@@ -213,7 +213,7 @@ button {
   grid-template-columns: minmax(0, 0.86fr) minmax(440px, 1.14fr);
   gap: 34px;
   align-items: center;
-  padding: 58px 0 22px;
+  padding: 64px 0 38px;
 }
 
 .eyebrow {
@@ -1280,7 +1280,7 @@ body {
   grid-template-columns: minmax(0, 1fr) minmax(380px, 0.62fr);
   gap: 34px;
   align-items: center;
-  padding: 64px 0 38px;
+  padding: 58px 0 22px;
 }
 
 .hero h1 {
@@ -1349,10 +1349,6 @@ body {
   background:
     linear-gradient(180deg, rgba(255, 255, 255, 0.105), rgba(255, 255, 255, 0.035)),
     linear-gradient(135deg, rgba(85, 214, 194, 0.08), rgba(240, 138, 93, 0.08));
-}
-
-.hero-board.is-swapping .selected-summary {
-  animation: panelSlide 300ms ease both;
 }
 
 .board-glow {
@@ -1834,16 +1830,15 @@ body {
   z-index: 2;
   grid-template-columns: minmax(0, 0.9fr) minmax(260px, 0.78fr);
   gap: 26px;
-  align-items: center;
-  min-height: 398px;
+  align-items: end;
+  min-height: 342px;
   margin: 18px 28px 0;
-  padding-bottom: 104px;
 }
 
 .summary-copy {
   display: grid;
   gap: 14px;
-  align-content: center;
+  align-content: end;
   min-width: 0;
 }
 
@@ -1857,56 +1852,6 @@ body {
   background: rgba(85, 214, 194, 0.12);
   font-size: 12px;
   font-weight: 900;
-}
-
-.summary-insights {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 8px;
-}
-
-.summary-insights span,
-.summary-problem {
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  border-radius: 8px;
-  background: rgba(255, 255, 255, 0.06);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06);
-}
-
-.summary-insights span {
-  display: grid;
-  gap: 4px;
-  min-width: 0;
-  padding: 10px;
-}
-
-.summary-insights small,
-.summary-problem span {
-  color: var(--muted);
-  font-size: 11px;
-  font-weight: 900;
-}
-
-.summary-insights b {
-  overflow: hidden;
-  color: var(--text);
-  font-size: 14px;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.summary-problem {
-  margin: 0;
-  padding: 12px 14px;
-  color: rgba(228, 237, 244, 0.86);
-  font-size: 14px;
-  line-height: 1.65;
-}
-
-.summary-problem span {
-  display: block;
-  margin-bottom: 5px;
-  color: var(--cyan);
 }
 
 .summary-copy .card-actions {
@@ -2042,6 +1987,66 @@ body {
   margin: 0;
 }
 
+.summary-insights {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.summary-insights span,
+.summary-problem {
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.06);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06);
+}
+
+.summary-insights span {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+  padding: 10px;
+}
+
+.summary-insights small,
+.summary-problem span {
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 900;
+}
+
+.summary-insights b {
+  overflow: hidden;
+  color: var(--text);
+  font-size: 14px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.summary-problem {
+  margin: 0;
+  padding: 12px 14px;
+  color: rgba(228, 237, 244, 0.86);
+  font-size: 14px;
+  line-height: 1.65;
+}
+
+.summary-problem span {
+  display: block;
+  margin-bottom: 5px;
+  color: var(--cyan);
+}
+
+.selected-summary {
+  min-height: 398px;
+  padding-bottom: 104px;
+  align-items: center;
+}
+
+.summary-copy {
+  align-content: center;
+}
+
 .showcase-arrows button {
   width: 60px;
   height: 60px;
@@ -2127,4 +2132,17 @@ body {
   .summary-copy .card-actions {
     grid-template-columns: 1fr;
   }
+}
+.game-experience-section {
+  margin-top: 28px;
+}
+
+.game-experience-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 18px;
+}
+
+.game-experience-card {
+  min-height: 220px;
 }

@@ -43,7 +43,7 @@ const defaultApps = [
     aiUse: "AI 参与关卡编辑器、关卡逻辑、道具流程、UI 调整、WebGL 打包和外网发布流程维护。",
     folder: "./projects/vita-mahjong/",
     entry: "./projects/vita-mahjong/index.html",
-    package: "",
+    package: "./downloads/vita-mahjong-webgl.zip",
     tags: ["Unity", "WebGL", "小游戏", "羊了个羊"],
     speed: 8,
     impact: 9,
@@ -181,6 +181,8 @@ const nodes = {
   sort: document.querySelector("#sortMode"),
   grid: document.querySelector("#appGrid"),
   resultCount: document.querySelector("#resultCount"),
+  gameGrid: document.querySelector("#gameGrid"),
+  gameCount: document.querySelector("#gameCount"),
   compare: document.querySelector("#compareBars"),
   command: document.querySelector("#commandInput"),
   log: document.querySelector("#responseLog"),
@@ -236,6 +238,13 @@ function bindEvents() {
     selectApp(dot.dataset.dotId);
   });
 
+  nodes.grid.addEventListener("click", event => {
+    if (event.target.closest("a, button")) return;
+    const card = event.target.closest("[data-app-id]");
+    if (!card) return;
+    selectApp(card.dataset.appId);
+  });
+
   nodes.prevApp.addEventListener("click", () => switchApp(-1));
   nodes.nextApp.addEventListener("click", () => switchApp(1));
 
@@ -264,6 +273,7 @@ function render() {
   renderSpotlight();
   renderDots();
   renderGrid(filtered);
+  renderGameGrid(filtered);
   renderCompare(filtered);
   renderEditForm();
 }
@@ -349,14 +359,33 @@ function renderDots() {
 }
 
 function renderGrid(filtered) {
-  nodes.resultCount.textContent = `${filtered.length} 个应用`;
-  if (!filtered.length) {
+  const applicationList = filtered.filter(app => app.status !== "game");
+  nodes.resultCount.textContent = `${applicationList.length} 个应用`;
+  if (!applicationList.length) {
     nodes.grid.innerHTML = `<article class="app-card"><h3>没有匹配结果</h3><p>换个关键词或重置筛选条件再试。</p></article>`;
     return;
   }
 
-  nodes.grid.innerHTML = filtered.map((app, index) => `
-    <article class="app-card ${app.id === state.selectedId ? "selected" : ""}" data-app-id="${escapeHtml(app.id)}" style="--card-order:${index}">
+  nodes.grid.innerHTML = applicationList.map(renderAppCard).join("");
+}
+
+function renderGameGrid(filtered) {
+  if (!nodes.gameGrid) return;
+  const gameList = filtered.filter(app => app.status === "game");
+  if (nodes.gameCount) {
+    nodes.gameCount.textContent = `${gameList.length} 个小游戏`;
+  }
+  if (!gameList.length) {
+    nodes.gameGrid.innerHTML = `<article class="app-card"><h3>没有匹配结果</h3><p>换个关键词或重置筛选条件再试。</p></article>`;
+    return;
+  }
+
+  nodes.gameGrid.innerHTML = gameList.map((app, index) => renderAppCard(app, index, " game-experience-card")).join("");
+}
+
+function renderAppCard(app, index = 0, extraClass = "") {
+  return `
+    <article class="app-card${extraClass} ${app.id === state.selectedId ? "selected" : ""}" data-app-id="${escapeHtml(app.id)}" style="--card-order:${index}">
       <div class="card-topline">
         <span class="status-badge status-${escapeHtml(app.status)}">${escapeHtml(statusLabel[app.status])}</span>
         <span>${escapeHtml(app.category)}</span>
@@ -368,7 +397,7 @@ function renderGrid(filtered) {
         ${renderActions(app, true)}
       </div>
     </article>
-  `).join("");
+  `;
 }
 
 function renderCompare(filtered) {
@@ -427,9 +456,6 @@ function selectApp(id) {
   if (!apps.some(app => app.id === id)) return;
   state.selectedId = id;
   localStorage.setItem(SELECTED_KEY, id);
-  document.querySelector(".hero-board")?.classList.remove("is-swapping");
-  void document.querySelector(".hero-board")?.offsetWidth;
-  document.querySelector(".hero-board")?.classList.add("is-swapping");
   render();
 }
 
@@ -579,6 +605,11 @@ function normalizeApp(app) {
   }
   if (normalized.id === "hub" && normalized.brief === OLD_HUB_BRIEF) {
     normalized.brief = HUB_BRIEF;
+  }
+  if (normalized.id === "vita-mahjong") {
+    normalized.entry = "./projects/vita-mahjong/index.html";
+    normalized.package = "./downloads/vita-mahjong-webgl.zip";
+    normalized.status = "game";
   }
   if (normalized.video && normalized.video.includes("演示视频占位")) {
     delete normalized.video;
