@@ -213,7 +213,7 @@ button {
   grid-template-columns: minmax(0, 0.86fr) minmax(440px, 1.14fr);
   gap: 34px;
   align-items: center;
-  padding: 64px 0 38px;
+  padding: 58px 0 22px;
 }
 
 .eyebrow {
@@ -241,7 +241,6 @@ button {
 
 .hero-lead,
 .section-head p:not(.eyebrow),
-.feature-band p,
 .app-card p,
 .detail-panel p,
 .review-notes li {
@@ -275,7 +274,6 @@ button {
 .console-panel,
 .app-card,
 .submission-grid a,
-.feature-band,
 .toolbar {
   border: 1px solid var(--line);
   border-radius: 8px;
@@ -403,39 +401,6 @@ button {
 
 .showcase-dot.active {
   background: var(--cyan);
-}
-
-.feature-band {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  overflow: hidden;
-  margin: 18px 0 74px;
-}
-
-.feature-band article {
-  min-height: 178px;
-  padding: 26px 22px;
-  border-right: 1px solid var(--line);
-}
-
-.feature-band article:last-child {
-  border-right: 0;
-}
-
-.feature-band span {
-  color: var(--amber);
-  font-size: 12px;
-  font-weight: 900;
-}
-
-.feature-band h2 {
-  margin: 12px 0 8px;
-  font-size: 19px;
-}
-
-.feature-band p {
-  margin: 0;
-  font-size: 14px;
 }
 
 .section {
@@ -922,7 +887,6 @@ body.editing .edit-panel {
     min-height: 560px;
   }
 
-  .feature-band,
   .app-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
@@ -951,7 +915,6 @@ body.editing .edit-panel {
 
   .status-strip,
   .hero-metrics,
-  .feature-band,
   .app-grid,
   .toolbar,
   .submission-grid,
@@ -985,15 +948,6 @@ body.editing .edit-panel {
 
   .showcase-dots {
     order: 5;
-  }
-
-  .feature-band article {
-    border-right: 0;
-    border-bottom: 1px solid var(--line);
-  }
-
-  .feature-band article:last-child {
-    border-bottom: 0;
   }
 
   .bar-item {
@@ -1071,7 +1025,6 @@ body {
 
 .status-strip span,
 .hero-metrics span,
-.feature-band article,
 .app-card,
 .submission-grid a,
 .detail-panel,
@@ -1084,7 +1037,6 @@ body {
 }
 
 .status-strip span:hover,
-.feature-band article:hover,
 .submission-grid a:hover {
   transform: translateY(-3px);
   border-color: rgba(85, 214, 194, 0.38);
@@ -1565,7 +1517,7 @@ body {
   grid-template-columns: minmax(190px, 220px) minmax(0, 1fr);
   gap: 20px;
   align-items: start;
-  margin-top: 72px;
+  margin-top: 42px;
 }
 
 .filter-panel {
@@ -1686,9 +1638,6 @@ body {
     grid-column: 1 / -1;
   }
 
-  .feature-band {
-    grid-template-columns: repeat(2, 1fr);
-  }
 }
 
 @media (max-width: 900px) {
@@ -1715,7 +1664,6 @@ body {
   }
 
   .metric-strip,
-  .feature-band,
   .filter-panel,
   .app-grid,
   .edit-grid,
@@ -1739,15 +1687,6 @@ body {
 
   .showcase-dot {
     min-width: 9px;
-  }
-
-  .feature-band article {
-    border-right: 0;
-    border-bottom: 1px solid var(--line);
-  }
-
-  .feature-band article:last-child {
-    border-bottom: 0;
   }
 
   .section-heading {

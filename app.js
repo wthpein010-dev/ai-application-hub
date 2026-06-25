@@ -1,7 +1,7 @@
 const STORAGE_KEY = "ai-competition-hub-v2-apps";
 const SELECTED_KEY = "ai-competition-hub-v2-selected";
 const PROJECT_ROOT_URL = "./projects/";
-const OLD_HUB_BRIEF = "把所有参赛应用、体验入口、下载包和提交材料集中在一个本地页面中，方便审核和维护。";
+const OLD_HUB_BRIEF = "把所有应用、体验入口、下载包和提交材料集中在一个本地页面中，方便审核和维护。";
 const HUB_BRIEF = "通过 Codex 调用 HyperFrames，快速制作网页动态效果；支持编辑和调整网页描述，沉淀可定制化网页模板的小工具设计。";
 
 const statusLabel = {
@@ -22,7 +22,7 @@ const defaultApps = [
     category: "项目总览",
     status: "navigation",
     brief: HUB_BRIEF,
-    problem: "参赛材料分散在多个目录，临近提交时难以快速判断哪个项目最完整、入口在哪里、还缺什么。",
+    problem: "项目材料分散在多个目录，临近提交时难以快速判断哪个项目最完整、入口在哪里、还缺什么。",
     aiUse: "AI 用于整理应用说明、维护建议、入口状态和提交材料清单。",
     folder: "./",
     entry: "./index.html",
