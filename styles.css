@@ -1827,7 +1827,7 @@ body {
 
 .summary-copy {
   display: grid;
-  gap: 12px;
+  gap: 14px;
   align-content: start;
   min-width: 0;
 }
@@ -1842,17 +1842,6 @@ body {
   background: rgba(85, 214, 194, 0.12);
   font-size: 12px;
   font-weight: 900;
-}
-
-.summary-copy .card-actions {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 10px;
-  margin-top: 4px;
-}
-
-.summary-copy .card-actions a {
-  min-height: 42px;
 }
 
 .hero-board .showcase-controls {
@@ -1876,6 +1865,7 @@ body {
   color: rgba(228, 237, 244, 0.86);
   font-size: 14px;
   line-height: 1.68;
+  min-height: 92px;
 }
 
 .summary-richtext span {
@@ -1884,6 +1874,14 @@ body {
   color: var(--cyan);
   font-size: 11px;
   font-weight: 900;
+}
+
+.summary-richtext em {
+  display: -webkit-box;
+  overflow: hidden;
+  font-style: normal;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
 }
 
 .selected-summary {
@@ -1964,8 +1962,8 @@ body {
 }
 
 @media (max-width: 720px) {
-  .summary-copy .card-actions {
-    grid-template-columns: 1fr;
+  .summary-richtext {
+    min-height: 104px;
   }
 }
 .game-experience-section {

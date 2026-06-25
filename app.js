@@ -312,16 +312,23 @@ function renderStats() {
 
 function renderSpotlight() {
   const app = getSelectedApp();
+  const introText = spotlightIntro(app);
   const richText = app.problem;
   nodes.spotlight.innerHTML = `
     <div class="summary-copy">
       <span class="summary-type">${escapeHtml(app.category)}</span>
       <strong>${escapeHtml(app.name)}</strong>
-      <p>${escapeHtml(app.brief)}</p>
-      <p class="summary-richtext"><span>使用场景</span>${escapeHtml(richText)}</p>
-      ${renderActions(app, true)}
+      <p class="summary-intro">${escapeHtml(introText)}</p>
+      <p class="summary-richtext"><span>使用场景</span><em>${escapeHtml(richText)}</em></p>
     </div>
   `;
+}
+
+function spotlightIntro(app) {
+  const aiText = app.aiUse
+    .replace(/^AI\s*用于/, "AI 负责")
+    .replace(/^AI\s*参与/, "AI 参与");
+  return `${app.brief} ${aiText}`;
 }
 
 function renderDots() {
