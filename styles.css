@@ -1548,7 +1548,8 @@ body {
   font-size: 13px;
 }
 
-.app-grid {
+.app-grid,
+.game-experience-grid {
   grid-template-columns: repeat(5, minmax(0, 1fr));
   gap: 14px;
 }
@@ -1588,13 +1589,15 @@ body {
     width: min(1440px, calc(100% - 44px));
   }
 
-  .app-grid {
+  .app-grid,
+  .game-experience-grid {
     grid-template-columns: repeat(4, minmax(0, 1fr));
   }
 }
 
 @media (max-width: 1240px) {
-  .app-grid {
+  .app-grid,
+  .game-experience-grid {
     grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 }
@@ -1633,7 +1636,8 @@ body {
 }
 
 @media (max-width: 900px) {
-  .app-grid {
+  .app-grid,
+  .game-experience-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
@@ -1658,6 +1662,7 @@ body {
   .metric-strip,
   .filter-panel,
   .app-grid,
+  .game-experience-grid,
   .edit-grid,
   .submission-grid,
   .command-line,
@@ -1967,15 +1972,21 @@ body {
   }
 }
 .game-experience-section {
-  margin-top: 28px;
+  margin-top: 48px;
+  margin-left: 240px;
 }
 
 .game-experience-grid {
   display: grid;
-  grid-template-columns: minmax(0, 1fr);
-  gap: 18px;
+  gap: 14px;
 }
 
 .game-experience-card {
-  min-height: 220px;
+  min-height: 286px;
+}
+
+@media (max-width: 1120px) {
+  .game-experience-section {
+    margin-left: 0;
+  }
 }
