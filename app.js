@@ -268,7 +268,7 @@ function render() {
   ensureSelectedApp(filtered);
   renderStats();
   renderSpotlight();
-  renderDots();
+  renderDots(filtered);
   renderGrid(filtered);
   renderGameGrid(filtered);
   renderCompare(filtered);
@@ -308,6 +308,13 @@ function getFilteredApps() {
     });
 }
 
+function getNavigationApps(filtered = getFilteredApps()) {
+  return [
+    ...filtered.filter(app => app.status !== "game"),
+    ...filtered.filter(app => app.status === "game")
+  ];
+}
+
 function renderStats() {
   const readyCount = apps.filter(app => app.entry).length;
   const packageCount = apps.filter(app => app.package).length;
@@ -338,8 +345,8 @@ function spotlightIntro(app) {
   return `${app.brief} ${aiText}`;
 }
 
-function renderDots() {
-  nodes.dots.innerHTML = apps.map((app, index) => `
+function renderDots(filtered = getFilteredApps()) {
+  nodes.dots.innerHTML = getNavigationApps(filtered).map(app => `
     <button class="showcase-dot ${app.id === state.selectedId ? "active" : ""}" type="button" data-dot-id="${escapeHtml(app.id)}" aria-label="${escapeHtml(app.name)}"></button>
   `).join("");
 }
@@ -466,8 +473,8 @@ function selectApp(id) {
 }
 
 function ensureSelectedApp(filtered) {
-  if (apps.some(app => app.id === state.selectedId)) return;
-  state.selectedId = (filtered[0] || apps[0]).id;
+  if (filtered.some(app => app.id === state.selectedId)) return;
+  state.selectedId = (getNavigationApps(filtered)[0] || apps[0]).id;
 }
 
 function getSelectedApp() {
@@ -475,9 +482,12 @@ function getSelectedApp() {
 }
 
 function switchApp(direction) {
-  const currentIndex = Math.max(0, apps.findIndex(app => app.id === state.selectedId));
-  const nextIndex = (currentIndex + direction + apps.length) % apps.length;
-  selectApp(apps[nextIndex].id);
+  const navigationApps = getNavigationApps();
+  if (!navigationApps.length) return;
+  const fallbackIndex = direction > 0 ? -1 : 0;
+  const currentIndex = navigationApps.findIndex(app => app.id === state.selectedId);
+  const nextIndex = ((currentIndex === -1 ? fallbackIndex : currentIndex) + direction + navigationApps.length) % navigationApps.length;
+  selectApp(navigationApps[nextIndex].id);
 }
 
 function getAdvice(app) {
