@@ -268,12 +268,10 @@ button {
 .status-strip span,
 .hero-metrics span,
 .detail-stat,
-.compare-panel,
 .detail-panel,
 .review-notes,
 .console-panel,
 .app-card,
-.submission-grid a,
 .toolbar {
   border: 1px solid var(--line);
   border-radius: 8px;
@@ -677,7 +675,6 @@ select option:hover {
 }
 
 .split-section,
-.compare-layout,
 .detail-layout {
   display: grid;
   grid-template-columns: minmax(260px, 0.42fr) minmax(0, 1fr);
@@ -685,57 +682,10 @@ select option:hover {
   align-items: start;
 }
 
-.submission-grid {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 14px;
-}
-
-.submission-grid a {
-  display: grid;
-  gap: 8px;
-  min-height: 132px;
-  padding: 22px;
-  color: var(--text);
-  text-decoration: none;
-}
-
-.submission-grid strong {
-  font-size: 18px;
-}
-
-.submission-grid span {
-  color: var(--muted);
-  line-height: 1.6;
-}
-
-.compare-panel,
 .detail-panel,
 .review-notes,
 .console-panel {
   padding: 22px;
-}
-
-.compare-bars {
-  display: grid;
-  gap: 14px;
-}
-
-.bar-item {
-  display: grid;
-  grid-template-columns: minmax(180px, 0.78fr) 1fr 42px;
-  gap: 12px;
-  align-items: center;
-}
-
-.bar-item strong,
-.bar-item > div:first-child span {
-  display: block;
-}
-
-.bar-item > div:first-child span {
-  color: var(--muted);
-  font-size: 12px;
 }
 
 .detail-panel h2,
@@ -969,7 +919,6 @@ body.editing .edit-panel {
 
   .hero,
   .split-section,
-  .compare-layout,
   .detail-layout {
     grid-template-columns: 1fr;
   }
@@ -1008,7 +957,6 @@ body.editing .edit-panel {
   .hero-metrics,
   .app-grid,
   .toolbar,
-  .submission-grid,
   .command-line,
   .detail-stats {
     grid-template-columns: 1fr;
@@ -1117,18 +1065,15 @@ body {
 .status-strip span,
 .hero-metrics span,
 .app-card,
-.submission-grid a,
 .detail-panel,
 .review-notes,
 .console-panel,
-.compare-panel,
 .toolbar,
 .spotlight-panel {
   transition: transform 180ms ease, border-color 180ms ease, background 180ms ease, box-shadow 180ms ease;
 }
 
-.status-strip span:hover,
-.submission-grid a:hover {
+.status-strip span:hover {
   transform: translateY(-3px);
   border-color: rgba(85, 214, 194, 0.38);
   background: rgba(255, 255, 255, 0.065);
@@ -1719,8 +1664,7 @@ body {
 
   .hero,
   .workspace,
-  .split-section,
-  .compare-layout {
+  .split-section {
     grid-template-columns: 1fr;
   }
 
@@ -1772,7 +1716,6 @@ body {
   .app-grid,
   .game-experience-grid,
   .edit-grid,
-  .submission-grid,
   .command-line,
   .platform-grid,
   .detail-stats {

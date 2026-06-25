@@ -61,6 +61,28 @@ const defaultApps = [
     polish: 8
   },
   {
+    id: "fill-what",
+    name: "填了个啥",
+    category: "Unity 微信小游戏原型",
+    status: "game",
+    brief: "以成语填字和诗意来信为核心的竖屏小游戏，使用 Unity UGUI 搭建界面，支持调试面板、关卡快照和过关结算。",
+    problem: "需要一个能直接在线体验、又能下载完整 Unity 工程继续改预制体和资源的小游戏样例，方便后续迁移到微信小游戏流程。",
+    aiUse: "AI 参与玩法拆解、UGUI 预制体结构、750×1624 适配、关卡内容、WebGL 发布页和下载包整理。",
+    folder: "./projects/fill-what/",
+    entry: "./projects/fill-what/index.html",
+    package: "./downloads/fill-what-unity-project.zip",
+    platforms: {
+      web: "./projects/fill-what/index.html",
+      windows: "./downloads/fill-what-unity-project.zip",
+      mac: "./downloads/fill-what-unity-project.zip"
+    },
+    tags: ["Unity", "UGUI", "成语填字", "微信小游戏"],
+    speed: 8,
+    impact: 8,
+    risk: 7,
+    polish: 8
+  },
+  {
     id: "travel-generator",
     name: "朋友圈发图神器",
     category: "AI 内容生成",
@@ -488,9 +510,9 @@ function renderActions(app, stopPropagation = false) {
   const web = platformValue(app, "web") || app.entry;
   const windows = platformValue(app, "windows") || app.package;
   const mac = platformValue(app, "mac");
-  const webLink = web ? `<a class="primary-link" data-action="web" href="${escapeHtml(projectHref(web))}"${stop}>网页</a>` : "";
-  const windowsLink = windows ? `<a class="download-link" data-action="windows" href="${escapeHtml(projectHref(windows))}" download${stop}>Win</a>` : "";
-  const macLink = mac ? `<a class="mac-link" data-action="mac" href="${escapeHtml(projectHref(mac))}" download${stop}>Mac</a>` : "";
+  const webLink = web ? `<a class="primary-link" data-action="web" href="${escapeHtml(projectHref(web))}"${stop}>${escapeHtml(platformLabel(app, "web", "网页"))}</a>` : "";
+  const windowsLink = windows ? `<a class="download-link" data-action="windows" href="${escapeHtml(projectHref(windows))}" download${stop}>${escapeHtml(platformLabel(app, "windows", "Win"))}</a>` : "";
+  const macLink = mac ? `<a class="mac-link" data-action="mac" href="${escapeHtml(projectHref(mac))}" download${stop}>${escapeHtml(platformLabel(app, "mac", "Mac"))}</a>` : "";
   const video = app.video ? `<a data-action="video" href="${escapeHtml(projectHref(app.video))}"${stop}>视频</a>` : "";
   return `
     <div class="card-actions">
@@ -506,6 +528,12 @@ function platformValue(app, key) {
   const value = app.platforms?.[key];
   if (!value) return "";
   return typeof value === "string" ? value : value.href;
+}
+
+function platformLabel(app, key, fallback) {
+  const value = app.platforms?.[key];
+  if (!value || typeof value === "string") return fallback;
+  return value.label || fallback;
 }
 
 function platformCount(app) {
@@ -698,11 +726,23 @@ function normalizeApp(app) {
     };
     normalized.status = "game";
   }
+  if (normalized.id === "fill-what") {
+    normalized.entry = "./projects/fill-what/index.html";
+    normalized.package = "./downloads/fill-what-unity-project.zip";
+    normalized.platforms = {
+      ...normalized.platforms,
+      web: "./projects/fill-what/index.html",
+      windows: "./downloads/fill-what-unity-project.zip",
+      mac: "./downloads/fill-what-unity-project.zip"
+    };
+    normalized.status = "game";
+  }
+  const currentPlatforms = normalized.platforms || {};
   normalized.platforms = {
-    ...(normalized.platforms || {}),
-    web: platformValue(normalized, "web") || normalized.entry || "",
-    windows: platformValue(normalized, "windows") || normalized.package || "",
-    mac: platformValue(normalized, "mac") || ""
+    ...currentPlatforms,
+    web: currentPlatforms.web || normalized.entry || "",
+    windows: currentPlatforms.windows || normalized.package || "",
+    mac: currentPlatforms.mac || ""
   };
   if (normalized.video && normalized.video.includes("演示视频占位")) {
     delete normalized.video;

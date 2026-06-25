@@ -1,0 +1,406 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="description" content="《填了个啥》Unity WebGL 小游戏演示，补全成语并翻开诗意来信。" />
+    <title>填了个啥 | Unity WebGL 小游戏</title>
+    <link rel="shortcut icon" href="./TemplateData/favicon.ico" />
+    <style>
+      :root {
+        color-scheme: dark;
+        --bg: #10141a;
+        --paper: #fff7e6;
+        --ink: #2a2017;
+        --muted: #765d49;
+        --green: #75d84f;
+        --blue: #42a6e8;
+        --line: rgba(255,255,255,0.18);
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        min-height: 100vh;
+        color: #fffaf1;
+        font-family: "Microsoft YaHei", "PingFang SC", Arial, sans-serif;
+        background:
+          linear-gradient(180deg, rgba(16,20,26,0.36), rgba(16,20,26,0.82)),
+          radial-gradient(circle at 28% 12%, rgba(255, 179, 176, 0.44), transparent 32%),
+          linear-gradient(135deg, #ca8e78 0%, #f4c8a4 48%, #8aa56b 100%);
+        overflow-x: hidden;
+      }
+
+      .page {
+        width: min(1180px, calc(100% - 32px));
+        margin: 0 auto;
+        padding: 24px 0 32px;
+      }
+
+      .topbar {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 16px;
+        min-height: 48px;
+      }
+
+      .topbar a {
+        color: #fffaf1;
+        font-weight: 800;
+        text-decoration: none;
+      }
+
+      .topbar span {
+        color: rgba(255,250,241,0.78);
+        font-size: 14px;
+      }
+
+      .layout {
+        display: grid;
+        grid-template-columns: minmax(280px, 0.86fr) minmax(320px, 520px);
+        gap: 34px;
+        align-items: center;
+        min-height: calc(100vh - 104px);
+      }
+
+      .copy {
+        max-width: 620px;
+      }
+
+      h1 {
+        margin: 0 0 18px;
+        color: #fff7d7;
+        font-size: clamp(42px, 7vw, 86px);
+        line-height: 1;
+        letter-spacing: 0;
+        text-shadow: 0 8px 22px rgba(67, 32, 18, 0.46);
+      }
+
+      .lead {
+        margin: 0;
+        color: rgba(255,250,241,0.86);
+        font-size: 18px;
+        line-height: 1.8;
+      }
+
+      .meta {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        margin: 24px 0 0;
+      }
+
+      .meta span {
+        display: inline-flex;
+        align-items: center;
+        min-height: 32px;
+        padding: 0 12px;
+        border: 1px solid rgba(255,255,255,0.22);
+        border-radius: 8px;
+        background: rgba(255,255,255,0.12);
+        color: #fff8e7;
+        font-weight: 800;
+      }
+
+      .actions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 12px;
+        margin-top: 30px;
+      }
+
+      button,
+      .button {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-height: 48px;
+        padding: 0 20px;
+        border: 0;
+        border-radius: 8px;
+        color: #17130d;
+        font-weight: 900;
+        text-decoration: none;
+        cursor: pointer;
+      }
+
+      #startButton {
+        background: linear-gradient(180deg, #a3f56d, var(--green));
+        box-shadow: 0 16px 36px rgba(72, 187, 56, 0.28);
+      }
+
+      .button {
+        background: linear-gradient(180deg, #77c8ff, var(--blue));
+      }
+
+      .stage {
+        position: relative;
+        width: min(100%, 422px);
+        margin: 0 auto;
+        aspect-ratio: 750 / 1624;
+        border: 1px solid rgba(255,255,255,0.24);
+        border-radius: 8px;
+        overflow: hidden;
+        background:
+          linear-gradient(180deg, rgba(255,245,218,0.94), rgba(255,224,184,0.92)),
+          var(--paper);
+        box-shadow: 0 24px 90px rgba(60, 28, 16, 0.38);
+      }
+
+      #unity-canvas {
+        width: 100%;
+        height: 100%;
+        display: block;
+        background: #f6d1bc;
+      }
+
+      .placeholder,
+      #loadingPanel {
+        position: absolute;
+        inset: 0;
+        display: grid;
+        place-items: center;
+        padding: 28px;
+        text-align: center;
+      }
+
+      .placeholder {
+        background:
+          radial-gradient(circle at 50% 22%, rgba(255, 255, 255, 0.92), transparent 18%),
+          linear-gradient(180deg, rgba(248, 202, 190, 0.96), rgba(246, 214, 164, 0.94));
+      }
+
+      .placeholder strong {
+        display: block;
+        margin-bottom: 14px;
+        color: #6c321c;
+        font-size: 38px;
+      }
+
+      .placeholder p {
+        margin: 0;
+        color: var(--muted);
+        line-height: 1.7;
+        font-weight: 800;
+      }
+
+      #loadingPanel {
+        display: none;
+        background: rgba(42, 32, 23, 0.72);
+      }
+
+      .progress {
+        width: min(280px, 80%);
+      }
+
+      .progress span {
+        display: block;
+        margin-bottom: 12px;
+        color: #fff8e7;
+        font-weight: 900;
+      }
+
+      .progress-track {
+        height: 12px;
+        border-radius: 999px;
+        overflow: hidden;
+        background: rgba(255,255,255,0.24);
+      }
+
+      #progressFill {
+        width: 0%;
+        height: 100%;
+        border-radius: inherit;
+        background: linear-gradient(90deg, #7ae35b, #ffe28b);
+      }
+
+      #unity-warning {
+        position: fixed;
+        left: 50%;
+        bottom: 18px;
+        z-index: 10;
+        transform: translateX(-50%);
+        max-width: min(680px, calc(100% - 32px));
+      }
+
+      #unity-warning div {
+        margin-top: 8px;
+        border-radius: 8px;
+        padding: 10px 12px;
+        color: #10141a;
+        background: #ffe28b;
+        font-weight: 800;
+      }
+
+      .fullscreen {
+        position: absolute;
+        right: 10px;
+        bottom: 10px;
+        display: none;
+        min-height: 38px;
+        padding: 0 12px;
+        border: 1px solid rgba(255,255,255,0.28);
+        color: #fff;
+        background: rgba(0,0,0,0.36);
+      }
+
+      .is-running .placeholder {
+        display: none;
+      }
+
+      .is-running .fullscreen {
+        display: inline-flex;
+      }
+
+      @media (max-width: 860px) {
+        .layout {
+          grid-template-columns: 1fr;
+          gap: 24px;
+          min-height: auto;
+          padding-top: 28px;
+        }
+
+        .copy {
+          max-width: none;
+        }
+
+        .stage {
+          width: min(100%, 390px);
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="page">
+      <header class="topbar">
+        <a href="../../index.html#games">返回小游戏集合</a>
+        <span>Unity 2022.3.62f3c1 · 750×1624 竖屏适配</span>
+      </header>
+
+      <main class="layout">
+        <section class="copy">
+          <h1>填了个啥</h1>
+          <p class="lead">
+            补全成语，翻开写给你的诗意来信。游戏使用 UGUI 搭建界面，内置调试面板、关卡快照、过关结算和移动端竖屏适配。
+          </p>
+          <div class="meta">
+            <span>成语填字</span>
+            <span>诗意来信</span>
+            <span>微信小游戏原型</span>
+          </div>
+          <div class="actions">
+            <button id="startButton" type="button">加载并开始</button>
+            <a class="button" href="../../downloads/fill-what-unity-project.zip" download>下载 Unity 工程</a>
+          </div>
+        </section>
+
+        <section id="stage" class="stage" aria-label="填了个啥游戏窗口">
+          <canvas id="unity-canvas" width="750" height="1624" tabindex="-1"></canvas>
+          <div class="placeholder">
+            <div>
+              <strong>填了个啥</strong>
+              <p>点击左侧按钮后再加载 30MB 左右的 Unity WebGL 资源，避免页面初始打开时等待过久。</p>
+            </div>
+          </div>
+          <div id="loadingPanel">
+            <div class="progress">
+              <span id="loadingText">正在准备资源...</span>
+              <div class="progress-track"><div id="progressFill"></div></div>
+            </div>
+          </div>
+          <button id="fullscreenButton" class="fullscreen" type="button">全屏</button>
+        </section>
+      </main>
+    </div>
+
+    <div id="unity-warning"></div>
+
+    <script>
+      const stage = document.querySelector("#stage");
+      const canvas = document.querySelector("#unity-canvas");
+      const startButton = document.querySelector("#startButton");
+      const loadingPanel = document.querySelector("#loadingPanel");
+      const loadingText = document.querySelector("#loadingText");
+      const progressFill = document.querySelector("#progressFill");
+      const fullscreenButton = document.querySelector("#fullscreenButton");
+      const warningBanner = document.querySelector("#unity-warning");
+      let unityInstance = null;
+      let loadingStarted = false;
+
+      function unityShowBanner(msg, type) {
+        const div = document.createElement("div");
+        div.textContent = msg;
+        if (type === "error") div.style.background = "#ff7474";
+        warningBanner.appendChild(div);
+        if (type !== "error") {
+          window.setTimeout(() => {
+            div.remove();
+          }, 5000);
+        }
+      }
+
+      function loadGame() {
+        if (loadingStarted) return;
+        loadingStarted = true;
+        startButton.disabled = true;
+        startButton.textContent = "加载中...";
+        stage.classList.add("is-running");
+        loadingPanel.style.display = "grid";
+
+        const buildUrl = "Build";
+        const config = {
+          dataUrl: buildUrl + "/WebGL.data",
+          frameworkUrl: buildUrl + "/WebGL.framework.js",
+          codeUrl: buildUrl + "/WebGL.wasm",
+          streamingAssetsUrl: "StreamingAssets",
+          companyName: "CodexPrototype",
+          productName: "填了个啥",
+          productVersion: "0.1.0",
+          showBanner: unityShowBanner,
+          autoSyncPersistentDataPath: true
+        };
+
+        if (/iPhone|iPad|iPod|Android/i.test(navigator.userAgent)) {
+          config.devicePixelRatio = Math.min(window.devicePixelRatio || 1, 2);
+        }
+
+        const script = document.createElement("script");
+        script.src = buildUrl + "/WebGL.loader.js";
+        script.onload = () => {
+          createUnityInstance(canvas, config, progress => {
+            const percent = Math.round(progress * 100);
+            progressFill.style.width = percent + "%";
+            loadingText.textContent = "正在加载资源 " + percent + "%";
+          }).then(instance => {
+            unityInstance = instance;
+            loadingPanel.style.display = "none";
+            startButton.textContent = "游戏已启动";
+          }).catch(message => {
+            startButton.disabled = false;
+            startButton.textContent = "重新加载";
+            loadingPanel.style.display = "none";
+            loadingStarted = false;
+            unityShowBanner(message, "error");
+          });
+        };
+        script.onerror = () => {
+          startButton.disabled = false;
+          startButton.textContent = "重新加载";
+          loadingPanel.style.display = "none";
+          loadingStarted = false;
+          unityShowBanner("Unity 加载脚本失败，请刷新后重试。", "error");
+        };
+        document.body.appendChild(script);
+      }
+
+      startButton.addEventListener("click", loadGame);
+      fullscreenButton.addEventListener("click", () => {
+        if (unityInstance) unityInstance.SetFullscreen(1);
+      });
+    </script>
+  </body>
+</html>
