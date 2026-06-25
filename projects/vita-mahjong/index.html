@@ -117,6 +117,42 @@
 
       loadingBar.style.display = "block";
 
+      (function enableNativeUnityGzip() {
+        if (!("DecompressionStream" in window) || !window.fetch || !window.ReadableStream) {
+          return;
+        }
+
+        var rawFetch = window.fetch.bind(window);
+        window.fetch = function(input, init) {
+          var requestUrl = typeof input === "string" ? input : input && input.url ? input.url : "";
+          return rawFetch(input, init).then(function(response) {
+            if (!response || !response.ok || !response.body || !/\.unityweb(?:\?|$)/.test(requestUrl)) {
+              return response;
+            }
+
+            if ((response.headers.get("Content-Encoding") || "").toLowerCase()) {
+              return response;
+            }
+
+            try {
+              var headers = new Headers(response.headers);
+              headers.delete("Content-Encoding");
+              headers.delete("Content-Length");
+              headers.set("X-Unity-Native-Gzip", "1");
+              window.__vitaNativeGzipCount = (window.__vitaNativeGzipCount || 0) + 1;
+              return new Response(response.body.pipeThrough(new DecompressionStream("gzip")), {
+                status: response.status,
+                statusText: response.statusText,
+                headers: headers
+              });
+            } catch (error) {
+              console.warn("[Vita Mahjong] Native gzip path unavailable, falling back to Unity loader.", error);
+              return response;
+            }
+          });
+        };
+      })();
+
       var script = document.createElement("script");
       script.src = loaderUrl;
       script.onload = () => {
