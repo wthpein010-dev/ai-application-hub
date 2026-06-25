@@ -1,0 +1,78 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Feishu Batch Downloader</title>
+    <link rel="stylesheet" href="popup.css">
+  </head>
+  <body>
+    <main class="shell">
+      <header class="topbar">
+        <div class="brand">
+          <img src="icons/icon-48.svg" alt="" class="brand-icon">
+          <div class="brand-copy">
+            <h1>飞书批量下载</h1>
+            <p id="pageTitle">正在读取当前页面</p>
+          </div>
+        </div>
+        <button id="refreshButton" class="icon-button" type="button" title="刷新文件列表" aria-label="刷新文件列表">
+          <span aria-hidden="true">↻</span>
+        </button>
+      </header>
+
+      <section class="status-card">
+        <div class="status-line">
+          <span id="statusDot" class="status-dot"></span>
+          <span id="statusText">准备连接飞书</span>
+        </div>
+        <div class="meter" aria-hidden="true">
+          <span id="progressBar"></span>
+        </div>
+      </section>
+
+      <section class="controls" aria-label="筛选工具">
+        <div class="segmented" role="tablist" aria-label="文件类型">
+          <button class="segment is-active" data-type="all" type="button">全部</button>
+          <button class="segment" data-type="docx" type="button">文档</button>
+          <button class="segment" data-type="xlsx" type="button">表格</button>
+          <button class="segment" data-type="pptx" type="button">幻灯片</button>
+          <button class="segment" data-type="mm" type="button">思维</button>
+        </div>
+        <input id="searchInput" type="search" placeholder="搜索文件名或路径" autocomplete="off">
+      </section>
+
+      <section class="summary" aria-live="polite">
+        <div>
+          <strong id="totalCount">0</strong>
+          <span>可导出</span>
+        </div>
+        <div>
+          <strong id="visibleCount">0</strong>
+          <span>当前可见</span>
+        </div>
+        <div>
+          <strong id="selectedCount">0</strong>
+          <span>已选择</span>
+        </div>
+      </section>
+
+      <section class="actions">
+        <button id="selectVisibleButton" type="button">选择可见</button>
+        <button id="clearButton" type="button">清空</button>
+        <button id="exportButton" class="primary" type="button" disabled>开始下载</button>
+      </section>
+
+      <section id="tree" class="tree" aria-label="飞书文件树"></section>
+
+      <section id="jobPanel" class="job-panel" aria-label="下载任务" hidden>
+        <div class="job-head">
+          <strong>下载队列</strong>
+          <span id="jobSummary">0 / 0</span>
+        </div>
+        <div id="jobList" class="job-list"></div>
+      </section>
+    </main>
+    <script src="popup.js"></script>
+  </body>
+</html>

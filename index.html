@@ -4,9 +4,9 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>AI 应用总览</title>
-    <meta name="description" content="汇总所有应用入口、说明、下载与演示内容。" />
+    <meta name="description" content="汇总所有应用入口、说明、网页体验与跨平台下载内容。" />
     <link rel="icon" href="./assets/app-avatar.png" type="image/png" />
-    <link rel="stylesheet" href="./styles.css?v=20260625-nav-order" />
+    <link rel="stylesheet" href="./styles.css?v=20260625-platforms" />
   </head>
   <body>
     <div class="app-shell">
@@ -21,8 +21,7 @@
         <nav aria-label="页面导航">
           <a href="#overview">总览</a>
           <a href="#apps">应用</a>
-          <a href="#submission">提交</a>
-          <a href="#compare">材料</a>
+          <a href="#platforms">平台</a>
           <a href="#maintain">维护</a>
         </nav>
 
@@ -37,11 +36,11 @@
           <div class="hero-copy">
             <h1>AI 应用总览</h1>
             <p class="hero-lead">
-              汇总所有应用入口、说明、下载与演示内容。
+              汇总所有应用入口、说明、网页体验与跨平台下载内容。
             </p>
             <div class="hero-actions">
               <a class="primary-action" href="#apps">查看应用集合</a>
-              <a class="ghost-action" href="#compare">查看材料</a>
+              <a class="ghost-action" href="#platforms">查看平台入口</a>
               <button id="streamButton" class="ghost-action" type="button">运行维护预览</button>
             </div>
             <div class="metric-strip" aria-label="项目统计">
@@ -54,11 +53,11 @@
                 <strong id="statMain">0</strong>
               </div>
               <div class="metric accent-blue">
-                <span>可用入口</span>
+                <span>网页体验</span>
                 <strong id="statReady">0</strong>
               </div>
               <div class="metric accent-gold">
-                <span>下载包</span>
+                <span>平台包</span>
                 <strong id="statScore">0</strong>
               </div>
             </div>
@@ -137,39 +136,12 @@
           <div id="gameGrid" class="app-grid game-experience-grid"></div>
         </section>
 
-        <section id="submission" class="section split-section">
+        <section id="platforms" class="section platform-section">
           <div class="section-head align-left">
-            <h2>提交材料入口</h2>
-            <p>面向比赛提交的关键材料入口集中在这里，优先确认演示视频、作品说明、AI 使用说明和下载包可访问。</p>
+            <h2>跨平台体验</h2>
+            <p>按网页、Windows、Mac 三种方式整理体验入口。网页和通用包可跨系统打开；桌面工具优先提供对应系统包。</p>
           </div>
-          <div class="submission-grid">
-            <a href="./projects/朋友圈发图神器/02_提交材料/01-submission-info.md">
-              <strong>作品信息</strong>
-              <span>名称、一句话介绍、核心亮点</span>
-            </a>
-            <a href="./projects/朋友圈发图神器/03_演示视频/index.html">
-              <strong>演示视频</strong>
-              <span>脚本、录制节奏、视频占位</span>
-            </a>
-            <a href="./projects/朋友圈发图神器/04_AI说明与提示词/04-ai-usage.md">
-              <strong>AI 使用说明</strong>
-              <span>AI 参与范围、提示词与协作方式</span>
-            </a>
-            <a href="./projects/朋友圈发图神器/07_发布提交包/travel-generator-submission.zip" download>
-              <strong>下载包</strong>
-              <span>最终压缩包、安装包和清单</span>
-            </a>
-          </div>
-        </section>
-
-        <section id="compare" class="section compare-layout">
-          <div class="section-head align-left">
-            <h2>材料入口总览</h2>
-            <p>按应用列出下载、演示和视频入口，方便逐项检查交付材料是否齐全。</p>
-          </div>
-          <div class="compare-panel">
-            <div id="compareBars" class="compare-bars"></div>
-          </div>
+          <div id="platformGrid" class="platform-grid"></div>
         </section>
 
         <section id="maintain" class="section split-section">
@@ -242,7 +214,7 @@
           <input id="editFolder" type="text" />
         </label>
         <label class="wide">
-          <span>演示入口</span>
+          <span>网页入口</span>
           <input id="editEntry" type="text" />
         </label>
       </div>
@@ -253,6 +225,6 @@
       <p class="edit-note">保存内容写入当前浏览器本地存储。需要固化到文件时，可让我继续处理。</p>
     </aside>
 
-    <script src="./app.js?v=20260625-nav-order"></script>
+    <script src="./app.js?v=20260625-platforms"></script>
   </body>
 </html>

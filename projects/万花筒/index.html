@@ -1,0 +1,100 @@
+﻿<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>万花筒</title>
+  <link rel="stylesheet" href="./styles.css" />
+</head>
+<body>
+  <main class="app-shell">
+    <aside class="side-panel" aria-label="转换模式">
+      <a class="back-link" href="../../全部项目总览.html">返回总览</a>
+      <div class="brand">
+        <div class="brand-mark">万</div>
+        <div>
+          <h1>万花筒</h1>
+          <p>一句话，转出万种表达。</p>
+        </div>
+      </div>
+      <nav class="mode-list" id="modeList"></nav>
+    </aside>
+
+    <section class="workspace" aria-label="表达转换工作台">
+      <header class="toolbar">
+        <div>
+          <span class="eyebrow" id="modeCategory">表达转换</span>
+          <h2 id="modeTitle">情绪翻译</h2>
+        </div>
+        <div class="toolbar-actions">
+          <button class="ghost-button" id="sampleButton" type="button">换个示例</button>
+          <button class="primary-button" id="convertButton" type="button">开始转换</button>
+        </div>
+      </header>
+
+      <section class="editor-grid">
+        <div class="input-panel">
+          <div class="panel-head">
+            <label for="sourceText">原始内容</label>
+            <span id="counter">0 字</span>
+          </div>
+          <textarea id="sourceText" spellcheck="false"></textarea>
+          <div class="control-row">
+            <label>
+              目标语言
+              <select id="languageSelect">
+                <option value="zh">中文</option>
+                <option value="en">English</option>
+                <option value="ja">日本語</option>
+                <option value="ko">한국어</option>
+                <option value="fr">Français</option>
+              </select>
+            </label>
+            <label>
+              表达风格
+              <select id="toneSelect">
+                <option value="warm">温和</option>
+                <option value="clear">清楚</option>
+                <option value="romantic">浪漫</option>
+                <option value="formal">正式</option>
+                <option value="playful">有梗</option>
+              </select>
+            </label>
+            <label>
+              输出长度
+              <select id="lengthSelect">
+                <option value="short">短句</option>
+                <option value="normal">标准</option>
+                <option value="detailed">详细</option>
+              </select>
+            </label>
+          </div>
+        </div>
+
+        <div class="output-panel">
+          <div class="panel-head">
+            <span>转换结果</span>
+            <button class="text-button" id="copyButton" type="button">复制</button>
+          </div>
+          <article id="result" class="result" aria-live="polite"></article>
+        </div>
+      </section>
+
+      <section class="bottom-grid">
+        <div class="quick-panel">
+          <h3>快捷入口</h3>
+          <div class="chip-row" id="quickChips"></div>
+        </div>
+        <div class="history-panel">
+          <div class="panel-head">
+            <h3>最近转换</h3>
+            <button class="text-button" id="clearHistory" type="button">清空</button>
+          </div>
+          <ol id="historyList" class="history-list"></ol>
+        </div>
+      </section>
+    </section>
+  </main>
+  <script src="./script.js"></script>
+</body>
+</html>

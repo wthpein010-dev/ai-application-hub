@@ -607,6 +607,9 @@ select option:hover {
 }
 
 .card-actions {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
   margin-top: 14px;
 }
 
@@ -643,6 +646,12 @@ select option:hover {
   background: linear-gradient(180deg, rgba(169, 140, 255, 0.18), rgba(169, 140, 255, 0.07));
 }
 
+.card-actions a.mac-link {
+  border-color: rgba(85, 214, 194, 0.36);
+  color: #d7fff7;
+  background: linear-gradient(180deg, rgba(85, 214, 194, 0.18), rgba(85, 214, 194, 0.07));
+}
+
 .card-bottom {
   display: grid;
   gap: 12px;
@@ -658,7 +667,6 @@ select option:hover {
 }
 
 .card-bottom .card-actions {
-  flex-wrap: nowrap;
   gap: 8px;
 }
 
@@ -765,6 +773,97 @@ select option:hover {
   display: grid;
   grid-template-columns: 1fr auto auto;
   gap: 10px;
+}
+
+.platform-section {
+  margin-top: 54px;
+}
+
+.platform-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.platform-card {
+  display: grid;
+  align-content: start;
+  gap: 16px;
+  min-height: 260px;
+  padding: 22px;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 8px;
+  background:
+    linear-gradient(135deg, rgba(255, 255, 255, 0.08), rgba(255, 255, 255, 0.025)),
+    rgba(18, 22, 30, 0.86);
+  box-shadow: var(--shadow);
+}
+
+.platform-web {
+  border-color: rgba(105, 167, 255, 0.28);
+}
+
+.platform-windows {
+  border-color: rgba(244, 189, 80, 0.3);
+}
+
+.platform-mac {
+  border-color: rgba(85, 214, 194, 0.3);
+}
+
+.platform-card-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+}
+
+.platform-card-head span {
+  color: var(--text);
+  font-size: 22px;
+  font-weight: 900;
+}
+
+.platform-card-head strong {
+  display: inline-grid;
+  place-items: center;
+  min-width: 42px;
+  height: 42px;
+  border-radius: 999px;
+  color: #08100f;
+  background: var(--cyan);
+  font-size: 20px;
+}
+
+.platform-card p {
+  margin: 0;
+  color: var(--muted);
+  line-height: 1.65;
+}
+
+.platform-apps {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.platform-apps a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 30px;
+  padding: 6px 10px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 999px;
+  color: var(--text);
+  background: rgba(255, 255, 255, 0.06);
+  font-size: 12px;
+  font-weight: 800;
+  text-decoration: none;
+}
+
+.platform-apps a:hover {
+  border-color: rgba(85, 214, 194, 0.46);
+  background: rgba(85, 214, 194, 0.12);
 }
 
 pre {
@@ -1649,6 +1748,10 @@ body {
   .filter-panel {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
+
+  .platform-grid {
+    grid-template-columns: 1fr;
+  }
 }
 
 @media (max-width: 720px) {
@@ -1671,6 +1774,7 @@ body {
   .edit-grid,
   .submission-grid,
   .command-line,
+  .platform-grid,
   .detail-stats {
     grid-template-columns: 1fr;
   }

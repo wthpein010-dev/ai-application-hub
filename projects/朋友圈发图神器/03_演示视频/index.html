@@ -1,0 +1,100 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>朋友圈发图神器 - 演示入口</title>
+    <style>
+      :root {
+        --bg: #f5f7fb;
+        --card: #ffffff;
+        --text: #172033;
+        --muted: #66758a;
+        --line: #dce3ed;
+        --blue: #2f6df6;
+        --green: #23845d;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        min-height: 100vh;
+        display: grid;
+        place-items: center;
+        padding: 28px;
+        background: var(--bg);
+        color: var(--text);
+        font-family: "Microsoft YaHei", "Segoe UI", Arial, sans-serif;
+      }
+
+      main {
+        width: min(760px, 100%);
+        padding: 28px;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background: var(--card);
+        box-shadow: 0 16px 36px rgba(23, 32, 51, 0.08);
+      }
+
+      h1 {
+        margin: 0;
+        font-size: 30px;
+      }
+
+      p {
+        margin: 12px 0 0;
+        color: var(--muted);
+        line-height: 1.75;
+      }
+
+      .links {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        margin-top: 22px;
+      }
+
+      a {
+        min-height: 40px;
+        display: inline-flex;
+        align-items: center;
+        padding: 10px 14px;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        color: var(--text);
+        text-decoration: none;
+        background: #ffffff;
+      }
+
+      a.primary {
+        border-color: var(--green);
+        background: var(--green);
+        color: #ffffff;
+        font-weight: 700;
+      }
+
+      a.secondary {
+        border-color: var(--blue);
+        color: var(--blue);
+        font-weight: 700;
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <h1>朋友圈发图神器演示入口</h1>
+      <p>
+        这里是稳定的演示跳转页。评审可以先打开作品体验页进行交互，也可以查看录制素材文件夹。
+      </p>
+      <div class="links">
+        <a class="primary" href="../01_作品体验入口/app/index.html">打开作品演示</a>
+        <a class="secondary" href="./">查看演示视频文件夹</a>
+        <a href="../02_提交材料/01-submission-info.md">查看提交材料</a>
+        <a href="../04_AI说明与提示词/04-ai-usage.md">查看 AI 说明</a>
+      </div>
+    </main>
+  </body>
+</html>

@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>朋友圈发图神器演示视频</title>
+    <style>
+      :root { color-scheme: dark; --bg:#0b0d12; --panel:#171b24; --line:rgba(255,255,255,.13); --text:#f6f7fb; --muted:#aeb7c9; --blue:#5b8cff; }
+      * { box-sizing:border-box; }
+      body { margin:0; min-height:100vh; background:var(--bg); color:var(--text); font-family:"Microsoft YaHei","Segoe UI",Arial,sans-serif; letter-spacing:0; }
+      .shell { width:min(1000px, calc(100% - 36px)); margin:0 auto; padding:28px 0; }
+      .panel { border:1px solid var(--line); border-radius:8px; background:var(--panel); padding:20px; }
+      h1 { margin:0 0 14px; font-size:clamp(28px,5vw,46px); }
+      p { color:var(--muted); line-height:1.7; }
+      video { width:100%; max-height:72vh; border-radius:8px; background:#000; }
+      a { color:inherit; }
+      .links { display:flex; flex-wrap:wrap; gap:10px; margin-top:14px; }
+      .btn { min-height:38px; padding:9px 12px; border-radius:8px; border:1px solid var(--line); background:rgba(255,255,255,.07); text-decoration:none; }
+      .btn.primary { background:var(--blue); border-color:transparent; font-weight:800; }
+    </style>
+  </head>
+  <body>
+    <main class="shell">
+      <section class="panel">
+        <h1>朋友圈发图神器演示视频</h1>
+        <video src="./朋友圈发图神器-演示视频.mp4" controls preload="metadata"></video>
+        <p>如果浏览器不能直接播放，可以点击下载或用系统播放器打开 MP4。</p>
+        <div class="links">
+          <a class="btn primary" href="./朋友圈发图神器-演示视频.mp4">打开视频文件</a>
+          <a class="btn" href="../../../全部项目总览.html">返回全部项目总览</a>
+          <a class="btn" href="../01_作品体验入口/app/index.html">打开作品</a>
+        </div>
+      </section>
+    </main>
+  </body>
+</html>

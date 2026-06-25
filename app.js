@@ -27,6 +27,11 @@ const defaultApps = [
     folder: "./",
     entry: "./index.html",
     package: "./downloads/ai-application-hub.zip",
+    platforms: {
+      web: "./index.html",
+      windows: "./downloads/ai-application-hub.zip",
+      mac: "./downloads/ai-application-hub.zip"
+    },
     tags: ["总览", "导航", "清单", "维护"],
     speed: 9,
     impact: 8,
@@ -44,6 +49,11 @@ const defaultApps = [
     folder: "./projects/vita-mahjong/",
     entry: "./projects/vita-mahjong/index.html",
     package: "./downloads/vita-mahjong-webgl.zip",
+    platforms: {
+      web: "./projects/vita-mahjong/index.html",
+      windows: "./downloads/vita-mahjong-webgl.zip",
+      mac: "./downloads/vita-mahjong-webgl.zip"
+    },
     tags: ["Unity", "WebGL", "小游戏", "羊了个羊"],
     speed: 8,
     impact: 9,
@@ -58,10 +68,15 @@ const defaultApps = [
     brief: "输入旅行心情和目的地，生成拍照任务、九宫格结构、预算建议和可直接发布的朋友圈文案。",
     problem: "旅行后照片很多，但整理成可发布的内容费时，文案、配图和节奏经常不统一。",
     aiUse: "AI 理解场景与情绪，生成拍照任务、图片收集建议、预算提醒和多风格分享文案。",
-    folder: "../朋友圈发图神器/",
-    entry: "../朋友圈发图神器/01_作品体验入口/app/index.html",
-    video: "../朋友圈发图神器/03_演示视频/演示视频.html",
-    package: "../朋友圈发图神器/07_发布提交包/travel-generator-submission.zip",
+    folder: "./projects/朋友圈发图神器/",
+    entry: "./projects/朋友圈发图神器/01_作品体验入口/app/index.html",
+    video: "./projects/朋友圈发图神器/03_演示视频/演示视频.html",
+    package: "./downloads/travel-generator-universal.zip",
+    platforms: {
+      web: "./projects/朋友圈发图神器/01_作品体验入口/app/index.html",
+      windows: "./downloads/travel-generator-universal.zip",
+      mac: "./downloads/travel-generator-mac-source.zip"
+    },
     tags: ["旅行", "朋友圈", "文案", "九宫格"],
     speed: 9,
     impact: 9,
@@ -76,9 +91,14 @@ const defaultApps = [
     brief: "面向飞书文档和文件资源整理场景，提供更清晰的批量下载和插件说明入口。",
     problem: "飞书资料分散在不同文档和文件里，手动逐个下载效率低，交付审核时也难以复查。",
     aiUse: "AI 参与需求拆解、交互文案、安装说明和审核材料梳理。",
-    folder: "../飞书文件批量下载插件/",
-    entry: "../飞书文件批量下载插件/index.html",
-    package: "../飞书文件批量下载插件/feishu-batch-downloader-extension.zip",
+    folder: "./projects/飞书文件批量下载插件/",
+    entry: "./projects/飞书文件批量下载插件/index.html",
+    package: "./downloads/feishu-batch-downloader-extension.zip",
+    platforms: {
+      web: "./projects/飞书文件批量下载插件/index.html",
+      windows: "./downloads/feishu-batch-downloader-extension.zip",
+      mac: "./downloads/feishu-batch-downloader-extension.zip"
+    },
     tags: ["飞书", "插件", "批量下载", "资料整理"],
     speed: 8,
     impact: 9,
@@ -93,9 +113,14 @@ const defaultApps = [
     brief: "读取 Codex 对话记录并进行整理、分析和导出，帮助复盘 AI 协作过程。",
     problem: "长对话里有大量决策、修改和验证记录，人工复盘成本高，也不容易发现质量波动。",
     aiUse: "AI 用于总结对话、抽取任务进展、检查风险点并形成复盘报告。",
-    folder: "../Codex对话评分工具/",
-    entry: "../Codex对话评分工具/index.html",
-    package: "../Codex对话评分工具/Windows发布包/Codex对话评分工具.zip",
+    folder: "./projects/Codex对话评分工具/",
+    entry: "./projects/Codex对话评分工具/index.html",
+    package: "./downloads/codex-reviewer-windows.zip",
+    platforms: {
+      web: "./projects/Codex对话评分工具/index.html",
+      windows: "./downloads/codex-reviewer-windows.zip",
+      mac: "./downloads/codex-reviewer-mac-source.zip"
+    },
     tags: ["Codex", "复盘", "报告", "整理"],
     speed: 8,
     impact: 8,
@@ -110,9 +135,14 @@ const defaultApps = [
     brief: "把一段话转换成情绪表达、生活说明、情书暗语、多语言或古诗古文版本。",
     problem: "同一句话在不同关系、场景和语言里需要不同说法，临时组织表达既费时又容易说偏。",
     aiUse: "AI 用于识别表达意图、切换语气风格、生成多语言版本，并把复杂内容整理成可直接使用的文本。",
-    folder: "../万花筒/",
-    entry: "../万花筒/index.html",
+    folder: "./projects/万花筒/",
+    entry: "./projects/万花筒/index.html",
     package: "./downloads/wanhuatong.zip",
+    platforms: {
+      web: "./projects/万花筒/index.html",
+      windows: "./downloads/wanhuatong.zip",
+      mac: "./downloads/wanhuatong.zip"
+    },
     tags: ["表达转换", "多语言", "情书", "古诗古文"],
     speed: 9,
     impact: 8,
@@ -127,9 +157,14 @@ const defaultApps = [
     brief: "选择岗位后，AI 扮演面试官连续追问，并给出复盘建议。",
     problem: "普通面试题库缺少真实追问压力，练完也不知道回答哪里需要改。",
     aiUse: "AI 用于岗位画像、角色扮演追问、答案评估和复盘建议生成。",
-    folder: "../AI面试陪练小剧场/",
-    entry: "../AI面试陪练小剧场/index.html",
+    folder: "./projects/AI面试陪练小剧场/",
+    entry: "./projects/AI面试陪练小剧场/index.html",
     package: "./downloads/interview-theater.zip",
+    platforms: {
+      web: "./projects/AI面试陪练小剧场/index.html",
+      windows: "./downloads/interview-theater.zip",
+      mac: "./downloads/interview-theater.zip"
+    },
     tags: ["面试", "追问", "复盘", "陪练"],
     speed: 7,
     impact: 8,
@@ -144,9 +179,14 @@ const defaultApps = [
     brief: "保存更多 AI 小工具方向，用于后续筛选、扩展和补充展示。",
     problem: "创意很多但容易丢失，缺少统一的价值、风险和实现范围判断。",
     aiUse: "AI 用于生成方向、归纳适用场景、评估 MVP 范围和整理说明。",
-    folder: "../备选应用工具创意库/",
-    entry: "../备选应用工具创意库/index.html",
+    folder: "./projects/备选应用工具创意库/",
+    entry: "./projects/备选应用工具创意库/index.html",
     package: "./downloads/idea-library.zip",
+    platforms: {
+      web: "./projects/备选应用工具创意库/index.html",
+      windows: "./downloads/idea-library.zip",
+      mac: "./downloads/idea-library.zip"
+    },
     tags: ["创意库", "备选", "MVP", "筛选"],
     speed: 9,
     impact: 7,
@@ -183,7 +223,7 @@ const nodes = {
   resultCount: document.querySelector("#resultCount"),
   gameGrid: document.querySelector("#gameGrid"),
   gameCount: document.querySelector("#gameCount"),
-  compare: document.querySelector("#compareBars"),
+  platformGrid: document.querySelector("#platformGrid"),
   command: document.querySelector("#commandInput"),
   log: document.querySelector("#responseLog"),
   commandRun: document.querySelector("#commandRun"),
@@ -271,7 +311,7 @@ function render() {
   renderDots(filtered);
   renderGrid(filtered);
   renderGameGrid(filtered);
-  renderCompare(filtered);
+  renderPlatformShowcase(filtered);
   renderEditForm();
 }
 
@@ -316,8 +356,8 @@ function getNavigationApps(filtered = getFilteredApps()) {
 }
 
 function renderStats() {
-  const readyCount = apps.filter(app => app.entry).length;
-  const packageCount = apps.filter(app => app.package).length;
+  const readyCount = apps.filter(app => platformValue(app, "web") || app.entry).length;
+  const packageCount = apps.filter(app => platformValue(app, "windows") || platformValue(app, "mac") || app.package).length;
   nodes.statApps.textContent = apps.length;
   nodes.statMain.textContent = apps.filter(app => app.status !== "navigation").length;
   nodes.statReady.textContent = readyCount;
@@ -413,39 +453,63 @@ function renderSelectedApp() {
   renderEditForm();
 }
 
-function renderCompare(filtered) {
-  const list = (filtered.length ? filtered : apps).slice(0, 9);
-  nodes.compare.innerHTML = list.map(app => `
-    <div class="bar-item">
-      <div>
-        <strong>${escapeHtml(app.name)}</strong>
-        <span>${escapeHtml(app.category)} / ${escapeHtml(statusLabel[app.status])}</span>
-      </div>
-      <b>${materialCount(app)}/3</b>
-    </div>
-  `).join("");
+function renderPlatformShowcase(filtered) {
+  if (!nodes.platformGrid) return;
+  const list = filtered.length ? filtered : apps;
+  const platformGroups = [
+    { key: "web", label: "网页体验", note: "浏览器直接打开，Windows 和 Mac 都可使用。" },
+    { key: "windows", label: "Windows", note: "优先提供 exe、插件包或通用 zip。" },
+    { key: "mac", label: "Mac", note: "优先提供 Mac 包；网页工具使用通用 zip 或源码包。" }
+  ];
+
+  nodes.platformGrid.innerHTML = platformGroups.map(group => {
+    const available = list.filter(app => platformValue(app, group.key) || (group.key === "web" && app.entry));
+    return `
+      <article class="platform-card platform-${escapeHtml(group.key)}">
+        <div class="platform-card-head">
+          <span>${escapeHtml(group.label)}</span>
+          <strong>${available.length}</strong>
+        </div>
+        <p>${escapeHtml(group.note)}</p>
+        <div class="platform-apps">
+          ${available.map(app => {
+            const href = platformValue(app, group.key) || app.entry;
+            const download = group.key === "web" ? "" : " download";
+            return `<a href="${escapeHtml(projectHref(href))}"${download}>${escapeHtml(app.name)}</a>`;
+          }).join("")}
+        </div>
+      </article>
+    `;
+  }).join("");
 }
 
 function renderActions(app, stopPropagation = false) {
   const stop = stopPropagation ? ` onclick="event.stopPropagation()"` : "";
-  const download = app.package ? `<a class="download-link" data-action="download" href="${escapeHtml(projectHref(app.package))}" download${stop}>下载</a>` : "";
-  const demo = app.entry ? `<a class="primary-link" data-action="demo" href="${escapeHtml(projectHref(app.entry))}"${stop}>演示</a>` : "";
+  const web = platformValue(app, "web") || app.entry;
+  const windows = platformValue(app, "windows") || app.package;
+  const mac = platformValue(app, "mac");
+  const webLink = web ? `<a class="primary-link" data-action="web" href="${escapeHtml(projectHref(web))}"${stop}>网页</a>` : "";
+  const windowsLink = windows ? `<a class="download-link" data-action="windows" href="${escapeHtml(projectHref(windows))}" download${stop}>Win</a>` : "";
+  const macLink = mac ? `<a class="mac-link" data-action="mac" href="${escapeHtml(projectHref(mac))}" download${stop}>Mac</a>` : "";
   const video = app.video ? `<a data-action="video" href="${escapeHtml(projectHref(app.video))}"${stop}>视频</a>` : "";
   return `
     <div class="card-actions">
-      ${download}
-      ${demo}
+      ${webLink}
+      ${windowsLink}
+      ${macLink}
       ${video}
     </div>
   `;
 }
 
-function materialCount(app) {
-  return [app.package, app.entry, app.video].filter(Boolean).length;
+function platformValue(app, key) {
+  const value = app.platforms?.[key];
+  if (!value) return "";
+  return typeof value === "string" ? value : value.href;
 }
 
-function materialSummary(app) {
-  return `材料 ${materialCount(app)}/3`;
+function platformCount(app) {
+  return ["web", "windows", "mac"].filter(key => platformValue(app, key)).length;
 }
 
 function renderEditForm() {
@@ -491,12 +555,12 @@ function switchApp(direction) {
 }
 
 function getAdvice(app) {
-  if (app.status === "navigation") return "作为总览入口使用，重点保证所有链接可打开、文案清晰、下载和演示入口一致。";
-  if (app.status === "plugin") return "作为插件工具展示时，优先说明安装方式、使用场景和下载包内容。";
-  if (app.status === "game") return "作为小游戏展示时，优先保留清晰玩法、即时反馈和可打开的演示入口。";
+  if (app.status === "navigation") return "作为总览入口使用，重点保证网页、Windows、Mac 入口清晰可打开。";
+  if (app.status === "plugin") return "作为插件工具展示时，优先说明安装方式、使用场景和跨平台可用方式。";
+  if (app.status === "game") return "作为小游戏展示时，优先保留清晰玩法、即时反馈和可打开的网页体验入口。";
   if (app.status === "training") return "作为训练工具展示时，优先说明角色流程、追问机制和复盘输出。";
-  if (materialCount(app) < 2) return "建议补齐下载包或演示入口，让审核者能直接体验和获取材料。";
-  return "入口材料较完整，继续保持说明清晰，并确认下载、演示和视频链接都能直接打开。";
+  if (platformCount(app) < 2) return "建议至少保留网页体验和一个可下载平台包，让使用者能直接打开。";
+  return "平台入口较清晰，继续确认网页、Windows、Mac 和视频链接都能直接打开。";
 }
 
 function runCommand() {
@@ -511,14 +575,14 @@ function runCommand() {
 function runMaintenance() {
   renderCategoryOptions();
   render();
-  log(`维护完成：已刷新 ${apps.length} 个应用，类型 ${new Set(apps.map(app => app.status)).size} 类，演示入口 ${apps.filter(app => app.entry).length} 个。`);
+  log(`维护完成：已刷新 ${apps.length} 个应用，类型 ${new Set(apps.map(app => app.status)).size} 类，网页体验 ${apps.filter(app => platformValue(app, "web") || app.entry).length} 个。`);
 }
 
 async function streamMaintenance() {
   const lines = [
     "正在读取应用集合...",
-    "正在检查演示入口和提交材料入口...",
-    "正在刷新类型筛选与材料入口状态...",
+    "正在检查网页体验、Windows 和 Mac 入口...",
+    "正在刷新类型筛选与平台入口状态...",
     "正在重绘当前应用详情...",
     "维护预览完成。"
   ];
@@ -582,9 +646,10 @@ function exportList() {
       `- 类型：${statusLabel[app.status]}`,
       `- 分类：${app.category}`,
       `- 简介：${app.brief}`,
-      `- 材料：${materialSummary(app)}`,
-      app.package ? `- 下载：${app.package}` : "",
-      app.entry ? `- 演示：${app.entry}` : "",
+      `- 平台：${platformCount(app)}/3`,
+      platformValue(app, "web") ? `- 网页：${platformValue(app, "web")}` : "",
+      platformValue(app, "windows") ? `- Windows：${platformValue(app, "windows")}` : "",
+      platformValue(app, "mac") ? `- Mac：${platformValue(app, "mac")}` : "",
       app.video ? `- 视频：${app.video}` : ""
     ].filter(Boolean).join("\n"))
   ].join("\n\n");
@@ -625,8 +690,20 @@ function normalizeApp(app) {
   if (normalized.id === "vita-mahjong") {
     normalized.entry = "./projects/vita-mahjong/index.html";
     normalized.package = "./downloads/vita-mahjong-webgl.zip";
+    normalized.platforms = {
+      ...normalized.platforms,
+      web: "./projects/vita-mahjong/index.html",
+      windows: "./downloads/vita-mahjong-webgl.zip",
+      mac: "./downloads/vita-mahjong-webgl.zip"
+    };
     normalized.status = "game";
   }
+  normalized.platforms = {
+    ...(normalized.platforms || {}),
+    web: platformValue(normalized, "web") || normalized.entry || "",
+    windows: platformValue(normalized, "windows") || normalized.package || "",
+    mac: platformValue(normalized, "mac") || ""
+  };
   if (normalized.video && normalized.video.includes("演示视频占位")) {
     delete normalized.video;
   }
@@ -636,7 +713,8 @@ function normalizeApp(app) {
 function cloneApp(app) {
   return {
     ...app,
-    tags: [...app.tags]
+    tags: [...app.tags],
+    platforms: { ...(app.platforms || {}) }
   };
 }
 

@@ -1,0 +1,138 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>朋友圈发图神器</title>
+    <link rel="stylesheet" href="./styles-recording.css?v=20260616-demo-recording" />
+  </head>
+  <body>
+    <main class="shell">
+      <section class="workspace" aria-label="朋友圈发图神器">
+        <div class="creator">
+          <header class="topbar">
+            <div>
+              <p class="eyebrow">朋友圈旅行拍照和文案分享</p>
+              <h1>朋友圈发图神器</h1>
+            </div>
+            <div class="status">Demo</div>
+          </header>
+
+          <label class="field">
+            <span>想发的旅行心情</span>
+            <textarea id="wish" rows="5">我想在杭州过一个不用赶路的下午，想看水、喝茶、散步</textarea>
+          </label>
+
+          <div class="destination-picker">
+            <div class="destination-tabs" role="tablist" aria-label="目的地区域">
+              <button class="destination-tab active" type="button" role="tab" aria-selected="true" data-region="domestic">国内</button>
+              <button class="destination-tab" type="button" role="tab" aria-selected="false" data-region="foreign">国外</button>
+            </div>
+            <div class="quick-cities" aria-label="国内目的地快捷选择" data-region-panel="domestic">
+              <button type="button" data-city="杭州">杭州</button>
+              <button type="button" data-city="新疆">新疆</button>
+              <button type="button" data-city="成都">成都</button>
+              <button type="button" data-city="西安">西安</button>
+              <button type="button" data-city="上海">上海</button>
+              <button type="button" data-city="三亚">三亚</button>
+            </div>
+            <div class="quick-cities" aria-label="国外目的地快捷选择" data-region-panel="foreign" hidden>
+              <button type="button" data-city="新加坡">新加坡</button>
+              <button type="button" data-city="日本">日本</button>
+            </div>
+          </div>
+
+          <div class="controls">
+            <div class="control-group">
+              <span>节奏</span>
+              <div class="segments" role="group" aria-label="旅行节奏">
+                <button class="segment active" type="button" data-pace="慢走">慢走</button>
+                <button class="segment" type="button" data-pace="经典">经典</button>
+                <button class="segment" type="button" data-pace="探索">探索</button>
+              </div>
+            </div>
+
+            <div class="control-group">
+              <span>时长</span>
+              <div class="segments two" role="group" aria-label="旅行时长">
+                <button class="segment active" type="button" data-duration="半日">半日</button>
+                <button class="segment" type="button" data-duration="一日">一日</button>
+              </div>
+            </div>
+
+            <div class="control-group">
+              <span>风格</span>
+              <div class="segments style-tabs" role="group" aria-label="朋友圈文案风格">
+                <button class="segment active" type="button" data-style="文艺">文艺</button>
+                <button class="segment" type="button" data-style="高冷">高冷</button>
+                <button class="segment" type="button" data-style="搞怪">搞怪</button>
+                <button class="segment" type="button" data-style="迷人">迷人</button>
+                <button class="segment" type="button" data-style="可爱">可爱</button>
+                <button class="segment" type="button" data-style="松弛">松弛</button>
+              </div>
+            </div>
+          </div>
+
+          <section id="moments-preview" class="moments-preview" aria-label="朋友圈预览" hidden>
+            <div class="moments-row">
+              <div class="moments-avatar">我</div>
+              <div class="moments-body">
+                <div class="moments-name">我的朋友圈</div>
+                <p id="moments-text" class="moments-text"></p>
+                <div id="moments-grid" class="moments-grid" aria-label="朋友圈九宫格"></div>
+                <div class="moments-meta">刚刚 · 仅预览</div>
+              </div>
+            </div>
+          </section>
+
+          <button id="generate" class="primary" type="button">点击生成朋友圈</button>
+          <div id="generate-feedback" class="generate-feedback" role="status" aria-live="polite">
+            等待生成
+          </div>
+
+          <div class="source-note">
+            资料库参考公开可访问的携程旅游索引与目的地页面；小红书搜索页当前只返回公开导航信息，未抓取笔记正文。国外目的地库已补入新加坡、日本内容。
+          </div>
+        </div>
+
+        <div class="result" aria-live="polite">
+          <div class="trip-card">
+            <div class="card-head">
+              <div>
+                <p class="eyebrow">今日拍照任务</p>
+                <h2 id="trip-title">杭州慢走下午</h2>
+              </div>
+              <span id="trip-meta">半日 / 慢走</span>
+            </div>
+
+            <p id="trip-summary" class="summary"></p>
+
+            <ol id="route" class="route"></ol>
+            <div id="photo-count" class="photo-count">已添加 0 / 9 张图片</div>
+
+            <div class="info-grid">
+              <section>
+                <h3>预算</h3>
+                <p id="budget"></p>
+              </section>
+              <section>
+                <h3>提示</h3>
+                <ul id="tips"></ul>
+              </section>
+            </div>
+
+            <div class="share">
+              <div class="share-head">
+                <span>分享文案</span>
+                <button id="random-copy" class="random-copy" type="button">随机换一句</button>
+              </div>
+              <p id="share-text"></p>
+            </div>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <script src="./script-recording.js?v=20260616-demo-recording"></script>
+  </body>
+</html>
