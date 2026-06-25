@@ -238,12 +238,8 @@ function bindEvents() {
     selectApp(dot.dataset.dotId);
   });
 
-  nodes.grid.addEventListener("click", event => {
-    if (event.target.closest("a, button")) return;
-    const card = event.target.closest("[data-app-id]");
-    if (!card) return;
-    selectApp(card.dataset.appId);
-  });
+  nodes.grid.addEventListener("click", handleAppCardClick);
+  nodes.gameGrid?.addEventListener("click", handleAppCardClick);
 
   nodes.prevApp.addEventListener("click", () => switchApp(-1));
   nodes.nextApp.addEventListener("click", () => switchApp(1));
@@ -366,7 +362,7 @@ function renderGrid(filtered) {
     return;
   }
 
-  nodes.grid.innerHTML = applicationList.map(renderAppCard).join("");
+  nodes.grid.innerHTML = applicationList.map((app, index) => renderAppCard(app, index)).join("");
 }
 
 function renderGameGrid(filtered) {
@@ -398,6 +394,13 @@ function renderAppCard(app, index = 0, extraClass = "") {
       </div>
     </article>
   `;
+}
+
+function handleAppCardClick(event) {
+  if (event.target.closest("a, button")) return;
+  const card = event.target.closest("[data-app-id]");
+  if (!card) return;
+  selectApp(card.dataset.appId);
 }
 
 function renderCompare(filtered) {
