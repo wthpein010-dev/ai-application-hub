@@ -312,38 +312,14 @@ function renderStats() {
 
 function renderSpotlight() {
   const app = getSelectedApp();
-  const previewTags = app.tags.slice(0, 3).map(tag => `<span>${escapeHtml(tag)}</span>`).join("");
-  const statusText = statusLabel[app.status] || "应用工具";
-  const entryText = app.entry ? "可体验" : "待补充";
+  const richText = app.problem;
   nodes.spotlight.innerHTML = `
     <div class="summary-copy">
       <span class="summary-type">${escapeHtml(app.category)}</span>
       <strong>${escapeHtml(app.name)}</strong>
       <p>${escapeHtml(app.brief)}</p>
-      <div class="summary-insights">
-        <span><small>类型</small><b>${escapeHtml(statusText)}</b></span>
-        <span><small>材料</small><b>${materialCount(app)}/3</b></span>
-        <span><small>入口</small><b>${escapeHtml(entryText)}</b></span>
-      </div>
-      <p class="summary-problem"><span>使用场景</span>${escapeHtml(app.problem)}</p>
-      <div class="tag-row">${app.tags.map(tag => `<span>${escapeHtml(tag)}</span>`).join("")}</div>
+      <p class="summary-richtext"><span>使用场景</span>${escapeHtml(richText)}</p>
       ${renderActions(app, true)}
-    </div>
-    <div class="app-preview" aria-hidden="true">
-      <div class="preview-chrome">
-        <i></i><i></i><i></i>
-        <span>${escapeHtml(statusText)}</span>
-      </div>
-      <div class="preview-screen">
-        <div class="preview-kicker">${escapeHtml(app.category)}</div>
-        <div class="preview-title">${escapeHtml(app.name)}</div>
-        <div class="preview-lines">
-          <span></span>
-          <span></span>
-          <span></span>
-        </div>
-        <div class="preview-tags">${previewTags}</div>
-      </div>
     </div>
   `;
 }
