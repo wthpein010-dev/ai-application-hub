@@ -232,7 +232,7 @@ button {
 }
 
 .hero h1 {
-  margin: 22px 0 18px;
+  margin: 0 0 18px;
   max-width: 8.5em;
   font-size: clamp(38px, 5vw, 64px);
   line-height: 1.05;
@@ -418,16 +418,8 @@ button {
   text-align: left;
 }
 
-.section-head .eyebrow {
-  margin: 0 auto;
-}
-
-.section-head.align-left .eyebrow {
-  margin: 0;
-}
-
 .section-head h2 {
-  margin: 16px 0 10px;
+  margin: 0 0 10px;
   font-size: clamp(30px, 4vw, 46px);
   line-height: 1.1;
 }
@@ -1529,7 +1521,7 @@ body {
 
 .panel-head h2,
 .section-heading h2 {
-  margin: 12px 0 0;
+  margin: 0;
   font-size: 24px;
 }
 
@@ -1545,6 +1537,10 @@ body {
   justify-content: space-between;
   gap: 12px;
   margin-bottom: 14px;
+}
+
+.app-list {
+  padding-top: 16px;
 }
 
 .section-heading span {
@@ -1815,12 +1811,6 @@ body {
   mask-image: linear-gradient(90deg, rgba(0,0,0,0.4), rgba(0,0,0,0.08));
 }
 
-.hero-board > .eyebrow {
-  position: relative;
-  z-index: 2;
-  margin: 26px 28px 0;
-}
-
 .board-glow {
   display: none;
 }
@@ -1831,7 +1821,7 @@ body {
   grid-template-columns: 1fr;
   align-items: start;
   min-height: 0;
-  margin: 16px 28px 0;
+  margin: 28px 28px 0;
   max-width: 580px;
 }
 
