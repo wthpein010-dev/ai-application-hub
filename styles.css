@@ -1106,6 +1106,11 @@ body {
   animation-delay: calc(var(--card-order, 0) * 45ms);
 }
 
+.card-intro-complete .app-card {
+  animation: none;
+  animation-delay: 0ms;
+}
+
 .app-card::after {
   content: "";
   position: absolute;

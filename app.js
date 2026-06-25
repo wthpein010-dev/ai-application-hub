@@ -209,6 +209,7 @@ const nodes = {
 bindEvents();
 renderCategoryOptions();
 render();
+finishListIntroAnimation();
 log("页面已加载。输入 1 或点击更新，可刷新当前应用清单。");
 
 function bindEvents() {
@@ -272,6 +273,12 @@ function render() {
   renderGameGrid(filtered);
   renderCompare(filtered);
   renderEditForm();
+}
+
+function finishListIntroAnimation() {
+  window.setTimeout(() => {
+    document.body.classList.add("card-intro-complete");
+  }, 900);
 }
 
 function renderCategoryOptions() {
@@ -386,6 +393,19 @@ function handleAppCardClick(event) {
   selectApp(card.dataset.appId);
 }
 
+function updateSelectedCards() {
+  document.querySelectorAll("[data-app-id]").forEach(card => {
+    card.classList.toggle("selected", card.dataset.appId === state.selectedId);
+  });
+}
+
+function renderSelectedApp() {
+  renderSpotlight();
+  renderDots();
+  updateSelectedCards();
+  renderEditForm();
+}
+
 function renderCompare(filtered) {
   const list = (filtered.length ? filtered : apps).slice(0, 9);
   nodes.compare.innerHTML = list.map(app => `
@@ -442,7 +462,7 @@ function selectApp(id) {
   if (!apps.some(app => app.id === id)) return;
   state.selectedId = id;
   localStorage.setItem(SELECTED_KEY, id);
-  render();
+  renderSelectedApp();
 }
 
 function ensureSelectedApp(filtered) {
