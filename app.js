@@ -72,9 +72,8 @@ const defaultApps = [
     entry: "./projects/fill-what/index.html",
     package: "./downloads/fill-what-unity-project.zip",
     platforms: {
-      web: "./projects/fill-what/index.html",
-      windows: "./downloads/fill-what-unity-project.zip",
-      mac: "./downloads/fill-what-unity-project.zip"
+      web: { href: "./projects/fill-what/index.html", label: "演示" },
+      windows: { href: "./downloads/fill-what-unity-project.zip", label: "下载工程" }
     },
     tags: ["Unity", "UGUI", "成语填字", "微信小游戏"],
     speed: 8,
@@ -271,6 +270,7 @@ const nodes = {
 bindEvents();
 renderCategoryOptions();
 render();
+alignHashTarget();
 finishListIntroAnimation();
 log("页面已加载。输入 1 或点击更新，可刷新当前应用清单。");
 
@@ -341,6 +341,15 @@ function finishListIntroAnimation() {
   window.setTimeout(() => {
     document.body.classList.add("card-intro-complete");
   }, 900);
+}
+
+function alignHashTarget() {
+  const id = window.location.hash.slice(1);
+  if (!id) return;
+  window.setTimeout(() => {
+    const target = document.getElementById(id);
+    if (target) target.scrollIntoView({ block: "start" });
+  }, 0);
 }
 
 function renderCategoryOptions() {
@@ -731,9 +740,9 @@ function normalizeApp(app) {
     normalized.package = "./downloads/fill-what-unity-project.zip";
     normalized.platforms = {
       ...normalized.platforms,
-      web: "./projects/fill-what/index.html",
-      windows: "./downloads/fill-what-unity-project.zip",
-      mac: "./downloads/fill-what-unity-project.zip"
+      web: { href: "./projects/fill-what/index.html", label: "演示" },
+      windows: { href: "./downloads/fill-what-unity-project.zip", label: "下载工程" },
+      mac: ""
     };
     normalized.status = "game";
   }
