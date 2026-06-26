@@ -2040,3 +2040,17 @@ body {
     margin-left: 0;
   }
 }
+
+
+/* Inline editing controls */
+.editable-text { position: relative; display: inline; }
+.inline-edit-button { display: none; width: 24px; height: 24px; margin-left: 6px; vertical-align: middle; border: 1px solid rgba(232, 190, 95, 0.46); border-radius: 999px; color: #f7dfaa; background: rgba(24, 18, 8, 0.88); box-shadow: 0 8px 20px rgba(0, 0, 0, 0.24); font-size: 13px; line-height: 24px; text-align: center; cursor: pointer; }
+body.editing .inline-edit-button { display: inline-block; }
+body.editing .editable-text { outline: 1px dashed rgba(232, 190, 95, 0.28); outline-offset: 3px; border-radius: 4px; }
+.edit-section { padding: 14px 0; border-top: 1px solid rgba(255, 255, 255, 0.08); }
+.edit-section:first-of-type { border-top: 0; padding-top: 0; }
+.edit-section-title { display: flex; justify-content: space-between; gap: 12px; align-items: end; margin-bottom: 12px; }
+.edit-section-title h3 { margin: 0; font-size: 16px; }
+.edit-section-title span { color: var(--muted); font-size: 12px; text-align: right; }
+.edit-grid label { border: 1px solid transparent; border-radius: 8px; padding: 6px; transition: border-color 160ms ease, background 160ms ease, box-shadow 160ms ease; }
+.edit-grid label.editing-focus { border-color: rgba(232, 190, 95, 0.62); background: rgba(232, 190, 95, 0.08); box-shadow: 0 0 0 3px rgba(232, 190, 95, 0.08); }
