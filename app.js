@@ -84,10 +84,10 @@ const defaultApps = [
     problem: "项目材料分散在多个目录，临近提交时难以快速判断哪个项目最完整、入口在哪里、还缺什么。",
     aiUse: "AI 用于整理应用说明、维护建议、入口状态和提交材料清单。",
     folder: "./",
-    entry: "./index.html",
+    entry: "",
     package: "./downloads/ai-application-hub.zip",
+    video: "./projects/AI应用方案整理器/视频资源/index.html",
     platforms: {
-      web: "./index.html",
       windows: "./downloads/ai-application-hub.zip",
       mac: "./downloads/ai-application-hub.zip"
     },
@@ -175,6 +175,7 @@ const defaultApps = [
     folder: "./projects/飞书文件批量下载插件/",
     entry: "./projects/飞书文件批量下载插件/index.html",
     package: "./downloads/feishu-batch-downloader-extension.zip",
+    video: "./projects/飞书文件批量下载插件/demo/index.html",
     platforms: {
       web: "./projects/飞书文件批量下载插件/index.html",
       windows: "./downloads/feishu-batch-downloader-extension.zip",
@@ -860,6 +861,16 @@ function normalizeApp(app) {
   if (normalized.id === "hub" && normalized.brief === OLD_HUB_BRIEF) {
     normalized.brief = HUB_BRIEF;
   }
+  if (normalized.id === "hub") {
+    normalized.entry = "";
+    normalized.video = "./projects/AI应用方案整理器/视频资源/index.html";
+    normalized.platforms = {
+      ...normalized.platforms,
+      web: "",
+      windows: "./downloads/ai-application-hub.zip",
+      mac: "./downloads/ai-application-hub.zip"
+    };
+  }
   if (normalized.id === "vita-mahjong") {
     normalized.entry = "./projects/vita-mahjong/index.html";
     normalized.package = "./downloads/vita-mahjong-webgl.zip";
@@ -882,6 +893,9 @@ function normalizeApp(app) {
       mac: ""
     };
     normalized.status = "game";
+  }
+  if (normalized.id === "feishu-downloader") {
+    normalized.video = "./projects/飞书文件批量下载插件/demo/index.html";
   }
   if (normalized.id === "wanhuatong") {
     normalized.name = "传话筒";

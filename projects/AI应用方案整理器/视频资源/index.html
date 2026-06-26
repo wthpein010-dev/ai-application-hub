@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>AI &#24212;&#29992;&#26041;&#26696;&#25972;&#29702;&#22120;&#20171;&#32461;&#35270;&#39057;</title>
+  <style>
+    :root { color-scheme: dark; --bg:#090d16; --panel:#141b29; --line:rgba(255,255,255,.14); --text:#f8fafc; --muted:#aeb8cc; --blue:#5b8cff; --green:#3fd39f; }
+    * { box-sizing:border-box; }
+    body { margin:0; min-height:100vh; color:var(--text); font-family:"Microsoft YaHei","Segoe UI",Arial,sans-serif; background:radial-gradient(circle at 20% 12%,rgba(91,140,255,.28),transparent 30rem),radial-gradient(circle at 86% 78%,rgba(63,211,159,.18),transparent 30rem),var(--bg); }
+    .home-link { position:fixed; top:18px; left:18px; z-index:20; display:inline-flex; align-items:center; min-height:38px; padding:0 14px; border:1px solid var(--line); border-radius:8px; color:var(--text); text-decoration:none; font-weight:800; background:rgba(20,27,41,.84); }
+    main { width:min(1040px,calc(100% - 32px)); margin:0 auto; padding:78px 0 36px; }
+    .panel { border:1px solid var(--line); border-radius:8px; background:rgba(20,27,41,.86); padding:24px; box-shadow:0 24px 80px rgba(0,0,0,.34); }
+    h1 { margin:0 0 10px; font-size:clamp(30px,5vw,54px); letter-spacing:0; }
+    p { margin:0; color:var(--muted); line-height:1.75; }
+    .story { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:14px; margin-top:22px; }
+    .card { min-height:180px; padding:18px; border:1px solid var(--line); border-radius:8px; background:rgba(255,255,255,.07); animation: float 5s ease-in-out infinite; }
+    .card:nth-child(2) { animation-delay:.5s; }
+    .card:nth-child(3) { animation-delay:1s; }
+    .card strong { display:block; margin-bottom:10px; font-size:22px; color:#fff; }
+    .actions { display:flex; flex-wrap:wrap; gap:10px; margin-top:18px; }
+    .button { display:inline-flex; align-items:center; min-height:40px; padding:0 14px; border:1px solid var(--line); border-radius:8px; color:var(--text); text-decoration:none; font-weight:800; background:rgba(255,255,255,.07); }
+    .button.primary { border-color:transparent; background:var(--blue); }
+    @keyframes float { 0%,100%{ transform:translateY(0); } 50%{ transform:translateY(-8px); } }
+    @media (max-width:760px) { .story { grid-template-columns:1fr; } }
+  </style>
+</head>
+<body>
+  <a class="home-link" href="../../../index.html">&#36820;&#22238;&#20027;&#39029;</a>
+  <main>
+    <section class="panel">
+      <h1>AI &#24212;&#29992;&#26041;&#26696;&#25972;&#29702;&#22120;&#20171;&#32461;&#35270;&#39057;</h1>
+      <p>&#36825;&#20010;&#36731;&#37327;&#20171;&#32461;&#39029;&#29992;&#26469;&#35828;&#26126;&#65306;&#23427;&#22914;&#20309;&#25226;&#25152;&#26377;&#24212;&#29992;&#20837;&#21475;&#12289;&#35270;&#39057;&#12289;&#19979;&#36733;&#21253;&#21644;&#32500;&#25252;&#29366;&#24577;&#38598;&#20013;&#21040;&#19968;&#20010;&#39029;&#38754;&#37324;&#12290;</p>
+      <div class="story" aria-label="hub intro">
+        <article class="card"><strong>&#38598;&#20013;&#20837;&#21475;</strong><p>&#24212;&#29992;&#39033;&#30446;&#38598;&#21512;&#12289;&#23567;&#28216;&#25103;&#20307;&#39564;&#38598;&#21512;&#21644;&#36328;&#24179;&#21488;&#19979;&#36733;&#20837;&#21475;&#32479;&#19968;&#23637;&#31034;&#12290;</p></article>
+        <article class="card"><strong>&#32479;&#19968;&#32500;&#25252;</strong><p>&#27599;&#20010;&#39033;&#30446;&#37117;&#33021;&#26597;&#30475; Windows &#19979;&#36733;&#12289;Mac &#19979;&#36733;&#21644;&#20171;&#32461;&#35270;&#39057;&#29366;&#24577;&#12290;</p></article>
+        <article class="card"><strong>&#26041;&#20415;&#20132;&#20184;</strong><p>&#20351;&#29992;&#30456;&#23545;&#36335;&#24452;&#65292;&#22797;&#21046;&#21040;&#20854;&#20182;&#30005;&#33041;&#25110;&#21457;&#24067;&#21040; GitHub Pages &#21518;&#20381;&#28982;&#33021;&#36339;&#36716;&#12290;</p></article>
+      </div>
+      <div class="actions">
+        <a class="button primary" href="../../../index.html">&#36820;&#22238;&#24635;&#35272;</a>
+        <a class="button" href="../../../downloads/ai-application-hub.zip">&#19979;&#36733;&#25972;&#29702;&#21253;</a>
+      </div>
+    </section>
+  </main>
+</body>
+</html>

@@ -3,170 +3,68 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>填了个啥介绍视频</title>
+  <title>&#22635;&#20102;&#20010;&#21861;&#20171;&#32461;&#35270;&#39057;</title>
   <style>
-    :root {
-      color-scheme: dark;
-      --bg: #0b1020;
-      --panel: #151b2f;
-      --line: rgba(255, 255, 255, 0.14);
-      --ink: #f8fafc;
-      --muted: #aeb8cc;
-      --blue: #5b8cff;
-      --green: #3fd39f;
-    }
-
-    * {
-      box-sizing: border-box;
-    }
-
-    body {
-      margin: 0;
-      min-height: 100vh;
-      color: var(--ink);
-      font-family: "Microsoft YaHei", "PingFang SC", "Segoe UI", Arial, sans-serif;
-      background:
-        radial-gradient(circle at 16% 12%, rgba(91, 140, 255, 0.32), transparent 30rem),
-        radial-gradient(circle at 84% 80%, rgba(63, 211, 159, 0.22), transparent 28rem),
-        var(--bg);
-    }
-
-    .home-link {
-      position: fixed;
-      top: 18px;
-      left: 18px;
-      z-index: 20;
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      min-height: 38px;
-      padding: 0 14px;
-      border: 1px solid var(--line);
-      border-radius: 8px;
-      color: var(--ink);
-      font-size: 14px;
-      font-weight: 800;
-      text-decoration: none;
-      background: rgba(21, 27, 47, 0.82);
-      box-shadow: 0 16px 40px rgba(0, 0, 0, 0.28);
-      backdrop-filter: blur(14px);
-    }
-
-    .home-link:hover {
-      border-color: var(--blue);
-      background: var(--blue);
-    }
-
-    main {
-      width: min(1080px, calc(100vw - 32px));
-      margin: 0 auto;
-      padding: 78px 0 34px;
-    }
-
-    .hero {
-      display: flex;
-      align-items: end;
-      justify-content: space-between;
-      gap: 18px;
-      margin-bottom: 18px;
-    }
-
-    h1 {
-      margin: 0 0 8px;
-      font-size: clamp(30px, 5vw, 54px);
-      line-height: 1.08;
-    }
-
-    p {
-      margin: 0;
-      color: var(--muted);
-      line-height: 1.7;
-    }
-
-    .badge {
-      flex: 0 0 auto;
-      padding: 8px 12px;
-      border: 1px solid rgba(63, 211, 159, 0.34);
-      border-radius: 999px;
-      color: var(--green);
-      font-size: 13px;
-      font-weight: 900;
-      background: rgba(63, 211, 159, 0.08);
-    }
-
-    .video-panel {
-      overflow: hidden;
-      border: 1px solid var(--line);
-      border-radius: 8px;
-      background: rgba(21, 27, 47, 0.84);
-      box-shadow: 0 26px 80px rgba(0, 0, 0, 0.36);
-    }
-
-    video {
-      display: block;
-      width: 100%;
-      max-height: min(70vh, 720px);
-      background: #000;
-    }
-
-    .actions {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 10px;
-      padding: 14px;
-      border-top: 1px solid var(--line);
-    }
-
-    .button {
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      min-height: 40px;
-      padding: 0 14px;
-      border: 1px solid var(--line);
-      border-radius: 8px;
-      color: var(--ink);
-      font-weight: 800;
-      text-decoration: none;
-      background: rgba(255, 255, 255, 0.07);
-    }
-
-    .button.primary {
-      border-color: transparent;
-      background: var(--blue);
-    }
-
-    @media (max-width: 680px) {
-      .hero {
-        align-items: flex-start;
-        flex-direction: column;
-      }
-
-      main {
-        width: min(100vw - 24px, 1080px);
-      }
-    }
+    :root { color-scheme: dark; --bg:#0b1020; --panel:#151b2f; --line:rgba(255,255,255,.14); --ink:#f8fafc; --muted:#aeb8cc; --blue:#5b8cff; --green:#3fd39f; }
+    * { box-sizing: border-box; }
+    body { margin:0; min-height:100vh; color:var(--ink); font-family:"Microsoft YaHei","PingFang SC","Segoe UI",Arial,sans-serif; background:radial-gradient(circle at 16% 12%,rgba(91,140,255,.32),transparent 30rem),radial-gradient(circle at 84% 80%,rgba(63,211,159,.22),transparent 28rem),var(--bg); }
+    .home-link { position:fixed; top:18px; left:18px; z-index:20; display:inline-flex; align-items:center; justify-content:center; min-height:38px; padding:0 14px; border:1px solid var(--line); border-radius:8px; color:var(--ink); font-size:14px; font-weight:800; text-decoration:none; background:rgba(21,27,47,.82); box-shadow:0 16px 40px rgba(0,0,0,.28); backdrop-filter:blur(14px); }
+    .home-link:hover { border-color:var(--blue); background:var(--blue); }
+    main { width:min(1080px,calc(100vw - 32px)); margin:0 auto; padding:78px 0 34px; }
+    .hero { display:flex; align-items:end; justify-content:space-between; gap:18px; margin-bottom:18px; }
+    h1 { margin:0 0 8px; font-size:clamp(30px,5vw,54px); line-height:1.08; letter-spacing:0; }
+    p { margin:0; color:var(--muted); line-height:1.7; }
+    .badge { flex:0 0 auto; padding:8px 12px; border:1px solid rgba(63,211,159,.34); border-radius:999px; color:var(--green); font-size:13px; font-weight:900; background:rgba(63,211,159,.08); }
+    .video-panel { overflow:hidden; border:1px solid var(--line); border-radius:8px; background:rgba(21,27,47,.84); box-shadow:0 26px 80px rgba(0,0,0,.36); }
+    .video-shell { position:relative; display:grid; place-items:center; min-height:min(62vh,620px); padding:24px; background:linear-gradient(135deg,#10172d,#111827); }
+    video { display:none; width:100%; max-height:min(70vh,720px); background:#000; }
+    .load-card { width:min(520px,100%); padding:22px; border:1px solid var(--line); border-radius:8px; text-align:center; background:rgba(255,255,255,.07); }
+    .load-card strong { display:block; margin-bottom:8px; font-size:22px; }
+    .actions { display:flex; flex-wrap:wrap; gap:10px; padding:14px; border-top:1px solid var(--line); }
+    .button, button.button { display:inline-flex; align-items:center; justify-content:center; min-height:40px; padding:0 14px; border:1px solid var(--line); border-radius:8px; color:var(--ink); font:inherit; font-weight:800; text-decoration:none; background:rgba(255,255,255,.07); cursor:pointer; }
+    .button.primary { border-color:transparent; background:var(--blue); }
+    @media (max-width:680px) { .hero { align-items:flex-start; flex-direction:column; } main { width:min(100vw - 24px,1080px); } }
   </style>
 </head>
 <body>
-  <a class="home-link" href="../../../index.html">返回主页</a>
+  <a class="home-link" href="../../../index.html">&#36820;&#22238;&#20027;&#39029;</a>
   <main>
     <section class="hero">
       <div>
-        <h1>填了个啥介绍视频</h1>
-        <p>通过一段演示视频了解这个成语填字与诗意来信小游戏的玩法、节奏和体验效果。</p>
+        <h1>&#22635;&#20102;&#20010;&#21861;&#20171;&#32461;&#35270;&#39057;</h1>
+        <p>&#39029;&#38754;&#20808;&#36731;&#37327;&#25171;&#24320;&#65292;&#28857;&#20987;&#21152;&#36733;&#21518;&#20877;&#25773;&#25918; MP4&#65292;&#32593;&#32476;&#36739;&#24930;&#26102;&#20063;&#33021;&#20808;&#30475;&#21040;&#20837;&#21475;&#12290;</p>
       </div>
-      <span class="badge">小游戏体验集合</span>
+      <span class="badge">&#23567;&#28216;&#25103;&#20307;&#39564;&#38598;&#21512;</span>
     </section>
-
-    <section class="video-panel" aria-label="填了个啥介绍视频">
-      <video src="./fill-what-intro.mp4" controls preload="metadata" playsinline></video>
+    <section class="video-panel" aria-label="fill what intro video">
+      <div class="video-shell">
+        <div class="load-card" id="loadCard">
+          <strong>&#20934;&#22791;&#25773;&#25918;&#20171;&#32461;&#35270;&#39057;</strong>
+          <p>&#35270;&#39057;&#32422; 177 &#31186;&#12290;&#28857;&#20987;&#25353;&#38062;&#21518;&#25165;&#24320;&#22987;&#21152;&#36733;&#65292;&#36991;&#20813;&#25171;&#24320;&#39029;&#38754;&#26102;&#30452;&#25509;&#31561;&#24453;&#22823;&#25991;&#20214;&#12290;</p>
+        </div>
+        <video id="introVideo" controls playsinline data-src="./fill-what-intro.mp4"></video>
+      </div>
       <div class="actions">
-        <a class="button primary" href="../index.html">网页预览</a>
-        <a class="button" href="./fill-what-intro.mp4">打开视频文件</a>
-        <a class="button" href="../../../index.html">返回主页</a>
+        <button id="loadVideo" class="button primary" type="button">&#21152;&#36733;&#35270;&#39057;</button>
+        <a class="button" href="../index.html">&#32593;&#39029;&#39044;&#35272;</a>
+        <a class="button" href="./fill-what-intro.mp4">&#25171;&#24320;&#35270;&#39057;&#25991;&#20214;</a>
+        <a class="button" href="../../../index.html">&#36820;&#22238;&#20027;&#39029;</a>
       </div>
     </section>
   </main>
+  <script>
+    const button = document.querySelector("#loadVideo");
+    const video = document.querySelector("#introVideo");
+    const card = document.querySelector("#loadCard");
+    button.addEventListener("click", () => {
+      if (!video.src) {
+        video.src = video.dataset.src;
+        video.style.display = "block";
+        card.style.display = "none";
+        button.textContent = "\u64ad\u653e\u89c6\u9891";
+      }
+      video.play().catch(() => video.load());
+    });
+  </script>
 </body>
 </html>
