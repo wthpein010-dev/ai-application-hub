@@ -1411,11 +1411,12 @@ body {
 }
 
 .metric {
-  min-height: 112px;
-  padding: 18px 20px;
+  min-height: 104px;
+  padding: 16px 18px;
   border-left: 4px solid rgba(255, 255, 255, 0.3);
   display: grid;
-  align-content: space-between;
+  grid-template-rows: auto auto 1fr;
+  align-content: start;
 }
 
 .metric span {
@@ -1424,11 +1425,38 @@ body {
   font-size: 15px;
 }
 
+.metric .editable-text,
+.metric .editable-value {
+  display: inline;
+}
+
+.metric .inline-edit-button {
+  display: none;
+}
+
+body.editing .metric .inline-edit-button {
+  display: inline-block;
+}
+
+.metric-note {
+  display: block;
+  margin-top: 4px;
+  color: rgba(196, 211, 226, 0.68);
+  font-size: 12px;
+  line-height: 1.35;
+}
+
+.metric-note .editable-text,
+.metric-note .editable-value {
+  display: inline;
+}
+
 .metric strong {
   display: block;
-  margin-top: 20px;
+  align-self: end;
+  margin-top: 14px;
   overflow-wrap: anywhere;
-  font-size: clamp(34px, 4vw, 56px);
+  font-size: clamp(32px, 3.6vw, 50px);
   line-height: 1.08;
 }
 
