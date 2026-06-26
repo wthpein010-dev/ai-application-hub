@@ -227,6 +227,10 @@
         max-width: min(680px, calc(100% - 32px));
       }
 
+      #unity-warning:empty {
+        display: none;
+      }
+
       #unity-warning div {
         margin-top: 8px;
         border-radius: 8px;
@@ -331,7 +335,30 @@
       let unityInstance = null;
       let loadingStarted = false;
 
+      function isLocalFileProtocol() {
+        return window.location.protocol === "file:";
+      }
+
+      function isFileProtocolUnityError(msg) {
+        return isLocalFileProtocol() && String(msg || "").includes("file:// URL without a web server");
+      }
+
+      function resetLoadingState(label) {
+        startButton.disabled = false;
+        startButton.textContent = label;
+        loadingPanel.style.display = "none";
+        progressFill.style.width = "0%";
+        loadingText.textContent = "正在准备资源...";
+        if (!unityInstance) {
+          stage.classList.remove("is-running");
+        }
+        loadingStarted = false;
+      }
+
       function unityShowBanner(msg, type) {
+        if (isFileProtocolUnityError(msg)) {
+          return;
+        }
         const div = document.createElement("div");
         div.textContent = msg;
         if (type === "error") div.style.background = "#ff7474";
@@ -345,6 +372,12 @@
 
       function loadGame() {
         if (loadingStarted) return;
+
+        if (isLocalFileProtocol()) {
+          resetLoadingState("请用预览脚本打开");
+          return;
+        }
+
         loadingStarted = true;
         startButton.disabled = true;
         startButton.textContent = "加载中...";
@@ -380,18 +413,12 @@
             loadingPanel.style.display = "none";
             startButton.textContent = "游戏已启动";
           }).catch(message => {
-            startButton.disabled = false;
-            startButton.textContent = "重新加载";
-            loadingPanel.style.display = "none";
-            loadingStarted = false;
+            resetLoadingState("重新加载");
             unityShowBanner(message, "error");
           });
         };
         script.onerror = () => {
-          startButton.disabled = false;
-          startButton.textContent = "重新加载";
-          loadingPanel.style.display = "none";
-          loadingStarted = false;
+          resetLoadingState("重新加载");
           unityShowBanner("Unity 加载脚本失败，请刷新后重试。", "error");
         };
         document.body.appendChild(script);
