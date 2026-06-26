@@ -6,7 +6,7 @@
     <title>AI 应用总览</title>
     <meta name="description" content="通过 Codex 调用 HyperFrames，制作动态网页效果并编辑网页描述的定制化模板小工具。" />
     <link rel="icon" href="./assets/app-avatar.png" type="image/png" />
-    <link rel="stylesheet" href="./styles.css?v=20260626-card-layout-2" />
+    <link rel="stylesheet" href="./styles.css?v=20260626-metrics-clean" />
   </head>
   <body>
     <div class="app-shell">
@@ -41,24 +41,19 @@
             <div class="hero-actions">
               <a class="primary-action" href="#apps">查看应用集合</a>
               <a class="ghost-action" href="#platforms">查看平台入口</a>
-              <button id="streamButton" class="ghost-action" type="button">运行维护预览</button>
             </div>
             <div class="metric-strip" aria-label="项目统计">
               <div class="metric">
-                <span>应用数</span>
-                <strong id="statApps">0</strong>
+                <span>总数</span>
+                <strong id="statTotal">0</strong>
               </div>
               <div class="metric accent-green">
-                <span>应用工具</span>
-                <strong id="statMain">0</strong>
+                <span>应用</span>
+                <strong id="statApps">0</strong>
               </div>
               <div class="metric accent-blue">
-                <span>网页体验</span>
-                <strong id="statReady">0</strong>
-              </div>
-              <div class="metric accent-gold">
-                <span>平台包</span>
-                <strong id="statScore">0</strong>
+                <span>小游戏</span>
+                <strong id="statGames">0</strong>
               </div>
             </div>
           </div>
@@ -240,7 +235,7 @@
       <p class="edit-note">保存内容写入当前浏览器本地存储。需要固化到文件时，可让我继续处理。</p>
     </aside>
 
-    <script src="./app-20260626-inline-edit-clean.js"></script>
+    <script src="./app-20260626-metrics-clean.js"></script>
   </body>
 </html>
 
