@@ -519,10 +519,10 @@ function renderActions(app, stopPropagation = false) {
   const web = platformValue(app, "web") || app.entry;
   const windows = platformValue(app, "windows") || app.package;
   const mac = platformValue(app, "mac");
-  const webLink = web ? `<a class="primary-link" data-action="web" href="${escapeHtml(projectHref(web))}"${stop}>${escapeHtml(platformLabel(app, "web", "网页"))}</a>` : "";
-  const windowsLink = windows ? `<a class="download-link" data-action="windows" href="${escapeHtml(projectHref(windows))}" download${stop}>${escapeHtml(platformLabel(app, "windows", "Win"))}</a>` : "";
-  const macLink = mac ? `<a class="mac-link" data-action="mac" href="${escapeHtml(projectHref(mac))}" download${stop}>${escapeHtml(platformLabel(app, "mac", "Mac"))}</a>` : "";
-  const video = app.video ? `<a data-action="video" href="${escapeHtml(projectHref(app.video))}"${stop}>视频</a>` : "";
+  const webLink = web ? `<a class="primary-link" data-action="web" href="${escapeHtml(projectHref(web))}"${stop}>${escapeHtml(platformLabel(app, "web", "预览体验"))}</a>` : "";
+  const windowsLink = windows ? `<a class="download-link" data-action="windows" href="${escapeHtml(projectHref(windows))}" download${stop}>${escapeHtml(platformLabel(app, "windows", "Windows版下载"))}</a>` : "";
+  const macLink = mac ? `<a class="mac-link" data-action="mac" href="${escapeHtml(projectHref(mac))}" download${stop}>${escapeHtml(platformLabel(app, "mac", "Mac版下载"))}</a>` : "";
+  const video = app.video ? `<a data-action="video" href="${escapeHtml(projectHref(app.video))}"${stop}>视频演示</a>` : "";
   return `
     <div class="card-actions">
       ${webLink}
