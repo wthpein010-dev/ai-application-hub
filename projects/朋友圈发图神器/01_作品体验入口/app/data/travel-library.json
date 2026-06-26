@@ -1,0 +1,87 @@
+{
+  "updatedAt": "2026-06-15",
+  "sources": [
+    {
+      "name": "小红书旅游搜索页",
+      "url": "https://www.xiaohongshu.com/search_result_ai?keyword=%25E6%2597%2585%25E6%25B8%25B8&source=web_explore_feed",
+      "access": "当前仅可见公开导航、登录和下载 App 引导，未获取到可核验笔记正文。"
+    },
+    {
+      "name": "小红书新疆旅游搜索页",
+      "url": "https://www.xiaohongshu.com/search_result_ai?keyword=%25E6%2596%25B0%25E7%2596%2586%25E6%2597%2585%25E6%25B8%25B8&source=web_explore_feed",
+      "access": "当前仅可见公开导航、登录和下载 App 引导，未获取到可核验笔记正文。"
+    },
+    {
+      "name": "携程旅游首页",
+      "url": "https://vacations.ctrip.com/",
+      "access": "可见旅游产品入口和热门目的地索引。"
+    },
+    {
+      "name": "携程杭州目的地页",
+      "url": "https://vacations.ctrip.com/list/whole/d-hangzhou-14.html",
+      "access": "可见杭州相关产品与常见景点关键词。"
+    },
+    {
+      "name": "小红书新加坡搜索页",
+      "url": "https://www.xiaohongshu.com/search_result_ai?keyword=%25E6%2596%25B0%25E5%258A%25A0%25E5%259D%25A1&source=web_explore_feed",
+      "access": "当前仅可见公开导航、登录和下载 App 引导，未获取到可核验笔记正文。"
+    },
+    {
+      "name": "携程新加坡目的地页",
+      "url": "https://you.ctrip.com/place/singapore53.html?renderPlatform=",
+      "access": "可见新加坡目的地与攻略入口，已整理为国外目的地路线、亮点和拍照任务素材。"
+    }
+  ],
+  "destinations": [
+    "杭州",
+    "新疆",
+    "成都",
+    "西安",
+    "上海",
+    "三亚",
+    "北京",
+    "苏州",
+    "厦门",
+    "重庆",
+    "南京",
+    "广州",
+    "深圳",
+    "新加坡"
+  ],
+  "destinationGroups": {
+    "domestic": [
+      "杭州",
+      "新疆",
+      "成都",
+      "西安",
+      "上海",
+      "三亚",
+      "北京",
+      "苏州",
+      "厦门",
+      "重庆",
+      "南京",
+      "广州",
+      "深圳"
+    ],
+    "foreign": [
+      "新加坡"
+    ]
+  },
+  "destinationNotes": {
+    "新加坡": {
+      "keywords": [
+        "鱼尾狮公园",
+        "滨海湾花园",
+        "圣淘沙岛",
+        "新加坡环球影城",
+        "金沙空中花园",
+        "牛车水",
+        "小印度",
+        "乌节路",
+        "克拉码头"
+      ],
+      "strategy": "把滨海湾地标、花园夜景、南洋街区和圣淘沙度假项目拆开规划，半日走城市地标，一日再加入圣淘沙或环球影城。"
+    }
+  }
+}
