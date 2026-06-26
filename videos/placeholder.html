@@ -1,2 +1,79 @@
 <!doctype html>
-<html lang="zh-CN"><head><meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" /><title>??????</title><style>body{margin:0;min-height:100vh;display:grid;place-items:center;background:#0b0f14;color:#f5f7fb;font-family:"Microsoft YaHei",Arial,sans-serif}main{width:min(680px,calc(100vw - 40px));padding:32px;border:1px solid rgba(255,255,255,.14);border-radius:12px;background:rgba(255,255,255,.05)}h1{margin:0 0 12px;font-size:28px}p{margin:0;color:#aeb8c5;line-height:1.7}</style></head><body><main><h1>???????</h1><p>???????????????????????????????????????????</p></main></body></html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>视频待上传</title>
+    <style>
+      :root {
+        color-scheme: dark;
+        --bg: #080d14;
+        --panel: #101923;
+        --line: rgba(255, 255, 255, 0.12);
+        --text: #edf5ff;
+        --muted: #9db0c3;
+        --accent: #70d6c2;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        min-height: 100vh;
+        display: grid;
+        place-items: center;
+        padding: 24px;
+        background:
+          radial-gradient(circle at 22% 18%, rgba(112, 214, 194, 0.24), transparent 32%),
+          radial-gradient(circle at 78% 72%, rgba(115, 151, 255, 0.22), transparent 34%),
+          var(--bg);
+        color: var(--text);
+        font-family: "Microsoft YaHei", "PingFang SC", "Segoe UI", Arial, sans-serif;
+      }
+
+      main {
+        width: min(720px, 100%);
+        padding: 32px;
+        border: 1px solid var(--line);
+        border-radius: 18px;
+        background: rgba(16, 25, 35, 0.82);
+        box-shadow: 0 30px 80px rgba(0, 0, 0, 0.36);
+      }
+
+      h1 {
+        margin: 0 0 12px;
+        font-size: clamp(28px, 5vw, 42px);
+      }
+
+      p {
+        margin: 0;
+        color: var(--muted);
+        font-size: 17px;
+        line-height: 1.8;
+      }
+
+      a {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-height: 42px;
+        margin-top: 24px;
+        padding: 0 16px;
+        border: 1px solid rgba(112, 214, 194, 0.4);
+        border-radius: 999px;
+        color: var(--text);
+        background: rgba(112, 214, 194, 0.12);
+        text-decoration: none;
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <h1>演示视频待上传</h1>
+      <p>这个入口用于评审在线观看视频。当前应用还没有绑定独立视频文件，录制完成后把视频页面或视频文件地址填入右侧编辑面板的“视频地址”即可。</p>
+      <a href="../index.html">返回应用总览</a>
+    </main>
+  </body>
+</html>

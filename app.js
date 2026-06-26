@@ -17,61 +17,61 @@ const statusLabel = {
 };
 
 const defaultPageText = {
-  "brand.title": "AI ????",
-  "nav.overview": "??",
-  "nav.apps": "??",
-  "nav.games": "???",
-  "nav.compare": "??",
-  "nav.maintain": "??",
-  "hero.title": "AI ????",
-  "hero.description": "?????????????????????????",
-  "hero.primaryAction": "??????",
-  "hero.secondaryAction": "??????",
-  "hero.streamAction": "??????",
-  "metrics.apps": "???",
-  "metrics.tools": "????",
-  "metrics.entries": "????",
-  "metrics.packages": "???",
-  "filter.title": "????",
-  "filter.searchLabel": "??",
-  "filter.categoryLabel": "??",
-  "filter.statusLabel": "??",
-  "filter.sortLabel": "??",
-  "apps.title": "??????",
-  "games.title": "???????",
-  "compare.title": "?????",
-  "compare.description": "????Windows?Mac ??????????????????????????????????????",
-  "maintain.title": "?????",
-  "maintain.description": "?? 1 ??????????????????????????????????????"
+  "brand.title": "AI 应用总览",
+  "nav.overview": "总览",
+  "nav.apps": "应用",
+  "nav.platforms": "平台",
+  "nav.maintain": "维护",
+  "hero.title": "AI 应用方案整理器",
+  "hero.description": "通过 Codex 调用 HyperFrames，快速制作网页动态效果；支持编辑修改网页描述，并沉淀可定制化网页模板的小工具设计。",
+  "hero.primaryAction": "查看应用集合",
+  "hero.secondaryAction": "查看平台入口",
+  "hero.streamAction": "运行维护预览",
+  "metrics.apps": "应用数",
+  "metrics.tools": "应用工具",
+  "metrics.entries": "网页体验",
+  "metrics.packages": "平台包",
+  "filter.title": "筛选应用",
+  "filter.searchLabel": "搜索",
+  "filter.categoryLabel": "分类",
+  "filter.statusLabel": "类型",
+  "filter.sortLabel": "排序",
+  "apps.title": "应用项目集合",
+  "games.title": "小游戏体验集合",
+  "platforms.title": "跨平台体验",
+  "platforms.description": "按网页、Windows、Mac 三种方式整理体验入口。网页和通用包可跨系统打开；桌面工具优先提供对应系统包。",
+  "maintain.title": "维护控制台",
+  "maintain.description": "输入 1 或点击更新，刷新统计、卡片和详情；也可以在右侧编辑主要文案。"
 };
+
 const pageTextTargets = [
-  { key: "brand.title", label: "????", selector: ".brand strong", short: true },
-  { key: "nav.overview", label: "?????", selector: ".top-nav nav a:nth-child(1)", short: true },
-  { key: "nav.apps", label: "?????", selector: ".top-nav nav a:nth-child(2)", short: true },
-  { key: "nav.games", label: "??????", selector: ".top-nav nav a:nth-child(3)", short: true },
-  { key: "nav.compare", label: "?????", selector: ".top-nav nav a:nth-child(4)", short: true },
-  { key: "nav.maintain", label: "?????", selector: ".top-nav nav a:nth-child(5)", short: true },
-  { key: "hero.title", label: "????", selector: ".hero-copy h1" },
-  { key: "hero.description", label: "????", selector: ".hero-lead", multiline: true },
-  { key: "hero.primaryAction", label: "???????", selector: ".hero-actions .primary-action", short: true },
-  { key: "hero.secondaryAction", label: "???????", selector: ".hero-actions .ghost-action[href=\"#compare\"]", short: true },
-  { key: "hero.streamAction", label: "???????", selector: "#streamButton", short: true },
-  { key: "metrics.apps", label: "??????", selector: ".metric-strip .metric:nth-child(1) span", short: true },
-  { key: "metrics.tools", label: "???????", selector: ".metric-strip .metric:nth-child(2) span", short: true },
-  { key: "metrics.entries", label: "???????", selector: ".metric-strip .metric:nth-child(3) span", short: true },
-  { key: "metrics.packages", label: "??????", selector: ".metric-strip .metric:nth-child(4) span", short: true },
-  { key: "filter.title", label: "????", selector: ".filter-panel h2" },
-  { key: "filter.searchLabel", label: "????", selector: "label[for=\"searchInput\"]", short: true },
-  { key: "filter.categoryLabel", label: "????", selector: "label[for=\"categoryFilter\"]", short: true },
-  { key: "filter.statusLabel", label: "????", selector: "label[for=\"statusFilter\"]", short: true },
-  { key: "filter.sortLabel", label: "????", selector: "label[for=\"sortMode\"]", short: true },
-  { key: "apps.title", label: "?????", selector: ".app-list .section-heading h2" },
-  { key: "games.title", label: "??????", selector: "#games .section-heading h2" },
-  { key: "compare.title", label: "?????", selector: "#compare h2" },
-  { key: "compare.description", label: "?????", selector: "#compare .section-head > p:last-child", multiline: true },
-  { key: "maintain.title", label: "?????", selector: "#maintain h2" },
-  { key: "maintain.description", label: "?????", selector: "#maintain .section-head > p:last-child", multiline: true }
+  { key: "brand.title", label: "品牌标题", selector: ".brand strong", short: true },
+  { key: "nav.overview", label: "导航：总览", selector: ".top-nav nav a:nth-child(1)", short: true },
+  { key: "nav.apps", label: "导航：应用", selector: ".top-nav nav a:nth-child(2)", short: true },
+  { key: "nav.platforms", label: "导航：平台", selector: ".top-nav nav a:nth-child(3)", short: true },
+  { key: "nav.maintain", label: "导航：维护", selector: ".top-nav nav a:nth-child(4)", short: true },
+  { key: "hero.title", label: "主页标题", selector: ".hero-copy h1" },
+  { key: "hero.description", label: "主页描述", selector: ".hero-lead", multiline: true },
+  { key: "hero.primaryAction", label: "主按钮", selector: ".hero-actions .primary-action", short: true },
+  { key: "hero.secondaryAction", label: "平台按钮", selector: ".hero-actions .ghost-action[href=\"#platforms\"]", short: true },
+  { key: "hero.streamAction", label: "维护按钮", selector: "#streamButton", short: true },
+  { key: "metrics.apps", label: "统计：应用数", selector: ".metric-strip .metric:nth-child(1) span", short: true },
+  { key: "metrics.tools", label: "统计：应用工具", selector: ".metric-strip .metric:nth-child(2) span", short: true },
+  { key: "metrics.entries", label: "统计：网页体验", selector: ".metric-strip .metric:nth-child(3) span", short: true },
+  { key: "metrics.packages", label: "统计：平台包", selector: ".metric-strip .metric:nth-child(4) span", short: true },
+  { key: "filter.title", label: "筛选标题", selector: ".filter-panel h2" },
+  { key: "filter.searchLabel", label: "搜索标签", selector: "label[for=\"searchInput\"]", short: true },
+  { key: "filter.categoryLabel", label: "分类标签", selector: "label[for=\"categoryFilter\"]", short: true },
+  { key: "filter.statusLabel", label: "类型标签", selector: "label[for=\"statusFilter\"]", short: true },
+  { key: "filter.sortLabel", label: "排序标签", selector: "label[for=\"sortMode\"]", short: true },
+  { key: "apps.title", label: "应用区标题", selector: ".app-list .section-heading h2" },
+  { key: "games.title", label: "小游戏标题", selector: "#games .section-heading h2" },
+  { key: "platforms.title", label: "平台标题", selector: "#platforms h2" },
+  { key: "platforms.description", label: "平台描述", selector: "#platforms .section-head > p:last-child", multiline: true },
+  { key: "maintain.title", label: "维护标题", selector: "#maintain h2" },
+  { key: "maintain.description", label: "维护描述", selector: "#maintain .section-head > p:last-child", multiline: true }
 ];
+
 const defaultApps = [
   {
     id: "hub",
@@ -282,8 +282,7 @@ const state = {
   status: "all",
   sort: "default",
   selectedId: localStorage.getItem(SELECTED_KEY) || "travel-generator",
-  editing: false,
-  editTarget: null
+  editing: false
 };
 
 const nodes = {
@@ -314,7 +313,6 @@ const nodes = {
   editClose: document.querySelector("#editClose"),
   editSave: document.querySelector("#editSave"),
   editReset: document.querySelector("#editReset"),
-  pageTextFields: document.querySelector("#pageTextFields"),
   editAppSelect: document.querySelector("#editAppSelect"),
   editName: document.querySelector("#editName"),
   editCategory: document.querySelector("#editCategory"),
@@ -327,6 +325,7 @@ const nodes = {
   editEntry: document.querySelector("#editEntry"),
   editPackage: document.querySelector("#editPackage"),
   editVideo: document.querySelector("#editVideo"),
+  pageTextFields: document.querySelector("#pageTextFields"),
 };
 
 bindEvents();
@@ -365,6 +364,7 @@ function bindEvents() {
 
   nodes.grid.addEventListener("click", handleAppCardClick);
   nodes.gameGrid?.addEventListener("click", handleAppCardClick);
+  document.addEventListener("click", handleInlineEditClick);
 
   nodes.prevApp.addEventListener("click", () => switchApp(-1));
   nodes.nextApp.addEventListener("click", () => switchApp(1));
@@ -384,21 +384,6 @@ function bindEvents() {
   nodes.editAppSelect.addEventListener("change", event => {
     selectApp(event.target.value);
     renderEditForm();
-  });
-  document.addEventListener("click", event => {
-    const editButton = event.target.closest(".inline-edit-button");
-    if (!editButton) return;
-    event.preventDefault();
-    event.stopPropagation();
-    selectEditTarget(editButton.dataset.editKind, editButton.dataset.editKey, editButton.dataset.appId, editButton.dataset.appField);
-  });
-  document.addEventListener("keydown", event => {
-    if (event.key !== "Enter" && event.key !== " ") return;
-    const editButton = event.target.closest(".inline-edit-button");
-    if (!editButton) return;
-    event.preventDefault();
-    event.stopPropagation();
-    selectEditTarget(editButton.dataset.editKind, editButton.dataset.editKey, editButton.dataset.appId, editButton.dataset.appField);
   });
 }
 
@@ -437,15 +422,6 @@ function renderCategoryOptions() {
     ...categories.map(category => `<option value="${escapeHtml(category)}">${escapeHtml(category)}</option>`)
   ].join("");
   nodes.category.value = state.category;
-}
-
-function renderPageText() {
-  pageTextTargets.forEach(target => {
-    const element = document.querySelector(target.selector);
-    if (!element) return;
-    const value = pageText[target.key] ?? defaultPageText[target.key] ?? "";
-    element.innerHTML = renderEditableText("page", target.key, value);
-  });
 }
 
 function getFilteredApps() {
@@ -488,9 +464,9 @@ function renderSpotlight() {
   const richText = app.problem;
   nodes.spotlight.innerHTML = `
     <div class="summary-copy">
-      <span class="summary-type">${renderEditableText("app", "category", app.category, app.id)}</span>
-      <strong>${renderEditableText("app", "name", app.name, app.id)}</strong>
-      <p class="summary-intro">${renderEditableText("app", "brief", app.brief, app.id)}</p>
+      <span class="summary-type">${escapeHtml(app.category)}</span>
+      <strong>${escapeHtml(app.name)}</strong>
+      <p class="summary-intro">${escapeHtml(introText)}</p>
       <p class="summary-richtext"><span>使用场景</span><em>${escapeHtml(richText)}</em></p>
     </div>
   `;
@@ -552,10 +528,7 @@ function renderAppCard(app, index = 0, extraClass = "") {
 }
 
 function handleAppCardClick(event) {
-  if (event.target.closest("a, button")) return;
-  const card = event.target.closest("[data-app-id]");
-  if (!card) return;
-  selectApp(card.dataset.appId);
+  if (event.target.closest("a, button, .inline-edit-button")) return;
 }
 
 function updateSelectedCards() {
@@ -606,11 +579,11 @@ function renderActions(app, stopPropagation = false) {
   const web = platformValue(app, "web") || app.entry;
   const windows = platformValue(app, "windows") || app.package;
   const mac = platformValue(app, "mac");
-  const webLink = web ? `<a class="primary-link" data-action="web" href="${escapeHtml(projectHref(web))}"${stop}>${escapeHtml(platformLabel(app, "web", "预览体验"))}</a>` : "";
-  const windowsLink = windows ? `<a class="download-link" data-action="windows" href="${escapeHtml(projectHref(windows))}" download${stop}>${escapeHtml(platformLabel(app, "windows", "Windows版下载"))}</a>` : "";
-  const macLink = mac ? `<a class="mac-link" data-action="mac" href="${escapeHtml(projectHref(mac))}" download${stop}>${escapeHtml(platformLabel(app, "mac", "Mac版下载"))}</a>` : "";
-  const reviewVideo = videoHref(app);
-  const video = reviewVideo ? `<a data-action="video" href="${escapeHtml(projectHref(reviewVideo))}"${stop}>??</a>` : "";
+  const webLink = web ? `<a class="primary-link" data-action="web" href="${escapeHtml(projectHref(web))}"${stop}>${escapeHtml(platformLabel(app, "web", "演示"))}</a>` : "";
+  const windowsLabel = platformLabel(app, "windows", "下载");
+  const windowsLink = windows ? `<a class="download-link" data-action="download" href="${escapeHtml(projectHref(windows))}" download${stop}>${escapeHtml(windowsLabel)}</a>` : "";
+  const macLink = mac ? `<a class="mac-link" data-action="mac" href="${escapeHtml(projectHref(mac))}" download${stop}>${escapeHtml(platformLabel(app, "mac", "Mac下载"))}</a>` : "";
+  const video = `<a data-action="video" href="${escapeHtml(projectHref(videoHref(app)))}"${stop}>视频</a>`;
   return `
     <div class="card-actions">
       ${webLink}
@@ -619,10 +592,6 @@ function renderActions(app, stopPropagation = false) {
       ${video}
     </div>
   `;
-}
-
-function videoHref(app) {
-  return app.video || "./videos/placeholder.html";
 }
 
 function platformValue(app, key) {
@@ -674,11 +643,15 @@ function renderPageTextFields() {
     return '<label class="' + (isWide ? 'wide' : '') + '" data-page-text-field="' + escapeHtml(target.key) + '"><span>' + escapeHtml(target.label) + '</span>' + field + '</label>';
   }).join("");
 }
+
 function markAppFieldLabels() {
   const fieldMap = { editName: "name", editCategory: "category", editBrief: "brief", editStatus: "status", editTags: "tags", editProblem: "problem", editAiUse: "aiUse", editFolder: "folder", editEntry: "entry", editPackage: "package", editVideo: "video" };
-  Object.entries(fieldMap).forEach(([id, field]) => { document.querySelector('#' + id)?.closest("label")?.setAttribute("data-app-field", field); });
+  Object.entries(fieldMap).forEach(([id, field]) => {
+    document.querySelector("#" + id)?.closest("label")?.setAttribute("data-app-field", field);
+  });
   nodes.editAppSelect?.closest("label")?.setAttribute("data-app-field", "select");
 }
+
 function highlightEditTarget() {
   document.querySelectorAll(".editing-focus").forEach(element => element.classList.remove("editing-focus"));
   if (!state.editTarget) return;
@@ -686,8 +659,12 @@ function highlightEditTarget() {
   const field = document.querySelector(selector);
   if (!field) return;
   field.classList.add("editing-focus");
-  requestAnimationFrame(() => { field.scrollIntoView({ block: "center", behavior: "smooth" }); field.querySelector("input, textarea, select")?.focus(); });
+  requestAnimationFrame(() => {
+    field.scrollIntoView({ block: "center", behavior: "smooth" });
+    field.querySelector("input, textarea, select")?.focus();
+  });
 }
+
 function selectApp(id) {
   if (!apps.some(app => app.id === id)) return;
   state.selectedId = id;
@@ -751,20 +728,29 @@ async function streamMaintenance() {
   }
 }
 
-function toggleEditMode() { setEditMode(!state.editing); }
+function toggleEditMode() {
+  setEditMode(!state.editing);
+}
+
 function setEditMode(active) {
   state.editing = active;
   document.body.classList.toggle("editing", state.editing);
   nodes.editPanel.setAttribute("aria-hidden", String(!state.editing));
-  nodes.exportButton.textContent = state.editing ? "????" : "??";
+  nodes.exportButton.textContent = state.editing ? "退出编辑" : "编辑";
   renderEditForm();
 }
-function closeEditMode() { setEditMode(false); state.editTarget = null; }
+
+function closeEditMode() {
+  setEditMode(false);
+  state.editTarget = null;
+}
+
 function selectEditTarget(kind, key, appId, appField) {
   if (kind === "app" && appId) selectApp(appId);
   state.editTarget = kind === "page" ? { kind, key } : { kind, appId: appId || state.selectedId, field: appField };
   setEditMode(true);
 }
+
 function saveEditForm() {
   pageText = { ...pageText, ...Object.fromEntries(Array.from(document.querySelectorAll("[data-page-text-input]")).map(input => [input.dataset.pageTextInput, input.value.trim()])) };
   apps = apps.map(app => {
@@ -825,20 +811,44 @@ function exportList() {
   });
 }
 
+function renderPageText() {
+  pageTextTargets.forEach(target => {
+    const element = document.querySelector(target.selector);
+    if (!element) return;
+    const value = pageText[target.key] ?? defaultPageText[target.key] ?? "";
+    element.innerHTML = renderEditableText("page", target.key, value);
+  });
+}
+
 function renderEditableText(kind, key, value, appId = "") {
-  const label = kind === "page" ? "??????" : "??????";
+  const label = kind === "page" ? "修改页面文案" : "修改应用文案";
   const dataKey = kind === "page" ? key : appId + "." + key;
   const appData = kind === "app" ? ' data-app-id="' + escapeHtml(appId) + '" data-app-field="' + escapeHtml(key) + '"' : "";
-  return '<span class="editable-text" data-edit-key="' + escapeHtml(dataKey) + '"><span class="editable-value">' + escapeHtml(value ?? "") + '</span><span class="inline-edit-button" role="button" tabindex="0" aria-label="' + label + '" title="' + label + '" data-edit-kind="' + escapeHtml(kind) + '" data-edit-key="' + escapeHtml(key) + '"' + appData + '>?</span></span>';
+  return '<span class="editable-text" data-edit-key="' + escapeHtml(dataKey) + '"><span class="editable-value">' + escapeHtml(value ?? "") + '</span><span class="inline-edit-button" role="button" tabindex="0" aria-label="' + label + '" title="' + label + '" data-edit-kind="' + escapeHtml(kind) + '" data-edit-key="' + escapeHtml(key) + '"' + appData + '>✎</span></span>';
 }
+
+function handleInlineEditClick(event) {
+  const button = event.target.closest(".inline-edit-button");
+  if (!button) return;
+  event.preventDefault();
+  event.stopPropagation();
+  selectEditTarget(button.dataset.editKind, button.dataset.editKey, button.dataset.appId, button.dataset.appField);
+}
+
 function loadPageText() {
-  try { const stored = JSON.parse(localStorage.getItem(PAGE_TEXT_STORAGE_KEY) || "null"); if (stored && typeof stored === "object" && !Array.isArray(stored)) return normalizePageText(stored); }
-  catch { localStorage.removeItem(PAGE_TEXT_STORAGE_KEY); }
+  try {
+    const stored = JSON.parse(localStorage.getItem(PAGE_TEXT_STORAGE_KEY) || "null");
+    if (stored && typeof stored === "object" && !Array.isArray(stored)) return normalizePageText(stored);
+  } catch {
+    localStorage.removeItem(PAGE_TEXT_STORAGE_KEY);
+  }
   return normalizePageText();
 }
+
 function normalizePageText(stored = {}) {
   return { ...defaultPageText, ...Object.fromEntries(Object.entries(stored).filter(([key, value]) => key in defaultPageText && typeof value === "string")) };
 }
+
 function loadApps() {
   try {
     const stored = JSON.parse(localStorage.getItem(STORAGE_KEY) || "null");
@@ -915,6 +925,15 @@ function projectHref(value) {
   return value;
 }
 
+function videoHref(app) {
+  return app.video || "./videos/placeholder.html";
+}
+
+function cssEscape(value) {
+  if (window.CSS?.escape) return CSS.escape(value);
+  return String(value).replace(/["\\]/g, "\\$&");
+}
+
 function log(message) {
   const time = new Date().toLocaleTimeString("zh-CN", { hour12: false });
   nodes.log.textContent += `[${time}] ${message}\n`;
@@ -923,11 +942,6 @@ function log(message) {
 
 function wait(ms) {
   return new Promise(resolve => setTimeout(resolve, ms));
-}
-
-function cssEscape(value) {
-  if (window.CSS?.escape) return CSS.escape(value);
-  return String(value).replace(/["\\]/g, "\\function escapeHtml(value) {");
 }
 
 function escapeHtml(value) {

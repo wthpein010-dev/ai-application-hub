@@ -4,7 +4,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>AI 应用总览</title>
-    <meta name="description" content="汇总所有应用入口、说明、网页体验与跨平台下载内容。" />
+    <meta name="description" content="通过 Codex 调用 HyperFrames，制作动态网页效果并编辑网页描述的定制化模板小工具。" />
     <link rel="icon" href="./assets/app-avatar.png" type="image/png" />
     <link rel="stylesheet" href="./styles.css?v=20260626-card-layout-2" />
   </head>
@@ -163,22 +163,16 @@
     <aside id="editPanel" class="edit-panel" aria-label="编辑面板" aria-hidden="true">
       <div class="edit-panel-head">
         <div>
-          <h2>编辑当前应用</h2>
+          <h2>编辑网页内容</h2>
         </div>
         <button id="editClose" type="button">关闭</button>
       </div>
-      <div class="edit-section">
-        <div class="edit-section-title">
-          <h3>????</h3>
-          <span>?????????????</span>
-        </div>
-        <div id="pageTextFields" class="edit-grid"></div>
-      </div>
-      <div class="edit-section">
-        <div class="edit-section-title">
-          <h3>????</h3>
-          <span>???????????????</span>
-        </div>
+      <section class="edit-section">
+        <h3>页面主要文案</h3>
+        <div id="pageTextFields" class="edit-grid page-text-grid"></div>
+      </section>
+      <section class="edit-section">
+        <h3>当前应用</h3>
       <div class="edit-grid">
         <label class="wide">
           <span>选择应用</span>
@@ -230,15 +224,15 @@
           <input id="editEntry" type="text" />
         </label>
         <label class="wide">
-          <span>????</span>
+          <span>下载包</span>
           <input id="editPackage" type="text" />
         </label>
         <label class="wide">
-          <span>????</span>
+          <span>视频地址</span>
           <input id="editVideo" type="text" />
         </label>
       </div>
-      </div>
+      </section>
       <div class="edit-actions">
         <button id="editSave" class="primary-action" type="button">保存</button>
         <button id="editReset" class="ghost-action" type="button">恢复默认</button>
