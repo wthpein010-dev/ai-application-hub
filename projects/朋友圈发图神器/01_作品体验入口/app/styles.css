@@ -35,7 +35,34 @@ textarea {
   min-height: 100vh;
   display: grid;
   place-items: center;
-  padding: 28px;
+  padding: 76px 28px 28px;
+}
+
+.home-link {
+  position: fixed;
+  top: 18px;
+  left: 18px;
+  z-index: 20;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 38px;
+  padding: 0 14px;
+  border: 1px solid rgba(23, 35, 31, 0.12);
+  border-radius: 8px;
+  color: var(--ink);
+  font-size: 14px;
+  font-weight: 800;
+  text-decoration: none;
+  background: rgba(255, 255, 255, 0.86);
+  box-shadow: 0 12px 30px rgba(23, 35, 31, 0.12);
+  backdrop-filter: blur(14px);
+}
+
+.home-link:hover {
+  color: #ffffff;
+  border-color: var(--blue);
+  background: var(--blue);
 }
 
 .workspace {
@@ -399,7 +426,7 @@ textarea:focus {
 }
 
 .demo-mode .shell {
-  padding: 16px;
+  padding: 62px 16px 16px;
 }
 
 .demo-mode .workspace {
@@ -684,7 +711,7 @@ textarea:focus {
 
 @media (max-width: 860px) {
   .shell {
-    padding: 14px;
+    padding: 66px 14px 14px;
     place-items: start;
   }
 
