@@ -1,0 +1,140 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>每日策划知识考核</title>
+    <meta name="description" content="面向休闲游戏与对对碰项目的每日策划训练答卷系统。" />
+    <link rel="icon" href="../../assets/app-avatar.png" type="image/png" />
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <div class="app-shell">
+      <header class="topbar">
+        <a class="brand" href="../../index.html#games" aria-label="返回应用总览">
+          <img src="../../assets/app-avatar.png" alt="" />
+          <span>
+            <strong>每日策划知识考核</strong>
+            <small>Planning Daily Drill</small>
+          </span>
+        </a>
+        <div class="topbar-actions">
+          <span id="syncState" class="sync-state">记录待同步</span>
+          <a class="ghost-link" href="../../index.html#games">返回总览</a>
+        </div>
+      </header>
+
+      <main>
+        <section class="hero">
+          <div class="hero-copy">
+            <p class="eyebrow">每天一轮，0 点刷新</p>
+            <h1>像闯关一样做策划基本功训练。</h1>
+            <p class="hero-lead">
+              每天从题库抽取一组题，提交后立刻批改，给出错题解析、能力短板和同类练习建议。当前版本以选择题为主，后续可接入 AI 做主观题点评。
+            </p>
+            <div class="hero-actions">
+              <button id="startButton" class="primary-button" type="button">开始今日考核</button>
+              <button id="historyButton" class="secondary-button" type="button">查看记录</button>
+            </div>
+          </div>
+
+          <aside class="training-board" aria-label="今日训练概览">
+            <div class="tile-stack" aria-hidden="true">
+              <span class="tile tile-a">规</span>
+              <span class="tile tile-b">文</span>
+              <span class="tile tile-c">美</span>
+              <span class="tile tile-d">数</span>
+            </div>
+            <div class="board-stats">
+              <div>
+                <span>今日题量</span>
+                <strong id="todayCount">0</strong>
+              </div>
+              <div>
+                <span>倒计时</span>
+                <strong id="timerPreview">--:--</strong>
+              </div>
+              <div>
+                <span>刷新时间</span>
+                <strong>00:00</strong>
+              </div>
+            </div>
+          </aside>
+        </section>
+
+        <section id="lockedPanel" class="panel locked-panel" hidden>
+          <div>
+            <p class="eyebrow">今日已完成</p>
+            <h2>训练记录已保存，明天 0 点后再来一轮。</h2>
+            <p id="lockedSummary"></p>
+          </div>
+          <button id="reviewTodayButton" class="secondary-button" type="button">查看今日批改</button>
+        </section>
+
+        <section id="setupPanel" class="panel setup-panel">
+          <div class="section-title">
+            <p class="eyebrow">进入答卷</p>
+            <h2>先留下答题人信息</h2>
+          </div>
+          <form id="profileForm" class="profile-form">
+            <label>
+              <span>姓名/昵称</span>
+              <input id="userName" name="userName" autocomplete="name" placeholder="例如：跳鼠" required />
+            </label>
+            <label>
+              <span>岗位/身份</span>
+              <select id="userRole" name="userRole">
+                <option value="执行策划">执行策划</option>
+                <option value="制作人/策划">制作人/策划</option>
+                <option value="客户端程序">客户端程序</option>
+                <option value="美术">美术</option>
+                <option value="其他">其他</option>
+              </select>
+            </label>
+            <button class="primary-button" type="submit">生成今日试卷</button>
+          </form>
+        </section>
+
+        <section id="quizPanel" class="quiz-layout" hidden>
+          <aside class="quiz-sidebar">
+            <div class="timer-card">
+              <span>剩余时间</span>
+              <strong id="timerText">--:--</strong>
+              <div class="timer-track"><i id="timerBar"></i></div>
+            </div>
+            <div class="progress-card">
+              <span>答题进度</span>
+              <strong id="progressText">0/0</strong>
+              <div id="questionDots" class="question-dots"></div>
+            </div>
+          </aside>
+
+          <form id="quizForm" class="question-list"></form>
+        </section>
+
+        <section id="resultPanel" class="result-panel" hidden></section>
+
+        <section id="historyPanel" class="panel history-panel" hidden>
+          <div class="section-title">
+            <p class="eyebrow">训练记录</p>
+            <h2>本机历史答题</h2>
+          </div>
+          <div id="historyList" class="history-list"></div>
+        </section>
+      </main>
+    </div>
+
+    <template id="questionTemplate">
+      <article class="question-card">
+        <div class="question-meta">
+          <span class="question-index"></span>
+          <span class="question-category"></span>
+        </div>
+        <h3></h3>
+        <div class="option-list"></div>
+      </article>
+    </template>
+
+    <script src="./app.js"></script>
+  </body>
+</html>

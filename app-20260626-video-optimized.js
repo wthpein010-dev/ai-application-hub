@@ -142,6 +142,28 @@ const defaultApps = [
     polish: 8
   },
   {
+    id: "planner-daily-quiz",
+    name: "每日策划知识考核",
+    category: "策划训练答卷",
+    status: "game",
+    brief: "面向休闲游戏和对对碰项目的每日训练题库，每天 0 点刷新一轮题，限时答题后给出批改、答案说明和错题强化建议。",
+    problem: "策划训练如果只靠文档阅读，很难形成稳定复习节奏，也不容易沉淀错题、薄弱能力和每日训练记录。",
+    aiUse: "AI 后续可接入主观题点评、错题解释、同类练习生成和能力画像总结；当前版本先完成每日抽题、倒计时、自动批改和本地记录。",
+    folder: "./projects/planner-daily-quiz/",
+    entry: "./projects/planner-daily-quiz/index.html",
+    package: "",
+    platforms: {
+      web: "./projects/planner-daily-quiz/index.html",
+      windows: "",
+      mac: ""
+    },
+    tags: ["策划训练", "每日答题", "错题反馈", "题库"],
+    speed: 9,
+    impact: 8,
+    risk: 8,
+    polish: 8
+  },
+  {
     id: "travel-generator",
     name: "朋友圈发图神器",
     category: "AI 内容生成",

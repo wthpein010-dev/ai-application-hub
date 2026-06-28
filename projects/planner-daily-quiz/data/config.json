@@ -1,0 +1,8 @@
+{
+  "dailyQuestionCount": 10,
+  "timeLimitSeconds": 900,
+  "unlockHour": 0,
+  "submitEndpoint": "",
+  "aiFeedbackEndpoint": "",
+  "version": "2026.06.28-mvp"
+}
