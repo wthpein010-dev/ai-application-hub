@@ -3,6 +3,7 @@
   "timeLimitSeconds": 900,
   "unlockHour": 0,
   "submitEndpoint": "",
+  "adminRecordsEndpoint": "",
   "aiFeedbackEndpoint": "",
   "version": "2026.06.28-mvp"
 }

@@ -1,6 +1,7 @@
 const STORAGE_KEY = "planner-daily-quiz-records-v1";
 const PROFILE_KEY = "planner-daily-quiz-profile-v1";
 const TODAY_KEY = "planner-daily-quiz-today-v1";
+const ADMIN_PASSWORD = "admin";
 
 const state = {
   config: {
@@ -8,6 +9,7 @@ const state = {
     timeLimitSeconds: 900,
     unlockHour: 0,
     submitEndpoint: "",
+    adminRecordsEndpoint: "",
     aiFeedbackEndpoint: "",
     version: "local"
   },
@@ -17,12 +19,24 @@ const state = {
   startedAt: null,
   timer: null,
   remainingSeconds: 0,
-  lastResult: null
+  lastResult: null,
+  adminAuthed: false,
+  adminRecords: []
 };
 
 const nodes = {
   startButton: document.querySelector("#startButton"),
   historyButton: document.querySelector("#historyButton"),
+  adminOpenButton: document.querySelector("#adminOpenButton"),
+  adminCloseButton: document.querySelector("#adminCloseButton"),
+  adminLoginForm: document.querySelector("#adminLoginForm"),
+  adminPassword: document.querySelector("#adminPassword"),
+  adminPanel: document.querySelector("#adminPanel"),
+  adminContent: document.querySelector("#adminContent"),
+  adminRecordCount: document.querySelector("#adminRecordCount"),
+  adminRecordList: document.querySelector("#adminRecordList"),
+  adminRefreshButton: document.querySelector("#adminRefreshButton"),
+  adminExportButton: document.querySelector("#adminExportButton"),
   reviewTodayButton: document.querySelector("#reviewTodayButton"),
   profileForm: document.querySelector("#profileForm"),
   userName: document.querySelector("#userName"),
@@ -77,6 +91,14 @@ function bindEvents() {
     nodes.userName.focus();
   });
   nodes.historyButton.addEventListener("click", toggleHistory);
+  nodes.adminOpenButton.addEventListener("click", openAdminPanel);
+  nodes.adminCloseButton.addEventListener("click", closeAdminPanel);
+  nodes.adminRefreshButton.addEventListener("click", loadAndRenderAdminRecords);
+  nodes.adminExportButton.addEventListener("click", exportAdminRecords);
+  nodes.adminLoginForm.addEventListener("submit", event => {
+    event.preventDefault();
+    loginAdmin();
+  });
   nodes.reviewTodayButton.addEventListener("click", () => {
     const todayRecord = getTodayRecord();
     if (todayRecord) renderResult(todayRecord, { readonly: true });
@@ -124,6 +146,7 @@ function renderQuiz() {
     const card = nodes.template.content.firstElementChild.cloneNode(true);
     card.dataset.questionId = question.id;
     card.querySelector(".question-index").textContent = `第 ${index + 1} 题`;
+    card.querySelector(".question-type").textContent = question.typeNote || typeLabel(question.type);
     card.querySelector(".question-category").textContent = question.category;
     card.querySelector("h3").textContent = question.question;
     const optionList = card.querySelector(".option-list");
@@ -210,6 +233,7 @@ function gradeQuiz(reason, profile) {
       index: index + 1,
       id: question.id,
       type: question.type,
+      typeLabel: question.typeNote || typeLabel(question.type),
       category: question.category,
       question: question.question,
       options: question.options,
@@ -290,7 +314,7 @@ function renderReviewItem(review) {
   const answerText = review.answer.map(index => review.options[index]).join("、");
   return `
     <article class="review-item ${review.correct ? "is-correct" : "is-wrong"}">
-      <h3>${review.correct ? "答对" : "需订正"} · 第 ${review.index} 题：${escapeHtml(review.question)}</h3>
+      <h3>${review.correct ? "答对" : "需订正"} · 第 ${review.index} 题（${escapeHtml(review.typeLabel || typeLabel(review.type))}）：${escapeHtml(review.question)}</h3>
       <p>你的答案：${escapeHtml(selectedText)}</p>
       <p class="answer-line">正确答案：${escapeHtml(answerText)}</p>
       <p>${escapeHtml(review.explanation)}</p>
@@ -333,6 +357,99 @@ function renderHistory() {
       </article>
     `).join("")
     : `<article class="history-item"><strong>还没有记录</strong><p>完成一次每日训练后，这里会出现分数和薄弱能力。</p></article>`;
+}
+
+function openAdminPanel() {
+  nodes.adminPanel.hidden = false;
+  nodes.adminPanel.scrollIntoView({ behavior: "smooth", block: "start" });
+  if (state.adminAuthed) {
+    loadAndRenderAdminRecords();
+  } else {
+    nodes.adminPassword.focus();
+  }
+}
+
+function closeAdminPanel() {
+  nodes.adminPanel.hidden = true;
+}
+
+function loginAdmin() {
+  if (nodes.adminPassword.value !== ADMIN_PASSWORD) {
+    nodes.adminPassword.value = "";
+    nodes.adminPassword.placeholder = "密码错误，请重新输入";
+    nodes.adminPassword.focus();
+    return;
+  }
+  state.adminAuthed = true;
+  nodes.adminContent.hidden = false;
+  nodes.adminPassword.value = "";
+  loadAndRenderAdminRecords();
+}
+
+async function loadAndRenderAdminRecords() {
+  if (!state.adminAuthed) return;
+  const localRecords = getRecords().map(record => ({ ...record, source: "本机本地记录" }));
+  const remoteRecords = await fetchRemoteAdminRecords();
+  const merged = [...remoteRecords, ...localRecords].sort((a, b) => String(b.finishedAt).localeCompare(String(a.finishedAt)));
+  state.adminRecords = merged;
+  nodes.adminRecordCount.textContent = `${merged.length} 条记录`;
+  nodes.adminRecordList.innerHTML = merged.length
+    ? merged.map(renderAdminRecord).join("")
+    : `<article class="admin-record"><strong>暂无记录</strong><p>当前浏览器本地还没有答题记录；配置远端接口后可读取云端记录。</p></article>`;
+}
+
+async function fetchRemoteAdminRecords() {
+  const endpoint = state.config.adminRecordsEndpoint || state.config.submitEndpoint || window.PLANNER_DAILY_QUIZ_ADMIN_ENDPOINT || "";
+  if (!endpoint) return [];
+  try {
+    const url = new URL(endpoint, window.location.href);
+    url.searchParams.set("password", ADMIN_PASSWORD);
+    const response = await fetch(url.toString(), { method: "GET" });
+    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+    const data = await response.json();
+    return Array.isArray(data.records) ? data.records.map(record => ({ ...record, source: "远端数据库" })) : [];
+  } catch (error) {
+    console.warn("Admin fetch failed:", error);
+    return [];
+  }
+}
+
+function renderAdminRecord(record) {
+  const weakTags = record.weakTags || [];
+  return `
+    <article class="admin-record">
+      <div class="admin-record-head">
+        <strong>${escapeHtml(record.profile?.userName || "匿名")} · ${escapeHtml(record.profile?.userRole || "未填写")} · ${record.score ?? "--"} 分</strong>
+        <span>${escapeHtml(record.source || "本地")}</span>
+      </div>
+      <p>${escapeHtml(record.date || "")}，答对 ${record.correctCount ?? 0}/${record.total ?? 0} 题，用时 ${formatDuration(record.durationSeconds || 0)}。</p>
+      <p>提交时间：${escapeHtml(formatDateTime(record.finishedAt))}</p>
+      <div class="tag-strip">${weakTags.map(tag => `<span>${escapeHtml(tag)}</span>`).join("") || "<span>暂无明显短板</span>"}</div>
+      <details>
+        <summary>查看答题明细</summary>
+        <div class="admin-answer-list">
+          ${(record.reviews || []).map(review => `
+            <div>
+              <b>${review.correct ? "对" : "错"} · ${escapeHtml(review.typeLabel || typeLabel(review.type))} · ${escapeHtml(review.question || "")}</b>
+              <p>用户答案：${escapeHtml(answerText(review, "selected"))}</p>
+              <p>正确答案：${escapeHtml(answerText(review, "answer"))}</p>
+            </div>
+          `).join("")}
+        </div>
+      </details>
+    </article>
+  `;
+}
+
+function answerText(review, key) {
+  const indexes = Array.isArray(review[key]) ? review[key] : [];
+  if (!indexes.length) return key === "selected" ? "未作答" : "";
+  return indexes.map(index => review.options?.[index] ?? index).join("、");
+}
+
+function exportAdminRecords() {
+  const text = JSON.stringify(state.adminRecords, null, 2);
+  navigator.clipboard?.writeText(text);
 }
 
 function saveDraft() {
@@ -401,6 +518,14 @@ function getProfile(requireName = true) {
     throw new Error("Missing user name");
   }
   return profile;
+}
+
+function typeLabel(type) {
+  return {
+    single: "单选题",
+    multiple: "多选题",
+    true_false: "判断题"
+  }[type] || "题目";
 }
 
 function pickDailyQuestions(questionBank, count) {
@@ -486,6 +611,13 @@ function formatDuration(seconds) {
   const rest = seconds % 60;
   if (minutes <= 0) return `${rest} 秒`;
   return `${minutes} 分 ${rest} 秒`;
+}
+
+function formatDateTime(value) {
+  if (!value) return "";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return String(value);
+  return date.toLocaleString("zh-CN", { hour12: false });
 }
 
 function copyResult(result) {

@@ -20,6 +20,7 @@
         </a>
         <div class="topbar-actions">
           <span id="syncState" class="sync-state">记录待同步</span>
+          <button id="adminOpenButton" class="ghost-button" type="button">管理员</button>
           <a class="ghost-link" href="../../index.html#games">返回总览</a>
         </div>
       </header>
@@ -84,11 +85,10 @@
             <label>
               <span>岗位/身份</span>
               <select id="userRole" name="userRole">
-                <option value="执行策划">执行策划</option>
-                <option value="制作人/策划">制作人/策划</option>
-                <option value="客户端程序">客户端程序</option>
+                <option value="制作人">制作人</option>
+                <option value="策划">策划</option>
                 <option value="美术">美术</option>
-                <option value="其他">其他</option>
+                <option value="程序">程序</option>
               </select>
             </label>
             <button class="primary-button" type="submit">生成今日试卷</button>
@@ -121,6 +121,29 @@
           </div>
           <div id="historyList" class="history-list"></div>
         </section>
+
+        <section id="adminPanel" class="panel admin-panel" hidden>
+          <div class="section-title">
+            <p class="eyebrow">管理员控制台</p>
+            <h2>查看答题数据库记录</h2>
+          </div>
+          <form id="adminLoginForm" class="admin-login">
+            <label>
+              <span>管理员密码</span>
+              <input id="adminPassword" type="password" autocomplete="current-password" placeholder="请输入管理员密码" />
+            </label>
+            <button class="primary-button" type="submit">登录查看</button>
+            <button id="adminCloseButton" class="secondary-button" type="button">关闭</button>
+          </form>
+          <div id="adminContent" class="admin-content" hidden>
+            <div class="admin-toolbar">
+              <strong id="adminRecordCount">0 条记录</strong>
+              <button id="adminRefreshButton" class="secondary-button" type="button">刷新数据</button>
+              <button id="adminExportButton" class="secondary-button" type="button">复制 JSON</button>
+            </div>
+            <div id="adminRecordList" class="admin-record-list"></div>
+          </div>
+        </section>
       </main>
     </div>
 
@@ -128,6 +151,7 @@
       <article class="question-card">
         <div class="question-meta">
           <span class="question-index"></span>
+          <span class="question-type"></span>
           <span class="question-category"></span>
         </div>
         <h3></h3>

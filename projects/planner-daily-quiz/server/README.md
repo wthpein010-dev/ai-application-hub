@@ -19,3 +19,9 @@ GitHub Pages 不能直接安全写仓库，因为前端不能暴露 GitHub token
 部署后，把 Worker 地址写入：
 
 `projects/planner-daily-quiz/data/config.json` 的 `submitEndpoint` 字段。
+
+管理员页面会通过 GET 读取同一个 Worker：
+
+`https://your-worker.example.com/submit?password=admin`
+
+如果希望提交和管理分开，也可以把地址写入 `adminRecordsEndpoint`。
