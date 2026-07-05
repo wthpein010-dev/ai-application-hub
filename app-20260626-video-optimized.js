@@ -120,6 +120,28 @@ const defaultApps = [
     polish: 8
   },
   {
+    id: "paws-home-client",
+    name: "羊了个羊：碰碰消",
+    category: "Unity H5 小游戏",
+    status: "game",
+    brief: "基于萌爪主题包装的碰一碰消除小游戏，已打出 WebGL 体验包，适合直接在浏览器里打开试玩。",
+    problem: "需要把新的 Unity 小游戏工程接入统一主页，让别人拿到仓库或打开线上页面时可以直接体验，并保留可下载的完整 WebGL 包。",
+    aiUse: "AI 参与离线 WebGL 打包、私有依赖兼容处理、发布目录整理、主页入口接入和跨平台访问验证。",
+    folder: "./projects/paws-home-client/",
+    entry: "./projects/paws-home-client/index.html",
+    package: "./downloads/paws-home-client-webgl.zip",
+    platforms: {
+      web: "./projects/paws-home-client/index.html",
+      windows: "./downloads/paws-home-client-webgl.zip",
+      mac: "./downloads/paws-home-client-webgl.zip"
+    },
+    tags: ["Unity", "WebGL", "小游戏", "碰一碰"],
+    speed: 8,
+    impact: 8,
+    risk: 7,
+    polish: 8
+  },
+  {
     id: "fill-what",
     name: "填了个啥",
     category: "Unity 微信小游戏原型",
@@ -901,6 +923,18 @@ function normalizeApp(app) {
       web: "./projects/vita-mahjong/index.html",
       windows: "./downloads/vita-mahjong-webgl.zip",
       mac: "./downloads/vita-mahjong-webgl.zip"
+    };
+    normalized.status = "game";
+  }
+  if (normalized.id === "paws-home-client") {
+    normalized.name = "羊了个羊：碰碰消";
+    normalized.entry = "./projects/paws-home-client/index.html";
+    normalized.package = "./downloads/paws-home-client-webgl.zip";
+    normalized.platforms = {
+      ...normalized.platforms,
+      web: "./projects/paws-home-client/index.html",
+      windows: "./downloads/paws-home-client-webgl.zip",
+      mac: "./downloads/paws-home-client-webgl.zip"
     };
     normalized.status = "game";
   }
