@@ -31,6 +31,8 @@
     <type fullname="MyUI.UIRuleScreenView" preserve="all" />
     <type fullname="MyUI.WaitNetScreenView" preserve="all" />
     <type fullname="SoundButtonEffect" preserve="all" />
+    <type fullname="MyUI.MainMarqueeInspectorSettings" preserve="nothing" serialized="true" />
+    <type fullname="MyUI.MainMarqueeLanguageEntry" preserve="nothing" serialized="true" />
   </assembly>
   <assembly fullname="DOTweenPro.Scripts, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null">
     <type fullname="DG.Tweening.DOTweenAnimation" preserve="all" />
