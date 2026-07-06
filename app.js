@@ -837,9 +837,6 @@ function normalizePageText(stored = {}) {
   Object.entries(staleGameText).forEach(([key, value]) => {
     if (merged[key] === value) merged[key] = defaultPageText[key];
   });
-  ["metrics.games", "metrics.gamesNote", "games.title"].forEach(key => {
-    if (/[�?]{2,}/.test(merged[key])) merged[key] = defaultPageText[key];
-  });
   return merged;
 }
 
