@@ -120,6 +120,27 @@ const defaultApps = [
     polish: 8
   },
   {
+    id: "zhuanglege-sha",
+    name: "装了个啥",
+    category: "Unity H5 小游戏",
+    status: "game",
+    brief: "机场安检审核题材的竖屏闯关小游戏，切换普通、X 光和轮廓视图，判断行李能否放行。",
+    problem: "玩家像安检员一样观察行李内部物品，在不计时的轻解谜节奏中识别危险品、干扰物和条件违规物。",
+    aiUse: "AI 参与玩法设定、关卡规则、文档排版、Unity 工程拆分、程序化 UI 和 WebGL 构建同步。",
+    folder: "./projects/zhuanglege-sha/",
+    entry: "./projects/zhuanglege-sha/index.html",
+    package: "",
+    platforms: {
+      web: "./projects/zhuanglege-sha/index.html",
+      windows: "",
+      mac: ""
+    },
+    tags: ["Unity", "WebGL", "安检", "观察判定"],
+    speed: 8,
+    impact: 8,
+    risk: 7,
+    polish: 8
+  },  {
     id: "paws-home-client",
     name: "羊了个羊：碰碰消",
     category: "Unity H5 小游戏",
@@ -552,6 +573,7 @@ function renderAppCard(app, index = 0, extraClass = "") {
 }
 
 function gameDisplayRank(app) {
+  if (app.id === "zhuanglege-sha") return -3;
   if (app.id === "xiang-le-ge-xiang") return -2;
   if (app.id === "paws-home-client") return -1;
   return defaultApps.findIndex(item => item.id === app.id);
