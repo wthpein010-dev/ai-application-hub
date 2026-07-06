@@ -3,48 +3,102 @@
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-    <title>箱了个箱</title>
+    <meta name="description" content="箱了个箱 2D 推箱子解谜小游戏网页体验入口，点击后进入竖屏预览窗口。" />
+    <title>箱了个箱 | 2D 推箱子解谜</title>
     <link rel="stylesheet" href="./styles.css">
   </head>
   <body>
-    <main class="game-shell">
-      <section class="topbar" aria-label="游戏状态">
-        <div class="brand">
-          <strong>箱了个箱</strong>
-          <span id="levelName">第一关</span>
-        </div>
-        <div class="stats">
-          <span id="moveCount">0</span>
-          <span id="undoCount">0</span>
-        </div>
-        <div class="tools">
-          <button id="undoButton" type="button" title="撤销" aria-label="撤销">↶</button>
-          <button id="resetButton" type="button" title="重开" aria-label="重开">⟳</button>
-          <button id="hintButton" type="button" title="提示" aria-label="提示">?</button>
-        </div>
-      </section>
+    <div class="page">
+      <header class="topbar">
+        <a href="../../index.html#games">返回小游戏集合</a>
+        <span>HTML5 Canvas · 竖屏小游戏预览</span>
+      </header>
 
-      <canvas id="gameCanvas" aria-label="箱了个箱棋盘"></canvas>
+      <main class="layout">
+        <section class="copy">
+          <h1>箱了个箱</h1>
+          <p class="lead">
+            只有两关的推箱子解谜：第一关一推即过，第二关先扫出大地图，再缩回当前区域。规则还是推箱子，难点藏在路线和顺序里。
+          </p>
+          <div class="meta">
+            <span>2D 推箱子</span>
+            <span>第二关难度飞升</span>
+            <span>微信/抖音小游戏方向</span>
+          </div>
+          <div class="actions">
+            <button id="startButton" type="button">开始体验</button>
+            <a class="button" href="../../index.html#games">返回合集</a>
+          </div>
+        </section>
 
-      <div id="hintBubble" class="hint-bubble" hidden></div>
+        <section id="stage" class="stage" aria-label="箱了个箱游戏预览窗口">
+          <main class="game-shell">
+            <section class="game-topbar" aria-label="游戏状态">
+              <div class="brand">
+                <strong>箱了个箱</strong>
+                <span id="levelName">第一关</span>
+              </div>
+              <div class="stats">
+                <span id="moveCount">0</span>
+                <span id="undoCount">0</span>
+              </div>
+              <div class="tools">
+                <button id="undoButton" type="button" title="撤销" aria-label="撤销">↶</button>
+                <button id="resetButton" type="button" title="重开" aria-label="重开">⟳</button>
+                <button id="hintButton" type="button" title="提示" aria-label="提示">?</button>
+              </div>
+            </section>
 
-      <section class="dpad" aria-label="方向控制">
-        <button type="button" data-move="up" aria-label="上">↑</button>
-        <button type="button" data-move="left" aria-label="左">←</button>
-        <button type="button" data-move="down" aria-label="下">↓</button>
-        <button type="button" data-move="right" aria-label="右">→</button>
-      </section>
+            <canvas id="gameCanvas" aria-label="箱了个箱棋盘" tabindex="-1"></canvas>
 
-      <section id="clearOverlay" class="clear-overlay" hidden>
-        <div class="clear-panel">
-          <p id="clearEyebrow">清关</p>
-          <h1 id="clearTitle">第一关过了</h1>
-          <p id="clearText">第二关来了。</p>
-          <button id="primaryButton" type="button">继续</button>
-        </div>
-      </section>
-    </main>
+            <div id="hintBubble" class="hint-bubble" hidden></div>
+
+            <section class="dpad" aria-label="方向控制">
+              <button type="button" data-move="up" aria-label="上">↑</button>
+              <button type="button" data-move="left" aria-label="左">←</button>
+              <button type="button" data-move="down" aria-label="下">↓</button>
+              <button type="button" data-move="right" aria-label="右">→</button>
+            </section>
+
+            <section id="clearOverlay" class="clear-overlay" hidden>
+              <div class="clear-panel">
+                <p id="clearEyebrow">清关</p>
+                <h1 id="clearTitle">第一关过了</h1>
+                <p id="clearText">第二关来了。</p>
+                <button id="primaryButton" type="button">继续</button>
+              </div>
+            </section>
+          </main>
+
+          <div class="placeholder">
+            <div>
+              <strong>箱了个箱</strong>
+              <p>点击左侧按钮后进入游戏。第一关很简单，第二关会先展示完整大地图，再缩回你当前位置。</p>
+            </div>
+          </div>
+          <button id="fullscreenButton" class="fullscreen" type="button">全屏</button>
+        </section>
+      </main>
+    </div>
 
     <script type="module" src="./src/game.mjs"></script>
+    <script>
+      const stage = document.querySelector("#stage");
+      const startButton = document.querySelector("#startButton");
+      const fullscreenButton = document.querySelector("#fullscreenButton");
+
+      startButton.addEventListener("click", () => {
+        stage.classList.add("is-running");
+        startButton.disabled = true;
+        startButton.textContent = "游戏已启动";
+        stage.scrollIntoView({ block: "start", inline: "nearest" });
+      });
+
+      fullscreenButton.addEventListener("click", () => {
+        if (stage.requestFullscreen) {
+          stage.requestFullscreen();
+        }
+      });
+    </script>
   </body>
 </html>
