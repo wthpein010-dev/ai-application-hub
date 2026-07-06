@@ -261,6 +261,7 @@ const defaultApps = [
     aiUse: "AI 用于识别表达意图、切换语气风格、生成多语言版本，并把复杂内容整理成可直接使用的文本。",
     folder: "./projects/万话筒/",
     entry: "./projects/万话筒/index.html",
+    video: "./projects/万话筒/视频资源/演示视频.html",
     package: "./downloads/wanhuatong.zip",
     platforms: {
       web: "./projects/万话筒/index.html",
@@ -916,6 +917,7 @@ function normalizeApp(app) {
     normalized.name = "万话筒";
     normalized.folder = "./projects/万话筒/";
     normalized.entry = "./projects/万话筒/index.html";
+    normalized.video = "./projects/万话筒/视频资源/演示视频.html";
     normalized.package = "./downloads/wanhuatong.zip";
     normalized.platforms = {
       ...normalized.platforms,
