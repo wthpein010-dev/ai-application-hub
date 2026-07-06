@@ -416,10 +416,32 @@ button {
   text-align: left;
 }
 
+.section-title-row,
+.panel-head,
+.section-heading > div {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
 .section-head h2 {
   margin: 0 0 10px;
   font-size: clamp(30px, 4vw, 46px);
   line-height: 1.1;
+}
+
+.section-title-row h2 {
+  margin: 0;
+}
+
+.hero-copy {
+  position: relative;
+}
+
+.hero-copy > .section-edit-button {
+  position: absolute;
+  top: 0;
+  right: 0;
 }
 
 .toolbar {
@@ -513,6 +535,14 @@ select option:hover {
   gap: 10px;
   color: var(--muted);
   font-size: 12px;
+}
+
+.card-meta {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
 }
 
 .status-badge {
@@ -944,10 +974,40 @@ body.editing .edit-panel {
 }
 
 body.editing .inline-edit-button {
-  display: inline-block;
+  display: none;
 }
 
-.inline-edit-button:hover {
+.region-edit-button {
+  display: none;
+  width: 30px;
+  height: 30px;
+  flex: 0 0 30px;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.08);
+  color: rgba(240, 246, 255, 0.9);
+  cursor: pointer;
+  transition: transform 160ms ease, border-color 160ms ease, background 160ms ease;
+}
+
+.region-edit-button::before {
+  content: "✎";
+  font-size: 13px;
+  line-height: 1;
+}
+
+body.editing .region-edit-button {
+  display: inline-flex;
+}
+
+.card-edit-button {
+  margin-left: auto;
+}
+
+.inline-edit-button:hover,
+.region-edit-button:hover {
   transform: translateY(-1px);
   border-color: rgba(112, 214, 194, 0.58);
   background: rgba(112, 214, 194, 0.14);
@@ -1435,7 +1495,7 @@ body {
 }
 
 body.editing .metric .inline-edit-button {
-  display: inline-block;
+  display: none;
 }
 
 .metric-note {

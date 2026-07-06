@@ -510,8 +510,11 @@ function renderAppCard(app, index = 0, extraClass = "") {
   return `
     <article class="app-card${extraClass} ${app.id === state.selectedId ? "selected" : ""}" data-app-id="${escapeHtml(app.id)}" style="--card-order:${index}">
       <div class="card-topline">
-        <span class="status-badge status-${escapeHtml(app.status)}">${escapeHtml(statusLabel[app.status])}</span>
-        <span>${renderEditableText("app", "category", app.category, app.id)}</span>
+        <div class="card-meta">
+          <span class="status-badge status-${escapeHtml(app.status)}">${escapeHtml(statusLabel[app.status])}</span>
+          <span>${renderEditableText("app", "category", app.category, app.id)}</span>
+        </div>
+        ${renderRegionEditButton("app", "name", app.id, "name", "编辑此应用")}
       </div>
       <h3>${renderEditableText("app", "name", app.name, app.id)}</h3>
       <p>${renderEditableText("app", "brief", app.brief, app.id)}</p>
@@ -524,7 +527,7 @@ function renderAppCard(app, index = 0, extraClass = "") {
 }
 
 function handleAppCardClick(event) {
-  if (event.target.closest("a, button, .inline-edit-button")) return;
+  if (event.target.closest("a, button, .inline-edit-button, .region-edit-button")) return;
 }
 
 function updateSelectedCards() {
@@ -803,14 +806,17 @@ function renderPageText() {
 }
 
 function renderEditableText(kind, key, value, appId = "") {
-  const label = kind === "page" ? "修改页面文案" : "修改应用文案";
   const dataKey = kind === "page" ? key : appId + "." + key;
-  const appData = kind === "app" ? ' data-app-id="' + escapeHtml(appId) + '" data-app-field="' + escapeHtml(key) + '"' : "";
-  return '<span class="editable-text" data-edit-key="' + escapeHtml(dataKey) + '"><span class="editable-value">' + escapeHtml(value ?? "") + '</span><span class="inline-edit-button" role="button" tabindex="0" aria-label="' + label + '" title="' + label + '" data-edit-kind="' + escapeHtml(kind) + '" data-edit-key="' + escapeHtml(key) + '"' + appData + '>✎</span></span>';
+  return '<span class="editable-text" data-edit-key="' + escapeHtml(dataKey) + '"><span class="editable-value">' + escapeHtml(value ?? "") + '</span></span>';
+}
+
+function renderRegionEditButton(kind, key, appId = "", appField = "", label = "编辑") {
+  const appData = kind === "app" ? ' data-app-id="' + escapeHtml(appId) + '" data-app-field="' + escapeHtml(appField || key) + '"' : "";
+  return '<button class="region-edit-button card-edit-button" type="button" aria-label="' + escapeHtml(label) + '" title="' + escapeHtml(label) + '" data-edit-kind="' + escapeHtml(kind) + '" data-edit-key="' + escapeHtml(key) + '"' + appData + '></button>';
 }
 
 function handleInlineEditClick(event) {
-  const button = event.target.closest(".inline-edit-button");
+  const button = event.target.closest(".inline-edit-button, .region-edit-button");
   if (!button) return;
   event.preventDefault();
   event.stopPropagation();
