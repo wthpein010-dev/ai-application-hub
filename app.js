@@ -253,17 +253,17 @@ const defaultApps = [
   },
   {
     id: "wanhuatong",
-    name: "万花筒",
+    name: "万话筒",
     category: "AI 表达转换",
     status: "life",
     brief: "把一段话转换成情绪表达、生活说明、情书暗语、多语言或古诗古文版本。",
     problem: "同一句话在不同关系、场景和语言里需要不同说法，临时组织表达既费时又容易说偏。",
     aiUse: "AI 用于识别表达意图、切换语气风格、生成多语言版本，并把复杂内容整理成可直接使用的文本。",
-    folder: "./projects/万花筒/",
-    entry: "./projects/万花筒/index.html",
+    folder: "./projects/万话筒/",
+    entry: "./projects/万话筒/index.html",
     package: "./downloads/wanhuatong.zip",
     platforms: {
-      web: "./projects/万花筒/index.html",
+      web: "./projects/万话筒/index.html",
       windows: "./downloads/wanhuatong.zip",
       mac: "./downloads/wanhuatong.zip"
     },
@@ -911,6 +911,16 @@ function normalizeApp(app) {
       mac: "./downloads/paws-home-client-webgl.zip"
     };
     normalized.status = "game";
+  }
+  if (normalized.id === "wanhuatong") {
+    normalized.name = "万话筒";
+    normalized.folder = "./projects/万话筒/";
+    normalized.entry = "./projects/万话筒/index.html";
+    normalized.package = "./downloads/wanhuatong.zip";
+    normalized.platforms = {
+      ...normalized.platforms,
+      web: "./projects/万话筒/index.html"
+    };
   }
   const currentPlatforms = normalized.platforms || {};
   normalized.platforms = {
