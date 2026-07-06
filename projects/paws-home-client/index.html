@@ -3,7 +3,7 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-    <meta name="description" content="羊了个羊：碰碰消 Unity WebGL 体验入口，点击后加载压缩资源。" />
+    <meta name="description" content="&#32650;&#20102;&#20010;&#32650;&#65306;&#30896;&#30896;&#28040; Unity WebGL &#20307;&#39564;&#20837;&#21475;&#65292;&#28857;&#20987;&#21518;&#21152;&#36733;&#32593;&#39029;&#36164;&#28304;&#12290;" />
     <title>&#32650;&#20102;&#20010;&#32650;&#65306;&#30896;&#30896;&#28040; | Unity WebGL</title>
     <link rel="shortcut icon" href="./TemplateData/favicon.ico" />
     <style>
@@ -44,7 +44,7 @@
           linear-gradient(rgba(255, 255, 255, 0.08) 1px, transparent 1px),
           linear-gradient(90deg, rgba(255, 255, 255, 0.06) 1px, transparent 1px);
         background-size: 58px 58px;
-        mask-image: linear-gradient(to bottom, rgba(0, 0, 0, 0.8), transparent 82%);
+        mask-image: linear-gradient(to bottom, rgba(0, 0, 0, 0.82), transparent 82%);
       }
 
       .page {
@@ -75,8 +75,8 @@
 
       .layout {
         display: grid;
-        grid-template-columns: minmax(280px, 0.86fr) minmax(320px, 430px);
-        gap: 34px;
+        grid-template-columns: minmax(320px, 1fr) minmax(320px, 390px);
+        gap: clamp(28px, 5vw, 62px);
         align-items: center;
         min-height: calc(100vh - 102px);
       }
@@ -96,7 +96,7 @@
 
       .lead {
         margin: 0;
-        color: rgba(255, 250, 241, 0.88);
+        color: rgba(255, 250, 241, 0.9);
         font-size: 18px;
         line-height: 1.8;
       }
@@ -132,6 +132,7 @@
         display: inline-flex;
         align-items: center;
         justify-content: center;
+        min-width: 104px;
         min-height: 48px;
         padding: 0 20px;
         border: 0;
@@ -158,15 +159,13 @@
 
       .stage {
         position: relative;
-        width: min(100%, 430px);
-        margin: 0 auto;
+        width: min(100%, 390px);
         aspect-ratio: 750 / 1334;
+        justify-self: center;
         overflow: hidden;
         border: 1px solid rgba(255, 255, 255, 0.28);
         border-radius: 8px;
-        background:
-          linear-gradient(180deg, rgba(255, 245, 218, 0.94), rgba(255, 224, 184, 0.92)),
-          var(--paper);
+        background: #17130d;
         box-shadow: 0 24px 90px rgba(60, 28, 16, 0.38);
       }
 
@@ -174,7 +173,7 @@
         display: block;
         width: 100%;
         height: 100%;
-        background: #f6d1bc;
+        background: #17130d;
       }
 
       .placeholder,
@@ -262,6 +261,7 @@
         bottom: 10px;
         display: none;
         min-height: 38px;
+        min-width: 60px;
         padding: 0 12px;
         border: 1px solid rgba(255, 255, 255, 0.28);
         color: #fff;
@@ -305,7 +305,7 @@
         <section class="copy">
           <h1>&#32650;&#20102;&#20010;&#32650;&#65306;&#30896;&#30896;&#28040;</h1>
           <p class="lead">
-            &#39029;&#38754;&#20808;&#24555;&#36895;&#25171;&#24320;&#65292;&#28857;&#20987;&#24320;&#22987;&#21518;&#20877;&#21152;&#36733;&#24050;&#21387;&#32553;&#30340; Unity WebGL &#36164;&#28304;&#12290;&#36825;&#26679;&#20943;&#23569;&#39318;&#23631;&#31561;&#24453;&#65292;&#20063;&#38477;&#20302;&#32593;&#32476;&#24930;&#26102;&#21345;&#20303;&#30340;&#27010;&#29575;&#12290;
+            &#39029;&#38754;&#20808;&#24555;&#36895;&#25171;&#24320;&#65292;&#28857;&#20987;&#24320;&#22987;&#21518;&#20877;&#21152;&#36733; Unity WebGL &#36164;&#28304;&#12290;&#20837;&#21475;&#20351;&#29992;&#21387;&#32553;&#21253;&#24182;&#24320;&#21551;&#22238;&#36864;&#35299;&#21387;&#65292;&#38477;&#20302; GitHub Pages &#32570;&#23569;&#21387;&#32553;&#22836;&#26102;&#30340;&#21345;&#39039;&#27010;&#29575;&#12290;
           </p>
           <div class="meta">
             <span>Unity WebGL</span>
@@ -361,21 +361,31 @@
         }
       }
 
+      function syncCanvasResolution() {
+        const ratio = Math.min(window.devicePixelRatio || 1, 2);
+        const rect = stage.getBoundingClientRect();
+        const width = Math.max(1, Math.round(rect.width * ratio));
+        const height = Math.max(1, Math.round(rect.height * ratio));
+        if (canvas.width !== width) canvas.width = width;
+        if (canvas.height !== height) canvas.height = height;
+      }
+
       function loadGame() {
         if (loadingStarted) return;
         if (window.location.protocol === "file:") {
-          unityShowBanner("Unity WebGL 需要通过 http:// 或 https:// 打开，请使用 GitHub Pages 链接或本地 Web 服务。", "error");
+          unityShowBanner("\u0055\u006e\u0069\u0074\u0079\u0020\u0057\u0065\u0062\u0047\u004c\u0020\u9700\u8981\u901a\u8fc7\u0020\u0068\u0074\u0074\u0070\u003a\u002f\u002f\u0020\u6216\u0020\u0068\u0074\u0074\u0070\u0073\u003a\u002f\u002f\u0020\u6253\u5f00\uff0c\u8bf7\u4f7f\u7528\u0020\u0047\u0069\u0074\u0048\u0075\u0062\u0020\u0050\u0061\u0067\u0065\u0073\u0020\u94fe\u63a5\u6216\u672c\u5730\u0020\u0057\u0065\u0062\u0020\u670d\u52a1\u3002", "error");
           return;
         }
 
         loadingStarted = true;
         startButton.disabled = true;
-        startButton.textContent = "加载中...";
+        startButton.textContent = "\u52a0\u8f7d\u4e2d...";
         stage.classList.add("is-running");
         loadingPanel.style.display = "grid";
+        syncCanvasResolution();
 
         const buildUrl = "Build";
-        const buildVersion = "20260706-optimized";
+        const buildVersion = "20260706-gzip-fallback-aa3";
         const config = {
           dataUrl: buildUrl + "/paws-home-client-webgl.data.unityweb?v=" + buildVersion,
           frameworkUrl: buildUrl + "/paws-home-client-webgl.framework.js.unityweb?v=" + buildVersion,
@@ -385,12 +395,9 @@
           productName: "Paws Home Client",
           productVersion: buildVersion,
           showBanner: unityShowBanner,
-          autoSyncPersistentDataPath: true
+          autoSyncPersistentDataPath: true,
+          devicePixelRatio: Math.min(window.devicePixelRatio || 1, 2)
         };
-
-        if (/iPhone|iPad|iPod|Android/i.test(navigator.userAgent)) {
-          config.devicePixelRatio = Math.min(window.devicePixelRatio || 1, 2);
-        }
 
         const script = document.createElement("script");
         script.src = buildUrl + "/paws-home-client-webgl.loader.js?v=" + buildVersion;
@@ -398,14 +405,14 @@
           createUnityInstance(canvas, config, progress => {
             const percent = Math.round(progress * 100);
             progressFill.style.width = percent + "%";
-            loadingText.textContent = "正在加载资源 " + percent + "%";
+            loadingText.textContent = "\u6b63\u5728\u52a0\u8f7d\u8d44\u6e90 " + percent + "%";
           }).then(instance => {
             unityInstance = instance;
             loadingPanel.style.display = "none";
-            startButton.textContent = "游戏已启动";
+            startButton.textContent = "\u6e38\u620f\u5df2\u542f\u52a8";
           }).catch(message => {
             startButton.disabled = false;
-            startButton.textContent = "重新加载";
+            startButton.textContent = "\u91cd\u65b0\u52a0\u8f7d";
             loadingPanel.style.display = "none";
             loadingStarted = false;
             unityShowBanner(message, "error");
@@ -413,14 +420,16 @@
         };
         script.onerror = () => {
           startButton.disabled = false;
-          startButton.textContent = "重新加载";
+          startButton.textContent = "\u91cd\u65b0\u52a0\u8f7d";
           loadingPanel.style.display = "none";
           loadingStarted = false;
-          unityShowBanner("Unity 加载脚本失败，请刷新后重试。", "error");
+          unityShowBanner("\u0055\u006e\u0069\u0074\u0079\u0020\u52a0\u8f7d\u811a\u672c\u5931\u8d25\uff0c\u8bf7\u5237\u65b0\u540e\u91cd\u8bd5\u3002", "error");
         };
         document.body.appendChild(script);
       }
 
+      syncCanvasResolution();
+      window.addEventListener("resize", syncCanvasResolution);
       startButton.addEventListener("click", loadGame);
       fullscreenButton.addEventListener("click", () => {
         if (unityInstance) unityInstance.SetFullscreen(1);
