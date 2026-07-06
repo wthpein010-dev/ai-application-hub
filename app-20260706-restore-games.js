@@ -140,7 +140,8 @@ const defaultApps = [
     impact: 8,
     risk: 7,
     polish: 8
-  },  {
+  },
+  {
     id: "paws-home-client",
     name: "羊了个羊：碰碰消",
     category: "Unity H5 小游戏",
