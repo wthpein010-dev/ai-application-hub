@@ -1,0 +1,411 @@
+import { createGameState, isDoorOpen, isWon, movePlayer, undoMove } from './engine.mjs';
+import { levels } from './levels.mjs';
+
+const canvas = document.querySelector('#gameCanvas');
+const context = canvas.getContext('2d');
+const levelName = document.querySelector('#levelName');
+const moveCount = document.querySelector('#moveCount');
+const undoCount = document.querySelector('#undoCount');
+const hintBubble = document.querySelector('#hintBubble');
+const clearOverlay = document.querySelector('#clearOverlay');
+const clearEyebrow = document.querySelector('#clearEyebrow');
+const clearTitle = document.querySelector('#clearTitle');
+const clearText = document.querySelector('#clearText');
+const primaryButton = document.querySelector('#primaryButton');
+
+let levelIndex = 0;
+let state = createGameState(levels[levelIndex]);
+let won = false;
+let hintIndex = 0;
+let hintTimer = 0;
+let flyoverStart = 0;
+let camera = {
+  x: state.player.x,
+  y: state.player.y,
+  tile: 48
+};
+
+const stars = Array.from({ length: 90 }, (_, index) => ({
+  x: (index * 97) % 997,
+  y: (index * 193) % 991,
+  r: 0.5 + ((index * 17) % 10) / 13,
+  a: 0.24 + ((index * 23) % 10) / 22
+}));
+
+resizeCanvas();
+resetFlyover();
+updateHud();
+requestAnimationFrame(render);
+
+window.addEventListener('resize', resizeCanvas);
+window.addEventListener('keydown', onKeyDown);
+document.querySelector('#undoButton').addEventListener('click', undo);
+document.querySelector('#resetButton').addEventListener('click', restartLevel);
+document.querySelector('#hintButton').addEventListener('click', showHint);
+primaryButton.addEventListener('click', onPrimary);
+document.querySelectorAll('[data-move]').forEach((button) => {
+  button.addEventListener('click', () => step(button.dataset.move));
+});
+
+let pointerStart = null;
+canvas.addEventListener('pointerdown', (event) => {
+  pointerStart = { x: event.clientX, y: event.clientY };
+});
+canvas.addEventListener('pointerup', (event) => {
+  if (!pointerStart) return;
+  const dx = event.clientX - pointerStart.x;
+  const dy = event.clientY - pointerStart.y;
+  pointerStart = null;
+  if (Math.hypot(dx, dy) < 24) return;
+  step(Math.abs(dx) > Math.abs(dy) ? (dx > 0 ? 'right' : 'left') : (dy > 0 ? 'down' : 'up'));
+});
+
+function resizeCanvas() {
+  const rect = canvas.getBoundingClientRect();
+  const ratio = window.devicePixelRatio || 1;
+  canvas.width = Math.max(1, Math.floor(rect.width * ratio));
+  canvas.height = Math.max(1, Math.floor(rect.height * ratio));
+  context.setTransform(ratio, 0, 0, ratio, 0, 0);
+}
+
+function onKeyDown(event) {
+  const direction = {
+    ArrowUp: 'up',
+    ArrowDown: 'down',
+    ArrowLeft: 'left',
+    ArrowRight: 'right',
+    w: 'up',
+    s: 'down',
+    a: 'left',
+    d: 'right',
+    W: 'up',
+    S: 'down',
+    A: 'left',
+    D: 'right'
+  }[event.key];
+
+  if (direction) {
+    event.preventDefault();
+    step(direction);
+  }
+}
+
+function step(direction) {
+  if (won) return;
+  const next = movePlayer(state, direction);
+  if (next === state) return;
+  state = next;
+  hideHint();
+  updateHud();
+
+  if (isWon(state)) {
+    won = true;
+    window.setTimeout(showClear, 280);
+  }
+}
+
+function undo() {
+  if (won) return;
+  const previous = undoMove(state);
+  if (previous === state) return;
+  state = previous;
+  updateHud();
+}
+
+function restartLevel() {
+  state = createGameState(levels[levelIndex]);
+  won = false;
+  hintIndex = 0;
+  hideHint();
+  clearOverlay.hidden = true;
+  resetFlyover();
+  updateHud();
+}
+
+function showHint() {
+  const hints = levels[levelIndex].hints;
+  hintBubble.textContent = hints[Math.min(hintIndex, hints.length - 1)];
+  hintBubble.hidden = false;
+  hintIndex += 1;
+  hintTimer = performance.now() + 3600;
+}
+
+function hideHint() {
+  hintBubble.hidden = true;
+  hintTimer = 0;
+}
+
+function showClear() {
+  const firstLevel = levelIndex === 0;
+  clearEyebrow.textContent = firstLevel ? '第一关' : '第二关';
+  clearTitle.textContent = firstLevel ? '简单吧' : '你真过了第二关';
+  clearText.textContent = firstLevel ? '下一关也差不多。' : '这次不是差一点，是到了。';
+  primaryButton.textContent = firstLevel ? '第二关' : '再来一次';
+  clearOverlay.hidden = false;
+}
+
+function onPrimary() {
+  if (levelIndex === 0) {
+    levelIndex = 1;
+  }
+  restartLevel();
+}
+
+function updateHud() {
+  levelName.textContent = `${levels[levelIndex].name} · ${levels[levelIndex].subtitle}`;
+  moveCount.textContent = String(state.moves);
+  undoCount.textContent = String(state.history.length);
+}
+
+function resetFlyover() {
+  flyoverStart = levels[levelIndex].flyover ? performance.now() : 0;
+  camera.x = state.player.x;
+  camera.y = state.player.y;
+}
+
+function render(now) {
+  const bounds = canvas.getBoundingClientRect();
+  const width = bounds.width;
+  const height = bounds.height;
+  context.clearRect(0, 0, width, height);
+
+  drawBackdrop(width, height, now);
+  updateCamera(width, height, now);
+  drawLevel(width, height);
+
+  if (hintTimer && now > hintTimer) {
+    hideHint();
+  }
+
+  requestAnimationFrame(render);
+}
+
+function updateCamera(width, height, now) {
+  const level = levels[levelIndex];
+  const normalTile = clamp(Math.min(width / 9.2, height / 12.4), 34, 62);
+
+  if (level.flyover && flyoverStart) {
+    const duration = level.flyover.seconds * 1000;
+    const progress = clamp((now - flyoverStart) / duration, 0, 1);
+    const eased = smooth(progress);
+    const overviewTile = Math.min(width / (level.width + 3), height / (level.height + 3));
+    camera.x = lerp(level.flyover.from.x, level.flyover.to.x, smooth(Math.min(progress / 0.76, 1)));
+    camera.y = lerp(level.flyover.from.y, level.flyover.to.y, smooth(Math.min(progress / 0.76, 1)));
+    camera.tile = lerp(overviewTile, normalTile, Math.max(0, (eased - 0.55) / 0.45));
+    if (progress >= 1) {
+      flyoverStart = 0;
+    }
+    return;
+  }
+
+  camera.x = lerp(camera.x, state.player.x, 0.18);
+  camera.y = lerp(camera.y, state.player.y, 0.18);
+  camera.tile = lerp(camera.tile, normalTile, 0.18);
+}
+
+function drawBackdrop(width, height, now) {
+  const gradient = context.createLinearGradient(0, 0, width, height);
+  gradient.addColorStop(0, '#171513');
+  gradient.addColorStop(0.52, '#20302f');
+  gradient.addColorStop(1, '#0e1011');
+  context.fillStyle = gradient;
+  context.fillRect(0, 0, width, height);
+
+  for (const star of stars) {
+    const x = (star.x / 997) * width;
+    const y = ((star.y / 991) * height + now * 0.006) % height;
+    context.globalAlpha = star.a;
+    context.fillStyle = '#f5f0e8';
+    context.beginPath();
+    context.arc(x, y, star.r, 0, Math.PI * 2);
+    context.fill();
+  }
+  context.globalAlpha = 1;
+}
+
+function drawLevel(width, height) {
+  const level = levels[levelIndex];
+  const tile = camera.tile;
+  const originX = width / 2 - (camera.x + 0.5) * tile;
+  const originY = height / 2 - (camera.y + 0.5) * tile;
+  const wallSet = makeSet(level.walls);
+  const goalSet = makeSet(level.goals);
+  const buttonSet = makeSet(level.buttons);
+  const crateSet = makeSet(state.crates);
+
+  context.save();
+  context.translate(originX, originY);
+
+  for (let y = 0; y < level.height; y += 1) {
+    for (let x = 0; x < level.width; x += 1) {
+      const point = { x, y };
+      const pointKey = key(point);
+      if (wallSet.has(pointKey)) {
+        drawWall(x, y, tile);
+      } else {
+        drawFloor(x, y, tile, (x + y) % 2);
+      }
+      if (buttonSet.has(pointKey)) {
+        drawButton(x, y, tile, crateSet.has(pointKey));
+      }
+      if (goalSet.has(pointKey)) {
+        drawGoal(x, y, tile, crateSet.has(pointKey));
+      }
+    }
+  }
+
+  for (const door of level.doors) {
+    drawDoor(door.x, door.y, tile, isDoorOpen(state, door));
+  }
+
+  for (const crate of state.crates) {
+    drawCrate(crate.x, crate.y, tile);
+  }
+
+  drawPlayer(state.player.x, state.player.y, tile);
+  context.restore();
+}
+
+function drawFloor(x, y, tile, variant) {
+  context.fillStyle = variant ? 'rgba(215, 206, 180, 0.09)' : 'rgba(215, 206, 180, 0.12)';
+  roundedRect(x * tile + 1, y * tile + 1, tile - 2, tile - 2, Math.max(3, tile * 0.08));
+  context.fill();
+  context.strokeStyle = 'rgba(245, 240, 232, 0.06)';
+  context.lineWidth = 1;
+  context.stroke();
+}
+
+function drawWall(x, y, tile) {
+  const px = x * tile;
+  const py = y * tile;
+  const gradient = context.createLinearGradient(px, py, px + tile, py + tile);
+  gradient.addColorStop(0, '#443a31');
+  gradient.addColorStop(1, '#2a2d28');
+  context.fillStyle = gradient;
+  roundedRect(px + 1, py + 1, tile - 2, tile - 2, Math.max(3, tile * 0.08));
+  context.fill();
+  context.strokeStyle = 'rgba(0, 0, 0, 0.26)';
+  context.stroke();
+}
+
+function drawButton(x, y, tile, active) {
+  const cx = x * tile + tile / 2;
+  const cy = y * tile + tile / 2;
+  context.fillStyle = active ? 'rgba(84, 208, 187, 0.88)' : 'rgba(84, 208, 187, 0.28)';
+  context.strokeStyle = active ? '#dcfff6' : 'rgba(220, 255, 246, 0.38)';
+  context.lineWidth = Math.max(2, tile * 0.05);
+  context.beginPath();
+  context.arc(cx, cy, tile * 0.22, 0, Math.PI * 2);
+  context.fill();
+  context.stroke();
+}
+
+function drawGoal(x, y, tile, covered) {
+  const cx = x * tile + tile / 2;
+  const cy = y * tile + tile / 2;
+  context.save();
+  context.translate(cx, cy);
+  context.rotate(Math.PI / 4);
+  context.fillStyle = covered ? 'rgba(241, 185, 77, 0.9)' : 'rgba(241, 185, 77, 0.28)';
+  context.strokeStyle = covered ? '#ffe7a6' : 'rgba(255, 231, 166, 0.46)';
+  context.lineWidth = Math.max(2, tile * 0.045);
+  roundedRect(-tile * 0.18, -tile * 0.18, tile * 0.36, tile * 0.36, Math.max(2, tile * 0.04));
+  context.fill();
+  context.stroke();
+  context.restore();
+}
+
+function drawDoor(x, y, tile, open) {
+  const px = x * tile + tile * 0.08;
+  const py = y * tile + tile * 0.08;
+  context.fillStyle = open ? 'rgba(84, 208, 187, 0.16)' : 'rgba(231, 111, 81, 0.78)';
+  context.strokeStyle = open ? 'rgba(84, 208, 187, 0.46)' : 'rgba(255, 214, 180, 0.58)';
+  context.lineWidth = Math.max(2, tile * 0.04);
+  roundedRect(px, py, tile * 0.84, tile * 0.84, Math.max(3, tile * 0.08));
+  context.fill();
+  context.stroke();
+
+  if (!open) {
+    context.strokeStyle = 'rgba(48, 20, 14, 0.52)';
+    for (let i = 0; i < 3; i += 1) {
+      const lx = x * tile + tile * (0.28 + i * 0.22);
+      context.beginPath();
+      context.moveTo(lx, y * tile + tile * 0.18);
+      context.lineTo(lx, y * tile + tile * 0.82);
+      context.stroke();
+    }
+  }
+}
+
+function drawCrate(x, y, tile) {
+  const px = x * tile + tile * 0.1;
+  const py = y * tile + tile * 0.1;
+  const gradient = context.createLinearGradient(px, py, px + tile, py + tile);
+  gradient.addColorStop(0, '#d99b3f');
+  gradient.addColorStop(1, '#8c5930');
+  context.fillStyle = gradient;
+  context.strokeStyle = 'rgba(255, 238, 197, 0.64)';
+  context.lineWidth = Math.max(2, tile * 0.04);
+  roundedRect(px, py, tile * 0.8, tile * 0.8, Math.max(4, tile * 0.1));
+  context.fill();
+  context.stroke();
+
+  context.strokeStyle = 'rgba(55, 30, 15, 0.36)';
+  context.beginPath();
+  context.moveTo(px + tile * 0.18, py + tile * 0.18);
+  context.lineTo(px + tile * 0.62, py + tile * 0.62);
+  context.moveTo(px + tile * 0.62, py + tile * 0.18);
+  context.lineTo(px + tile * 0.18, py + tile * 0.62);
+  context.stroke();
+}
+
+function drawPlayer(x, y, tile) {
+  const cx = x * tile + tile / 2;
+  const cy = y * tile + tile / 2;
+  context.fillStyle = '#f5f0e8';
+  context.strokeStyle = '#54d0bb';
+  context.lineWidth = Math.max(2, tile * 0.05);
+  context.beginPath();
+  context.arc(cx, cy, tile * 0.28, 0, Math.PI * 2);
+  context.fill();
+  context.stroke();
+
+  context.fillStyle = '#1a2424';
+  context.beginPath();
+  context.arc(cx + tile * 0.08, cy - tile * 0.06, tile * 0.045, 0, Math.PI * 2);
+  context.fill();
+}
+
+function makeSet(points) {
+  return new Set(points.map(key));
+}
+
+function key(point) {
+  return `${point.x},${point.y}`;
+}
+
+function roundedRect(x, y, width, height, radius) {
+  context.beginPath();
+  context.moveTo(x + radius, y);
+  context.lineTo(x + width - radius, y);
+  context.quadraticCurveTo(x + width, y, x + width, y + radius);
+  context.lineTo(x + width, y + height - radius);
+  context.quadraticCurveTo(x + width, y + height, x + width - radius, y + height);
+  context.lineTo(x + radius, y + height);
+  context.quadraticCurveTo(x, y + height, x, y + height - radius);
+  context.lineTo(x, y + radius);
+  context.quadraticCurveTo(x, y, x + radius, y);
+  context.closePath();
+}
+
+function clamp(value, min, max) {
+  return Math.max(min, Math.min(max, value));
+}
+
+function lerp(a, b, amount) {
+  return a + (b - a) * amount;
+}
+
+function smooth(value) {
+  return value * value * (3 - 2 * value);
+}

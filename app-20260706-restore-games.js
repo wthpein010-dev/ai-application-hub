@@ -163,6 +163,28 @@ const defaultApps = [
     polish: 8
   },
   {
+    id: "xiang-le-ge-xiang",
+    name: "箱了个箱",
+    category: "2D 推箱子解谜小游戏",
+    status: "game",
+    brief: "只有两关的竖屏推箱子原型：第一关一推即过，第二关开场扫出大地图，再缩回当前区域，让玩家在低理解成本里一路觉得快过了。",
+    problem: "需要一个能直接在线体验的微信/抖音小游戏方向样例，用第二关难度飞升制造传播梗，同时保持基础推箱子规则清晰易懂。",
+    aiUse: "AI 参与玩法定位、第二关大地图结构、推箱子规则引擎、Canvas 渲染、移动端操作和自动化通关测试。",
+    folder: "./projects/xiang-le-ge-xiang/",
+    entry: "./projects/xiang-le-ge-xiang/index.html",
+    package: "",
+    platforms: {
+      web: { href: "./projects/xiang-le-ge-xiang/index.html", label: "体验" },
+      windows: "",
+      mac: ""
+    },
+    tags: ["推箱子", "小游戏", "第二关", "解谜"],
+    speed: 9,
+    impact: 9,
+    risk: 8,
+    polish: 8
+  },
+  {
     id: "planner-daily-quiz",
     name: "每日策划知识考核",
     category: "策划训练答卷",
@@ -530,6 +552,7 @@ function renderAppCard(app, index = 0, extraClass = "") {
 }
 
 function gameDisplayRank(app) {
+  if (app.id === "xiang-le-ge-xiang") return -2;
   if (app.id === "paws-home-client") return -1;
   return defaultApps.findIndex(item => item.id === app.id);
 }

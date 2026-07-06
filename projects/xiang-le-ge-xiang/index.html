@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+    <title>箱了个箱</title>
+    <link rel="stylesheet" href="./styles.css">
+  </head>
+  <body>
+    <main class="game-shell">
+      <section class="topbar" aria-label="游戏状态">
+        <div class="brand">
+          <strong>箱了个箱</strong>
+          <span id="levelName">第一关</span>
+        </div>
+        <div class="stats">
+          <span id="moveCount">0</span>
+          <span id="undoCount">0</span>
+        </div>
+        <div class="tools">
+          <button id="undoButton" type="button" title="撤销" aria-label="撤销">↶</button>
+          <button id="resetButton" type="button" title="重开" aria-label="重开">⟳</button>
+          <button id="hintButton" type="button" title="提示" aria-label="提示">?</button>
+        </div>
+      </section>
+
+      <canvas id="gameCanvas" aria-label="箱了个箱棋盘"></canvas>
+
+      <div id="hintBubble" class="hint-bubble" hidden></div>
+
+      <section class="dpad" aria-label="方向控制">
+        <button type="button" data-move="up" aria-label="上">↑</button>
+        <button type="button" data-move="left" aria-label="左">←</button>
+        <button type="button" data-move="down" aria-label="下">↓</button>
+        <button type="button" data-move="right" aria-label="右">→</button>
+      </section>
+
+      <section id="clearOverlay" class="clear-overlay" hidden>
+        <div class="clear-panel">
+          <p id="clearEyebrow">清关</p>
+          <h1 id="clearTitle">第一关过了</h1>
+          <p id="clearText">第二关来了。</p>
+          <button id="primaryButton" type="button">继续</button>
+        </div>
+      </section>
+    </main>
+
+    <script type="module" src="./src/game.mjs"></script>
+  </body>
+</html>
