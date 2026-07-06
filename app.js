@@ -494,7 +494,9 @@ function renderGrid(filtered) {
 
 function renderGameGrid(filtered) {
   if (!nodes.gameGrid) return;
-  const gameList = filtered.filter(app => app.status === "game");
+  const gameList = filtered
+    .filter(app => app.status === "game")
+    .sort((a, b) => gameDisplayRank(a) - gameDisplayRank(b));
   if (nodes.gameCount) {
     nodes.gameCount.textContent = `${gameList.length} 个小游戏`;
   }
@@ -524,6 +526,11 @@ function renderAppCard(app, index = 0, extraClass = "") {
       </div>
     </article>
   `;
+}
+
+function gameDisplayRank(app) {
+  if (app.id === "paws-home-client") return -1;
+  return defaultApps.findIndex(item => item.id === app.id);
 }
 
 function handleAppCardClick(event) {

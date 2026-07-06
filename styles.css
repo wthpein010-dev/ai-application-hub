@@ -573,6 +573,11 @@ select option:hover {
   background: var(--green);
 }
 
+[data-app-id="paws-home-client"] .status-game {
+  background: #f59e0b;
+  color: #251406;
+}
+
 .status-navigation {
   background: var(--cyan);
 }
