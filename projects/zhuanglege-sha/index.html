@@ -169,6 +169,26 @@
         box-shadow: 0 24px 90px rgba(60, 28, 16, 0.38);
       }
 
+      .stage:fullscreen {
+        width: min(100vw, calc(100vh * 750 / 1624));
+        height: min(100vh, calc(100vw * 1624 / 750));
+        margin: auto;
+        border: 0;
+        border-radius: 0;
+        background: #05070a;
+        box-shadow: none;
+      }
+
+      .stage:-webkit-full-screen {
+        width: min(100vw, calc(100vh * 750 / 1624));
+        height: min(100vh, calc(100vw * 1624 / 750));
+        margin: auto;
+        border: 0;
+        border-radius: 0;
+        background: #05070a;
+        box-shadow: none;
+      }
+
       #unity-canvas {
         display: block;
         width: 100%;
@@ -258,7 +278,7 @@
       .fullscreen {
         position: absolute;
         right: 10px;
-        bottom: 10px;
+        top: 10px;
         display: none;
         min-height: 38px;
         min-width: 60px;
@@ -305,12 +325,12 @@
         <section class="copy">
           <h1>&#35013;&#20102;&#20010;&#21861;</h1>
           <p class="lead">
-            &#39029;&#38754;&#20808;&#24555;&#36895;&#25171;&#24320;&#65292;&#28857;&#20987;&#24320;&#22987;&#21518;&#20877;&#21152;&#36733; Unity WebGL &#36164;&#28304;&#12290;&#29609;&#23478;&#20197;&#23433;&#26816;&#21592;&#35270;&#35282;&#20999;&#25442;&#26222;&#36890;&#12289;X &#20809;&#21644;&#36718;&#24275;&#35270;&#22270;&#65292;&#21028;&#26029;&#34892;&#26446;&#33021;&#21542;&#25918;&#34892;&#12290;
+            页面先快速打开，点击开始后再加载 Unity WebGL 资源。玩家以安检员视角使用 X 光机、人工复核和轮廓增强，判断行李是否符合刀具、火种、压力罐和 100ml 液体规则。
           </p>
           <div class="meta">
             <span>Unity WebGL</span>
-            <span>&#23433;&#26816;&#23457;&#26680;</span>
-            <span>&#31446;&#23631;&#38383;&#20851;</span>
+            <span>X 光判读</span>
+            <span>100ml 液体规则</span>
           </div>
           <div class="actions">
             <button id="startButton" type="button">&#24320;&#22987;&#20307;&#39564;</button>
@@ -385,7 +405,7 @@
         syncCanvasResolution();
 
         const buildUrl = "Build";
-        const buildVersion = "20260707-ui-art";
+        const buildVersion = "20260707-security-layout";
         const config = {
           dataUrl: buildUrl + "/WebGL.data?v=" + buildVersion,
           frameworkUrl: buildUrl + "/WebGL.framework.js?v=" + buildVersion,
@@ -432,8 +452,16 @@
       window.addEventListener("resize", syncCanvasResolution);
       startButton.addEventListener("click", loadGame);
       fullscreenButton.addEventListener("click", () => {
-        if (unityInstance) unityInstance.SetFullscreen(1);
+        if (stage.requestFullscreen) {
+          stage.requestFullscreen();
+        } else if (stage.webkitRequestFullscreen) {
+          stage.webkitRequestFullscreen();
+        } else if (unityInstance) {
+          unityInstance.SetFullscreen(1);
+        }
       });
+      document.addEventListener("fullscreenchange", syncCanvasResolution);
+      document.addEventListener("webkitfullscreenchange", syncCanvasResolution);
     </script>
   </body>
 </html>
