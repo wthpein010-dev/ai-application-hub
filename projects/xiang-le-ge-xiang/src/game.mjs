@@ -1,4 +1,5 @@
 import { createGameState, isDoorOpen, isWon, movePlayer, undoMove } from './engine.mjs';
+import { artAssets } from './assets.mjs';
 import { levels } from './levels.mjs';
 
 const canvas = document.querySelector('#gameCanvas');
@@ -25,7 +26,9 @@ let camera = {
   y: state.player.y,
   tile: 48
 };
+const sprites = new Map();
 
+loadArtAssets();
 resizeCanvas();
 resetFlyover();
 updateHud();
@@ -199,6 +202,12 @@ function updateCamera(width, height, now) {
 }
 
 function drawBackdrop(width, height, now) {
+  if (drawSprite('backdrop', 0, 0, width, height)) {
+    drawSprite('spark', width * 0.08, height * 0.12, 42, 42, Math.sin(now * 0.001) * 0.22, 0.2);
+    drawSprite('spark', width * 0.82, height * 0.2, 30, 30, -0.4, 0.14);
+    return;
+  }
+
   const gradient = context.createLinearGradient(0, 0, width, height);
   gradient.addColorStop(0, '#171513');
   gradient.addColorStop(0.52, '#20302f');
@@ -251,6 +260,10 @@ function drawLevel(width, height) {
 }
 
 function drawFloor(x, y, tile, variant) {
+  if (drawSprite(variant ? 'floor-b' : 'floor-a', x * tile + 1, y * tile + 1, tile - 2, tile - 2)) {
+    return;
+  }
+
   context.fillStyle = variant ? 'rgba(215, 206, 180, 0.09)' : 'rgba(215, 206, 180, 0.12)';
   roundedRect(x * tile + 1, y * tile + 1, tile - 2, tile - 2, Math.max(3, tile * 0.08));
   context.fill();
@@ -260,6 +273,10 @@ function drawFloor(x, y, tile, variant) {
 }
 
 function drawWall(x, y, tile) {
+  if (drawSprite('wall', x * tile + 1, y * tile + 1, tile - 2, tile - 2)) {
+    return;
+  }
+
   const px = x * tile;
   const py = y * tile;
   const gradient = context.createLinearGradient(px, py, px + tile, py + tile);
@@ -273,6 +290,11 @@ function drawWall(x, y, tile) {
 }
 
 function drawButton(x, y, tile, active) {
+  const sprite = active ? 'switch-on' : 'switch-off';
+  if (drawSprite(sprite, x * tile + tile * 0.18, y * tile + tile * 0.18, tile * 0.64, tile * 0.64)) {
+    return;
+  }
+
   const cx = x * tile + tile / 2;
   const cy = y * tile + tile / 2;
   context.fillStyle = active ? 'rgba(84, 208, 187, 0.88)' : 'rgba(84, 208, 187, 0.28)';
@@ -285,6 +307,11 @@ function drawButton(x, y, tile, active) {
 }
 
 function drawGoal(x, y, tile, covered) {
+  const alpha = covered ? 1 : 0.74;
+  if (drawSprite('goal', x * tile + tile * 0.2, y * tile + tile * 0.2, tile * 0.6, tile * 0.6, 0, alpha)) {
+    return;
+  }
+
   const cx = x * tile + tile / 2;
   const cy = y * tile + tile / 2;
   context.save();
@@ -300,6 +327,11 @@ function drawGoal(x, y, tile, covered) {
 }
 
 function drawDoor(x, y, tile, open) {
+  const sprite = open ? 'door-open' : 'door-closed';
+  if (drawSprite(sprite, x * tile + tile * 0.04, y * tile + tile * 0.04, tile * 0.92, tile * 0.92)) {
+    return;
+  }
+
   const px = x * tile + tile * 0.08;
   const py = y * tile + tile * 0.08;
   context.fillStyle = open ? 'rgba(84, 208, 187, 0.16)' : 'rgba(231, 111, 81, 0.78)';
@@ -322,6 +354,11 @@ function drawDoor(x, y, tile, open) {
 }
 
 function drawCrate(x, y, tile) {
+  drawSprite('crate-shadow', x * tile + tile * 0.08, y * tile + tile * 0.22, tile * 0.84, tile * 0.84, 0, 0.72);
+  if (drawSprite('crate', x * tile + tile * 0.08, y * tile + tile * 0.04, tile * 0.84, tile * 0.84)) {
+    return;
+  }
+
   const px = x * tile + tile * 0.1;
   const py = y * tile + tile * 0.1;
   const gradient = context.createLinearGradient(px, py, px + tile, py + tile);
@@ -344,6 +381,10 @@ function drawCrate(x, y, tile) {
 }
 
 function drawPlayer(x, y, tile) {
+  if (drawSprite('player', x * tile + tile * 0.08, y * tile + tile * 0.02, tile * 0.84, tile * 0.84)) {
+    return;
+  }
+
   const cx = x * tile + tile / 2;
   const cy = y * tile + tile / 2;
   context.fillStyle = '#f5f0e8';
@@ -380,6 +421,34 @@ function roundedRect(x, y, width, height, radius) {
   context.lineTo(x, y + radius);
   context.quadraticCurveTo(x, y, x + radius, y);
   context.closePath();
+}
+
+function loadArtAssets() {
+  for (const asset of artAssets) {
+    const image = new Image();
+    image.decoding = 'async';
+    image.onload = () => {
+      sprites.set(asset.id, image);
+    };
+    image.src = asset.src;
+  }
+}
+
+function drawSprite(id, x, y, width, height, rotation = 0, alpha = 1) {
+  const sprite = sprites.get(id);
+  if (!sprite) return false;
+
+  context.save();
+  context.globalAlpha *= alpha;
+  if (rotation) {
+    context.translate(x + width / 2, y + height / 2);
+    context.rotate(rotation);
+    context.drawImage(sprite, -width / 2, -height / 2, width, height);
+  } else {
+    context.drawImage(sprite, x, y, width, height);
+  }
+  context.restore();
+  return true;
 }
 
 function clamp(value, min, max) {

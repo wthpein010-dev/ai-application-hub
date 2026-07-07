@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
+import { existsSync, readFileSync, readdirSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -36,4 +36,32 @@ test('removes decorative thin-line patterns from the preview and game backdrop',
   assert.doesNotMatch(css, /background-size:\s*58px 58px/);
   assert.doesNotMatch(game, /const stars/);
   assert.doesNotMatch(game, /for \(const star of stars\)/);
+});
+
+test('targets a 750 by 1624 portrait game resolution', () => {
+  assert.match(html, /data-resolution="750x1624"/);
+  assert.match(html, /<canvas id="gameCanvas"[^>]*width="750"[^>]*height="1624"/);
+  assert.match(css, /aspect-ratio:\s*750\s*\/\s*1624/);
+  assert.match(css, /grid-template-rows:\s*auto minmax\(0,\s*1fr\)/);
+  assert.match(css, /#gameCanvas\s*{[^}]*min-height:\s*0/s);
+});
+
+test('uses UGUI-style screen classes for the playable package', () => {
+  assert.match(html, /class="game-shell ugui-screen"/);
+  assert.match(html, /class="game-topbar ugui-panel"/);
+  assert.match(html, /class="clear-panel ugui-panel"/);
+  assert.match(css, /\.ugui-screen/);
+  assert.match(css, /\.ugui-panel/);
+  assert.match(css, /\.ugui-button/);
+});
+
+test('ships a rich local art asset set used by the canvas renderer', () => {
+  const assetDir = join(root, 'assets', 'art');
+  assert.equal(existsSync(assetDir), true);
+  const svgAssets = readdirSync(assetDir).filter((name) => name.endsWith('.svg'));
+  assert.ok(svgAssets.length >= 12, `expected at least 12 art assets, found ${svgAssets.length}`);
+  assert.equal(existsSync(join(root, 'src', 'assets.mjs')), true);
+  assert.match(game, /import \{ artAssets \} from '\.\/assets\.mjs'/);
+  assert.match(game, /loadArtAssets\(\)/);
+  assert.match(game, /drawSprite\(/);
 });

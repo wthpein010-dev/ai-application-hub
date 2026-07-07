@@ -31,9 +31,9 @@
           </div>
         </section>
 
-        <section id="stage" class="stage" aria-label="箱了个箱游戏预览窗口">
-          <main class="game-shell">
-            <section class="game-topbar" aria-label="游戏状态">
+        <section id="stage" class="stage" data-resolution="750x1624" aria-label="箱了个箱游戏预览窗口">
+          <main class="game-shell ugui-screen">
+            <section class="game-topbar ugui-panel" aria-label="游戏状态">
               <div class="brand">
                 <strong>箱了个箱</strong>
                 <span id="levelName">第一关</span>
@@ -43,22 +43,22 @@
                 <span id="undoCount">0</span>
               </div>
               <div class="tools">
-                <button id="undoButton" type="button" title="撤销" aria-label="撤销">↶</button>
-                <button id="resetButton" type="button" title="重开" aria-label="重开">⟳</button>
-                <button id="hintButton" type="button" title="提示" aria-label="提示">?</button>
+                <button id="undoButton" class="ugui-button" type="button" title="撤销" aria-label="撤销">↶</button>
+                <button id="resetButton" class="ugui-button" type="button" title="重开" aria-label="重开">⟳</button>
+                <button id="hintButton" class="ugui-button" type="button" title="提示" aria-label="提示">?</button>
               </div>
             </section>
 
-            <canvas id="gameCanvas" aria-label="箱了个箱棋盘" tabindex="-1"></canvas>
+            <canvas id="gameCanvas" width="750" height="1624" aria-label="箱了个箱棋盘" tabindex="-1"></canvas>
 
             <div id="hintBubble" class="hint-bubble" hidden></div>
 
             <section id="clearOverlay" class="clear-overlay" hidden>
-              <div class="clear-panel">
+              <div class="clear-panel ugui-panel">
                 <p id="clearEyebrow">清关</p>
                 <h1 id="clearTitle">第一关过了</h1>
                 <p id="clearText">第二关来了。</p>
-                <button id="primaryButton" type="button">继续</button>
+                <button id="primaryButton" class="ugui-button" type="button">继续</button>
               </div>
             </section>
           </main>
