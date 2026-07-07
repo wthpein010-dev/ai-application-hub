@@ -23,8 +23,8 @@ test('uses the shared game preview shell structure', () => {
 });
 
 test('cache busts mutable package files when replacing the online build', () => {
-  assert.match(html, /href="\.\/styles\.css\?v=reward-feedback"/);
-  assert.match(html, /src="\.\/src\/game\.mjs\?v=reward-feedback"/);
+  assert.match(html, /href="\.\/styles\.css\?v=runtime-resolution"/);
+  assert.match(html, /src="\.\/src\/game\.mjs\?v=runtime-resolution"/);
 });
 
 test('uses swipe gestures instead of virtual direction controls', () => {
@@ -49,6 +49,15 @@ test('targets a 750 by 1624 portrait game resolution', () => {
   assert.match(css, /aspect-ratio:\s*750\s*\/\s*1624/);
   assert.match(css, /grid-template-rows:\s*auto minmax\(0,\s*1fr\)/);
   assert.match(css, /#gameCanvas\s*{[^}]*min-height:\s*0/s);
+});
+
+test('keeps the runtime canvas backing store at the package resolution', () => {
+  assert.match(game, /const BASE_WIDTH = 750/);
+  assert.match(game, /const BASE_HEIGHT = 1624/);
+  assert.match(game, /canvas\.width = BASE_WIDTH/);
+  assert.match(game, /canvas\.height = BASE_HEIGHT/);
+  assert.match(game, /context\.setTransform\(BASE_WIDTH \/ rect\.width,\s*0,\s*0,\s*BASE_HEIGHT \/ rect\.height,\s*0,\s*0\)/);
+  assert.doesNotMatch(game, /window\.devicePixelRatio/);
 });
 
 test('uses UGUI-style screen classes for the playable package', () => {

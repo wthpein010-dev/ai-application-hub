@@ -5,6 +5,8 @@ import { levels } from './levels.mjs';
 const canvas = document.querySelector('#gameCanvas');
 const stage = document.querySelector('#stage');
 const context = canvas.getContext('2d');
+const BASE_WIDTH = 750;
+const BASE_HEIGHT = 1624;
 const levelName = document.querySelector('#levelName');
 const moveCount = document.querySelector('#moveCount');
 const undoCount = document.querySelector('#undoCount');
@@ -62,10 +64,9 @@ stage.addEventListener('pointercancel', () => {
 
 function resizeCanvas() {
   const rect = canvas.getBoundingClientRect();
-  const ratio = window.devicePixelRatio || 1;
-  canvas.width = Math.max(1, Math.floor(rect.width * ratio));
-  canvas.height = Math.max(1, Math.floor(rect.height * ratio));
-  context.setTransform(ratio, 0, 0, ratio, 0, 0);
+  canvas.width = BASE_WIDTH;
+  canvas.height = BASE_HEIGHT;
+  context.setTransform(BASE_WIDTH / rect.width, 0, 0, BASE_HEIGHT / rect.height, 0, 0);
 }
 
 function onKeyDown(event) {
