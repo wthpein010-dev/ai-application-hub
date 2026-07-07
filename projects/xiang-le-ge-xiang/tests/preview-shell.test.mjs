@@ -22,6 +22,11 @@ test('uses the shared game preview shell structure', () => {
   assert.match(css, /\.is-running \.placeholder/);
 });
 
+test('cache busts mutable package files when replacing the online build', () => {
+  assert.match(html, /href="\.\/styles\.css\?v=reward-feedback"/);
+  assert.match(html, /src="\.\/src\/game\.mjs\?v=reward-feedback"/);
+});
+
 test('uses swipe gestures instead of virtual direction controls', () => {
   assert.doesNotMatch(html, /class="dpad"/);
   assert.doesNotMatch(html, /data-move=/);
