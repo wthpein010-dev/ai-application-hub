@@ -23,8 +23,8 @@ test('uses the shared game preview shell structure', () => {
 });
 
 test('cache busts mutable package files when replacing the online build', () => {
-  assert.match(html, /href="\.\/styles\.css\?v=runtime-resolution"/);
-  assert.match(html, /src="\.\/src\/game\.mjs\?v=runtime-resolution"/);
+  assert.match(html, /href="\.\/styles\.css\?v=tap-toolbar-levels"/);
+  assert.match(html, /src="\.\/src\/game\.mjs\?v=tap-toolbar-levels"/);
 });
 
 test('uses swipe gestures instead of virtual direction controls', () => {
@@ -34,6 +34,25 @@ test('uses swipe gestures instead of virtual direction controls', () => {
   assert.doesNotMatch(html, /gesture-hint/);
   assert.match(game, /stage\.addEventListener\('pointerdown'/);
   assert.match(game, /stage\.addEventListener\('pointerup'/);
+});
+
+test('supports mobile tap-to-step interaction on adjacent board cells', () => {
+  assert.match(game, /handleTap\(/);
+  assert.match(game, /screenPointToTile\(/);
+  assert.match(game, /directionFromAdjacentTile\(/);
+  assert.match(game, /Math\.hypot\(dx,\s*dy\) < 24\)\s*{\s*handleTap\(event\)/s);
+  assert.match(game, /step\(tapDirection\)/);
+});
+
+test('moves utility controls into a larger bottom mobile toolbar', () => {
+  assert.doesNotMatch(html, /<div class="tools">/);
+  assert.match(html, /<section class="bottom-tools ugui-panel"/);
+  assert.match(html, /class="tool-button ugui-button"/);
+  assert.match(css, /\.bottom-tools/);
+  assert.match(css, /grid-template-columns:\s*repeat\(4,\s*1fr\)/);
+  assert.match(css, /\.tool-button\s*{[^}]*min-height:\s*56px/s);
+  assert.match(css, /\.hint-bubble\s*{[^}]*bottom:\s*calc\(96px \+ env\(safe-area-inset-bottom\)\)/s);
+  assert.doesNotMatch(css, /\.tools/);
 });
 
 test('removes decorative thin-line patterns from the preview and game backdrop', () => {

@@ -222,7 +222,7 @@ h1 {
   position: absolute;
   inset: 0;
   display: grid;
-  grid-template-rows: auto minmax(0, 1fr);
+  grid-template-rows: auto minmax(0, 1fr) auto;
   min-width: 0;
   min-height: 0;
   visibility: hidden;
@@ -241,7 +241,7 @@ h1 {
 .game-topbar {
   z-index: 2;
   display: grid;
-  grid-template-columns: 1fr auto auto;
+  grid-template-columns: 1fr auto;
   align-items: center;
   gap: 10px;
   padding: calc(10px + env(safe-area-inset-top)) 12px 10px;
@@ -325,29 +325,36 @@ h1 {
   color: #ffe28b;
 }
 
-.tools {
-  display: flex;
-  gap: 6px;
-}
-
-.tools button {
-  display: grid;
-  place-items: center;
-  border-radius: 8px;
-  font-weight: 700;
-}
-
-.tools button {
-  width: 36px;
-  height: 36px;
-  font-size: 18px;
-}
-
 .tool-icon {
-  width: 18px;
-  height: 18px;
+  width: 22px;
+  height: 22px;
   color: #fff7d7;
   pointer-events: none;
+}
+
+.bottom-tools {
+  z-index: 3;
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+  padding: 10px 12px calc(10px + env(safe-area-inset-bottom));
+  border-top: 1px solid rgba(255, 226, 139, 0.18);
+  background:
+    linear-gradient(180deg, rgba(18, 21, 22, 0.72), rgba(12, 13, 14, 0.96)),
+    rgba(0, 0, 0, 0.18);
+  backdrop-filter: blur(14px);
+}
+
+.tool-button {
+  display: grid;
+  min-width: 0;
+  min-height: 56px;
+  place-items: center;
+  border-radius: 8px;
+  border-color: rgba(255, 250, 241, 0.2);
+  background:
+    linear-gradient(180deg, rgba(255, 250, 241, 0.12), rgba(255, 250, 241, 0.04)),
+    rgba(0, 0, 0, 0.24);
 }
 
 #gameCanvas {
@@ -361,7 +368,7 @@ h1 {
   position: absolute;
   left: 16px;
   right: 16px;
-  bottom: calc(18px + env(safe-area-inset-bottom));
+  bottom: calc(96px + env(safe-area-inset-bottom));
   z-index: 3;
   padding: 12px 14px;
   border: 1px solid rgba(241, 185, 77, 0.34);
@@ -402,24 +409,6 @@ h1 {
 
 .is-running .placeholder {
   display: none;
-}
-
-.fullscreen {
-  position: absolute;
-  right: 10px;
-  bottom: 10px;
-  display: none;
-  min-height: 38px;
-  min-width: 60px;
-  padding: 0 12px;
-  border: 1px solid rgba(255, 255, 255, 0.28);
-  border-radius: 8px;
-  color: #fff;
-  background: rgba(0, 0, 0, 0.36);
-}
-
-.is-running .fullscreen {
-  display: inline-flex;
 }
 
 .clear-overlay {

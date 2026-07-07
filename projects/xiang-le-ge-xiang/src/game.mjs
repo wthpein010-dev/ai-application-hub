@@ -55,7 +55,10 @@ stage.addEventListener('pointerup', (event) => {
   const dx = event.clientX - pointerStart.x;
   const dy = event.clientY - pointerStart.y;
   pointerStart = null;
-  if (Math.hypot(dx, dy) < 24) return;
+  if (Math.hypot(dx, dy) < 24) {
+    handleTap(event);
+    return;
+  }
   step(Math.abs(dx) > Math.abs(dy) ? (dx > 0 ? 'right' : 'left') : (dy > 0 ? 'down' : 'up'));
 });
 stage.addEventListener('pointercancel', () => {
@@ -89,6 +92,39 @@ function onKeyDown(event) {
     event.preventDefault();
     step(direction);
   }
+}
+
+function handleTap(event) {
+  const tile = screenPointToTile(event.clientX, event.clientY);
+  if (!tile) return;
+
+  const tapDirection = directionFromAdjacentTile(tile);
+  if (tapDirection) {
+    step(tapDirection);
+  }
+}
+
+function screenPointToTile(clientX, clientY) {
+  const rect = canvas.getBoundingClientRect();
+  if (clientX < rect.left || clientX > rect.right || clientY < rect.top || clientY > rect.bottom) {
+    return null;
+  }
+
+  const origin = getLevelOrigin(rect.width, rect.height);
+  return {
+    x: Math.floor((clientX - rect.left - origin.x) / camera.tile),
+    y: Math.floor((clientY - rect.top - origin.y) / camera.tile)
+  };
+}
+
+function directionFromAdjacentTile(tile) {
+  const dx = tile.x - state.player.x;
+  const dy = tile.y - state.player.y;
+  if (Math.abs(dx) + Math.abs(dy) !== 1) return null;
+  if (dx === 1) return 'right';
+  if (dx === -1) return 'left';
+  if (dy === 1) return 'down';
+  return 'up';
 }
 
 function step(direction) {
@@ -263,15 +299,14 @@ function drawCelebration(width, height, now) {
 function drawLevel(width, height) {
   const level = levels[levelIndex];
   const tile = camera.tile;
-  const originX = width / 2 - (camera.x + 0.5) * tile;
-  const originY = height / 2 - (camera.y + 0.5) * tile;
+  const origin = getLevelOrigin(width, height);
   const wallSet = makeSet(level.walls);
   const goalSet = makeSet(level.goals);
   const buttonSet = makeSet(level.buttons);
   const crateSet = makeSet(state.crates);
 
   context.save();
-  context.translate(originX, originY);
+  context.translate(origin.x, origin.y);
 
   for (let y = 0; y < level.height; y += 1) {
     for (let x = 0; x < level.width; x += 1) {
@@ -301,6 +336,13 @@ function drawLevel(width, height) {
 
   drawPlayer(state.player.x, state.player.y, tile);
   context.restore();
+}
+
+function getLevelOrigin(width, height) {
+  return {
+    x: width / 2 - (camera.x + 0.5) * camera.tile,
+    y: height / 2 - (camera.y + 0.5) * camera.tile
+  };
 }
 
 function drawFloor(x, y, tile, variant) {

@@ -16,20 +16,38 @@ test('level one can be cleared with one push', () => {
 test('level two has a verified full solution path', () => {
   const solution = [
     'right', 'right', 'right',
-    'up', 'right', 'right', 'down', 'right', 'right',
-
-    'down', 'down', 'down', 'right', 'right', 'right', 'right',
-    'up', 'up', 'up', 'up', 'up', 'up', 'up', 'right', 'right', 'right', 'right',
-
-    'right', 'right', 'right', 'right',
-    'down', 'down', 'down', 'down', 'down', 'right', 'right', 'right', 'right',
-
-    'up', 'up', 'right', 'right', 'right', 'down', 'right', 'up',
-    'down', 'down', 'down', 'down', 'down', 'down', 'left', 'left', 'left',
-    'up', 'up', 'right', 'right', 'up', 'right', 'down'
+    'up', 'right', 'right', 'right', 'down', 'right',
+    'right', 'right', 'right', 'up', 'up', 'up', 'up', 'up',
+    'right', 'right',
+    'down', 'right', 'right', 'right', 'up', 'right',
+    'right', 'right', 'right', 'down', 'down',
+    'right', 'right',
+    'down', 'right', 'right', 'right', 'up', 'right',
+    'right', 'right', 'right', 'up', 'up',
+    'right', 'right', 'right',
+    'left', 'left', 'left', 'down', 'down', 'down', 'down', 'down',
+    'right', 'right', 'right',
+    'left', 'left', 'left', 'up', 'up', 'up', 'left', 'left', 'left',
+    'left', 'down', 'left', 'left', 'left', 'left', 'left', 'down', 'down', 'down', 'down', 'down', 'down',
+    'right', 'right',
+    'down', 'right', 'right', 'right', 'up', 'right',
+    'right', 'right', 'right', 'down', 'down',
+    'right', 'right', 'right'
   ];
 
   const state = play(levels[1], solution);
 
   assert.equal(isWon(state), true);
+});
+
+test('level two is a larger multi-gate challenge with three required goals', () => {
+  const level = levels[1];
+
+  assert.ok(level.width >= 36);
+  assert.ok(level.height >= 24);
+  assert.equal(level.goals.length, 3);
+  assert.ok(level.crates.length >= 7);
+  assert.ok(level.buttons.length >= 4);
+  assert.ok(level.doors.length >= 4);
+  assert.ok(level.hints.length >= 4);
 });
