@@ -573,7 +573,7 @@ select option:hover {
   background: var(--green);
 }
 
-[data-app-id="paws-home-client"] .status-game {
+.status-engineering {
   background: #f59e0b;
   color: #251406;
 }
@@ -701,6 +701,10 @@ select option:hover {
 
 .card-actions {
   align-items: stretch;
+}
+
+.card-actions.actions-engineering {
+  grid-template-columns: 1fr;
 }
 
 .card-bottom .card-actions {
@@ -1756,7 +1760,8 @@ body.editing .metric .inline-edit-button {
 }
 
 .app-grid,
-.game-experience-grid {
+.game-experience-grid,
+.engineering-experience-grid {
   grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 16px;
 }
@@ -1799,7 +1804,8 @@ body.editing .metric .inline-edit-button {
 
 @media (max-width: 1240px) {
   .app-grid,
-  .game-experience-grid {
+  .game-experience-grid,
+  .engineering-experience-grid {
     grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 }
@@ -1838,7 +1844,8 @@ body.editing .metric .inline-edit-button {
 
 @media (max-width: 900px) {
   .app-grid,
-  .game-experience-grid {
+  .game-experience-grid,
+  .engineering-experience-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
@@ -2289,17 +2296,32 @@ body.editing .metric .inline-edit-button {
   margin-left: 240px;
 }
 
-.game-experience-grid {
+.engineering-experience-section {
+  margin-top: 34px;
+  margin-left: 240px;
+}
+
+.engineering-description {
+  max-width: 760px;
+  margin: -4px 0 16px;
+  color: var(--muted);
+  line-height: 1.75;
+}
+
+.game-experience-grid,
+.engineering-experience-grid {
   display: grid;
   gap: 14px;
 }
 
-.game-experience-card {
+.game-experience-card,
+.engineering-experience-card {
   min-height: 286px;
 }
 
 @media (max-width: 1120px) {
-  .game-experience-section {
+  .game-experience-section,
+  .engineering-experience-section {
     margin-left: 0;
   }
 }

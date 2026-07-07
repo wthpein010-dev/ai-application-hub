@@ -11,6 +11,7 @@ const statusLabel = {
   plugin: "插件工具",
   assistant: "辅助工具",
   game: "小游戏",
+  engineering: "工程体验",
   life: "生活工具",
   training: "训练工具",
   idea: "创意工具"
@@ -39,6 +40,8 @@ const defaultPageText = {
   "filter.sortLabel": "排序",
   "apps.title": "应用项目集合",
   "games.title": "小游戏体验集合",
+  "engineering.title": "工程在线体验",
+  "engineering.description": "项目组打包内部体验测试入口，只保留在线演示，方便快速检查 WebGL 包和浏览器运行状态。",
   "platforms.title": "跨平台体验",
   "platforms.description": "按网页、Windows、Mac 三种方式整理体验入口。网页和通用包可跨系统打开；桌面工具优先提供对应系统包。",
   "maintain.title": "维护控制台",
@@ -68,6 +71,8 @@ const pageTextTargets = [
   { key: "filter.sortLabel", label: "排序标签", selector: "label[for=\"sortMode\"]", short: true },
   { key: "apps.title", label: "应用区标题", selector: ".app-list .section-heading h2" },
   { key: "games.title", label: "小游戏标题", selector: "#games .section-heading h2" },
+  { key: "engineering.title", label: "工程体验标题", selector: "#engineering .section-heading h2" },
+  { key: "engineering.description", label: "工程体验说明", selector: "#engineering .engineering-description", multiline: true },
   { key: "platforms.title", label: "平台标题", selector: "#platforms h2" },
   { key: "platforms.description", label: "平台描述", selector: "#platforms .section-head > p:last-child", multiline: true },
   { key: "maintain.title", label: "维护标题", selector: "#maintain h2" },
@@ -144,20 +149,20 @@ const defaultApps = [
   {
     id: "paws-home-client",
     name: "羊了个羊：碰碰消",
-    category: "Unity H5 小游戏",
-    status: "game",
+    category: "项目组打包内部体验测试",
+    status: "engineering",
     brief: "用于项目组打包测试，已打出 WebGL 体验包，适合直接在浏览器里打开试玩。",
-    problem: "需要把新的 Unity 小游戏工程接入统一主页，让别人拿到仓库或打开线上页面时可以直接体验，并保留可下载的完整 WebGL 包。",
+    problem: "作为工程在线体验入口，只保留浏览器演示，用于快速检查 WebGL 包、加载状态和运行表现。",
     aiUse: "AI 参与离线 WebGL 打包、私有依赖兼容处理、发布目录整理、主页入口接入和跨平台访问验证。",
     folder: "./projects/paws-home-client/",
     entry: "./projects/paws-home-client/index.html",
-    package: "./downloads/paws-home-client-webgl.zip",
+    package: "",
     platforms: {
       web: "./projects/paws-home-client/index.html",
-      windows: "./downloads/paws-home-client-webgl.zip",
-      mac: "./downloads/paws-home-client-webgl.zip"
+      windows: "",
+      mac: ""
     },
-    tags: ["Unity", "WebGL", "小游戏", "碰一碰"],
+    tags: ["Unity", "WebGL", "内部测试", "工程包"],
     speed: 8,
     impact: 8,
     risk: 7,
@@ -348,6 +353,8 @@ const nodes = {
   resultCount: document.querySelector("#resultCount"),
   gameGrid: document.querySelector("#gameGrid"),
   gameCount: document.querySelector("#gameCount"),
+  engineeringGrid: document.querySelector("#engineeringGrid"),
+  engineeringCount: document.querySelector("#engineeringCount"),
   platformGrid: document.querySelector("#platformGrid"),
   command: document.querySelector("#commandInput"),
   log: document.querySelector("#responseLog"),
@@ -409,6 +416,7 @@ function bindEvents() {
 
   nodes.grid.addEventListener("click", handleAppCardClick);
   nodes.gameGrid?.addEventListener("click", handleAppCardClick);
+  nodes.engineeringGrid?.addEventListener("click", handleAppCardClick);
   document.addEventListener("click", handleInlineEditClick);
 
   nodes.prevApp.addEventListener("click", () => switchApp(-1));
@@ -440,6 +448,7 @@ function render() {
   renderDots(filtered);
   renderGrid(filtered);
   renderGameGrid(filtered);
+  renderEngineeringGrid(filtered);
   renderPlatformShowcase(filtered);
   renderEditForm();
 }
@@ -488,8 +497,9 @@ function getFilteredApps() {
 
 function getNavigationApps(filtered = getFilteredApps()) {
   return [
-    ...filtered.filter(app => app.status !== "game"),
-    ...filtered.filter(app => app.status === "game")
+    ...filtered.filter(app => app.status !== "game" && app.status !== "engineering"),
+    ...filtered.filter(app => app.status === "game").sort((a, b) => gameDisplayRank(a) - gameDisplayRank(b)),
+    ...filtered.filter(app => app.status === "engineering")
   ];
 }
 
@@ -527,7 +537,7 @@ function renderDots(filtered = getFilteredApps()) {
 }
 
 function renderGrid(filtered) {
-  const applicationList = filtered.filter(app => app.status !== "game");
+  const applicationList = filtered.filter(app => app.status !== "game" && app.status !== "engineering");
   nodes.resultCount.textContent = `${applicationList.length} 个应用`;
   if (!applicationList.length) {
     nodes.grid.innerHTML = `<article class="app-card"><h3>没有匹配结果</h3><p>换个关键词或重置筛选条件再试。</p></article>`;
@@ -553,7 +563,21 @@ function renderGameGrid(filtered) {
   nodes.gameGrid.innerHTML = gameList.map((app, index) => renderAppCard(app, index, " game-experience-card")).join("");
 }
 
-function renderAppCard(app, index = 0, extraClass = "") {
+function renderEngineeringGrid(filtered) {
+  if (!nodes.engineeringGrid) return;
+  const engineeringList = filtered.filter(app => app.status === "engineering");
+  if (nodes.engineeringCount) {
+    nodes.engineeringCount.textContent = `${engineeringList.length} 个工程体验`;
+  }
+  if (!engineeringList.length) {
+    nodes.engineeringGrid.innerHTML = `<article class="app-card engineering-experience-card"><h3>没有匹配结果</h3><p>换个关键词或重置筛选条件再试。</p></article>`;
+    return;
+  }
+
+  nodes.engineeringGrid.innerHTML = engineeringList.map((app, index) => renderAppCard(app, index, " engineering-experience-card", "engineering")).join("");
+}
+
+function renderAppCard(app, index = 0, extraClass = "", actionMode = "default") {
   return `
     <article class="app-card${extraClass} ${app.id === state.selectedId ? "selected" : ""}" data-app-id="${escapeHtml(app.id)}" style="--card-order:${index}">
       <div class="card-topline">
@@ -567,7 +591,7 @@ function renderAppCard(app, index = 0, extraClass = "") {
       <p>${renderEditableText("app", "brief", app.brief, app.id)}</p>
       <div class="tag-row">${app.tags.slice(0, 4).map(tag => `<span>${escapeHtml(tag)}</span>`).join("")}</div>
       <div class="card-bottom">
-        ${renderActions(app, true)}
+        ${renderActions(app, true, actionMode)}
       </div>
     </article>
   `;
@@ -576,7 +600,6 @@ function renderAppCard(app, index = 0, extraClass = "") {
 function gameDisplayRank(app) {
   if (app.id === "zhuanglege-sha") return -3;
   if (app.id === "xiang-le-ge-xiang") return -2;
-  if (app.id === "paws-home-client") return -1;
   return defaultApps.findIndex(item => item.id === app.id);
 }
 
@@ -627,12 +650,20 @@ function renderPlatformShowcase(filtered) {
   }).join("");
 }
 
-function renderActions(app, stopPropagation = false) {
+function renderActions(app, stopPropagation = false, mode = "default") {
   const stop = stopPropagation ? ` onclick="event.stopPropagation()"` : "";
   const web = platformValue(app, "web") || app.entry;
+  if (mode === "engineering") {
+    const webLink = web ? `<a class="primary-link" data-action="web" href="${escapeHtml(projectHref(web))}"${stop}>演示</a>` : "";
+    return `
+      <div class="card-actions actions-engineering">
+        ${webLink}
+      </div>
+    `;
+  }
   const windows = platformValue(app, "windows") || app.package;
   const mac = platformValue(app, "mac");
-  const webLink = web ? `<a class="primary-link" data-action="web" href="${escapeHtml(projectHref(web))}"${stop}>${escapeHtml(platformLabel(app, "web", "演示"))}</a>` : "";
+  const webLink = web ? `<a class="primary-link" data-action="web" href="${escapeHtml(projectHref(web))}"${stop}>演示</a>` : "";
   const windowsLabel = "Wins下载";
   const windowsLink = windows ? `<a class="download-link" data-action="download" href="${escapeHtml(projectHref(windows))}" download${stop}>${escapeHtml(windowsLabel)}</a>` : "";
   const macLink = mac ? `<a class="mac-link" data-action="mac" href="${escapeHtml(projectHref(mac))}" download${stop}>${escapeHtml(platformLabel(app, "mac", "Mac下载"))}</a>` : "";
@@ -949,15 +980,18 @@ function normalizeApp(app) {
     normalized.status = "game";
   }
   if (normalized.id === "paws-home-client") {
+    normalized.category = "项目组打包内部体验测试";
     normalized.entry = "./projects/paws-home-client/index.html";
-    normalized.package = "./downloads/paws-home-client-webgl.zip";
+    normalized.package = "";
     normalized.platforms = {
       ...normalized.platforms,
       web: "./projects/paws-home-client/index.html",
-      windows: "./downloads/paws-home-client-webgl.zip",
-      mac: "./downloads/paws-home-client-webgl.zip"
+      windows: "",
+      mac: ""
     };
-    normalized.status = "game";
+    normalized.status = "engineering";
+    normalized.tags = ["Unity", "WebGL", "内部测试", "工程包"];
+    normalized.video = "";
   }
   if (normalized.id === "wanhuatong") {
     normalized.name = "万话筒";
