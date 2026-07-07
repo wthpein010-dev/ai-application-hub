@@ -67,9 +67,18 @@ stage.addEventListener('pointercancel', () => {
 
 function resizeCanvas() {
   const rect = canvas.getBoundingClientRect();
+  if (!rect.width || !rect.height) {
+    return null;
+  }
+
   canvas.width = BASE_WIDTH;
   canvas.height = BASE_HEIGHT;
   context.setTransform(BASE_WIDTH / rect.width, 0, 0, BASE_HEIGHT / rect.height, 0, 0);
+
+  return {
+    width: rect.width,
+    height: rect.height
+  };
 }
 
 function onKeyDown(event) {
@@ -211,7 +220,12 @@ function resetFlyover() {
 }
 
 function render(now) {
-  const bounds = canvas.getBoundingClientRect();
+  const bounds = resizeCanvas();
+  if (!bounds) {
+    requestAnimationFrame(render);
+    return;
+  }
+
   const width = bounds.width;
   const height = bounds.height;
   context.clearRect(0, 0, width, height);
