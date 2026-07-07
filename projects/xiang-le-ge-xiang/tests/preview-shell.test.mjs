@@ -87,9 +87,32 @@ test('renders visible HUD controls with inline svg icons to avoid broken image c
   assert.match(css, /\.tool-icon/);
 });
 
+test('adds richer UGUI feedback layers for touch input and clear rewards', () => {
+  assert.match(html, /class="stage-effects"/);
+  assert.match(html, /id="touchPulse"/);
+  assert.match(html, /class="clear-medal"/);
+  assert.match(html, /class="clear-particles"/);
+  assert.match(html, /class="clear-particle"/);
+  assert.match(html, /assets\/art\/confetti\.svg/);
+  assert.match(css, /\.stage-effects/);
+  assert.match(css, /\.touch-pulse\.is-active/);
+  assert.match(css, /\.clear-medal/);
+  assert.match(css, /\.clear-particle/);
+  assert.match(css, /@keyframes clearFloat/);
+  assert.match(css, /\.hud-stat::after/);
+});
+
 test('draws richer scene decoration assets in the canvas renderer', () => {
   assert.match(game, /drawSceneDressing\(/);
   assert.match(game, /drawSprite\('rail-top'/);
   assert.match(game, /drawSprite\('corner-glow'/);
   assert.match(game, /drawSprite\('mist'/);
+});
+
+test('renders animated celebration resources after a level clear', () => {
+  assert.match(game, /let wonAt = 0/);
+  assert.match(game, /wonAt = performance\.now\(\)/);
+  assert.match(game, /drawCelebration\(/);
+  assert.match(game, /drawSprite\('confetti'/);
+  assert.match(game, /triggerTouchPulse\(/);
 });

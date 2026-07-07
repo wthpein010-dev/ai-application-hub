@@ -166,6 +166,58 @@ h1 {
   touch-action: none;
 }
 
+.stage-effects {
+  position: absolute;
+  inset: 0;
+  z-index: 4;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.stage-glow {
+  position: absolute;
+  width: 180px;
+  height: 180px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(255, 226, 139, 0.26), transparent 68%);
+  opacity: 0;
+  mix-blend-mode: screen;
+}
+
+.is-running .stage-glow {
+  opacity: 0.42;
+  animation: slowFloat 5.8s ease-in-out infinite alternate;
+}
+
+.stage-glow-a {
+  left: -74px;
+  top: 22%;
+}
+
+.stage-glow-b {
+  right: -92px;
+  bottom: 18%;
+  background: radial-gradient(circle, rgba(84, 208, 187, 0.24), transparent 68%);
+  animation-delay: -2.1s;
+}
+
+.touch-pulse {
+  position: absolute;
+  left: 50%;
+  top: 58%;
+  width: 84px;
+  height: 84px;
+  border: 1px solid rgba(255, 226, 139, 0.55);
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(255, 226, 139, 0.28), transparent 68%);
+  opacity: 0;
+  transform: translate(-50%, -50%) scale(0.5);
+}
+
+.touch-pulse.is-active {
+  animation: touchPulse 520ms ease-out;
+}
+
 .game-shell {
   position: absolute;
   inset: 0;
@@ -240,6 +292,8 @@ h1 {
 }
 
 .hud-stat {
+  position: relative;
+  overflow: hidden;
   display: inline-flex;
   align-items: center;
   gap: 5px;
@@ -251,6 +305,17 @@ h1 {
   background:
     linear-gradient(180deg, rgba(255, 255, 255, 0.09), rgba(255, 255, 255, 0.03)),
     rgba(0, 0, 0, 0.18);
+}
+
+.hud-stat::after {
+  content: "";
+  position: absolute;
+  inset: 1px auto 1px -38%;
+  width: 34%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, transparent, rgba(255, 226, 139, 0.24), transparent);
+  animation: hudSweep 3.4s ease-in-out infinite;
+  pointer-events: none;
 }
 
 .hud-icon {
@@ -378,6 +443,62 @@ h1 {
   pointer-events: none;
 }
 
+.clear-medal {
+  position: absolute;
+  top: calc(50% - 142px);
+  width: 78px;
+  height: 78px;
+  color: #ffe28b;
+  filter: drop-shadow(0 14px 26px rgba(241, 185, 77, 0.3));
+  animation: medalPop 760ms cubic-bezier(0.2, 1.2, 0.2, 1) both;
+}
+
+.clear-particles {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.clear-particle {
+  position: absolute;
+  width: 38px;
+  height: 38px;
+  background: url("./assets/art/confetti.svg") center / contain no-repeat;
+  opacity: 0;
+  filter: drop-shadow(0 8px 14px rgba(0, 0, 0, 0.22));
+  animation: clearFloat 1500ms ease-out infinite;
+}
+
+.clear-particle:first-child {
+  left: 18%;
+  top: 34%;
+}
+
+.clear-particle-b {
+  left: 72%;
+  top: 32%;
+  animation-delay: 120ms;
+}
+
+.clear-particle-c {
+  left: 25%;
+  top: 62%;
+  animation-delay: 240ms;
+}
+
+.clear-particle-d {
+  left: 64%;
+  top: 66%;
+  animation-delay: 360ms;
+}
+
+.clear-particle-e {
+  left: 47%;
+  top: 24%;
+  animation-delay: 520ms;
+}
+
 .clear-panel {
   position: relative;
   width: min(360px, 100%);
@@ -430,5 +551,77 @@ h1 {
 
   .stage {
     width: min(100%, 390px);
+  }
+}
+
+@keyframes touchPulse {
+  0% {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(0.5);
+  }
+
+  24% {
+    opacity: 0.85;
+  }
+
+  100% {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(1.55);
+  }
+}
+
+@keyframes hudSweep {
+  0%,
+  44% {
+    transform: translateX(0);
+    opacity: 0;
+  }
+
+  58% {
+    opacity: 1;
+  }
+
+  76%,
+  100% {
+    transform: translateX(420%);
+    opacity: 0;
+  }
+}
+
+@keyframes clearFloat {
+  0% {
+    opacity: 0;
+    transform: translateY(22px) rotate(-18deg) scale(0.7);
+  }
+
+  22% {
+    opacity: 0.95;
+  }
+
+  100% {
+    opacity: 0;
+    transform: translateY(-76px) rotate(28deg) scale(1.12);
+  }
+}
+
+@keyframes medalPop {
+  0% {
+    opacity: 0;
+    transform: translateY(18px) scale(0.62);
+  }
+
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes slowFloat {
+  from {
+    transform: translateY(-10px) scale(0.92);
+  }
+
+  to {
+    transform: translateY(14px) scale(1.06);
   }
 }

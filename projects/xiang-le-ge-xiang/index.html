@@ -12,6 +12,7 @@
     <link rel="preload" as="image" href="./assets/art/icon-hint.svg" type="image/svg+xml">
     <link rel="preload" as="image" href="./assets/art/icon-fullscreen.svg" type="image/svg+xml">
     <link rel="preload" as="image" href="./assets/art/clear-burst.svg" type="image/svg+xml">
+    <link rel="preload" as="image" href="./assets/art/confetti.svg" type="image/svg+xml">
   </head>
   <body>
     <div class="page">
@@ -38,6 +39,11 @@
         </section>
 
         <section id="stage" class="stage" data-resolution="750x1624" aria-label="箱了个箱游戏预览窗口">
+          <div class="stage-effects" aria-hidden="true">
+            <span id="touchPulse" class="touch-pulse"></span>
+            <span class="stage-glow stage-glow-a"></span>
+            <span class="stage-glow stage-glow-b"></span>
+          </div>
           <main class="game-shell ugui-screen">
             <section class="game-topbar ugui-panel" aria-label="游戏状态">
               <div class="brand">
@@ -90,6 +96,17 @@
                 <circle cx="256" cy="256" r="232" fill="currentColor" opacity=".16"/>
                 <path d="M256 24l28 136 108-87-74 116 140-10-132 51 117 76-140-22 46 133-93-105-93 105 46-133-140 22 117-76-132-51 140 10-74-116 108 87z" fill="currentColor" opacity=".55"/>
               </svg>
+              <svg class="clear-medal" viewBox="0 0 96 96" aria-hidden="true">
+                <circle cx="48" cy="48" r="34" fill="currentColor" opacity=".28"/>
+                <path d="M48 18l8 18 20 2-15 13 5 20-18-10-18 10 5-20-15-13 20-2z" fill="currentColor"/>
+              </svg>
+              <div class="clear-particles" aria-hidden="true">
+                <span class="clear-particle"></span>
+                <span class="clear-particle clear-particle-b"></span>
+                <span class="clear-particle clear-particle-c"></span>
+                <span class="clear-particle clear-particle-d"></span>
+                <span class="clear-particle clear-particle-e"></span>
+              </div>
               <div class="clear-panel ugui-panel">
                 <p id="clearEyebrow">清关</p>
                 <h1 id="clearTitle">第一关过了</h1>

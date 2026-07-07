@@ -14,10 +14,12 @@ const clearEyebrow = document.querySelector('#clearEyebrow');
 const clearTitle = document.querySelector('#clearTitle');
 const clearText = document.querySelector('#clearText');
 const primaryButton = document.querySelector('#primaryButton');
+const touchPulse = document.querySelector('#touchPulse');
 
 let levelIndex = 0;
 let state = createGameState(levels[levelIndex]);
 let won = false;
+let wonAt = 0;
 let hintIndex = 0;
 let hintTimer = 0;
 let flyoverStart = 0;
@@ -93,11 +95,13 @@ function step(direction) {
   const next = movePlayer(state, direction);
   if (next === state) return;
   state = next;
+  triggerTouchPulse(direction);
   hideHint();
   updateHud();
 
   if (isWon(state)) {
     won = true;
+    wonAt = performance.now();
     window.setTimeout(showClear, 280);
   }
 }
@@ -113,11 +117,19 @@ function undo() {
 function restartLevel() {
   state = createGameState(levels[levelIndex]);
   won = false;
+  wonAt = 0;
   hintIndex = 0;
   hideHint();
   clearOverlay.hidden = true;
   resetFlyover();
   updateHud();
+}
+
+function triggerTouchPulse(direction) {
+  touchPulse.dataset.direction = direction;
+  touchPulse.classList.remove('is-active');
+  void touchPulse.offsetWidth;
+  touchPulse.classList.add('is-active');
 }
 
 function showHint() {
@@ -171,6 +183,7 @@ function render(now) {
   drawSceneDressing(width, height, now);
   updateCamera(width, height, now);
   drawLevel(width, height);
+  drawCelebration(width, height, now);
 
   if (hintTimer && now > hintTimer) {
     hideHint();
@@ -223,6 +236,27 @@ function drawSceneDressing(width, height, now) {
   drawSprite('corner-glow', -44 + sway * 0.2, 78, 118, 118, now * 0.00012, 0.32);
   drawSprite('corner-glow', width - 74 - sway * 0.2, height * 0.16, 96, 96, -now * 0.0001, 0.24);
   drawSprite('mist', 0, height * 0.56 + sway, width, Math.min(160, height * 0.24), 0, 0.42);
+}
+
+function drawCelebration(width, height, now) {
+  if (!won || !wonAt) return;
+
+  const elapsed = now - wonAt;
+  const fade = clamp(1 - elapsed / 2400, 0, 1);
+  if (!fade) return;
+
+  const drift = (elapsed / 1000) * height * 0.08;
+  const pieces = [
+    [0.18, 0.24, 46, -0.32],
+    [0.78, 0.28, 38, 0.42],
+    [0.34, 0.16, 32, 0.18],
+    [0.64, 0.46, 44, -0.12],
+    [0.48, 0.34, 36, 0.28]
+  ];
+
+  for (const [x, y, size, rotation] of pieces) {
+    drawSprite('confetti', width * x, height * y + drift, size, size, rotation + now * 0.001, fade * 0.74);
+  }
 }
 
 function drawLevel(width, height) {
