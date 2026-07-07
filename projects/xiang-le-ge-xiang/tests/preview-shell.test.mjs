@@ -59,9 +59,37 @@ test('ships a rich local art asset set used by the canvas renderer', () => {
   const assetDir = join(root, 'assets', 'art');
   assert.equal(existsSync(assetDir), true);
   const svgAssets = readdirSync(assetDir).filter((name) => name.endsWith('.svg'));
-  assert.ok(svgAssets.length >= 12, `expected at least 12 art assets, found ${svgAssets.length}`);
+  assert.ok(svgAssets.length >= 22, `expected at least 22 art assets, found ${svgAssets.length}`);
   assert.equal(existsSync(join(root, 'src', 'assets.mjs')), true);
   assert.match(game, /import \{ artAssets \} from '\.\/assets\.mjs'/);
   assert.match(game, /loadArtAssets\(\)/);
   assert.match(game, /drawSprite\(/);
+});
+
+test('uses local UGUI icon resources in HUD controls and clear feedback', () => {
+  assert.match(html, /class="hud-stat ugui-panel"/);
+  assert.match(html, /assets\/art\/icon-moves\.svg/);
+  assert.match(html, /assets\/art\/icon-undo\.svg/);
+  assert.match(html, /assets\/art\/icon-reset\.svg/);
+  assert.match(html, /assets\/art\/icon-hint\.svg/);
+  assert.match(html, /assets\/art\/icon-fullscreen\.svg/);
+  assert.match(html, /class="clear-burst"/);
+  assert.match(css, /\.hud-icon/);
+  assert.match(css, /\.clear-burst/);
+});
+
+test('renders visible HUD controls with inline svg icons to avoid broken image chrome', () => {
+  assert.match(html, /<link rel="preload" as="image" href="\.\/assets\/art\/icon-moves\.svg"/);
+  assert.match(html, /<svg class="hud-icon"/);
+  assert.match(html, /<svg class="tool-icon"/);
+  assert.doesNotMatch(html, /<img class="hud-icon"/);
+  assert.doesNotMatch(html, /<button[^>]*class="[^"]*ugui-button[^"]*"[^>]*><img/s);
+  assert.match(css, /\.tool-icon/);
+});
+
+test('draws richer scene decoration assets in the canvas renderer', () => {
+  assert.match(game, /drawSceneDressing\(/);
+  assert.match(game, /drawSprite\('rail-top'/);
+  assert.match(game, /drawSprite\('corner-glow'/);
+  assert.match(game, /drawSprite\('mist'/);
 });

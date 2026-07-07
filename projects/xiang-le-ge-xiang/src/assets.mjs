@@ -11,5 +11,15 @@ export const artAssets = [
   { id: 'switch-on', src: './assets/art/switch-on.svg' },
   { id: 'door-closed', src: './assets/art/door-closed.svg' },
   { id: 'door-open', src: './assets/art/door-open.svg' },
-  { id: 'spark', src: './assets/art/spark.svg' }
+  { id: 'spark', src: './assets/art/spark.svg' },
+  { id: 'rail-top', src: './assets/art/rail-top.svg' },
+  { id: 'corner-glow', src: './assets/art/corner-glow.svg' },
+  { id: 'mist', src: './assets/art/mist.svg' },
+  { id: 'clear-burst', src: './assets/art/clear-burst.svg' },
+  { id: 'confetti', src: './assets/art/confetti.svg' },
+  { id: 'icon-moves', src: './assets/art/icon-moves.svg' },
+  { id: 'icon-undo', src: './assets/art/icon-undo.svg' },
+  { id: 'icon-reset', src: './assets/art/icon-reset.svg' },
+  { id: 'icon-hint', src: './assets/art/icon-hint.svg' },
+  { id: 'icon-fullscreen', src: './assets/art/icon-fullscreen.svg' }
 ];

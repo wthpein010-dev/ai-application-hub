@@ -168,6 +168,7 @@ function render(now) {
   context.clearRect(0, 0, width, height);
 
   drawBackdrop(width, height, now);
+  drawSceneDressing(width, height, now);
   updateCamera(width, height, now);
   drawLevel(width, height);
 
@@ -214,6 +215,14 @@ function drawBackdrop(width, height, now) {
   gradient.addColorStop(1, '#0e1011');
   context.fillStyle = gradient;
   context.fillRect(0, 0, width, height);
+}
+
+function drawSceneDressing(width, height, now) {
+  const sway = Math.sin(now * 0.0008) * 10;
+  drawSprite('rail-top', 0, 6, width, Math.min(56, height * 0.08), 0, 0.72);
+  drawSprite('corner-glow', -44 + sway * 0.2, 78, 118, 118, now * 0.00012, 0.32);
+  drawSprite('corner-glow', width - 74 - sway * 0.2, height * 0.16, 96, 96, -now * 0.0001, 0.24);
+  drawSprite('mist', 0, height * 0.56 + sway, width, Math.min(160, height * 0.24), 0, 0.42);
 }
 
 function drawLevel(width, height) {

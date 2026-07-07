@@ -6,6 +6,12 @@
     <meta name="description" content="箱了个箱 2D 推箱子解谜小游戏网页体验入口，点击后进入竖屏预览窗口。" />
     <title>箱了个箱 | 2D 推箱子解谜</title>
     <link rel="stylesheet" href="./styles.css">
+    <link rel="preload" as="image" href="./assets/art/icon-moves.svg" type="image/svg+xml">
+    <link rel="preload" as="image" href="./assets/art/icon-undo.svg" type="image/svg+xml">
+    <link rel="preload" as="image" href="./assets/art/icon-reset.svg" type="image/svg+xml">
+    <link rel="preload" as="image" href="./assets/art/icon-hint.svg" type="image/svg+xml">
+    <link rel="preload" as="image" href="./assets/art/icon-fullscreen.svg" type="image/svg+xml">
+    <link rel="preload" as="image" href="./assets/art/clear-burst.svg" type="image/svg+xml">
   </head>
   <body>
     <div class="page">
@@ -39,13 +45,39 @@
                 <span id="levelName">第一关</span>
               </div>
               <div class="stats">
-                <span id="moveCount">0</span>
-                <span id="undoCount">0</span>
+                <span class="hud-stat ugui-panel">
+                  <svg class="hud-icon" viewBox="0 0 64 64" aria-hidden="true">
+                    <path d="M32 8l14 14h-9v20H27V22h-9z" fill="currentColor"/>
+                    <path d="M18 44h28" stroke="currentColor" stroke-width="7" stroke-linecap="round" opacity=".55"/>
+                  </svg>
+                  <span id="moveCount">0</span>
+                </span>
+                <span class="hud-stat ugui-panel">
+                  <svg class="hud-icon" viewBox="0 0 64 64" aria-hidden="true">
+                    <path d="M28 17L13 32l15 15v-9h13c7 0 11 4 11 10 3-16-3-27-18-27h-6z" fill="currentColor"/>
+                    <path d="M14 32h26" stroke="currentColor" stroke-width="6" stroke-linecap="round" opacity=".5"/>
+                  </svg>
+                  <span id="undoCount">0</span>
+                </span>
               </div>
               <div class="tools">
-                <button id="undoButton" class="ugui-button" type="button" title="撤销" aria-label="撤销">↶</button>
-                <button id="resetButton" class="ugui-button" type="button" title="重开" aria-label="重开">⟳</button>
-                <button id="hintButton" class="ugui-button" type="button" title="提示" aria-label="提示">?</button>
+                <button id="undoButton" class="ugui-button" type="button" title="撤销" aria-label="撤销">
+                  <svg class="tool-icon" viewBox="0 0 64 64" aria-hidden="true">
+                    <path d="M28 17L13 32l15 15v-9h13c7 0 11 4 11 10 3-16-3-27-18-27h-6z" fill="currentColor"/>
+                  </svg>
+                </button>
+                <button id="resetButton" class="ugui-button" type="button" title="重开" aria-label="重开">
+                  <svg class="tool-icon" viewBox="0 0 64 64" aria-hidden="true">
+                    <path d="M32 12a20 20 0 1 0 19 26" fill="none" stroke="currentColor" stroke-width="7" stroke-linecap="round"/>
+                    <path d="M49 14v16H33z" fill="currentColor"/>
+                  </svg>
+                </button>
+                <button id="hintButton" class="ugui-button" type="button" title="提示" aria-label="提示">
+                  <svg class="tool-icon" viewBox="0 0 64 64" aria-hidden="true">
+                    <path d="M24 48h16" stroke="currentColor" stroke-width="6" stroke-linecap="round"/>
+                    <path d="M25 40h14c1-8 9-11 9-21 0-9-7-15-16-15S16 10 16 19c0 10 8 13 9 21z" fill="currentColor"/>
+                  </svg>
+                </button>
               </div>
             </section>
 
@@ -54,6 +86,10 @@
             <div id="hintBubble" class="hint-bubble" hidden></div>
 
             <section id="clearOverlay" class="clear-overlay" hidden>
+              <svg class="clear-burst" viewBox="0 0 512 512" aria-hidden="true">
+                <circle cx="256" cy="256" r="232" fill="currentColor" opacity=".16"/>
+                <path d="M256 24l28 136 108-87-74 116 140-10-132 51 117 76-140-22 46 133-93-105-93 105 46-133-140 22 117-76-132-51 140 10-74-116 108 87z" fill="currentColor" opacity=".55"/>
+              </svg>
               <div class="clear-panel ugui-panel">
                 <p id="clearEyebrow">清关</p>
                 <h1 id="clearTitle">第一关过了</h1>
@@ -69,7 +105,11 @@
               <p>点击左侧按钮后进入游戏。第一关很简单，第二关会先展示完整大地图，再缩回你当前位置。</p>
             </div>
           </div>
-          <button id="fullscreenButton" class="fullscreen" type="button">全屏</button>
+          <button id="fullscreenButton" class="fullscreen ugui-button" type="button" aria-label="全屏">
+            <svg class="tool-icon" viewBox="0 0 64 64" aria-hidden="true">
+              <path d="M10 26V10h16M38 10h16v16M54 38v16H38M26 54H10V38" fill="none" stroke="currentColor" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </button>
         </section>
       </main>
     </div>

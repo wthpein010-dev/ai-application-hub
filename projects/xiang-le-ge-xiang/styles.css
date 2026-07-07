@@ -236,20 +236,28 @@ h1 {
   display: flex;
   align-items: center;
   gap: 8px;
-  min-width: 68px;
   justify-content: flex-end;
 }
 
-.stats span {
-  display: inline-grid;
-  min-width: 28px;
+.hud-stat {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  min-width: 46px;
   height: 28px;
-  place-items: center;
+  padding: 0 7px;
   border: 1px solid var(--line);
   border-radius: 8px;
   background:
     linear-gradient(180deg, rgba(255, 255, 255, 0.09), rgba(255, 255, 255, 0.03)),
     rgba(0, 0, 0, 0.18);
+}
+
+.hud-icon {
+  width: 15px;
+  height: 15px;
+  flex: 0 0 auto;
+  color: #ffe28b;
 }
 
 .tools {
@@ -268,6 +276,13 @@ h1 {
   width: 36px;
   height: 36px;
   font-size: 18px;
+}
+
+.tool-icon {
+  width: 18px;
+  height: 18px;
+  color: #fff7d7;
+  pointer-events: none;
 }
 
 #gameCanvas {
@@ -353,7 +368,18 @@ h1 {
   backdrop-filter: blur(12px);
 }
 
+.clear-burst {
+  position: absolute;
+  width: min(430px, 94%);
+  height: auto;
+  color: #ffe28b;
+  opacity: 0.72;
+  transform: translateY(-34px);
+  pointer-events: none;
+}
+
 .clear-panel {
+  position: relative;
   width: min(360px, 100%);
   padding: 22px;
   border: 1px solid rgba(245, 240, 232, 0.18);
