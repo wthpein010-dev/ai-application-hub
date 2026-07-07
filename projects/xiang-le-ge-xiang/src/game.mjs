@@ -73,11 +73,11 @@ function resizeCanvas() {
 
   canvas.width = BASE_WIDTH;
   canvas.height = BASE_HEIGHT;
-  context.setTransform(BASE_WIDTH / rect.width, 0, 0, BASE_HEIGHT / rect.height, 0, 0);
+  context.setTransform(1, 0, 0, 1, 0, 0);
 
   return {
-    width: rect.width,
-    height: rect.height
+    width: BASE_WIDTH,
+    height: BASE_HEIGHT
   };
 }
 
@@ -119,10 +119,12 @@ function screenPointToTile(clientX, clientY) {
     return null;
   }
 
-  const origin = getLevelOrigin(rect.width, rect.height);
+  const scaleX = BASE_WIDTH / rect.width;
+  const scaleY = BASE_HEIGHT / rect.height;
+  const origin = getLevelOrigin(BASE_WIDTH, BASE_HEIGHT);
   return {
-    x: Math.floor((clientX - rect.left - origin.x) / camera.tile),
-    y: Math.floor((clientY - rect.top - origin.y) / camera.tile)
+    x: Math.floor(((clientX - rect.left) * scaleX - origin.x) / camera.tile),
+    y: Math.floor(((clientY - rect.top) * scaleY - origin.y) / camera.tile)
   };
 }
 

@@ -23,8 +23,8 @@ test('uses the shared game preview shell structure', () => {
 });
 
 test('cache busts mutable package files when replacing the online build', () => {
-  assert.match(html, /href="\.\/styles\.css\?v=canvas-resync"/);
-  assert.match(html, /src="\.\/src\/game\.mjs\?v=canvas-resync"/);
+  assert.match(html, /href="\.\/styles\.css\?v=canvas-resync-v2"/);
+  assert.match(html, /src="\.\/src\/game\.mjs\?v=canvas-resync-v2"/);
 });
 
 test('uses swipe gestures instead of virtual direction controls', () => {
@@ -75,14 +75,16 @@ test('keeps the runtime canvas backing store at the package resolution', () => {
   assert.match(game, /const BASE_HEIGHT = 1624/);
   assert.match(game, /canvas\.width = BASE_WIDTH/);
   assert.match(game, /canvas\.height = BASE_HEIGHT/);
-  assert.match(game, /context\.setTransform\(BASE_WIDTH \/ rect\.width,\s*0,\s*0,\s*BASE_HEIGHT \/ rect\.height,\s*0,\s*0\)/);
+  assert.match(game, /context\.setTransform\(1,\s*0,\s*0,\s*1,\s*0,\s*0\)/);
   assert.doesNotMatch(game, /window\.devicePixelRatio/);
 });
 
 test('resyncs the canvas transform from the live layout before drawing', () => {
   assert.match(game, /const bounds = resizeCanvas\(\);/);
   assert.match(game, /if \(!bounds\)\s*{\s*requestAnimationFrame\(render\);\s*return;\s*}/s);
-  assert.match(game, /return \{\s*width: rect\.width,\s*height: rect\.height\s*\}/s);
+  assert.match(game, /return \{\s*width: BASE_WIDTH,\s*height: BASE_HEIGHT\s*\}/s);
+  assert.match(game, /const scaleX = BASE_WIDTH \/ rect\.width/);
+  assert.match(game, /const scaleY = BASE_HEIGHT \/ rect\.height/);
 });
 
 test('uses UGUI-style screen classes for the playable package', () => {
