@@ -2,6 +2,7 @@ import { createGameState, isDoorOpen, isWon, movePlayer, undoMove } from './engi
 import { levels } from './levels.mjs';
 
 const canvas = document.querySelector('#gameCanvas');
+const stage = document.querySelector('#stage');
 const context = canvas.getContext('2d');
 const levelName = document.querySelector('#levelName');
 const moveCount = document.querySelector('#moveCount');
@@ -25,13 +26,6 @@ let camera = {
   tile: 48
 };
 
-const stars = Array.from({ length: 90 }, (_, index) => ({
-  x: (index * 97) % 997,
-  y: (index * 193) % 991,
-  r: 0.5 + ((index * 17) % 10) / 13,
-  a: 0.24 + ((index * 23) % 10) / 22
-}));
-
 resizeCanvas();
 resetFlyover();
 updateHud();
@@ -43,21 +37,22 @@ document.querySelector('#undoButton').addEventListener('click', undo);
 document.querySelector('#resetButton').addEventListener('click', restartLevel);
 document.querySelector('#hintButton').addEventListener('click', showHint);
 primaryButton.addEventListener('click', onPrimary);
-document.querySelectorAll('[data-move]').forEach((button) => {
-  button.addEventListener('click', () => step(button.dataset.move));
-});
 
 let pointerStart = null;
-canvas.addEventListener('pointerdown', (event) => {
+stage.addEventListener('pointerdown', (event) => {
+  if (!stage.classList.contains('is-running') || event.target.closest('button, a')) return;
   pointerStart = { x: event.clientX, y: event.clientY };
 });
-canvas.addEventListener('pointerup', (event) => {
+stage.addEventListener('pointerup', (event) => {
   if (!pointerStart) return;
   const dx = event.clientX - pointerStart.x;
   const dy = event.clientY - pointerStart.y;
   pointerStart = null;
   if (Math.hypot(dx, dy) < 24) return;
   step(Math.abs(dx) > Math.abs(dy) ? (dx > 0 ? 'right' : 'left') : (dy > 0 ? 'down' : 'up'));
+});
+stage.addEventListener('pointercancel', () => {
+  pointerStart = null;
 });
 
 function resizeCanvas() {
@@ -210,17 +205,6 @@ function drawBackdrop(width, height, now) {
   gradient.addColorStop(1, '#0e1011');
   context.fillStyle = gradient;
   context.fillRect(0, 0, width, height);
-
-  for (const star of stars) {
-    const x = (star.x / 997) * width;
-    const y = ((star.y / 991) * height + now * 0.006) % height;
-    context.globalAlpha = star.a;
-    context.fillStyle = '#f5f0e8';
-    context.beginPath();
-    context.arc(x, y, star.r, 0, Math.PI * 2);
-    context.fill();
-  }
-  context.globalAlpha = 1;
 }
 
 function drawLevel(width, height) {
