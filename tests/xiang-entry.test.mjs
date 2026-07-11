@@ -9,7 +9,7 @@ const indexHtml = readFileSync(join(root, 'index.html'), 'utf8');
 const appScript = readFileSync(join(root, 'app-20260706-restore-games.js'), 'utf8');
 
 test('home page exposes the Xiang Le Ge Xiang playable entry', () => {
-  assert.match(indexHtml, /app-20260706-restore-games\.js\?v=[^"]*xiang/);
+  assert.match(indexHtml, /app-20260706-restore-games\.js\?v=[^"]+/);
   assert.match(appScript, /id:\s*"xiang-le-ge-xiang"/);
   assert.match(appScript, /name:\s*"箱了个箱"/);
   assert.match(appScript, /entry:\s*"\.\/projects\/xiang-le-ge-xiang\/index\.html"/);

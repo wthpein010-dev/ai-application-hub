@@ -212,6 +212,28 @@ const defaultApps = [
     polish: 8
   },
   {
+    id: "minigame-project-simulator",
+    name: "小游戏立项模拟器",
+    category: "小游戏开发辅助工具",
+    status: "game",
+    brief: "用快速选项和可展开问卷整理小游戏立项需求，生成可直接交给 Codex 的项目需求与 Unity 微信小游戏通用开发记忆。",
+    problem: "新游戏开始前，玩法、范围、视觉风格、微信能力、性能和验收要求容易缺失，导致 Codex 或开发人员反复追问、方向漂移，也不便于形成可回退的书面基线。",
+    aiUse: "工具把用户选择整理为结构化 Markdown，让 Codex 先检查关键缺失和冲突，再按 Unity 2022.3.62f3c1、uGUI、750×1624 与微信小游戏约束开展设计和开发。",
+    folder: "./projects/minigame-project-simulator/",
+    entry: "",
+    package: "./downloads/minigame-project-simulator-windows.zip",
+    platforms: {
+      web: "",
+      windows: { href: "./downloads/minigame-project-simulator-windows.zip", label: "Windows下载" },
+      mac: ""
+    },
+    tags: ["Unity", "微信小游戏", "需求生成", "UGUI"],
+    speed: 9,
+    impact: 9,
+    risk: 8,
+    polish: 9
+  },
+  {
     id: "planner-daily-quiz",
     name: "每日策划知识考核",
     category: "策划训练答卷",
@@ -600,6 +622,7 @@ function renderAppCard(app, index = 0, extraClass = "", actionMode = "default") 
 function gameDisplayRank(app) {
   if (app.id === "zhuanglege-sha") return -3;
   if (app.id === "xiang-le-ge-xiang") return -2;
+  if (app.id === "minigame-project-simulator") return 9999;
   return defaultApps.findIndex(item => item.id === app.id);
 }
 
