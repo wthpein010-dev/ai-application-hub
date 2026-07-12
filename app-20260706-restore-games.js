@@ -311,6 +311,7 @@ const defaultApps = [
     aiUse: "AI 用于总结对话、抽取任务进展、检查风险点并形成复盘报告。",
     folder: "./projects/Codex对话评分工具/",
     entry: "./projects/Codex对话评分工具/index.html",
+    video: "./projects/Codex对话评分工具/视频资源/演示视频.html",
     package: "./downloads/codex-reviewer-windows.zip",
     platforms: {
       web: "./projects/Codex对话评分工具/index.html",
@@ -1030,6 +1031,9 @@ function normalizeApp(app) {
       mac: ""
     };
     normalized.tags = ["微信小游戏", "Unity", "需求文档", "Codex"];
+  }
+  if (normalized.id === "codex-reviewer") {
+    normalized.video = "./projects/Codex对话评分工具/视频资源/演示视频.html";
   }
   if (normalized.id === "wanhuatong") {
     normalized.name = "万话筒";

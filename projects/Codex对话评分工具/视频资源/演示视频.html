@@ -1,0 +1,80 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Codex 对话评分工具｜功能介绍视频</title>
+  <meta name="description" content="用三分钟了解如何读取本地 Codex 对话、检查提示质量并导出脱敏的 Excel 复盘报告。">
+  <style>
+    :root { color-scheme: dark; --bg:#07111f; --panel:#101d31; --line:#2b4262; --text:#f5f8ff; --muted:#aebdd2; --blue:#74a7ff; --green:#56d8aa; }
+    * { box-sizing:border-box; }
+    html { background:var(--bg); }
+    body { margin:0; min-height:100vh; overflow-x:hidden; color:var(--text); background:radial-gradient(circle at 75% 0,#17335c 0,transparent 42%),var(--bg); font-family:"Microsoft YaHei","Segoe UI",sans-serif; }
+    a { color:inherit; text-decoration:none; }
+    .shell { width:min(1120px,calc(100% - 32px)); margin:auto; padding:24px 0 48px; }
+    header { display:flex; align-items:center; justify-content:space-between; gap:16px; margin-bottom:20px; }
+    .brand { display:flex; align-items:center; gap:12px; font-weight:800; }
+    .mark { display:grid; place-items:center; width:42px; height:42px; border-radius:12px; background:linear-gradient(135deg,var(--blue),#846bff); box-shadow:0 10px 30px #2c5fb655; }
+    .back { padding:10px 14px; border:1px solid var(--line); border-radius:10px; color:var(--muted); }
+    main { border:1px solid var(--line); border-radius:20px; background:#0d192ae8; box-shadow:0 24px 80px #0008; overflow:hidden; }
+    .intro { padding:clamp(24px,5vw,54px); border-bottom:1px solid var(--line); }
+    .eyebrow { color:var(--green); font-size:13px; font-weight:900; letter-spacing:.12em; }
+    h1 { max-width:850px; margin:12px 0; font-size:clamp(32px,6vw,62px); line-height:1.08; }
+    .intro p { max-width:760px; margin:0; color:var(--muted); font-size:17px; line-height:1.8; }
+    .player-panel { padding:clamp(18px,4vw,40px); }
+    .poster { position:relative; display:grid; place-items:center; min-height:min(56vw,560px); border:1px solid var(--line); border-radius:16px; overflow:hidden; background:linear-gradient(135deg,#122845,#0a1525 55%,#102c2b); }
+    .poster::before { content:""; position:absolute; inset:0; background:linear-gradient(90deg,transparent 49.8%,#ffffff0d 50%,transparent 50.2%),linear-gradient(#ffffff08 1px,transparent 1px); background-size:100% 100%,100% 36px; }
+    #loadVideo { position:relative; display:grid; place-items:center; width:104px; height:104px; border:0; border-radius:50%; background:var(--blue); color:#07111f; font-size:0; cursor:pointer; box-shadow:0 18px 50px #4e87ee66; }
+    #loadVideo::after { content:""; margin-left:8px; border-left:30px solid currentColor; border-top:19px solid transparent; border-bottom:19px solid transparent; }
+    #loadVideo:focus-visible { outline:4px solid white; outline-offset:5px; }
+    video { position:absolute; inset:0; width:100%; height:100%; background:#000; object-fit:contain; }
+    [hidden] { display:none !important; }
+    .details { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:12px; margin-top:16px; }
+    .detail { padding:16px; border:1px solid var(--line); border-radius:12px; background:#132138; }
+    .detail strong { display:block; margin-bottom:6px; color:#dfe9ff; }
+    .detail span { color:var(--muted); font-size:14px; line-height:1.6; }
+    .note { margin:18px 0 0; color:var(--muted); font-size:13px; text-align:center; }
+    @media (max-width:680px) { header { align-items:flex-start; flex-direction:column; } .details { grid-template-columns:1fr; } .poster { min-height:52vw; } #loadVideo { width:78px; height:78px; } #loadVideo::after { border-left-width:23px; border-top-width:15px; border-bottom-width:15px; } }
+  </style>
+</head>
+<body>
+  <div class="shell">
+    <header>
+      <a class="brand" href="../../../index.html#apps"><span class="mark">C</span><span>Codex 对话评分工具</span></a>
+      <a class="back" href="../../../index.html#apps">返回应用集合</a>
+    </header>
+    <main>
+      <section class="intro">
+        <span class="eyebrow">真实流程演示 · 中文配音</span>
+        <h1>把一段 Codex 对话，变成可复盘的评分报告</h1>
+        <p>观看工具如何读取本地会话、隐藏敏感字段、逐条评价提示质量，并生成包含总览、逐条评分、会话汇总和评分规则的 Excel。</p>
+      </section>
+      <section class="player-panel">
+        <div class="poster">
+          <button id="loadVideo" type="button" aria-label="播放 Codex 对话评分工具介绍视频"></button>
+          <video id="walkthroughVideo" controls playsinline preload="none" hidden>
+            <track kind="subtitles" srclang="zh-CN" label="简体中文" src="./codex-reviewer-intro.vtt" default>
+          </video>
+        </div>
+        <div class="details">
+          <div class="detail"><strong>本地读取</strong><span>定位 Codex 会话文件，不主动上传对话内容。</span></div>
+          <div class="detail"><strong>默认脱敏</strong><span>隐藏明显的 API key、token 和 password 类字段。</span></div>
+          <div class="detail"><strong>Excel 复盘</strong><span>从总览到逐条建议，保留可筛选、可分享的结构。</span></div>
+        </div>
+        <p class="note">视频文件约两至三分钟，点击播放后才会加载。</p>
+      </section>
+    </main>
+  </div>
+  <script>
+    const button = document.querySelector("#loadVideo");
+    const video = document.querySelector("#walkthroughVideo");
+    button.addEventListener("click", () => {
+      video.src = "./codex-reviewer-intro.mp4";
+      video.hidden = false;
+      button.hidden = true;
+      video.load();
+      video.play().catch(() => {});
+    }, { once: true });
+  </script>
+</body>
+</html>
