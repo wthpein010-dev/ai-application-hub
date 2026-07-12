@@ -9,11 +9,14 @@ const source = readFileSync(join(root, "app-20260706-restore-games.js"), "utf8")
 
 test("minigame project simulator card has required metadata", () => {
   assert.match(source, /id:\s*"minigame-project-simulator"/);
-  assert.match(source, /name:\s*"小游戏立项模拟器"/);
-  assert.match(source, /category:\s*"小游戏开发辅助工具"/);
-  assert.match(source, /status:\s*"game"/);
+  assert.match(source, /name:\s*"小游戏立项工具"/);
+  assert.match(source, /category:\s*"游戏立项与需求工具"/);
+  assert.match(source, /status:\s*"assistant"/);
+  assert.match(source, /entry:\s*"\.\/projects\/minigame-project-tool\/index\.html"/);
+  assert.match(source, /video:\s*"\.\/projects\/minigame-project-tool\/video\/index\.html"/);
   assert.match(source, /package:\s*"\.\/downloads\/minigame-project-simulator-windows\.zip"/);
-  assert.match(source, /tags:\s*\["Unity",\s*"微信小游戏",\s*"需求生成",\s*"UGUI"\]/);
+  assert.match(source, /tags:\s*\["微信小游戏",\s*"Unity",\s*"需求文档",\s*"Codex"\]/);
+  assert.doesNotMatch(source, /gameDisplayRank[\s\S]*minigame-project-simulator/);
 });
 
 test("minigame project simulator site artifacts exist", () => {
