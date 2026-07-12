@@ -55,7 +55,8 @@
 
 - `projects/minigame-project-tool/index.html`：演示页结构。
 - `projects/minigame-project-tool/styles.css`：演示页响应式视觉样式。
-- `projects/minigame-project-tool/app.js`：问卷、持久化、完整度检查、Markdown 生成与下载。
+- `projects/minigame-project-tool/core.mjs`：问卷定义、默认值、完整度检查和 Markdown 生成等可独立测试的纯逻辑。
+- `projects/minigame-project-tool/app.js`：页面渲染、持久化、定位、预览与下载交互。
 - `projects/minigame-project-tool/video/index.html`：视频播放页。
 - `projects/minigame-project-tool/video/minigame-project-tool-intro.mp4`：最终视频。
 - `projects/minigame-project-tool/video/minigame-project-tool-intro.vtt`：字幕文件。
