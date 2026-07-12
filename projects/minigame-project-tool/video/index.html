@@ -1,0 +1,85 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>小游戏立项工具｜功能介绍视频</title>
+  <style>
+    :root { color-scheme:dark; --bg:#07101e; --panel:#101c2d; --line:#30445f; --text:#f5f8ff; --muted:#b8c5d9; --blue:#347df0; --cyan:#5fe0d3; }
+    * { box-sizing:border-box; }
+    body { min-height:100vh; margin:0; color:var(--text); font-family:"Microsoft YaHei UI","Microsoft YaHei","Segoe UI",sans-serif; background:radial-gradient(circle at 16% 0%,rgba(52,125,240,.23),transparent 34rem),radial-gradient(circle at 90% 78%,rgba(95,224,211,.13),transparent 30rem),var(--bg); }
+    a { color:inherit; }
+    .topbar { display:flex; align-items:center; justify-content:space-between; gap:18px; min-height:68px; padding:12px clamp(16px,4vw,52px); border-bottom:1px solid rgba(148,171,204,.18); background:rgba(7,16,30,.88); }
+    .brand { display:flex; align-items:center; gap:11px; text-decoration:none; font-weight:900; }
+    .mark { display:grid; width:38px; height:38px; place-items:center; border-radius:11px; background:linear-gradient(145deg,#347df0,#5f76e8); }
+    .topbar nav { display:flex; flex-wrap:wrap; gap:8px; }
+    .topbar nav a,.button { display:inline-flex; min-height:38px; align-items:center; justify-content:center; padding:0 13px; border:1px solid var(--line); border-radius:10px; text-decoration:none; font-weight:800; background:#15243a; }
+    main { width:min(1180px,calc(100% - 28px)); margin:0 auto; padding:44px 0 58px; }
+    .hero { display:flex; align-items:flex-end; justify-content:space-between; gap:20px; margin-bottom:20px; }
+    .eyebrow { color:var(--cyan); font-size:11px; font-weight:900; letter-spacing:.12em; }
+    h1 { margin:7px 0 10px; font-size:clamp(32px,5vw,56px); letter-spacing:-.035em; }
+    p { margin:0; color:var(--muted); line-height:1.75; }
+    .duration { flex:0 0 auto; padding:7px 11px; border:1px solid rgba(95,224,211,.3); border-radius:99px; color:var(--cyan); font-size:12px; font-weight:900; background:rgba(95,224,211,.07); }
+    .viewer { overflow:hidden; border:1px solid rgba(148,171,204,.2); border-radius:18px; background:var(--panel); box-shadow:0 26px 90px rgba(0,0,0,.38); }
+    .video-shell { display:grid; min-height:min(64vh,660px); place-items:center; background:#030812; }
+    video { display:none; width:100%; max-height:74vh; background:#000; }
+    .load-card { width:min(580px,calc(100% - 32px)); padding:32px; border:1px solid var(--line); border-radius:16px; text-align:center; background:linear-gradient(145deg,rgba(52,125,240,.15),rgba(21,36,58,.9)); }
+    .load-card strong { display:block; margin-bottom:10px; font-size:25px; }
+    .load-card p { margin-bottom:18px; }
+    .button { color:#fff; cursor:pointer; font:inherit; }
+    .button.primary { border-color:transparent; background:linear-gradient(135deg,#347df0,#4768df); }
+    .viewer-actions { display:flex; flex-wrap:wrap; gap:9px; padding:14px; border-top:1px solid rgba(148,171,204,.18); }
+    .chapters { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:12px; margin-top:18px; }
+    .chapter { padding:16px; border:1px solid rgba(148,171,204,.18); border-radius:13px; background:rgba(16,28,45,.82); }
+    .chapter span { color:var(--cyan); font-size:11px; font-weight:900; }
+    .chapter strong { display:block; margin:6px 0; }
+    @media (max-width:720px) { .topbar,.hero { align-items:flex-start; flex-direction:column; } .topbar nav { width:100%; } .topbar nav a { flex:1; } main { padding-top:26px; } .chapters { grid-template-columns:1fr; } .video-shell { min-height:52vh; } }
+  </style>
+</head>
+<body>
+  <header class="topbar">
+    <a class="brand" href="../index.html"><span class="mark">立</span><span>小游戏立项工具</span></a>
+    <nav><a href="../index.html">打开网页演示</a><a href="../../../index.html#apps">返回应用集合</a></nav>
+  </header>
+  <main>
+    <section class="hero">
+      <div><span class="eyebrow">NARRATED WALKTHROUGH</span><h1>从想法到可交付的游戏需求</h1><p>中文配音与字幕演示：快速问卷、详细设置、缺失检查、Markdown 预览和 Codex 交接。</p></div>
+      <span class="duration">约 2 分 50 秒</span>
+    </section>
+    <section class="viewer" aria-label="小游戏立项工具介绍视频">
+      <div class="video-shell">
+        <div class="load-card" id="loadCard">
+          <strong>准备播放功能介绍</strong>
+          <p>视频会在点击后加载，避免进入页面时占用带宽。包含中文配音和同步字幕。</p>
+          <button id="loadVideo" class="button primary" type="button">加载并播放</button>
+        </div>
+        <video id="introVideo" controls playsinline preload="none" data-src="./minigame-project-tool-intro.mp4">
+          <track kind="captions" srclang="zh-CN" label="简体中文" src="./minigame-project-tool-intro.vtt" default />
+          你的浏览器不支持 HTML5 视频。
+        </video>
+      </div>
+      <div class="viewer-actions">
+        <a class="button" href="./minigame-project-tool-intro.mp4">直接打开 MP4</a>
+        <a class="button" href="../index.html">边看边体验</a>
+        <a class="button" href="../../../downloads/minigame-project-simulator-windows.zip" download>下载 Windows 版</a>
+      </div>
+    </section>
+    <section class="chapters" aria-label="视频章节">
+      <article class="chapter"><span>00:00</span><strong>为什么先做立项</strong><p>把零散想法变成稳定、可回退的书面基线。</p></article>
+      <article class="chapter"><span>00:24</span><strong>快速问卷与详细设置</strong><p>从五个核心问题逐步补充微信小游戏约束。</p></article>
+      <article class="chapter"><span>01:50</span><strong>检查、下载与 Codex</strong><p>定位缺失项，下载 Markdown 并交给 Codex。</p></article>
+    </section>
+  </main>
+  <script>
+    const button = document.querySelector("#loadVideo");
+    const video = document.querySelector("#introVideo");
+    const card = document.querySelector("#loadCard");
+    button.addEventListener("click", () => {
+      if (!video.src) video.src = video.dataset.src;
+      card.style.display = "none";
+      video.style.display = "block";
+      video.play().catch(() => video.load());
+    });
+  </script>
+</body>
+</html>
