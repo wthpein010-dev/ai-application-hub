@@ -1016,6 +1016,21 @@ function normalizeApp(app) {
     normalized.tags = ["Unity", "WebGL", "内部测试", "工程包"];
     normalized.video = "";
   }
+  if (normalized.id === "minigame-project-simulator") {
+    normalized.name = "小游戏立项工具";
+    normalized.category = "游戏立项与需求工具";
+    normalized.status = "assistant";
+    normalized.folder = "./projects/minigame-project-tool/";
+    normalized.entry = "./projects/minigame-project-tool/index.html";
+    normalized.video = "./projects/minigame-project-tool/video/index.html";
+    normalized.package = "./downloads/minigame-project-simulator-windows.zip";
+    normalized.platforms = {
+      web: { href: "./projects/minigame-project-tool/index.html", label: "演示" },
+      windows: { href: "./downloads/minigame-project-simulator-windows.zip", label: "Windows下载" },
+      mac: ""
+    };
+    normalized.tags = ["微信小游戏", "Unity", "需求文档", "Codex"];
+  }
   if (normalized.id === "wanhuatong") {
     normalized.name = "万话筒";
     normalized.folder = "./projects/万话筒/";
