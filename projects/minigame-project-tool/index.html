@@ -1,0 +1,136 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="theme-color" content="#0a1020" />
+  <title>小游戏立项工具｜网页演示</title>
+  <meta name="description" content="通过结构化问卷整理 Unity 微信小游戏需求，检查关键缺失并生成可直接交给 Codex 的 Markdown。" />
+  <link rel="stylesheet" href="./styles.css" />
+</head>
+<body>
+  <header class="topbar">
+    <a class="brand" href="../../index.html#apps" aria-label="返回 AI 应用总览">
+      <span class="brand-mark" aria-hidden="true">立</span>
+      <span><strong>小游戏立项工具</strong><small>Game Brief Studio · Web</small></span>
+    </a>
+    <nav class="top-actions" aria-label="页面入口">
+      <a href="./video/index.html">功能视频</a>
+      <a href="../../downloads/minigame-project-simulator-windows.zip" download>Windows 版</a>
+      <a class="home-link" href="../../index.html#apps">返回应用集合</a>
+    </nav>
+  </header>
+
+  <main class="workspace">
+    <aside class="sidebar" aria-label="立项进度">
+      <div class="baseline-card">
+        <span class="eyebrow">默认开发基线</span>
+        <strong>Unity 2022.3.62f3c1</strong>
+        <span>UGUI · 750×1624 · 微信小游戏</span>
+      </div>
+
+      <div class="progress-card">
+        <div class="progress-heading">
+          <span>需求完整度</span>
+          <strong id="progressText">0 / 5</strong>
+        </div>
+        <div class="progress-track" aria-hidden="true"><span id="progressBar"></span></div>
+        <p id="progressHint">先完成 5 个核心问题，即可生成第一版需求。</p>
+      </div>
+
+      <nav class="step-nav" aria-label="问卷步骤">
+        <a class="active" href="#quickStart"><span>01</span>快速开始</a>
+        <a href="#advanced"><span>02</span>详细调查问卷</a>
+        <a href="#review"><span>03</span>缺失检查</a>
+        <a href="#output"><span>04</span>预览与下载</a>
+      </nav>
+
+      <div class="privacy-note">
+        <strong>内容只保存在本机</strong>
+        <span id="storageStatus">草稿会自动保存到当前浏览器。</span>
+      </div>
+    </aside>
+
+    <div class="content">
+      <section class="hero-panel">
+        <div>
+          <span class="eyebrow">微信小游戏需求生成器</span>
+          <h1>先把游戏想清楚，再交给 Codex 开发</h1>
+          <p>回答核心问题，补充可展开的高级问卷，自动检查遗漏并生成结构化 Markdown。</p>
+        </div>
+        <div class="hero-actions">
+          <button id="fillExample" class="secondary-button" type="button">填充演示案例</button>
+          <button id="viewMemory" class="secondary-button" type="button">查看通用开发记忆</button>
+        </div>
+      </section>
+
+      <section id="quickStart" class="panel" data-record-step="quick">
+        <div class="section-heading">
+          <div>
+            <span class="step-label">STEP 01</span>
+            <h2>快速开始</h2>
+            <p>先回答 5 个核心问题，几分钟内得到可讨论的第一版需求。</p>
+          </div>
+          <span class="required-note">核心问题</span>
+        </div>
+        <div id="quickFields" class="field-grid"></div>
+      </section>
+
+      <section id="advanced" class="panel" data-record-step="advanced">
+        <div class="section-heading">
+          <div>
+            <span class="step-label">STEP 02</span>
+            <h2>详细调查问卷</h2>
+            <p>按需展开玩法、玩家、视觉、UI、微信能力、资源、性能和验收设置。</p>
+          </div>
+          <button id="toggleAdvanced" class="text-button" type="button">全部展开</button>
+        </div>
+        <div id="advancedSections" class="accordion-list"></div>
+      </section>
+
+      <section id="review" class="panel" data-record-step="review">
+        <div class="section-heading">
+          <div>
+            <span class="step-label">STEP 03</span>
+            <h2>检查关键缺失</h2>
+            <p>点击任何问题即可回到对应字段；建议项不会阻止生成。</p>
+          </div>
+          <button id="checkIssues" class="primary-button" type="button">重新检查</button>
+        </div>
+        <div id="issueSummary" class="issue-summary" role="status"></div>
+        <div id="issueList" class="issue-list"></div>
+      </section>
+
+      <section id="output" class="panel output-panel" data-record-step="output">
+        <div class="section-heading">
+          <div>
+            <span class="step-label">STEP 04</span>
+            <h2>预览与下载</h2>
+            <p>生成结果包含项目需求、待确认事项、Codex 指令和通用开发记忆。</p>
+          </div>
+          <div class="output-actions">
+            <button id="copyMarkdown" class="secondary-button" type="button">复制内容</button>
+            <button id="downloadMarkdown" class="primary-button" type="button">下载 MD 文件</button>
+          </div>
+        </div>
+        <pre id="markdownPreview" tabindex="0" aria-label="Markdown 预览"></pre>
+        <div class="handoff-tip">
+          <span aria-hidden="true">→</span>
+          <p><strong>下一步：</strong>把下载的 Markdown 拖入 Codex 任务，即可作为游戏开发基础信息使用。</p>
+        </div>
+      </section>
+    </div>
+  </main>
+
+  <dialog id="memoryDialog" class="memory-dialog">
+    <div class="dialog-heading">
+      <div><span class="eyebrow">默认随需求生成</span><h2>Unity 微信小游戏通用开发记忆</h2></div>
+      <button id="closeMemory" type="button" aria-label="关闭通用开发记忆">×</button>
+    </div>
+    <pre id="memoryContent"></pre>
+  </dialog>
+
+  <div id="toast" class="toast" role="status" aria-live="polite"></div>
+  <script type="module" src="./app.js"></script>
+</body>
+</html>
