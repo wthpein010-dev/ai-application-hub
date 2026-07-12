@@ -1,6 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
+import { spawnSync } from "node:child_process";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -21,4 +22,41 @@ test("codex reviewer video page lazy-loads media and subtitles", () => {
   assert.match(page, /codex-reviewer-intro\.mp4/);
   assert.match(page, /codex-reviewer-intro\.vtt/);
   assert.match(page, /overflow-x:\s*hidden/);
+});
+
+test("storyboard avoids JavaScript escape sequences in example paths", () => {
+  const storyboard = readFileSync(join(root, "projects", "Codex对话评分工具", "视频资源", "storyboard.html"), "utf8");
+  assert.doesNotMatch(storyboard, /sessions\\2026\\07\\12/);
+  assert.doesNotMatch(storyboard, /C:\\Users\\Demo/);
+});
+
+test("recording script builds Chinese paths without depending on PowerShell source encoding", () => {
+  const script = readFileSync(join(root, "scripts", "record-codex-reviewer-demo.ps1"), "utf8");
+  assert.doesNotMatch(script, /projects\\Codex对话评分工具\\视频资源/);
+  assert.match(script, /\$projectName = -join/);
+  assert.match(script, /\$assetName = -join/);
+});
+
+test("codex reviewer walkthrough is 1080p with audio and under three minutes", () => {
+  const probe = spawnSync(process.env.FFPROBE_PATH || "ffprobe", [
+    "-v", "error",
+    "-show_entries", "format=duration:stream=codec_type,codec_name,width,height",
+    "-of", "json",
+    join(root, "projects", "Codex对话评分工具", "视频资源", "codex-reviewer-intro.mp4")
+  ], { encoding: "utf8" });
+  assert.equal(probe.status, 0, probe.stderr || probe.error?.message);
+  const data = JSON.parse(probe.stdout);
+  const video = data.streams.find(stream => stream.codec_type === "video");
+  const audio = data.streams.find(stream => stream.codec_type === "audio");
+  assert.deepEqual([video.width, video.height, video.codec_name], [1920, 1080, "h264"]);
+  assert.equal(audio.codec_name, "aac");
+  assert.ok(Number(data.format.duration) >= 120 && Number(data.format.duration) <= 180);
+
+  const decode = spawnSync(process.env.FFMPEG_PATH || "ffmpeg", [
+    "-v", "error", "-i",
+    join(root, "projects", "Codex对话评分工具", "视频资源", "codex-reviewer-intro.mp4"),
+    "-f", "null", "-"
+  ], { encoding: "utf8" });
+  assert.equal(decode.status, 0, decode.stderr || decode.error?.message);
+  assert.equal(decode.stderr.trim(), "");
 });
