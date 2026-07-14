@@ -15,7 +15,8 @@ const statusLabel = {
   engineering: "工程体验",
   life: "生活工具",
   training: "训练工具",
-  idea: "创意工具"
+  idea: "创意工具",
+  desktop: "桌面工具"
 };
 
 const defaultPageText = {
@@ -185,6 +186,28 @@ const defaultApps = [
       windows: { href: "./downloads/fill-what-unity-project.zip", label: "下载工程" }
     },
     tags: ["Unity", "UGUI", "成语填字", "微信小游戏"],
+    speed: 8,
+    impact: 8,
+    risk: 7,
+    polish: 8
+  },
+  {
+    id: "web-media-collector",
+    name: "网页素材一键收桌面版",
+    category: "网页素材整理",
+    status: "desktop",
+    brief: "输入网页 URL，在始终置顶的桌面窗口里扫描、筛选、预览并批量下载公开网页素材。",
+    problem: "浏览器扩展弹窗无法真正固定置顶，做设计参考、资料整理和内容采集时，需要一个能停留在屏幕上方的独立工具。",
+    aiUse: "AI 参与产品定位、桌面交互设计、跨平台打包说明、参赛说明和工具文案整理。",
+    folder: "./projects/朋友圈发图神器/01_作品体验入口/网页素材一键收桌面版/",
+    entry: "./projects/朋友圈发图神器/01_作品体验入口/网页素材一键收桌面版/README.md",
+    package: "./downloads/web-media-collector-desktop-source.zip",
+    platforms: {
+      web: { href: "./projects/朋友圈发图神器/01_作品体验入口/网页素材一键收桌面版/README.md", label: "说明" },
+      windows: { href: "./downloads/web-media-collector-desktop-source.zip", label: "源码包" },
+      mac: { href: "./projects/朋友圈发图神器/01_作品体验入口/网页素材一键收桌面版/macOS版/README.md", label: "macOS说明" }
+    },
+    tags: ["网页素材", "桌面版", "始终置顶", "批量下载"],
     speed: 8,
     impact: 8,
     risk: 7,
@@ -1005,6 +1028,17 @@ function normalizeApp(app) {
       mac: ""
     };
     normalized.status = "game";
+  }
+  if (normalized.id === "web-media-collector") {
+    normalized.entry = "./projects/朋友圈发图神器/01_作品体验入口/网页素材一键收桌面版/README.md";
+    normalized.package = "./downloads/web-media-collector-desktop-source.zip";
+    normalized.platforms = {
+      ...normalized.platforms,
+      web: { href: "./projects/朋友圈发图神器/01_作品体验入口/网页素材一键收桌面版/README.md", label: "说明" },
+      windows: { href: "./downloads/web-media-collector-desktop-source.zip", label: "源码包" },
+      mac: { href: "./projects/朋友圈发图神器/01_作品体验入口/网页素材一键收桌面版/macOS版/README.md", label: "macOS说明" }
+    };
+    normalized.status = "desktop";
   }
   if (normalized.id === "paws-home-client") {
     normalized.category = "项目组打包内部体验测试";

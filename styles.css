@@ -563,6 +563,7 @@ select option:hover {
 }
 
 .status-plugin,
+.status-desktop,
 .status-training {
   background: var(--blue);
 }

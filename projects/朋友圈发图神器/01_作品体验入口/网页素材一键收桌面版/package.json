@@ -1,0 +1,41 @@
+{
+  "name": "web-media-collector-desktop",
+  "version": "0.1.0",
+  "description": "网页素材一键收桌面版",
+  "main": "src/main.js",
+  "private": true,
+  "scripts": {
+    "start": "electron .",
+    "dist:win": "electron-builder --win dir",
+    "dist:win-portable": "electron-builder --win portable",
+    "pack:mac-x64": "electron-packager . 网页素材一键收 --platform=darwin --arch=x64 --out=dist --overwrite",
+    "pack:mac-arm64": "electron-packager . 网页素材一键收 --platform=darwin --arch=arm64 --out=dist --overwrite"
+  },
+  "build": {
+    "appId": "cn.ai.design.web-media-collector",
+    "productName": "网页素材一键收",
+    "directories": {
+      "output": "dist"
+    },
+    "files": [
+      "src/**/*",
+      "assets/**/*",
+      "package.json"
+    ],
+    "win": {
+      "target": [
+        {
+          "target": "portable",
+          "arch": [
+            "x64"
+          ]
+        }
+      ]
+    }
+  },
+  "devDependencies": {
+    "electron": "^37.2.0",
+    "electron-builder": "^26.0.12",
+    "electron-packager": "^17.1.2"
+  }
+}
