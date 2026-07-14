@@ -371,7 +371,50 @@
         if (canvas.height !== height) canvas.height = height;
       }
 
-      function loadGame() {
+      async function preloadUnityAsset(url, onProgress) {
+        const response = await fetch(url, { cache: "force-cache" });
+        if (!response.ok) throw new Error("资源加载失败：" + response.status + " " + url);
+        const total = Number(response.headers.get("content-length")) || 0;
+        if (!response.body || !total) {
+          await response.arrayBuffer();
+          onProgress(1, total);
+          return;
+        }
+
+        const reader = response.body.getReader();
+        let loaded = 0;
+        while (true) {
+          const result = await reader.read();
+          if (result.done) break;
+          loaded += result.value.byteLength;
+          onProgress(Math.min(loaded / total, 1), total);
+        }
+      }
+
+      async function preloadUnityAssets(files) {
+        const progress = new Map(files.map(file => [file.url, 0]));
+        const weights = new Map(files.map(file => [file.url, file.size || 1]));
+        const update = () => {
+          let loaded = 0;
+          let total = 0;
+          for (const file of files) {
+            const weight = weights.get(file.url) || 1;
+            loaded += (progress.get(file.url) || 0) * weight;
+            total += weight;
+          }
+          const percent = Math.min(Math.round((loaded / total) * 80), 80);
+          progressFill.style.width = percent + "%";
+          loadingText.textContent = "\u6b63\u5728\u4e0b\u8f7d\u6e38\u620f\u5305 " + percent + "%";
+        };
+
+        await Promise.all(files.map(file => preloadUnityAsset(file.url, (ratio, size) => {
+          progress.set(file.url, ratio);
+          if (size) weights.set(file.url, size);
+          update();
+        })));
+      }
+
+      async function loadGame() {
         if (loadingStarted) return;
         if (window.location.protocol === "file:") {
           unityShowBanner("\u0055\u006e\u0069\u0074\u0079\u0020\u0057\u0065\u0062\u0047\u004c\u0020\u9700\u8981\u901a\u8fc7\u0020\u0068\u0074\u0074\u0070\u003a\u002f\u002f\u0020\u6216\u0020\u0068\u0074\u0074\u0070\u0073\u003a\u002f\u002f\u0020\u6253\u5f00\uff0c\u8bf7\u4f7f\u7528\u0020\u0047\u0069\u0074\u0048\u0075\u0062\u0020\u0050\u0061\u0067\u0065\u0073\u0020\u94fe\u63a5\u6216\u672c\u5730\u0020\u0057\u0065\u0062\u0020\u670d\u52a1\u3002", "error");
@@ -400,13 +443,26 @@
           devicePixelRatio: Math.min(window.devicePixelRatio || 1, 2)
         };
 
+        preloadUnityAssets([
+          { url: config.dataUrl, size: 11054519 },
+          { url: config.frameworkUrl, size: 85905 },
+          { url: config.codeUrl, size: 10081725 }
+        ]).catch(error => {
+          unityShowBanner(error.message || String(error), "warning");
+        }).finally(() => {
+          loadUnityRuntime();
+        });
+
+        function loadUnityRuntime() {
+          loadingText.textContent = "\u6b63\u5728\u542f\u52a8\u6e38\u620f...";
+
         const script = document.createElement("script");
         script.src = buildUrl + "/paws-home-client-webgl.loader.js?v=" + buildVersion;
         script.onload = () => {
           createUnityInstance(canvas, config, progress => {
-            const percent = Math.round(progress * 100);
+            const percent = 80 + Math.round(progress * 20);
             progressFill.style.width = percent + "%";
-            loadingText.textContent = "\u6b63\u5728\u52a0\u8f7d\u8d44\u6e90 " + percent + "%";
+            loadingText.textContent = "\u6b63\u5728\u542f\u52a8\u6e38\u620f " + percent + "%";
           }).then(instance => {
             unityInstance = instance;
             loadingPanel.style.display = "none";
@@ -427,6 +483,7 @@
           unityShowBanner("\u0055\u006e\u0069\u0074\u0079\u0020\u52a0\u8f7d\u811a\u672c\u5931\u8d25\uff0c\u8bf7\u5237\u65b0\u540e\u91cd\u8bd5\u3002", "error");
         };
         document.body.appendChild(script);
+        }
       }
 
       syncCanvasResolution();
