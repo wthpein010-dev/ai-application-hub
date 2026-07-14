@@ -11,6 +11,7 @@ const statusLabel = {
   plugin: "插件工具",
   assistant: "辅助工具",
   game: "小游戏",
+  ai: "AI版",
   engineering: "工程体验",
   life: "生活工具",
   training: "训练工具",
@@ -105,8 +106,8 @@ const defaultApps = [
   {
     id: "vita-mahjong",
     name: "羊了个羊：对对碰",
-    category: "Unity H5 小游戏",
-    status: "game",
+    category: "Unity H5 AI版",
+    status: "ai",
     brief: "基于羊了个羊体验做的后续玩法变形，以拟人砖块、槽位、道具和城市羊群包装构成可直接游玩的 H5 原型。",
     problem: "需要一个外网可访问的最新 WebGL 包，方便团队、朋友或外部评审直接打开体验，不依赖局域网服务。",
     aiUse: "AI 参与关卡编辑器、关卡逻辑、道具流程、UI 调整、WebGL 打包和外网发布流程维护。",
@@ -118,7 +119,7 @@ const defaultApps = [
       windows: "./downloads/vita-mahjong-webgl.zip",
       mac: "./downloads/vita-mahjong-webgl.zip"
     },
-    tags: ["Unity", "WebGL", "小游戏", "羊了个羊"],
+    tags: ["Unity", "WebGL", "AI版", "羊了个羊"],
     speed: 8,
     impact: 9,
     risk: 7,
@@ -475,9 +476,9 @@ function getFilteredApps() {
 
 function getNavigationApps(filtered = getFilteredApps()) {
   return [
-    ...filtered.filter(app => app.status !== "game" && app.status !== "engineering"),
+    ...filtered.filter(app => !["game", "engineering", "ai"].includes(app.status)),
     ...filtered.filter(app => app.status === "game").sort((a, b) => gameDisplayRank(a) - gameDisplayRank(b)),
-    ...filtered.filter(app => app.status === "engineering")
+    ...filtered.filter(app => ["engineering", "ai"].includes(app.status))
   ];
 }
 
@@ -515,7 +516,7 @@ function renderDots(filtered = getFilteredApps()) {
 }
 
 function renderGrid(filtered) {
-  const applicationList = filtered.filter(app => app.status !== "game" && app.status !== "engineering");
+  const applicationList = filtered.filter(app => !["game", "engineering", "ai"].includes(app.status));
   nodes.resultCount.textContent = `${applicationList.length} 个应用`;
   if (!applicationList.length) {
     nodes.grid.innerHTML = `<article class="app-card"><h3>没有匹配结果</h3><p>换个关键词或重置筛选条件再试。</p></article>`;
@@ -543,7 +544,7 @@ function renderGameGrid(filtered) {
 
 function renderEngineeringGrid(filtered) {
   if (!nodes.engineeringGrid) return;
-  const engineeringList = filtered.filter(app => app.status === "engineering");
+  const engineeringList = filtered.filter(app => ["engineering", "ai"].includes(app.status));
   if (nodes.engineeringCount) {
     nodes.engineeringCount.textContent = `${engineeringList.length} 个工程体验`;
   }
@@ -935,6 +936,7 @@ function normalizeApp(app) {
     normalized.brief = HUB_BRIEF;
   }
   if (normalized.id === "vita-mahjong") {
+    normalized.category = "Unity H5 AI版";
     normalized.entry = "./projects/vita-mahjong/index.html";
     normalized.package = "./downloads/vita-mahjong-webgl.zip";
     normalized.platforms = {
@@ -943,7 +945,8 @@ function normalizeApp(app) {
       windows: "./downloads/vita-mahjong-webgl.zip",
       mac: "./downloads/vita-mahjong-webgl.zip"
     };
-    normalized.status = "game";
+    normalized.status = "ai";
+    normalized.tags = ["Unity", "WebGL", "AI版", "羊了个羊"];
   }
   if (normalized.id === "fill-what") {
     normalized.entry = "./projects/fill-what/index.html";
