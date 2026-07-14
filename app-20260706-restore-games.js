@@ -105,6 +105,28 @@ const defaultApps = [
     polish: 9
   },
   {
+    id: "icecream",
+    name: "IceCream 冰激凌工坊",
+    category: "Unity 微信小游戏",
+    status: "game",
+    brief: "面向微信小游戏的竖屏冰激凌配单游戏：按顾客需求选择口味、制作甜筒并连续闯过 10 个关卡。",
+    problem: "需要一套可直接网页试玩、可下载完整 Unity 工程、同时提供微信小游戏转换包的 UGUI 项目样例。",
+    aiUse: "AI 参与玩法扩展、10 关配置、UGUI 预制体、750×1624 安全区适配、进度存档、WebGL 与微信小游戏构建及发布验证。",
+    folder: "./projects/icecream/",
+    entry: "./projects/icecream/index.html",
+    package: "./downloads/icecream-unity-project.zip",
+    platforms: {
+      web: { href: "./projects/icecream/index.html", label: "试玩" },
+      windows: { href: "./downloads/icecream-unity-project.zip", label: "工程下载" },
+      mac: { href: "./downloads/icecream-wechat-minigame.zip", label: "微信包下载" }
+    },
+    tags: ["Unity", "UGUI", "冰激凌", "微信小游戏"],
+    speed: 9,
+    impact: 9,
+    risk: 7,
+    polish: 8
+  },
+  {
     id: "vita-mahjong",
     name: "羊了个羊：对对碰",
     category: "Unity H5 AI版",
@@ -647,6 +669,7 @@ function renderAppCard(app, index = 0, extraClass = "", actionMode = "default") 
 }
 
 function gameDisplayRank(app) {
+  if (app.id === "icecream") return -4;
   if (app.id === "zhuanglege-sha") return -3;
   if (app.id === "xiang-le-ge-xiang") return -2;
   return defaultApps.findIndex(item => item.id === app.id);
@@ -713,7 +736,7 @@ function renderActions(app, stopPropagation = false, mode = "default") {
   const windows = platformValue(app, "windows") || app.package;
   const mac = platformValue(app, "mac");
   const webLink = web ? `<a class="primary-link" data-action="web" href="${escapeHtml(projectHref(web))}"${stop}>演示</a>` : "";
-  const windowsLabel = "Wins下载";
+  const windowsLabel = platformLabel(app, "windows", "Wins下载");
   const windowsLink = windows ? `<a class="download-link" data-action="download" href="${escapeHtml(projectHref(windows))}" download${stop}>${escapeHtml(windowsLabel)}</a>` : "";
   const macLink = mac ? `<a class="mac-link" data-action="mac" href="${escapeHtml(projectHref(mac))}" download${stop}>${escapeHtml(platformLabel(app, "mac", "Mac下载"))}</a>` : "";
   const video = `<a data-action="video" href="${escapeHtml(projectHref(videoHref(app)))}"${stop}>视频</a>`;
@@ -1005,6 +1028,16 @@ function normalizeApp(app) {
   }
   if (normalized.id === "hub" && normalized.brief === OLD_HUB_BRIEF) {
     normalized.brief = HUB_BRIEF;
+  }
+  if (normalized.id === "icecream") {
+    normalized.entry = "./projects/icecream/index.html";
+    normalized.package = "./downloads/icecream-unity-project.zip";
+    normalized.platforms = {
+      web: { href: "./projects/icecream/index.html", label: "试玩" },
+      windows: { href: "./downloads/icecream-unity-project.zip", label: "工程下载" },
+      mac: { href: "./downloads/icecream-wechat-minigame.zip", label: "微信包下载" }
+    };
+    normalized.status = "game";
   }
   if (normalized.id === "vita-mahjong") {
     normalized.category = "Unity H5 AI版";
