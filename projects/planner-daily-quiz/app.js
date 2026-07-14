@@ -21,7 +21,8 @@ const state = {
   remainingSeconds: 0,
   lastResult: null,
   adminAuthed: false,
-  adminRecords: []
+  adminRecords: [],
+  adminView: "records"
 };
 
 const nodes = {
@@ -33,10 +34,18 @@ const nodes = {
   adminPassword: document.querySelector("#adminPassword"),
   adminPanel: document.querySelector("#adminPanel"),
   adminContent: document.querySelector("#adminContent"),
+  adminTabs: document.querySelector("#adminTabs"),
+  adminTabButtons: Array.from(document.querySelectorAll("[data-admin-view]")),
+  adminRecordsView: document.querySelector("#adminRecordsView"),
   adminRecordCount: document.querySelector("#adminRecordCount"),
   adminRecordList: document.querySelector("#adminRecordList"),
   adminRefreshButton: document.querySelector("#adminRefreshButton"),
   adminExportButton: document.querySelector("#adminExportButton"),
+  adminQuestionBank: document.querySelector("#adminQuestionBank"),
+  adminQuestionCount: document.querySelector("#adminQuestionCount"),
+  adminQuestionSearch: document.querySelector("#adminQuestionSearch"),
+  adminCategoryFilter: document.querySelector("#adminCategoryFilter"),
+  adminQuestionList: document.querySelector("#adminQuestionList"),
   reviewTodayButton: document.querySelector("#reviewTodayButton"),
   profileForm: document.querySelector("#profileForm"),
   userName: document.querySelector("#userName"),
@@ -63,6 +72,7 @@ init();
 
 async function init() {
   await loadData();
+  populateAdminCategoryFilter();
   hydrateProfile();
   state.dailyQuestions = pickDailyQuestions(state.questions, state.config.dailyQuestionCount);
   nodes.todayCount.textContent = state.dailyQuestions.length;
@@ -95,6 +105,12 @@ function bindEvents() {
   nodes.adminCloseButton.addEventListener("click", closeAdminPanel);
   nodes.adminRefreshButton.addEventListener("click", loadAndRenderAdminRecords);
   nodes.adminExportButton.addEventListener("click", exportAdminRecords);
+  nodes.adminTabs.addEventListener("click", event => {
+    const button = event.target.closest("[data-admin-view]");
+    if (button) setAdminView(button.dataset.adminView);
+  });
+  nodes.adminQuestionSearch.addEventListener("input", renderAdminQuestionBank);
+  nodes.adminCategoryFilter.addEventListener("change", renderAdminQuestionBank);
   nodes.adminLoginForm.addEventListener("submit", event => {
     event.preventDefault();
     loginAdmin();
@@ -359,10 +375,27 @@ function renderHistory() {
     : `<article class="history-item"><strong>还没有记录</strong><p>完成一次每日训练后，这里会出现分数和薄弱能力。</p></article>`;
 }
 
+function populateAdminCategoryFilter() {
+  const selectedCategory = nodes.adminCategoryFilter.value;
+  const categories = [...new Set(state.questions.map(question => question.category).filter(Boolean))]
+    .sort((a, b) => a.localeCompare(b, "zh-CN"));
+  nodes.adminCategoryFilter.innerHTML = '<option value="">全部分类</option>';
+  categories.forEach(category => {
+    const option = document.createElement("option");
+    option.value = category;
+    option.textContent = category;
+    nodes.adminCategoryFilter.appendChild(option);
+  });
+  nodes.adminCategoryFilter.value = categories.includes(selectedCategory) ? selectedCategory : "";
+}
+
 function openAdminPanel() {
   nodes.adminPanel.hidden = false;
   nodes.adminPanel.scrollIntoView({ behavior: "smooth", block: "start" });
   if (state.adminAuthed) {
+    nodes.adminLoginForm.hidden = true;
+    nodes.adminContent.hidden = false;
+    setAdminView(state.adminView);
     loadAndRenderAdminRecords();
   } else {
     nodes.adminPassword.focus();
@@ -381,9 +414,85 @@ function loginAdmin() {
     return;
   }
   state.adminAuthed = true;
+  nodes.adminLoginForm.hidden = true;
   nodes.adminContent.hidden = false;
   nodes.adminPassword.value = "";
+  setAdminView("records");
   loadAndRenderAdminRecords();
+}
+
+function setAdminView(view) {
+  const nextView = view === "question-bank" ? "question-bank" : "records";
+  const showQuestionBank = nextView === "question-bank";
+  state.adminView = nextView;
+  nodes.adminRecordsView.hidden = showQuestionBank;
+  nodes.adminQuestionBank.hidden = !showQuestionBank;
+  nodes.adminTabButtons.forEach(button => {
+    const selected = button.dataset.adminView === nextView;
+    button.classList.toggle("is-active", selected);
+    button.setAttribute("aria-selected", String(selected));
+  });
+  if (showQuestionBank) renderAdminQuestionBank();
+}
+
+function getFilteredAdminQuestions() {
+  const query = nodes.adminQuestionSearch.value.trim().toLocaleLowerCase();
+  const category = nodes.adminCategoryFilter.value;
+  return state.questions.filter(question => {
+    const searchable = [
+      question.question,
+      question.category,
+      ...(question.tags || []),
+      ...(question.options || [])
+    ].join(" ").toLocaleLowerCase();
+    return (!category || question.category === category) && (!query || searchable.includes(query));
+  });
+}
+
+function renderAdminQuestionBank() {
+  if (!state.adminAuthed) return;
+  const questions = getFilteredAdminQuestions();
+  nodes.adminQuestionCount.textContent = `显示 ${questions.length}/${state.questions.length} 道题`;
+  nodes.adminQuestionList.innerHTML = questions.length
+    ? questions.map(renderAdminQuestion).join("")
+    : `<article class="admin-empty-state"><strong>没有匹配的题目</strong><p>请清空搜索词或切换题目分类后重试。</p></article>`;
+}
+
+function renderAdminQuestion(question) {
+  const correctAnswers = new Set(question.answer || []);
+  const questionNumber = state.questions.indexOf(question) + 1;
+  const options = (question.options || []).map((option, index) => `
+    <div class="admin-question-option${correctAnswers.has(index) ? " is-correct" : ""}">
+      ${optionLabel(index)}. ${escapeHtml(option)}
+    </div>
+  `).join("");
+  const tags = (question.tags || []).map(tag => `<span>${escapeHtml(tag)}</span>`).join("");
+  return `
+    <article class="admin-question-card">
+      <div class="admin-question-meta">
+        <span>第 ${questionNumber} 题</span>
+        <span>${escapeHtml(question.typeNote || typeLabel(question.type))}</span>
+        <span>${escapeHtml(question.category || "未分类")}</span>
+        <span>难度 ${escapeHtml(String(question.difficulty ?? "--"))}</span>
+      </div>
+      <h3>${escapeHtml(question.question || "")}</h3>
+      <div class="admin-question-options">${options}</div>
+      <p class="admin-question-answer">正确答案：${escapeHtml(formatQuestionAnswer(question))}</p>
+      <p class="admin-question-explanation">解析：${escapeHtml(question.explanation || "暂无解析")}</p>
+      <div class="tag-strip">${tags || "<span>暂无标签</span>"}</div>
+    </article>
+  `;
+}
+
+function formatQuestionAnswer(question) {
+  return (question.answer || []).map(index => {
+    const option = question.options?.[index];
+    return option === undefined ? `选项 ${index + 1}` : `${optionLabel(index)}. ${option}`;
+  }).join("；");
+}
+
+function optionLabel(index) {
+  return String.fromCharCode(65 + index);
 }
 
 async function loadAndRenderAdminRecords() {

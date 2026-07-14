@@ -125,23 +125,48 @@
         <section id="adminPanel" class="panel admin-panel" hidden>
           <div class="section-title">
             <p class="eyebrow">管理员控制台</p>
-            <h2>查看答题数据库记录</h2>
+            <h2>查看答题记录与完整题库</h2>
           </div>
           <form id="adminLoginForm" class="admin-login">
             <label>
               <span>管理员密码</span>
               <input id="adminPassword" type="password" autocomplete="current-password" placeholder="请输入管理员密码" />
             </label>
-            <button class="primary-button" type="submit">登录查看</button>
+            <button class="primary-button" type="submit">登录管理</button>
             <button id="adminCloseButton" class="secondary-button" type="button">关闭</button>
           </form>
           <div id="adminContent" class="admin-content" hidden>
-            <div class="admin-toolbar">
-              <strong id="adminRecordCount">0 条记录</strong>
-              <button id="adminRefreshButton" class="secondary-button" type="button">刷新数据</button>
-              <button id="adminExportButton" class="secondary-button" type="button">复制 JSON</button>
+            <div id="adminTabs" class="admin-tabs" role="tablist" aria-label="管理员内容">
+              <button id="adminRecordsTab" class="admin-tab is-active" type="button" role="tab" aria-selected="true" aria-controls="adminRecordsView" data-admin-view="records">答题记录</button>
+              <button id="adminQuestionBankTab" class="admin-tab" type="button" role="tab" aria-selected="false" aria-controls="adminQuestionBank" data-admin-view="question-bank">题库查阅</button>
             </div>
-            <div id="adminRecordList" class="admin-record-list"></div>
+            <section id="adminRecordsView" class="admin-view" role="tabpanel" aria-labelledby="adminRecordsTab">
+              <div class="admin-toolbar">
+                <strong id="adminRecordCount">0 条记录</strong>
+                <button id="adminRefreshButton" class="secondary-button" type="button">刷新数据</button>
+                <button id="adminExportButton" class="secondary-button" type="button">复制 JSON</button>
+              </div>
+              <div id="adminRecordList" class="admin-record-list"></div>
+            </section>
+            <section id="adminQuestionBank" class="admin-view admin-question-bank" role="tabpanel" aria-labelledby="adminQuestionBankTab" hidden>
+              <div class="admin-toolbar admin-question-toolbar">
+                <strong id="adminQuestionCount">0 道题</strong>
+                <span>完整题干、答案与解析</span>
+              </div>
+              <div class="admin-question-filters">
+                <label>
+                  <span>搜索题库</span>
+                  <input id="adminQuestionSearch" type="search" placeholder="搜索题干、分类、标签或选项" autocomplete="off" />
+                </label>
+                <label>
+                  <span>题目分类</span>
+                  <select id="adminCategoryFilter">
+                    <option value="">全部分类</option>
+                  </select>
+                </label>
+              </div>
+              <div id="adminQuestionList" class="admin-question-list"></div>
+            </section>
           </div>
         </section>
       </main>
