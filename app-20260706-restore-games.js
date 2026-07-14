@@ -201,6 +201,7 @@ const defaultApps = [
     aiUse: "AI 参与产品定位、桌面交互设计、跨平台打包说明、参赛说明和工具文案整理。",
     folder: "./projects/朋友圈发图神器/01_作品体验入口/网页素材一键收桌面版/",
     entry: "./projects/朋友圈发图神器/01_作品体验入口/网页素材一键收桌面版/index.html",
+    video: "./projects/\u670b\u53cb\u5708\u53d1\u56fe\u795e\u5668/01_\u4f5c\u54c1\u4f53\u9a8c\u5165\u53e3/\u7f51\u9875\u7d20\u6750\u4e00\u952e\u6536\u684c\u9762\u7248/\u89c6\u9891\u8d44\u6e90/\u6f14\u793a\u89c6\u9891.html",
     package: "./downloads/web-media-collector-desktop-source.zip",
     platforms: {
       web: { href: "./projects/朋友圈发图神器/01_作品体验入口/网页素材一键收桌面版/index.html", label: "演示" },
@@ -1030,6 +1031,7 @@ function normalizeApp(app) {
     normalized.status = "game";
   }
   if (normalized.id === "web-media-collector") {
+    normalized.video = "./projects/\u670b\u53cb\u5708\u53d1\u56fe\u795e\u5668/01_\u4f5c\u54c1\u4f53\u9a8c\u5165\u53e3/\u7f51\u9875\u7d20\u6750\u4e00\u952e\u6536\u684c\u9762\u7248/\u89c6\u9891\u8d44\u6e90/\u6f14\u793a\u89c6\u9891.html";
     normalized.entry = "./projects/朋友圈发图神器/01_作品体验入口/网页素材一键收桌面版/index.html";
     normalized.package = "./downloads/web-media-collector-desktop-source.zip";
     normalized.platforms = {
