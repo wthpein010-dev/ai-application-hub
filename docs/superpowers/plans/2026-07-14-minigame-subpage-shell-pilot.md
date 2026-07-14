@@ -30,7 +30,7 @@
 - Consumes: `assets/hero-ai-companion.png` and the pilot page's existing `.topbar`, `.brand`, and `.top-actions` classes.
 - Produces: `.hub-subpage`, `.hub-home-link`, and `.hub-home-link__icon`, reusable by later app, video, and game pages.
 
-- [ ] **Step 1: Write the failing shell test**
+- [x] **Step 1: Write the failing shell test**
 
 Extend the `node:fs` import and add this test to `tests/minigame-project-tool-page.test.mjs`:
 
@@ -57,7 +57,7 @@ test("web demo uses the shared subpage shell and one root home link", () => {
 });
 ```
 
-- [ ] **Step 2: Run the targeted test and confirm the expected failure**
+- [x] **Step 2: Run the targeted test and confirm the expected failure**
 
 Run:
 
@@ -67,7 +67,7 @@ node --test tests/minigame-project-tool-page.test.mjs
 
 Expected: the new test fails because `assets/subpage-shell.css` does not exist.
 
-- [ ] **Step 3: Create the shared shell stylesheet**
+- [x] **Step 3: Create the shared shell stylesheet**
 
 Create `assets/subpage-shell.css` with:
 
@@ -165,7 +165,7 @@ body.hub-subpage::after {
 }
 ```
 
-- [ ] **Step 4: Opt the pilot HTML into the shared shell**
+- [x] **Step 4: Opt the pilot HTML into the shared shell**
 
 Load the shared CSS after the existing app CSS:
 
@@ -198,7 +198,7 @@ Remove only this duplicate navigation item:
 <a class="home-link" href="../../index.html">返回主页</a>
 ```
 
-- [ ] **Step 5: Run targeted and related tests**
+- [x] **Step 5: Run targeted and related tests**
 
 Run:
 
@@ -226,7 +226,7 @@ git commit -m "feat: add unified subpage shell pilot"
 - Consumes: the static pilot produced by Task 1.
 - Produces: a verified GitHub Pages URL for user review.
 
-- [ ] **Step 1: Start a local static server**
+- [x] **Step 1: Start a local static server**
 
 Run from the repository root:
 
@@ -236,7 +236,7 @@ python -m http.server 4176 --bind 127.0.0.1
 
 Expected: `http://127.0.0.1:4176/projects/minigame-project-tool/index.html` returns HTTP 200.
 
-- [ ] **Step 2: Verify desktop and mobile rendering**
+- [x] **Step 2: Verify desktop and mobile rendering**
 
 Open the pilot at 1440×1000 and 390×844. Confirm:
 

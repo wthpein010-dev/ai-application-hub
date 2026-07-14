@@ -1,0 +1,91 @@
+body.hub-subpage {
+  position: relative;
+  isolation: isolate;
+  min-height: 100vh;
+  background: #07101e;
+}
+
+body.hub-subpage::before,
+body.hub-subpage::after {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+}
+
+body.hub-subpage::before {
+  z-index: -2;
+  background: url("./hero-ai-companion.png") right center / cover no-repeat;
+  opacity: 0.2;
+}
+
+body.hub-subpage::after {
+  z-index: -1;
+  background: rgba(5, 10, 18, 0.78);
+}
+
+.hub-home-link {
+  position: fixed;
+  top: max(15px, env(safe-area-inset-top));
+  left: max(18px, env(safe-area-inset-left));
+  z-index: 1000;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-width: 130px;
+  min-height: 42px;
+  padding: 0 14px;
+  border: 1px solid rgba(224, 235, 248, 0.28);
+  border-radius: 8px;
+  color: #f7f9fc;
+  text-decoration: none;
+  font: 800 14px/1 "Microsoft YaHei UI", "Microsoft YaHei", "PingFang SC", "Segoe UI", sans-serif;
+  background: rgba(9, 17, 29, 0.86);
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.3);
+  backdrop-filter: blur(14px);
+}
+
+.hub-home-link:hover {
+  border-color: rgba(95, 224, 211, 0.7);
+  background: rgba(20, 38, 59, 0.96);
+}
+
+.hub-home-link:focus-visible {
+  outline: 3px solid rgba(107, 164, 255, 0.52);
+  outline-offset: 3px;
+}
+
+.hub-home-link__icon {
+  display: grid;
+  width: 20px;
+  height: 20px;
+  place-items: center;
+  flex: 0 0 20px;
+  font-size: 20px;
+  line-height: 20px;
+}
+
+.hub-subpage .topbar {
+  padding-left: max(172px, calc(env(safe-area-inset-left) + 172px));
+}
+
+@media (max-width: 760px) {
+  .hub-home-link {
+    position: absolute;
+    right: max(14px, env(safe-area-inset-right));
+    left: max(14px, env(safe-area-inset-left));
+    width: max-content;
+  }
+
+  .hub-subpage .topbar {
+    padding-top: calc(max(15px, env(safe-area-inset-top)) + 56px);
+    padding-left: 14px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hub-home-link {
+    scroll-behavior: auto;
+  }
+}
