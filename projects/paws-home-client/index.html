@@ -299,7 +299,7 @@
     <div class="page">
       <header class="topbar">
         <a href="../../index.html#games">&#36820;&#22238;&#23567;&#28216;&#25103;&#38598;&#21512;</a>
-        <span>Unity WebGL &#183; &#39318;&#27425;&#21152;&#36733;&#32422; 22MB</span>
+        <span>Unity WebGL &#183; &#39318;&#27425;&#21152;&#36733;&#32422; 60MB</span>
       </header>
 
       <main class="layout">
@@ -430,12 +430,12 @@
         loadingPanel.style.display = "grid";
         syncCanvasResolution();
 
-        const buildUrl = "https://testingcf.jsdelivr.net/gh/wthpein010-dev/ai-application-hub@b78f4b8f56348aa27913eae31adaffbb30a81e5f/projects/paws-home-client/Build";
-        const buildVersion = "20260714-testingcf-b78f4b8";
+        const buildUrl = "https://testingcf.jsdelivr.net/gh/wthpein010-dev/ai-application-hub@6e04688bdd7b03c5d2375205ad785f989ced4fa9/projects/paws-home-client/Build";
+        const buildVersion = "20260714-testingcf-6e04688";
         const config = {
-          dataUrl: buildUrl + "/paws-home-client-webgl.data.unityweb?v=" + buildVersion,
-          frameworkUrl: buildUrl + "/paws-home-client-webgl.framework.js.unityweb?v=" + buildVersion,
-          codeUrl: buildUrl + "/paws-home-client-webgl.wasm.unityweb?v=" + buildVersion,
+          dataUrl: buildUrl + "/paws-home-client-webgl.data?v=" + buildVersion,
+          frameworkUrl: buildUrl + "/paws-home-client-webgl.framework.js?v=" + buildVersion,
+          codeUrl: buildUrl + "/paws-home-client-webgl.wasm?v=" + buildVersion,
           streamingAssetsUrl: "StreamingAssets",
           companyName: "Joyo",
           productName: "Paws Home Client",
@@ -446,9 +446,9 @@
         };
 
         preloadUnityAssets([
-          { url: config.dataUrl, size: 11054522 },
-          { url: config.frameworkUrl, size: 85905 },
-          { url: config.codeUrl, size: 10081725 }
+          { url: config.dataUrl, size: 18969108 },
+          { url: config.frameworkUrl, size: 446290 },
+          { url: config.codeUrl, size: 40368219 }
         ]).catch(error => {
           unityShowBanner(error.message || String(error), "warning");
         }).finally(() => {
