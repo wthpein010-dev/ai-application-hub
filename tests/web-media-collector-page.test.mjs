@@ -5,7 +5,9 @@ import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const root = dirname(dirname(fileURLToPath(import.meta.url)));
-const app = readFileSync(join(root, "app.js"), "utf8");
+const hub = readFileSync(join(root, "index.html"), "utf8");
+const runtimeScript = hub.match(/<script\s+src="\.\/([^"?]+)(?:\?[^\"]*)?"><\/script>/)?.[1] || "app.js";
+const app = readFileSync(join(root, runtimeScript), "utf8");
 const project = join(root, "projects", "朋友圈发图神器", "01_作品体验入口", "网页素材一键收桌面版");
 const pagePath = join(project, "index.html");
 

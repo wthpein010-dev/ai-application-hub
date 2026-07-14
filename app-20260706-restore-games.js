@@ -200,12 +200,12 @@ const defaultApps = [
     problem: "浏览器扩展弹窗无法真正固定置顶，做设计参考、资料整理和内容采集时，需要一个能停留在屏幕上方的独立工具。",
     aiUse: "AI 参与产品定位、桌面交互设计、跨平台打包说明、参赛说明和工具文案整理。",
     folder: "./projects/朋友圈发图神器/01_作品体验入口/网页素材一键收桌面版/",
-    entry: "./projects/朋友圈发图神器/01_作品体验入口/网页素材一键收桌面版/README.md",
+    entry: "./projects/朋友圈发图神器/01_作品体验入口/网页素材一键收桌面版/index.html",
     package: "./downloads/web-media-collector-desktop-source.zip",
     platforms: {
-      web: { href: "./projects/朋友圈发图神器/01_作品体验入口/网页素材一键收桌面版/README.md", label: "说明" },
+      web: { href: "./projects/朋友圈发图神器/01_作品体验入口/网页素材一键收桌面版/index.html", label: "演示" },
       windows: { href: "./downloads/web-media-collector-desktop-source.zip", label: "源码包" },
-      mac: { href: "./projects/朋友圈发图神器/01_作品体验入口/网页素材一键收桌面版/macOS版/README.md", label: "macOS说明" }
+      mac: { href: "./projects/朋友圈发图神器/01_作品体验入口/网页素材一键收桌面版/index.html#macos", label: "macOS说明" }
     },
     tags: ["网页素材", "桌面版", "始终置顶", "批量下载"],
     speed: 8,
@@ -1030,13 +1030,13 @@ function normalizeApp(app) {
     normalized.status = "game";
   }
   if (normalized.id === "web-media-collector") {
-    normalized.entry = "./projects/朋友圈发图神器/01_作品体验入口/网页素材一键收桌面版/README.md";
+    normalized.entry = "./projects/朋友圈发图神器/01_作品体验入口/网页素材一键收桌面版/index.html";
     normalized.package = "./downloads/web-media-collector-desktop-source.zip";
     normalized.platforms = {
       ...normalized.platforms,
-      web: { href: "./projects/朋友圈发图神器/01_作品体验入口/网页素材一键收桌面版/README.md", label: "说明" },
+      web: { href: "./projects/朋友圈发图神器/01_作品体验入口/网页素材一键收桌面版/index.html", label: "演示" },
       windows: { href: "./downloads/web-media-collector-desktop-source.zip", label: "源码包" },
-      mac: { href: "./projects/朋友圈发图神器/01_作品体验入口/网页素材一键收桌面版/macOS版/README.md", label: "macOS说明" }
+      mac: { href: "./projects/朋友圈发图神器/01_作品体验入口/网页素材一键收桌面版/index.html#macos", label: "macOS说明" }
     };
     normalized.status = "desktop";
   }
