@@ -1,0 +1,387 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="description" content="网页素材一键收桌面版：扫描公开网页中的图片、视频、音频和文档资源，在桌面窗口中筛选、预览并批量下载。" />
+    <title>网页素材一键收桌面版</title>
+    <style>
+      :root {
+        color-scheme: dark;
+        --page: #10151b;
+        --panel: #17202a;
+        --panel-strong: #1d2935;
+        --line: #334454;
+        --text: #f1f5f7;
+        --muted: #a9b6c0;
+        --teal: #55d4be;
+        --gold: #f0c266;
+      }
+
+      * { box-sizing: border-box; }
+
+      body {
+        margin: 0;
+        min-width: 320px;
+        color: var(--text);
+        font-family: Inter, "Microsoft YaHei", "PingFang SC", Arial, sans-serif;
+        background: var(--page);
+      }
+
+      a { color: inherit; }
+
+      .shell {
+        width: min(1040px, calc(100% - 32px));
+        margin: 0 auto;
+        padding: 18px 0 52px;
+      }
+
+      .topbar {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 16px;
+        padding: 12px 14px;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background: #121921;
+      }
+
+      .brand {
+        display: inline-flex;
+        align-items: center;
+        gap: 10px;
+        min-width: 0;
+        text-decoration: none;
+      }
+
+      .brand img {
+        width: 36px;
+        height: 36px;
+        border-radius: 7px;
+      }
+
+      .brand strong,
+      .brand span { display: block; }
+
+      .brand span {
+        margin-top: 2px;
+        color: var(--muted);
+        font-size: 12px;
+      }
+
+      .back-link {
+        color: var(--muted);
+        font-size: 14px;
+        text-decoration: none;
+      }
+
+      .back-link:hover { color: var(--text); }
+
+      .hero {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) minmax(230px, 0.42fr);
+        gap: 32px;
+        align-items: center;
+        padding: 66px 0 36px;
+      }
+
+      .eyebrow {
+        display: inline-flex;
+        min-height: 28px;
+        align-items: center;
+        padding: 4px 10px;
+        border: 1px solid rgba(85, 212, 190, 0.35);
+        border-radius: 999px;
+        color: var(--teal);
+        background: rgba(85, 212, 190, 0.1);
+        font-size: 12px;
+        font-weight: 800;
+      }
+
+      h1 {
+        max-width: 11em;
+        margin: 16px 0;
+        font-size: clamp(38px, 6vw, 64px);
+        line-height: 1.08;
+        letter-spacing: 0;
+      }
+
+      .lead {
+        max-width: 44em;
+        margin: 0;
+        color: var(--muted);
+        line-height: 1.8;
+      }
+
+      .actions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        margin-top: 28px;
+      }
+
+      .button {
+        display: inline-flex;
+        min-height: 42px;
+        align-items: center;
+        justify-content: center;
+        padding: 0 14px;
+        border: 1px solid var(--line);
+        border-radius: 7px;
+        text-decoration: none;
+        font-size: 14px;
+        font-weight: 800;
+      }
+
+      .button.primary {
+        border-color: rgba(240, 194, 102, 0.52);
+        color: #1b160c;
+        background: var(--gold);
+      }
+
+      .button.secondary { background: rgba(255, 255, 255, 0.04); }
+
+      .preview-panel,
+      .section {
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background: var(--panel);
+      }
+
+      .preview-panel {
+        padding: 22px;
+      }
+
+      .preview-window {
+        overflow: hidden;
+        border: 1px solid #456174;
+        border-radius: 7px;
+        background: #0c1117;
+      }
+
+      .window-bar {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        height: 34px;
+        padding: 0 11px;
+        border-bottom: 1px solid #2b3c4a;
+      }
+
+      .window-bar i {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        background: var(--gold);
+      }
+
+      .window-content { padding: 16px; }
+
+      .url-field,
+      .asset-row {
+        border-radius: 6px;
+        background: #1d2a35;
+      }
+
+      .url-field {
+        height: 30px;
+        margin-bottom: 14px;
+      }
+
+      .asset-row {
+        display: grid;
+        grid-template-columns: 34px 1fr 46px;
+        gap: 9px;
+        align-items: center;
+        height: 44px;
+        margin-top: 8px;
+        padding: 0 10px;
+      }
+
+      .asset-row b {
+        width: 26px;
+        height: 22px;
+        border-radius: 4px;
+        background: var(--teal);
+      }
+
+      .asset-row span,
+      .asset-row em {
+        height: 8px;
+        border-radius: 999px;
+        background: rgba(241, 245, 247, 0.35);
+      }
+
+      .asset-row em {
+        background: rgba(240, 194, 102, 0.72);
+      }
+
+      .section { padding: 24px; margin-top: 18px; }
+
+      .section h2 {
+        margin: 0;
+        font-size: 23px;
+      }
+
+      .section > p {
+        margin: 8px 0 0;
+        color: var(--muted);
+        line-height: 1.7;
+      }
+
+      .feature-grid,
+      .platform-grid {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 12px;
+        margin-top: 18px;
+      }
+
+      .feature,
+      .platform {
+        min-height: 136px;
+        padding: 16px;
+        border: 1px solid rgba(241, 245, 247, 0.12);
+        border-radius: 7px;
+        background: var(--panel-strong);
+      }
+
+      .feature strong,
+      .platform strong { display: block; }
+
+      .feature p,
+      .platform p {
+        margin: 8px 0 0;
+        color: var(--muted);
+        font-size: 14px;
+        line-height: 1.65;
+      }
+
+      .steps {
+        display: grid;
+        gap: 10px;
+        margin-top: 18px;
+        padding: 0;
+        list-style: none;
+      }
+
+      .steps li {
+        display: grid;
+        grid-template-columns: 28px 1fr;
+        gap: 10px;
+        align-items: center;
+        padding: 12px;
+        border-left: 2px solid var(--teal);
+        color: var(--muted);
+        background: rgba(255, 255, 255, 0.035);
+        line-height: 1.6;
+      }
+
+      .steps b { color: var(--teal); }
+
+      .platform .button {
+        width: 100%;
+        margin-top: 16px;
+      }
+
+      .notice {
+        margin-top: 18px;
+        padding: 14px;
+        border: 1px solid rgba(240, 194, 102, 0.32);
+        border-radius: 7px;
+        color: #f5dfac;
+        background: rgba(240, 194, 102, 0.08);
+        line-height: 1.7;
+      }
+
+      @media (max-width: 760px) {
+        .shell { width: min(100% - 24px, 1040px); }
+        .topbar,
+        .hero { grid-template-columns: 1fr; }
+        .topbar { align-items: flex-start; flex-direction: column; }
+        .hero { gap: 22px; padding: 42px 0 24px; }
+        .feature-grid,
+        .platform-grid { grid-template-columns: 1fr; }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="shell">
+      <header class="topbar">
+        <a class="brand" href="../../../../index.html#apps">
+          <img src="./assets/icon.png" alt="" />
+          <span><strong>网页素材一键收桌面版</strong><span>公开网页资源整理工具</span></span>
+        </a>
+        <a class="back-link" href="../../../../index.html#apps">返回全部项目总览</a>
+      </header>
+
+      <main>
+        <section class="hero">
+          <div>
+            <span class="eyebrow">Windows / macOS 桌面工具</span>
+            <h1>把公开网页素材收进一个桌面窗口。</h1>
+            <p class="lead">输入网页地址后，工具会扫描图片、视频、音频和常见文档资源。你可以在始终置顶的窗口中筛选、预览并批量下载，适合做设计参考、资料整理与内容采集。</p>
+            <div class="actions">
+              <a class="button primary" href="../../../../downloads/web-media-collector-desktop-source.zip" download>下载源码包</a>
+              <a class="button secondary" href="#macos">查看 macOS 使用方式</a>
+            </div>
+          </div>
+          <aside class="preview-panel" aria-label="桌面工具功能示意">
+            <div class="preview-window">
+              <div class="window-bar"><i></i><i></i><i></i></div>
+              <div class="window-content">
+                <div class="url-field"></div>
+                <div class="asset-row"><b></b><span></span><em></em></div>
+                <div class="asset-row"><b></b><span></span><em></em></div>
+                <div class="asset-row"><b></b><span></span><em></em></div>
+              </div>
+            </div>
+          </aside>
+        </section>
+
+        <section class="section">
+          <h2>桌面版能力</h2>
+          <p>浏览器端仅提供项目介绍与源码获取；扫描和下载任务在本机桌面应用内执行。</p>
+          <div class="feature-grid">
+            <article class="feature"><strong>公开资源扫描</strong><p>识别当前可访问网页内的图片、视频、音频及常见文档资源。</p></article>
+            <article class="feature"><strong>筛选与预览</strong><p>按资源类型快速聚焦内容，确认后再加入下载队列。</p></article>
+            <article class="feature"><strong>始终置顶窗口</strong><p>工具窗口可停留在设计稿或浏览器上方，边浏览边收集素材。</p></article>
+          </div>
+        </section>
+
+        <section class="section">
+          <h2>使用流程</h2>
+          <ol class="steps">
+            <li><b>01</b><span>下载源码包并解压到本机目录。</span></li>
+            <li><b>02</b><span>安装 Node.js 后，在项目目录执行 <code>npm install</code>。</span></li>
+            <li><b>03</b><span>执行 <code>npm start</code>，输入公开网页 URL 后开始扫描与整理。</span></li>
+          </ol>
+        </section>
+
+        <section class="section" id="macos">
+          <h2>跨系统使用</h2>
+          <p>源码包同时包含 Windows 与 macOS 的运行、打包配置。Windows 的 <code>.exe</code> 不能直接在 macOS 运行；Mac 需在本机完成依赖安装和应用打包。</p>
+          <div class="platform-grid">
+            <article class="platform" id="windows">
+              <strong>Windows</strong>
+              <p>下载源码包后可运行 <code>npm.cmd install</code> 与 <code>npm.cmd start</code>；也可执行 <code>npm.cmd run dist:win-portable</code> 生成便携版。</p>
+              <a class="button secondary" href="../../../../downloads/web-media-collector-desktop-source.zip" download>下载源码包</a>
+            </article>
+            <article class="platform">
+              <strong>Intel Mac</strong>
+              <p>在 Mac 里执行 <code>npm install</code>，随后运行 <code>npm run pack:mac-x64</code> 打包 Intel 版本。</p>
+              <a class="button secondary" href="../../../../downloads/web-media-collector-desktop-source.zip" download>下载源码包</a>
+            </article>
+            <article class="platform">
+              <strong>Apple Silicon</strong>
+              <p>在 Mac 里执行 <code>npm install</code>，随后运行 <code>npm run pack:mac-arm64</code> 打包 Apple Silicon 版本。</p>
+              <a class="button secondary" href="../../../../downloads/web-media-collector-desktop-source.zip" download>下载源码包</a>
+            </article>
+          </div>
+          <p class="notice">仅处理当前网络可访问的公开网页资源，不绕过登录、付费墙、DRM 或网站权限限制。</p>
+        </section>
+      </main>
+    </div>
+  </body>
+</html>
