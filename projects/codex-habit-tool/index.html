@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="theme-color" content="#0c1523" />
+  <title>Codex 习惯设置工具 | 网页演示</title>
+  <meta name="description" content="Codex 常用偏好、模型、快捷键、任务命名与对话报告的网页演示。" />
+  <link rel="stylesheet" href="../../assets/subpage-shell.css" />
+  <link rel="stylesheet" href="./styles.css" />
+</head>
+<body class="hub-subpage">
+  <a class="hub-home-link" href="../../index.html#apps" aria-label="返回主页"><span class="hub-home-link__icon" aria-hidden="true">←</span><span>返回主页</span></a>
+  <main class="demo-shell">
+    <header class="page-intro">
+      <div>
+        <span class="eyebrow">WEB PREVIEW</span>
+        <h1>Codex 习惯设置工具</h1>
+        <p>在网页中体验模型、中文偏好、快捷键、任务命名和对话报告的设置流程。</p>
+      </div>
+      <a class="video-link" href="../../videos/codex-habit-tool-demo.html">观看使用视频</a>
+    </header>
+
+    <section class="tool-window" aria-label="Codex 习惯设置工具演示">
+      <header class="tool-header">
+        <div><strong>Codex 习惯设置工具</strong><span>将常用偏好快速应用到本机 Codex</span></div>
+        <span class="window-state">本机设置</span>
+      </header>
+      <div class="tool-body">
+        <section class="setting-card">
+          <div class="section-title"><h2>要应用的设置</h2><span>可单独启用</span></div>
+          <label class="setting-row"><input id="chineseUi" type="checkbox" checked /><span><strong>Codex 界面优先中文</strong><small>将内置浏览器语言偏好设为中文。</small></span></label>
+          <label class="setting-row"><input id="defaultModel" type="checkbox" checked /><span><strong>设置默认模型</strong><small>新对话默认使用所选模型和推理档位。</small></span></label>
+          <div class="model-controls" aria-label="模型设置">
+            <label>默认模型<select id="model"><option>5.6 Terra</option><option selected>5.6 Sol</option><option>5.6 Luna</option></select></label>
+            <label>推理档位<select id="reasoning"><option>低</option><option selected>中</option><option>高</option></select></label>
+          </div>
+          <label class="setting-row"><input id="shortcutToggle" type="checkbox" checked /><span><strong>启用全局快捷键</strong><small>即使设置窗口关闭，也能打开或隐藏 Codex。</small></span></label>
+          <div class="shortcut-controls" aria-label="快捷键设置"><label><input id="alt" type="checkbox" checked /> Alt</label><label><input id="ctrl" type="checkbox" /> Ctrl</label><label><input id="shift" type="checkbox" /> Shift</label><select id="key"><option>A</option><option selected>S</option><option>D</option><option>F</option></select><output id="shortcutOutput">Alt + S</output></div>
+          <label class="setting-row compact"><input id="startup" type="checkbox" /><span><strong>开机启动快捷键助手</strong></span></label>
+        </section>
+
+        <section class="quick-actions">
+          <div class="action-copy"><strong>任务命名</strong><span>更新近 3 天有变化的任务，标题最多 7 字。</span></div><button id="renameButton" type="button">更新名称</button>
+          <div class="action-copy"><strong>对话报告</strong><span>生成一份便于回顾任务进展与建议的 Excel 报告。</span></div><button id="reportButton" class="secondary" type="button">生成报告</button>
+        </section>
+        <p id="notice" class="notice" role="status">演示模式：设置只在当前网页显示。</p>
+      </div>
+      <footer class="tool-footer"><a href="../../downloads/codex-habit-tool-windows.zip" download>下载 Windows 版</a><button id="applyButton" type="button">应用设置</button></footer>
+    </section>
+  </main>
+  <script src="./app.js"></script>
+</body>
+</html>

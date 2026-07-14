@@ -372,6 +372,29 @@ const defaultApps = [
     polish: 7
   },
   {
+    id: "codex-habit-tool",
+    name: "Codex 习惯设置工具",
+    category: "Codex 效率工具",
+    status: "desktop",
+    brief: "把常用模型、中文界面、全局快捷键、任务命名和对话报告集中到一个本地设置工具里。",
+    problem: "每台新电脑都要重复配置 Codex，常用模型、中文偏好和快捷键容易遗漏，任务名称也缺少统一整理入口。",
+    aiUse: "AI 用于归纳任务内容、生成精简名称、提取对话报告，并把个人使用习惯沉淀为可复用的本地配置。",
+    folder: "./projects/codex-habit-tool/",
+    entry: "./projects/codex-habit-tool/index.html",
+    video: "./videos/codex-habit-tool-demo.html",
+    package: "./downloads/codex-habit-tool-windows.zip",
+    platforms: {
+      web: { href: "./projects/codex-habit-tool/index.html", label: "演示" },
+      windows: { href: "./downloads/codex-habit-tool-windows.zip", label: "Windows 下载" },
+      mac: { href: "./downloads/codex-habit-tool-mac-source.zip", label: "Mac 源码包" }
+    },
+    tags: ["Codex", "快捷键", "中文界面", "任务命名"],
+    speed: 9,
+    impact: 9,
+    risk: 8,
+    polish: 8
+  },
+  {
     id: "wanhuatong",
     name: "万话筒",
     category: "AI 表达转换",

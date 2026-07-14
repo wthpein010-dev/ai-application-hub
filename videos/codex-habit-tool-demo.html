@@ -1,0 +1,22 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="theme-color" content="#0c1523" />
+  <title>Codex 习惯设置工具 | 使用视频</title>
+  <meta name="description" content="约两分钟了解 Codex 习惯设置工具的主要使用流程。" />
+  <link rel="stylesheet" href="../assets/subpage-shell.css" />
+  <style>
+    :root{color-scheme:dark;--bg:#0c1523;--panel:#14243a;--line:#38516d;--text:#edf4fd;--muted:#aebed2;--blue:#3684d5;--teal:#55d3bd}*{box-sizing:border-box}body{margin:0;color:var(--text);font-family:"Microsoft YaHei UI","Microsoft YaHei","Segoe UI",sans-serif}.page{width:min(1100px,calc(100% - 32px));margin:auto;padding:78px 0 54px}.top{display:flex;justify-content:space-between;align-items:end;gap:18px;margin-bottom:22px}.eyebrow{color:var(--teal);font-size:12px;font-weight:900;letter-spacing:.12em}h1{margin:8px 0;font-size:clamp(30px,5vw,54px);line-height:1.08;letter-spacing:0}.top p{max-width:690px;margin:0;color:var(--muted);line-height:1.75}.demo{padding:10px 13px;border:1px solid var(--line);border-radius:8px;color:#e4f0ff;text-decoration:none;background:#17304c;font-weight:800}.viewer{overflow:hidden;border:1px solid var(--line);border-radius:8px;background:var(--panel);box-shadow:0 28px 80px rgba(0,0,0,.42)}.video-stage{display:grid;min-height:min(62vh,650px);place-items:center;background:#050a12}.video-stage video{display:none;width:100%;max-height:72vh;background:#000}.load{width:min(540px,calc(100% - 30px));padding:34px;border:1px solid var(--line);border-radius:8px;text-align:center;background:#13263e}.load strong{display:block;font-size:24px}.load p{margin:10px 0 20px;color:var(--muted);line-height:1.7}.load button{min-height:42px;padding:0 16px;border:0;border-radius:6px;color:white;background:var(--blue);font:800 14px "Microsoft YaHei UI","Microsoft YaHei",sans-serif;cursor:pointer}.meta{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:1px;background:var(--line)}.meta div{padding:17px;background:#112036}.meta strong{display:block;margin-bottom:7px;color:#dcecff}.meta span{color:var(--muted);font-size:13px;line-height:1.55}@media(max-width:680px){.page{width:min(100% - 24px,1100px);padding-top:86px}.top{align-items:flex-start;flex-direction:column}.meta{grid-template-columns:1fr}.video-stage{min-height:52vh}}
+  </style>
+</head>
+<body class="hub-subpage">
+  <a class="hub-home-link" href="../index.html#apps" aria-label="返回主页"><span class="hub-home-link__icon" aria-hidden="true">←</span><span>返回主页</span></a>
+  <main class="page">
+    <section class="top"><div><span class="eyebrow">CHINESE WALKTHROUGH</span><h1>两分钟配置好常用 Codex 习惯</h1><p>演示中文界面、默认模型、全局快捷键、任务命名、对话报告和应用设置的完整流程。</p></div><a class="demo" href="../projects/codex-habit-tool/index.html">打开网页演示</a></section>
+    <section class="viewer" aria-label="Codex 习惯设置工具教学视频"><div class="video-stage"><div id="loadCard" class="load"><strong>准备播放教学视频</strong><p>视频约两分钟，包含中文语音与同步字幕。点击后开始加载，避免进入页面时占用带宽。</p><button id="play" type="button">加载并播放</button></div><video id="video" controls playsinline preload="none"><track kind="captions" srclang="zh-CN" label="简体中文" src="./codex-habit-tool-demo.vtt" default /></video></div><div class="meta"><div><strong>00:00</strong><span>打开工具，确认中文界面和默认模型。</span></div><div><strong>00:35</strong><span>设置 Alt + S 全局快捷键与开机助手。</span></div><div><strong>01:10</strong><span>更新任务名称，生成报告并应用设置。</span></div></div></section>
+  </main>
+  <script>const button=document.querySelector('#play');const video=document.querySelector('#video');button.addEventListener('click',()=>{video.src='./codex-habit-tool-demo.mp4';document.querySelector('#loadCard').hidden=true;video.style.display='block';video.load();video.play().catch(()=>{});},{once:true});</script>
+</body>
+</html>

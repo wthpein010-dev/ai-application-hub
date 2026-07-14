@@ -16,7 +16,7 @@ test("codex reviewer exposes and migrates its video entry", () => {
 
 test("home page cache key refreshes the codex reviewer video metadata", () => {
   const home = readFileSync(join(root, "index.html"), "utf8");
-  assert.match(home, /app-20260706-restore-games\.js\?v=20260712-codex-reviewer-video/);
+  assert.match(home, /app-20260706-restore-games\.js\?v=20260715-codex-habit-tool/);
 });
 
 test("codex reviewer video page lazy-loads media and subtitles", () => {
