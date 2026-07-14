@@ -4,6 +4,9 @@
     <type fullname="GameScript.Runtime.Comp.ItemIconComponent" preserve="all" />
     <type fullname="GameScript.Runtime.Comp.SceneTransitionHeadAnim" preserve="all" />
     <type fullname="GameScript.Runtime.Comp.TopSafeAreaRectMatch" preserve="all" />
+    <type fullname="GameScript.Runtime.Display.MainDisplay.MainDisplay" preserve="all" />
+    <type fullname="GameScript.Runtime.Display.MainDisplay.RankTitle" preserve="all" />
+    <type fullname="GameScript.Runtime.Display.MainDisplay.SingleArea" preserve="all" />
     <type fullname="GameScript.Runtime.RedDot.RedDotComp" preserve="all" />
     <type fullname="GameScript.Runtime.UI.UserAuthorizationView" preserve="all" />
     <type fullname="MyUI.AddShortcutButton" preserve="all" />
@@ -14,9 +17,12 @@
     <type fullname="MyUI.FlyTargetLayout" preserve="all" />
     <type fullname="MyUI.FriendMainScreenView" preserve="all" />
     <type fullname="MyUI.FuncPopupScreenView" preserve="all" />
+    <type fullname="MyUI.LevelFailScreenView" preserve="all" />
+    <type fullname="MyUI.LevelMain" preserve="all" />
     <type fullname="MyUI.LevelSceneBootstrap" preserve="all" />
     <type fullname="MyUI.LevelSceneScreenView" preserve="all" />
     <type fullname="MyUI.LevelTranslationScreenView" preserve="all" />
+    <type fullname="MyUI.LevelWinScreenView" preserve="all" />
     <type fullname="MyUI.LoadingDisplay" preserve="all" />
     <type fullname="MyUI.LoadSimpleDisplay" preserve="all" />
     <type fullname="MyUI.MainScreenView" preserve="all" />
@@ -31,8 +37,6 @@
     <type fullname="MyUI.UIRuleScreenView" preserve="all" />
     <type fullname="MyUI.WaitNetScreenView" preserve="all" />
     <type fullname="SoundButtonEffect" preserve="all" />
-    <type fullname="MyUI.MainMarqueeInspectorSettings" preserve="nothing" serialized="true" />
-    <type fullname="MyUI.MainMarqueeLanguageEntry" preserve="nothing" serialized="true" />
   </assembly>
   <assembly fullname="DOTweenPro.Scripts, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null">
     <type fullname="DG.Tweening.DOTweenAnimation" preserve="all" />
@@ -49,18 +53,19 @@
     <type fullname="HutongGames.PlayMaker.ActionData" preserve="nothing" serialized="true" />
     <type fullname="HutongGames.PlayMaker.Fsm" preserve="nothing" serialized="true" />
     <type fullname="HutongGames.PlayMaker.Fsm/EditorFlags" preserve="nothing" serialized="true" />
-    <type fullname="HutongGames.PlayMaker.FsmBool" preserve="nothing" serialized="true" />
-    <type fullname="HutongGames.PlayMaker.FsmEnum" preserve="nothing" serialized="true" />
     <type fullname="HutongGames.PlayMaker.FsmEvent" preserve="nothing" serialized="true" />
-    <type fullname="HutongGames.PlayMaker.FsmEventTarget" preserve="nothing" serialized="true" />
-    <type fullname="HutongGames.PlayMaker.FsmFloat" preserve="nothing" serialized="true" />
-    <type fullname="HutongGames.PlayMaker.FsmGameObject" preserve="nothing" serialized="true" />
-    <type fullname="HutongGames.PlayMaker.FsmOwnerDefault" preserve="nothing" serialized="true" />
+    <type fullname="HutongGames.PlayMaker.FsmInt" preserve="nothing" serialized="true" />
     <type fullname="HutongGames.PlayMaker.FsmState" preserve="nothing" serialized="true" />
     <type fullname="HutongGames.PlayMaker.FsmString" preserve="nothing" serialized="true" />
     <type fullname="HutongGames.PlayMaker.FsmTransition" preserve="nothing" serialized="true" />
     <type fullname="HutongGames.PlayMaker.FsmVariables" preserve="nothing" serialized="true" />
     <type fullname="HutongGames.PlayMaker.UiEvents" preserve="nothing" serialized="true" />
+    <type fullname="HutongGames.PlayMaker.FsmBool" preserve="nothing" serialized="true" />
+    <type fullname="HutongGames.PlayMaker.FsmEnum" preserve="nothing" serialized="true" />
+    <type fullname="HutongGames.PlayMaker.FsmEventTarget" preserve="nothing" serialized="true" />
+    <type fullname="HutongGames.PlayMaker.FsmFloat" preserve="nothing" serialized="true" />
+    <type fullname="HutongGames.PlayMaker.FsmGameObject" preserve="nothing" serialized="true" />
+    <type fullname="HutongGames.PlayMaker.FsmOwnerDefault" preserve="nothing" serialized="true" />
   </assembly>
   <assembly fullname="SDKRuntime, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null">
     <type fullname="Sdk.CanvasMatchScale" preserve="all" />
@@ -69,6 +74,16 @@
     <type fullname="Sdk.SceneTransition" preserve="all" />
     <type fullname="Sdk.UiSelectableFeedback" preserve="all" />
     <type fullname="Sdk.UiSelectableFeedback/ToggleBoolEvent" preserve="nothing" serialized="true" />
+  </assembly>
+  <assembly fullname="spine-unity, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null">
+    <type fullname="Spine.Unity.SkeletonAnimation" preserve="all" />
+    <type fullname="Spine.Unity.SkeletonDataAsset" preserve="all" />
+    <type fullname="Spine.Unity.SkeletonGraphic" preserve="all" />
+    <type fullname="Spine.Unity.SpineAtlasAsset" preserve="all" />
+    <type fullname="Spine.Unity.BlendModeMaterials" preserve="nothing" serialized="true" />
+    <type fullname="Spine.Unity.SkeletonRenderer/SpriteMaskInteractionMaterials" preserve="nothing" serialized="true" />
+    <type fullname="Spine.Unity.MeshGenerator" preserve="nothing" serialized="true" />
+    <type fullname="Spine.Unity.MeshGenerator/Settings" preserve="nothing" serialized="true" />
   </assembly>
   <assembly fullname="Unity.Addressables, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null" preserve="all">
     <type fullname="UnityEngine.AddressableAssets.Addressables" preserve="all" />
@@ -107,11 +122,14 @@
     <type fullname="UnityEngine.GameObject" preserve="all" />
     <type fullname="UnityEngine.LightmapSettings" preserve="all" />
     <type fullname="UnityEngine.Material" preserve="all" />
+    <type fullname="UnityEngine.MeshFilter" preserve="all" />
+    <type fullname="UnityEngine.MeshRenderer" preserve="all" />
     <type fullname="UnityEngine.Object" preserve="all" />
     <type fullname="UnityEngine.RectTransform" preserve="all" />
     <type fullname="UnityEngine.RenderSettings" preserve="all" />
     <type fullname="UnityEngine.Shader" preserve="all" />
     <type fullname="UnityEngine.Sprite" preserve="all" />
+    <type fullname="UnityEngine.SpriteRenderer" preserve="all" />
     <type fullname="UnityEngine.TextAsset" preserve="all" />
     <type fullname="UnityEngine.Texture2D" preserve="all" />
     <type fullname="UnityEngine.Transform" preserve="all" />
