@@ -457,8 +457,8 @@
         loadingPanel.style.display = "grid";
         syncCanvasResolution();
 
-        const buildUrl = "https://testingcf.jsdelivr.net/gh/wthpein010-dev/ai-application-hub@b78f4b8f56348aa27913eae31adaffbb30a81e5f/projects/paws-home-client/Build";
-        const buildVersion = "20260714-native-decompress-b78f4b8";
+        const buildUrl = "https://testingcf.jsdelivr.net/gh/wthpein010-dev/ai-application-hub@6c2657aeb0d0ac35e544c7bfaff155ac15f666b1/projects/paws-home-client/Build";
+        const buildVersion = "20260714-native-decompress-6c2657a";
         const config = {
           dataUrl: buildUrl + "/paws-home-client-webgl.data.unityweb?v=" + buildVersion,
           frameworkUrl: buildUrl + "/paws-home-client-webgl.framework.js.unityweb?v=" + buildVersion,
@@ -473,9 +473,9 @@
         };
 
         preloadUnityAssets([
-          { key: "dataUrl", url: config.dataUrl, size: 11054522, compressed: true },
+          { key: "dataUrl", url: config.dataUrl, size: 11054449, compressed: true },
           { key: "frameworkUrl", url: config.frameworkUrl, size: 85905, compressed: true, type: "text/javascript" },
-          { key: "codeUrl", url: config.codeUrl, size: 10081725, compressed: true, type: "application/wasm" }
+          { key: "codeUrl", url: config.codeUrl, size: 10081595, compressed: true, type: "application/wasm" }
         ]).then(assetUrls => {
           Object.assign(config, assetUrls);
         }).catch(error => {
