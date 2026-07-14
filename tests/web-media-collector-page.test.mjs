@@ -6,6 +6,7 @@ import { fileURLToPath } from "node:url";
 
 const root = dirname(dirname(fileURLToPath(import.meta.url)));
 const hub = readFileSync(join(root, "index.html"), "utf8");
+assert.match(hub, /app-20260706-restore-games\.js\?v=20260714-web-media-demo-route/);
 const runtimeScript = hub.match(/<script\s+src="\.\/([^"?]+)(?:\?[^\"]*)?"><\/script>/)?.[1] || "app.js";
 const app = readFileSync(join(root, runtimeScript), "utf8");
 const project = join(root, "projects", "朋友圈发图神器", "01_作品体验入口", "网页素材一键收桌面版");
