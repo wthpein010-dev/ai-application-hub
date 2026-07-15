@@ -282,6 +282,29 @@ const defaultApps = [
     polish: 9
   },
   {
+    id: "ai-game-requirements-workshop",
+    name: "AI游戏需求工坊",
+    category: "游戏需求与 AI 开发",
+    status: "assistant",
+    brief: "通过灵感组合和开发配置，一次生成可直接交给 Codex 等 AI 工具执行的游戏开发任务书。",
+    problem: "游戏灵感、玩法范围和开发约束常被拆成多轮消息，AI 反复追问后仍容易遗漏引擎版本、UI 技术和验收标准。",
+    aiUse: "工具把设计者的选择整理成包含技术环境、核心循环、MVP、模块、风险、验收标准和原型计划的结构化 Markdown。",
+    folder: "https://gamepop-studio-20260713.polite-chord-7994.chatgpt.site",
+    entry: "https://gamepop-studio-20260713.polite-chord-7994.chatgpt.site",
+    video: "./projects/ai-game-requirements-workshop/video/index.html",
+    package: "",
+    platforms: {
+      web: { href: "https://gamepop-studio-20260713.polite-chord-7994.chatgpt.site", label: "演示" },
+      windows: "",
+      mac: ""
+    },
+    tags: ["游戏策划", "Unity", "Cocos", "Codex"],
+    speed: 9,
+    impact: 9,
+    risk: 9,
+    polish: 9
+  },
+  {
     id: "planner-daily-quiz",
     name: "每日策划知识考核",
     category: "策划训练答卷",
