@@ -1,12 +1,31 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
-import { spawnSync } from "node:child_process";
+import { spawnSync as childSpawnSync } from "node:child_process";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
+import { inspectMedia } from "./media-inspect.mjs";
 
 const root = dirname(dirname(fileURLToPath(import.meta.url)));
 const source = readFileSync(join(root, "app-20260706-restore-games.js"), "utf8");
+
+function spawnSync(command, args, options) {
+  if (command === (process.env.FFPROBE_PATH || "ffprobe")) {
+    const media = inspectMedia(args.at(-1));
+    return {
+      status: 0,
+      stderr: "",
+      stdout: JSON.stringify({
+        format: { duration: media.duration },
+        streams: [
+          { codec_type: "video", codec_name: media.videoCodec, width: media.width, height: media.height },
+          { codec_type: "audio", codec_name: media.audioCodec }
+        ]
+      })
+    };
+  }
+  return childSpawnSync(command, args, options);
+}
 
 test("codex reviewer exposes and migrates its video entry", () => {
   assert.match(source, /video:\s*"\.\/projects\/Codex对话评分工具\/视频资源\/演示视频\.html"/);
@@ -16,14 +35,14 @@ test("codex reviewer exposes and migrates its video entry", () => {
 
 test("home page cache key refreshes the codex reviewer video metadata", () => {
   const home = readFileSync(join(root, "index.html"), "utf8");
-  assert.match(home, /app-20260706-restore-games\.js\?v=20260715-codex-habit-tool/);
+  assert.match(home, /app-20260706-restore-games\.js\?v=20260716-video-coverage/);
 });
 
 test("codex reviewer video page lazy-loads media and subtitles", () => {
   const page = readFileSync(join(root, "projects", "Codex对话评分工具", "视频资源", "演示视频.html"), "utf8");
   assert.match(page, /id="loadVideo"/);
   assert.match(page, /id="walkthroughVideo"/);
-  assert.doesNotMatch(page, /<video[^>]+src=/);
+  assert.doesNotMatch(page, /<video\s+[^>]*\ssrc=/);
   assert.match(page, /codex-reviewer-intro\.mp4/);
   assert.match(page, /codex-reviewer-intro\.vtt/);
   assert.match(page, /overflow-x:\s*hidden/);

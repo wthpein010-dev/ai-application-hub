@@ -1,264 +1,61 @@
 <!doctype html>
 <html lang="zh-CN">
-<head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <meta name="theme-color" content="#080b10" />
-  <title>AI游戏需求工坊｜使用教学</title>
-  <style>
-    :root {
-      color-scheme: dark;
-      --bg: #080b10;
-      --surface: #10151d;
-      --surface-raised: #151c26;
-      --line: #283442;
-      --text: #f4f7fb;
-      --muted: #aab6c5;
-      --green: #54d6a3;
-      --blue: #62a8ff;
-      --amber: #ffc66d;
-      --coral: #ff8075;
-    }
-
-    * { box-sizing: border-box; }
-
-    body {
-      min-height: 100vh;
-      margin: 0;
-      color: var(--text);
-      font-family: "Microsoft YaHei UI", "Microsoft YaHei", "Segoe UI", sans-serif;
-      background: var(--bg);
-    }
-
-    a { color: inherit; }
-
-    .topbar {
-      display: flex;
-      min-height: 66px;
-      align-items: center;
-      justify-content: space-between;
-      gap: 20px;
-      padding: 12px clamp(16px, 4vw, 52px);
-      border-bottom: 1px solid var(--line);
-      background: rgba(8, 11, 16, 0.94);
-    }
-
-    .brand {
-      display: inline-flex;
-      align-items: center;
-      gap: 11px;
-      min-width: 0;
-      text-decoration: none;
-      font-weight: 800;
-    }
-
-    .mark {
-      display: grid;
-      width: 38px;
-      height: 38px;
-      flex: 0 0 38px;
-      place-items: center;
-      border: 1px solid rgba(84, 214, 163, 0.45);
-      border-radius: 8px;
-      color: var(--green);
-      background: #101d1a;
-    }
-
-    .topbar nav { display: flex; flex-wrap: wrap; gap: 8px; }
-
-    .topbar nav a,
-    .button {
-      display: inline-flex;
-      min-height: 38px;
-      align-items: center;
-      justify-content: center;
-      padding: 0 13px;
-      border: 1px solid var(--line);
-      border-radius: 6px;
-      color: var(--text);
-      text-decoration: none;
-      font-weight: 700;
-      background: var(--surface-raised);
-    }
-
-    .topbar nav a:hover,
-    .button:hover,
-    .chapter:hover {
-      border-color: var(--blue);
-      background: #192536;
-    }
-
-    main {
-      width: min(1180px, calc(100% - 28px));
-      margin: 0 auto;
-      padding: 38px 0 56px;
-    }
-
-    .heading {
-      display: grid;
-      grid-template-columns: minmax(0, 1fr) auto;
-      align-items: end;
-      gap: 22px;
-      margin-bottom: 18px;
-    }
-
-    .eyebrow {
-      color: var(--green);
-      font-size: 12px;
-      font-weight: 800;
-      letter-spacing: 0;
-    }
-
-    h1 {
-      max-width: 780px;
-      margin: 7px 0 8px;
-      font-size: clamp(30px, 4vw, 46px);
-      line-height: 1.14;
-      letter-spacing: 0;
-    }
-
-    p { margin: 0; color: var(--muted); line-height: 1.7; }
-
-    .duration {
-      padding: 7px 10px;
-      border: 1px solid rgba(255, 198, 109, 0.42);
-      border-radius: 6px;
-      color: var(--amber);
-      font-size: 12px;
-      font-weight: 800;
-      background: #211b12;
-    }
-
-    .viewer {
-      overflow: hidden;
-      border: 1px solid var(--line);
-      border-radius: 8px;
-      background: var(--surface);
-      box-shadow: 0 24px 70px rgba(0, 0, 0, 0.34);
-    }
-
-    video {
-      display: block;
-      width: 100%;
-      aspect-ratio: 16 / 9;
-      max-height: 74vh;
-      background: #000;
-    }
-
-    .viewer-actions {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 9px;
-      padding: 13px;
-      border-top: 1px solid var(--line);
-    }
-
-    .button.primary {
-      border-color: rgba(84, 214, 163, 0.5);
-      color: #eafff7;
-      background: #123027;
-    }
-
-    .chapters {
-      display: grid;
-      grid-template-columns: repeat(5, minmax(0, 1fr));
-      gap: 10px;
-      margin-top: 16px;
-    }
-
-    .chapter {
-      min-width: 0;
-      padding: 14px;
-      border: 1px solid var(--line);
-      border-radius: 6px;
-      color: inherit;
-      text-align: left;
-      font: inherit;
-      cursor: pointer;
-      background: var(--surface);
-    }
-
-    .chapter span { color: var(--blue); font-size: 11px; font-weight: 800; }
-    .chapter strong { display: block; margin: 6px 0; font-size: 14px; }
-    .chapter small { display: block; color: var(--muted); line-height: 1.55; }
-    .chapter:nth-child(4) span { color: var(--amber); }
-    .chapter:nth-child(5) span { color: var(--coral); }
-
-    .fallback {
-      margin-top: 14px;
-      padding-left: 12px;
-      border-left: 3px solid var(--coral);
-      color: var(--muted);
-      font-size: 13px;
-    }
-
-    @media (max-width: 860px) {
-      .chapters { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-    }
-
-    @media (max-width: 640px) {
-      .topbar, .heading { grid-template-columns: 1fr; align-items: flex-start; }
-      .topbar { flex-direction: column; }
-      .topbar nav { width: 100%; }
-      .topbar nav a { flex: 1; }
-      main { padding-top: 26px; }
-      .heading { display: flex; flex-direction: column; }
-      .chapters { grid-template-columns: 1fr; }
-    }
-  </style>
-</head>
-<body>
-  <header class="topbar">
-    <a class="brand" href="https://gamepop-studio-20260713.polite-chord-7994.chatgpt.site">
-      <span class="mark" aria-hidden="true">AI</span>
-      <span>AI游戏需求工坊</span>
-    </a>
-    <nav aria-label="页面导航">
-      <a href="https://gamepop-studio-20260713.polite-chord-7994.chatgpt.site">打开网页演示</a>
-      <a href="../../../index.html#apps">返回应用集合</a>
-    </nav>
-  </header>
-  <main>
-    <section class="heading">
-      <div>
-        <span class="eyebrow">中文配音 · 同步字幕</span>
-        <h1>从游戏灵感到 AI 可执行任务书</h1>
-        <p>完整演示灵感组合、需求补全、Unity 与 Cocos 配置，以及复制给 Codex 的交付流程。</p>
-      </div>
-      <span class="duration">约 2 分 20 秒</span>
-    </section>
-
-    <section class="viewer" aria-label="AI游戏需求工坊使用教学视频">
-      <video id="tutorialVideo" controls playsinline preload="metadata" poster="./poster.jpg">
-        <source src="./ai-game-requirements-workshop.mp4" type="video/mp4" />
-        <track kind="captions" srclang="zh-CN" label="简体中文" src="./ai-game-requirements-workshop.vtt" default />
-        你的浏览器不支持 HTML5 视频，请使用下方链接直接打开 MP4。
-      </video>
-      <div class="viewer-actions">
-        <a class="button primary" href="./ai-game-requirements-workshop.mp4">直接打开 MP4</a>
-        <a class="button" href="https://gamepop-studio-20260713.polite-chord-7994.chatgpt.site">边看边体验</a>
-        <a class="button" href="./ai-game-requirements-workshop.vtt">查看中文字幕</a>
-      </div>
-    </section>
-
-    <section class="chapters" aria-label="视频章节">
-      <button class="chapter" data-time="0" type="button"><span>00:00</span><strong>工具定位</strong><small>一次整理完整上下文，减少重复投喂。</small></button>
-      <button class="chapter" data-time="22" type="button"><span>00:22</span><strong>组合灵感</strong><small>随机、锁定、单抽与题库选择。</small></button>
-      <button class="chapter" data-time="50" type="button"><span>00:50</span><strong>补全需求</strong><small>把玩法、选择、失败反馈和假设说清楚。</small></button>
-      <button class="chapter" data-time="73" type="button"><span>01:13</span><strong>编辑器配置</strong><small>Unity 版本、UGUI 与 Cocos 切换。</small></button>
-      <button class="chapter" data-time="103" type="button"><span>01:43</span><strong>交付给 Codex</strong><small>预览、复制、下载和草稿恢复。</small></button>
-    </section>
-
-    <p class="fallback">无法播放时，可使用“直接打开 MP4”在浏览器中播放，或下载后使用本地播放器查看。</p>
-  </main>
-  <script>
-    const video = document.querySelector("#tutorialVideo");
-    document.querySelectorAll(".chapter").forEach((chapter) => {
-      chapter.addEventListener("click", () => {
-        video.currentTime = Number(chapter.dataset.time);
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>AI &#28216;&#25103;&#38656;&#27714;&#24037;&#22346;&#25945;&#23398;&#35270;&#39057;</title>
+    <style>
+      :root { --page: #101827; --panel: #172234; --line: #2b3d57; --text: #f8fafc; --muted: #aebdce; --accent: #58cbb3; }
+      * { box-sizing: border-box; }
+      body { margin: 0; min-width: 320px; overflow-x: hidden; color: var(--text); background: var(--page); font-family: "Microsoft YaHei", "PingFang SC", "Segoe UI", Arial, sans-serif; }
+      .back { position: fixed; top: 16px; left: 16px; z-index: 2; display: inline-flex; min-height: 38px; align-items: center; padding: 0 13px; border: 1px solid var(--line); border-radius: 8px; color: var(--text); background: #172234; font-size: 14px; font-weight: 800; text-decoration: none; }
+      main { width: min(980px, calc(100% - 32px)); margin: 0 auto; padding: 84px 0 44px; }
+      .eyebrow { margin: 0 0 12px; color: var(--accent); font-size: 13px; font-weight: 900; }
+      h1 { max-width: 760px; margin: 0; font-size: clamp(30px, 5vw, 52px); line-height: 1.12; letter-spacing: 0; }
+      .intro { max-width: 700px; margin: 14px 0 22px; color: var(--muted); line-height: 1.75; }
+      .player { overflow: hidden; border: 1px solid var(--line); border-radius: 8px; background: var(--panel); }
+      .load-card { display: grid; min-height: 420px; place-content: center; gap: 14px; padding: 28px; text-align: center; }
+      .load-card strong { font-size: 24px; }
+      .load-card p { max-width: 440px; margin: 0; color: var(--muted); line-height: 1.7; }
+      button { min-height: 44px; padding: 0 17px; border: 0; border-radius: 8px; color: #101827; background: var(--accent); font: inherit; font-weight: 900; cursor: pointer; }
+      video { display: block; width: 100%; aspect-ratio: 16 / 9; background: #060b13; }
+      [hidden] { display: none !important; }
+      .links { display: flex; flex-wrap: wrap; gap: 14px; margin-top: 18px; }
+      .links a { color: var(--muted); font-size: 14px; text-decoration: none; }
+      .links a:hover, .back:hover { color: var(--accent); }
+      @media (max-width: 560px) { main { width: min(100% - 24px, 980px); padding-top: 78px; } .back { top: 12px; left: 12px; } .load-card { min-height: 280px; } }
+    </style>
+  </head>
+  <body>
+    <a class="back" href="../../../index.html#apps">&#36820;&#22238;&#20027;&#39029;</a>
+    <main>
+      <p class="eyebrow">&#24037;&#20855;&#25945;&#23398;&#35270;&#39057;</p>
+      <h1>AI &#28216;&#25103;&#38656;&#27714;&#24037;&#22346;&#25945;&#23398;&#35270;&#39057;</h1>
+      <p class="intro">&#29992;&#19968;&#26465;&#35270;&#39057;&#30475;&#25026;&#22914;&#20309;&#25972;&#29702;&#28216;&#25103;&#38656;&#27714;&#65292;&#24182;&#29983;&#25104;&#21487;&#20132;&#32473; Codex &#30340;&#32467;&#26500;&#21270;&#20449;&#24687;&#12290;</p>
+      <section class="player" aria-label="tutorial video player">
+        <div class="load-card" id="loadCard">
+          <strong>&#20934;&#22791;&#25773;&#25918;&#25945;&#23398;&#35270;&#39057;</strong>
+          <p>&#39029;&#38754;&#20808;&#36731;&#37327;&#25171;&#24320;&#65292;&#28857;&#20987;&#21518;&#25165;&#21152;&#36733; MP4&#65292;&#32593;&#32476;&#36739;&#24930;&#26102;&#20063;&#33021;&#20808;&#30475;&#21040;&#20837;&#21475;&#12290;</p>
+          <button id="loadVideo" type="button">&#21152;&#36733;&#24182;&#25773;&#25918;&#35270;&#39057;</button>
+        </div>
+        <video id="introVideo" controls playsinline preload="none" data-src="./ai-game-requirements-workshop.mp4" hidden></video>
+      </section>
+      <nav class="links" aria-label="related links">
+        <a href="./ai-game-requirements-workshop.mp4">&#30452;&#25509;&#25171;&#24320; MP4</a>
+        <a href="https://gamepop-studio-20260713.polite-chord-7994.chatgpt.site">&#25171;&#24320;&#24212;&#29992;</a>
+        <a href="../../../index.html#apps">&#36820;&#22238;&#20840;&#37096;&#39033;&#30446;&#24635;&#35272;</a>
+      </nav>
+    </main>
+    <script>
+      const video = document.querySelector('#introVideo');
+      const loadButton = document.querySelector('#loadVideo');
+      const loadCard = document.querySelector('#loadCard');
+      loadButton.addEventListener('click', () => {
+        if (!video.src) video.src = video.dataset.src;
+        loadCard.hidden = true;
+        video.hidden = false;
         video.play().catch(() => video.load());
-      });
-    });
-  </script>
-</body>
+      }, { once: true });
+    </script>
+  </body>
 </html>

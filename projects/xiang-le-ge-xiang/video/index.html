@@ -3,9 +3,9 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Codex &#23545;&#35805;&#35780;&#20998;&#24037;&#20855;&#25945;&#23398;&#35270;&#39057;</title>
+    <title>&#31665;&#20102;&#20010;&#31665;&#25945;&#23398;&#35270;&#39057;</title>
     <style>
-      :root { --page: #101827; --panel: #172234; --line: #2b3d57; --text: #f8fafc; --muted: #aebdce; --accent: #5b8cff; }
+      :root { --page: #101827; --panel: #172234; --line: #2b3d57; --text: #f8fafc; --muted: #aebdce; --accent: #e78352; }
       * { box-sizing: border-box; }
       body { margin: 0; min-width: 320px; overflow-x: hidden; color: var(--text); background: var(--page); font-family: "Microsoft YaHei", "PingFang SC", "Segoe UI", Arial, sans-serif; }
       .back { position: fixed; top: 16px; left: 16px; z-index: 2; display: inline-flex; min-height: 38px; align-items: center; padding: 0 13px; border: 1px solid var(--line); border-radius: 8px; color: var(--text); background: #172234; font-size: 14px; font-weight: 800; text-decoration: none; }
@@ -27,29 +27,27 @@
     </style>
   </head>
   <body>
-    <a class="back" href="../../../index.html#apps">&#36820;&#22238;&#20027;&#39029;</a>
+    <a class="back" href="../../../index.html#games">&#36820;&#22238;&#20027;&#39029;</a>
     <main>
-      <p class="eyebrow">&#24037;&#20855;&#25945;&#23398;&#35270;&#39057;</p>
-      <h1>Codex &#23545;&#35805;&#35780;&#20998;&#24037;&#20855;&#25945;&#23398;&#35270;&#39057;</h1>
-      <p class="intro">&#20171;&#32461;&#22914;&#20309;&#35835;&#21462;&#26412;&#22320; Codex &#23545;&#35805;&#12289;&#35780;&#20998;&#24182;&#23548;&#20986;&#21487;&#22797;&#30424;&#25253;&#21578;&#12290;</p>
+      <p class="eyebrow">&#23567;&#28216;&#25103;&#25945;&#23398;&#35270;&#39057;</p>
+      <h1>&#31665;&#20102;&#20010;&#31665;&#25945;&#23398;&#35270;&#39057;</h1>
+      <p class="intro">&#30475;&#25026;&#22522;&#30784;&#25512;&#31665;&#35268;&#21017;&#65292;&#24182;&#20307;&#39564;&#31532;&#20108;&#20851;&#30340;&#22320;&#22270;&#21464;&#21270;&#12290;</p>
       <section class="player" aria-label="tutorial video player">
         <div class="load-card" id="loadCard">
           <strong>&#20934;&#22791;&#25773;&#25918;&#25945;&#23398;&#35270;&#39057;</strong>
           <p>&#39029;&#38754;&#20808;&#36731;&#37327;&#25171;&#24320;&#65292;&#28857;&#20987;&#21518;&#25165;&#21152;&#36733; MP4&#65292;&#32593;&#32476;&#36739;&#24930;&#26102;&#20063;&#33021;&#20808;&#30475;&#21040;&#20837;&#21475;&#12290;</p>
           <button id="loadVideo" type="button">&#21152;&#36733;&#24182;&#25773;&#25918;&#35270;&#39057;</button>
         </div>
-        <video id="walkthroughVideo" controls playsinline preload="none" data-src="./codex-reviewer-intro.mp4" hidden>
-          <track kind="subtitles" srclang="zh-CN" label="Chinese" src="./codex-reviewer-intro.vtt" default />
-        </video>
+        <video id="introVideo" controls playsinline preload="none" data-src="./xiang-le-ge-xiang-tutorial.mp4" hidden></video>
       </section>
       <nav class="links" aria-label="related links">
-        <a href="./codex-reviewer-intro.mp4">&#30452;&#25509;&#25171;&#24320; MP4</a>
+        <a href="./xiang-le-ge-xiang-tutorial.mp4">&#30452;&#25509;&#25171;&#24320; MP4</a>
         <a href="../index.html">&#25171;&#24320;&#24212;&#29992;</a>
-        <a href="../../../index.html#apps">&#36820;&#22238;&#20840;&#37096;&#39033;&#30446;&#24635;&#35272;</a>
+        <a href="../../../index.html#games">&#36820;&#22238;&#20840;&#37096;&#39033;&#30446;&#24635;&#35272;</a>
       </nav>
     </main>
     <script>
-      const video = document.querySelector('#walkthroughVideo');
+      const video = document.querySelector('#introVideo');
       const loadButton = document.querySelector('#loadVideo');
       const loadCard = document.querySelector('#loadCard');
       loadButton.addEventListener('click', () => {

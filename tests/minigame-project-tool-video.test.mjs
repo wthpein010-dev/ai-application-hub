@@ -2,8 +2,8 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { existsSync, readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
-import { spawnSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
+import { inspectMedia } from "./media-inspect.mjs";
 
 const root = dirname(dirname(fileURLToPath(import.meta.url)));
 const videoDir = join(root, "projects", "minigame-project-tool", "video");
@@ -27,16 +27,11 @@ test("video page lazy-loads the narrated walkthrough and subtitles", () => {
 
 test("walkthrough is 1080p with audio and no longer than three minutes", () => {
   assert.equal(existsSync(videoPath), true, "MP4 should exist");
-  const command = process.env.FFPROBE_PATH || "ffprobe";
-  const result = spawnSync(command, ["-v", "error", "-show_streams", "-show_format", "-of", "json", videoPath], { encoding: "utf8" });
-  assert.equal(result.status, 0, result.stderr || `Unable to run ${command}`);
-  const probe = JSON.parse(result.stdout);
-  const video = probe.streams.find(stream => stream.codec_type === "video");
-  const audio = probe.streams.find(stream => stream.codec_type === "audio");
+  const probe = inspectMedia(videoPath);
 
-  assert.equal(video?.width, 1920);
-  assert.equal(video?.height, 1080);
-  assert.ok(audio, "audio stream should exist");
-  assert.ok(Number(probe.format.duration) > 150, "video should be at least 150 seconds");
-  assert.ok(Number(probe.format.duration) <= 180, "video should not exceed three minutes");
+  assert.equal(probe.width, 1920);
+  assert.equal(probe.height, 1080);
+  assert.ok(probe.audioCodec, "audio stream should exist");
+  assert.ok(probe.duration > 150, "video should be at least 150 seconds");
+  assert.ok(probe.duration <= 180, "video should not exceed three minutes");
 });

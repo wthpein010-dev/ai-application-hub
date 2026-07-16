@@ -92,6 +92,7 @@ const defaultApps = [
     aiUse: "AI 用于整理应用说明、维护建议、入口状态和提交材料清单。",
     folder: "./",
     entry: "./index.html",
+    video: "./projects/AI\u5e94\u7528\u65b9\u6848\u6574\u7406\u5668/\u89c6\u9891\u8d44\u6e90/index.html",
     package: "./downloads/ai-application-hub.zip",
     platforms: {
       web: "./index.html",
@@ -114,6 +115,7 @@ const defaultApps = [
     aiUse: "AI 参与玩法扩展、10 关配置、UGUI 预制体、750×1624 安全区适配、进度存档、WebGL 与微信小游戏构建及发布验证。",
     folder: "./projects/icecream/",
     entry: "./projects/icecream/index.html",
+    video: "./projects/icecream/video/index.html",
     package: "./downloads/icecream-unity-project.zip",
     platforms: {
       web: { href: "./projects/icecream/index.html", label: "试玩" },
@@ -136,6 +138,7 @@ const defaultApps = [
     aiUse: "AI 参与关卡编辑器、关卡逻辑、道具流程、UI 调整、WebGL 打包和外网发布流程维护。",
     folder: "./projects/vita-mahjong/",
     entry: "./projects/vita-mahjong/index.html",
+    video: "./projects/vita-mahjong/video/index.html",
     package: "./downloads/vita-mahjong-webgl.zip",
     platforms: {
       web: "./projects/vita-mahjong/index.html",
@@ -158,6 +161,7 @@ const defaultApps = [
     aiUse: "AI 参与玩法设定、关卡规则、文档排版、Unity 工程拆分、程序化 UI 和 WebGL 构建同步。",
     folder: "./projects/zhuanglege-sha/",
     entry: "./projects/zhuanglege-sha/index.html",
+    video: "./projects/zhuanglege-sha/video/index.html",
     package: "",
     platforms: {
       web: "./projects/zhuanglege-sha/index.html",
@@ -180,6 +184,7 @@ const defaultApps = [
     aiUse: "AI 参与离线 WebGL 打包、私有依赖兼容处理、发布目录整理、主页入口接入和跨平台访问验证。",
     folder: "./projects/paws-home-client/",
     entry: "./projects/paws-home-client/index.html",
+    video: "./projects/paws-home-client/video/index.html",
     package: "",
     platforms: {
       web: "./projects/paws-home-client/index.html",
@@ -202,6 +207,7 @@ const defaultApps = [
     aiUse: "AI 参与玩法拆解、UGUI 预制体结构、750×1624 适配、关卡内容、WebGL 发布页和下载包整理。",
     folder: "./projects/fill-what/",
     entry: "./projects/fill-what/index.html",
+    video: "./projects/fill-what/\u89c6\u9891\u8d44\u6e90/index.html",
     package: "./downloads/fill-what-unity-project.zip",
     platforms: {
       web: { href: "./projects/fill-what/index.html", label: "演示" },
@@ -246,6 +252,7 @@ const defaultApps = [
     aiUse: "AI 参与玩法定位、第二关大地图结构、推箱子规则引擎、Canvas 渲染、移动端操作和自动化通关测试。",
     folder: "./projects/xiang-le-ge-xiang/",
     entry: "./projects/xiang-le-ge-xiang/index.html",
+    video: "./projects/xiang-le-ge-xiang/video/index.html",
     package: "",
     platforms: {
       web: { href: "./projects/xiang-le-ge-xiang/index.html", label: "体验" },
@@ -314,6 +321,7 @@ const defaultApps = [
     aiUse: "AI 后续可接入主观题点评、错题解释、同类练习生成和能力画像总结；当前版本先完成每日抽题、倒计时、自动批改和本地记录。",
     folder: "./projects/planner-daily-quiz/",
     entry: "./projects/planner-daily-quiz/index.html",
+    video: "./projects/planner-daily-quiz/video/index.html",
     package: "",
     platforms: {
       web: "./projects/planner-daily-quiz/index.html",
@@ -359,6 +367,7 @@ const defaultApps = [
     aiUse: "AI 参与需求拆解、交互文案、安装说明和审核材料梳理。",
     folder: "./projects/飞书文件批量下载插件/",
     entry: "./projects/飞书文件批量下载插件/index.html",
+    video: "./projects/\u98de\u4e66\u6587\u4ef6\u6279\u91cf\u4e0b\u8f7d\u63d2\u4ef6/\u89c6\u9891\u8d44\u6e90/\u6f14\u793a\u89c6\u9891.html",
     package: "./downloads/feishu-batch-downloader-extension.zip",
     platforms: {
       web: "./projects/飞书文件批量下载插件/index.html",
@@ -771,11 +780,13 @@ function renderPlatformShowcase(filtered) {
 function renderActions(app, stopPropagation = false, mode = "default") {
   const stop = stopPropagation ? ` onclick="event.stopPropagation()"` : "";
   const web = platformValue(app, "web") || app.entry;
+  const engineeringVideoLink = app.video ? `<a data-action="video" href="${escapeHtml(projectHref(videoHref(app)))}"${stop}>\u89c6\u9891</a>` : "";
   if (mode === "engineering") {
     const webLink = web ? `<a class="primary-link" data-action="web" href="${escapeHtml(projectHref(web))}"${stop}>演示</a>` : "";
     return `
       <div class="card-actions actions-engineering">
         ${webLink}
+        ${engineeringVideoLink}
       </div>
     `;
   }
@@ -1069,6 +1080,9 @@ function normalizeApp(app) {
     ...app,
     tags: Array.isArray(app.tags) ? app.tags : []
   };
+  if (!normalized.video && base.video) {
+    normalized.video = base.video;
+  }
   if (!statusLabel[normalized.status]) {
     normalized.status = base.status;
   }
@@ -1133,7 +1147,6 @@ function normalizeApp(app) {
     };
     normalized.status = "engineering";
     normalized.tags = ["Unity", "WebGL", "内部测试", "工程包"];
-    normalized.video = "";
   }
   if (normalized.id === "minigame-project-simulator") {
     normalized.name = "小游戏立项工具";

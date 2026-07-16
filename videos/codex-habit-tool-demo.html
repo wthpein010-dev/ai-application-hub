@@ -1,22 +1,61 @@
 <!doctype html>
 <html lang="zh-CN">
-<head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <meta name="theme-color" content="#0c1523" />
-  <title>Codex 习惯设置工具 | 使用视频</title>
-  <meta name="description" content="约两分钟了解 Codex 习惯设置工具的主要使用流程。" />
-  <link rel="stylesheet" href="../assets/subpage-shell.css" />
-  <style>
-    :root{color-scheme:dark;--bg:#0c1523;--panel:#14243a;--line:#38516d;--text:#edf4fd;--muted:#aebed2;--blue:#3684d5;--teal:#55d3bd}*{box-sizing:border-box}body{margin:0;color:var(--text);font-family:"Microsoft YaHei UI","Microsoft YaHei","Segoe UI",sans-serif}.page{width:min(1100px,calc(100% - 32px));margin:auto;padding:78px 0 54px}.top{display:flex;justify-content:space-between;align-items:end;gap:18px;margin-bottom:22px}.eyebrow{color:var(--teal);font-size:12px;font-weight:900;letter-spacing:.12em}h1{margin:8px 0;font-size:clamp(30px,5vw,54px);line-height:1.08;letter-spacing:0}.top p{max-width:690px;margin:0;color:var(--muted);line-height:1.75}.demo{padding:10px 13px;border:1px solid var(--line);border-radius:8px;color:#e4f0ff;text-decoration:none;background:#17304c;font-weight:800}.viewer{overflow:hidden;border:1px solid var(--line);border-radius:8px;background:var(--panel);box-shadow:0 28px 80px rgba(0,0,0,.42)}.video-stage{display:grid;min-height:min(62vh,650px);place-items:center;background:#050a12}.video-stage video{display:none;width:100%;max-height:72vh;background:#000}.load{width:min(540px,calc(100% - 30px));padding:34px;border:1px solid var(--line);border-radius:8px;text-align:center;background:#13263e}.load strong{display:block;font-size:24px}.load p{margin:10px 0 20px;color:var(--muted);line-height:1.7}.load button{min-height:42px;padding:0 16px;border:0;border-radius:6px;color:white;background:var(--blue);font:800 14px "Microsoft YaHei UI","Microsoft YaHei",sans-serif;cursor:pointer}.meta{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:1px;background:var(--line)}.meta div{padding:17px;background:#112036}.meta strong{display:block;margin-bottom:7px;color:#dcecff}.meta span{color:var(--muted);font-size:13px;line-height:1.55}@media(max-width:680px){.page{width:min(100% - 24px,1100px);padding-top:86px}.top{align-items:flex-start;flex-direction:column}.meta{grid-template-columns:1fr}.video-stage{min-height:52vh}}
-  </style>
-</head>
-<body class="hub-subpage">
-  <a class="hub-home-link" href="../index.html#apps" aria-label="返回主页"><span class="hub-home-link__icon" aria-hidden="true">←</span><span>返回主页</span></a>
-  <main class="page">
-    <section class="top"><div><span class="eyebrow">CHINESE WALKTHROUGH</span><h1>两分钟配置好常用 Codex 习惯</h1><p>演示中文界面、默认模型、全局快捷键、任务命名、对话报告和应用设置的完整流程。</p></div><a class="demo" href="../projects/codex-habit-tool/index.html">打开网页演示</a></section>
-    <section class="viewer" aria-label="Codex 习惯设置工具教学视频"><div class="video-stage"><div id="loadCard" class="load"><strong>准备播放教学视频</strong><p>视频约两分钟，包含中文语音与同步字幕。点击后开始加载，避免进入页面时占用带宽。</p><button id="play" type="button">加载并播放</button></div><video id="video" controls playsinline preload="none"><track kind="captions" srclang="zh-CN" label="简体中文" src="./codex-habit-tool-demo.vtt" default /></video></div><div class="meta"><div><strong>00:00</strong><span>打开工具，确认中文界面和默认模型。</span></div><div><strong>00:35</strong><span>设置 Alt + S 全局快捷键与开机助手。</span></div><div><strong>01:10</strong><span>更新任务名称，生成报告并应用设置。</span></div></div></section>
-  </main>
-  <script>const button=document.querySelector('#play');const video=document.querySelector('#video');button.addEventListener('click',()=>{video.src='./codex-habit-tool-demo.mp4';document.querySelector('#loadCard').hidden=true;video.style.display='block';video.load();video.play().catch(()=>{});},{once:true});</script>
-</body>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Codex &#20064;&#24815;&#24037;&#20855;&#25945;&#23398;&#35270;&#39057;</title>
+    <style>
+      :root { --page: #101827; --panel: #172234; --line: #2b3d57; --text: #f8fafc; --muted: #aebdce; --accent: #58cbb3; }
+      * { box-sizing: border-box; }
+      body { margin: 0; min-width: 320px; overflow-x: hidden; color: var(--text); background: var(--page); font-family: "Microsoft YaHei", "PingFang SC", "Segoe UI", Arial, sans-serif; }
+      .back { position: fixed; top: 16px; left: 16px; z-index: 2; display: inline-flex; min-height: 38px; align-items: center; padding: 0 13px; border: 1px solid var(--line); border-radius: 8px; color: var(--text); background: #172234; font-size: 14px; font-weight: 800; text-decoration: none; }
+      main { width: min(980px, calc(100% - 32px)); margin: 0 auto; padding: 84px 0 44px; }
+      .eyebrow { margin: 0 0 12px; color: var(--accent); font-size: 13px; font-weight: 900; }
+      h1 { max-width: 760px; margin: 0; font-size: clamp(30px, 5vw, 52px); line-height: 1.12; letter-spacing: 0; }
+      .intro { max-width: 700px; margin: 14px 0 22px; color: var(--muted); line-height: 1.75; }
+      .player { overflow: hidden; border: 1px solid var(--line); border-radius: 8px; background: var(--panel); }
+      .load-card { display: grid; min-height: 420px; place-content: center; gap: 14px; padding: 28px; text-align: center; }
+      .load-card strong { font-size: 24px; }
+      .load-card p { max-width: 440px; margin: 0; color: var(--muted); line-height: 1.7; }
+      button { min-height: 44px; padding: 0 17px; border: 0; border-radius: 8px; color: #101827; background: var(--accent); font: inherit; font-weight: 900; cursor: pointer; }
+      video { display: block; width: 100%; aspect-ratio: 16 / 9; background: #060b13; }
+      [hidden] { display: none !important; }
+      .links { display: flex; flex-wrap: wrap; gap: 14px; margin-top: 18px; }
+      .links a { color: var(--muted); font-size: 14px; text-decoration: none; }
+      .links a:hover, .back:hover { color: var(--accent); }
+      @media (max-width: 560px) { main { width: min(100% - 24px, 980px); padding-top: 78px; } .back { top: 12px; left: 12px; } .load-card { min-height: 280px; } }
+    </style>
+  </head>
+  <body>
+    <a class="back" href="../index.html#apps">&#36820;&#22238;&#20027;&#39029;</a>
+    <main>
+      <p class="eyebrow">&#24037;&#20855;&#25945;&#23398;&#35270;&#39057;</p>
+      <h1>Codex &#20064;&#24815;&#24037;&#20855;&#25945;&#23398;&#35270;&#39057;</h1>
+      <p class="intro">&#24555;&#36895;&#20102;&#35299;&#20064;&#24815;&#21015;&#34920;&#30340;&#25805;&#20316;&#27969;&#31243;&#65292;&#21253;&#25324;&#26032;&#24314;&#12289;&#23436;&#25104;&#19982;&#26597;&#30475;&#32479;&#35745;&#12290;</p>
+      <section class="player" aria-label="tutorial video player">
+        <div class="load-card" id="loadCard">
+          <strong>&#20934;&#22791;&#25773;&#25918;&#25945;&#23398;&#35270;&#39057;</strong>
+          <p>&#39029;&#38754;&#20808;&#36731;&#37327;&#25171;&#24320;&#65292;&#28857;&#20987;&#21518;&#25165;&#21152;&#36733; MP4&#65292;&#32593;&#32476;&#36739;&#24930;&#26102;&#20063;&#33021;&#20808;&#30475;&#21040;&#20837;&#21475;&#12290;</p>
+          <button id="loadVideo" type="button">&#21152;&#36733;&#24182;&#25773;&#25918;&#35270;&#39057;</button>
+        </div>
+        <video id="introVideo" controls playsinline preload="none" data-src="./codex-habit-tool-demo.mp4" hidden></video>
+      </section>
+      <nav class="links" aria-label="related links">
+        <a href="./codex-habit-tool-demo.mp4">&#30452;&#25509;&#25171;&#24320; MP4</a>
+        <a href="../projects/codex-habit-tool/index.html">&#25171;&#24320;&#24212;&#29992;</a>
+        <a href="../index.html#apps">&#36820;&#22238;&#20840;&#37096;&#39033;&#30446;&#24635;&#35272;</a>
+      </nav>
+    </main>
+    <script>
+      const video = document.querySelector('#introVideo');
+      const loadButton = document.querySelector('#loadVideo');
+      const loadCard = document.querySelector('#loadCard');
+      loadButton.addEventListener('click', () => {
+        if (!video.src) video.src = video.dataset.src;
+        loadCard.hidden = true;
+        video.hidden = false;
+        video.play().catch(() => video.load());
+      }, { once: true });
+    </script>
+  </body>
 </html>

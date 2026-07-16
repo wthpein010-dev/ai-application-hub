@@ -1,0 +1,59 @@
+import test from "node:test";
+import assert from "node:assert/strict";
+import { existsSync, readFileSync } from "node:fs";
+import { dirname, join, resolve } from "node:path";
+import { fileURLToPath } from "node:url";
+import vm from "node:vm";
+
+const root = dirname(dirname(fileURLToPath(import.meta.url)));
+const runtimePath = join(root, "app-20260706-restore-games.js");
+const runtime = readFileSync(runtimePath, "utf8");
+
+function loadDefaultApps() {
+  const start = runtime.indexOf("const defaultApps = [");
+  const closing = /\r?\n\];\r?\n\r?\nlet apps/.exec(runtime.slice(start));
+  assert.notEqual(start, -1, "defaultApps declaration should exist");
+  assert.ok(closing, "defaultApps declaration should end before runtime state");
+  const end = start + closing.index + 3;
+
+  const dataSource = runtime
+    .slice(start, end + 3)
+    .replace("const defaultApps =", "globalThis.defaultApps =")
+    .replace(/\bHUB_BRIEF\b/g, '""');
+  const context = { globalThis: {} };
+  vm.runInNewContext(dataSource, context);
+  return context.globalThis.defaultApps;
+}
+
+test("every visible project provides its own lazy-loaded tutorial video", () => {
+  const apps = loadDefaultApps();
+  assert.equal(apps.length, 16, "the hub should keep its full project inventory");
+
+  for (const app of apps) {
+    assert.ok(app.video, `${app.id} needs a dedicated video player path`);
+    assert.notEqual(app.video, "./videos/placeholder.html", `${app.id} must not use the generic placeholder`);
+
+    const videoPage = join(root, ...app.video.replace(/^\.\//, "").split("/"));
+    assert.equal(existsSync(videoPage), true, `${app.id} video player should exist`);
+
+    const html = readFileSync(videoPage, "utf8");
+    assert.match(html, /id=["']loadVideo["']/, `${app.id} player should require an explicit load action`);
+    const sourceMatch = html.match(/data-src=["']([^"']+\.mp4)["']/);
+    assert.ok(sourceMatch, `${app.id} player should lazy-load an MP4`);
+
+    const mediaPath = resolve(dirname(videoPage), sourceMatch[1]);
+    assert.equal(existsSync(mediaPath), true, `${app.id} tutorial MP4 should exist`);
+    assert.equal(readFileSync(mediaPath).includes(Buffer.from("avc1")), true, `${app.id} tutorial should use broadly supported H.264 video`);
+  }
+});
+
+test("engineering cards retain the demo action and expose a tutorial video when available", () => {
+  const engineeringRenderer = runtime.slice(
+    runtime.indexOf("function renderActions"),
+    runtime.indexOf("function platformValue")
+  );
+
+  assert.match(engineeringRenderer, /mode === "engineering"/);
+  assert.match(engineeringRenderer, /data-action="web"/);
+  assert.match(engineeringRenderer, /data-action="video"/);
+});
