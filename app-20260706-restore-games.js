@@ -793,16 +793,15 @@ function renderActions(app, stopPropagation = false, mode = "default") {
   const windows = platformValue(app, "windows") || app.package;
   const mac = platformValue(app, "mac");
   const webLink = web ? `<a class="primary-link" data-action="web" href="${escapeHtml(projectHref(web))}"${stop}>演示</a>` : "";
-  const windowsLabel = platformLabel(app, "windows", "Wins下载");
-  const windowsLink = windows ? `<a class="download-link" data-action="download" href="${escapeHtml(projectHref(windows))}" download${stop}>${escapeHtml(windowsLabel)}</a>` : "";
-  const macLink = mac ? `<a class="mac-link" data-action="mac" href="${escapeHtml(projectHref(mac))}" download${stop}>${escapeHtml(platformLabel(app, "mac", "Mac下载"))}</a>` : "";
+  const windowsLink = windows ? `<a class="download-link" data-action="download" href="${escapeHtml(projectHref(windows))}" download${stop}>Wins下载</a>` : "";
+  const macLink = mac ? `<a class="mac-link" data-action="mac" href="${escapeHtml(projectHref(mac))}" download${stop}>Mac下载</a>` : "";
   const video = `<a data-action="video" href="${escapeHtml(projectHref(videoHref(app)))}"${stop}>视频</a>`;
   return `
     <div class="card-actions">
       ${webLink}
+      ${video}
       ${windowsLink}
       ${macLink}
-      ${video}
     </div>
   `;
 }

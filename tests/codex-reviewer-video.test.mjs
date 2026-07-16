@@ -33,9 +33,9 @@ test("codex reviewer exposes and migrates its video entry", () => {
   assert.match(source, /normalized\.video = "\.\/projects\/Codex对话评分工具\/视频资源\/演示视频\.html"/);
 });
 
-test("home page cache key refreshes the codex reviewer video metadata", () => {
+test("home page cache key refreshes the current runtime metadata", () => {
   const home = readFileSync(join(root, "index.html"), "utf8");
-  assert.match(home, /app-20260706-restore-games\.js\?v=20260716-video-coverage/);
+  assert.match(home, /app-20260706-restore-games\.js\?v=20260716-button-order/);
 });
 
 test("codex reviewer video page lazy-loads media and subtitles", () => {
