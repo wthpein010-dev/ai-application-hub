@@ -220,6 +220,29 @@ const defaultApps = [
     polish: 8
   },
   {
+    id: "codex-quota-bar",
+    name: "Codex 用量悬浮条",
+    category: "AI 开发桌面工具",
+    status: "desktop",
+    brief: "始终置顶显示 Codex 主额度与 Spark 额度，自动刷新、断线重连，并提供 Windows 与 macOS 双平台工具包。",
+    problem: "长时间使用 Codex 时，剩余额度和重置时间分散在账户界面里，不便于在工作过程中持续观察，也容易错过低额度状态。",
+    aiUse: "工具通过本机 codex app-server 读取实时额度，不接触 auth.json；AI 参与跨平台协议接入、悬浮窗交互、托盘生命周期和打包验证。",
+    folder: "./projects/codex-quota-bar/",
+    entry: "./projects/codex-quota-bar/index.html",
+    video: "./projects/codex-quota-bar/video/index.html",
+    package: "./downloads/CodexQuotaBar-Windows-x64.zip",
+    platforms: {
+      web: { href: "./projects/codex-quota-bar/index.html", label: "演示" },
+      windows: { href: "./downloads/CodexQuotaBar-Windows-x64.zip", label: "Wins下载" },
+      mac: { href: "./downloads/CodexQuotaBar-macOS.zip", label: "Mac下载" }
+    },
+    tags: ["Codex", "实时额度", "桌面悬浮", "跨平台"],
+    speed: 9,
+    impact: 9,
+    risk: 9,
+    polish: 9
+  },
+  {
     id: "web-media-collector",
     name: "网页素材一键收桌面版",
     category: "网页素材整理",

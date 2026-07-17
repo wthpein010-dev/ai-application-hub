@@ -1,0 +1,120 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Codex 用量悬浮条｜在线演示</title>
+  <meta name="description" content="交互体验 Codex 用量悬浮条的实时额度、折叠、托盘和低额度状态。" />
+  <link rel="stylesheet" href="./styles.css?v=20260717-dragfix" />
+</head>
+<body>
+  <header class="topbar">
+    <a class="brand" href="../../index.html#apps" aria-label="返回 AI 应用总览">
+      <span class="brand-mark" aria-hidden="true">CQ</span>
+      <span>Codex 用量悬浮条</span>
+    </a>
+    <nav aria-label="页面入口">
+      <a href="./video/index.html">视频</a>
+      <a href="../../downloads/CodexQuotaBar-Windows-x64.zip" download>Wins下载</a>
+      <a href="../../downloads/CodexQuotaBar-macOS.zip" download>Mac下载</a>
+    </nav>
+  </header>
+
+  <main class="demo-workspace">
+    <aside class="control-dock" aria-label="用量模拟控制">
+      <div class="dock-heading">
+        <span class="live-dot" aria-hidden="true"></span>
+        <div>
+          <strong>实时模拟</strong>
+          <small id="simulationStatus">数据已连接</small>
+        </div>
+      </div>
+
+      <label class="range-control" for="codexRange">
+        <span>Codex 剩余</span>
+        <output id="codexOutput" for="codexRange">72%</output>
+        <input id="codexRange" type="range" min="0" max="100" value="72" />
+      </label>
+
+      <label class="range-control" for="sparkRange">
+        <span>Spark 剩余</span>
+        <output id="sparkOutput" for="sparkRange">100%</output>
+        <input id="sparkRange" type="range" min="0" max="100" value="100" />
+      </label>
+
+      <div class="status-control" aria-label="连接状态">
+        <span>状态</span>
+        <div class="segmented">
+          <button type="button" data-status="live" class="active">在线</button>
+          <button type="button" data-status="reconnecting">重连</button>
+          <button type="button" data-status="offline">离线</button>
+        </div>
+      </div>
+
+      <div class="dock-actions">
+        <button id="consumeButton" type="button">模拟消耗</button>
+        <button id="refreshButton" class="primary" type="button">立即刷新</button>
+      </div>
+    </aside>
+
+    <section id="desktop" class="desktop" aria-label="Codex 用量悬浮条桌面演示">
+      <div class="desktop-label" aria-hidden="true">
+        <span>CODING SESSION</span>
+        <strong>14:32</strong>
+      </div>
+
+      <article id="quotaWindow" class="quota-window" aria-label="Codex Quota Bar">
+        <header id="windowTitlebar" class="window-titlebar">
+          <div class="traffic-lights" aria-hidden="true">
+            <i class="red"></i><i class="yellow"></i><i class="green"></i>
+          </div>
+          <strong>CODEX QUOTA</strong>
+          <span id="connectionLabel" class="connection-label">刚刚更新</span>
+          <button id="collapseButton" class="icon-button" type="button" title="折叠" aria-label="折叠用量窗口">−</button>
+          <button id="hideButton" class="icon-button" type="button" title="隐藏到托盘" aria-label="隐藏到托盘">×</button>
+        </header>
+
+        <div class="expanded-content">
+          <div class="quota-hero">
+            <div>
+              <span>CODEX 剩余</span>
+              <strong id="codexValue">72%</strong>
+            </div>
+            <small id="resetText">6天后重置</small>
+          </div>
+          <div class="progress-track" aria-label="Codex 剩余进度">
+            <span id="codexProgress"></span>
+          </div>
+          <div class="secondary-row">
+            <span>GPT-5.3-Codex-Spark</span>
+            <strong id="sparkValue">100%</strong>
+          </div>
+          <div class="progress-track compact" aria-label="Spark 剩余进度">
+            <span id="sparkProgress"></span>
+          </div>
+          <footer class="quota-footer">
+            <span>重置机会 5</span>
+            <span>每 30 秒刷新</span>
+          </footer>
+        </div>
+
+        <div class="collapsed-content">
+          <strong>CODEX</strong>
+          <span id="collapsedValue">72%</span>
+          <div class="progress-track compact"><span id="collapsedProgress"></span></div>
+          <button id="expandButton" class="icon-button" type="button" title="展开" aria-label="展开用量窗口">□</button>
+          <button id="collapsedHideButton" class="icon-button" type="button" title="隐藏到托盘" aria-label="隐藏到托盘">×</button>
+        </div>
+      </article>
+
+      <button id="trayButton" class="tray-button" type="button" aria-label="从托盘恢复 Codex 用量悬浮条" title="Codex 用量">
+        <span>CQ</span>
+      </button>
+
+      <div id="videoCaption" class="video-caption" aria-live="polite"></div>
+    </section>
+  </main>
+
+  <script src="./app.js?v=20260717-dragfix"></script>
+</body>
+</html>
