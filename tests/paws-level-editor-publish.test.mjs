@@ -42,5 +42,8 @@ test("stored app merge iterates current defaults so an old browser sees new card
 });
 
 test("home page cache key changes for the published runtime", () => {
-  assert.match(page, /app-20260706-restore-games\.js\?v=20260720-paws-ai-levels/);
+  assert.match(
+    page,
+    /app-20260706-restore-games\.js\?v=20260720-paws-ai-codex-thread-workbench/,
+  );
 });

@@ -266,6 +266,28 @@ const defaultApps = [
     polish: 9
   },
   {
+    id: "codex-thread-workbench",
+    name: "Codex 多会话工作台",
+    category: "AI 开发桌面工具",
+    status: "desktop",
+    brief: "在同一个 Windows 一级界面中同时查看和操作多个真实 Codex 线程，直接输入、停止、审批，并清晰区分进行中与已完成任务。",
+    problem: "并行推进多个 Codex 任务时，频繁切换线程会打断判断，也难以及时发现等待输入、等待审批或已经完成的任务。",
+    aiUse: "工具通过本机 codex app-server 连接真实线程，不读取凭据；AI 参与协议接入、状态投影、多窗口会话交互和 Windows 发布验证。",
+    folder: "./projects/codex-thread-workbench/",
+    entry: "./projects/codex-thread-workbench/index.html",
+    package: "https://github.com/wthpein010-dev/ai-application-hub/releases/download/codex-thread-workbench-v1.0.0/CodexThreadWorkbench-Windows-x64.zip",
+    platforms: {
+      web: { href: "./projects/codex-thread-workbench/index.html", label: "交互演示" },
+      windows: { href: "https://github.com/wthpein010-dev/ai-application-hub/releases/download/codex-thread-workbench-v1.0.0/CodexThreadWorkbench-Windows-x64.zip", label: "Windows下载" },
+      mac: ""
+    },
+    tags: ["Codex", "多线程", "桌面工作台", "Windows"],
+    speed: 9,
+    impact: 9,
+    risk: 9,
+    polish: 9
+  },
+  {
     id: "web-media-collector",
     name: "网页素材一键收桌面版",
     category: "网页素材整理",
@@ -841,7 +863,9 @@ function renderActions(app, stopPropagation = false, mode = "default") {
   const webLink = web ? `<a class="primary-link" data-action="web" href="${escapeHtml(projectHref(web))}"${stop}>演示</a>` : "";
   const windowsLink = windows ? `<a class="download-link" data-action="download" href="${escapeHtml(projectHref(windows))}" download${stop}>Wins下载</a>` : "";
   const macLink = mac ? `<a class="mac-link" data-action="mac" href="${escapeHtml(projectHref(mac))}" download${stop}>Mac下载</a>` : "";
-  const video = `<a data-action="video" href="${escapeHtml(projectHref(videoHref(app)))}"${stop}>视频</a>`;
+  const video = app.video
+    ? `<a data-action="video" href="${escapeHtml(projectHref(videoHref(app)))}"${stop}>视频</a>`
+    : "";
   return `
     <div class="card-actions">
       ${webLink}
