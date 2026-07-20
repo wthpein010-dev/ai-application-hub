@@ -51,6 +51,35 @@ test("Mac downloader reuses the verified core and retries each part three times"
   assert.match(script, /application\/zip/);
 });
 
+test("Hub workflow builds and verifies both Mac architectures before publishing", () => {
+  const workflow = readFileSync(
+    join(root, ".github", "workflows", "build-codex-thread-workbench.yml"),
+    "utf8",
+  );
+
+  assert.match(workflow, /runtime:\s*osx-arm64\s+runner:\s*macos-14/);
+  assert.match(workflow, /runtime:\s*osx-x64\s+runner:\s*macos-15-intel/);
+  assert.equal((workflow.match(/scripts\/test-macos-package\.sh/g) || []).length, 2);
+  assert.match(workflow, /needs:\s*build-macos/);
+  assert.match(workflow, /manifest-arm64\.json/);
+  assert.match(workflow, /manifest-x64\.json/);
+  assert.match(workflow, /git pull --rebase origin/);
+  assert.doesNotMatch(workflow, /git push[^\n]+--force/);
+  assert.equal(
+    existsSync(
+      join(
+        root,
+        "build",
+        "codex-thread-workbench",
+        "src",
+        "CodexThreadWorkbench",
+        "CodexThreadWorkbench.csproj",
+      ),
+    ),
+    true,
+  );
+});
+
 test("shared downloader accepts Mac app ZIP manifests and validates every part", async () => {
   const { assembleDownload, validateManifest } = await import(coreUrl);
   const chunks = [Uint8Array.of(1, 2, 3), Uint8Array.of(4, 5)];

@@ -1,0 +1,152 @@
+name: Build Codex Thread Workbench for macOS
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - agent/workbench-mac-video
+    paths:
+      - ".github/workflows/build-codex-thread-workbench.yml"
+      - "build/codex-thread-workbench/**"
+      - "scripts/split-workbench-mac.mjs"
+      - "tests/codex-thread-workbench-mac-download.test.mjs"
+
+permissions:
+  contents: write
+
+concurrency:
+  group: codex-thread-workbench-macos-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  build-macos:
+    name: Build and verify ${{ matrix.architecture }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - architecture: arm64
+            runtime: osx-arm64
+            runner: macos-14
+          - architecture: x64
+            runtime: osx-x64
+            runner: macos-15-intel
+    runs-on: ${{ matrix.runner }}
+    defaults:
+      run:
+        working-directory: build/codex-thread-workbench
+    steps:
+      - name: Check out the build snapshot
+        uses: actions/checkout@v4
+        with:
+          sparse-checkout: |
+            build/codex-thread-workbench
+          sparse-checkout-cone-mode: false
+
+      - name: Set up .NET 8
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 8.0.x
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Install the public Codex CLI
+        run: npm install --global @openai/codex
+
+      - name: Run Release tests
+        run: dotnet test CodexThreadWorkbench.sln --configuration Release
+
+      - name: Build, sign, and verify the final app
+        shell: bash
+        run: |
+          set -euo pipefail
+          chmod +x scripts/publish-macos.sh scripts/test-macos-package.sh
+          scripts/publish-macos.sh "${{ matrix.runtime }}"
+          scripts/test-macos-package.sh \
+            "artifacts/release/CodexThreadWorkbench-macOS-${{ matrix.architecture }}.app.zip" \
+            "${{ matrix.runtime }}"
+          shasum -a 256 \
+            "artifacts/release/CodexThreadWorkbench-macOS-${{ matrix.architecture }}.app.zip"
+
+      - name: Upload verified app
+        uses: actions/upload-artifact@v4
+        with:
+          name: workbench-macos-${{ matrix.architecture }}
+          path: build/codex-thread-workbench/artifacts/release/CodexThreadWorkbench-macOS-${{ matrix.architecture }}.app.zip
+          if-no-files-found: error
+          retention-days: 7
+
+  publish-pages-parts:
+    name: Publish verified Pages parts
+    needs: build-macos
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out only the publishing surface
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          sparse-checkout: |
+            .github/workflows/build-codex-thread-workbench.yml
+            build/codex-thread-workbench/src/CodexThreadWorkbench/CodexThreadWorkbench.csproj
+            package.json
+            package-lock.json
+            projects/codex-thread-workbench
+            scripts
+            tests
+          sparse-checkout-cone-mode: false
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install static test dependencies
+        run: npm ci
+
+      - name: Download both verified apps
+        uses: actions/download-artifact@v4
+        with:
+          pattern: workbench-macos-*
+          path: artifacts/workbench-macos
+          merge-multiple: true
+
+      - name: Create verified Pages parts and manifests
+        run: |
+          set -euo pipefail
+          node scripts/split-workbench-mac.mjs \
+            artifacts/workbench-macos/CodexThreadWorkbench-macOS-arm64.app.zip \
+            projects/codex-thread-workbench/download/mac \
+            arm64
+          node scripts/split-workbench-mac.mjs \
+            artifacts/workbench-macos/CodexThreadWorkbench-macOS-x64.app.zip \
+            projects/codex-thread-workbench/download/mac \
+            x64
+
+      - name: Verify download, media, and manifest contracts
+        run: |
+          node --test \
+            tests/codex-thread-workbench-download.test.mjs \
+            tests/codex-thread-workbench-mac-download.test.mjs \
+            tests/codex-thread-workbench-video.test.mjs
+
+      - name: Commit verified Mac packages to the publication branch
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add \
+            projects/codex-thread-workbench/download/mac/manifest-arm64.json \
+            projects/codex-thread-workbench/download/mac/manifest-x64.json \
+            projects/codex-thread-workbench/download/mac/parts
+          if git diff --cached --quiet; then
+            echo "Verified package parts are already current."
+            exit 0
+          fi
+          git commit -m "release: publish verified workbench macOS packages"
+          git pull --rebase origin "${GITHUB_REF_NAME}"
+          git push origin "HEAD:${GITHUB_REF_NAME}"

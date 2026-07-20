@@ -1,0 +1,117 @@
+<UserControl x:Class="CodexThreadWorkbench.Views.ThreadPickerOverlay"
+             xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:views="using:CodexThreadWorkbench.Views">
+  <Grid Background="#660B1114">
+    <Border Width="760"
+            MaxHeight="680"
+            Margin="30"
+            Padding="22"
+            HorizontalAlignment="Center"
+            VerticalAlignment="Center"
+            Background="#FAFBFB"
+            BorderBrush="{StaticResource BorderBrush}"
+            BorderThickness="1"
+            CornerRadius="16"
+            BoxShadow="0 8 28 0 #3D273137">
+      <Grid RowDefinitions="Auto,Auto,Auto,*">
+        <Grid Grid.Row="0" ColumnDefinitions="*,Auto">
+          <StackPanel>
+            <TextBlock FontSize="20"
+                       FontWeight="SemiBold"
+                       Text="打开 Codex 任务" />
+            <TextBlock Margin="0,5,0,0"
+                       Foreground="{StaticResource SecondaryTextBrush}"
+                       FontSize="12"
+                       Text="选择后会直接加入当前对话网格。" />
+          </StackPanel>
+          <Button Grid.Column="1"
+                  Classes="icon"
+                  Command="{Binding ClosePickerCommand}"
+                  Content="×"
+                  FontSize="18" />
+        </Grid>
+
+        <TextBox x:Name="ThreadSearchBox"
+                 Grid.Row="1"
+                 Classes="input"
+                 Height="40"
+                 Margin="0,18,0,12"
+                 VerticalContentAlignment="Center"
+                 Text="{Binding Picker.SearchText, UpdateSourceTrigger=PropertyChanged}"
+                 Watermark="搜索标题、预览或项目路径" />
+
+        <Border Grid.Row="2"
+                Margin="0,0,0,10"
+                Padding="10,7"
+                Background="#FFF4E6"
+                BorderBrush="#F1D4A9"
+                BorderThickness="1"
+                CornerRadius="7"
+                IsVisible="{Binding Picker.HasError}">
+          <TextBlock Foreground="#9A5B18"
+                     FontSize="11"
+                     Text="{Binding Picker.ErrorMessage}" />
+        </Border>
+
+        <ListBox x:Name="ThreadList"
+                 Grid.Row="3"
+                 MinHeight="300"
+                 ItemsSource="{Binding Picker.Items}"
+                 Background="Transparent"
+                 BorderThickness="0"
+                 ScrollViewer.HorizontalScrollBarVisibility="Disabled"
+                 ScrollViewer.VerticalScrollBarVisibility="Auto">
+          <ListBox.Styles>
+            <Style Selector="ListBoxItem">
+              <Setter Property="Padding" Value="0" />
+              <Setter Property="Margin" Value="0,0,0,7" />
+              <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+              <Setter Property="Focusable" Value="False" />
+            </Style>
+          </ListBox.Styles>
+          <ListBox.ItemTemplate>
+            <DataTemplate>
+              <Border Padding="13,11"
+                      Background="White"
+                      BorderBrush="{StaticResource BorderBrush}"
+                      BorderThickness="1"
+                      CornerRadius="9">
+                <Grid ColumnDefinitions="*,Auto">
+                  <StackPanel>
+                    <TextBlock FontSize="13"
+                               FontWeight="SemiBold"
+                               Text="{Binding Title}"
+                               TextTrimming="CharacterEllipsis" />
+                    <TextBlock Margin="0,4,14,0"
+                               Foreground="{StaticResource SecondaryTextBrush}"
+                               FontSize="11"
+                               Text="{Binding Preview}"
+                               TextTrimming="CharacterEllipsis" />
+                    <StackPanel Margin="0,6,0,0" Orientation="Horizontal">
+                      <TextBlock Foreground="#8B959C"
+                                 FontSize="10"
+                                 Text="{Binding UpdatedText}" />
+                      <TextBlock Margin="10,0,0,0"
+                                 Foreground="#8B959C"
+                                 FontSize="10"
+                                 Text="{Binding WorkingDirectory}"
+                                 TextTrimming="CharacterEllipsis" />
+                    </StackPanel>
+                  </StackPanel>
+                  <Button Grid.Column="1"
+                          Classes="toolbar"
+                          MinWidth="74"
+                          Command="{Binding DataContext.OpenThreadCommand, RelativeSource={RelativeSource AncestorType=views:ThreadPickerOverlay}}"
+                          CommandParameter="{Binding}"
+                          Content="打开"
+                          IsEnabled="{Binding !IsOpen}" />
+                </Grid>
+              </Border>
+            </DataTemplate>
+          </ListBox.ItemTemplate>
+        </ListBox>
+      </Grid>
+    </Border>
+  </Grid>
+</UserControl>
