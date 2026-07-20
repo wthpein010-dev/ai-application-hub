@@ -1,0 +1,272 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>GamePulse 小游雷达视频说明</title>
+    <meta
+      name="description"
+      content="用 75 秒了解 GamePulse 小游雷达的双榜浏览、筛选、详情、比较和每日更新机制。"
+    />
+    <style>
+      :root {
+        color-scheme: dark;
+        --page: #07110f;
+        --panel: #0b1916;
+        --line: #214137;
+        --text: #effff8;
+        --muted: #8ba79b;
+        --accent: #5de7c2;
+        --signal: #c8ff45;
+      }
+
+      * { box-sizing: border-box; }
+
+      body {
+        margin: 0;
+        min-width: 320px;
+        overflow-x: hidden;
+        color: var(--text);
+        background:
+          linear-gradient(rgba(93, 231, 194, 0.035) 1px, transparent 1px),
+          linear-gradient(90deg, rgba(93, 231, 194, 0.035) 1px, transparent 1px),
+          var(--page);
+        background-size: 52px 52px;
+        font-family: "Microsoft YaHei", "PingFang SC", "Segoe UI", sans-serif;
+      }
+
+      .back {
+        position: fixed;
+        top: 16px;
+        left: 16px;
+        z-index: 3;
+        display: inline-flex;
+        min-height: 40px;
+        align-items: center;
+        padding: 0 14px;
+        border: 1px solid var(--line);
+        border-radius: 10px;
+        color: var(--text);
+        background: rgba(11, 25, 22, 0.94);
+        font-size: 14px;
+        font-weight: 800;
+        text-decoration: none;
+        backdrop-filter: blur(14px);
+      }
+
+      main {
+        width: min(1040px, calc(100% - 32px));
+        margin: 0 auto;
+        padding: 90px 0 50px;
+      }
+
+      .eyebrow {
+        margin: 0 0 12px;
+        color: var(--accent);
+        font-size: 12px;
+        font-weight: 900;
+        letter-spacing: 0.14em;
+      }
+
+      h1 {
+        max-width: 820px;
+        margin: 0;
+        font-size: clamp(32px, 6vw, 60px);
+        line-height: 1.06;
+        letter-spacing: -0.035em;
+      }
+
+      h1 span { color: var(--signal); }
+
+      .intro {
+        max-width: 720px;
+        margin: 18px 0 26px;
+        color: var(--muted);
+        line-height: 1.75;
+      }
+
+      .player {
+        overflow: hidden;
+        border: 1px solid var(--line);
+        border-radius: 18px;
+        background: var(--panel);
+        box-shadow: 0 24px 80px rgba(0, 0, 0, 0.28);
+      }
+
+      .load-card {
+        display: grid;
+        min-height: 480px;
+        place-content: center;
+        gap: 16px;
+        padding: 32px;
+        text-align: center;
+        background:
+          radial-gradient(circle at 50% 40%, rgba(93, 231, 194, 0.13), transparent 38%),
+          var(--panel);
+      }
+
+      .load-card strong { font-size: clamp(24px, 4vw, 36px); }
+
+      .load-card p {
+        max-width: 520px;
+        margin: 0;
+        color: var(--muted);
+        line-height: 1.7;
+      }
+
+      button {
+        min-height: 46px;
+        padding: 0 20px;
+        border: 0;
+        border-radius: 10px;
+        color: #07110f;
+        background: var(--accent);
+        font: inherit;
+        font-weight: 900;
+        cursor: pointer;
+      }
+
+      video {
+        display: block;
+        width: 100%;
+        aspect-ratio: 16 / 9;
+        background: #020706;
+      }
+
+      [hidden] { display: none !important; }
+
+      .chapters {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 10px;
+        margin-top: 18px;
+      }
+
+      .chapter {
+        display: grid;
+        grid-template-columns: auto 1fr;
+        gap: 10px;
+        align-items: center;
+        min-height: 64px;
+        padding: 12px 14px;
+        border: 1px solid var(--line);
+        border-radius: 12px;
+        color: var(--text);
+        background: var(--panel);
+        text-align: left;
+      }
+
+      .chapter time {
+        color: var(--signal);
+        font-family: Consolas, "SFMono-Regular", monospace;
+        font-size: 12px;
+      }
+
+      .chapter span { font-size: 14px; font-weight: 800; }
+
+      .links {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 16px;
+        margin-top: 20px;
+      }
+
+      .links a {
+        color: var(--muted);
+        font-size: 14px;
+        text-decoration: none;
+      }
+
+      .links a:hover,
+      .back:hover { color: var(--accent); }
+
+      @media (max-width: 760px) {
+        .chapters { grid-template-columns: 1fr 1fr; }
+        .load-card { min-height: 300px; }
+      }
+
+      @media (max-width: 520px) {
+        main { width: min(100% - 24px, 1040px); padding-top: 78px; }
+        .back { top: 12px; left: 12px; }
+        .chapters { grid-template-columns: 1fr; }
+      }
+    </style>
+  </head>
+  <body>
+    <a class="back" href="../../../index.html#games">返回小游戏集合</a>
+    <main>
+      <p class="eyebrow">GAMEPULSE / 75S WALKTHROUGH</p>
+      <h1>看懂国内与海外小游戏榜，<span>只需 75 秒。</span></h1>
+      <p class="intro">
+        视频依次演示今日洞察、国内与海外双榜、搜索筛选、游戏详情、三款比较，
+        以及每天北京时间 07:10 后的数据检查机制。视频无配音，默认开启中文字幕。
+      </p>
+
+      <section class="player" aria-label="GamePulse 视频说明播放器">
+        <div class="load-card" id="loadCard">
+          <strong>准备播放 GamePulse 视频说明</strong>
+          <p>点击后再加载 MP4，打开页面时无需等待完整视频下载。</p>
+          <button id="loadVideo" type="button">加载并播放视频</button>
+        </div>
+        <video
+          id="introVideo"
+          controls
+          playsinline
+          preload="none"
+          data-src="./gamepulse-mini-radar-demo.mp4"
+          poster="./poster.jpg"
+          hidden
+        >
+          <track
+            kind="captions"
+            src="./gamepulse-mini-radar-demo.vtt"
+            srclang="zh"
+            label="中文字幕"
+            default
+          />
+        </video>
+      </section>
+
+      <nav class="chapters" aria-label="视频章节">
+        <button class="chapter" type="button" data-time="0"><time>00:00</time><span>产品定位</span></button>
+        <button class="chapter" type="button" data-time="10"><time>00:10</time><span>今日洞察</span></button>
+        <button class="chapter" type="button" data-time="22"><time>00:22</time><span>国内与海外双榜</span></button>
+        <button class="chapter" type="button" data-time="35"><time>00:35</time><span>搜索和筛选</span></button>
+        <button class="chapter" type="button" data-time="48"><time>00:48</time><span>详情与三款比较</span></button>
+        <button class="chapter" type="button" data-time="62"><time>01:02</time><span>来源与每日更新</span></button>
+      </nav>
+
+      <nav class="links" aria-label="相关链接">
+        <a href="./gamepulse-mini-radar-demo.mp4">直接打开 MP4</a>
+        <a href="https://gamepulse-mini-radar.polite-chord-7994.chatgpt.site">打开 GamePulse</a>
+        <a href="../../../index.html#games">返回小游戏体验集合</a>
+      </nav>
+    </main>
+    <script>
+      const video = document.querySelector("#introVideo");
+      const loadButton = document.querySelector("#loadVideo");
+      const loadCard = document.querySelector("#loadCard");
+
+      function revealVideo({ autoplay = false } = {}) {
+        if (!video.src) video.src = video.dataset.src;
+        loadCard.hidden = true;
+        video.hidden = false;
+        if (autoplay) video.play().catch(() => video.load());
+      }
+
+      loadButton.addEventListener(
+        "click",
+        () => revealVideo({ autoplay: true }),
+        { once: true },
+      );
+
+      document.querySelectorAll("[data-time]").forEach((chapter) => {
+        chapter.addEventListener("click", () => {
+          revealVideo();
+          video.currentTime = Number(chapter.dataset.time);
+          video.play().catch(() => video.load());
+        });
+      });
+    </script>
+  </body>
+</html>
