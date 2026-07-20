@@ -38,7 +38,7 @@ function naturalSort(left, right) {
 }
 
 function readPublicTextFiles(root) {
-  const extensions = new Set([".html", ".css", ".js", ".mjs"]);
+  const extensions = new Set([".html", ".css", ".js", ".mjs", ".json"]);
   const text = [];
   const visit = (directory) => {
     for (const name of readdirSync(directory)) {
@@ -86,6 +86,16 @@ test("all published block images preserve the expected 120 by 135 dimensions", (
 test("public files contain no private level path or credential material", () => {
   const text = readPublicTextFiles(editorRoot);
   assert.doesNotMatch(text, /EditorLevels|E:\\Mahjong|maque|cookie|password/i);
+  assert.match(text, /公开演示专用；坐标与牌组均为自行生成，不含真实工程关卡数据。/);
+});
+
+test("published levels contain only the index and standalone showcase", () => {
+  const levels = readdirSync(join(editorRoot, "levels")).sort();
+  assert.deepEqual(levels, ["index.json", "level_showcase.json"]);
+  const showcase = JSON.parse(
+    readFileSync(join(editorRoot, "levels", "level_showcase.json"), "utf8"),
+  );
+  assert.match(showcase.designerNote.source, /公开演示专用/);
 });
 
 test("entry uses relative GitHub Pages module and Three paths", () => {

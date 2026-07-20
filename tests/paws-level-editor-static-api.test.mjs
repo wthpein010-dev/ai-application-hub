@@ -4,7 +4,13 @@ import { readFile } from "node:fs/promises";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 
-import { createApiClient } from "../projects/paws-level-editor/static-api-client.mjs";
+import * as staticApi from "../projects/paws-level-editor/static-api-client.mjs";
+import {
+  parseLevelDocument,
+  serializeLevelDocument,
+} from "../projects/paws-level-editor/core/level-adapter.mjs";
+
+const { createApiClient } = staticApi;
 
 const root = dirname(dirname(fileURLToPath(import.meta.url)));
 const levelsPath = join(root, "projects", "paws-level-editor", "levels");
@@ -68,6 +74,37 @@ test("save survives a new client and reset restores the bundle", async () => {
   assert.notEqual(saved.version, loaded.version);
 });
 
+test("adapter save reload and serialize round-trip preserves string designerNote and unknown fields", async () => {
+  const storage = createStorage();
+  const fetchImpl = await createFetch();
+  const api = createApiClient({ fetchImpl, storage, now: () => "2026-07-20T00:00:00.000Z" });
+  const loaded = await api.loadLevel("level_showcase.json");
+  const document = parseLevelDocument(loaded.value, {
+    fileName: loaded.fileName,
+    version: loaded.version,
+  });
+  const firstSerialized = serializeLevelDocument(document);
+  const saved = await api.saveLevel({
+    fileName: loaded.fileName,
+    value: firstSerialized,
+    expectedVersion: loaded.version,
+    saveAs: false,
+  });
+
+  assert.equal(typeof saved.value.designerNote, "string");
+  assert.equal(JSON.parse(saved.value.designerNote).source, loaded.value.designerNote.source);
+  assert.equal(Array.isArray(JSON.parse(saved.value.designerNote).levelData), false);
+
+  const reloaded = await api.loadLevel(loaded.fileName);
+  const secondSerialized = serializeLevelDocument(
+    parseLevelDocument(reloaded.value, {
+      fileName: reloaded.fileName,
+      version: reloaded.version,
+    }),
+  );
+  assert.deepEqual(JSON.parse(secondSerialized.designerNote), JSON.parse(firstSerialized.designerNote));
+});
+
 test("lists and loads a locally saved copy that is absent from the bundled index", async () => {
   const storage = createStorage();
   const fetchImpl = await createFetch();
@@ -85,6 +122,26 @@ test("lists and loads a locally saved copy that is absent from the bundled index
   assert.equal((await refreshed.loadLevel("showcase_copy.json")).value.name, "浏览器副本");
 });
 
+test("reset rejects a local-only copy without deleting it", async () => {
+  const storage = createStorage();
+  const api = createApiClient({
+    fetchImpl: await createFetch(),
+    storage,
+    now: () => "2026-07-20T00:00:00.000Z",
+  });
+  await api.saveLevel({
+    fileName: "local_copy.json",
+    value: { name: "必须保留", tiles: [] },
+    saveAs: true,
+  });
+
+  await assert.rejects(() => api.resetLevel("local_copy.json"), {
+    status: 400,
+    code: "not-bundled-level",
+  });
+  assert.equal((await api.loadLevel("local_copy.json")).value.name, "必须保留");
+});
+
 test("lists the bundle when its local override is corrupt and reset recovers it", async () => {
   const storage = createStorage();
   storage.setItem("paws-level-editor-demo-v1:level_showcase.json", "{not valid JSON");
@@ -93,6 +150,7 @@ test("lists the bundle when its local override is corrupt and reset recovers it"
   const levels = await api.listLevels();
 
   assert.equal(levels[0].fileName, "level_showcase.json");
+  assert.equal(levels[0].bundled, true);
   assert.equal(levels[0].local, false);
   assert.equal(levels[0].localError, "invalid-local-record");
   await assert.rejects(() => api.loadLevel("level_showcase.json"), { code: "invalid-local-record" });
@@ -107,6 +165,28 @@ test("rejects path traversal and stale versions", async () => {
     () => api.saveLevel({ fileName: "level_showcase.json", value: {}, expectedVersion: "stale", saveAs: false }),
     { status: 409, code: "version-conflict" },
   );
+});
+
+test("shared file name validation accepts safe Unicode names and rejects paths", async () => {
+  assert.equal(typeof staticApi.isValidLevelFileName, "function");
+  assert.equal(staticApi.isValidLevelFileName("关卡副本.json"), true);
+  assert.equal(staticApi.isValidLevelFileName("level copy.json"), true);
+  assert.equal(staticApi.isValidLevelFileName("../secret.json"), false);
+  assert.equal(staticApi.isValidLevelFileName("folder/关卡.json"), false);
+  assert.equal(staticApi.isValidLevelFileName("关卡..json"), false);
+  assert.equal(staticApi.isValidLevelFileName("关卡.json.bak"), false);
+
+  const api = createApiClient({
+    fetchImpl: await createFetch(),
+    storage: createStorage(),
+    now: () => "2026-07-20T00:00:00.000Z",
+  });
+  const saved = await api.saveLevel({
+    fileName: "关卡副本.json",
+    value: { name: "中文文件名", tiles: [] },
+    saveAs: true,
+  });
+  assert.equal(saved.fileName, "关卡副本.json");
 });
 
 test("exposes the static demo support methods and returns detached values", async () => {

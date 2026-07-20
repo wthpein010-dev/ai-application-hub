@@ -1,4 +1,4 @@
-import { createApiClient } from "../static-api-client.mjs";
+import { createApiClient, isValidLevelFileName } from "../static-api-client.mjs";
 import { EditHistory, createAddTilesCommand, createDeleteTilesCommand, createMoveTilesCommand, createPatchTilesCommand } from "../core/edit-history.mjs";
 import { parseLevelDocument, serializeLevelDocument } from "../core/level-adapter.mjs";
 import { validateLevel } from "../core/level-validator.mjs";
@@ -253,14 +253,29 @@ export class WorkbenchController {
       });
       meta.append(count, date);
       button.append(head, file, meta);
-      button.addEventListener("click", () => this.openLevel(level.fileName));
+      button.addEventListener("click", () =>
+        this.openLevel(level.fileName, { recoverable: level.recoverable }));
       this.elements.levelList.append(button);
     }
   }
 
-  async openLevel(fileName, { discardDirty = false } = {}) {
+  async openLevel(
+    fileName,
+    { discardDirty = false, recoverable = false, recoveryAttempted = false } = {},
+  ) {
     if (!discardDirty && this.isDirty() && !confirm("当前关卡有未保存修改，确定打开其他关卡吗？")) {
       return;
+    }
+    if (recoverable) {
+      if (!confirm("浏览器保存已损坏，是否清除并恢复内置示例？")) {
+        return;
+      }
+      try {
+        await this.api.resetLevel(fileName);
+      } catch (error) {
+        this.showToast(error.message, "error");
+        return;
+      }
     }
     this.showToast(`正在打开 ${fileName}…`);
     try {
@@ -269,6 +284,7 @@ export class WorkbenchController {
         fileName,
         version: response.version,
       });
+      this.document.bundled = response.bundled === true;
       this.history = new EditHistory(this.document);
       this.history.markSaved();
       this.selection = new Set();
@@ -291,13 +307,27 @@ export class WorkbenchController {
       }
       this.elements.libraryPanel.classList.remove("is-open");
     } catch (error) {
+      if (error.code === "invalid-local-record" && !recoveryAttempted) {
+        if (confirm("浏览器保存已损坏，是否清除并恢复内置示例？")) {
+          try {
+            await this.api.resetLevel(fileName);
+            return this.openLevel(fileName, {
+              discardDirty: true,
+              recoveryAttempted: true,
+            });
+          } catch (resetError) {
+            this.showToast(resetError.message, "error");
+            return;
+          }
+        }
+      }
       this.showToast(error.message, "error");
     }
   }
 
   async resetCurrentLevel() {
     const { document } = this;
-    if (!document?.fileName) {
+    if (!document?.bundled) {
       return;
     }
     if (!confirm("确定清除当前浏览器保存并恢复内置示例吗？")) {
@@ -673,8 +703,9 @@ export class WorkbenchController {
     if (!this.document || this.readonly) {
       return;
     }
-    const base = (this.document.fileName || `level_${String(this.document.id).padStart(4, "0")}_${this.document.name || "新关卡"}.json`).replace(/\.json$/i, "");
-    this.elements.saveAsName.value = `${base}_copy.json`;
+    this.elements.saveAsName.value = this.document.fileName
+      ? `${this.document.fileName.replace(/\.json$/i, "")}_copy.json`
+      : `level_${String(this.document.id).padStart(4, "0")}_copy.json`;
     this.elements.saveAsError.textContent = "";
     const fileName = await new Promise((resolve) => {
       this.saveAsResolver = resolve;
@@ -693,7 +724,7 @@ export class WorkbenchController {
       return;
     }
     const fileName = this.elements.saveAsName.value.trim();
-    if (!fileName.toLowerCase().endsWith(".json") || /[\\/:*?"<>|]/.test(fileName) || fileName.includes("..")) {
+    if (!isValidLevelFileName(fileName)) {
       this.elements.saveAsError.textContent = "请输入不含路径字符的 .json 文件名。";
       return;
     }
@@ -706,6 +737,7 @@ export class WorkbenchController {
       const saved = await this.api.saveLevel({ fileName, value, expectedVersion, saveAs });
       this.document.fileName = fileName;
       this.document.version = saved.version;
+      this.document.bundled = saved.bundled === true;
       this.document.original = structuredClone(saved.value);
       try {
         this.document.designerNote = JSON.parse(saved.value.designerNote);
@@ -775,7 +807,7 @@ export class WorkbenchController {
     });
     this.elements.undo.disabled = !this.history?.canUndo;
     this.elements.redo.disabled = !this.history?.canRedo;
-    this.elements.resetLevel.disabled = !this.document?.fileName;
+    this.elements.resetLevel.disabled = !this.document?.bundled;
     this.elements.dirty.textContent = this.isDirty() ? "未保存" : "已保存";
     this.elements.dirty.classList.toggle("is-dirty", this.isDirty());
     this.elements.statusLevel.textContent = this.document?.name || this.document?.fileName || "未打开";

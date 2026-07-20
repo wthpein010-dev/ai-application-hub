@@ -1,7 +1,7 @@
 const STORAGE_PREFIX = "paws-level-editor-demo-v1";
 const STORAGE_MANIFEST_KEY = `${STORAGE_PREFIX}:local-files`;
 const INDEX_URL = "./levels/index.json";
-const FILE_NAME_PATTERN = /^[A-Za-z0-9][A-Za-z0-9_-]*\.json$/;
+const FILE_NAME_PATTERN = /^[^\u0000-\u001f<>:"/\\|?*]+\.json$/iu;
 
 export class WorkbenchApiError extends Error {
   constructor(message, { status = 500, code = "static-api-error" } = {}) {
@@ -10,6 +10,15 @@ export class WorkbenchApiError extends Error {
     this.status = status;
     this.code = code;
   }
+}
+
+export function isValidLevelFileName(fileName) {
+  return (
+    typeof fileName === "string"
+    && fileName === fileName.trim()
+    && !fileName.includes("..")
+    && FILE_NAME_PATTERN.test(fileName)
+  );
 }
 
 export function createApiClient({
@@ -31,7 +40,8 @@ export function createApiClient({
         throw new WorkbenchApiError("内置关卡索引格式无效。", { code: "invalid-level-index" });
       }
       const bundledFileNames = new Set(index.levels.map((entry) => entry.fileName));
-      const bundled = index.levels.map((entry) => mergeStoredSummary(entry, storage));
+      const bundled = index.levels.map((entry) =>
+        mergeStoredSummary({ ...entry, bundled: true }, storage));
       const localOnly = readStoredFileNames(storage)
         .filter((fileName) => !bundledFileNames.has(fileName))
         .map((fileName) => mergeStoredOnlySummary(fileName, storage))
@@ -40,7 +50,14 @@ export function createApiClient({
     },
     async loadLevel(fileName) {
       assertFileName(fileName);
-      return readStored(storage, fileName) ?? await loadBundled(fetchImpl, fileName);
+      const stored = readStored(storage, fileName);
+      if (!stored) return loadBundled(fetchImpl, fileName);
+      const index = await fetchJson(fetchImpl, INDEX_URL);
+      return {
+        ...stored,
+        bundled: Array.isArray(index?.levels)
+          && index.levels.some((entry) => entry.fileName === fileName),
+      };
     },
     async saveLevel({ fileName, value, expectedVersion = "", saveAs = false } = {}) {
       assertFileName(fileName);
@@ -54,7 +71,12 @@ export function createApiClient({
       if (!saveAs && current?.version !== expectedVersion) {
         throw new WorkbenchApiError("浏览器版本已变化。", { status: 409, code: "version-conflict" });
       }
-      const saved = makeLocalRecord(fileName, synchronizeLevelData(value), now());
+      const saved = makeLocalRecord(
+        fileName,
+        synchronizeLevelData(value),
+        now(),
+        Boolean(current?.bundled),
+      );
       writeStored(storage, fileName, saved);
       rememberStoredFileName(storage, fileName);
       return clone(saved);
@@ -64,14 +86,23 @@ export function createApiClient({
     blockImageUrl(type) { return `./assets/blocks/block_${encodeURIComponent(type)}.png`; },
     async resetLevel(fileName) {
       assertFileName(fileName);
+      const index = await fetchJson(fetchImpl, INDEX_URL);
+      if (!Array.isArray(index?.levels)
+        || !index.levels.some((entry) => entry.fileName === fileName)) {
+        throw new WorkbenchApiError("该关卡没有可恢复的内置版本。", {
+          status: 400,
+          code: "not-bundled-level",
+        });
+      }
+      const bundled = await loadBundled(fetchImpl, fileName);
       removeStored(storage, fileName);
-      return loadBundled(fetchImpl, fileName);
+      return bundled;
     },
   };
 }
 
 function assertFileName(fileName) {
-  if (typeof fileName !== "string" || !FILE_NAME_PATTERN.test(fileName)) {
+  if (!isValidLevelFileName(fileName)) {
     throw new WorkbenchApiError("关卡文件名无效。", { status: 400, code: "invalid-file-name" });
   }
 }
@@ -116,10 +147,17 @@ function mergeStoredOnlySummary(fileName, storage) {
   try {
     const stored = readStored(storage, fileName);
     if (!stored) return null;
-    return storedSummary({ fileName, name: fileName }, stored);
+    return storedSummary({ fileName, name: fileName, bundled: false }, stored);
   } catch (error) {
     if (error instanceof WorkbenchApiError && error.code === "invalid-local-record") {
-      return { fileName, name: fileName, local: false, localError: error.code, recoverable: true };
+      return {
+        fileName,
+        name: fileName,
+        bundled: false,
+        local: false,
+        localError: error.code,
+        recoverable: false,
+      };
     }
     throw error;
   }
@@ -143,10 +181,11 @@ function makeBundledRecord(fileName, value) {
     version: `bundle-${stableHash(clonedValue)}`,
     updatedAt: "",
     local: false,
+    bundled: true,
   };
 }
 
-function makeLocalRecord(fileName, value, updatedAt) {
+function makeLocalRecord(fileName, value, updatedAt, bundled) {
   const clonedValue = clone(value);
   return {
     fileName,
@@ -154,16 +193,37 @@ function makeLocalRecord(fileName, value, updatedAt) {
     version: `local-${stableHash({ fileName, value: clonedValue, updatedAt })}`,
     updatedAt,
     local: true,
+    bundled,
   };
 }
 
 function synchronizeLevelData(value) {
   const copy = clone(value);
-  if (Array.isArray(copy?.tiles)) {
-    copy.designerNote = copy.designerNote && typeof copy.designerNote === "object" ? copy.designerNote : {};
-    copy.designerNote.levelData = clone(copy.tiles);
+  if (!Array.isArray(copy?.tiles)) return copy;
+  const stringFormat = typeof copy.designerNote === "string";
+  let note;
+  try {
+    note = stringFormat
+      ? JSON.parse(copy.designerNote)
+      : clone(copy.designerNote ?? {});
+  } catch {
+    return copy;
   }
+  if (!note || typeof note !== "object" || Array.isArray(note)) note = {};
+  if (!note.levelData || typeof note.levelData !== "object" || Array.isArray(note.levelData)) {
+    note.levelData = groupTilesByLayer(copy.tiles);
+  }
+  copy.designerNote = stringFormat ? JSON.stringify(note) : note;
   return copy;
+}
+
+function groupTilesByLayer(tiles) {
+  const levelData = {};
+  for (const tile of tiles) {
+    const layer = String(tile?.layer ?? tile?.layerNum ?? 0);
+    (levelData[layer] ??= []).push(clone(tile));
+  }
+  return levelData;
 }
 
 function storageKey(fileName) {
@@ -208,7 +268,7 @@ function readStoredFileNames(storage) {
   try {
     const fileNames = JSON.parse(raw);
     if (!Array.isArray(fileNames)) throw new Error("invalid manifest");
-    return [...new Set(fileNames.filter((fileName) => typeof fileName === "string" && FILE_NAME_PATTERN.test(fileName)))];
+    return [...new Set(fileNames.filter(isValidLevelFileName))];
   } catch (error) {
     return [];
   }
