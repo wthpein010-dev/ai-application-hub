@@ -61,10 +61,26 @@ export function createApiClient({
     },
     async saveLevel({ fileName, value, expectedVersion = "", saveAs = false } = {}) {
       assertFileName(fileName);
-      const current = await this.loadLevel(fileName).catch((error) => {
-        if (error instanceof WorkbenchApiError && error.status === 404) return null;
-        throw error;
-      });
+      let current;
+      if (saveAs) {
+        current = readStored(storage, fileName);
+        if (!current) {
+          const index = await fetchJson(fetchImpl, INDEX_URL);
+          if (!Array.isArray(index?.levels)) {
+            throw new WorkbenchApiError("内置关卡索引格式无效。", {
+              code: "invalid-level-index",
+            });
+          }
+          current = index.levels.some((entry) => entry.fileName === fileName)
+            ? { bundled: true }
+            : null;
+        }
+      } else {
+        current = await this.loadLevel(fileName).catch((error) => {
+          if (error instanceof WorkbenchApiError && error.status === 404) return null;
+          throw error;
+        });
+      }
       if (saveAs && current) {
         throw new WorkbenchApiError("文件已存在。", { status: 409, code: "file-exists" });
       }

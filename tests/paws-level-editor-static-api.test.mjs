@@ -122,6 +122,27 @@ test("lists and loads a locally saved copy that is absent from the bundled index
   assert.equal((await refreshed.loadLevel("showcase_copy.json")).value.name, "浏览器副本");
 });
 
+test("save-as checks the bundled index without requesting a missing level resource", async () => {
+  const requestedUrls = [];
+  const fetchImpl = await createFetch();
+  const api = createApiClient({
+    fetchImpl: async (url) => {
+      requestedUrls.push(url);
+      return fetchImpl(url);
+    },
+    storage: createStorage(),
+    now: () => "2026-07-20T00:00:00.000Z",
+  });
+
+  await api.saveLevel({
+    fileName: "local_import.json",
+    value: { name: "本地导入", tiles: [] },
+    saveAs: true,
+  });
+
+  assert.deepEqual(requestedUrls, ["./levels/index.json"]);
+});
+
 test("reset rejects a local-only copy without deleting it", async () => {
   const storage = createStorage();
   const api = createApiClient({

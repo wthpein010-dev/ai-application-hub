@@ -1,18 +1,18 @@
 {
   "schemaVersion": 1,
-  "recordedAt": "2026-07-20T03:58:30.702Z",
+  "recordedAt": "2026-07-20T05:25:42.690Z",
   "recording": {
     "browser": "system Chrome",
-    "preRollMs": 951,
-    "completedAt": "2026-07-20T03:59:58.713Z",
-    "durationMs": 88011
+    "preRollMs": 963,
+    "completedAt": "2026-07-20T05:27:10.691Z",
+    "durationMs": 88001
   },
   "timeline": {
-    "tools": 0,
-    "edit2d": 12005,
-    "view3d": 32005,
-    "play": 50003,
-    "persistence": 70003
+    "tools": 1,
+    "edit2d": 12006,
+    "view3d": 32004,
+    "play": 50002,
+    "persistence": 70001
   },
   "actions": {
     "metadata": {
@@ -107,13 +107,13 @@
   },
   "media": {
     "file": "paws-level-editor-tutorial.mp4",
-    "sha256": "481094790de292203b3d9663c39fe8a4c2f7c2fd08bee2083dde9482c3caacef"
+    "sha256": "5e9b2103eef2258c3dd3c9a9f562731b6b85bc00d9ad4cd988cf7dd4ef584782"
   },
   "sources": {
-    "projects/paws-level-editor/index.html": "beceb999bd40e5817d01c01f4d00dfe4b145a8c2ad6c4c879f863c5e8d33e63e",
+    "projects/paws-level-editor/index.html": "61fe45c2c03e63c7eff62420c417a255ba9eacf9d3b2db7ea5ab36ed8440e4c6",
     "projects/paws-level-editor/app.mjs": "550278401cebcf10ebb91159d70ca9698340c38261817da2dceb7bdaa5ac9dbf",
     "projects/paws-level-editor/ui/level-summary.mjs": "f7876ba36caaef6ac9123f98680aad02a65e5134f6ec1486f306e17f359b4713",
-    "projects/paws-level-editor/ui/workbench-controller.mjs": "10f86521d396de50f2952ada1566a4fd128e5f36b2e58689fe5f9c4e8c31f903",
+    "projects/paws-level-editor/ui/workbench-controller.mjs": "096a1227dea7d6a0a9ba08f4d809543c9c44956144d03a2a0e862bb3c9cbd80a",
     "projects/paws-level-editor/levels/index.json": "7b7071b659670c03b2bcc776ac5fc2cae9a08f498c72e635108fec3f956dcb50",
     "projects/paws-level-editor/levels/level_showcase.json": "4becdd02018ddeee7b8d5551c009c4fd00fe2e1ea90929e2be6005d8f92f939e",
     "scripts/record-paws-level-editor-demo.mjs": "d8e447a84a6fba5181721fc057ad1af46ea82a174e01b64fa4f4e2b413cc32e9",

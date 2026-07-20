@@ -145,6 +145,20 @@ async function assertNoHorizontalOverflow(page, label) {
   );
 }
 
+async function importSyntheticLevel(page, { name, value }) {
+  const [chooser] = await Promise.all([
+    page.waitForEvent("filechooser"),
+    page.locator("#import-level").click(),
+  ]);
+  await chooser.setFiles({
+    name,
+    mimeType: "application/json",
+    buffer: Buffer.from(
+      typeof value === "string" ? value : JSON.stringify(value),
+    ),
+  });
+}
+
 async function clickAvailablePairIn2d(page) {
   const targets = await page.evaluate(() => {
     const controller = window.pawsWorkbench;
@@ -251,6 +265,10 @@ try {
     browser: `${browser.browserType().name()} ${browser.version()}`,
     desktopOverflow: null,
     mobileOverflow: null,
+    importedFileName: null,
+    importPersists: null,
+    collisionFileName: null,
+    mobileImportHidden: null,
   };
   const desktop = await browser.newContext({ viewport: { width: 1440, height: 900 } });
   const page = await desktop.newPage();
@@ -274,6 +292,111 @@ try {
   assert.equal(await page.locator(".level-canvas-2d").isVisible(), true, "2D canvas should be visible");
   await assertNoHorizontalOverflow(page, "desktop");
   summary.desktopOverflow = false;
+
+  const importedLevel = {
+    id: 72020,
+    name: "浏览器本地导入",
+    difficulty: "Hard",
+    unknownTopLevel: { preserve: "browser-smoke" },
+    designerNote: JSON.stringify({
+      customNote: "保留未知设计字段",
+      widthNum: 8,
+      heightNum: 10,
+    }),
+    tiles: [
+      { x: 0, y: 0, layer: 1, type: 1 },
+      { x: 8, y: 0, layer: 1, type: 1 },
+    ],
+  };
+  await importSyntheticLevel(page, {
+    name: "local_demo.json",
+    value: importedLevel,
+  });
+  await page.waitForFunction(() =>
+    window.pawsWorkbench?.document?.fileName === "local_demo.json");
+  await waitForNetworkAndTextures(page);
+  assert.equal(await page.locator('[role="option"]').count(), 2);
+  assert.equal(
+    await page.locator('[role="option"][aria-selected="true"] .level-file').textContent(),
+    "local_demo.json",
+    "the imported local document should be selected",
+  );
+  const importedDocument = await page.evaluate(() => ({
+    fileName: window.pawsWorkbench.document.fileName,
+    id: window.pawsWorkbench.document.id,
+    name: window.pawsWorkbench.document.name,
+    unknownTopLevel: window.pawsWorkbench.document.original.unknownTopLevel,
+  }));
+  assert.deepEqual(importedDocument, {
+    fileName: "local_demo.json",
+    id: importedLevel.id,
+    name: importedLevel.name,
+    unknownTopLevel: importedLevel.unknownTopLevel,
+  });
+  summary.importedFileName = importedDocument.fileName;
+  const storedImport = await page.evaluate(() => {
+    const raw = localStorage.getItem("paws-level-editor-demo-v1:local_demo.json");
+    return raw ? JSON.parse(raw) : null;
+  });
+  assert.equal(storedImport?.fileName, "local_demo.json");
+  assert.equal(storedImport?.value?.id, importedLevel.id);
+  assert.equal(storedImport?.value?.name, importedLevel.name);
+  assert.deepEqual(storedImport?.value?.unknownTopLevel, importedLevel.unknownTopLevel);
+
+  await page.reload({ waitUntil: "networkidle" });
+  await page.waitForFunction(() =>
+    window.pawsWorkbench?.levels?.length === 2);
+  assert.equal(await page.locator('[role="option"]').count(), 2);
+  assert.equal(
+    await page.locator('[role="option"] .level-file').allTextContents()
+      .then((fileNames) => fileNames.includes("local_demo.json")),
+    true,
+    "reload should retain the imported entry",
+  );
+  summary.importPersists = true;
+
+  await importSyntheticLevel(page, {
+    name: "local_demo.json",
+    value: importedLevel,
+  });
+  await page.waitForFunction(() =>
+    window.pawsWorkbench?.document?.fileName === "local_demo_import.json");
+  await waitForNetworkAndTextures(page);
+  assert.equal(await page.locator('[role="option"]').count(), 3);
+  summary.collisionFileName = await page.evaluate(() =>
+    window.pawsWorkbench.document.fileName);
+  assert.equal(summary.collisionFileName, "local_demo_import.json");
+
+  const stateBeforeInvalidImport = await page.evaluate(() => ({
+    fileName: window.pawsWorkbench.document.fileName,
+    levelCount: window.pawsWorkbench.levels.length,
+  }));
+  await importSyntheticLevel(page, {
+    name: "invalid.json",
+    value: "{invalid JSON",
+  });
+  await page.waitForFunction(() =>
+    document.querySelector("#stage-toast")?.textContent?.includes("不是合法 JSON"));
+  assert.deepEqual(
+    await page.evaluate(() => ({
+      fileName: window.pawsWorkbench.document.fileName,
+      levelCount: window.pawsWorkbench.levels.length,
+    })),
+    stateBeforeInvalidImport,
+    "invalid JSON should not change the current document or level list",
+  );
+
+  await page.locator('[role="option"]', { hasText: "level_showcase.json" }).click();
+  await page.waitForFunction(() =>
+    window.pawsWorkbench?.document?.fileName === "level_showcase.json");
+  await waitForNetworkAndTextures(page);
+  await page.evaluate(async () => {
+    localStorage.removeItem("paws-level-editor-demo-v1:local_demo.json");
+    localStorage.removeItem("paws-level-editor-demo-v1:local_demo_import.json");
+    localStorage.setItem("paws-level-editor-demo-v1:local-files", "[]");
+    await window.pawsWorkbench.refreshLevels();
+  });
+  assert.equal(await page.locator('[role="option"]').count(), 1);
 
   await page.locator("#view-3d").click();
   await page.locator(".level-canvas-3d").waitFor({ state: "visible" });
@@ -426,6 +549,9 @@ try {
   assert.equal(await mobilePage.locator("#readonly-banner").isVisible(), true);
   assert.equal(await mobilePage.locator("#app").getAttribute("data-mode"), "play");
   assert.equal(await mobilePage.locator("#mode-edit").isVisible(), false);
+  summary.mobileImportHidden =
+    await mobilePage.locator("#import-level").isHidden();
+  assert.equal(summary.mobileImportHidden, true);
   await assertNoHorizontalOverflow(mobilePage, "390x844");
   summary.mobileOverflow = false;
   await mobile.close();

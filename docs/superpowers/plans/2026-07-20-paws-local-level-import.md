@@ -30,7 +30,7 @@
 - Consumes: `isValidLevelFileName(fileName)`, `parseLevelDocument(raw, options)`, `serializeLevelDocument(document)`.
 - Produces: `MAX_IMPORT_BYTES`, `LocalLevelImportError`, `chooseImportedFileName(fileName, occupiedFileNames)`, and `prepareImportedLevel(file, { occupiedFileNames }) -> Promise<{ fileName, value }>`.
 
-- [ ] **Step 1: Write failing helper tests**
+- [x] **Step 1: Write failing helper tests**
 
 Create tests that use file-like objects with `name`, `size`, and `text()`:
 
@@ -68,7 +68,7 @@ test("deduplicates without overwriting existing levels", () => {
 
 Also assert stable `LocalLevelImportError.code` values for invalid filename, empty file, file over `MAX_IMPORT_BYTES`, invalid JSON, non-object JSON root, and read failure.
 
-- [ ] **Step 2: Run helper tests and verify RED**
+- [x] **Step 2: Run helper tests and verify RED**
 
 Run:
 
@@ -78,7 +78,7 @@ node --test tests/paws-level-editor-local-import.test.mjs tests/paws-level-edito
 
 Expected: FAIL because `local-level-import.mjs` and the required published module do not exist.
 
-- [ ] **Step 3: Implement the minimal helper**
+- [x] **Step 3: Implement the minimal helper**
 
 Implement:
 
@@ -117,13 +117,13 @@ export function chooseImportedFileName(fileName, occupiedFileNames = []) {
 
 `prepareImportedLevel` must validate before reading, catch `file.text()` failures, reject blank/invalid/non-object JSON, parse with the final deduplicated filename, and return `serializeLevelDocument(document)`.
 
-- [ ] **Step 4: Run helper tests and verify GREEN**
+- [x] **Step 4: Run helper tests and verify GREEN**
 
 Run the same command.
 
 Expected: all helper and asset tests PASS.
 
-- [ ] **Step 5: Commit Task 1**
+- [x] **Step 5: Commit Task 1**
 
 ```powershell
 git add projects/paws-level-editor/ui/local-level-import.mjs tests/paws-level-editor-local-import.test.mjs tests/paws-level-editor-assets.test.mjs
@@ -145,7 +145,7 @@ git commit -m "feat: prepare local paws level imports"
 - Consumes: `prepareImportedLevel(file, { occupiedFileNames })`.
 - Produces: `requestLocalImport()` and `importLocalLevel(file)` controller methods plus `#import-level` and `#import-level-input`.
 
-- [ ] **Step 1: Write failing controller and page contract tests**
+- [x] **Step 1: Write failing controller and page contract tests**
 
 Assert:
 
@@ -160,7 +160,7 @@ assert.match(controller, /openLevel\(fileName,\s*\{\s*discardDirty:\s*true\s*\}\
 
 Update the hub publish test to require “导入本地 JSON” in the Paws card copy and require the home script cache key `20260720-paws-local-import`.
 
-- [ ] **Step 2: Run contract tests and verify RED**
+- [x] **Step 2: Run contract tests and verify RED**
 
 Run:
 
@@ -170,7 +170,7 @@ node --test tests/paws-level-editor-controller-contract.test.mjs tests/paws-leve
 
 Expected: FAIL because the controls, controller methods, copy, and cache key are missing.
 
-- [ ] **Step 3: Add the HTML and responsive layout**
+- [x] **Step 3: Add the HTML and responsive layout**
 
 Add to the library action area:
 
@@ -181,7 +181,7 @@ Add to the library action area:
 
 Change `.panel-action-row` to a two-column grid so four buttons remain readable. Update the demo banner to state that selected local JSON is read and saved only in the current browser.
 
-- [ ] **Step 4: Wire the controller**
+- [x] **Step 4: Wire the controller**
 
 Import the helper, cache both elements, bind button and `change` events, then implement:
 
@@ -216,17 +216,17 @@ async importLocalLevel(file) {
 }
 ```
 
-- [ ] **Step 5: Update application-center copy and cache key**
+- [x] **Step 5: Update application-center copy and cache key**
 
 Mention local JSON import in the Paws card description and bump the `app-20260706-restore-games.js` query string in root `index.html`.
 
-- [ ] **Step 6: Run contract tests and verify GREEN**
+- [x] **Step 6: Run contract tests and verify GREEN**
 
 Run the Step 2 command.
 
 Expected: PASS.
 
-- [ ] **Step 7: Commit Task 2**
+- [x] **Step 7: Commit Task 2**
 
 ```powershell
 git add projects/paws-level-editor/index.html projects/paws-level-editor/styles.css projects/paws-level-editor/ui/workbench-controller.mjs tests/paws-level-editor-controller-contract.test.mjs tests/paws-level-editor-publish.test.mjs app-20260706-restore-games.js index.html
@@ -243,7 +243,7 @@ git commit -m "feat: import local paws level json"
 - Consumes: public import button/input and browser-local save flow.
 - Produces: browser evidence for import, persistence, collision naming, invalid-file isolation, and mobile hiding.
 
-- [ ] **Step 1: Extend the browser smoke test before relying on the feature**
+- [x] **Step 1: Extend the browser smoke test before relying on the feature**
 
 Use a real Playwright file chooser:
 
@@ -272,7 +272,7 @@ Assert:
 
 Add `importedFileName`, `importPersists`, `collisionFileName`, and `mobileImportHidden` to the printed JSON summary.
 
-- [ ] **Step 2: Run browser test and fix only observed failures**
+- [x] **Step 2: Run browser test and fix only observed failures**
 
 Run:
 
@@ -282,7 +282,7 @@ npm run test:paws-browser
 
 Expected: desktop/mobile overflow false, import persistence true, collision name populated, mobile import hidden true, and all console/HTTP/page/request counts 0.
 
-- [ ] **Step 3: Run the complete relevant regression**
+- [x] **Step 3: Run the complete relevant regression**
 
 Run:
 
@@ -294,11 +294,11 @@ npm run test:paws-browser
 
 Expected: 0 failures; only the existing Windows symlink permission condition may skip.
 
-- [ ] **Step 4: Run syntax, privacy, media, and diff checks**
+- [x] **Step 4: Run syntax, privacy, media, and diff checks**
 
 Check every Paws `.mjs` module plus the recording scripts with `node --check`, fully decode the MP4, run `git diff --check origin/main...HEAD`, and scan the public project for local paths, `EditorLevels`, credentials, and the prior session password.
 
-- [ ] **Step 5: Mark plan complete and commit browser coverage**
+- [x] **Step 5: Mark plan complete and commit browser coverage**
 
 Check completed plan boxes, then:
 
