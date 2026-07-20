@@ -7,6 +7,7 @@
     "test:paws-browser": "node --test tests/paws-level-editor-static-server.test.mjs && node tests/paws-level-editor-browser-smoke.mjs"
   },
   "devDependencies": {
+    "ffmpeg-static": "5.2.0",
     "playwright": "1.61.1"
   }
 }

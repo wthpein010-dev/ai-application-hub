@@ -27,7 +27,7 @@ function loadDefaultApps() {
 
 test("every visible project provides its own lazy-loaded tutorial video", () => {
   const apps = loadDefaultApps();
-  assert.equal(apps.length, 16, "the hub should keep its full project inventory");
+  assert.equal(apps.length, 18, "the hub should keep its full project inventory");
 
   for (const app of apps) {
     assert.ok(app.video, `${app.id} needs a dedicated video player path`);

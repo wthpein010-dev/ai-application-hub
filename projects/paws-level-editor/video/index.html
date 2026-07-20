@@ -1,0 +1,351 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="color-scheme" content="dark" />
+    <meta name="theme-color" content="#111718" />
+    <title>Paws 关卡编辑器 · 教学视频</title>
+    <link rel="icon" href="data:," />
+    <style>
+      :root {
+        --bg: #0c1112;
+        --surface: #111718;
+        --surface-2: #171e20;
+        --line: #2a3436;
+        --line-strong: #3b484a;
+        --text: #edf0e9;
+        --muted: #909b98;
+        --accent: #d5f06a;
+        --accent-ink: #1c2400;
+        --cyan: #6fd7cf;
+        --font-sans: Inter, "Segoe UI", "Microsoft YaHei UI", system-ui, sans-serif;
+        --font-mono: "Cascadia Code", "JetBrains Mono", Consolas, monospace;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        min-width: 320px;
+        margin: 0;
+        color: var(--text);
+        background:
+          radial-gradient(circle at 50% -15%, rgb(213 240 106 / 0.08), transparent 38%),
+          var(--bg);
+        font-family: var(--font-sans);
+      }
+
+      a {
+        color: inherit;
+      }
+
+      .topbar {
+        position: sticky;
+        z-index: 10;
+        top: 0;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        min-height: 64px;
+        padding: 0 22px;
+        border-bottom: 1px solid var(--line);
+        background: rgb(12 17 18 / 0.9);
+        backdrop-filter: blur(14px);
+      }
+
+      .brand,
+      .top-links,
+      .chapters {
+        display: flex;
+        align-items: center;
+      }
+
+      .brand {
+        gap: 11px;
+        font-weight: 650;
+        text-decoration: none;
+      }
+
+      .brand-mark {
+        display: grid;
+        width: 32px;
+        height: 32px;
+        place-items: center;
+        border: 1px solid #53605c;
+        border-radius: 9px;
+        color: var(--accent);
+        font-family: var(--font-mono);
+        transform: rotate(45deg);
+      }
+
+      .brand-mark span {
+        transform: rotate(-45deg);
+      }
+
+      .top-links {
+        gap: 8px;
+      }
+
+      .top-links a,
+      .chapter {
+        min-height: 34px;
+        padding: 8px 11px;
+        border: 1px solid var(--line);
+        border-radius: 7px;
+        color: var(--muted);
+        background: var(--surface-2);
+        font: inherit;
+        font-size: 12px;
+        font-weight: 650;
+        text-decoration: none;
+        cursor: pointer;
+      }
+
+      .top-links a:hover,
+      .chapter:hover {
+        color: var(--text);
+        border-color: var(--line-strong);
+      }
+
+      main {
+        width: min(1080px, calc(100% - 32px));
+        margin: 0 auto;
+        padding: 52px 0 56px;
+      }
+
+      .eyebrow {
+        margin: 0 0 8px;
+        color: var(--cyan);
+        font-family: var(--font-mono);
+        font-size: 10px;
+        font-weight: 700;
+        letter-spacing: 0.18em;
+      }
+
+      h1 {
+        max-width: 760px;
+        margin: 0;
+        font-size: clamp(32px, 5vw, 54px);
+        line-height: 1.08;
+        letter-spacing: -0.035em;
+      }
+
+      .intro {
+        max-width: 760px;
+        margin: 16px 0 28px;
+        color: var(--muted);
+        font-size: 15px;
+        line-height: 1.75;
+      }
+
+      .player-shell {
+        position: relative;
+        overflow: hidden;
+        border: 1px solid var(--line);
+        border-radius: 10px;
+        background: #080c0d;
+        box-shadow: 0 24px 70px rgb(0 0 0 / 0.3);
+      }
+
+      video {
+        display: block;
+        width: 100%;
+        aspect-ratio: 16 / 9;
+        background: #080c0d;
+      }
+
+      .load-overlay {
+        position: absolute;
+        inset: 0;
+        display: grid;
+        place-content: center;
+        gap: 12px;
+        padding: 24px;
+        background: linear-gradient(rgb(8 12 13 / 0.28), rgb(8 12 13 / 0.82));
+        text-align: center;
+      }
+
+      .load-overlay strong {
+        font-size: clamp(20px, 3vw, 30px);
+      }
+
+      .load-overlay p {
+        max-width: 540px;
+        margin: 0;
+        color: #c4ccca;
+        line-height: 1.65;
+      }
+
+      #loadVideo {
+        justify-self: center;
+        min-height: 44px;
+        padding: 0 18px;
+        border: 0;
+        border-radius: 8px;
+        color: var(--accent-ink);
+        background: var(--accent);
+        font: inherit;
+        font-weight: 750;
+        cursor: pointer;
+      }
+
+      #loadVideo:hover {
+        background: #e3fa83;
+      }
+
+      [hidden] {
+        display: none !important;
+      }
+
+      .chapter-panel {
+        margin-top: 18px;
+        padding: 18px;
+        border: 1px solid var(--line);
+        border-radius: 10px;
+        background: var(--surface);
+      }
+
+      .chapter-panel h2 {
+        margin: 0 0 13px;
+        font-size: 15px;
+      }
+
+      .chapters {
+        flex-wrap: wrap;
+        gap: 8px;
+      }
+
+      .chapter {
+        text-align: left;
+      }
+
+      .chapter time {
+        margin-right: 7px;
+        color: var(--accent);
+        font-family: var(--font-mono);
+      }
+
+      .footnote {
+        margin: 18px 0 0;
+        color: var(--muted);
+        font-size: 12px;
+        line-height: 1.7;
+      }
+
+      @media (max-width: 680px) {
+        .topbar {
+          align-items: flex-start;
+          gap: 10px;
+          padding: 12px;
+        }
+
+        .top-links {
+          flex-direction: column;
+          align-items: stretch;
+        }
+
+        main {
+          width: min(100% - 24px, 1080px);
+          padding-top: 34px;
+        }
+
+        .load-overlay p {
+          display: none;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <header class="topbar">
+      <a class="brand" href="../index.html">
+        <span class="brand-mark" aria-hidden="true"><span>⌁</span></span>
+        <span>Paws Level Lab</span>
+      </a>
+      <nav class="top-links" aria-label="页面导航">
+        <a href="../index.html">返回演示</a>
+        <a href="../../../index.html#engineering">应用中心</a>
+      </nav>
+    </header>
+
+    <main>
+      <p class="eyebrow">PAWS / LEVEL LAB / TUTORIAL</p>
+      <h1>用 88 秒看懂 2D、3D、试玩与浏览器保存</h1>
+      <p class="intro">
+        视频来自公开静态编辑器的实际浏览器操作录制。页面先展示封面，只有点击播放或章节后才加载 MP4；中文字幕默认开启。
+      </p>
+
+      <section class="player-shell" aria-label="Paws 关卡编辑器教学视频">
+        <video
+          id="tutorialVideo"
+          controls
+          playsinline
+          preload="none"
+          poster="./poster.jpg"
+          data-src="./paws-level-editor-tutorial.mp4"
+        >
+          <track
+            kind="captions"
+            src="./paws-level-editor-tutorial.vtt"
+            srclang="zh"
+            label="中文"
+            default
+          />
+        </video>
+        <div id="loadOverlay" class="load-overlay">
+          <strong>真实编辑器操作演示</strong>
+          <p>加载后可查看 2D 拖动、3D 相机、试玩配对，以及保存、刷新和恢复内置的完整流程。</p>
+          <button id="loadVideo" type="button">加载并播放视频</button>
+        </div>
+      </section>
+
+      <section class="chapter-panel">
+        <h2>章节</h2>
+        <div class="chapters">
+          <button class="chapter" type="button" data-time="0"><time>00:00</time>工具与示例</button>
+          <button class="chapter" type="button" data-time="12"><time>00:12</time>2D 编辑</button>
+          <button class="chapter" type="button" data-time="32"><time>00:32</time>3D 检查</button>
+          <button class="chapter" type="button" data-time="50"><time>00:50</time>试玩配对</button>
+          <button class="chapter" type="button" data-time="70"><time>01:10</time>保存与恢复</button>
+        </div>
+        <p class="footnote">无音频版本 · H.264 · 1280 × 720 · 中文 WebVTT 字幕</p>
+      </section>
+    </main>
+
+    <script>
+      const video = document.querySelector("#tutorialVideo");
+      const loadOverlay = document.querySelector("#loadOverlay");
+      const loadButton = document.querySelector("#loadVideo");
+
+      function ensureVideoLoaded() {
+        if (!video.src) {
+          video.src = video.dataset.src;
+          video.load();
+        }
+        loadOverlay.hidden = true;
+      }
+
+      loadButton.addEventListener("click", () => {
+        ensureVideoLoaded();
+        video.play().catch(() => video.load());
+      });
+
+      document.querySelectorAll(".chapter").forEach((button) => {
+        button.addEventListener("click", () => {
+          const targetTime = Number(button.dataset.time);
+          ensureVideoLoaded();
+          const seek = () => {
+            video.currentTime = targetTime;
+            video.play().catch(() => {});
+          };
+          if (video.readyState >= 1) {
+            seek();
+          } else {
+            video.addEventListener("loadedmetadata", seek, { once: true });
+          }
+        });
+      });
+    </script>
+  </body>
+</html>
