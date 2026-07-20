@@ -1,6 +1,6 @@
 # Paws 工程关卡库与浏览器 AI 生成 Implementation Plan
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
+> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [x]`) syntax for tracking.
 
 **Goal:** 发布 30 个工程关卡、默认打开 `level_0020_r2_第二关模板12.json`，并增加浏览器本地统计学习、约束生成和自动求解的 AI 关卡生成器。
 
@@ -35,7 +35,7 @@
 - Produces: `api.listLevelCatalog(): Promise<{ defaultFileName: string, levels: LevelSummary[] }>`
 - Consumes: existing `parseLevelDocument(raw)` to count normalized tiles and layers.
 
-- [ ] **Step 1: Write the failing publication tests**
+- [x] **Step 1: Write the failing publication tests**
 
 ```js
 test("published catalog contains the 30 authorized project levels and the requested default", async () => {
@@ -60,13 +60,13 @@ test("published levels parse and contain no source path or credential-shaped top
 });
 ```
 
-- [ ] **Step 2: Run the publication tests and verify RED**
+- [x] **Step 2: Run the publication tests and verify RED**
 
 Run: `node --test tests/paws-level-editor-published-levels.test.mjs`
 
 Expected: FAIL because `index.json` still contains one showcase and has no `defaultFileName`.
 
-- [ ] **Step 3: Implement the synchronization script**
+- [x] **Step 3: Implement the synchronization script**
 
 ```js
 export async function syncPublishedLevels({
@@ -108,7 +108,7 @@ export async function syncPublishedLevels({
 }
 ```
 
-- [ ] **Step 4: Generate the authorized public files**
+- [x] **Step 4: Generate the authorized public files**
 
 Run:
 
@@ -121,7 +121,7 @@ node scripts/sync-paws-published-levels.mjs `
 
 Expected: `Synced 30 levels; default=level_0020_r2_第二关模板12.json`.
 
-- [ ] **Step 5: Add catalog API and controller default selection**
+- [x] **Step 5: Add catalog API and controller default selection**
 
 ```js
 async listLevelCatalog() {
@@ -151,7 +151,7 @@ if (!this.document && this.levels.length) {
 }
 ```
 
-- [ ] **Step 6: Run Task 1 tests and commit**
+- [x] **Step 6: Run Task 1 tests and commit**
 
 Run: `node --test tests/paws-level-editor-published-levels.test.mjs tests/paws-level-editor-static-api.test.mjs tests/paws-level-editor-controller-contract.test.mjs`
 
@@ -181,7 +181,7 @@ git commit -m "feat: publish paws project level library"
 - Produces: `generateAiLevel({ references, difficulty, layout, seed, maxAttempts = 32 }): { document, report, seed, attempts }`
 - Consumes: `computeCoverage(tiles)`, `validateLevel(document)`, `XorShift32`.
 
-- [ ] **Step 1: Write failing statistic and solver tests**
+- [x] **Step 1: Write failing statistic and solver tests**
 
 ```js
 test("statistics report layers, overlap, exact stacks, and initial pairs", () => {
@@ -210,13 +210,13 @@ test("solver distinguishes a removable level from a blocked level", () => {
 });
 ```
 
-- [ ] **Step 2: Run core tests and verify RED**
+- [x] **Step 2: Run core tests and verify RED**
 
 Run: `node --test tests/paws-level-editor-ai-generator.test.mjs`
 
 Expected: FAIL with module-not-found for `level-statistics.mjs`.
 
-- [ ] **Step 3: Implement statistics**
+- [x] **Step 3: Implement statistics**
 
 ```js
 export function extractLevelStatistics(document) {
@@ -240,7 +240,7 @@ export function extractLevelStatistics(document) {
 }
 ```
 
-- [ ] **Step 4: Implement deterministic solver**
+- [x] **Step 4: Implement deterministic solver**
 
 ```js
 export function solveLevel(document, { maxNodes = 20000 } = {}) {
@@ -277,7 +277,7 @@ export function solveLevel(document, { maxNodes = 20000 } = {}) {
 }
 ```
 
-- [ ] **Step 5: Write failing generator matrix test**
+- [x] **Step 5: Write failing generator matrix test**
 
 ```js
 for (const difficulty of ["easy", "normal", "hard"]) {
@@ -297,7 +297,7 @@ for (const difficulty of ["easy", "normal", "hard"]) {
 }
 ```
 
-- [ ] **Step 6: Implement deterministic constrained generator**
+- [x] **Step 6: Implement deterministic constrained generator**
 
 ```js
 export const DIFFICULTY_PROFILES = Object.freeze({
@@ -325,7 +325,7 @@ export function generateAiLevel({ references, difficulty, layout, seed, maxAttem
 }
 ```
 
-- [ ] **Step 7: Run Task 2 tests and commit**
+- [x] **Step 7: Run Task 2 tests and commit**
 
 Run: `node --test tests/paws-level-editor-ai-generator.test.mjs`
 
@@ -355,7 +355,7 @@ git commit -m "feat: generate solvable paws levels locally"
 - Produces controller method: `generateAiLevelFromDialog(): Promise<boolean>`
 - Consumes: `generateAiLevel`, `serializeLevelDocument`, `chooseImportedFileName`, `api.loadLevel`, `api.saveLevel`.
 
-- [ ] **Step 1: Write failing option and controller contract tests**
+- [x] **Step 1: Write failing option and controller contract tests**
 
 ```js
 test("AI dialog keeps the choice set intentionally small", () => {
@@ -372,13 +372,13 @@ test("controller saves a collision-safe browser copy and opens it", () => {
 });
 ```
 
-- [ ] **Step 2: Run UI contract tests and verify RED**
+- [x] **Step 2: Run UI contract tests and verify RED**
 
 Run: `node --test tests/paws-level-editor-ai-controller.test.mjs`
 
 Expected: FAIL because the dialog and controller method do not exist.
 
-- [ ] **Step 3: Add dialog markup and pure option helpers**
+- [x] **Step 3: Add dialog markup and pure option helpers**
 
 ```html
 <button id="generate-ai-level" class="ai-button edit-only" type="button">✦ AI 生成</button>
@@ -424,7 +424,7 @@ export function normalizeGenerationOptions(formData) {
 }
 ```
 
-- [ ] **Step 4: Add controller generation flow**
+- [x] **Step 4: Add controller generation flow**
 
 ```js
 async generateAiLevelFromDialog(options) {
@@ -462,7 +462,7 @@ async generateAiLevelFromDialog(options) {
 }
 ```
 
-- [ ] **Step 5: Run Task 3 tests and commit**
+- [x] **Step 5: Run Task 3 tests and commit**
 
 Run: `node --test tests/paws-level-editor-ai-controller.test.mjs tests/paws-level-editor-controller-contract.test.mjs tests/paws-level-editor-static-api.test.mjs`
 
@@ -491,7 +491,7 @@ git commit -m "feat: add local ai level generation flow"
 - Consumes: IDs and classes from Task 3.
 - Produces: desktop AI button/dialog styles and truthful public copy.
 
-- [ ] **Step 1: Write failing publication-copy tests**
+- [x] **Step 1: Write failing publication-copy tests**
 
 ```js
 test("public editor describes the published project library and browser-local writes", () => {
@@ -505,13 +505,13 @@ test("hub cache-bust version includes the AI release", () => {
 });
 ```
 
-- [ ] **Step 2: Run copy tests and verify RED**
+- [x] **Step 2: Run copy tests and verify RED**
 
 Run: `node --test tests/paws-level-editor-assets.test.mjs tests/paws-level-editor-publish.test.mjs`
 
 Expected: FAIL on old “独立示例关卡” copy and old cache version.
 
-- [ ] **Step 3: Update copy and responsive styles**
+- [x] **Step 3: Update copy and responsive styles**
 
 ```css
 .ai-button {
@@ -545,7 +545,7 @@ Update the banner to:
 </div>
 ```
 
-- [ ] **Step 4: Run Task 4 tests and commit**
+- [x] **Step 4: Run Task 4 tests and commit**
 
 Run: `node --test tests/paws-level-editor-assets.test.mjs tests/paws-level-editor-publish.test.mjs`
 
@@ -573,7 +573,7 @@ git commit -m "feat: present paws ai level library"
 - Consumes: production browser UI and `window.pawsWorkbench`.
 - Produces: machine-readable proof for default level, catalog, generation, 2D/3D/play, persistence and zero-error gates.
 
-- [ ] **Step 1: Add failing browser acceptance**
+- [x] **Step 1: Add failing browser acceptance**
 
 ```js
 await page.goto(`${baseUrl}/projects/paws-level-editor/`, { waitUntil: "networkidle" });
@@ -593,13 +593,13 @@ await page.reload({ waitUntil: "networkidle" });
 assert.equal(await page.locator(".level-card").count(), 31);
 ```
 
-- [ ] **Step 2: Run browser test and verify RED**
+- [x] **Step 2: Run browser test and verify RED**
 
 Run: `node tests/paws-level-editor-ai-browser-smoke.mjs`
 
 Expected: FAIL until the production UI and test fixture are fully connected.
 
-- [ ] **Step 3: Complete browser proof capture**
+- [x] **Step 3: Complete browser proof capture**
 
 Record:
 
@@ -618,7 +618,7 @@ await writeFile(proofPath, `${JSON.stringify(proof, null, 2)}\n`);
 await page.screenshot({ path: screenshotPath, fullPage: true });
 ```
 
-- [ ] **Step 4: Run all tests and syntax checks**
+- [x] **Step 4: Run all tests and syntax checks**
 
 Run:
 
@@ -631,7 +631,7 @@ node tests/paws-level-editor-ai-browser-smoke.mjs
 
 Expected: every test PASS, every module syntax check exits 0, browser console/page/request error arrays are empty.
 
-- [ ] **Step 5: Inspect the desktop screenshot and commit**
+- [x] **Step 5: Inspect the desktop screenshot and commit**
 
 Run: inspect `tests/artifacts/paws-ai-level-desktop.png` at original resolution.
 
@@ -656,7 +656,7 @@ git commit -m "test: verify paws ai level release"
 - Consumes: clean tested branch and GitHub Pages workflow.
 - Produces: updated `origin/main` and verified production URL.
 
-- [ ] **Step 1: Run final clean-tree release gate**
+- [x] **Step 1: Run final clean-tree release gate**
 
 Run:
 
@@ -669,7 +669,7 @@ node tests/paws-level-editor-ai-browser-smoke.mjs
 
 Expected: no whitespace errors, only intentional plan checkbox edits before their final commit, all tests PASS.
 
-- [ ] **Step 2: Commit release documentation**
+- [x] **Step 2: Commit release documentation**
 
 ```powershell
 git add docs/superpowers/specs/2026-07-20-paws-ai-level-generation-design.md docs/superpowers/plans/2026-07-20-paws-ai-level-generation.md
