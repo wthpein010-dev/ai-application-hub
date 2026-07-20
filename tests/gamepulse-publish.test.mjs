@@ -26,14 +26,14 @@ function loadDefaultApps() {
   return context.globalThis.defaultApps;
 }
 
-test("GamePulse is published once in the games collection", () => {
+test("GamePulse is published once in the application collection", () => {
   const matches = loadDefaultApps().filter(
     (app) => app.id === "gamepulse-mini-radar",
   );
   assert.equal(matches.length, 1);
 
   const [app] = matches;
-  assert.equal(app.status, "game");
+  assert.equal(app.status, "assistant");
   assert.equal(
     app.entry,
     "https://gamepulse-mini-radar.polite-chord-7994.chatgpt.site",
@@ -56,6 +56,6 @@ test("the page cache key changes for the GamePulse release", () => {
   const html = readFileSync(join(root, "index.html"), "utf8");
   assert.match(
     html,
-    /app-20260706-restore-games\.js\?v=20260720-gamepulse/,
+    /app-20260706-restore-games\.js\?v=20260720-gamepulse-home-entry/,
   );
 });
