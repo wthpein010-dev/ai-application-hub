@@ -1,4 +1,5 @@
 const STORAGE_PREFIX = "paws-level-editor-demo-v1";
+const STORAGE_MANIFEST_KEY = `${STORAGE_PREFIX}:local-files`;
 const INDEX_URL = "./levels/index.json";
 const FILE_NAME_PATTERN = /^[A-Za-z0-9][A-Za-z0-9_-]*\.json$/;
 
@@ -29,7 +30,13 @@ export function createApiClient({
       if (!Array.isArray(index?.levels)) {
         throw new WorkbenchApiError("内置关卡索引格式无效。", { code: "invalid-level-index" });
       }
-      return index.levels.map((entry) => mergeStoredSummary(entry, storage));
+      const bundledFileNames = new Set(index.levels.map((entry) => entry.fileName));
+      const bundled = index.levels.map((entry) => mergeStoredSummary(entry, storage));
+      const localOnly = readStoredFileNames(storage)
+        .filter((fileName) => !bundledFileNames.has(fileName))
+        .map((fileName) => mergeStoredOnlySummary(fileName, storage))
+        .filter(Boolean);
+      return [...bundled, ...localOnly];
     },
     async loadLevel(fileName) {
       assertFileName(fileName);
@@ -49,6 +56,7 @@ export function createApiClient({
       }
       const saved = makeLocalRecord(fileName, synchronizeLevelData(value), now());
       writeStored(storage, fileName, saved);
+      rememberStoredFileName(storage, fileName);
       return clone(saved);
     },
     async login() { return { authenticated: true }; },
@@ -92,8 +100,32 @@ async function loadBundled(fetchImpl, fileName) {
 
 function mergeStoredSummary(entry, storage) {
   const summary = clone(entry);
-  const stored = readStored(storage, entry.fileName);
-  if (!stored) return { ...summary, local: false };
+  try {
+    const stored = readStored(storage, entry.fileName);
+    if (!stored) return { ...summary, local: false };
+    return storedSummary(summary, stored);
+  } catch (error) {
+    if (error instanceof WorkbenchApiError && error.code === "invalid-local-record") {
+      return { ...summary, local: false, localError: error.code, recoverable: true };
+    }
+    throw error;
+  }
+}
+
+function mergeStoredOnlySummary(fileName, storage) {
+  try {
+    const stored = readStored(storage, fileName);
+    if (!stored) return null;
+    return storedSummary({ fileName, name: fileName }, stored);
+  } catch (error) {
+    if (error instanceof WorkbenchApiError && error.code === "invalid-local-record") {
+      return { fileName, name: fileName, local: false, localError: error.code, recoverable: true };
+    }
+    throw error;
+  }
+}
+
+function storedSummary(summary, stored) {
   return {
     ...summary,
     name: stored.value?.name ?? summary.name,
@@ -165,9 +197,38 @@ function writeStored(storage, fileName, record) {
   }
 }
 
+function readStoredFileNames(storage) {
+  let raw;
+  try {
+    raw = storage?.getItem(STORAGE_MANIFEST_KEY);
+  } catch (error) {
+    throw new WorkbenchApiError("无法读取浏览器本地关卡清单。", { code: "local-storage-read-failed" });
+  }
+  if (raw === null || raw === undefined) return [];
+  try {
+    const fileNames = JSON.parse(raw);
+    if (!Array.isArray(fileNames)) throw new Error("invalid manifest");
+    return [...new Set(fileNames.filter((fileName) => typeof fileName === "string" && FILE_NAME_PATTERN.test(fileName)))];
+  } catch (error) {
+    return [];
+  }
+}
+
+function rememberStoredFileName(storage, fileName) {
+  const fileNames = readStoredFileNames(storage);
+  if (fileNames.includes(fileName)) return;
+  try {
+    storage?.setItem(STORAGE_MANIFEST_KEY, JSON.stringify([...fileNames, fileName]));
+  } catch (error) {
+    throw new WorkbenchApiError("无法保存浏览器本地关卡清单。", { code: "local-storage-write-failed" });
+  }
+}
+
 function removeStored(storage, fileName) {
   try {
     storage?.removeItem(storageKey(fileName));
+    const fileNames = readStoredFileNames(storage).filter((storedFileName) => storedFileName !== fileName);
+    storage?.setItem(STORAGE_MANIFEST_KEY, JSON.stringify(fileNames));
   } catch (error) {
     throw new WorkbenchApiError("无法清除浏览器本地关卡。", { code: "local-storage-remove-failed" });
   }

@@ -68,6 +68,37 @@ test("save survives a new client and reset restores the bundle", async () => {
   assert.notEqual(saved.version, loaded.version);
 });
 
+test("lists and loads a locally saved copy that is absent from the bundled index", async () => {
+  const storage = createStorage();
+  const fetchImpl = await createFetch();
+  const api = createApiClient({ fetchImpl, storage, now: () => "2026-07-20T00:00:00.000Z" });
+
+  await api.saveLevel({
+    fileName: "showcase_copy.json",
+    value: { name: "浏览器副本", tiles: [] },
+    saveAs: true,
+  });
+  const refreshed = createApiClient({ fetchImpl, storage });
+  const levels = await refreshed.listLevels();
+
+  assert.equal(levels.find((level) => level.fileName === "showcase_copy.json")?.local, true);
+  assert.equal((await refreshed.loadLevel("showcase_copy.json")).value.name, "浏览器副本");
+});
+
+test("lists the bundle when its local override is corrupt and reset recovers it", async () => {
+  const storage = createStorage();
+  storage.setItem("paws-level-editor-demo-v1:level_showcase.json", "{not valid JSON");
+  const api = createApiClient({ fetchImpl: await createFetch(), storage });
+
+  const levels = await api.listLevels();
+
+  assert.equal(levels[0].fileName, "level_showcase.json");
+  assert.equal(levels[0].local, false);
+  assert.equal(levels[0].localError, "invalid-local-record");
+  await assert.rejects(() => api.loadLevel("level_showcase.json"), { code: "invalid-local-record" });
+  assert.equal((await api.resetLevel("level_showcase.json")).value.name, "3D层级展示关");
+});
+
 test("rejects path traversal and stale versions", async () => {
   const api = createApiClient({ fetchImpl: await createFetch(), storage: createStorage() });
 
