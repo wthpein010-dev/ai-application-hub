@@ -20,6 +20,8 @@ try {
 }
 
 const repoRoot = dirname(dirname(fileURLToPath(import.meta.url)));
+const defaultFileName = "level_0020_r2_第二关模板12.json";
+const bundledLevelCount = 30;
 
 async function assertBundledLevelIsValid() {
   const levelPath = resolve(
@@ -27,36 +29,26 @@ async function assertBundledLevelIsValid() {
     "projects",
     "paws-level-editor",
     "levels",
-    "level_showcase.json",
+    defaultFileName,
   );
   const value = JSON.parse(await readFile(levelPath, "utf8"));
-  assert.deepEqual(
-    value.tiles,
-    value.designerNote.levelData,
-    "top-level tiles and designerNote.levelData should stay synchronized",
-  );
+  const designerNote = typeof value.designerNote === "string"
+    ? JSON.parse(value.designerNote)
+    : value.designerNote;
+  assert.equal(value.id, 20);
+  assert.equal(value.name, "第二关模板12");
+  assert.equal(value.tiles.length, 198);
+  assert.equal(Object.keys(designerNote.levelData).length, 17);
   const types = new Set(value.tiles.map((tile) => tile.type));
-  assert.equal(types.has(0), true, "showcase should retain local-random type 0");
-  assert.equal(types.has(-1), true, "showcase should retain full-random type -1");
-  assert.equal(
-    value.tiles.some((tile) => tile.presetColorType === 2),
-    true,
-    "showcase should retain a face-down tile",
-  );
-  for (let type = 1001; type <= 1006; type += 1) {
-    assert.equal(types.has(type), true, `showcase should retain special type ${type}`);
-  }
-  assert.equal(
-    new Set(value.tiles.map((tile) => tile.layer)).size >= 4,
-    true,
-    "showcase should retain at least four layers",
-  );
+  assert.equal(types.has(0), true, "default should retain local-random type 0");
+  assert.equal(types.has(-1), true, "default should retain full-random type -1");
+  assert.equal(new Set(value.tiles.map((tile) => tile.layer)).size, 17);
   const document = parseLevelDocument(value, {
-    fileName: "level_showcase.json",
+    fileName: defaultFileName,
     version: "browser-smoke",
   });
   const errors = validateLevel(document).filter((issue) => issue.severity === "error");
-  assert.deepEqual(errors, [], `bundled showcase validation errors:\n${JSON.stringify(errors, null, 2)}`);
+  assert.deepEqual(errors, [], `bundled default validation errors:\n${JSON.stringify(errors, null, 2)}`);
 }
 
 function captureBrowserErrors(page, label, errors) {
@@ -296,14 +288,25 @@ try {
   });
   await page.locator("#connection-state").waitFor({ state: "visible" });
   await page.waitForFunction(() =>
-    document.querySelector("#connection-state")?.textContent?.includes("静态演示在线"));
+    document.querySelector("#connection-state")?.textContent?.includes("关卡库在线"));
 
-  assert.equal(await page.locator('[role="option"]').count(), 1, "expected one bundled demo level");
-  const levelCardText = await page.locator('[role="option"]').textContent();
+  assert.equal(
+    await page.locator('[role="option"]').count(),
+    bundledLevelCount,
+    "expected all bundled project levels",
+  );
+  const levelCardText = await page.locator(
+    `[role="option"]:has-text("${defaultFileName}")`,
+  ).textContent();
   assert.doesNotMatch(levelCardText, /#undefined|Invalid Date/);
   assert.match(levelCardText, /#\d{4,}/);
   await waitForWorkbench(page);
   await waitForNetworkAndTextures(page);
+  assert.equal(
+    await page.evaluate(() => window.pawsWorkbench.document.fileName),
+    defaultFileName,
+    "requested default should open automatically",
+  );
   assert.notEqual((await page.locator("#status-tiles").textContent())?.trim(), "—");
   assert.equal(await page.locator("#reset-level").isEnabled(), true);
   assert.equal(await page.locator(".level-canvas-2d").isVisible(), true, "2D canvas should be visible");
@@ -332,7 +335,7 @@ try {
   await page.waitForFunction(() =>
     window.pawsWorkbench?.document?.fileName === "local_demo.json");
   await waitForNetworkAndTextures(page);
-  assert.equal(await page.locator('[role="option"]').count(), 2);
+  assert.equal(await page.locator('[role="option"]').count(), bundledLevelCount + 1);
   assert.equal(
     await page.locator('[role="option"][aria-selected="true"] .level-file').textContent(),
     "local_demo.json",
@@ -362,8 +365,8 @@ try {
 
   await page.reload({ waitUntil: "networkidle" });
   await page.waitForFunction(() =>
-    window.pawsWorkbench?.levels?.length === 2);
-  assert.equal(await page.locator('[role="option"]').count(), 2);
+    window.pawsWorkbench?.levels?.length === 31);
+  assert.equal(await page.locator('[role="option"]').count(), bundledLevelCount + 1);
   assert.equal(
     await page.locator('[role="option"] .level-file').allTextContents()
       .then((fileNames) => fileNames.includes("local_demo.json")),
@@ -387,7 +390,7 @@ try {
   await page.waitForFunction(() =>
     window.pawsWorkbench?.document?.fileName === "local_demo_import.json");
   await waitForNetworkAndTextures(page);
-  assert.equal(await page.locator('[role="option"]').count(), 3);
+  assert.equal(await page.locator('[role="option"]').count(), bundledLevelCount + 2);
   summary.collisionFileName = await page.evaluate(() =>
     window.pawsWorkbench.document.fileName);
   assert.equal(summary.collisionFileName, "local_demo_import.json");
@@ -509,9 +512,9 @@ try {
   await page.locator("#mode-edit").click();
   await page.waitForFunction(() => window.pawsWorkbench.mode === "edit");
 
-  await page.locator('[role="option"]', { hasText: "level_showcase.json" }).click();
-  await page.waitForFunction(() =>
-    window.pawsWorkbench?.document?.fileName === "level_showcase.json");
+  await page.locator('[role="option"]', { hasText: defaultFileName }).click();
+  await page.waitForFunction((fileName) =>
+    window.pawsWorkbench?.document?.fileName === fileName, defaultFileName);
   await waitForNetworkAndTextures(page);
   await page.evaluate(async () => {
     localStorage.removeItem("paws-level-editor-demo-v1:local_demo.json");
@@ -519,7 +522,7 @@ try {
     localStorage.setItem("paws-level-editor-demo-v1:local-files", "[]");
     await window.pawsWorkbench.refreshLevels();
   });
-  assert.equal(await page.locator('[role="option"]').count(), 1);
+  assert.equal(await page.locator('[role="option"]').count(), bundledLevelCount);
 
   await page.locator("#view-3d").click();
   await page.locator(".level-canvas-3d").waitFor({ state: "visible" });
@@ -549,7 +552,10 @@ try {
     document.querySelector("#stage-toast")?.textContent?.includes("已保存到当前浏览器"));
   await waitForNetworkAndTextures(page);
   assert.equal(
-    await page.evaluate(() => localStorage.getItem("paws-level-editor-demo-v1:level_showcase.json") !== null),
+    await page.evaluate(
+      (fileName) => localStorage.getItem(`paws-level-editor-demo-v1:${fileName}`) !== null,
+      defaultFileName,
+    ),
     true,
     "save should write the bundled level override to localStorage",
   );
@@ -580,7 +586,10 @@ try {
     "reset should restore the bundled tile value",
   );
   assert.equal(
-    await page.evaluate(() => localStorage.getItem("paws-level-editor-demo-v1:level_showcase.json")),
+    await page.evaluate(
+      (fileName) => localStorage.getItem(`paws-level-editor-demo-v1:${fileName}`),
+      defaultFileName,
+    ),
     null,
     "reset should remove the localStorage override",
   );
@@ -675,6 +684,7 @@ try {
   summary.mobileImportHidden =
     await mobilePage.locator("#import-level").isHidden();
   assert.equal(summary.mobileImportHidden, true);
+  assert.equal(await mobilePage.locator("#generate-ai-level").isHidden(), true);
   await assertNoHorizontalOverflow(mobilePage, "390x844");
   summary.mobileOverflow = false;
   await mobile.close();

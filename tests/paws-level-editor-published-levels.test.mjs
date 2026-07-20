@@ -1,6 +1,13 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { mkdtemp, mkdir, readFile, rm, writeFile } from "node:fs/promises";
+import {
+  mkdtemp,
+  mkdir,
+  readFile,
+  readdir,
+  rm,
+  writeFile,
+} from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -21,6 +28,14 @@ test("published catalog contains the 30 authorized project levels and requested 
   assert.equal(
     catalog.levels.some(({ fileName }) => fileName === "level_showcase.json"),
     false,
+  );
+  const publishedFiles = (await readdir(levelsRoot))
+    .filter((fileName) => fileName.endsWith(".json") && fileName !== "index.json")
+    .sort((left, right) => left.localeCompare(right, "zh-CN"));
+  assert.deepEqual(
+    publishedFiles,
+    catalog.levels.map(({ fileName }) => fileName),
+    "published directory must not retain a JSON level removed from the source catalog",
   );
 
   const selected = catalog.levels.find(
@@ -64,6 +79,8 @@ test("sync script validates every source before publishing and emits determinist
   const sourceDir = join(root, "source");
   const targetDir = join(root, "target");
   await mkdir(sourceDir);
+  await mkdir(targetDir);
+  await writeFile(join(targetDir, "level_stale.json"), "{}");
   const firstFile = "level_0001_第一关.json";
   const defaultFile = "level_0002_第二关.json";
   const makeLevel = (id, name, tiles) => ({
@@ -126,6 +143,10 @@ test("sync script validates every source before publishing and emits determinist
       { x: 4, y: 4, layer: 2, type: 2 },
       { x: 20, y: 4, layer: 2, type: 2 },
     ]),
+  );
+  await assert.rejects(
+    () => readFile(join(targetDir, "level_stale.json"), "utf8"),
+    { code: "ENOENT" },
   );
 });
 

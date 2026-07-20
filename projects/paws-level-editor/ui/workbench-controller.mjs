@@ -4,6 +4,7 @@ import { parseLevelDocument, serializeLevelDocument } from "../core/level-adapte
 import { validateLevel } from "../core/level-validator.mjs";
 import { createPlaySession } from "../core/play-engine.mjs";
 import { generateAiLevel } from "../core/ai-level-generator.mjs";
+import { solveLevel } from "../core/level-solver.mjs";
 import { InspectorPanel } from "./inspector.mjs";
 import { formatLevelId, formatLevelModifiedAt } from "./level-summary.mjs";
 import { Canvas2DView } from "../views/canvas-2d.mjs";
@@ -525,12 +526,20 @@ export class WorkbenchController {
         openLevel: () => this.openLevel(fileName, { discardDirty: true }),
         getDocument: () => this.document,
       });
+      const reopenedReport = solveLevel(this.document);
+      if (!reopenedReport.solvable) {
+        throw new Error("生成关卡重新打开后未通过可解性校验。");
+      }
       this.lastAiGeneration = {
         fileName,
         seed: unsignedSeed,
         attempts: generated.attempts,
         options: structuredClone(options),
-        report: structuredClone(generated.report),
+        report: structuredClone({
+          ...generated.report,
+          ...reopenedReport,
+          statistics: generated.report.statistics,
+        }),
       };
       this.showToast(`已生成可解关卡 ${fileName}，种子 ${unsignedSeed}。`);
       return true;

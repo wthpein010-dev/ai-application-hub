@@ -1,0 +1,17 @@
+{
+  "environment": "local",
+  "catalogCount": 30,
+  "defaultFileName": "level_0020_r2_第二关模板12.json",
+  "generatedFileName": "ai_level_2246084889.json",
+  "generatedTileCount": 64,
+  "generatedLayerCount": 6,
+  "solverSteps": 32,
+  "solverNodes": 32,
+  "completedInPlay": true,
+  "webgl": true,
+  "persistedAfterReload": true,
+  "consoleErrors": 0,
+  "httpErrors": 0,
+  "pageErrors": 0,
+  "requestFailures": 0
+}

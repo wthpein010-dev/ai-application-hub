@@ -22,14 +22,20 @@ const proofPath = join(videoRoot, "recording-proof.json");
 const recordingRoot = join(tmpdir(), "paws-level-editor-demo-recording");
 const ffmpegPath = process.env.FFMPEG_PATH || bundledFfmpeg;
 const targetDuration = 88;
+const defaultFileName = "level_0020_r2_第二关模板12.json";
 const sourceFiles = [
   "projects/paws-level-editor/index.html",
+  "projects/paws-level-editor/styles.css",
   "projects/paws-level-editor/app.mjs",
+  "projects/paws-level-editor/core/ai-level-generator.mjs",
+  "projects/paws-level-editor/core/level-solver.mjs",
+  "projects/paws-level-editor/core/level-statistics.mjs",
+  "projects/paws-level-editor/ui/ai-level-dialog.mjs",
   "projects/paws-level-editor/ui/local-level-import.mjs",
   "projects/paws-level-editor/ui/level-summary.mjs",
   "projects/paws-level-editor/ui/workbench-controller.mjs",
   "projects/paws-level-editor/levels/index.json",
-  "projects/paws-level-editor/levels/level_showcase.json",
+  "projects/paws-level-editor/levels/level_0020_r2_第二关模板12.json",
   "scripts/record-paws-level-editor-demo.mjs",
   "scripts/paws-recording-support.mjs",
 ];
@@ -316,15 +322,25 @@ async function recordEditor() {
         { waitUntil: "domcontentloaded" },
       );
       await waitForWorkbench(page);
-      await page.locator('[role="option"]').waitFor({ state: "visible" });
-      const metadata = await page.evaluate(() => {
-        const level = window.pawsWorkbench.levels[0];
+      await page.locator('[role="option"]').first().waitFor({ state: "visible" });
+      await page.waitForFunction(
+        (requested) =>
+          window.pawsWorkbench?.document?.fileName === requested
+          && window.pawsWorkbench?.levels?.length === 30,
+        defaultFileName,
+      );
+      const metadata = await page.evaluate((requested) => {
+        const controller = window.pawsWorkbench;
+        const level = controller.levels.find(({ fileName }) => fileName === requested);
         return {
-          cardText: document.querySelector('[role="option"]')?.textContent ?? "",
+          cardText:
+            document.querySelector('[role="option"][aria-selected="true"]')?.textContent ?? "",
+          fileName: controller.document.fileName,
           levelId: level.id,
           modifiedAt: level.modifiedAt,
         };
-      });
+      }, defaultFileName);
+      assert.equal(metadata.fileName, defaultFileName);
       assert.equal(Number.isInteger(metadata.levelId), true);
       assert.equal(new Date(metadata.modifiedAt).toISOString(), metadata.modifiedAt);
       assert.doesNotMatch(metadata.cardText, /#undefined|Invalid Date/);
@@ -343,18 +359,60 @@ async function recordEditor() {
         errors,
       };
 
-      // 00:00 — the real tool opens its bundled showcase automatically.
+      // 00:00 — show the 30-level library, requested default and local AI generation.
       markChapter(proof.timeline, "tools", startedAt, 0);
       await page.locator("#fit-view").click();
+      await delay(1_200);
+      await page.locator("#generate-ai-level").click();
+      await page.locator("#ai-level-dialog").waitFor({ state: "visible" });
+      assert.equal(
+        await page.locator('input[name="ai-reference"][value="all"]').isChecked(),
+        true,
+      );
+      await delay(1_500);
+      await page.locator("#confirm-ai-level").click();
+      await page.waitForFunction(() => {
+        const controller = window.pawsWorkbench;
+        return (
+          !controller?.aiGenerationPending
+          && controller?.lastAiGeneration?.fileName
+          && controller.document?.fileName === controller.lastAiGeneration.fileName
+        );
+      });
+      const aiGeneration = await page.evaluate(() => {
+        const controller = window.pawsWorkbench;
+        return {
+          fileName: controller.lastAiGeneration.fileName,
+          reference: controller.lastAiGeneration.options.reference,
+          solvable: controller.lastAiGeneration.report.solvable,
+          tileCount: controller.document.tiles.length,
+        };
+      });
+      assert.match(aiGeneration.fileName, /^ai_level_\d+\.json$/);
+      assert.equal(aiGeneration.reference, "all");
+      assert.equal(aiGeneration.solvable, true);
+      assert.ok(aiGeneration.tileCount >= 60);
+      assert.equal(await page.locator('[role="option"]').count(), 31);
+      proof.actions.aiGeneration = aiGeneration;
+      const generatedFileName = aiGeneration.fileName;
+      const generatedStorageKey = `paws-level-editor-demo-v1:${generatedFileName}`;
+      await page.locator("#fit-view").click();
+      await waitForWorkbench(page);
 
       // 00:12 — real 2D selection, drag and visible property edit.
       await waitUntil(startedAt, 12);
       markChapter(proof.timeline, "edit2d", startedAt, 12);
       const editTile = await visibleEditTile(page);
-      const originalPosition = await page.evaluate((uid) => {
-        const tile = window.pawsWorkbench.document.tiles.find((item) => item.uid === uid);
-        return { x: tile.x, y: tile.y };
+      const { editTileIndex, originalPosition } = await page.evaluate((uid) => {
+        const tiles = window.pawsWorkbench.document.tiles;
+        const editTileIndex = tiles.findIndex((item) => item.uid === uid);
+        const tile = tiles[editTileIndex];
+        return {
+          editTileIndex,
+          originalPosition: { x: tile.x, y: tile.y },
+        };
       }, editTile.uid);
+      assert.ok(editTileIndex >= 0);
       const canvas2d = await page.locator(".level-canvas-2d").boundingBox();
       assert.ok(canvas2d, "2D canvas should have a bounding box");
       await page.mouse.click(canvas2d.x + editTile.x, canvas2d.y + editTile.y);
@@ -515,12 +573,11 @@ async function recordEditor() {
       };
       await delay(2700);
 
-      // 01:10 — return to edit, save visibly, refresh to restore, then reset bundled data.
+      // 01:10 — save the generated copy, reload it, then return to the requested default.
       await waitUntil(startedAt, 70);
       markChapter(proof.timeline, "persistence", startedAt, 70);
       await page.locator("#mode-edit").click();
       await page.locator("#view-2d").click();
-      const storageKey = "paws-level-editor-demo-v1:level_showcase.json";
       await page.locator("#save-level").click();
       await page.waitForFunction(() =>
         document
@@ -529,51 +586,52 @@ async function recordEditor() {
       );
       await page.waitForFunction(
         (key) => localStorage.getItem(key) !== null,
-        storageKey,
+        generatedStorageKey,
       );
       const savedToLocalStorage = await page.evaluate(
         (key) => localStorage.getItem(key) !== null,
-        storageKey,
+        generatedStorageKey,
       );
       assert.equal(savedToLocalStorage, true);
       await delay(2400);
       await page.reload({ waitUntil: "domcontentloaded" });
       await waitForWorkbench(page);
-      const reloadedPosition = await page.evaluate((uid) => {
-        const tile = window.pawsWorkbench.document.tiles.find((item) => item.uid === uid);
-        return { x: tile.x, y: tile.y };
-      }, editTile.uid);
-      assert.deepEqual(reloadedPosition, savedPosition);
-      await delay(2500);
-      page.once("dialog", (dialog) => dialog.accept());
-      await page.locator("#reset-level").click();
-      await page.waitForFunction(() =>
-        document
-          .querySelector("#stage-toast")
-          ?.textContent?.includes("已恢复内置示例"),
+      await page.locator('[role="option"]', { hasText: generatedFileName }).click();
+      await page.waitForFunction(
+        (fileName) => window.pawsWorkbench?.document?.fileName === fileName,
+        generatedFileName,
       );
       await waitForWorkbench(page);
-      const resetPosition = await page.evaluate((uid) => {
-        const tile = window.pawsWorkbench.document.tiles.find((item) => item.uid === uid);
+      const reloadedPosition = await page.evaluate((tileIndex) => {
+        const tile = window.pawsWorkbench.document.tiles[tileIndex];
         return { x: tile.x, y: tile.y };
-      }, editTile.uid);
-      const overrideRemoved = await page.evaluate(
-        (key) => localStorage.getItem(key) === null,
-        storageKey,
+      }, editTileIndex);
+      assert.deepEqual(reloadedPosition, savedPosition);
+      const localCopyPreserved = await page.evaluate(
+        (key) => localStorage.getItem(key) !== null,
+        generatedStorageKey,
       );
-      assert.equal(overrideRemoved, true);
-      assert.deepEqual(resetPosition, originalPosition);
+      assert.equal(localCopyPreserved, true);
+      await delay(1_700);
+      await page.locator('[role="option"]', { hasText: defaultFileName }).click();
+      await page.waitForFunction(
+        (fileName) => window.pawsWorkbench?.document?.fileName === fileName,
+        defaultFileName,
+      );
+      await waitForWorkbench(page);
+      const returnedToDefault = await page.evaluate(
+        (fileName) => window.pawsWorkbench.document.fileName === fileName,
+        defaultFileName,
+      );
+      assert.equal(returnedToDefault, true);
       proof.actions.persistence = {
-        originalProperty: originalPosition.x,
-        originalPosition,
         savedProperty: savedPosition.x,
         savedPosition,
         savedToLocalStorage,
         reloadedProperty: reloadedPosition.x,
         reloadedPosition,
-        overrideRemoved,
-        resetProperty: resetPosition.x,
-        resetPosition,
+        localCopyPreserved,
+        returnedToDefault,
       };
 
       await waitUntil(startedAt, targetDuration);

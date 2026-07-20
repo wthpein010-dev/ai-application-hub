@@ -1,4 +1,10 @@
-import { mkdir, readFile, readdir, writeFile } from "node:fs/promises";
+import {
+  mkdir,
+  readFile,
+  readdir,
+  unlink,
+  writeFile,
+} from "node:fs/promises";
 import { resolve, join } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -69,6 +75,18 @@ export async function syncPublishedLevels({
   };
 
   await mkdir(targetDir, { recursive: true });
+  const sourceNames = new Set(names);
+  const staleNames = (await readdir(targetDir, { withFileTypes: true }))
+    .filter(
+      (entry) =>
+        entry.isFile()
+        && entry.name.toLowerCase().endsWith(".json")
+        && entry.name !== "index.json"
+        && !sourceNames.has(entry.name),
+    )
+    .map((entry) => entry.name);
+  await Promise.all(staleNames.map((fileName) =>
+    unlink(join(targetDir, fileName))));
   await Promise.all(prepared.map(({ fileName, raw }) =>
     writeFile(join(targetDir, fileName), raw, "utf8")));
   await writeFile(

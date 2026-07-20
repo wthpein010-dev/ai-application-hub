@@ -1,37 +1,44 @@
 {
   "schemaVersion": 1,
-  "recordedAt": "2026-07-20T06:05:49.159Z",
+  "recordedAt": "2026-07-20T08:29:50.916Z",
   "recording": {
     "browser": "system Chrome",
-    "preRollMs": 976,
-    "completedAt": "2026-07-20T06:07:17.162Z",
-    "durationMs": 88003
+    "preRollMs": 955,
+    "completedAt": "2026-07-20T08:31:18.926Z",
+    "durationMs": 88010
   },
   "timeline": {
-    "tools": 1,
-    "edit2d": 12011,
-    "view3d": 32015,
-    "play": 50006,
-    "persistence": 69999
+    "tools": 0,
+    "edit2d": 12000,
+    "view3d": 32011,
+    "play": 50012,
+    "persistence": 70001
   },
   "actions": {
     "metadata": {
-      "cardText": "3D层级展示关#9001level_showcase.json34 tiles07/20",
-      "levelId": 9001,
+      "cardText": "第二关模板12#0020level_0020_r2_第二关模板12.json198 tiles07/20",
+      "fileName": "level_0020_r2_第二关模板12.json",
+      "levelId": 20,
       "modifiedAt": "2026-07-20T00:00:00.000Z"
+    },
+    "aiGeneration": {
+      "fileName": "ai_level_1765184870.json",
+      "reference": "all",
+      "solvable": true,
+      "tileCount": 62
     },
     "edit2d": {
       "drag": {
-        "uid": "tile-33",
-        "selectedBefore": "tile-33",
-        "selectedAfter": "tile-33",
+        "uid": "tile-59",
+        "selectedBefore": "tile-59",
+        "selectedAfter": "tile-59",
         "before": {
-          "x": 32,
-          "y": 40
+          "x": 24,
+          "y": 56
         },
         "after": {
           "x": 40,
-          "y": 48
+          "y": 64
         }
       },
       "property": {
@@ -43,62 +50,53 @@
     "edit3d": {
       "cameraBefore": {
         "position": [
-          3.5999999999999996,
-          5.2,
-          4.599999999999999
+          6.75,
+          8.975,
+          8.625
         ],
         "target": [
           0,
-          0.35,
+          0.385,
           0
         ]
       },
       "cameraAfter": {
         "position": [
-          0.5505129690121952,
-          0.8403438418158985,
-          -7.556387919352916
+          1.0093853506755825,
+          1.2589872501426949,
+          -13.854909328481066
         ],
         "target": [
           0,
-          0.35,
+          0.385,
           0
         ]
       },
-      "selectedBefore": "tile-33",
-      "selectedAfter": "tile-7"
+      "selectedBefore": "tile-59",
+      "selectedAfter": "tile-1"
     },
     "play2d": {
       "removedBefore": 0,
-      "removedAfter": 6
+      "removedAfter": 2
     },
     "play3d": {
       "selectedBefore": "",
-      "selectedAfter": "tile-29"
+      "selectedAfter": "tile-5"
     },
     "persistence": {
-      "originalProperty": 32,
-      "originalPosition": {
-        "x": 32,
-        "y": 40
-      },
       "savedProperty": 41,
       "savedPosition": {
         "x": 41,
-        "y": 48
+        "y": 64
       },
       "savedToLocalStorage": true,
       "reloadedProperty": 41,
       "reloadedPosition": {
         "x": 41,
-        "y": 48
+        "y": 64
       },
-      "overrideRemoved": true,
-      "resetProperty": 32,
-      "resetPosition": {
-        "x": 32,
-        "y": 40
-      }
+      "localCopyPreserved": true,
+      "returnedToDefault": true
     }
   },
   "errors": {
@@ -107,17 +105,22 @@
   },
   "media": {
     "file": "paws-level-editor-tutorial.mp4",
-    "sha256": "4dd76608c34ab86d4ab3d8679e29783b8339c9112f952b3360a4302c33c6bf6d"
+    "sha256": "d0ee59c45ffcb817e21710dae139a6b930d7b6b44f16bb57f5eb3c68fd4ef339"
   },
   "sources": {
-    "projects/paws-level-editor/index.html": "61fe45c2c03e63c7eff62420c417a255ba9eacf9d3b2db7ea5ab36ed8440e4c6",
+    "projects/paws-level-editor/index.html": "55e6e58c830163205668ecdb6d99d9f0e6d6002cb137f79b1d178e334efe1441",
+    "projects/paws-level-editor/styles.css": "cf074e6421a44591bc73c10dd033f9d443dc5114534d23073d9d937884de7391",
     "projects/paws-level-editor/app.mjs": "550278401cebcf10ebb91159d70ca9698340c38261817da2dceb7bdaa5ac9dbf",
+    "projects/paws-level-editor/core/ai-level-generator.mjs": "9a5c8deb97c46bf7a9e26c3fce728bedf8ef7cea4bcf05c0f96a8a15c6bfbfa8",
+    "projects/paws-level-editor/core/level-solver.mjs": "95a97b42973db91aaf118326b0bbf83bfda24168ff36fb5bc9b4b7703cd6c248",
+    "projects/paws-level-editor/core/level-statistics.mjs": "5dbc6dadcb576e7ad7d6c4d2e85c517bce5822adce7645775598a32fe50042e0",
+    "projects/paws-level-editor/ui/ai-level-dialog.mjs": "06d0b206eb5cf73c32328aed23058977764d1b002862e68d435f43f9fac97220",
     "projects/paws-level-editor/ui/local-level-import.mjs": "651987b8d3c1ca4293218bb1289f48c6c706ce2ba502e0960e5ae02a6883d8e9",
     "projects/paws-level-editor/ui/level-summary.mjs": "f7876ba36caaef6ac9123f98680aad02a65e5134f6ec1486f306e17f359b4713",
-    "projects/paws-level-editor/ui/workbench-controller.mjs": "ffed90b9061f54d7ddf6566b47fc49c3a032d6d0956d5b4b6aeb0a1bd67082b8",
-    "projects/paws-level-editor/levels/index.json": "7b7071b659670c03b2bcc776ac5fc2cae9a08f498c72e635108fec3f956dcb50",
-    "projects/paws-level-editor/levels/level_showcase.json": "4becdd02018ddeee7b8d5551c009c4fd00fe2e1ea90929e2be6005d8f92f939e",
-    "scripts/record-paws-level-editor-demo.mjs": "fe057a84347aecc2c39fa21c007dfba178feb6d5faddea7931b969d78d8ba5dd",
+    "projects/paws-level-editor/ui/workbench-controller.mjs": "15795ab4296288352d8db9cbdf40aea77b5a98582042baa2826bcacbb58ac5e0",
+    "projects/paws-level-editor/levels/index.json": "9192f432ae94035e5e4a8914218680d6500f282cc2bc29a8885f93ad39e13696",
+    "projects/paws-level-editor/levels/level_0020_r2_第二关模板12.json": "c60a1d78a6afe1e1078d944edb2b465f3b39da6121f8d8c08e3efbbf1f558dbd",
+    "scripts/record-paws-level-editor-demo.mjs": "566e4456a4ea1cb37dfe25a71101cbc7daf0b37753d4974610a345f0c1fb9a89",
     "scripts/paws-recording-support.mjs": "e5d2b2f02b67798c90d080a3202b97ecce50ffd738e31fc374d751ad18ae79c2"
   }
 }

@@ -263,12 +263,12 @@
       "modifiedAt": "2026-07-20T00:00:00.000Z"
     },
     {
-      "id": 1001,
-      "fileName": "level_1001_r1_新关卡.json",
-      "name": "新关卡",
+      "id": 50,
+      "fileName": "level_0050_r2_50 第二关第一版.json",
+      "name": "50 第二关第一版",
       "difficulty": "Normal",
-      "tileCount": 28,
-      "layerCount": 12,
+      "tileCount": 186,
+      "layerCount": 42,
       "modifiedAt": "2026-07-20T00:00:00.000Z"
     }
   ]

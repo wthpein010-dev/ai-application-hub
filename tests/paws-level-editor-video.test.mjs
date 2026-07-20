@@ -80,12 +80,17 @@ test("recording proof matches current media, sources, timeline and real state ch
 
   const sourceFiles = [
     "projects/paws-level-editor/index.html",
+    "projects/paws-level-editor/styles.css",
     "projects/paws-level-editor/app.mjs",
+    "projects/paws-level-editor/core/ai-level-generator.mjs",
+    "projects/paws-level-editor/core/level-solver.mjs",
+    "projects/paws-level-editor/core/level-statistics.mjs",
+    "projects/paws-level-editor/ui/ai-level-dialog.mjs",
     "projects/paws-level-editor/ui/local-level-import.mjs",
     "projects/paws-level-editor/ui/level-summary.mjs",
     "projects/paws-level-editor/ui/workbench-controller.mjs",
     "projects/paws-level-editor/levels/index.json",
-    "projects/paws-level-editor/levels/level_showcase.json",
+    "projects/paws-level-editor/levels/level_0020_r2_第二关模板12.json",
     "scripts/record-paws-level-editor-demo.mjs",
     "scripts/paws-recording-support.mjs",
   ];
@@ -116,6 +121,10 @@ test("recording proof matches current media, sources, timeline and real state ch
   assert.equal(Number.isInteger(actions.metadata.levelId), true);
   assert.equal(new Date(actions.metadata.modifiedAt).toISOString(), actions.metadata.modifiedAt);
   assert.doesNotMatch(actions.metadata.cardText, /#undefined|Invalid Date/);
+  assert.match(actions.aiGeneration.fileName, /^ai_level_\d+\.json$/);
+  assert.equal(actions.aiGeneration.reference, "all");
+  assert.equal(actions.aiGeneration.solvable, true);
+  assert.equal(actions.aiGeneration.tileCount >= 60, true);
   assert.notDeepEqual(actions.edit2d.drag.before, actions.edit2d.drag.after);
   assert.equal(actions.edit2d.drag.selectedBefore, actions.edit2d.drag.uid);
   assert.equal(actions.edit2d.drag.selectedAfter, actions.edit2d.drag.uid);
@@ -133,15 +142,8 @@ test("recording proof matches current media, sources, timeline and real state ch
     actions.persistence.reloadedPosition,
     actions.persistence.savedPosition,
   );
-  assert.equal(actions.persistence.overrideRemoved, true);
-  assert.equal(
-    actions.persistence.resetProperty,
-    actions.persistence.originalProperty,
-  );
-  assert.deepEqual(
-    actions.persistence.resetPosition,
-    actions.persistence.originalPosition,
-  );
+  assert.equal(actions.persistence.localCopyPreserved, true);
+  assert.equal(actions.persistence.returnedToDefault, true);
   assert.deepEqual(proof.errors.console, []);
   assert.deepEqual(proof.errors.page, []);
 });
