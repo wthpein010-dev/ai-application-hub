@@ -15,6 +15,7 @@ const baseUrlIndex = process.argv.indexOf("--base-url");
 const externalBaseUrl = baseUrlIndex >= 0
   ? process.argv[baseUrlIndex + 1]?.replace(/\/+$/, "")
   : "";
+const updateArtifacts = process.argv.includes("--update-artifacts");
 
 function editorUrl(baseUrl) {
   return baseUrl.includes("/projects/paws-level-editor")
@@ -67,6 +68,20 @@ try {
   const baseUrl = externalBaseUrl || server.baseUrl;
   browser = await launchBrowser();
   const context = await browser.newContext({ viewport: { width: 1440, height: 900 } });
+  await context.addInitScript(() => {
+    const fixedSeed = 73125;
+    const originalGetRandomValues = crypto.getRandomValues.bind(crypto);
+    Object.defineProperty(crypto, "getRandomValues", {
+      configurable: true,
+      value(values) {
+        if (values instanceof Uint32Array) {
+          values.fill(fixedSeed);
+          return values;
+        }
+        return originalGetRandomValues(values);
+      },
+    });
+  });
   const page = await context.newPage();
   const errors = captureErrors(page);
 
@@ -124,7 +139,7 @@ try {
     await page.locator('input[name="ai-reference"][value="all"]').isChecked(),
     true,
   );
-  if (!externalBaseUrl) {
+  if (!externalBaseUrl && updateArtifacts) {
     await mkdir(artifactsRoot, { recursive: true });
     await page.screenshot({
       path: join(artifactsRoot, "paws-ai-level-dialog.png"),
@@ -172,7 +187,7 @@ try {
   const webgl = await page.locator(".level-canvas-3d").evaluate((canvas) =>
     Boolean(canvas.getContext("webgl2") || canvas.getContext("webgl")));
   assert.equal(webgl, true);
-  if (!externalBaseUrl) {
+  if (!externalBaseUrl && updateArtifacts) {
     await page.screenshot({
       path: join(artifactsRoot, "paws-ai-level-desktop.png"),
       fullPage: true,
@@ -242,7 +257,7 @@ try {
     pageErrors: errors.page.length,
     requestFailures: errors.request.length,
   };
-  if (!externalBaseUrl) {
+  if (!externalBaseUrl && updateArtifacts) {
     await writeFile(
       join(artifactsRoot, "paws-ai-level-proof.json"),
       `${JSON.stringify(proof, null, 2)}\n`,
