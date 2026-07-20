@@ -107,10 +107,10 @@ const defaultApps = [
   },
   {
     id: "gamepulse-mini-radar",
-    name: "GamePulse 小游雷达",
+    name: "小游戏每日排行",
     category: "小游戏产品洞察",
     status: "assistant",
-    brief: "把国内微信小游戏热门榜、畅销榜与海外 US iOS Casual Top 10 放在同一张开发者工作台上。",
+    brief: "把国内微信小游戏热门榜、畅销榜与海外美国 iOS 休闲前十放在同一张开发者工作台上。",
     problem: "小游戏开发者需要快速发现国内轻休闲产品与海外休闲榜变化，同时保留可核验的原始名次和数据状态。",
     aiUse: "AI 参与榜单清洗、轻休闲筛选、产品信号整理和异常回退；站点每天北京时间 07:10 后检查更新。",
     folder: "https://gamepulse-mini-radar.polite-chord-7994.chatgpt.site",
@@ -125,7 +125,7 @@ const defaultApps = [
       windows: "",
       mac: ""
     },
-    tags: ["小游戏排行", "微信小游戏", "iOS Casual", "产品洞察"],
+    tags: ["小游戏排行", "微信小游戏", "iOS 休闲榜", "产品洞察"],
     speed: 9,
     impact: 9,
     risk: 8,

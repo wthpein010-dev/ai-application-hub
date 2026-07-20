@@ -35,6 +35,16 @@ test("GamePulse video page returns to the application collection", () => {
   assert.match(html, /返回应用集合/);
 });
 
+test("GamePulse video shell uses the public Chinese product name", () => {
+  const html = readFileSync(join(videoRoot, "index.html"), "utf8");
+  assert.match(html, /小游戏每日排行视频说明/);
+  assert.match(html, /打开小游戏每日排行/);
+  assert.doesNotMatch(html, /GamePulse 小游雷达视频说明/);
+  assert.doesNotMatch(html, /GAMEPULSE \/ 75S WALKTHROUGH/);
+  assert.doesNotMatch(html, /准备播放 GamePulse/);
+  assert.doesNotMatch(html, /打开 GamePulse/);
+});
+
 test("GamePulse script and captions cover the six walkthrough chapters", () => {
   const captions = readFileSync(
     join(videoRoot, "gamepulse-mini-radar-demo.vtt"),

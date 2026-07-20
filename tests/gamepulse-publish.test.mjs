@@ -33,6 +33,7 @@ test("GamePulse is published once in the application collection", () => {
   assert.equal(matches.length, 1);
 
   const [app] = matches;
+  assert.equal(app.name, "小游戏每日排行");
   assert.equal(app.status, "assistant");
   assert.equal(
     app.entry,
@@ -44,11 +45,12 @@ test("GamePulse is published once in the application collection", () => {
     app.video,
     "./projects/gamepulse-mini-radar/video/index.html",
   );
-  assert.match(app.brief, /国内.*海外.*Top 10/);
+  assert.match(app.brief, /国内.*海外.*前十/);
+  assert.doesNotMatch(app.brief, /Top 10/);
   assert.match(app.aiUse, /07:10/);
   assert.deepEqual(
     [...app.tags],
-    ["小游戏排行", "微信小游戏", "iOS Casual", "产品洞察"],
+    ["小游戏排行", "微信小游戏", "iOS 休闲榜", "产品洞察"],
   );
 });
 
@@ -56,6 +58,6 @@ test("the page cache key changes for the GamePulse release", () => {
   const html = readFileSync(join(root, "index.html"), "utf8");
   assert.match(
     html,
-    /app-20260706-restore-games\.js\?v=20260720-gamepulse-home-entry/,
+    /app-20260706-restore-games\.js\?v=20260720-daily-game-ranking/,
   );
 });
