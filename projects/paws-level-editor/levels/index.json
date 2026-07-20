@@ -1,0 +1,10 @@
+{
+  "levels": [
+    {
+      "fileName": "level_showcase.json",
+      "name": "3D层级展示关",
+      "description": "公开演示专用的对称多层关卡",
+      "tileCount": 34
+    }
+  ]
+}
