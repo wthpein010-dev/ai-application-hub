@@ -87,26 +87,30 @@ test("all published block images preserve the expected 120 by 135 dimensions", (
 
 test("public files contain no private level path or credential material", () => {
   const text = readPublicTextFiles(editorRoot);
-  assert.doesNotMatch(text, /EditorLevels|E:\\Mahjong|maque|cookie|password/i);
-  assert.match(text, /公开演示专用；坐标与牌组均为自行生成，不含真实工程关卡数据。/);
+  assert.doesNotMatch(text, /E:\\Mahjong|maque|cookie|password/i);
+  assert.match(text, /level_0020_r2_第二关模板12\.json/);
 });
 
-test("published levels contain only the index and standalone showcase", () => {
+test("published levels contain the index and 30 authorized project files", () => {
   const levels = readdirSync(join(editorRoot, "levels")).sort();
-  assert.deepEqual(levels, ["index.json", "level_showcase.json"]);
+  assert.equal(levels.length, 31);
+  assert.equal(levels.includes("index.json"), true);
+  assert.equal(levels.includes("level_showcase.json"), false);
   const index = JSON.parse(
     readFileSync(join(editorRoot, "levels", "index.json"), "utf8"),
   );
-  const showcase = JSON.parse(
-    readFileSync(join(editorRoot, "levels", "level_showcase.json"), "utf8"),
+  assert.equal(index.levels.length, 30);
+  assert.equal(index.defaultFileName, "level_0020_r2_第二关模板12.json");
+  assert.deepEqual(
+    levels.filter((name) => name !== "index.json"),
+    index.levels.map(({ fileName }) => fileName).sort(),
   );
-  assert.match(showcase.designerNote.source, /公开演示专用/);
-  assert.equal(index.levels.length, 1);
-  const summary = index.levels[0];
-  assert.equal(Number.isInteger(summary.id) && summary.id > 0, true);
-  assert.equal(new Date(summary.modifiedAt).toISOString(), summary.modifiedAt);
-  assert.equal(showcase.id, summary.id);
-  assert.equal(showcase.modifiedAt, summary.modifiedAt);
+  for (const summary of index.levels) {
+    assert.equal(typeof summary.name, "string");
+    assert.equal(Number.isInteger(summary.tileCount) && summary.tileCount > 0, true);
+    assert.equal(Number.isInteger(summary.layerCount) && summary.layerCount > 0, true);
+    assert.equal(new Date(summary.modifiedAt).toISOString(), summary.modifiedAt);
+  }
 });
 
 test("entry uses relative GitHub Pages module and Three paths", () => {

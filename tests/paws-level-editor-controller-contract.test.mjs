@@ -58,6 +58,15 @@ test("controller shares file name validation and displays API save errors", () =
   assert.match(controller, /level_\$\{String\(this\.document\.id\)[^`]*_copy\.json/);
 });
 
+test("controller opens the catalog default instead of relying on a single item", () => {
+  assert.match(controller, /api\.listLevelCatalog\(\)/);
+  assert.match(controller, /this\.defaultFileName\s*=\s*catalog\.defaultFileName/);
+  assert.match(
+    controller,
+    /this\.levels\.find\(\s*\(\{\s*fileName\s*\}\)\s*=>\s*fileName\s*===\s*this\.defaultFileName,\s*\)\s*\?\?\s*this\.levels\[0\]/,
+  );
+});
+
 test("controller imports a local JSON level into browser-local storage", () => {
   assert.match(page, /id="import-level"[^>]*>导入 JSON</);
   assert.match(page, /id="import-level-input"[^>]*type="file"[^>]*accept="[^"]*\.json/);

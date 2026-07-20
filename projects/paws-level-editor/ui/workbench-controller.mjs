@@ -38,6 +38,7 @@ export class WorkbenchController {
     this.root = root;
     this.api = api;
     this.levels = [];
+    this.defaultFileName = "";
     this.document = null;
     this.history = null;
     this.selection = new Set();
@@ -208,12 +209,17 @@ export class WorkbenchController {
   async refreshLevels() {
     this.elements.levelList.innerHTML = `<div class="loading-card"><span class="loader"></span><p>正在读取示例关卡…</p></div>`;
     try {
-      this.levels = await this.api.listLevels();
+      const catalog = await this.api.listLevelCatalog();
+      this.levels = catalog.levels;
+      this.defaultFileName = catalog.defaultFileName;
       this.renderLevelList();
       this.setConnection("online", "静态演示在线");
-      if (this.levels.length === 1 && !this.document) {
-        await this.openLevel(this.levels[0].fileName, {
-          recoverable: this.levels[0].recoverable,
+      if (this.levels.length && !this.document) {
+        const level = this.levels.find(
+          ({ fileName }) => fileName === this.defaultFileName,
+        ) ?? this.levels[0];
+        await this.openLevel(level.fileName, {
+          recoverable: level.recoverable,
         });
       }
     } catch (error) {

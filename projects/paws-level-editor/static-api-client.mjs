@@ -34,7 +34,7 @@ export function createApiClient({
     async health() {
       return { online: true, authenticated: true, writable: true, staticDemo: true };
     },
-    async listLevels() {
+    async listLevelCatalog() {
       const index = await fetchJson(fetchImpl, INDEX_URL);
       if (!Array.isArray(index?.levels)) {
         throw new WorkbenchApiError("内置关卡索引格式无效。", { code: "invalid-level-index" });
@@ -46,7 +46,14 @@ export function createApiClient({
         .filter((fileName) => !bundledFileNames.has(fileName))
         .map((fileName) => mergeStoredOnlySummary(fileName, storage))
         .filter(Boolean);
-      return [...bundled, ...localOnly];
+      return {
+        defaultFileName:
+          typeof index.defaultFileName === "string" ? index.defaultFileName : "",
+        levels: [...bundled, ...localOnly],
+      };
+    },
+    async listLevels() {
+      return (await this.listLevelCatalog()).levels;
     },
     async loadLevel(fileName) {
       assertFileName(fileName);

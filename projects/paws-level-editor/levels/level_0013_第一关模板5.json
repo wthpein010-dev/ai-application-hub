@@ -1,0 +1,204 @@
+{
+    "id": 13,
+    "name": "第一关模板5",
+    "difficulty": "Normal",
+    "gridUnit": "sheep_7x8_mini8",
+    "designerNote": "{\"widthNum\":7,\"heightNum\":8,\"cdNum\":0,\"levelKey\":13,\"gameLevelOrder\":13,\"showLayerNum\":true,\"blockTypeCount\":8,\"blockTypeData\":{},\"levelData\":{\"1\":[{\"id\":\"1-8-8\",\"type\":4,\"rolNum\":8,\"rowNum\":8,\"layerNum\":1,\"moldType\":1,\"metaType\":0,\"metaData\":0,\"presetColorType\":1},{\"id\":\"1-24-8\",\"type\":0,\"rolNum\":24,\"rowNum\":8,\"layerNum\":1,\"moldType\":1,\"metaType\":0,\"metaData\":0,\"presetColorType\":1},{\"id\":\"1-40-8\",\"type\":1,\"rolNum\":40,\"rowNum\":8,\"layerNum\":1,\"moldType\":1,\"metaType\":0,\"metaData\":0,\"presetColorType\":1},{\"id\":\"1-8-28\",\"type\":1,\"rolNum\":8,\"rowNum\":28,\"layerNum\":1,\"moldType\":1,\"metaType\":0,\"metaData\":0,\"presetColorType\":1},{\"id\":\"1-24-28\",\"type\":2,\"rolNum\":24,\"rowNum\":28,\"layerNum\":1,\"moldType\":1,\"metaType\":0,\"metaData\":0,\"presetColorType\":1},{\"id\":\"1-40-28\",\"type\":3,\"rolNum\":40,\"rowNum\":28,\"layerNum\":1,\"moldType\":1,\"metaType\":0,\"metaData\":0,\"presetColorType\":1},{\"id\":\"1-8-48\",\"type\":4,\"rolNum\":8,\"rowNum\":48,\"layerNum\":1,\"moldType\":1,\"metaType\":0,\"metaData\":0,\"presetColorType\":1},{\"id\":\"1-24-48\",\"type\":3,\"rolNum\":24,\"rowNum\":48,\"layerNum\":1,\"moldType\":1,\"metaType\":0,\"metaData\":0,\"presetColorType\":1},{\"id\":\"1-40-48\",\"type\":2,\"rolNum\":40,\"rowNum\":48,\"layerNum\":1,\"moldType\":1,\"metaType\":0,\"metaData\":0,\"presetColorType\":1}],\"2\":[{\"id\":\"2-8-9\",\"type\":0,\"rolNum\":8,\"rowNum\":9,\"layerNum\":2,\"moldType\":1,\"metaType\":0,\"metaData\":0,\"presetColorType\":1},{\"id\":\"2-24-9\",\"type\":0,\"rolNum\":24,\"rowNum\":9,\"layerNum\":2,\"moldType\":1,\"metaType\":0,\"metaData\":0,\"presetColorType\":1},{\"id\":\"2-40-9\",\"type\":0,\"rolNum\":40,\"rowNum\":9,\"layerNum\":2,\"moldType\":1,\"metaType\":0,\"metaData\":0,\"presetColorType\":1},{\"id\":\"2-8-29\",\"type\":2,\"rolNum\":8,\"rowNum\":29,\"layerNum\":2,\"moldType\":1,\"metaType\":0,\"metaData\":0,\"presetColorType\":1},{\"id\":\"2-24-29\",\"type\":3,\"rolNum\":24,\"rowNum\":29,\"layerNum\":2,\"moldType\":1,\"metaType\":0,\"metaData\":0,\"presetColorType\":1},{\"id\":\"2-40-29\",\"type\":1,\"rolNum\":40,\"rowNum\":29,\"layerNum\":2,\"moldType\":1,\"metaType\":0,\"metaData\":0,\"presetColorType\":1},{\"id\":\"2-8-49\",\"type\":1,\"rolNum\":8,\"rowNum\":49,\"layerNum\":2,\"moldType\":1,\"metaType\":0,\"metaData\":0,\"presetColorType\":1},{\"id\":\"2-24-49\",\"type\":2,\"rolNum\":24,\"rowNum\":49,\"layerNum\":2,\"moldType\":1,\"metaType\":0,\"metaData\":0,\"presetColorType\":1},{\"id\":\"2-40-49\",\"type\":3,\"rolNum\":40,\"rowNum\":49,\"layerNum\":2,\"moldType\":1,\"metaType\":0,\"metaData\":0,\"presetColorType\":1}]},\"goldBlockData\":{\"collectCount\":0,\"blockList\":[]},\"cakeNum\":0}",
+    "features": {
+        "flipEvery": 0,
+        "monoColor": false,
+        "ranked": false,
+        "difficult": false,
+        "easyAfterHard": false,
+        "festival": false,
+        "premiumTiles": false
+    },
+    "bagOffer": {
+        "label": "",
+        "rewardType": "",
+        "rewardCount": 0
+    },
+    "tiles": [
+        {
+            "x": 8,
+            "y": 8,
+            "layer": 1,
+            "type": 4,
+            "moldType": 1,
+            "metaType": 0,
+            "metaData": 0,
+            "presetColorType": 1
+        },
+        {
+            "x": 24,
+            "y": 8,
+            "layer": 1,
+            "type": 0,
+            "moldType": 1,
+            "metaType": 0,
+            "metaData": 0,
+            "presetColorType": 1
+        },
+        {
+            "x": 40,
+            "y": 8,
+            "layer": 1,
+            "type": 1,
+            "moldType": 1,
+            "metaType": 0,
+            "metaData": 0,
+            "presetColorType": 1
+        },
+        {
+            "x": 8,
+            "y": 28,
+            "layer": 1,
+            "type": 1,
+            "moldType": 1,
+            "metaType": 0,
+            "metaData": 0,
+            "presetColorType": 1
+        },
+        {
+            "x": 24,
+            "y": 28,
+            "layer": 1,
+            "type": 2,
+            "moldType": 1,
+            "metaType": 0,
+            "metaData": 0,
+            "presetColorType": 1
+        },
+        {
+            "x": 40,
+            "y": 28,
+            "layer": 1,
+            "type": 3,
+            "moldType": 1,
+            "metaType": 0,
+            "metaData": 0,
+            "presetColorType": 1
+        },
+        {
+            "x": 8,
+            "y": 48,
+            "layer": 1,
+            "type": 4,
+            "moldType": 1,
+            "metaType": 0,
+            "metaData": 0,
+            "presetColorType": 1
+        },
+        {
+            "x": 24,
+            "y": 48,
+            "layer": 1,
+            "type": 3,
+            "moldType": 1,
+            "metaType": 0,
+            "metaData": 0,
+            "presetColorType": 1
+        },
+        {
+            "x": 40,
+            "y": 48,
+            "layer": 1,
+            "type": 2,
+            "moldType": 1,
+            "metaType": 0,
+            "metaData": 0,
+            "presetColorType": 1
+        },
+        {
+            "x": 8,
+            "y": 9,
+            "layer": 2,
+            "type": 0,
+            "moldType": 1,
+            "metaType": 0,
+            "metaData": 0,
+            "presetColorType": 1
+        },
+        {
+            "x": 24,
+            "y": 9,
+            "layer": 2,
+            "type": 0,
+            "moldType": 1,
+            "metaType": 0,
+            "metaData": 0,
+            "presetColorType": 1
+        },
+        {
+            "x": 40,
+            "y": 9,
+            "layer": 2,
+            "type": 0,
+            "moldType": 1,
+            "metaType": 0,
+            "metaData": 0,
+            "presetColorType": 1
+        },
+        {
+            "x": 8,
+            "y": 29,
+            "layer": 2,
+            "type": 2,
+            "moldType": 1,
+            "metaType": 0,
+            "metaData": 0,
+            "presetColorType": 1
+        },
+        {
+            "x": 24,
+            "y": 29,
+            "layer": 2,
+            "type": 3,
+            "moldType": 1,
+            "metaType": 0,
+            "metaData": 0,
+            "presetColorType": 1
+        },
+        {
+            "x": 40,
+            "y": 29,
+            "layer": 2,
+            "type": 1,
+            "moldType": 1,
+            "metaType": 0,
+            "metaData": 0,
+            "presetColorType": 1
+        },
+        {
+            "x": 8,
+            "y": 49,
+            "layer": 2,
+            "type": 1,
+            "moldType": 1,
+            "metaType": 0,
+            "metaData": 0,
+            "presetColorType": 1
+        },
+        {
+            "x": 24,
+            "y": 49,
+            "layer": 2,
+            "type": 2,
+            "moldType": 1,
+            "metaType": 0,
+            "metaData": 0,
+            "presetColorType": 1
+        },
+        {
+            "x": 40,
+            "y": 49,
+            "layer": 2,
+            "type": 3,
+            "moldType": 1,
+            "metaType": 0,
+            "metaData": 0,
+            "presetColorType": 1
+        }
+    ],
+    "stacks": []
+}

@@ -1,0 +1,3184 @@
+{
+    "id": 21,
+    "name": "第二关模板1",
+    "difficulty": "Normal",
+    "gridUnit": "sheep_7x8_mini8",
+    "designerNote": "{\"widthNum\":7,\"heightNum\":8,\"cdNum\":0,\"levelKey\":21,\"gameLevelOrder\":2,\"showLayerNum\":true,\"blockTypeCount\":8,\"boardScale\":1.00,\"blockTypeData\":{},\"levelData\":{\"1\":[{\"id\":\"1-24-0\",\"type\":0,\"rolNum\":24,\"rowNum\":0,\"layerNum\":1,\"moldType\":1,\"metaType\":0,\"metaData\":0,\"presetColorType\":1},{\"id\":\"1-24-8\",\"type\":0,\"rolNum\":24,\"rowNum\":8,\"layerNum\":1,\"moldType\":1,\"metaType\":0,\"metaData\":0,\"presetColorType\":1},{\"id\":\"1-24-16\",\"type\":0,\"rolNum\":24,\"rowNum\":16,\"layerNum\":1,\"moldType\":1,\"metaType\":0,\"metaData\":0,\"presetColorType\":1},{\"id\":\"1-24-24\",\"type\":0,\"rolNum\":24,\"rowNum\":24,\"layerNum\":1,\"moldType\":1,\"metaType\":0,\"metaData\":0,\"presetColorType\":1},{\"id\":\"1-24-32\",\"type\":0,\"rolNum\":24,\"rowNum\":32,\"layerNum\":1,\"moldType\":1,\"metaType\":0,\"metaData\":0,\"presetColorType\":1},{\"id\":\"1-24-40\",\"type\":0,\"rolNum\":24,\"rowNum\":40,\"layerNum\":1,\"moldType\":1,\"metaType\":0,\"metaData\":0,\"presetColorType\":1},{\"id\":\"1-0-56\",\"type\":0,\"rolNum\":0,\"rowNum\":56,\"layerNum\":1,\"moldType\":1,\"metaType\":0,\"metaData\":0,\"presetColorType\":1}],\"2\":[{\"id\":\"2-25-0\",\"type\":0,\"rolNum\":25,\"rowNum\":0,\"layerNum\":2,\"moldType\":1,\"metaType\":0,\"metaData\":0,\"presetColorType\":1},{\"id\":\"2-20-8\",\"type\":0,\"rolNum\":20,\"rowNum\":8,\"layerNum\":2,\"moldType\":1,\"metaType\":0,\"metaData\":0,\"presetColorType\":1},{\"id\":\"2-28-8\",\"type\":0,\"rolNum\":28,\"rowNum\":8,\"layerNum\":2,\"moldType\":1,\"metaType\":0,\"metaData\":0,\"presetColorType\":1},{\"id\":\"2-20-16\",\"type\":0,\"rolNum\":20,\"rowNum\":16,\"layerNum\":2,\"moldType\":1,\"metaType\":0,\"metaData\":0,\"presetColorType\":1},{\"id\":\"2-28-16\",\"type\":0,\"rolNum\":28,\"rowNum\":16,\"layerNum\":2,\"moldType\":1,\"metaType\":0,\"metaData\":0,\"presetColorType\":1},{\"id\":\"2-20-24\",\"type\":0,\"rolNum\":20,\"rowNum\":24,\"layerNum\":2,\"moldType\":1,\"metaType\":0,\"metaData\":0,\"presetColorType\":1},{\"id\":\"2-28-24\",\"type\":0,\"rolNum\":28,\"rowNum\":24,\"layerNum\":2,\"moldType\":1,\"metaType\":0,\"metaData\":0,\"presetColorType\":1},{\"id\":\"2-20-32\",\"type\":0,\"rolNum\":20,\"rowNum\":32,\"layerNum\":2,\"moldType\":1,\"metaType\":0,\"metaData\":0,\"presetColorType\":1},{\"id\":\"2-28-32\",\"type\":0,\"rolNum\":28,\"rowNum\":32,\"layerNum\":2,\"moldType\":1,\"metaType\":0,\"metaData\":0,\"presetColorType\":1},{\"id\":\"2-20-40\",\"type\":0,\"rolNum\":20,\"rowNum\":40,\"layerNum\":2,\"moldType\":1,\"metaType\":0,\"metaData\":0,\"presetColorType\":1},{\"id\":\"2-28-40\",\"type\":0,\"rolNum\":28,\"rowNum\":40,\"layerNum\":2,\"moldType\":1,\"metaType\":0,\"metaData\":0,\"presetColorType\":1},{\"id\":\"2-1-56\",\"type\":0,\"rolNum\":1,\"rowNum\":56,\"layerNum\":2,\"moldType\":1,\"metaType\":0,\"metaData\":0,\"presetColorType\":1}],\"3\":[{\"id\":\"3-26-0\",\"type\":0,\"rolNum\":26,\"rowNum\":0,\"layerNum\":3,\"moldType\":1,\"metaType\":0,\"metaData\":0,\"presetColorType\":1},{\"id\":\"3-24-8\",\"type\":0,\"rolNum\":24,\"rowNum\":8,\"layerNum\":3,\"moldType\":1,\"metaType\":0,\"metaData\":0,\"presetColorType\":1},{\"id\":\"3-24-16\",\"type\":0,\"rolNum\":24,\"rowNum\":16,\"layerNum\":3,\"moldType\":1,\"metaType\":0,\"metaData\":0,\"presetColorType\":1},{\"id\":\"3-24-24\",\"type\":0,\"rolNum\":24,\"rowNum\":24,\"layerNum\":3,\"moldType\":1,\"metaType\":0,\"metaData\":0,\"presetColorType\":1},{\"id\":\"3-24-32\",\"type\":0,\"rolNum\":24,\"rowNum\":32,\"layerNum\":3,\"moldType\":1,\"metaType\":0,\"metaData\":0,\"presetColorType\":1},{\"id\":\"3-24-40\",\"type\":0,\"rolNum\":24,\"rowNum\":40,\"layerNum\":3,\"moldType\":1,\"metaType\":0,\"metaData\":0,\"presetColorType\":1},{\"id\":\"3-2-56\",\"type\":0,\"rolNum\":2,\"rowNum\":56,\"layerNum\":3,\"moldType\":1,\"metaType\":0,\"metaData\":0,\"presetColorType\":1}],\"4\":[{\"id\":\"4-27-0\",\"type\":0,\"rolNum\":27,\"rowNum\":0,\"layerNum\":4,\"moldType\":1,\"metaType\":0,\"metaData\":0,\"presetColorType\":1},{\"id\":\"4-20-8\",\"type\":0,\"rolNum\":20,\"rowNum\":8,\"layerNum\":4,\"moldType\":1,\"metaType\":0,\"metaData\":0,\"presetColorType\":1},{\"id\":\"4-28-8\",\"type\":0,\"rolNum\":28,\"rowNum\":8,\"layerNum\":4,\"moldType\":1,\"metaType\":0,\"metaData\":0,\"presetColorType\":1},{\"id\":\"4-20-16\",\"type\":0,\"rolNum\":20,\"rowNum\":16,\"layerNum\":4,\"moldType\":1,\"metaType\":0,\"metaData\":0,\"presetColorType\":1},{\"id\":\"4-28-16\",\"type\":0,\"rolNum\":28,\"rowNum\":16,\"layerNum\":4,\"moldType\":1,\"metaType\":0,\"metaData\":0,\"presetColorType\":1},{\"id\":\"4-20-24\",\"type\":0,\"rolNum\":20,\"rowNum\":24,\"layerNum\":4,\"moldType\":1,\"metaType\":0,\"metaData\":0,\"presetColorType\":1},{\"id\":\"4-28-24\",\"type\":0,\"rolNum\":28,\"rowNum\":24,\"layerNum\":4,\"moldType\":1,\"metaType\":0,\"metaData\":0,\"presetColorType\":1},{\"id\":\"4-20-32\",\"type\":0,\"rolNum\":20,\"rowNum\":32,\"layerNum\":4,\"moldType\":1,\"metaType\":0,\"metaData\":0,\"presetColorType\":1},{\"id\":\"4-28-32\",\"type\":0,\"rolNum\":28,\"rowNum\":32,\"layerNum\":4,\"moldType\":1,\"metaType\":0,\"metaData\":0,\"presetColorType\":1},{\"id\":\"4-20-40\",\"type\":0,\"rolNum\":20,\"rowNum\":40,\"layerNum\":4,\"moldType\":1,\"metaType\":0,\"metaData\":0,\"presetColorType\":1},{\"id\":\"4-28-40\",\"type\":0,\"rolNum\":28,\"rowNum\":40,\"layerNum\":4,\"moldType\":1,\"metaType\":0,\"metaData\":0,\"presetColorType\":1},{\"id\":\"4-3-56\",\"type\":0,\"rolNum\":3,\"rowNum\":56,\"layerNum\":4,\"moldType\":1,\"metaType\":0,\"metaData\":0,\"presetColorType\":1}],\"5\":[{\"id\":\"5-28-0\",\"type\":0,\"rolNum\":28,\"rowNum\":0,\"layerNum\":5,\"moldType\":1,\"metaType\":0,\"metaData\":0,\"presetColorType\":1},{\"id\":\"5-24-8\",\"type\":0,\"rolNum\":24,\"rowNum\":8,\"layerNum\":5,\"moldType\":1,\"metaType\":0,\"metaData\":0,\"presetColorType\":1},{\"id\":\"5-24-16\",\"type\":0,\"rolNum\":24,\"rowNum\":16,\"layerNum\":5,\"moldType\":1,\"metaType\":0,\"metaData\":0,\"presetColorType\":1},{\"id\":\"5-24-24\",\"type\":0,\"rolNum\":24,\"rowNum\":24,\"layerNum\":5,\"moldType\":1,\"metaType\":0,\"metaData\":0,\"presetColorType\":1},{\"id\":\"5-24-32\",\"type\":0,\"rolNum\":24,\"rowNum\":32,\"layerNum\":5,\"moldType\":1,\"metaType\":0,\"metaData\":0,\"presetColorType\":1},{\"id\":\"5-24-40\",\"type\":0,\"rolNum\":24,\"rowNum\":40,\"layerNum\":5,\"moldType\":1,\"metaType\":0,\"metaData\":0,\"presetColorType\":1},{\"id\":\"5-4-56\",\"type\":0,\"rolNum\":4,\"rowNum\":56,\"layerNum\":5,\"moldType\":1,\"metaType\":0,\"metaData\":0,\"presetColorType\":1}],\"6\":[{\"id\":\"6-29-0\",\"type\":0,\"rolNum\":29,\"rowNum\":0,\"layerNum\":6,\"moldType\":1,\"metaType\":0,\"metaData\":0,\"presetColorType\":1},{\"id\":\"6-20-8\",\"type\":0,\"rolNum\":20,\"rowNum\":8,\"layerNum\":6,\"moldType\":1,\"metaType\":0,\"metaData\":0,\"presetColorType\":1},{\"id\":\"6-28-8\",\"type\":0,\"rolNum\":28,\"rowNum\":8,\"layerNum\":6,\"moldType\":1,\"metaType\":0,\"metaData\":0,\"presetColorType\":1},{\"id\":\"6-20-16\",\"type\":0,\"rolNum\":20,\"rowNum\":16,\"layerNum\":6,\"moldType\":1,\"metaType\":0,\"metaData\":0,\"presetColorType\":1},{\"id\":\"6-28-16\",\"type\":0,\"rolNum\":28,\"rowNum\":16,\"layerNum\":6,\"moldType\":1,\"metaType\":0,\"metaData\":0,\"presetColorType\":1},{\"id\":\"6-20-24\",\"type\":0,\"rolNum\":20,\"rowNum\":24,\"layerNum\":6,\"moldType\":1,\"metaType\":0,\"metaData\":0,\"presetColorType\":1},{\"id\":\"6-28-24\",\"type\":0,\"rolNum\":28,\"rowNum\":24,\"layerNum\":6,\"moldType\":1,\"metaType\":0,\"metaData\":0,\"presetColorType\":1},{\"id\":\"6-20-32\",\"type\":0,\"rolNum\":20,\"rowNum\":32,\"layerNum\":6,\"moldType\":1,\"metaType\":0,\"metaData\":0,\"presetColorType\":1},{\"id\":\"6-28-32\",\"type\":0,\"rolNum\":28,\"rowNum\":32,\"layerNum\":6,\"moldType\":1,\"metaType\":0,\"metaData\":0,\"presetColorType\":1},{\"id\":\"6-20-40\",\"type\":0,\"rolNum\":20,\"rowNum\":40,\"layerNum\":6,\"moldType\":1,\"metaType\":0,\"metaData\":0,\"presetColorType\":1},{\"id\":\"6-28-40\",\"type\":0,\"rolNum\":28,\"rowNum\":40,\"layerNum\":6,\"moldType\":1,\"metaType\":0,\"metaData\":0,\"presetColorType\":1},{\"id\":\"6-5-56\",\"type\":0,\"rolNum\":5,\"rowNum\":56,\"layerNum\":6,\"moldType\":1,\"metaType\":0,\"metaData\":0,\"presetColorType\":1}],\"7\":[{\"id\":\"7-30-0\",\"type\":0,\"rolNum\":30,\"rowNum\":0,\"layerNum\":7,\"moldType\":1,\"metaType\":0,\"metaData\":0,\"presetColorType\":1},{\"id\":\"7-24-8\",\"type\":0,\"rolNum\":24,\"rowNum\":8,\"layerNum\":7,\"moldType\":1,\"metaType\":0,\"metaData\":0,\"presetColorType\":1},{\"id\":\"7-24-16\",\"type\":0,\"rolNum\":24,\"rowNum\":16,\"layerNum\":7,\"moldType\":1,\"metaType\":0,\"metaData\":0,\"presetColorType\":1},{\"id\":\"7-24-24\",\"type\":0,\"rolNum\":24,\"rowNum\":24,\"layerNum\":7,\"moldType\":1,\"metaType\":0,\"metaData\":0,\"presetColorType\":1},{\"id\":\"7-24-32\",\"type\":0,\"rolNum\":24,\"rowNum\":32,\"layerNum\":7,\"moldType\":1,\"metaType\":0,\"metaData\":0,\"presetColorType\":1},{\"id\":\"7-24-40\",\"type\":0,\"rolNum\":24,\"rowNum\":40,\"layerNum\":7,\"moldType\":1,\"metaType\":0,\"metaData\":0,\"presetColorType\":1},{\"id\":\"7-6-56\",\"type\":0,\"rolNum\":6,\"rowNum\":56,\"layerNum\":7,\"moldType\":1,\"metaType\":0,\"metaData\":0,\"presetColorType\":1}],\"8\":[{\"id\":\"8-31-0\",\"type\":0,\"rolNum\":31,\"rowNum\":0,\"layerNum\":8,\"moldType\":1,\"metaType\":0,\"metaData\":0,\"presetColorType\":1},{\"id\":\"8-20-8\",\"type\":0,\"rolNum\":20,\"rowNum\":8,\"layerNum\":8,\"moldType\":1,\"metaType\":0,\"metaData\":0,\"presetColorType\":1},{\"id\":\"8-28-8\",\"type\":0,\"rolNum\":28,\"rowNum\":8,\"layerNum\":8,\"moldType\":1,\"metaType\":0,\"metaData\":0,\"presetColorType\":1},{\"id\":\"8-20-16\",\"type\":0,\"rolNum\":20,\"rowNum\":16,\"layerNum\":8,\"moldType\":1,\"metaType\":0,\"metaData\":0,\"presetColorType\":1},{\"id\":\"8-28-16\",\"type\":0,\"rolNum\":28,\"rowNum\":16,\"layerNum\":8,\"moldType\":1,\"metaType\":0,\"metaData\":0,\"presetColorType\":1},{\"id\":\"8-20-24\",\"type\":0,\"rolNum\":20,\"rowNum\":24,\"layerNum\":8,\"moldType\":1,\"metaType\":0,\"metaData\":0,\"presetColorType\":1},{\"id\":\"8-28-24\",\"type\":0,\"rolNum\":28,\"rowNum\":24,\"layerNum\":8,\"moldType\":1,\"metaType\":0,\"metaData\":0,\"presetColorType\":1},{\"id\":\"8-20-32\",\"type\":0,\"rolNum\":20,\"rowNum\":32,\"layerNum\":8,\"moldType\":1,\"metaType\":0,\"metaData\":0,\"presetColorType\":1},{\"id\":\"8-28-32\",\"type\":0,\"rolNum\":28,\"rowNum\":32,\"layerNum\":8,\"moldType\":1,\"metaType\":0,\"metaData\":0,\"presetColorType\":1},{\"id\":\"8-20-40\",\"type\":0,\"rolNum\":20,\"rowNum\":40,\"layerNum\":8,\"moldType\":1,\"metaType\":0,\"metaData\":0,\"presetColorType\":1},{\"id\":\"8-28-40\",\"type\":0,\"rolNum\":28,\"rowNum\":40,\"layerNum\":8,\"moldType\":1,\"metaType\":0,\"metaData\":0,\"presetColorType\":1},{\"id\":\"8-7-56\",\"type\":0,\"rolNum\":7,\"rowNum\":56,\"layerNum\":8,\"moldType\":1,\"metaType\":0,\"metaData\":0,\"presetColorType\":1}],\"9\":[{\"id\":\"9-32-0\",\"type\":0,\"rolNum\":32,\"rowNum\":0,\"layerNum\":9,\"moldType\":1,\"metaType\":0,\"metaData\":0,\"presetColorType\":1},{\"id\":\"9-24-8\",\"type\":0,\"rolNum\":24,\"rowNum\":8,\"layerNum\":9,\"moldType\":1,\"metaType\":0,\"metaData\":0,\"presetColorType\":1},{\"id\":\"9-24-16\",\"type\":0,\"rolNum\":24,\"rowNum\":16,\"layerNum\":9,\"moldType\":1,\"metaType\":0,\"metaData\":0,\"presetColorType\":1},{\"id\":\"9-24-24\",\"type\":0,\"rolNum\":24,\"rowNum\":24,\"layerNum\":9,\"moldType\":1,\"metaType\":0,\"metaData\":0,\"presetColorType\":1},{\"id\":\"9-24-32\",\"type\":0,\"rolNum\":24,\"rowNum\":32,\"layerNum\":9,\"moldType\":1,\"metaType\":0,\"metaData\":0,\"presetColorType\":1},{\"id\":\"9-24-40\",\"type\":0,\"rolNum\":24,\"rowNum\":40,\"layerNum\":9,\"moldType\":1,\"metaType\":0,\"metaData\":0,\"presetColorType\":1},{\"id\":\"9-8-56\",\"type\":0,\"rolNum\":8,\"rowNum\":56,\"layerNum\":9,\"moldType\":1,\"metaType\":0,\"metaData\":0,\"presetColorType\":1}],\"10\":[{\"id\":\"10-33-0\",\"type\":0,\"rolNum\":33,\"rowNum\":0,\"layerNum\":10,\"moldType\":1,\"metaType\":0,\"metaData\":0,\"presetColorType\":1},{\"id\":\"10-20-8\",\"type\":0,\"rolNum\":20,\"rowNum\":8,\"layerNum\":10,\"moldType\":1,\"metaType\":0,\"metaData\":0,\"presetColorType\":1},{\"id\":\"10-28-8\",\"type\":-1,\"rolNum\":28,\"rowNum\":8,\"layerNum\":10,\"moldType\":1,\"metaType\":0,\"metaData\":0,\"presetColorType\":1},{\"id\":\"10-20-16\",\"type\":0,\"rolNum\":20,\"rowNum\":16,\"layerNum\":10,\"moldType\":1,\"metaType\":0,\"metaData\":0,\"presetColorType\":1},{\"id\":\"10-28-16\",\"type\":-1,\"rolNum\":28,\"rowNum\":16,\"layerNum\":10,\"moldType\":1,\"metaType\":0,\"metaData\":0,\"presetColorType\":1},{\"id\":\"10-20-24\",\"type\":-1,\"rolNum\":20,\"rowNum\":24,\"layerNum\":10,\"moldType\":1,\"metaType\":0,\"metaData\":0,\"presetColorType\":1},{\"id\":\"10-28-24\",\"type\":-1,\"rolNum\":28,\"rowNum\":24,\"layerNum\":10,\"moldType\":1,\"metaType\":0,\"metaData\":0,\"presetColorType\":1},{\"id\":\"10-20-32\",\"type\":-1,\"rolNum\":20,\"rowNum\":32,\"layerNum\":10,\"moldType\":1,\"metaType\":0,\"metaData\":0,\"presetColorType\":1},{\"id\":\"10-28-32\",\"type\":-1,\"rolNum\":28,\"rowNum\":32,\"layerNum\":10,\"moldType\":1,\"metaType\":0,\"metaData\":0,\"presetColorType\":1},{\"id\":\"10-20-40\",\"type\":-1,\"rolNum\":20,\"rowNum\":40,\"layerNum\":10,\"moldType\":1,\"metaType\":0,\"metaData\":0,\"presetColorType\":1},{\"id\":\"10-28-40\",\"type\":-1,\"rolNum\":28,\"rowNum\":40,\"layerNum\":10,\"moldType\":1,\"metaType\":0,\"metaData\":0,\"presetColorType\":1},{\"id\":\"10-9-56\",\"type\":0,\"rolNum\":9,\"rowNum\":56,\"layerNum\":10,\"moldType\":1,\"metaType\":0,\"metaData\":0,\"presetColorType\":1}],\"11\":[{\"id\":\"11-34-0\",\"type\":0,\"rolNum\":34,\"rowNum\":0,\"layerNum\":11,\"moldType\":1,\"metaType\":0,\"metaData\":0,\"presetColorType\":1},{\"id\":\"11-24-8\",\"type\":-1,\"rolNum\":24,\"rowNum\":8,\"layerNum\":11,\"moldType\":1,\"metaType\":0,\"metaData\":0,\"presetColorType\":1},{\"id\":\"11-24-16\",\"type\":-1,\"rolNum\":24,\"rowNum\":16,\"layerNum\":11,\"moldType\":1,\"metaType\":0,\"metaData\":0,\"presetColorType\":1},{\"id\":\"11-24-24\",\"type\":-1,\"rolNum\":24,\"rowNum\":24,\"layerNum\":11,\"moldType\":1,\"metaType\":0,\"metaData\":0,\"presetColorType\":1},{\"id\":\"11-24-32\",\"type\":-1,\"rolNum\":24,\"rowNum\":32,\"layerNum\":11,\"moldType\":1,\"metaType\":0,\"metaData\":0,\"presetColorType\":1},{\"id\":\"11-24-40\",\"type\":-1,\"rolNum\":24,\"rowNum\":40,\"layerNum\":11,\"moldType\":1,\"metaType\":0,\"metaData\":0,\"presetColorType\":1},{\"id\":\"11-10-56\",\"type\":0,\"rolNum\":10,\"rowNum\":56,\"layerNum\":11,\"moldType\":1,\"metaType\":0,\"metaData\":0,\"presetColorType\":1}],\"12\":[{\"id\":\"12-35-0\",\"type\":0,\"rolNum\":35,\"rowNum\":0,\"layerNum\":12,\"moldType\":1,\"metaType\":0,\"metaData\":0,\"presetColorType\":1},{\"id\":\"12-20-8\",\"type\":-1,\"rolNum\":20,\"rowNum\":8,\"layerNum\":12,\"moldType\":1,\"metaType\":0,\"metaData\":0,\"presetColorType\":1},{\"id\":\"12-28-8\",\"type\":-1,\"rolNum\":28,\"rowNum\":8,\"layerNum\":12,\"moldType\":1,\"metaType\":0,\"metaData\":0,\"presetColorType\":1},{\"id\":\"12-20-16\",\"type\":-1,\"rolNum\":20,\"rowNum\":16,\"layerNum\":12,\"moldType\":1,\"metaType\":0,\"metaData\":0,\"presetColorType\":1},{\"id\":\"12-28-16\",\"type\":-1,\"rolNum\":28,\"rowNum\":16,\"layerNum\":12,\"moldType\":1,\"metaType\":0,\"metaData\":0,\"presetColorType\":1},{\"id\":\"12-20-24\",\"type\":-1,\"rolNum\":20,\"rowNum\":24,\"layerNum\":12,\"moldType\":1,\"metaType\":0,\"metaData\":0,\"presetColorType\":1},{\"id\":\"12-28-24\",\"type\":-1,\"rolNum\":28,\"rowNum\":24,\"layerNum\":12,\"moldType\":1,\"metaType\":0,\"metaData\":0,\"presetColorType\":1},{\"id\":\"12-20-32\",\"type\":-1,\"rolNum\":20,\"rowNum\":32,\"layerNum\":12,\"moldType\":1,\"metaType\":0,\"metaData\":0,\"presetColorType\":1},{\"id\":\"12-28-32\",\"type\":-1,\"rolNum\":28,\"rowNum\":32,\"layerNum\":12,\"moldType\":1,\"metaType\":0,\"metaData\":0,\"presetColorType\":1},{\"id\":\"12-20-40\",\"type\":-1,\"rolNum\":20,\"rowNum\":40,\"layerNum\":12,\"moldType\":1,\"metaType\":0,\"metaData\":0,\"presetColorType\":1},{\"id\":\"12-28-40\",\"type\":-1,\"rolNum\":28,\"rowNum\":40,\"layerNum\":12,\"moldType\":1,\"metaType\":0,\"metaData\":0,\"presetColorType\":1},{\"id\":\"12-11-56\",\"type\":0,\"rolNum\":11,\"rowNum\":56,\"layerNum\":12,\"moldType\":1,\"metaType\":0,\"metaData\":0,\"presetColorType\":1}],\"13\":[{\"id\":\"13-36-0\",\"type\":0,\"rolNum\":36,\"rowNum\":0,\"layerNum\":13,\"moldType\":1,\"metaType\":0,\"metaData\":0,\"presetColorType\":1},{\"id\":\"13-24-8\",\"type\":-1,\"rolNum\":24,\"rowNum\":8,\"layerNum\":13,\"moldType\":1,\"metaType\":0,\"metaData\":0,\"presetColorType\":1},{\"id\":\"13-24-16\",\"type\":-1,\"rolNum\":24,\"rowNum\":16,\"layerNum\":13,\"moldType\":1,\"metaType\":0,\"metaData\":0,\"presetColorType\":1},{\"id\":\"13-24-24\",\"type\":-1,\"rolNum\":24,\"rowNum\":24,\"layerNum\":13,\"moldType\":1,\"metaType\":0,\"metaData\":0,\"presetColorType\":1},{\"id\":\"13-24-32\",\"type\":-1,\"rolNum\":24,\"rowNum\":32,\"layerNum\":13,\"moldType\":1,\"metaType\":0,\"metaData\":0,\"presetColorType\":1},{\"id\":\"13-24-40\",\"type\":-1,\"rolNum\":24,\"rowNum\":40,\"layerNum\":13,\"moldType\":1,\"metaType\":0,\"metaData\":0,\"presetColorType\":1},{\"id\":\"13-12-56\",\"type\":0,\"rolNum\":12,\"rowNum\":56,\"layerNum\":13,\"moldType\":1,\"metaType\":0,\"metaData\":0,\"presetColorType\":1}],\"14\":[{\"id\":\"14-37-0\",\"type\":0,\"rolNum\":37,\"rowNum\":0,\"layerNum\":14,\"moldType\":1,\"metaType\":0,\"metaData\":0,\"presetColorType\":1},{\"id\":\"14-20-8\",\"type\":-1,\"rolNum\":20,\"rowNum\":8,\"layerNum\":14,\"moldType\":1,\"metaType\":0,\"metaData\":0,\"presetColorType\":1},{\"id\":\"14-28-8\",\"type\":-1,\"rolNum\":28,\"rowNum\":8,\"layerNum\":14,\"moldType\":1,\"metaType\":0,\"metaData\":0,\"presetColorType\":1},{\"id\":\"14-20-16\",\"type\":-1,\"rolNum\":20,\"rowNum\":16,\"layerNum\":14,\"moldType\":1,\"metaType\":0,\"metaData\":0,\"presetColorType\":1},{\"id\":\"14-28-16\",\"type\":-1,\"rolNum\":28,\"rowNum\":16,\"layerNum\":14,\"moldType\":1,\"metaType\":0,\"metaData\":0,\"presetColorType\":1},{\"id\":\"14-20-24\",\"type\":-1,\"rolNum\":20,\"rowNum\":24,\"layerNum\":14,\"moldType\":1,\"metaType\":0,\"metaData\":0,\"presetColorType\":1},{\"id\":\"14-28-24\",\"type\":-1,\"rolNum\":28,\"rowNum\":24,\"layerNum\":14,\"moldType\":1,\"metaType\":0,\"metaData\":0,\"presetColorType\":1},{\"id\":\"14-20-32\",\"type\":-1,\"rolNum\":20,\"rowNum\":32,\"layerNum\":14,\"moldType\":1,\"metaType\":0,\"metaData\":0,\"presetColorType\":1},{\"id\":\"14-28-32\",\"type\":-1,\"rolNum\":28,\"rowNum\":32,\"layerNum\":14,\"moldType\":1,\"metaType\":0,\"metaData\":0,\"presetColorType\":1},{\"id\":\"14-20-40\",\"type\":-1,\"rolNum\":20,\"rowNum\":40,\"layerNum\":14,\"moldType\":1,\"metaType\":0,\"metaData\":0,\"presetColorType\":1},{\"id\":\"14-28-40\",\"type\":-1,\"rolNum\":28,\"rowNum\":40,\"layerNum\":14,\"moldType\":1,\"metaType\":0,\"metaData\":0,\"presetColorType\":1},{\"id\":\"14-13-56\",\"type\":0,\"rolNum\":13,\"rowNum\":56,\"layerNum\":14,\"moldType\":1,\"metaType\":0,\"metaData\":0,\"presetColorType\":1}],\"15\":[{\"id\":\"15-38-0\",\"type\":0,\"rolNum\":38,\"rowNum\":0,\"layerNum\":15,\"moldType\":1,\"metaType\":0,\"metaData\":0,\"presetColorType\":1},{\"id\":\"15-24-8\",\"type\":-1,\"rolNum\":24,\"rowNum\":8,\"layerNum\":15,\"moldType\":1,\"metaType\":0,\"metaData\":0,\"presetColorType\":1},{\"id\":\"15-24-16\",\"type\":-1,\"rolNum\":24,\"rowNum\":16,\"layerNum\":15,\"moldType\":1,\"metaType\":0,\"metaData\":0,\"presetColorType\":1},{\"id\":\"15-24-24\",\"type\":-1,\"rolNum\":24,\"rowNum\":24,\"layerNum\":15,\"moldType\":1,\"metaType\":0,\"metaData\":0,\"presetColorType\":1},{\"id\":\"15-24-32\",\"type\":-1,\"rolNum\":24,\"rowNum\":32,\"layerNum\":15,\"moldType\":1,\"metaType\":0,\"metaData\":0,\"presetColorType\":1},{\"id\":\"15-24-40\",\"type\":-1,\"rolNum\":24,\"rowNum\":40,\"layerNum\":15,\"moldType\":1,\"metaType\":0,\"metaData\":0,\"presetColorType\":1},{\"id\":\"15-14-56\",\"type\":0,\"rolNum\":14,\"rowNum\":56,\"layerNum\":15,\"moldType\":1,\"metaType\":0,\"metaData\":0,\"presetColorType\":1}],\"16\":[{\"id\":\"16-39-0\",\"type\":0,\"rolNum\":39,\"rowNum\":0,\"layerNum\":16,\"moldType\":1,\"metaType\":0,\"metaData\":0,\"presetColorType\":1},{\"id\":\"16-20-8\",\"type\":-1,\"rolNum\":20,\"rowNum\":8,\"layerNum\":16,\"moldType\":1,\"metaType\":0,\"metaData\":0,\"presetColorType\":1},{\"id\":\"16-28-8\",\"type\":-1,\"rolNum\":28,\"rowNum\":8,\"layerNum\":16,\"moldType\":1,\"metaType\":0,\"metaData\":0,\"presetColorType\":1},{\"id\":\"16-20-16\",\"type\":-1,\"rolNum\":20,\"rowNum\":16,\"layerNum\":16,\"moldType\":1,\"metaType\":0,\"metaData\":0,\"presetColorType\":1},{\"id\":\"16-28-16\",\"type\":-1,\"rolNum\":28,\"rowNum\":16,\"layerNum\":16,\"moldType\":1,\"metaType\":0,\"metaData\":0,\"presetColorType\":1},{\"id\":\"16-20-24\",\"type\":-1,\"rolNum\":20,\"rowNum\":24,\"layerNum\":16,\"moldType\":1,\"metaType\":0,\"metaData\":0,\"presetColorType\":1},{\"id\":\"16-28-24\",\"type\":-1,\"rolNum\":28,\"rowNum\":24,\"layerNum\":16,\"moldType\":1,\"metaType\":0,\"metaData\":0,\"presetColorType\":1},{\"id\":\"16-20-32\",\"type\":-1,\"rolNum\":20,\"rowNum\":32,\"layerNum\":16,\"moldType\":1,\"metaType\":0,\"metaData\":0,\"presetColorType\":1},{\"id\":\"16-28-32\",\"type\":-1,\"rolNum\":28,\"rowNum\":32,\"layerNum\":16,\"moldType\":1,\"metaType\":0,\"metaData\":0,\"presetColorType\":1},{\"id\":\"16-20-40\",\"type\":-1,\"rolNum\":20,\"rowNum\":40,\"layerNum\":16,\"moldType\":1,\"metaType\":0,\"metaData\":0,\"presetColorType\":1},{\"id\":\"16-28-40\",\"type\":-1,\"rolNum\":28,\"rowNum\":40,\"layerNum\":16,\"moldType\":1,\"metaType\":0,\"metaData\":0,\"presetColorType\":1},{\"id\":\"16-15-56\",\"type\":0,\"rolNum\":15,\"rowNum\":56,\"layerNum\":16,\"moldType\":1,\"metaType\":0,\"metaData\":0,\"presetColorType\":1}],\"17\":[{\"id\":\"17-40-0\",\"type\":0,\"rolNum\":40,\"rowNum\":0,\"layerNum\":17,\"moldType\":1,\"metaType\":0,\"metaData\":0,\"presetColorType\":1},{\"id\":\"17-24-8\",\"type\":-1,\"rolNum\":24,\"rowNum\":8,\"layerNum\":17,\"moldType\":1,\"metaType\":0,\"metaData\":0,\"presetColorType\":1},{\"id\":\"17-24-16\",\"type\":-1,\"rolNum\":24,\"rowNum\":16,\"layerNum\":17,\"moldType\":1,\"metaType\":0,\"metaData\":0,\"presetColorType\":1},{\"id\":\"17-24-24\",\"type\":-1,\"rolNum\":24,\"rowNum\":24,\"layerNum\":17,\"moldType\":1,\"metaType\":0,\"metaData\":0,\"presetColorType\":1},{\"id\":\"17-24-32\",\"type\":-1,\"rolNum\":24,\"rowNum\":32,\"layerNum\":17,\"moldType\":1,\"metaType\":0,\"metaData\":0,\"presetColorType\":1},{\"id\":\"17-24-40\",\"type\":-1,\"rolNum\":24,\"rowNum\":40,\"layerNum\":17,\"moldType\":1,\"metaType\":0,\"metaData\":0,\"presetColorType\":1},{\"id\":\"17-16-56\",\"type\":0,\"rolNum\":16,\"rowNum\":56,\"layerNum\":17,\"moldType\":1,\"metaType\":0,\"metaData\":0,\"presetColorType\":1}],\"18\":[{\"id\":\"18-41-0\",\"type\":0,\"rolNum\":41,\"rowNum\":0,\"layerNum\":18,\"moldType\":1,\"metaType\":0,\"metaData\":0,\"presetColorType\":1},{\"id\":\"18-20-8\",\"type\":-1,\"rolNum\":20,\"rowNum\":8,\"layerNum\":18,\"moldType\":1,\"metaType\":0,\"metaData\":0,\"presetColorType\":1},{\"id\":\"18-28-8\",\"type\":-1,\"rolNum\":28,\"rowNum\":8,\"layerNum\":18,\"moldType\":1,\"metaType\":0,\"metaData\":0,\"presetColorType\":1},{\"id\":\"18-20-16\",\"type\":-1,\"rolNum\":20,\"rowNum\":16,\"layerNum\":18,\"moldType\":1,\"metaType\":0,\"metaData\":0,\"presetColorType\":1},{\"id\":\"18-28-16\",\"type\":-1,\"rolNum\":28,\"rowNum\":16,\"layerNum\":18,\"moldType\":1,\"metaType\":0,\"metaData\":0,\"presetColorType\":1},{\"id\":\"18-20-24\",\"type\":-1,\"rolNum\":20,\"rowNum\":24,\"layerNum\":18,\"moldType\":1,\"metaType\":0,\"metaData\":0,\"presetColorType\":1},{\"id\":\"18-28-24\",\"type\":-1,\"rolNum\":28,\"rowNum\":24,\"layerNum\":18,\"moldType\":1,\"metaType\":0,\"metaData\":0,\"presetColorType\":1},{\"id\":\"18-20-32\",\"type\":-1,\"rolNum\":20,\"rowNum\":32,\"layerNum\":18,\"moldType\":1,\"metaType\":0,\"metaData\":0,\"presetColorType\":1},{\"id\":\"18-28-32\",\"type\":-1,\"rolNum\":28,\"rowNum\":32,\"layerNum\":18,\"moldType\":1,\"metaType\":0,\"metaData\":0,\"presetColorType\":1},{\"id\":\"18-20-40\",\"type\":-1,\"rolNum\":20,\"rowNum\":40,\"layerNum\":18,\"moldType\":1,\"metaType\":0,\"metaData\":0,\"presetColorType\":1},{\"id\":\"18-28-40\",\"type\":-1,\"rolNum\":28,\"rowNum\":40,\"layerNum\":18,\"moldType\":1,\"metaType\":0,\"metaData\":0,\"presetColorType\":1},{\"id\":\"18-17-56\",\"type\":0,\"rolNum\":17,\"rowNum\":56,\"layerNum\":18,\"moldType\":1,\"metaType\":0,\"metaData\":0,\"presetColorType\":1}],\"19\":[{\"id\":\"19-42-0\",\"type\":0,\"rolNum\":42,\"rowNum\":0,\"layerNum\":19,\"moldType\":1,\"metaType\":0,\"metaData\":0,\"presetColorType\":1},{\"id\":\"19-24-8\",\"type\":-1,\"rolNum\":24,\"rowNum\":8,\"layerNum\":19,\"moldType\":1,\"metaType\":0,\"metaData\":0,\"presetColorType\":1},{\"id\":\"19-24-16\",\"type\":-1,\"rolNum\":24,\"rowNum\":16,\"layerNum\":19,\"moldType\":1,\"metaType\":0,\"metaData\":0,\"presetColorType\":1},{\"id\":\"19-24-24\",\"type\":-1,\"rolNum\":24,\"rowNum\":24,\"layerNum\":19,\"moldType\":1,\"metaType\":0,\"metaData\":0,\"presetColorType\":1},{\"id\":\"19-24-32\",\"type\":-1,\"rolNum\":24,\"rowNum\":32,\"layerNum\":19,\"moldType\":1,\"metaType\":0,\"metaData\":0,\"presetColorType\":1},{\"id\":\"19-24-40\",\"type\":-1,\"rolNum\":24,\"rowNum\":40,\"layerNum\":19,\"moldType\":1,\"metaType\":0,\"metaData\":0,\"presetColorType\":1},{\"id\":\"19-18-56\",\"type\":0,\"rolNum\":18,\"rowNum\":56,\"layerNum\":19,\"moldType\":1,\"metaType\":0,\"metaData\":0,\"presetColorType\":1}],\"20\":[{\"id\":\"20-43-0\",\"type\":0,\"rolNum\":43,\"rowNum\":0,\"layerNum\":20,\"moldType\":1,\"metaType\":0,\"metaData\":0,\"presetColorType\":1},{\"id\":\"20-20-8\",\"type\":-1,\"rolNum\":20,\"rowNum\":8,\"layerNum\":20,\"moldType\":1,\"metaType\":0,\"metaData\":0,\"presetColorType\":1},{\"id\":\"20-28-8\",\"type\":-1,\"rolNum\":28,\"rowNum\":8,\"layerNum\":20,\"moldType\":1,\"metaType\":0,\"metaData\":0,\"presetColorType\":1},{\"id\":\"20-20-16\",\"type\":-1,\"rolNum\":20,\"rowNum\":16,\"layerNum\":20,\"moldType\":1,\"metaType\":0,\"metaData\":0,\"presetColorType\":1},{\"id\":\"20-28-16\",\"type\":-1,\"rolNum\":28,\"rowNum\":16,\"layerNum\":20,\"moldType\":1,\"metaType\":0,\"metaData\":0,\"presetColorType\":1},{\"id\":\"20-20-24\",\"type\":-1,\"rolNum\":20,\"rowNum\":24,\"layerNum\":20,\"moldType\":1,\"metaType\":0,\"metaData\":0,\"presetColorType\":1},{\"id\":\"20-28-24\",\"type\":-1,\"rolNum\":28,\"rowNum\":24,\"layerNum\":20,\"moldType\":1,\"metaType\":0,\"metaData\":0,\"presetColorType\":1},{\"id\":\"20-20-32\",\"type\":-1,\"rolNum\":20,\"rowNum\":32,\"layerNum\":20,\"moldType\":1,\"metaType\":0,\"metaData\":0,\"presetColorType\":1},{\"id\":\"20-28-32\",\"type\":-1,\"rolNum\":28,\"rowNum\":32,\"layerNum\":20,\"moldType\":1,\"metaType\":0,\"metaData\":0,\"presetColorType\":1},{\"id\":\"20-20-40\",\"type\":-1,\"rolNum\":20,\"rowNum\":40,\"layerNum\":20,\"moldType\":1,\"metaType\":0,\"metaData\":0,\"presetColorType\":1},{\"id\":\"20-28-40\",\"type\":-1,\"rolNum\":28,\"rowNum\":40,\"layerNum\":20,\"moldType\":1,\"metaType\":0,\"metaData\":0,\"presetColorType\":1},{\"id\":\"20-19-56\",\"type\":0,\"rolNum\":19,\"rowNum\":56,\"layerNum\":20,\"moldType\":1,\"metaType\":0,\"metaData\":0,\"presetColorType\":1}],\"21\":[{\"id\":\"21-44-0\",\"type\":0,\"rolNum\":44,\"rowNum\":0,\"layerNum\":21,\"moldType\":1,\"metaType\":0,\"metaData\":0,\"presetColorType\":1},{\"id\":\"21-24-8\",\"type\":-1,\"rolNum\":24,\"rowNum\":8,\"layerNum\":21,\"moldType\":1,\"metaType\":0,\"metaData\":0,\"presetColorType\":1},{\"id\":\"21-24-16\",\"type\":-1,\"rolNum\":24,\"rowNum\":16,\"layerNum\":21,\"moldType\":1,\"metaType\":0,\"metaData\":0,\"presetColorType\":1},{\"id\":\"21-24-24\",\"type\":-1,\"rolNum\":24,\"rowNum\":24,\"layerNum\":21,\"moldType\":1,\"metaType\":0,\"metaData\":0,\"presetColorType\":1},{\"id\":\"21-24-32\",\"type\":-1,\"rolNum\":24,\"rowNum\":32,\"layerNum\":21,\"moldType\":1,\"metaType\":0,\"metaData\":0,\"presetColorType\":1},{\"id\":\"21-24-40\",\"type\":-1,\"rolNum\":24,\"rowNum\":40,\"layerNum\":21,\"moldType\":1,\"metaType\":0,\"metaData\":0,\"presetColorType\":1},{\"id\":\"21-20-56\",\"type\":0,\"rolNum\":20,\"rowNum\":56,\"layerNum\":21,\"moldType\":1,\"metaType\":0,\"metaData\":0,\"presetColorType\":1}],\"22\":[{\"id\":\"22-45-0\",\"type\":0,\"rolNum\":45,\"rowNum\":0,\"layerNum\":22,\"moldType\":1,\"metaType\":0,\"metaData\":0,\"presetColorType\":1},{\"id\":\"22-20-8\",\"type\":-1,\"rolNum\":20,\"rowNum\":8,\"layerNum\":22,\"moldType\":1,\"metaType\":0,\"metaData\":0,\"presetColorType\":1},{\"id\":\"22-28-8\",\"type\":-1,\"rolNum\":28,\"rowNum\":8,\"layerNum\":22,\"moldType\":1,\"metaType\":0,\"metaData\":0,\"presetColorType\":1},{\"id\":\"22-20-16\",\"type\":-1,\"rolNum\":20,\"rowNum\":16,\"layerNum\":22,\"moldType\":1,\"metaType\":0,\"metaData\":0,\"presetColorType\":1},{\"id\":\"22-28-16\",\"type\":-1,\"rolNum\":28,\"rowNum\":16,\"layerNum\":22,\"moldType\":1,\"metaType\":0,\"metaData\":0,\"presetColorType\":1},{\"id\":\"22-20-24\",\"type\":-1,\"rolNum\":20,\"rowNum\":24,\"layerNum\":22,\"moldType\":1,\"metaType\":0,\"metaData\":0,\"presetColorType\":1},{\"id\":\"22-28-24\",\"type\":-1,\"rolNum\":28,\"rowNum\":24,\"layerNum\":22,\"moldType\":1,\"metaType\":0,\"metaData\":0,\"presetColorType\":1},{\"id\":\"22-20-32\",\"type\":-1,\"rolNum\":20,\"rowNum\":32,\"layerNum\":22,\"moldType\":1,\"metaType\":0,\"metaData\":0,\"presetColorType\":1},{\"id\":\"22-28-32\",\"type\":-1,\"rolNum\":28,\"rowNum\":32,\"layerNum\":22,\"moldType\":1,\"metaType\":0,\"metaData\":0,\"presetColorType\":1},{\"id\":\"22-20-40\",\"type\":-1,\"rolNum\":20,\"rowNum\":40,\"layerNum\":22,\"moldType\":1,\"metaType\":0,\"metaData\":0,\"presetColorType\":1},{\"id\":\"22-28-40\",\"type\":-1,\"rolNum\":28,\"rowNum\":40,\"layerNum\":22,\"moldType\":1,\"metaType\":0,\"metaData\":0,\"presetColorType\":1},{\"id\":\"22-21-56\",\"type\":0,\"rolNum\":21,\"rowNum\":56,\"layerNum\":22,\"moldType\":1,\"metaType\":0,\"metaData\":0,\"presetColorType\":1}],\"23\":[{\"id\":\"23-46-0\",\"type\":0,\"rolNum\":46,\"rowNum\":0,\"layerNum\":23,\"moldType\":1,\"metaType\":0,\"metaData\":0,\"presetColorType\":1},{\"id\":\"23-24-8\",\"type\":-1,\"rolNum\":24,\"rowNum\":8,\"layerNum\":23,\"moldType\":1,\"metaType\":0,\"metaData\":0,\"presetColorType\":1},{\"id\":\"23-24-16\",\"type\":-1,\"rolNum\":24,\"rowNum\":16,\"layerNum\":23,\"moldType\":1,\"metaType\":0,\"metaData\":0,\"presetColorType\":1},{\"id\":\"23-24-24\",\"type\":-1,\"rolNum\":24,\"rowNum\":24,\"layerNum\":23,\"moldType\":1,\"metaType\":0,\"metaData\":0,\"presetColorType\":1},{\"id\":\"23-24-32\",\"type\":-1,\"rolNum\":24,\"rowNum\":32,\"layerNum\":23,\"moldType\":1,\"metaType\":0,\"metaData\":0,\"presetColorType\":1},{\"id\":\"23-24-40\",\"type\":-1,\"rolNum\":24,\"rowNum\":40,\"layerNum\":23,\"moldType\":1,\"metaType\":0,\"metaData\":0,\"presetColorType\":1},{\"id\":\"23-22-56\",\"type\":0,\"rolNum\":22,\"rowNum\":56,\"layerNum\":23,\"moldType\":1,\"metaType\":0,\"metaData\":0,\"presetColorType\":1}],\"24\":[{\"id\":\"24-47-0\",\"type\":0,\"rolNum\":47,\"rowNum\":0,\"layerNum\":24,\"moldType\":1,\"metaType\":0,\"metaData\":0,\"presetColorType\":1},{\"id\":\"24-20-8\",\"type\":-1,\"rolNum\":20,\"rowNum\":8,\"layerNum\":24,\"moldType\":1,\"metaType\":0,\"metaData\":0,\"presetColorType\":1},{\"id\":\"24-28-8\",\"type\":-1,\"rolNum\":28,\"rowNum\":8,\"layerNum\":24,\"moldType\":1,\"metaType\":0,\"metaData\":0,\"presetColorType\":1},{\"id\":\"24-20-16\",\"type\":-1,\"rolNum\":20,\"rowNum\":16,\"layerNum\":24,\"moldType\":1,\"metaType\":0,\"metaData\":0,\"presetColorType\":1},{\"id\":\"24-28-16\",\"type\":-1,\"rolNum\":28,\"rowNum\":16,\"layerNum\":24,\"moldType\":1,\"metaType\":0,\"metaData\":0,\"presetColorType\":1},{\"id\":\"24-20-24\",\"type\":-1,\"rolNum\":20,\"rowNum\":24,\"layerNum\":24,\"moldType\":1,\"metaType\":0,\"metaData\":0,\"presetColorType\":1},{\"id\":\"24-28-24\",\"type\":-1,\"rolNum\":28,\"rowNum\":24,\"layerNum\":24,\"moldType\":1,\"metaType\":0,\"metaData\":0,\"presetColorType\":1},{\"id\":\"24-20-32\",\"type\":-1,\"rolNum\":20,\"rowNum\":32,\"layerNum\":24,\"moldType\":1,\"metaType\":0,\"metaData\":0,\"presetColorType\":1},{\"id\":\"24-28-32\",\"type\":-1,\"rolNum\":28,\"rowNum\":32,\"layerNum\":24,\"moldType\":1,\"metaType\":0,\"metaData\":0,\"presetColorType\":1},{\"id\":\"24-20-40\",\"type\":-1,\"rolNum\":20,\"rowNum\":40,\"layerNum\":24,\"moldType\":1,\"metaType\":0,\"metaData\":0,\"presetColorType\":1},{\"id\":\"24-28-40\",\"type\":-1,\"rolNum\":28,\"rowNum\":40,\"layerNum\":24,\"moldType\":1,\"metaType\":0,\"metaData\":0,\"presetColorType\":1},{\"id\":\"24-23-56\",\"type\":0,\"rolNum\":23,\"rowNum\":56,\"layerNum\":24,\"moldType\":1,\"metaType\":0,\"metaData\":0,\"presetColorType\":1}],\"25\":[{\"id\":\"25-48-0\",\"type\":0,\"rolNum\":48,\"rowNum\":0,\"layerNum\":25,\"moldType\":1,\"metaType\":0,\"metaData\":0,\"presetColorType\":1},{\"id\":\"25-24-8\",\"type\":-1,\"rolNum\":24,\"rowNum\":8,\"layerNum\":25,\"moldType\":1,\"metaType\":0,\"metaData\":0,\"presetColorType\":1},{\"id\":\"25-24-16\",\"type\":-1,\"rolNum\":24,\"rowNum\":16,\"layerNum\":25,\"moldType\":1,\"metaType\":0,\"metaData\":0,\"presetColorType\":1},{\"id\":\"25-24-24\",\"type\":-1,\"rolNum\":24,\"rowNum\":24,\"layerNum\":25,\"moldType\":1,\"metaType\":0,\"metaData\":0,\"presetColorType\":1},{\"id\":\"25-24-32\",\"type\":-1,\"rolNum\":24,\"rowNum\":32,\"layerNum\":25,\"moldType\":1,\"metaType\":0,\"metaData\":0,\"presetColorType\":1},{\"id\":\"25-24-40\",\"type\":-1,\"rolNum\":24,\"rowNum\":40,\"layerNum\":25,\"moldType\":1,\"metaType\":0,\"metaData\":0,\"presetColorType\":1},{\"id\":\"25-24-56\",\"type\":0,\"rolNum\":24,\"rowNum\":56,\"layerNum\":25,\"moldType\":1,\"metaType\":0,\"metaData\":0,\"presetColorType\":1}],\"26\":[{\"id\":\"26-20-8\",\"type\":-1,\"rolNum\":20,\"rowNum\":8,\"layerNum\":26,\"moldType\":1,\"metaType\":0,\"metaData\":0,\"presetColorType\":1},{\"id\":\"26-28-8\",\"type\":-1,\"rolNum\":28,\"rowNum\":8,\"layerNum\":26,\"moldType\":1,\"metaType\":0,\"metaData\":0,\"presetColorType\":1},{\"id\":\"26-20-16\",\"type\":-1,\"rolNum\":20,\"rowNum\":16,\"layerNum\":26,\"moldType\":1,\"metaType\":0,\"metaData\":0,\"presetColorType\":1},{\"id\":\"26-28-16\",\"type\":-1,\"rolNum\":28,\"rowNum\":16,\"layerNum\":26,\"moldType\":1,\"metaType\":0,\"metaData\":0,\"presetColorType\":1},{\"id\":\"26-20-24\",\"type\":-1,\"rolNum\":20,\"rowNum\":24,\"layerNum\":26,\"moldType\":1,\"metaType\":0,\"metaData\":0,\"presetColorType\":1},{\"id\":\"26-28-24\",\"type\":-1,\"rolNum\":28,\"rowNum\":24,\"layerNum\":26,\"moldType\":1,\"metaType\":0,\"metaData\":0,\"presetColorType\":1},{\"id\":\"26-20-32\",\"type\":-1,\"rolNum\":20,\"rowNum\":32,\"layerNum\":26,\"moldType\":1,\"metaType\":0,\"metaData\":0,\"presetColorType\":1},{\"id\":\"26-28-32\",\"type\":-1,\"rolNum\":28,\"rowNum\":32,\"layerNum\":26,\"moldType\":1,\"metaType\":0,\"metaData\":0,\"presetColorType\":1},{\"id\":\"26-20-40\",\"type\":-1,\"rolNum\":20,\"rowNum\":40,\"layerNum\":26,\"moldType\":1,\"metaType\":0,\"metaData\":0,\"presetColorType\":1},{\"id\":\"26-28-40\",\"type\":-1,\"rolNum\":28,\"rowNum\":40,\"layerNum\":26,\"moldType\":1,\"metaType\":0,\"metaData\":0,\"presetColorType\":1},{\"id\":\"26-25-56\",\"type\":0,\"rolNum\":25,\"rowNum\":56,\"layerNum\":26,\"moldType\":1,\"metaType\":0,\"metaData\":0,\"presetColorType\":1}],\"27\":[{\"id\":\"27-24-8\",\"type\":-1,\"rolNum\":24,\"rowNum\":8,\"layerNum\":27,\"moldType\":1,\"metaType\":0,\"metaData\":0,\"presetColorType\":1},{\"id\":\"27-24-16\",\"type\":-1,\"rolNum\":24,\"rowNum\":16,\"layerNum\":27,\"moldType\":1,\"metaType\":0,\"metaData\":0,\"presetColorType\":1},{\"id\":\"27-24-24\",\"type\":-1,\"rolNum\":24,\"rowNum\":24,\"layerNum\":27,\"moldType\":1,\"metaType\":0,\"metaData\":0,\"presetColorType\":1},{\"id\":\"27-24-32\",\"type\":-1,\"rolNum\":24,\"rowNum\":32,\"layerNum\":27,\"moldType\":1,\"metaType\":0,\"metaData\":0,\"presetColorType\":1},{\"id\":\"27-24-40\",\"type\":-1,\"rolNum\":24,\"rowNum\":40,\"layerNum\":27,\"moldType\":1,\"metaType\":0,\"metaData\":0,\"presetColorType\":1}],\"28\":[{\"id\":\"28-20-8\",\"type\":-1,\"rolNum\":20,\"rowNum\":8,\"layerNum\":28,\"moldType\":1,\"metaType\":0,\"metaData\":0,\"presetColorType\":1},{\"id\":\"28-28-8\",\"type\":-1,\"rolNum\":28,\"rowNum\":8,\"layerNum\":28,\"moldType\":1,\"metaType\":0,\"metaData\":0,\"presetColorType\":1},{\"id\":\"28-20-16\",\"type\":-1,\"rolNum\":20,\"rowNum\":16,\"layerNum\":28,\"moldType\":1,\"metaType\":0,\"metaData\":0,\"presetColorType\":1},{\"id\":\"28-28-16\",\"type\":-1,\"rolNum\":28,\"rowNum\":16,\"layerNum\":28,\"moldType\":1,\"metaType\":0,\"metaData\":0,\"presetColorType\":1},{\"id\":\"28-20-24\",\"type\":-1,\"rolNum\":20,\"rowNum\":24,\"layerNum\":28,\"moldType\":1,\"metaType\":0,\"metaData\":0,\"presetColorType\":1},{\"id\":\"28-28-24\",\"type\":-1,\"rolNum\":28,\"rowNum\":24,\"layerNum\":28,\"moldType\":1,\"metaType\":0,\"metaData\":0,\"presetColorType\":1},{\"id\":\"28-20-32\",\"type\":-1,\"rolNum\":20,\"rowNum\":32,\"layerNum\":28,\"moldType\":1,\"metaType\":0,\"metaData\":0,\"presetColorType\":1},{\"id\":\"28-28-32\",\"type\":-1,\"rolNum\":28,\"rowNum\":32,\"layerNum\":28,\"moldType\":1,\"metaType\":0,\"metaData\":0,\"presetColorType\":1},{\"id\":\"28-20-40\",\"type\":-1,\"rolNum\":20,\"rowNum\":40,\"layerNum\":28,\"moldType\":1,\"metaType\":0,\"metaData\":0,\"presetColorType\":1},{\"id\":\"28-28-40\",\"type\":-1,\"rolNum\":28,\"rowNum\":40,\"layerNum\":28,\"moldType\":1,\"metaType\":0,\"metaData\":0,\"presetColorType\":1}],\"29\":[{\"id\":\"29-24-8\",\"type\":-1,\"rolNum\":24,\"rowNum\":8,\"layerNum\":29,\"moldType\":1,\"metaType\":0,\"metaData\":0,\"presetColorType\":1},{\"id\":\"29-24-16\",\"type\":-1,\"rolNum\":24,\"rowNum\":16,\"layerNum\":29,\"moldType\":1,\"metaType\":0,\"metaData\":0,\"presetColorType\":1},{\"id\":\"29-24-24\",\"type\":-1,\"rolNum\":24,\"rowNum\":24,\"layerNum\":29,\"moldType\":1,\"metaType\":0,\"metaData\":0,\"presetColorType\":1},{\"id\":\"29-24-32\",\"type\":-1,\"rolNum\":24,\"rowNum\":32,\"layerNum\":29,\"moldType\":1,\"metaType\":0,\"metaData\":0,\"presetColorType\":1},{\"id\":\"29-24-40\",\"type\":-1,\"rolNum\":24,\"rowNum\":40,\"layerNum\":29,\"moldType\":1,\"metaType\":0,\"metaData\":0,\"presetColorType\":1}],\"30\":[{\"id\":\"30-4-8\",\"type\":-1,\"rolNum\":4,\"rowNum\":8,\"layerNum\":30,\"moldType\":1,\"metaType\":0,\"metaData\":0,\"presetColorType\":1},{\"id\":\"30-20-8\",\"type\":-1,\"rolNum\":20,\"rowNum\":8,\"layerNum\":30,\"moldType\":1,\"metaType\":0,\"metaData\":0,\"presetColorType\":1},{\"id\":\"30-28-8\",\"type\":-1,\"rolNum\":28,\"rowNum\":8,\"layerNum\":30,\"moldType\":1,\"metaType\":0,\"metaData\":0,\"presetColorType\":1},{\"id\":\"30-44-8\",\"type\":-1,\"rolNum\":44,\"rowNum\":8,\"layerNum\":30,\"moldType\":1,\"metaType\":0,\"metaData\":0,\"presetColorType\":1},{\"id\":\"30-12-16\",\"type\":-1,\"rolNum\":12,\"rowNum\":16,\"layerNum\":30,\"moldType\":1,\"metaType\":0,\"metaData\":0,\"presetColorType\":1},{\"id\":\"30-20-16\",\"type\":-1,\"rolNum\":20,\"rowNum\":16,\"layerNum\":30,\"moldType\":1,\"metaType\":0,\"metaData\":0,\"presetColorType\":1},{\"id\":\"30-28-16\",\"type\":-1,\"rolNum\":28,\"rowNum\":16,\"layerNum\":30,\"moldType\":1,\"metaType\":0,\"metaData\":0,\"presetColorType\":1},{\"id\":\"30-36-16\",\"type\":-1,\"rolNum\":36,\"rowNum\":16,\"layerNum\":30,\"moldType\":1,\"metaType\":0,\"metaData\":0,\"presetColorType\":1},{\"id\":\"30-20-24\",\"type\":-1,\"rolNum\":20,\"rowNum\":24,\"layerNum\":30,\"moldType\":1,\"metaType\":0,\"metaData\":0,\"presetColorType\":1},{\"id\":\"30-28-24\",\"type\":-1,\"rolNum\":28,\"rowNum\":24,\"layerNum\":30,\"moldType\":1,\"metaType\":0,\"metaData\":0,\"presetColorType\":1},{\"id\":\"30-20-32\",\"type\":-1,\"rolNum\":20,\"rowNum\":32,\"layerNum\":30,\"moldType\":1,\"metaType\":0,\"metaData\":0,\"presetColorType\":1},{\"id\":\"30-28-32\",\"type\":-1,\"rolNum\":28,\"rowNum\":32,\"layerNum\":30,\"moldType\":1,\"metaType\":0,\"metaData\":0,\"presetColorType\":1},{\"id\":\"30-12-40\",\"type\":-1,\"rolNum\":12,\"rowNum\":40,\"layerNum\":30,\"moldType\":1,\"metaType\":0,\"metaData\":0,\"presetColorType\":1},{\"id\":\"30-20-40\",\"type\":-1,\"rolNum\":20,\"rowNum\":40,\"layerNum\":30,\"moldType\":1,\"metaType\":0,\"metaData\":0,\"presetColorType\":1},{\"id\":\"30-28-40\",\"type\":0,\"rolNum\":28,\"rowNum\":40,\"layerNum\":30,\"moldType\":1,\"metaType\":0,\"metaData\":0,\"presetColorType\":1},{\"id\":\"30-36-40\",\"type\":-1,\"rolNum\":36,\"rowNum\":40,\"layerNum\":30,\"moldType\":1,\"metaType\":0,\"metaData\":0,\"presetColorType\":1}],\"31\":[{\"id\":\"31-4-4\",\"type\":-1,\"rolNum\":4,\"rowNum\":4,\"layerNum\":31,\"moldType\":1,\"metaType\":0,\"metaData\":0,\"presetColorType\":1},{\"id\":\"31-4-16\",\"type\":-1,\"rolNum\":4,\"rowNum\":16,\"layerNum\":31,\"moldType\":1,\"metaType\":0,\"metaData\":0,\"presetColorType\":1},{\"id\":\"31-12-16\",\"type\":-1,\"rolNum\":12,\"rowNum\":16,\"layerNum\":31,\"moldType\":1,\"metaType\":0,\"metaData\":0,\"presetColorType\":1},{\"id\":\"31-24-16\",\"type\":-1,\"rolNum\":24,\"rowNum\":16,\"layerNum\":31,\"moldType\":1,\"metaType\":0,\"metaData\":0,\"presetColorType\":1},{\"id\":\"31-36-16\",\"type\":-1,\"rolNum\":36,\"rowNum\":16,\"layerNum\":31,\"moldType\":1,\"metaType\":0,\"metaData\":0,\"presetColorType\":1},{\"id\":\"31-44-16\",\"type\":-1,\"rolNum\":44,\"rowNum\":16,\"layerNum\":31,\"moldType\":1,\"metaType\":0,\"metaData\":0,\"presetColorType\":1},{\"id\":\"31-4-24\",\"type\":-1,\"rolNum\":4,\"rowNum\":24,\"layerNum\":31,\"moldType\":1,\"metaType\":0,\"metaData\":0,\"presetColorType\":1},{\"id\":\"31-12-24\",\"type\":-1,\"rolNum\":12,\"rowNum\":24,\"layerNum\":31,\"moldType\":1,\"metaType\":0,\"metaData\":0,\"presetColorType\":1},{\"id\":\"31-24-24\",\"type\":-1,\"rolNum\":24,\"rowNum\":24,\"layerNum\":31,\"moldType\":1,\"metaType\":0,\"metaData\":0,\"presetColorType\":1},{\"id\":\"31-36-24\",\"type\":-1,\"rolNum\":36,\"rowNum\":24,\"layerNum\":31,\"moldType\":1,\"metaType\":0,\"metaData\":0,\"presetColorType\":1},{\"id\":\"31-44-24\",\"type\":-1,\"rolNum\":44,\"rowNum\":24,\"layerNum\":31,\"moldType\":1,\"metaType\":0,\"metaData\":0,\"presetColorType\":1},{\"id\":\"31-24-32\",\"type\":-1,\"rolNum\":24,\"rowNum\":32,\"layerNum\":31,\"moldType\":1,\"metaType\":0,\"metaData\":0,\"presetColorType\":1},{\"id\":\"31-8-40\",\"type\":-1,\"rolNum\":8,\"rowNum\":40,\"layerNum\":31,\"moldType\":1,\"metaType\":0,\"metaData\":0,\"presetColorType\":1},{\"id\":\"31-24-40\",\"type\":0,\"rolNum\":24,\"rowNum\":40,\"layerNum\":31,\"moldType\":1,\"metaType\":0,\"metaData\":0,\"presetColorType\":1},{\"id\":\"31-40-40\",\"type\":-1,\"rolNum\":40,\"rowNum\":40,\"layerNum\":31,\"moldType\":1,\"metaType\":0,\"metaData\":0,\"presetColorType\":1},{\"id\":\"31-0-48\",\"type\":-1,\"rolNum\":0,\"rowNum\":48,\"layerNum\":31,\"moldType\":1,\"metaType\":0,\"metaData\":0,\"presetColorType\":1},{\"id\":\"31-48-48\",\"type\":-1,\"rolNum\":48,\"rowNum\":48,\"layerNum\":31,\"moldType\":1,\"metaType\":0,\"metaData\":0,\"presetColorType\":1}],\"32\":[{\"id\":\"32-4-20\",\"type\":-1,\"rolNum\":4,\"rowNum\":20,\"layerNum\":32,\"moldType\":1,\"metaType\":0,\"metaData\":0,\"presetColorType\":1},{\"id\":\"32-12-20\",\"type\":-1,\"rolNum\":12,\"rowNum\":20,\"layerNum\":32,\"moldType\":1,\"metaType\":0,\"metaData\":0,\"presetColorType\":1},{\"id\":\"32-36-20\",\"type\":-1,\"rolNum\":36,\"rowNum\":20,\"layerNum\":32,\"moldType\":1,\"metaType\":0,\"metaData\":0,\"presetColorType\":1},{\"id\":\"32-44-20\",\"type\":-1,\"rolNum\":44,\"rowNum\":20,\"layerNum\":32,\"moldType\":1,\"metaType\":0,\"metaData\":0,\"presetColorType\":1},{\"id\":\"32-12-28\",\"type\":0,\"rolNum\":12,\"rowNum\":28,\"layerNum\":32,\"moldType\":1,\"metaType\":0,\"metaData\":0,\"presetColorType\":1},{\"id\":\"32-36-29\",\"type\":0,\"rolNum\":36,\"rowNum\":29,\"layerNum\":32,\"moldType\":1,\"metaType\":0,\"metaData\":0,\"presetColorType\":1},{\"id\":\"32-44-29\",\"type\":0,\"rolNum\":44,\"rowNum\":29,\"layerNum\":32,\"moldType\":1,\"metaType\":0,\"metaData\":0,\"presetColorType\":1},{\"id\":\"32-4-40\",\"type\":-1,\"rolNum\":4,\"rowNum\":40,\"layerNum\":32,\"moldType\":1,\"metaType\":0,\"metaData\":0,\"presetColorType\":1},{\"id\":\"32-44-40\",\"type\":-1,\"rolNum\":44,\"rowNum\":40,\"layerNum\":32,\"moldType\":1,\"metaType\":0,\"metaData\":0,\"presetColorType\":1},{\"id\":\"32-4-48\",\"type\":-1,\"rolNum\":4,\"rowNum\":48,\"layerNum\":32,\"moldType\":1,\"metaType\":0,\"metaData\":0,\"presetColorType\":1},{\"id\":\"32-44-48\",\"type\":-1,\"rolNum\":44,\"rowNum\":48,\"layerNum\":32,\"moldType\":1,\"metaType\":0,\"metaData\":0,\"presetColorType\":1}],\"33\":[{\"id\":\"33-4-32\",\"type\":-1,\"rolNum\":4,\"rowNum\":32,\"layerNum\":33,\"moldType\":1,\"metaType\":0,\"metaData\":0,\"presetColorType\":1},{\"id\":\"33-0-40\",\"type\":-1,\"rolNum\":0,\"rowNum\":40,\"layerNum\":33,\"moldType\":1,\"metaType\":0,\"metaData\":0,\"presetColorType\":1},{\"id\":\"33-47-40\",\"type\":-1,\"rolNum\":47,\"rowNum\":40,\"layerNum\":33,\"moldType\":1,\"metaType\":0,\"metaData\":0,\"presetColorType\":1},{\"id\":\"33-8-48\",\"type\":-1,\"rolNum\":8,\"rowNum\":48,\"layerNum\":33,\"moldType\":1,\"metaType\":0,\"metaData\":0,\"presetColorType\":1},{\"id\":\"33-40-48\",\"type\":-1,\"rolNum\":40,\"rowNum\":48,\"layerNum\":33,\"moldType\":1,\"metaType\":0,\"metaData\":0,\"presetColorType\":1}],\"34\":[{\"id\":\"34-4-28\",\"type\":0,\"rolNum\":4,\"rowNum\":28,\"layerNum\":34,\"moldType\":1,\"metaType\":0,\"metaData\":0,\"presetColorType\":1}]},\"goldBlockData\":{\"collectCount\":0,\"blockList\":[]},\"cakeNum\":0}",
+    "features": {
+        "flipEvery": 0,
+        "monoColor": false,
+        "ranked": false,
+        "difficult": false,
+        "easyAfterHard": false,
+        "festival": false,
+        "premiumTiles": false
+    },
+    "bagOffer": {
+        "label": "",
+        "rewardType": "",
+        "rewardCount": 0
+    },
+    "tiles": [
+        {
+            "x": 24,
+            "y": 0,
+            "layer": 1,
+            "type": 0,
+            "moldType": 1,
+            "metaType": 0,
+            "metaData": 0,
+            "presetColorType": 1
+        },
+        {
+            "x": 24,
+            "y": 8,
+            "layer": 1,
+            "type": 0,
+            "moldType": 1,
+            "metaType": 0,
+            "metaData": 0,
+            "presetColorType": 1
+        },
+        {
+            "x": 24,
+            "y": 16,
+            "layer": 1,
+            "type": 0,
+            "moldType": 1,
+            "metaType": 0,
+            "metaData": 0,
+            "presetColorType": 1
+        },
+        {
+            "x": 24,
+            "y": 24,
+            "layer": 1,
+            "type": 0,
+            "moldType": 1,
+            "metaType": 0,
+            "metaData": 0,
+            "presetColorType": 1
+        },
+        {
+            "x": 24,
+            "y": 32,
+            "layer": 1,
+            "type": 0,
+            "moldType": 1,
+            "metaType": 0,
+            "metaData": 0,
+            "presetColorType": 1
+        },
+        {
+            "x": 24,
+            "y": 40,
+            "layer": 1,
+            "type": 0,
+            "moldType": 1,
+            "metaType": 0,
+            "metaData": 0,
+            "presetColorType": 1
+        },
+        {
+            "x": 0,
+            "y": 56,
+            "layer": 1,
+            "type": 0,
+            "moldType": 1,
+            "metaType": 0,
+            "metaData": 0,
+            "presetColorType": 1
+        },
+        {
+            "x": 25,
+            "y": 0,
+            "layer": 2,
+            "type": 0,
+            "moldType": 1,
+            "metaType": 0,
+            "metaData": 0,
+            "presetColorType": 1
+        },
+        {
+            "x": 20,
+            "y": 8,
+            "layer": 2,
+            "type": 0,
+            "moldType": 1,
+            "metaType": 0,
+            "metaData": 0,
+            "presetColorType": 1
+        },
+        {
+            "x": 28,
+            "y": 8,
+            "layer": 2,
+            "type": 0,
+            "moldType": 1,
+            "metaType": 0,
+            "metaData": 0,
+            "presetColorType": 1
+        },
+        {
+            "x": 20,
+            "y": 16,
+            "layer": 2,
+            "type": 0,
+            "moldType": 1,
+            "metaType": 0,
+            "metaData": 0,
+            "presetColorType": 1
+        },
+        {
+            "x": 28,
+            "y": 16,
+            "layer": 2,
+            "type": 0,
+            "moldType": 1,
+            "metaType": 0,
+            "metaData": 0,
+            "presetColorType": 1
+        },
+        {
+            "x": 20,
+            "y": 24,
+            "layer": 2,
+            "type": 0,
+            "moldType": 1,
+            "metaType": 0,
+            "metaData": 0,
+            "presetColorType": 1
+        },
+        {
+            "x": 28,
+            "y": 24,
+            "layer": 2,
+            "type": 0,
+            "moldType": 1,
+            "metaType": 0,
+            "metaData": 0,
+            "presetColorType": 1
+        },
+        {
+            "x": 20,
+            "y": 32,
+            "layer": 2,
+            "type": 0,
+            "moldType": 1,
+            "metaType": 0,
+            "metaData": 0,
+            "presetColorType": 1
+        },
+        {
+            "x": 28,
+            "y": 32,
+            "layer": 2,
+            "type": 0,
+            "moldType": 1,
+            "metaType": 0,
+            "metaData": 0,
+            "presetColorType": 1
+        },
+        {
+            "x": 20,
+            "y": 40,
+            "layer": 2,
+            "type": 0,
+            "moldType": 1,
+            "metaType": 0,
+            "metaData": 0,
+            "presetColorType": 1
+        },
+        {
+            "x": 28,
+            "y": 40,
+            "layer": 2,
+            "type": 0,
+            "moldType": 1,
+            "metaType": 0,
+            "metaData": 0,
+            "presetColorType": 1
+        },
+        {
+            "x": 1,
+            "y": 56,
+            "layer": 2,
+            "type": 0,
+            "moldType": 1,
+            "metaType": 0,
+            "metaData": 0,
+            "presetColorType": 1
+        },
+        {
+            "x": 26,
+            "y": 0,
+            "layer": 3,
+            "type": 0,
+            "moldType": 1,
+            "metaType": 0,
+            "metaData": 0,
+            "presetColorType": 1
+        },
+        {
+            "x": 24,
+            "y": 8,
+            "layer": 3,
+            "type": 0,
+            "moldType": 1,
+            "metaType": 0,
+            "metaData": 0,
+            "presetColorType": 1
+        },
+        {
+            "x": 24,
+            "y": 16,
+            "layer": 3,
+            "type": 0,
+            "moldType": 1,
+            "metaType": 0,
+            "metaData": 0,
+            "presetColorType": 1
+        },
+        {
+            "x": 24,
+            "y": 24,
+            "layer": 3,
+            "type": 0,
+            "moldType": 1,
+            "metaType": 0,
+            "metaData": 0,
+            "presetColorType": 1
+        },
+        {
+            "x": 24,
+            "y": 32,
+            "layer": 3,
+            "type": 0,
+            "moldType": 1,
+            "metaType": 0,
+            "metaData": 0,
+            "presetColorType": 1
+        },
+        {
+            "x": 24,
+            "y": 40,
+            "layer": 3,
+            "type": 0,
+            "moldType": 1,
+            "metaType": 0,
+            "metaData": 0,
+            "presetColorType": 1
+        },
+        {
+            "x": 2,
+            "y": 56,
+            "layer": 3,
+            "type": 0,
+            "moldType": 1,
+            "metaType": 0,
+            "metaData": 0,
+            "presetColorType": 1
+        },
+        {
+            "x": 27,
+            "y": 0,
+            "layer": 4,
+            "type": 0,
+            "moldType": 1,
+            "metaType": 0,
+            "metaData": 0,
+            "presetColorType": 1
+        },
+        {
+            "x": 20,
+            "y": 8,
+            "layer": 4,
+            "type": 0,
+            "moldType": 1,
+            "metaType": 0,
+            "metaData": 0,
+            "presetColorType": 1
+        },
+        {
+            "x": 28,
+            "y": 8,
+            "layer": 4,
+            "type": 0,
+            "moldType": 1,
+            "metaType": 0,
+            "metaData": 0,
+            "presetColorType": 1
+        },
+        {
+            "x": 20,
+            "y": 16,
+            "layer": 4,
+            "type": 0,
+            "moldType": 1,
+            "metaType": 0,
+            "metaData": 0,
+            "presetColorType": 1
+        },
+        {
+            "x": 28,
+            "y": 16,
+            "layer": 4,
+            "type": 0,
+            "moldType": 1,
+            "metaType": 0,
+            "metaData": 0,
+            "presetColorType": 1
+        },
+        {
+            "x": 20,
+            "y": 24,
+            "layer": 4,
+            "type": 0,
+            "moldType": 1,
+            "metaType": 0,
+            "metaData": 0,
+            "presetColorType": 1
+        },
+        {
+            "x": 28,
+            "y": 24,
+            "layer": 4,
+            "type": 0,
+            "moldType": 1,
+            "metaType": 0,
+            "metaData": 0,
+            "presetColorType": 1
+        },
+        {
+            "x": 20,
+            "y": 32,
+            "layer": 4,
+            "type": 0,
+            "moldType": 1,
+            "metaType": 0,
+            "metaData": 0,
+            "presetColorType": 1
+        },
+        {
+            "x": 28,
+            "y": 32,
+            "layer": 4,
+            "type": 0,
+            "moldType": 1,
+            "metaType": 0,
+            "metaData": 0,
+            "presetColorType": 1
+        },
+        {
+            "x": 20,
+            "y": 40,
+            "layer": 4,
+            "type": 0,
+            "moldType": 1,
+            "metaType": 0,
+            "metaData": 0,
+            "presetColorType": 1
+        },
+        {
+            "x": 28,
+            "y": 40,
+            "layer": 4,
+            "type": 0,
+            "moldType": 1,
+            "metaType": 0,
+            "metaData": 0,
+            "presetColorType": 1
+        },
+        {
+            "x": 3,
+            "y": 56,
+            "layer": 4,
+            "type": 0,
+            "moldType": 1,
+            "metaType": 0,
+            "metaData": 0,
+            "presetColorType": 1
+        },
+        {
+            "x": 28,
+            "y": 0,
+            "layer": 5,
+            "type": 0,
+            "moldType": 1,
+            "metaType": 0,
+            "metaData": 0,
+            "presetColorType": 1
+        },
+        {
+            "x": 24,
+            "y": 8,
+            "layer": 5,
+            "type": 0,
+            "moldType": 1,
+            "metaType": 0,
+            "metaData": 0,
+            "presetColorType": 1
+        },
+        {
+            "x": 24,
+            "y": 16,
+            "layer": 5,
+            "type": 0,
+            "moldType": 1,
+            "metaType": 0,
+            "metaData": 0,
+            "presetColorType": 1
+        },
+        {
+            "x": 24,
+            "y": 24,
+            "layer": 5,
+            "type": 0,
+            "moldType": 1,
+            "metaType": 0,
+            "metaData": 0,
+            "presetColorType": 1
+        },
+        {
+            "x": 24,
+            "y": 32,
+            "layer": 5,
+            "type": 0,
+            "moldType": 1,
+            "metaType": 0,
+            "metaData": 0,
+            "presetColorType": 1
+        },
+        {
+            "x": 24,
+            "y": 40,
+            "layer": 5,
+            "type": 0,
+            "moldType": 1,
+            "metaType": 0,
+            "metaData": 0,
+            "presetColorType": 1
+        },
+        {
+            "x": 4,
+            "y": 56,
+            "layer": 5,
+            "type": 0,
+            "moldType": 1,
+            "metaType": 0,
+            "metaData": 0,
+            "presetColorType": 1
+        },
+        {
+            "x": 29,
+            "y": 0,
+            "layer": 6,
+            "type": 0,
+            "moldType": 1,
+            "metaType": 0,
+            "metaData": 0,
+            "presetColorType": 1
+        },
+        {
+            "x": 20,
+            "y": 8,
+            "layer": 6,
+            "type": 0,
+            "moldType": 1,
+            "metaType": 0,
+            "metaData": 0,
+            "presetColorType": 1
+        },
+        {
+            "x": 28,
+            "y": 8,
+            "layer": 6,
+            "type": 0,
+            "moldType": 1,
+            "metaType": 0,
+            "metaData": 0,
+            "presetColorType": 1
+        },
+        {
+            "x": 20,
+            "y": 16,
+            "layer": 6,
+            "type": 0,
+            "moldType": 1,
+            "metaType": 0,
+            "metaData": 0,
+            "presetColorType": 1
+        },
+        {
+            "x": 28,
+            "y": 16,
+            "layer": 6,
+            "type": 0,
+            "moldType": 1,
+            "metaType": 0,
+            "metaData": 0,
+            "presetColorType": 1
+        },
+        {
+            "x": 20,
+            "y": 24,
+            "layer": 6,
+            "type": 0,
+            "moldType": 1,
+            "metaType": 0,
+            "metaData": 0,
+            "presetColorType": 1
+        },
+        {
+            "x": 28,
+            "y": 24,
+            "layer": 6,
+            "type": 0,
+            "moldType": 1,
+            "metaType": 0,
+            "metaData": 0,
+            "presetColorType": 1
+        },
+        {
+            "x": 20,
+            "y": 32,
+            "layer": 6,
+            "type": 0,
+            "moldType": 1,
+            "metaType": 0,
+            "metaData": 0,
+            "presetColorType": 1
+        },
+        {
+            "x": 28,
+            "y": 32,
+            "layer": 6,
+            "type": 0,
+            "moldType": 1,
+            "metaType": 0,
+            "metaData": 0,
+            "presetColorType": 1
+        },
+        {
+            "x": 20,
+            "y": 40,
+            "layer": 6,
+            "type": 0,
+            "moldType": 1,
+            "metaType": 0,
+            "metaData": 0,
+            "presetColorType": 1
+        },
+        {
+            "x": 28,
+            "y": 40,
+            "layer": 6,
+            "type": 0,
+            "moldType": 1,
+            "metaType": 0,
+            "metaData": 0,
+            "presetColorType": 1
+        },
+        {
+            "x": 5,
+            "y": 56,
+            "layer": 6,
+            "type": 0,
+            "moldType": 1,
+            "metaType": 0,
+            "metaData": 0,
+            "presetColorType": 1
+        },
+        {
+            "x": 30,
+            "y": 0,
+            "layer": 7,
+            "type": 0,
+            "moldType": 1,
+            "metaType": 0,
+            "metaData": 0,
+            "presetColorType": 1
+        },
+        {
+            "x": 24,
+            "y": 8,
+            "layer": 7,
+            "type": 0,
+            "moldType": 1,
+            "metaType": 0,
+            "metaData": 0,
+            "presetColorType": 1
+        },
+        {
+            "x": 24,
+            "y": 16,
+            "layer": 7,
+            "type": 0,
+            "moldType": 1,
+            "metaType": 0,
+            "metaData": 0,
+            "presetColorType": 1
+        },
+        {
+            "x": 24,
+            "y": 24,
+            "layer": 7,
+            "type": 0,
+            "moldType": 1,
+            "metaType": 0,
+            "metaData": 0,
+            "presetColorType": 1
+        },
+        {
+            "x": 24,
+            "y": 32,
+            "layer": 7,
+            "type": 0,
+            "moldType": 1,
+            "metaType": 0,
+            "metaData": 0,
+            "presetColorType": 1
+        },
+        {
+            "x": 24,
+            "y": 40,
+            "layer": 7,
+            "type": 0,
+            "moldType": 1,
+            "metaType": 0,
+            "metaData": 0,
+            "presetColorType": 1
+        },
+        {
+            "x": 6,
+            "y": 56,
+            "layer": 7,
+            "type": 0,
+            "moldType": 1,
+            "metaType": 0,
+            "metaData": 0,
+            "presetColorType": 1
+        },
+        {
+            "x": 31,
+            "y": 0,
+            "layer": 8,
+            "type": 0,
+            "moldType": 1,
+            "metaType": 0,
+            "metaData": 0,
+            "presetColorType": 1
+        },
+        {
+            "x": 20,
+            "y": 8,
+            "layer": 8,
+            "type": 0,
+            "moldType": 1,
+            "metaType": 0,
+            "metaData": 0,
+            "presetColorType": 1
+        },
+        {
+            "x": 28,
+            "y": 8,
+            "layer": 8,
+            "type": 0,
+            "moldType": 1,
+            "metaType": 0,
+            "metaData": 0,
+            "presetColorType": 1
+        },
+        {
+            "x": 20,
+            "y": 16,
+            "layer": 8,
+            "type": 0,
+            "moldType": 1,
+            "metaType": 0,
+            "metaData": 0,
+            "presetColorType": 1
+        },
+        {
+            "x": 28,
+            "y": 16,
+            "layer": 8,
+            "type": 0,
+            "moldType": 1,
+            "metaType": 0,
+            "metaData": 0,
+            "presetColorType": 1
+        },
+        {
+            "x": 20,
+            "y": 24,
+            "layer": 8,
+            "type": 0,
+            "moldType": 1,
+            "metaType": 0,
+            "metaData": 0,
+            "presetColorType": 1
+        },
+        {
+            "x": 28,
+            "y": 24,
+            "layer": 8,
+            "type": 0,
+            "moldType": 1,
+            "metaType": 0,
+            "metaData": 0,
+            "presetColorType": 1
+        },
+        {
+            "x": 20,
+            "y": 32,
+            "layer": 8,
+            "type": 0,
+            "moldType": 1,
+            "metaType": 0,
+            "metaData": 0,
+            "presetColorType": 1
+        },
+        {
+            "x": 28,
+            "y": 32,
+            "layer": 8,
+            "type": 0,
+            "moldType": 1,
+            "metaType": 0,
+            "metaData": 0,
+            "presetColorType": 1
+        },
+        {
+            "x": 20,
+            "y": 40,
+            "layer": 8,
+            "type": 0,
+            "moldType": 1,
+            "metaType": 0,
+            "metaData": 0,
+            "presetColorType": 1
+        },
+        {
+            "x": 28,
+            "y": 40,
+            "layer": 8,
+            "type": 0,
+            "moldType": 1,
+            "metaType": 0,
+            "metaData": 0,
+            "presetColorType": 1
+        },
+        {
+            "x": 7,
+            "y": 56,
+            "layer": 8,
+            "type": 0,
+            "moldType": 1,
+            "metaType": 0,
+            "metaData": 0,
+            "presetColorType": 1
+        },
+        {
+            "x": 32,
+            "y": 0,
+            "layer": 9,
+            "type": 0,
+            "moldType": 1,
+            "metaType": 0,
+            "metaData": 0,
+            "presetColorType": 1
+        },
+        {
+            "x": 24,
+            "y": 8,
+            "layer": 9,
+            "type": 0,
+            "moldType": 1,
+            "metaType": 0,
+            "metaData": 0,
+            "presetColorType": 1
+        },
+        {
+            "x": 24,
+            "y": 16,
+            "layer": 9,
+            "type": 0,
+            "moldType": 1,
+            "metaType": 0,
+            "metaData": 0,
+            "presetColorType": 1
+        },
+        {
+            "x": 24,
+            "y": 24,
+            "layer": 9,
+            "type": 0,
+            "moldType": 1,
+            "metaType": 0,
+            "metaData": 0,
+            "presetColorType": 1
+        },
+        {
+            "x": 24,
+            "y": 32,
+            "layer": 9,
+            "type": 0,
+            "moldType": 1,
+            "metaType": 0,
+            "metaData": 0,
+            "presetColorType": 1
+        },
+        {
+            "x": 24,
+            "y": 40,
+            "layer": 9,
+            "type": 0,
+            "moldType": 1,
+            "metaType": 0,
+            "metaData": 0,
+            "presetColorType": 1
+        },
+        {
+            "x": 8,
+            "y": 56,
+            "layer": 9,
+            "type": 0,
+            "moldType": 1,
+            "metaType": 0,
+            "metaData": 0,
+            "presetColorType": 1
+        },
+        {
+            "x": 33,
+            "y": 0,
+            "layer": 10,
+            "type": 0,
+            "moldType": 1,
+            "metaType": 0,
+            "metaData": 0,
+            "presetColorType": 1
+        },
+        {
+            "x": 20,
+            "y": 8,
+            "layer": 10,
+            "type": 0,
+            "moldType": 1,
+            "metaType": 0,
+            "metaData": 0,
+            "presetColorType": 1
+        },
+        {
+            "x": 28,
+            "y": 8,
+            "layer": 10,
+            "type": -1,
+            "moldType": 1,
+            "metaType": 0,
+            "metaData": 0,
+            "presetColorType": 1
+        },
+        {
+            "x": 20,
+            "y": 16,
+            "layer": 10,
+            "type": 0,
+            "moldType": 1,
+            "metaType": 0,
+            "metaData": 0,
+            "presetColorType": 1
+        },
+        {
+            "x": 28,
+            "y": 16,
+            "layer": 10,
+            "type": -1,
+            "moldType": 1,
+            "metaType": 0,
+            "metaData": 0,
+            "presetColorType": 1
+        },
+        {
+            "x": 20,
+            "y": 24,
+            "layer": 10,
+            "type": -1,
+            "moldType": 1,
+            "metaType": 0,
+            "metaData": 0,
+            "presetColorType": 1
+        },
+        {
+            "x": 28,
+            "y": 24,
+            "layer": 10,
+            "type": -1,
+            "moldType": 1,
+            "metaType": 0,
+            "metaData": 0,
+            "presetColorType": 1
+        },
+        {
+            "x": 20,
+            "y": 32,
+            "layer": 10,
+            "type": -1,
+            "moldType": 1,
+            "metaType": 0,
+            "metaData": 0,
+            "presetColorType": 1
+        },
+        {
+            "x": 28,
+            "y": 32,
+            "layer": 10,
+            "type": -1,
+            "moldType": 1,
+            "metaType": 0,
+            "metaData": 0,
+            "presetColorType": 1
+        },
+        {
+            "x": 20,
+            "y": 40,
+            "layer": 10,
+            "type": -1,
+            "moldType": 1,
+            "metaType": 0,
+            "metaData": 0,
+            "presetColorType": 1
+        },
+        {
+            "x": 28,
+            "y": 40,
+            "layer": 10,
+            "type": -1,
+            "moldType": 1,
+            "metaType": 0,
+            "metaData": 0,
+            "presetColorType": 1
+        },
+        {
+            "x": 9,
+            "y": 56,
+            "layer": 10,
+            "type": 0,
+            "moldType": 1,
+            "metaType": 0,
+            "metaData": 0,
+            "presetColorType": 1
+        },
+        {
+            "x": 34,
+            "y": 0,
+            "layer": 11,
+            "type": 0,
+            "moldType": 1,
+            "metaType": 0,
+            "metaData": 0,
+            "presetColorType": 1
+        },
+        {
+            "x": 24,
+            "y": 8,
+            "layer": 11,
+            "type": -1,
+            "moldType": 1,
+            "metaType": 0,
+            "metaData": 0,
+            "presetColorType": 1
+        },
+        {
+            "x": 24,
+            "y": 16,
+            "layer": 11,
+            "type": -1,
+            "moldType": 1,
+            "metaType": 0,
+            "metaData": 0,
+            "presetColorType": 1
+        },
+        {
+            "x": 24,
+            "y": 24,
+            "layer": 11,
+            "type": -1,
+            "moldType": 1,
+            "metaType": 0,
+            "metaData": 0,
+            "presetColorType": 1
+        },
+        {
+            "x": 24,
+            "y": 32,
+            "layer": 11,
+            "type": -1,
+            "moldType": 1,
+            "metaType": 0,
+            "metaData": 0,
+            "presetColorType": 1
+        },
+        {
+            "x": 24,
+            "y": 40,
+            "layer": 11,
+            "type": -1,
+            "moldType": 1,
+            "metaType": 0,
+            "metaData": 0,
+            "presetColorType": 1
+        },
+        {
+            "x": 10,
+            "y": 56,
+            "layer": 11,
+            "type": 0,
+            "moldType": 1,
+            "metaType": 0,
+            "metaData": 0,
+            "presetColorType": 1
+        },
+        {
+            "x": 35,
+            "y": 0,
+            "layer": 12,
+            "type": 0,
+            "moldType": 1,
+            "metaType": 0,
+            "metaData": 0,
+            "presetColorType": 1
+        },
+        {
+            "x": 20,
+            "y": 8,
+            "layer": 12,
+            "type": -1,
+            "moldType": 1,
+            "metaType": 0,
+            "metaData": 0,
+            "presetColorType": 1
+        },
+        {
+            "x": 28,
+            "y": 8,
+            "layer": 12,
+            "type": -1,
+            "moldType": 1,
+            "metaType": 0,
+            "metaData": 0,
+            "presetColorType": 1
+        },
+        {
+            "x": 20,
+            "y": 16,
+            "layer": 12,
+            "type": -1,
+            "moldType": 1,
+            "metaType": 0,
+            "metaData": 0,
+            "presetColorType": 1
+        },
+        {
+            "x": 28,
+            "y": 16,
+            "layer": 12,
+            "type": -1,
+            "moldType": 1,
+            "metaType": 0,
+            "metaData": 0,
+            "presetColorType": 1
+        },
+        {
+            "x": 20,
+            "y": 24,
+            "layer": 12,
+            "type": -1,
+            "moldType": 1,
+            "metaType": 0,
+            "metaData": 0,
+            "presetColorType": 1
+        },
+        {
+            "x": 28,
+            "y": 24,
+            "layer": 12,
+            "type": -1,
+            "moldType": 1,
+            "metaType": 0,
+            "metaData": 0,
+            "presetColorType": 1
+        },
+        {
+            "x": 20,
+            "y": 32,
+            "layer": 12,
+            "type": -1,
+            "moldType": 1,
+            "metaType": 0,
+            "metaData": 0,
+            "presetColorType": 1
+        },
+        {
+            "x": 28,
+            "y": 32,
+            "layer": 12,
+            "type": -1,
+            "moldType": 1,
+            "metaType": 0,
+            "metaData": 0,
+            "presetColorType": 1
+        },
+        {
+            "x": 20,
+            "y": 40,
+            "layer": 12,
+            "type": -1,
+            "moldType": 1,
+            "metaType": 0,
+            "metaData": 0,
+            "presetColorType": 1
+        },
+        {
+            "x": 28,
+            "y": 40,
+            "layer": 12,
+            "type": -1,
+            "moldType": 1,
+            "metaType": 0,
+            "metaData": 0,
+            "presetColorType": 1
+        },
+        {
+            "x": 11,
+            "y": 56,
+            "layer": 12,
+            "type": 0,
+            "moldType": 1,
+            "metaType": 0,
+            "metaData": 0,
+            "presetColorType": 1
+        },
+        {
+            "x": 36,
+            "y": 0,
+            "layer": 13,
+            "type": 0,
+            "moldType": 1,
+            "metaType": 0,
+            "metaData": 0,
+            "presetColorType": 1
+        },
+        {
+            "x": 24,
+            "y": 8,
+            "layer": 13,
+            "type": -1,
+            "moldType": 1,
+            "metaType": 0,
+            "metaData": 0,
+            "presetColorType": 1
+        },
+        {
+            "x": 24,
+            "y": 16,
+            "layer": 13,
+            "type": -1,
+            "moldType": 1,
+            "metaType": 0,
+            "metaData": 0,
+            "presetColorType": 1
+        },
+        {
+            "x": 24,
+            "y": 24,
+            "layer": 13,
+            "type": -1,
+            "moldType": 1,
+            "metaType": 0,
+            "metaData": 0,
+            "presetColorType": 1
+        },
+        {
+            "x": 24,
+            "y": 32,
+            "layer": 13,
+            "type": -1,
+            "moldType": 1,
+            "metaType": 0,
+            "metaData": 0,
+            "presetColorType": 1
+        },
+        {
+            "x": 24,
+            "y": 40,
+            "layer": 13,
+            "type": -1,
+            "moldType": 1,
+            "metaType": 0,
+            "metaData": 0,
+            "presetColorType": 1
+        },
+        {
+            "x": 12,
+            "y": 56,
+            "layer": 13,
+            "type": 0,
+            "moldType": 1,
+            "metaType": 0,
+            "metaData": 0,
+            "presetColorType": 1
+        },
+        {
+            "x": 37,
+            "y": 0,
+            "layer": 14,
+            "type": 0,
+            "moldType": 1,
+            "metaType": 0,
+            "metaData": 0,
+            "presetColorType": 1
+        },
+        {
+            "x": 20,
+            "y": 8,
+            "layer": 14,
+            "type": -1,
+            "moldType": 1,
+            "metaType": 0,
+            "metaData": 0,
+            "presetColorType": 1
+        },
+        {
+            "x": 28,
+            "y": 8,
+            "layer": 14,
+            "type": -1,
+            "moldType": 1,
+            "metaType": 0,
+            "metaData": 0,
+            "presetColorType": 1
+        },
+        {
+            "x": 20,
+            "y": 16,
+            "layer": 14,
+            "type": -1,
+            "moldType": 1,
+            "metaType": 0,
+            "metaData": 0,
+            "presetColorType": 1
+        },
+        {
+            "x": 28,
+            "y": 16,
+            "layer": 14,
+            "type": -1,
+            "moldType": 1,
+            "metaType": 0,
+            "metaData": 0,
+            "presetColorType": 1
+        },
+        {
+            "x": 20,
+            "y": 24,
+            "layer": 14,
+            "type": -1,
+            "moldType": 1,
+            "metaType": 0,
+            "metaData": 0,
+            "presetColorType": 1
+        },
+        {
+            "x": 28,
+            "y": 24,
+            "layer": 14,
+            "type": -1,
+            "moldType": 1,
+            "metaType": 0,
+            "metaData": 0,
+            "presetColorType": 1
+        },
+        {
+            "x": 20,
+            "y": 32,
+            "layer": 14,
+            "type": -1,
+            "moldType": 1,
+            "metaType": 0,
+            "metaData": 0,
+            "presetColorType": 1
+        },
+        {
+            "x": 28,
+            "y": 32,
+            "layer": 14,
+            "type": -1,
+            "moldType": 1,
+            "metaType": 0,
+            "metaData": 0,
+            "presetColorType": 1
+        },
+        {
+            "x": 20,
+            "y": 40,
+            "layer": 14,
+            "type": -1,
+            "moldType": 1,
+            "metaType": 0,
+            "metaData": 0,
+            "presetColorType": 1
+        },
+        {
+            "x": 28,
+            "y": 40,
+            "layer": 14,
+            "type": -1,
+            "moldType": 1,
+            "metaType": 0,
+            "metaData": 0,
+            "presetColorType": 1
+        },
+        {
+            "x": 13,
+            "y": 56,
+            "layer": 14,
+            "type": 0,
+            "moldType": 1,
+            "metaType": 0,
+            "metaData": 0,
+            "presetColorType": 1
+        },
+        {
+            "x": 38,
+            "y": 0,
+            "layer": 15,
+            "type": 0,
+            "moldType": 1,
+            "metaType": 0,
+            "metaData": 0,
+            "presetColorType": 1
+        },
+        {
+            "x": 24,
+            "y": 8,
+            "layer": 15,
+            "type": -1,
+            "moldType": 1,
+            "metaType": 0,
+            "metaData": 0,
+            "presetColorType": 1
+        },
+        {
+            "x": 24,
+            "y": 16,
+            "layer": 15,
+            "type": -1,
+            "moldType": 1,
+            "metaType": 0,
+            "metaData": 0,
+            "presetColorType": 1
+        },
+        {
+            "x": 24,
+            "y": 24,
+            "layer": 15,
+            "type": -1,
+            "moldType": 1,
+            "metaType": 0,
+            "metaData": 0,
+            "presetColorType": 1
+        },
+        {
+            "x": 24,
+            "y": 32,
+            "layer": 15,
+            "type": -1,
+            "moldType": 1,
+            "metaType": 0,
+            "metaData": 0,
+            "presetColorType": 1
+        },
+        {
+            "x": 24,
+            "y": 40,
+            "layer": 15,
+            "type": -1,
+            "moldType": 1,
+            "metaType": 0,
+            "metaData": 0,
+            "presetColorType": 1
+        },
+        {
+            "x": 14,
+            "y": 56,
+            "layer": 15,
+            "type": 0,
+            "moldType": 1,
+            "metaType": 0,
+            "metaData": 0,
+            "presetColorType": 1
+        },
+        {
+            "x": 39,
+            "y": 0,
+            "layer": 16,
+            "type": 0,
+            "moldType": 1,
+            "metaType": 0,
+            "metaData": 0,
+            "presetColorType": 1
+        },
+        {
+            "x": 20,
+            "y": 8,
+            "layer": 16,
+            "type": -1,
+            "moldType": 1,
+            "metaType": 0,
+            "metaData": 0,
+            "presetColorType": 1
+        },
+        {
+            "x": 28,
+            "y": 8,
+            "layer": 16,
+            "type": -1,
+            "moldType": 1,
+            "metaType": 0,
+            "metaData": 0,
+            "presetColorType": 1
+        },
+        {
+            "x": 20,
+            "y": 16,
+            "layer": 16,
+            "type": -1,
+            "moldType": 1,
+            "metaType": 0,
+            "metaData": 0,
+            "presetColorType": 1
+        },
+        {
+            "x": 28,
+            "y": 16,
+            "layer": 16,
+            "type": -1,
+            "moldType": 1,
+            "metaType": 0,
+            "metaData": 0,
+            "presetColorType": 1
+        },
+        {
+            "x": 20,
+            "y": 24,
+            "layer": 16,
+            "type": -1,
+            "moldType": 1,
+            "metaType": 0,
+            "metaData": 0,
+            "presetColorType": 1
+        },
+        {
+            "x": 28,
+            "y": 24,
+            "layer": 16,
+            "type": -1,
+            "moldType": 1,
+            "metaType": 0,
+            "metaData": 0,
+            "presetColorType": 1
+        },
+        {
+            "x": 20,
+            "y": 32,
+            "layer": 16,
+            "type": -1,
+            "moldType": 1,
+            "metaType": 0,
+            "metaData": 0,
+            "presetColorType": 1
+        },
+        {
+            "x": 28,
+            "y": 32,
+            "layer": 16,
+            "type": -1,
+            "moldType": 1,
+            "metaType": 0,
+            "metaData": 0,
+            "presetColorType": 1
+        },
+        {
+            "x": 20,
+            "y": 40,
+            "layer": 16,
+            "type": -1,
+            "moldType": 1,
+            "metaType": 0,
+            "metaData": 0,
+            "presetColorType": 1
+        },
+        {
+            "x": 28,
+            "y": 40,
+            "layer": 16,
+            "type": -1,
+            "moldType": 1,
+            "metaType": 0,
+            "metaData": 0,
+            "presetColorType": 1
+        },
+        {
+            "x": 15,
+            "y": 56,
+            "layer": 16,
+            "type": 0,
+            "moldType": 1,
+            "metaType": 0,
+            "metaData": 0,
+            "presetColorType": 1
+        },
+        {
+            "x": 40,
+            "y": 0,
+            "layer": 17,
+            "type": 0,
+            "moldType": 1,
+            "metaType": 0,
+            "metaData": 0,
+            "presetColorType": 1
+        },
+        {
+            "x": 24,
+            "y": 8,
+            "layer": 17,
+            "type": -1,
+            "moldType": 1,
+            "metaType": 0,
+            "metaData": 0,
+            "presetColorType": 1
+        },
+        {
+            "x": 24,
+            "y": 16,
+            "layer": 17,
+            "type": -1,
+            "moldType": 1,
+            "metaType": 0,
+            "metaData": 0,
+            "presetColorType": 1
+        },
+        {
+            "x": 24,
+            "y": 24,
+            "layer": 17,
+            "type": -1,
+            "moldType": 1,
+            "metaType": 0,
+            "metaData": 0,
+            "presetColorType": 1
+        },
+        {
+            "x": 24,
+            "y": 32,
+            "layer": 17,
+            "type": -1,
+            "moldType": 1,
+            "metaType": 0,
+            "metaData": 0,
+            "presetColorType": 1
+        },
+        {
+            "x": 24,
+            "y": 40,
+            "layer": 17,
+            "type": -1,
+            "moldType": 1,
+            "metaType": 0,
+            "metaData": 0,
+            "presetColorType": 1
+        },
+        {
+            "x": 16,
+            "y": 56,
+            "layer": 17,
+            "type": 0,
+            "moldType": 1,
+            "metaType": 0,
+            "metaData": 0,
+            "presetColorType": 1
+        },
+        {
+            "x": 41,
+            "y": 0,
+            "layer": 18,
+            "type": 0,
+            "moldType": 1,
+            "metaType": 0,
+            "metaData": 0,
+            "presetColorType": 1
+        },
+        {
+            "x": 20,
+            "y": 8,
+            "layer": 18,
+            "type": -1,
+            "moldType": 1,
+            "metaType": 0,
+            "metaData": 0,
+            "presetColorType": 1
+        },
+        {
+            "x": 28,
+            "y": 8,
+            "layer": 18,
+            "type": -1,
+            "moldType": 1,
+            "metaType": 0,
+            "metaData": 0,
+            "presetColorType": 1
+        },
+        {
+            "x": 20,
+            "y": 16,
+            "layer": 18,
+            "type": -1,
+            "moldType": 1,
+            "metaType": 0,
+            "metaData": 0,
+            "presetColorType": 1
+        },
+        {
+            "x": 28,
+            "y": 16,
+            "layer": 18,
+            "type": -1,
+            "moldType": 1,
+            "metaType": 0,
+            "metaData": 0,
+            "presetColorType": 1
+        },
+        {
+            "x": 20,
+            "y": 24,
+            "layer": 18,
+            "type": -1,
+            "moldType": 1,
+            "metaType": 0,
+            "metaData": 0,
+            "presetColorType": 1
+        },
+        {
+            "x": 28,
+            "y": 24,
+            "layer": 18,
+            "type": -1,
+            "moldType": 1,
+            "metaType": 0,
+            "metaData": 0,
+            "presetColorType": 1
+        },
+        {
+            "x": 20,
+            "y": 32,
+            "layer": 18,
+            "type": -1,
+            "moldType": 1,
+            "metaType": 0,
+            "metaData": 0,
+            "presetColorType": 1
+        },
+        {
+            "x": 28,
+            "y": 32,
+            "layer": 18,
+            "type": -1,
+            "moldType": 1,
+            "metaType": 0,
+            "metaData": 0,
+            "presetColorType": 1
+        },
+        {
+            "x": 20,
+            "y": 40,
+            "layer": 18,
+            "type": -1,
+            "moldType": 1,
+            "metaType": 0,
+            "metaData": 0,
+            "presetColorType": 1
+        },
+        {
+            "x": 28,
+            "y": 40,
+            "layer": 18,
+            "type": -1,
+            "moldType": 1,
+            "metaType": 0,
+            "metaData": 0,
+            "presetColorType": 1
+        },
+        {
+            "x": 17,
+            "y": 56,
+            "layer": 18,
+            "type": 0,
+            "moldType": 1,
+            "metaType": 0,
+            "metaData": 0,
+            "presetColorType": 1
+        },
+        {
+            "x": 42,
+            "y": 0,
+            "layer": 19,
+            "type": 0,
+            "moldType": 1,
+            "metaType": 0,
+            "metaData": 0,
+            "presetColorType": 1
+        },
+        {
+            "x": 24,
+            "y": 8,
+            "layer": 19,
+            "type": -1,
+            "moldType": 1,
+            "metaType": 0,
+            "metaData": 0,
+            "presetColorType": 1
+        },
+        {
+            "x": 24,
+            "y": 16,
+            "layer": 19,
+            "type": -1,
+            "moldType": 1,
+            "metaType": 0,
+            "metaData": 0,
+            "presetColorType": 1
+        },
+        {
+            "x": 24,
+            "y": 24,
+            "layer": 19,
+            "type": -1,
+            "moldType": 1,
+            "metaType": 0,
+            "metaData": 0,
+            "presetColorType": 1
+        },
+        {
+            "x": 24,
+            "y": 32,
+            "layer": 19,
+            "type": -1,
+            "moldType": 1,
+            "metaType": 0,
+            "metaData": 0,
+            "presetColorType": 1
+        },
+        {
+            "x": 24,
+            "y": 40,
+            "layer": 19,
+            "type": -1,
+            "moldType": 1,
+            "metaType": 0,
+            "metaData": 0,
+            "presetColorType": 1
+        },
+        {
+            "x": 18,
+            "y": 56,
+            "layer": 19,
+            "type": 0,
+            "moldType": 1,
+            "metaType": 0,
+            "metaData": 0,
+            "presetColorType": 1
+        },
+        {
+            "x": 43,
+            "y": 0,
+            "layer": 20,
+            "type": 0,
+            "moldType": 1,
+            "metaType": 0,
+            "metaData": 0,
+            "presetColorType": 1
+        },
+        {
+            "x": 20,
+            "y": 8,
+            "layer": 20,
+            "type": -1,
+            "moldType": 1,
+            "metaType": 0,
+            "metaData": 0,
+            "presetColorType": 1
+        },
+        {
+            "x": 28,
+            "y": 8,
+            "layer": 20,
+            "type": -1,
+            "moldType": 1,
+            "metaType": 0,
+            "metaData": 0,
+            "presetColorType": 1
+        },
+        {
+            "x": 20,
+            "y": 16,
+            "layer": 20,
+            "type": -1,
+            "moldType": 1,
+            "metaType": 0,
+            "metaData": 0,
+            "presetColorType": 1
+        },
+        {
+            "x": 28,
+            "y": 16,
+            "layer": 20,
+            "type": -1,
+            "moldType": 1,
+            "metaType": 0,
+            "metaData": 0,
+            "presetColorType": 1
+        },
+        {
+            "x": 20,
+            "y": 24,
+            "layer": 20,
+            "type": -1,
+            "moldType": 1,
+            "metaType": 0,
+            "metaData": 0,
+            "presetColorType": 1
+        },
+        {
+            "x": 28,
+            "y": 24,
+            "layer": 20,
+            "type": -1,
+            "moldType": 1,
+            "metaType": 0,
+            "metaData": 0,
+            "presetColorType": 1
+        },
+        {
+            "x": 20,
+            "y": 32,
+            "layer": 20,
+            "type": -1,
+            "moldType": 1,
+            "metaType": 0,
+            "metaData": 0,
+            "presetColorType": 1
+        },
+        {
+            "x": 28,
+            "y": 32,
+            "layer": 20,
+            "type": -1,
+            "moldType": 1,
+            "metaType": 0,
+            "metaData": 0,
+            "presetColorType": 1
+        },
+        {
+            "x": 20,
+            "y": 40,
+            "layer": 20,
+            "type": -1,
+            "moldType": 1,
+            "metaType": 0,
+            "metaData": 0,
+            "presetColorType": 1
+        },
+        {
+            "x": 28,
+            "y": 40,
+            "layer": 20,
+            "type": -1,
+            "moldType": 1,
+            "metaType": 0,
+            "metaData": 0,
+            "presetColorType": 1
+        },
+        {
+            "x": 19,
+            "y": 56,
+            "layer": 20,
+            "type": 0,
+            "moldType": 1,
+            "metaType": 0,
+            "metaData": 0,
+            "presetColorType": 1
+        },
+        {
+            "x": 44,
+            "y": 0,
+            "layer": 21,
+            "type": 0,
+            "moldType": 1,
+            "metaType": 0,
+            "metaData": 0,
+            "presetColorType": 1
+        },
+        {
+            "x": 24,
+            "y": 8,
+            "layer": 21,
+            "type": -1,
+            "moldType": 1,
+            "metaType": 0,
+            "metaData": 0,
+            "presetColorType": 1
+        },
+        {
+            "x": 24,
+            "y": 16,
+            "layer": 21,
+            "type": -1,
+            "moldType": 1,
+            "metaType": 0,
+            "metaData": 0,
+            "presetColorType": 1
+        },
+        {
+            "x": 24,
+            "y": 24,
+            "layer": 21,
+            "type": -1,
+            "moldType": 1,
+            "metaType": 0,
+            "metaData": 0,
+            "presetColorType": 1
+        },
+        {
+            "x": 24,
+            "y": 32,
+            "layer": 21,
+            "type": -1,
+            "moldType": 1,
+            "metaType": 0,
+            "metaData": 0,
+            "presetColorType": 1
+        },
+        {
+            "x": 24,
+            "y": 40,
+            "layer": 21,
+            "type": -1,
+            "moldType": 1,
+            "metaType": 0,
+            "metaData": 0,
+            "presetColorType": 1
+        },
+        {
+            "x": 20,
+            "y": 56,
+            "layer": 21,
+            "type": 0,
+            "moldType": 1,
+            "metaType": 0,
+            "metaData": 0,
+            "presetColorType": 1
+        },
+        {
+            "x": 45,
+            "y": 0,
+            "layer": 22,
+            "type": 0,
+            "moldType": 1,
+            "metaType": 0,
+            "metaData": 0,
+            "presetColorType": 1
+        },
+        {
+            "x": 20,
+            "y": 8,
+            "layer": 22,
+            "type": -1,
+            "moldType": 1,
+            "metaType": 0,
+            "metaData": 0,
+            "presetColorType": 1
+        },
+        {
+            "x": 28,
+            "y": 8,
+            "layer": 22,
+            "type": -1,
+            "moldType": 1,
+            "metaType": 0,
+            "metaData": 0,
+            "presetColorType": 1
+        },
+        {
+            "x": 20,
+            "y": 16,
+            "layer": 22,
+            "type": -1,
+            "moldType": 1,
+            "metaType": 0,
+            "metaData": 0,
+            "presetColorType": 1
+        },
+        {
+            "x": 28,
+            "y": 16,
+            "layer": 22,
+            "type": -1,
+            "moldType": 1,
+            "metaType": 0,
+            "metaData": 0,
+            "presetColorType": 1
+        },
+        {
+            "x": 20,
+            "y": 24,
+            "layer": 22,
+            "type": -1,
+            "moldType": 1,
+            "metaType": 0,
+            "metaData": 0,
+            "presetColorType": 1
+        },
+        {
+            "x": 28,
+            "y": 24,
+            "layer": 22,
+            "type": -1,
+            "moldType": 1,
+            "metaType": 0,
+            "metaData": 0,
+            "presetColorType": 1
+        },
+        {
+            "x": 20,
+            "y": 32,
+            "layer": 22,
+            "type": -1,
+            "moldType": 1,
+            "metaType": 0,
+            "metaData": 0,
+            "presetColorType": 1
+        },
+        {
+            "x": 28,
+            "y": 32,
+            "layer": 22,
+            "type": -1,
+            "moldType": 1,
+            "metaType": 0,
+            "metaData": 0,
+            "presetColorType": 1
+        },
+        {
+            "x": 20,
+            "y": 40,
+            "layer": 22,
+            "type": -1,
+            "moldType": 1,
+            "metaType": 0,
+            "metaData": 0,
+            "presetColorType": 1
+        },
+        {
+            "x": 28,
+            "y": 40,
+            "layer": 22,
+            "type": -1,
+            "moldType": 1,
+            "metaType": 0,
+            "metaData": 0,
+            "presetColorType": 1
+        },
+        {
+            "x": 21,
+            "y": 56,
+            "layer": 22,
+            "type": 0,
+            "moldType": 1,
+            "metaType": 0,
+            "metaData": 0,
+            "presetColorType": 1
+        },
+        {
+            "x": 46,
+            "y": 0,
+            "layer": 23,
+            "type": 0,
+            "moldType": 1,
+            "metaType": 0,
+            "metaData": 0,
+            "presetColorType": 1
+        },
+        {
+            "x": 24,
+            "y": 8,
+            "layer": 23,
+            "type": -1,
+            "moldType": 1,
+            "metaType": 0,
+            "metaData": 0,
+            "presetColorType": 1
+        },
+        {
+            "x": 24,
+            "y": 16,
+            "layer": 23,
+            "type": -1,
+            "moldType": 1,
+            "metaType": 0,
+            "metaData": 0,
+            "presetColorType": 1
+        },
+        {
+            "x": 24,
+            "y": 24,
+            "layer": 23,
+            "type": -1,
+            "moldType": 1,
+            "metaType": 0,
+            "metaData": 0,
+            "presetColorType": 1
+        },
+        {
+            "x": 24,
+            "y": 32,
+            "layer": 23,
+            "type": -1,
+            "moldType": 1,
+            "metaType": 0,
+            "metaData": 0,
+            "presetColorType": 1
+        },
+        {
+            "x": 24,
+            "y": 40,
+            "layer": 23,
+            "type": -1,
+            "moldType": 1,
+            "metaType": 0,
+            "metaData": 0,
+            "presetColorType": 1
+        },
+        {
+            "x": 22,
+            "y": 56,
+            "layer": 23,
+            "type": 0,
+            "moldType": 1,
+            "metaType": 0,
+            "metaData": 0,
+            "presetColorType": 1
+        },
+        {
+            "x": 47,
+            "y": 0,
+            "layer": 24,
+            "type": 0,
+            "moldType": 1,
+            "metaType": 0,
+            "metaData": 0,
+            "presetColorType": 1
+        },
+        {
+            "x": 20,
+            "y": 8,
+            "layer": 24,
+            "type": -1,
+            "moldType": 1,
+            "metaType": 0,
+            "metaData": 0,
+            "presetColorType": 1
+        },
+        {
+            "x": 28,
+            "y": 8,
+            "layer": 24,
+            "type": -1,
+            "moldType": 1,
+            "metaType": 0,
+            "metaData": 0,
+            "presetColorType": 1
+        },
+        {
+            "x": 20,
+            "y": 16,
+            "layer": 24,
+            "type": -1,
+            "moldType": 1,
+            "metaType": 0,
+            "metaData": 0,
+            "presetColorType": 1
+        },
+        {
+            "x": 28,
+            "y": 16,
+            "layer": 24,
+            "type": -1,
+            "moldType": 1,
+            "metaType": 0,
+            "metaData": 0,
+            "presetColorType": 1
+        },
+        {
+            "x": 20,
+            "y": 24,
+            "layer": 24,
+            "type": -1,
+            "moldType": 1,
+            "metaType": 0,
+            "metaData": 0,
+            "presetColorType": 1
+        },
+        {
+            "x": 28,
+            "y": 24,
+            "layer": 24,
+            "type": -1,
+            "moldType": 1,
+            "metaType": 0,
+            "metaData": 0,
+            "presetColorType": 1
+        },
+        {
+            "x": 20,
+            "y": 32,
+            "layer": 24,
+            "type": -1,
+            "moldType": 1,
+            "metaType": 0,
+            "metaData": 0,
+            "presetColorType": 1
+        },
+        {
+            "x": 28,
+            "y": 32,
+            "layer": 24,
+            "type": -1,
+            "moldType": 1,
+            "metaType": 0,
+            "metaData": 0,
+            "presetColorType": 1
+        },
+        {
+            "x": 20,
+            "y": 40,
+            "layer": 24,
+            "type": -1,
+            "moldType": 1,
+            "metaType": 0,
+            "metaData": 0,
+            "presetColorType": 1
+        },
+        {
+            "x": 28,
+            "y": 40,
+            "layer": 24,
+            "type": -1,
+            "moldType": 1,
+            "metaType": 0,
+            "metaData": 0,
+            "presetColorType": 1
+        },
+        {
+            "x": 23,
+            "y": 56,
+            "layer": 24,
+            "type": 0,
+            "moldType": 1,
+            "metaType": 0,
+            "metaData": 0,
+            "presetColorType": 1
+        },
+        {
+            "x": 48,
+            "y": 0,
+            "layer": 25,
+            "type": 0,
+            "moldType": 1,
+            "metaType": 0,
+            "metaData": 0,
+            "presetColorType": 1
+        },
+        {
+            "x": 24,
+            "y": 8,
+            "layer": 25,
+            "type": -1,
+            "moldType": 1,
+            "metaType": 0,
+            "metaData": 0,
+            "presetColorType": 1
+        },
+        {
+            "x": 24,
+            "y": 16,
+            "layer": 25,
+            "type": -1,
+            "moldType": 1,
+            "metaType": 0,
+            "metaData": 0,
+            "presetColorType": 1
+        },
+        {
+            "x": 24,
+            "y": 24,
+            "layer": 25,
+            "type": -1,
+            "moldType": 1,
+            "metaType": 0,
+            "metaData": 0,
+            "presetColorType": 1
+        },
+        {
+            "x": 24,
+            "y": 32,
+            "layer": 25,
+            "type": -1,
+            "moldType": 1,
+            "metaType": 0,
+            "metaData": 0,
+            "presetColorType": 1
+        },
+        {
+            "x": 24,
+            "y": 40,
+            "layer": 25,
+            "type": -1,
+            "moldType": 1,
+            "metaType": 0,
+            "metaData": 0,
+            "presetColorType": 1
+        },
+        {
+            "x": 24,
+            "y": 56,
+            "layer": 25,
+            "type": 0,
+            "moldType": 1,
+            "metaType": 0,
+            "metaData": 0,
+            "presetColorType": 1
+        },
+        {
+            "x": 20,
+            "y": 8,
+            "layer": 26,
+            "type": -1,
+            "moldType": 1,
+            "metaType": 0,
+            "metaData": 0,
+            "presetColorType": 1
+        },
+        {
+            "x": 28,
+            "y": 8,
+            "layer": 26,
+            "type": -1,
+            "moldType": 1,
+            "metaType": 0,
+            "metaData": 0,
+            "presetColorType": 1
+        },
+        {
+            "x": 20,
+            "y": 16,
+            "layer": 26,
+            "type": -1,
+            "moldType": 1,
+            "metaType": 0,
+            "metaData": 0,
+            "presetColorType": 1
+        },
+        {
+            "x": 28,
+            "y": 16,
+            "layer": 26,
+            "type": -1,
+            "moldType": 1,
+            "metaType": 0,
+            "metaData": 0,
+            "presetColorType": 1
+        },
+        {
+            "x": 20,
+            "y": 24,
+            "layer": 26,
+            "type": -1,
+            "moldType": 1,
+            "metaType": 0,
+            "metaData": 0,
+            "presetColorType": 1
+        },
+        {
+            "x": 28,
+            "y": 24,
+            "layer": 26,
+            "type": -1,
+            "moldType": 1,
+            "metaType": 0,
+            "metaData": 0,
+            "presetColorType": 1
+        },
+        {
+            "x": 20,
+            "y": 32,
+            "layer": 26,
+            "type": -1,
+            "moldType": 1,
+            "metaType": 0,
+            "metaData": 0,
+            "presetColorType": 1
+        },
+        {
+            "x": 28,
+            "y": 32,
+            "layer": 26,
+            "type": -1,
+            "moldType": 1,
+            "metaType": 0,
+            "metaData": 0,
+            "presetColorType": 1
+        },
+        {
+            "x": 20,
+            "y": 40,
+            "layer": 26,
+            "type": -1,
+            "moldType": 1,
+            "metaType": 0,
+            "metaData": 0,
+            "presetColorType": 1
+        },
+        {
+            "x": 28,
+            "y": 40,
+            "layer": 26,
+            "type": -1,
+            "moldType": 1,
+            "metaType": 0,
+            "metaData": 0,
+            "presetColorType": 1
+        },
+        {
+            "x": 25,
+            "y": 56,
+            "layer": 26,
+            "type": 0,
+            "moldType": 1,
+            "metaType": 0,
+            "metaData": 0,
+            "presetColorType": 1
+        },
+        {
+            "x": 24,
+            "y": 8,
+            "layer": 27,
+            "type": -1,
+            "moldType": 1,
+            "metaType": 0,
+            "metaData": 0,
+            "presetColorType": 1
+        },
+        {
+            "x": 24,
+            "y": 16,
+            "layer": 27,
+            "type": -1,
+            "moldType": 1,
+            "metaType": 0,
+            "metaData": 0,
+            "presetColorType": 1
+        },
+        {
+            "x": 24,
+            "y": 24,
+            "layer": 27,
+            "type": -1,
+            "moldType": 1,
+            "metaType": 0,
+            "metaData": 0,
+            "presetColorType": 1
+        },
+        {
+            "x": 24,
+            "y": 32,
+            "layer": 27,
+            "type": -1,
+            "moldType": 1,
+            "metaType": 0,
+            "metaData": 0,
+            "presetColorType": 1
+        },
+        {
+            "x": 24,
+            "y": 40,
+            "layer": 27,
+            "type": -1,
+            "moldType": 1,
+            "metaType": 0,
+            "metaData": 0,
+            "presetColorType": 1
+        },
+        {
+            "x": 20,
+            "y": 8,
+            "layer": 28,
+            "type": -1,
+            "moldType": 1,
+            "metaType": 0,
+            "metaData": 0,
+            "presetColorType": 1
+        },
+        {
+            "x": 28,
+            "y": 8,
+            "layer": 28,
+            "type": -1,
+            "moldType": 1,
+            "metaType": 0,
+            "metaData": 0,
+            "presetColorType": 1
+        },
+        {
+            "x": 20,
+            "y": 16,
+            "layer": 28,
+            "type": -1,
+            "moldType": 1,
+            "metaType": 0,
+            "metaData": 0,
+            "presetColorType": 1
+        },
+        {
+            "x": 28,
+            "y": 16,
+            "layer": 28,
+            "type": -1,
+            "moldType": 1,
+            "metaType": 0,
+            "metaData": 0,
+            "presetColorType": 1
+        },
+        {
+            "x": 20,
+            "y": 24,
+            "layer": 28,
+            "type": -1,
+            "moldType": 1,
+            "metaType": 0,
+            "metaData": 0,
+            "presetColorType": 1
+        },
+        {
+            "x": 28,
+            "y": 24,
+            "layer": 28,
+            "type": -1,
+            "moldType": 1,
+            "metaType": 0,
+            "metaData": 0,
+            "presetColorType": 1
+        },
+        {
+            "x": 20,
+            "y": 32,
+            "layer": 28,
+            "type": -1,
+            "moldType": 1,
+            "metaType": 0,
+            "metaData": 0,
+            "presetColorType": 1
+        },
+        {
+            "x": 28,
+            "y": 32,
+            "layer": 28,
+            "type": -1,
+            "moldType": 1,
+            "metaType": 0,
+            "metaData": 0,
+            "presetColorType": 1
+        },
+        {
+            "x": 20,
+            "y": 40,
+            "layer": 28,
+            "type": -1,
+            "moldType": 1,
+            "metaType": 0,
+            "metaData": 0,
+            "presetColorType": 1
+        },
+        {
+            "x": 28,
+            "y": 40,
+            "layer": 28,
+            "type": -1,
+            "moldType": 1,
+            "metaType": 0,
+            "metaData": 0,
+            "presetColorType": 1
+        },
+        {
+            "x": 24,
+            "y": 8,
+            "layer": 29,
+            "type": -1,
+            "moldType": 1,
+            "metaType": 0,
+            "metaData": 0,
+            "presetColorType": 1
+        },
+        {
+            "x": 24,
+            "y": 16,
+            "layer": 29,
+            "type": -1,
+            "moldType": 1,
+            "metaType": 0,
+            "metaData": 0,
+            "presetColorType": 1
+        },
+        {
+            "x": 24,
+            "y": 24,
+            "layer": 29,
+            "type": -1,
+            "moldType": 1,
+            "metaType": 0,
+            "metaData": 0,
+            "presetColorType": 1
+        },
+        {
+            "x": 24,
+            "y": 32,
+            "layer": 29,
+            "type": -1,
+            "moldType": 1,
+            "metaType": 0,
+            "metaData": 0,
+            "presetColorType": 1
+        },
+        {
+            "x": 24,
+            "y": 40,
+            "layer": 29,
+            "type": -1,
+            "moldType": 1,
+            "metaType": 0,
+            "metaData": 0,
+            "presetColorType": 1
+        },
+        {
+            "x": 4,
+            "y": 8,
+            "layer": 30,
+            "type": -1,
+            "moldType": 1,
+            "metaType": 0,
+            "metaData": 0,
+            "presetColorType": 1
+        },
+        {
+            "x": 20,
+            "y": 8,
+            "layer": 30,
+            "type": -1,
+            "moldType": 1,
+            "metaType": 0,
+            "metaData": 0,
+            "presetColorType": 1
+        },
+        {
+            "x": 28,
+            "y": 8,
+            "layer": 30,
+            "type": -1,
+            "moldType": 1,
+            "metaType": 0,
+            "metaData": 0,
+            "presetColorType": 1
+        },
+        {
+            "x": 44,
+            "y": 8,
+            "layer": 30,
+            "type": -1,
+            "moldType": 1,
+            "metaType": 0,
+            "metaData": 0,
+            "presetColorType": 1
+        },
+        {
+            "x": 12,
+            "y": 16,
+            "layer": 30,
+            "type": -1,
+            "moldType": 1,
+            "metaType": 0,
+            "metaData": 0,
+            "presetColorType": 1
+        },
+        {
+            "x": 20,
+            "y": 16,
+            "layer": 30,
+            "type": -1,
+            "moldType": 1,
+            "metaType": 0,
+            "metaData": 0,
+            "presetColorType": 1
+        },
+        {
+            "x": 28,
+            "y": 16,
+            "layer": 30,
+            "type": -1,
+            "moldType": 1,
+            "metaType": 0,
+            "metaData": 0,
+            "presetColorType": 1
+        },
+        {
+            "x": 36,
+            "y": 16,
+            "layer": 30,
+            "type": -1,
+            "moldType": 1,
+            "metaType": 0,
+            "metaData": 0,
+            "presetColorType": 1
+        },
+        {
+            "x": 20,
+            "y": 24,
+            "layer": 30,
+            "type": -1,
+            "moldType": 1,
+            "metaType": 0,
+            "metaData": 0,
+            "presetColorType": 1
+        },
+        {
+            "x": 28,
+            "y": 24,
+            "layer": 30,
+            "type": -1,
+            "moldType": 1,
+            "metaType": 0,
+            "metaData": 0,
+            "presetColorType": 1
+        },
+        {
+            "x": 20,
+            "y": 32,
+            "layer": 30,
+            "type": -1,
+            "moldType": 1,
+            "metaType": 0,
+            "metaData": 0,
+            "presetColorType": 1
+        },
+        {
+            "x": 28,
+            "y": 32,
+            "layer": 30,
+            "type": -1,
+            "moldType": 1,
+            "metaType": 0,
+            "metaData": 0,
+            "presetColorType": 1
+        },
+        {
+            "x": 12,
+            "y": 40,
+            "layer": 30,
+            "type": -1,
+            "moldType": 1,
+            "metaType": 0,
+            "metaData": 0,
+            "presetColorType": 1
+        },
+        {
+            "x": 20,
+            "y": 40,
+            "layer": 30,
+            "type": -1,
+            "moldType": 1,
+            "metaType": 0,
+            "metaData": 0,
+            "presetColorType": 1
+        },
+        {
+            "x": 28,
+            "y": 40,
+            "layer": 30,
+            "type": 0,
+            "moldType": 1,
+            "metaType": 0,
+            "metaData": 0,
+            "presetColorType": 1
+        },
+        {
+            "x": 36,
+            "y": 40,
+            "layer": 30,
+            "type": -1,
+            "moldType": 1,
+            "metaType": 0,
+            "metaData": 0,
+            "presetColorType": 1
+        },
+        {
+            "x": 4,
+            "y": 4,
+            "layer": 31,
+            "type": -1,
+            "moldType": 1,
+            "metaType": 0,
+            "metaData": 0,
+            "presetColorType": 1
+        },
+        {
+            "x": 4,
+            "y": 16,
+            "layer": 31,
+            "type": -1,
+            "moldType": 1,
+            "metaType": 0,
+            "metaData": 0,
+            "presetColorType": 1
+        },
+        {
+            "x": 12,
+            "y": 16,
+            "layer": 31,
+            "type": -1,
+            "moldType": 1,
+            "metaType": 0,
+            "metaData": 0,
+            "presetColorType": 1
+        },
+        {
+            "x": 24,
+            "y": 16,
+            "layer": 31,
+            "type": -1,
+            "moldType": 1,
+            "metaType": 0,
+            "metaData": 0,
+            "presetColorType": 1
+        },
+        {
+            "x": 36,
+            "y": 16,
+            "layer": 31,
+            "type": -1,
+            "moldType": 1,
+            "metaType": 0,
+            "metaData": 0,
+            "presetColorType": 1
+        },
+        {
+            "x": 44,
+            "y": 16,
+            "layer": 31,
+            "type": -1,
+            "moldType": 1,
+            "metaType": 0,
+            "metaData": 0,
+            "presetColorType": 1
+        },
+        {
+            "x": 4,
+            "y": 24,
+            "layer": 31,
+            "type": -1,
+            "moldType": 1,
+            "metaType": 0,
+            "metaData": 0,
+            "presetColorType": 1
+        },
+        {
+            "x": 12,
+            "y": 24,
+            "layer": 31,
+            "type": -1,
+            "moldType": 1,
+            "metaType": 0,
+            "metaData": 0,
+            "presetColorType": 1
+        },
+        {
+            "x": 24,
+            "y": 24,
+            "layer": 31,
+            "type": -1,
+            "moldType": 1,
+            "metaType": 0,
+            "metaData": 0,
+            "presetColorType": 1
+        },
+        {
+            "x": 36,
+            "y": 24,
+            "layer": 31,
+            "type": -1,
+            "moldType": 1,
+            "metaType": 0,
+            "metaData": 0,
+            "presetColorType": 1
+        },
+        {
+            "x": 44,
+            "y": 24,
+            "layer": 31,
+            "type": -1,
+            "moldType": 1,
+            "metaType": 0,
+            "metaData": 0,
+            "presetColorType": 1
+        },
+        {
+            "x": 24,
+            "y": 32,
+            "layer": 31,
+            "type": -1,
+            "moldType": 1,
+            "metaType": 0,
+            "metaData": 0,
+            "presetColorType": 1
+        },
+        {
+            "x": 8,
+            "y": 40,
+            "layer": 31,
+            "type": -1,
+            "moldType": 1,
+            "metaType": 0,
+            "metaData": 0,
+            "presetColorType": 1
+        },
+        {
+            "x": 24,
+            "y": 40,
+            "layer": 31,
+            "type": 0,
+            "moldType": 1,
+            "metaType": 0,
+            "metaData": 0,
+            "presetColorType": 1
+        },
+        {
+            "x": 40,
+            "y": 40,
+            "layer": 31,
+            "type": -1,
+            "moldType": 1,
+            "metaType": 0,
+            "metaData": 0,
+            "presetColorType": 1
+        },
+        {
+            "x": 0,
+            "y": 48,
+            "layer": 31,
+            "type": -1,
+            "moldType": 1,
+            "metaType": 0,
+            "metaData": 0,
+            "presetColorType": 1
+        },
+        {
+            "x": 48,
+            "y": 48,
+            "layer": 31,
+            "type": -1,
+            "moldType": 1,
+            "metaType": 0,
+            "metaData": 0,
+            "presetColorType": 1
+        },
+        {
+            "x": 4,
+            "y": 20,
+            "layer": 32,
+            "type": -1,
+            "moldType": 1,
+            "metaType": 0,
+            "metaData": 0,
+            "presetColorType": 1
+        },
+        {
+            "x": 12,
+            "y": 20,
+            "layer": 32,
+            "type": -1,
+            "moldType": 1,
+            "metaType": 0,
+            "metaData": 0,
+            "presetColorType": 1
+        },
+        {
+            "x": 36,
+            "y": 20,
+            "layer": 32,
+            "type": -1,
+            "moldType": 1,
+            "metaType": 0,
+            "metaData": 0,
+            "presetColorType": 1
+        },
+        {
+            "x": 44,
+            "y": 20,
+            "layer": 32,
+            "type": -1,
+            "moldType": 1,
+            "metaType": 0,
+            "metaData": 0,
+            "presetColorType": 1
+        },
+        {
+            "x": 12,
+            "y": 28,
+            "layer": 32,
+            "type": 0,
+            "moldType": 1,
+            "metaType": 0,
+            "metaData": 0,
+            "presetColorType": 1
+        },
+        {
+            "x": 36,
+            "y": 29,
+            "layer": 32,
+            "type": 0,
+            "moldType": 1,
+            "metaType": 0,
+            "metaData": 0,
+            "presetColorType": 1
+        },
+        {
+            "x": 44,
+            "y": 29,
+            "layer": 32,
+            "type": 0,
+            "moldType": 1,
+            "metaType": 0,
+            "metaData": 0,
+            "presetColorType": 1
+        },
+        {
+            "x": 4,
+            "y": 40,
+            "layer": 32,
+            "type": -1,
+            "moldType": 1,
+            "metaType": 0,
+            "metaData": 0,
+            "presetColorType": 1
+        },
+        {
+            "x": 44,
+            "y": 40,
+            "layer": 32,
+            "type": -1,
+            "moldType": 1,
+            "metaType": 0,
+            "metaData": 0,
+            "presetColorType": 1
+        },
+        {
+            "x": 4,
+            "y": 48,
+            "layer": 32,
+            "type": -1,
+            "moldType": 1,
+            "metaType": 0,
+            "metaData": 0,
+            "presetColorType": 1
+        },
+        {
+            "x": 44,
+            "y": 48,
+            "layer": 32,
+            "type": -1,
+            "moldType": 1,
+            "metaType": 0,
+            "metaData": 0,
+            "presetColorType": 1
+        },
+        {
+            "x": 4,
+            "y": 32,
+            "layer": 33,
+            "type": -1,
+            "moldType": 1,
+            "metaType": 0,
+            "metaData": 0,
+            "presetColorType": 1
+        },
+        {
+            "x": 0,
+            "y": 40,
+            "layer": 33,
+            "type": -1,
+            "moldType": 1,
+            "metaType": 0,
+            "metaData": 0,
+            "presetColorType": 1
+        },
+        {
+            "x": 47,
+            "y": 40,
+            "layer": 33,
+            "type": -1,
+            "moldType": 1,
+            "metaType": 0,
+            "metaData": 0,
+            "presetColorType": 1
+        },
+        {
+            "x": 8,
+            "y": 48,
+            "layer": 33,
+            "type": -1,
+            "moldType": 1,
+            "metaType": 0,
+            "metaData": 0,
+            "presetColorType": 1
+        },
+        {
+            "x": 40,
+            "y": 48,
+            "layer": 33,
+            "type": -1,
+            "moldType": 1,
+            "metaType": 0,
+            "metaData": 0,
+            "presetColorType": 1
+        },
+        {
+            "x": 4,
+            "y": 28,
+            "layer": 34,
+            "type": 0,
+            "moldType": 1,
+            "metaType": 0,
+            "metaData": 0,
+            "presetColorType": 1
+        }
+    ],
+    "stacks": []
+}

@@ -14,6 +14,7 @@ const { createApiClient } = staticApi;
 
 const root = dirname(dirname(fileURLToPath(import.meta.url)));
 const levelsPath = join(root, "projects", "paws-level-editor", "levels");
+const defaultFileName = "level_0020_r2_第二关模板12.json";
 
 function createStorage() {
   const values = new Map();
@@ -44,7 +45,10 @@ function createBoundaryFailingStorage() {
 async function createFetch() {
   const files = new Map([
     ["./levels/index.json", await readFile(join(levelsPath, "index.json"), "utf8")],
-    ["./levels/level_showcase.json", await readFile(join(levelsPath, "level_showcase.json"), "utf8")],
+    [
+      `./levels/${encodeURIComponent(defaultFileName)}`,
+      await readFile(join(levelsPath, defaultFileName), "utf8"),
+    ],
   ]);
   return async (url) => {
     const body = files.get(url);
@@ -59,35 +63,42 @@ async function createFetch() {
   };
 }
 
-test("lists and loads the bundled showcase", async () => {
+test("lists the catalog and loads the requested bundled default", async () => {
   const api = createApiClient({
     fetchImpl: await createFetch(),
     storage: createStorage(),
     now: () => "2026-07-20T00:00:00.000Z",
   });
 
-  assert.equal((await api.listLevels())[0].fileName, "level_showcase.json");
-  assert.equal((await api.loadLevel("level_showcase.json")).value.name, "3D层级展示关");
+  const catalog = await api.listLevelCatalog();
+  assert.equal(catalog.defaultFileName, defaultFileName);
+  assert.equal(catalog.levels.length, 30);
+  assert.equal(catalog.levels.some(({ fileName }) => fileName === defaultFileName), true);
+  assert.deepEqual(await api.listLevels(), catalog.levels);
+  assert.equal((await api.loadLevel(defaultFileName)).value.name, "第二关模板12");
 });
 
 test("save survives a new client and reset restores the bundle", async () => {
   const storage = createStorage();
   const fetchImpl = await createFetch();
   const first = createApiClient({ fetchImpl, storage, now: () => "2026-07-20T00:00:00.000Z" });
-  const loaded = await first.loadLevel("level_showcase.json");
+  const loaded = await first.loadLevel(defaultFileName);
   loaded.value.name = "浏览器修改版";
   const saved = await first.saveLevel({
-    fileName: "level_showcase.json",
+    fileName: defaultFileName,
     value: loaded.value,
     expectedVersion: loaded.version,
     saveAs: false,
   });
   const second = createApiClient({ fetchImpl, storage });
 
-  assert.equal((await second.loadLevel("level_showcase.json")).value.name, "浏览器修改版");
-  assert.equal((await second.listLevels())[0].local, true);
-  await second.resetLevel("level_showcase.json");
-  assert.equal((await second.loadLevel("level_showcase.json")).value.name, "3D层级展示关");
+  assert.equal((await second.loadLevel(defaultFileName)).value.name, "浏览器修改版");
+  assert.equal(
+    (await second.listLevels()).find(({ fileName }) => fileName === defaultFileName).local,
+    true,
+  );
+  await second.resetLevel(defaultFileName);
+  assert.equal((await second.loadLevel(defaultFileName)).value.name, "第二关模板12");
   assert.notEqual(saved.version, loaded.version);
 });
 
@@ -95,7 +106,7 @@ test("adapter save reload and serialize round-trip preserves string designerNote
   const storage = createStorage();
   const fetchImpl = await createFetch();
   const api = createApiClient({ fetchImpl, storage, now: () => "2026-07-20T00:00:00.000Z" });
-  const loaded = await api.loadLevel("level_showcase.json");
+  const loaded = await api.loadLevel(defaultFileName);
   const document = parseLevelDocument(loaded.value, {
     fileName: loaded.fileName,
     version: loaded.version,
@@ -187,11 +198,11 @@ test("save-as rejects a bundled file name without overwriting the bundle", async
     storage: createStorage(),
     now: () => "2026-07-20T00:00:00.000Z",
   });
-  const original = await api.loadLevel("level_showcase.json");
+  const original = await api.loadLevel(defaultFileName);
 
   await assert.rejects(
     () => api.saveLevel({
-      fileName: "level_showcase.json",
+      fileName: defaultFileName,
       value: { id: 9999, name: "不得覆盖内置关卡", tiles: [] },
       saveAs: true,
     }),
@@ -203,7 +214,7 @@ test("save-as rejects a bundled file name without overwriting the bundle", async
     },
   );
 
-  assert.deepEqual(await api.loadLevel("level_showcase.json"), original);
+  assert.deepEqual(await api.loadLevel(defaultFileName), original);
 });
 
 test("save-as rejects a browser-local file name without overwriting its record", async () => {
@@ -316,17 +327,18 @@ test("reset rejects a local-only copy without deleting it", async () => {
 
 test("lists the bundle when its local override is corrupt and reset recovers it", async () => {
   const storage = createStorage();
-  storage.setItem("paws-level-editor-demo-v1:level_showcase.json", "{not valid JSON");
+  storage.setItem(`paws-level-editor-demo-v1:${defaultFileName}`, "{not valid JSON");
   const api = createApiClient({ fetchImpl: await createFetch(), storage });
 
   const levels = await api.listLevels();
 
-  assert.equal(levels[0].fileName, "level_showcase.json");
-  assert.equal(levels[0].bundled, true);
-  assert.equal(levels[0].local, false);
-  assert.equal(levels[0].localError, "invalid-local-record");
-  await assert.rejects(() => api.loadLevel("level_showcase.json"), { code: "invalid-local-record" });
-  assert.equal((await api.resetLevel("level_showcase.json")).value.name, "3D层级展示关");
+  const level = levels.find(({ fileName }) => fileName === defaultFileName);
+  assert.equal(level.fileName, defaultFileName);
+  assert.equal(level.bundled, true);
+  assert.equal(level.local, false);
+  assert.equal(level.localError, "invalid-local-record");
+  await assert.rejects(() => api.loadLevel(defaultFileName), { code: "invalid-local-record" });
+  assert.equal((await api.resetLevel(defaultFileName)).value.name, "第二关模板12");
 });
 
 test("rejects path traversal and stale versions", async () => {
@@ -334,7 +346,7 @@ test("rejects path traversal and stale versions", async () => {
 
   await assert.rejects(() => api.loadLevel("../secret.json"), { code: "invalid-file-name" });
   await assert.rejects(
-    () => api.saveLevel({ fileName: "level_showcase.json", value: {}, expectedVersion: "stale", saveAs: false }),
+    () => api.saveLevel({ fileName: defaultFileName, value: {}, expectedVersion: "stale", saveAs: false }),
     { status: 409, code: "version-conflict" },
   );
 });
@@ -385,12 +397,12 @@ test("percent-encodes a bundled file name before fetching it", async () => {
 test("exposes the static demo support methods and returns detached values", async () => {
   const api = createApiClient({ fetchImpl: await createFetch(), storage: createStorage() });
   const health = await api.health();
-  const loaded = await api.loadLevel("level_showcase.json");
+  const loaded = await api.loadLevel(defaultFileName);
   loaded.value.name = "mutated only in the caller";
 
   assert.deepEqual(health, { online: true, authenticated: true, writable: true, staticDemo: true });
   assert.deepEqual(await api.login(), { authenticated: true });
   assert.deepEqual(await api.logout(), { authenticated: true });
   assert.equal(api.blockImageUrl("1001/bonus"), "./assets/blocks/block_1001%2Fbonus.png");
-  assert.equal((await api.loadLevel("level_showcase.json")).value.name, "3D层级展示关");
+  assert.equal((await api.loadLevel(defaultFileName)).value.name, "第二关模板12");
 });

@@ -1,11 +1,274 @@
 {
+  "defaultFileName": "level_0020_r2_第二关模板12.json",
   "levels": [
     {
-      "id": 9001,
-      "fileName": "level_showcase.json",
-      "name": "3D层级展示关",
-      "description": "公开演示专用的对称多层关卡",
-      "tileCount": 34,
+      "id": 0,
+      "fileName": "level_0000_r1_第0关-翻转砖块测试.json",
+      "name": "第0关-翻转砖块测试",
+      "difficulty": "Normal",
+      "tileCount": 50,
+      "layerCount": 2,
+      "modifiedAt": "2026-07-20T00:00:00.000Z"
+    },
+    {
+      "id": 1,
+      "fileName": "level_0001_第一关.json",
+      "name": "第一关",
+      "difficulty": "Normal",
+      "tileCount": 22,
+      "layerCount": 3,
+      "modifiedAt": "2026-07-20T00:00:00.000Z"
+    },
+    {
+      "id": 2,
+      "fileName": "level_0002_羊了个羊关卡编辑器_before_20260610_sync.json",
+      "name": "羊了个羊编辑器关卡",
+      "difficulty": "Normal",
+      "tileCount": 86,
+      "layerCount": 13,
+      "modifiedAt": "2026-07-20T00:00:00.000Z"
+    },
+    {
+      "id": 2,
+      "fileName": "level_0002_r2_暂定第二关.json",
+      "name": "暂定第二关",
+      "difficulty": "Normal",
+      "tileCount": 112,
+      "layerCount": 13,
+      "modifiedAt": "2026-07-20T00:00:00.000Z"
+    },
+    {
+      "id": 3,
+      "fileName": "level_0003_r2_羊了个羊关卡编辑器.json",
+      "name": "羊了个羊关卡编辑器",
+      "difficulty": "Normal",
+      "tileCount": 126,
+      "layerCount": 14,
+      "modifiedAt": "2026-07-20T00:00:00.000Z"
+    },
+    {
+      "id": 5,
+      "fileName": "level_0005_羊了个羊关卡编辑器.json",
+      "name": "羊了个羊编辑器关卡",
+      "difficulty": "Normal",
+      "tileCount": 192,
+      "layerCount": 100,
+      "modifiedAt": "2026-07-20T00:00:00.000Z"
+    },
+    {
+      "id": 6,
+      "fileName": "level_0006_羊了个羊关卡编辑器.json",
+      "name": "羊了个羊关卡编辑器关卡6",
+      "difficulty": "Normal",
+      "tileCount": 248,
+      "layerCount": 17,
+      "modifiedAt": "2026-07-20T00:00:00.000Z"
+    },
+    {
+      "id": 7,
+      "fileName": "level_0007_羊了个羊关卡编辑器.json",
+      "name": "羊了个羊关卡编辑器关卡7",
+      "difficulty": "Normal",
+      "tileCount": 266,
+      "layerCount": 31,
+      "modifiedAt": "2026-07-20T00:00:00.000Z"
+    },
+    {
+      "id": 8,
+      "fileName": "level_0008_r1_羊了个羊编辑器关卡.json",
+      "name": "羊了个羊编辑器关卡",
+      "difficulty": "Normal",
+      "tileCount": 260,
+      "layerCount": 29,
+      "modifiedAt": "2026-07-20T00:00:00.000Z"
+    },
+    {
+      "id": 9,
+      "fileName": "level_0009_羊了个羊关卡编辑器.json",
+      "name": "羊了个羊编辑器关卡",
+      "difficulty": "Normal",
+      "tileCount": 388,
+      "layerCount": 34,
+      "modifiedAt": "2026-07-20T00:00:00.000Z"
+    },
+    {
+      "id": 11,
+      "fileName": "level_0011_第一关模板3.json",
+      "name": "第一关模板3",
+      "difficulty": "Normal",
+      "tileCount": 24,
+      "layerCount": 4,
+      "modifiedAt": "2026-07-20T00:00:00.000Z"
+    },
+    {
+      "id": 12,
+      "fileName": "level_0012_第一关模板4.json",
+      "name": "第一关模板4",
+      "difficulty": "Normal",
+      "tileCount": 32,
+      "layerCount": 5,
+      "modifiedAt": "2026-07-20T00:00:00.000Z"
+    },
+    {
+      "id": 13,
+      "fileName": "level_0013_第一关模板5.json",
+      "name": "第一关模板5",
+      "difficulty": "Normal",
+      "tileCount": 18,
+      "layerCount": 2,
+      "modifiedAt": "2026-07-20T00:00:00.000Z"
+    },
+    {
+      "id": 13,
+      "fileName": "level_0013_r2_第二关模板2.json",
+      "name": "第二关模板2",
+      "difficulty": "Normal",
+      "tileCount": 300,
+      "layerCount": 37,
+      "modifiedAt": "2026-07-20T00:00:00.000Z"
+    },
+    {
+      "id": 14,
+      "fileName": "level_0014_新关卡第一关模板6.json",
+      "name": "新关卡第一关模板6",
+      "difficulty": "Normal",
+      "tileCount": 24,
+      "layerCount": 2,
+      "modifiedAt": "2026-07-20T00:00:00.000Z"
+    },
+    {
+      "id": 15,
+      "fileName": "level_0015_第一关模板7.json",
+      "name": "第一关模板7",
+      "difficulty": "Normal",
+      "tileCount": 24,
+      "layerCount": 2,
+      "modifiedAt": "2026-07-20T00:00:00.000Z"
+    },
+    {
+      "id": 16,
+      "fileName": "level_0016_16第一关模板8.json",
+      "name": "16第一关模板8",
+      "difficulty": "Normal",
+      "tileCount": 24,
+      "layerCount": 3,
+      "modifiedAt": "2026-07-20T00:00:00.000Z"
+    },
+    {
+      "id": 20,
+      "fileName": "level_0020_r1_第一关模板6.json",
+      "name": "第一关模板6",
+      "difficulty": "Normal",
+      "tileCount": 18,
+      "layerCount": 4,
+      "modifiedAt": "2026-07-20T00:00:00.000Z"
+    },
+    {
+      "id": 20,
+      "fileName": "level_0020_r2_第二关模板12.json",
+      "name": "第二关模板12",
+      "difficulty": "Normal",
+      "tileCount": 198,
+      "layerCount": 17,
+      "modifiedAt": "2026-07-20T00:00:00.000Z"
+    },
+    {
+      "id": 21,
+      "fileName": "level_0021_r1_新关卡随机模板7.json",
+      "name": "新关卡随机模板7",
+      "difficulty": "Normal",
+      "tileCount": 18,
+      "layerCount": 4,
+      "modifiedAt": "2026-07-20T00:00:00.000Z"
+    },
+    {
+      "id": 21,
+      "fileName": "level_0021_r2_第二关模板1.json",
+      "name": "第二关模板1",
+      "difficulty": "Normal",
+      "tileCount": 316,
+      "layerCount": 34,
+      "modifiedAt": "2026-07-20T00:00:00.000Z"
+    },
+    {
+      "id": 22,
+      "fileName": "level_0022_r2_第二关模板10.json",
+      "name": "第二关模板10",
+      "difficulty": "Normal",
+      "tileCount": 334,
+      "layerCount": 27,
+      "modifiedAt": "2026-07-20T00:00:00.000Z"
+    },
+    {
+      "id": 23,
+      "fileName": "level_0023_r2_第二关模板11.json",
+      "name": "第二关模板11",
+      "difficulty": "Normal",
+      "tileCount": 202,
+      "layerCount": 29,
+      "modifiedAt": "2026-07-20T00:00:00.000Z"
+    },
+    {
+      "id": 26,
+      "fileName": "level_0026_r1_实验1.json",
+      "name": "实验1",
+      "difficulty": "Normal",
+      "tileCount": 96,
+      "layerCount": 10,
+      "modifiedAt": "2026-07-20T00:00:00.000Z"
+    },
+    {
+      "id": 27,
+      "fileName": "level_0027_r2_27.json",
+      "name": "27",
+      "difficulty": "Normal",
+      "tileCount": 170,
+      "layerCount": 17,
+      "modifiedAt": "2026-07-20T00:00:00.000Z"
+    },
+    {
+      "id": 28,
+      "fileName": "level_0028_r2_28Video Layout Full Random Sample.json",
+      "name": "28Video Layout Full Random Sample",
+      "difficulty": "Normal",
+      "tileCount": 82,
+      "layerCount": 5,
+      "modifiedAt": "2026-07-20T00:00:00.000Z"
+    },
+    {
+      "id": 30,
+      "fileName": "level_0030_r2_第二关模板.json",
+      "name": "第二关模板",
+      "difficulty": "Normal",
+      "tileCount": 300,
+      "layerCount": 29,
+      "modifiedAt": "2026-07-20T00:00:00.000Z"
+    },
+    {
+      "id": 31,
+      "fileName": "level_0031_r1_第一关新模板.json",
+      "name": "第一关新模板",
+      "difficulty": "Normal",
+      "tileCount": 15,
+      "layerCount": 3,
+      "modifiedAt": "2026-07-20T00:00:00.000Z"
+    },
+    {
+      "id": 32,
+      "fileName": "level_0032_r1_32第一关模板.json",
+      "name": "32第一关模板",
+      "difficulty": "Normal",
+      "tileCount": 18,
+      "layerCount": 3,
+      "modifiedAt": "2026-07-20T00:00:00.000Z"
+    },
+    {
+      "id": 1001,
+      "fileName": "level_1001_r1_新关卡.json",
+      "name": "新关卡",
+      "difficulty": "Normal",
+      "tileCount": 28,
+      "layerCount": 12,
       "modifiedAt": "2026-07-20T00:00:00.000Z"
     }
   ]
