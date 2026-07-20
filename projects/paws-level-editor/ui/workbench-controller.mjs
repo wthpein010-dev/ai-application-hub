@@ -184,7 +184,7 @@ export class WorkbenchController {
         this.setConnection("error", health.directoryError || "关卡目录不可读");
         return;
       }
-      this.setConnection("online", "关卡服务在线 · 可保存");
+      this.setConnection("online", "静态演示在线 · 可保存到当前浏览器");
       await this.refreshLevels();
     } catch (error) {
       this.setConnection("error", error.message);
@@ -202,7 +202,12 @@ export class WorkbenchController {
     try {
       this.levels = await this.api.listLevels();
       this.renderLevelList();
-      this.setConnection("online", "关卡服务在线");
+      this.setConnection("online", "静态演示在线");
+      if (this.levels.length === 1 && !this.document) {
+        await this.openLevel(this.levels[0].fileName, {
+          recoverable: this.levels[0].recoverable,
+        });
+      }
     } catch (error) {
       this.elements.levelList.innerHTML = `<div class="list-empty"><p>${error.message}</p></div>`;
       this.setConnection("error", error.message);
@@ -747,7 +752,7 @@ export class WorkbenchController {
       this.history.markSaved();
       await this.refreshLevels();
       this.updateUI();
-      this.showToast(saveAs ? `已另存为 ${fileName}` : `已保存 ${fileName} 到当前浏览器。`);
+      this.showToast(saveAs ? `已另存为 ${fileName}` : `已保存到当前浏览器：${fileName}`);
       return true;
     } catch (error) {
       if (error.status === 409 && error.code === "version-conflict") {
