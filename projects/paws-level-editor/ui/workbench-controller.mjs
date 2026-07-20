@@ -218,7 +218,7 @@ export class WorkbenchController {
         this.setConnection("error", health.directoryError || "关卡目录不可读");
         return;
       }
-      this.setConnection("online", "静态演示在线 · 可保存到当前浏览器");
+      this.setConnection("online", "关卡库在线 · 编辑只保存到当前浏览器");
       await this.refreshLevels();
     } catch (error) {
       this.setConnection("error", error.message);
@@ -232,13 +232,13 @@ export class WorkbenchController {
   }
 
   async refreshLevels() {
-    this.elements.levelList.innerHTML = `<div class="loading-card"><span class="loader"></span><p>正在读取示例关卡…</p></div>`;
+    this.elements.levelList.innerHTML = `<div class="loading-card"><span class="loader"></span><p>正在读取工程关卡…</p></div>`;
     try {
       const catalog = await this.api.listLevelCatalog();
       this.levels = catalog.levels;
       this.defaultFileName = catalog.defaultFileName;
       this.renderLevelList();
-      this.setConnection("online", "静态演示在线");
+      this.setConnection("online", "关卡库在线 · 编辑只保存到当前浏览器");
       if (this.levels.length && !this.document) {
         const level = this.levels.find(
           ({ fileName }) => fileName === this.defaultFileName,

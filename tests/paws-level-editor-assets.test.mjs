@@ -12,14 +12,18 @@ const requiredFiles = [
   "styles.css",
   "app.mjs",
   "core/coverage.mjs",
+  "core/ai-level-generator.mjs",
   "core/edit-history.mjs",
   "core/level-adapter.mjs",
+  "core/level-solver.mjs",
+  "core/level-statistics.mjs",
   "core/level-validator.mjs",
   "core/play-engine.mjs",
   "core/random-assigner.mjs",
   "core/view-model.mjs",
   "core/xorshift.mjs",
   "ui/editor-tools.mjs",
+  "ui/ai-level-dialog.mjs",
   "ui/inspector.mjs",
   "ui/local-level-import.mjs",
   "ui/level-summary.mjs",
@@ -126,6 +130,31 @@ test("demo boundary occupies its own visible layout row", () => {
   assert.match(css, /\.readonly-banner\s*\{[^}]*grid-row:\s*3/s);
   assert.match(css, /\.workspace\s*\{[^}]*grid-row:\s*4/s);
   assert.match(css, /grid-template-rows:\s*64px auto 0 minmax\(0,\s*1fr\)/);
+});
+
+test("public copy describes the project library and browser-local AI boundary", () => {
+  const html = readFileSync(join(editorRoot, "index.html"), "utf8");
+  const controller = readFileSync(
+    join(editorRoot, "ui", "workbench-controller.mjs"),
+    "utf8",
+  );
+  assert.match(html, /已发布 30 个工程关卡/);
+  assert.match(html, /编辑和 AI 生成结果只保存到当前浏览器/);
+  assert.doesNotMatch(html, /仅使用独立示例关卡/);
+  assert.doesNotMatch(html, /正在读取示例关卡/);
+  assert.match(controller, /关卡库在线 · 编辑只保存到当前浏览器/);
+  assert.doesNotMatch(controller, /静态演示在线/);
+});
+
+test("AI dialog styles radios as compact cards and stays desktop-only", () => {
+  const css = readFileSync(join(editorRoot, "styles.css"), "utf8");
+  assert.match(css, /\.ai-button\s*\{[^}]*linear-gradient/s);
+  assert.match(css, /\.ai-choice-grid\s*\{[^}]*grid-template-columns:\s*repeat\(3/s);
+  assert.match(css, /\.ai-choice input\s*\{[^}]*width:\s*16px/s);
+  assert.match(
+    css,
+    /@media \(max-width:\s*900px\),\s*\(pointer:\s*coarse\)[\s\S]*#generate-ai-level\s*\{[^}]*display:\s*none\s*!important/s,
+  );
 });
 
 test("static editor exposes the built-in reset control and controller flow", () => {

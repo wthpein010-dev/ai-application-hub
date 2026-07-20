@@ -31,7 +31,9 @@ test("hub publishes one 关卡3D编辑器 engineering card", () => {
   assert.equal(matches[0].name, "关卡3D编辑器");
   assert.equal(matches[0].status, "engineering");
   assert.equal(matches[0].video, "./projects/paws-level-editor/video/index.html");
-  assert.match(matches[0].brief, /导入本地 JSON/);
+  assert.match(matches[0].brief, /30 个工程关卡/);
+  assert.match(matches[0].brief, /AI 生成/);
+  assert.equal(matches[0].tags.includes("AI关卡"), true);
 });
 
 test("stored app merge iterates current defaults so an old browser sees new cards", () => {
@@ -40,5 +42,5 @@ test("stored app merge iterates current defaults so an old browser sees new card
 });
 
 test("home page cache key changes for the published runtime", () => {
-  assert.match(page, /app-20260706-restore-games\.js\?v=20260720-paws-local-import/);
+  assert.match(page, /app-20260706-restore-games\.js\?v=20260720-paws-ai-levels/);
 });

@@ -366,6 +366,27 @@ select:disabled {
   background: #e3fa83;
 }
 
+.ai-button {
+  grid-column: 1 / -1;
+  min-height: 36px;
+  border: 0;
+  border-radius: 7px;
+  color: #102021;
+  background: linear-gradient(135deg, #bdfd80, #75e9ff);
+  font-weight: 800;
+  box-shadow: 0 8px 22px rgb(117 233 255 / 0.12);
+}
+
+.ai-button:hover {
+  filter: brightness(1.06);
+}
+
+.ai-button:disabled {
+  cursor: wait;
+  filter: saturate(0.4);
+  opacity: 0.62;
+}
+
 .secondary-button,
 .icon-button,
 .tool-strip button {
@@ -964,6 +985,101 @@ select:disabled {
   font-size: 11px;
 }
 
+.ai-level-dialog {
+  width: min(760px, calc(100vw - 32px));
+}
+
+.ai-level-dialog form {
+  padding: 26px;
+}
+
+.ai-level-dialog .dialog-intro {
+  margin-bottom: 20px !important;
+}
+
+.ai-level-dialog fieldset {
+  margin: 0 0 18px;
+  padding: 0;
+  border: 0;
+}
+
+.ai-level-dialog legend {
+  margin-bottom: 8px;
+  color: var(--text);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+}
+
+.ai-choice-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.ai-choice-grid-reference {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.workbench-dialog .ai-choice {
+  display: grid;
+  grid-template-columns: 16px minmax(0, 1fr);
+  align-items: start;
+  gap: 9px;
+  min-height: 70px;
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: 9px;
+  color: var(--muted);
+  background: var(--surface-2);
+  cursor: pointer;
+}
+
+.workbench-dialog .ai-choice:has(input:checked) {
+  border-color: var(--cyan);
+  background: rgb(117 233 255 / 0.08);
+  box-shadow: inset 0 0 0 1px rgb(117 233 255 / 0.14);
+}
+
+.workbench-dialog .ai-choice:has(input:disabled) {
+  cursor: not-allowed;
+  opacity: 0.42;
+}
+
+.ai-choice input {
+  width: 16px;
+  min-height: 16px;
+  margin: 2px 0 0;
+  padding: 0;
+  accent-color: var(--cyan);
+}
+
+.ai-choice span {
+  display: grid;
+  gap: 5px;
+}
+
+.ai-choice strong {
+  color: var(--text);
+  font-size: 12px;
+}
+
+.ai-choice small {
+  color: var(--muted-2);
+  font-size: 10px;
+  line-height: 1.45;
+}
+
+.workbench-dialog .ai-level-hint {
+  margin: 4px 0 0 !important;
+  padding: 11px 12px;
+  border-left: 2px solid var(--accent);
+  border-radius: 0 7px 7px 0;
+  color: #d9e8dd !important;
+  background: rgb(189 253 128 / 0.06);
+  font-size: 11px;
+}
+
 .form-error {
   min-height: 18px;
   margin: 8px 0 0;
@@ -1058,6 +1174,10 @@ select:disabled {
   }
 
   .edit-only {
+    display: none !important;
+  }
+
+  #generate-ai-level {
     display: none !important;
   }
 
