@@ -1193,6 +1193,17 @@ function normalizeApp(app) {
   if (normalized.id === "hub" && normalized.brief === OLD_HUB_BRIEF) {
     normalized.brief = HUB_BRIEF;
   }
+  if (normalized.id === "codex-thread-workbench" && app.platforms?.mac === "") {
+    const legacyBrief = "在同一个 Windows 一级界面中同时查看和操作多个真实 Codex 线程，直接输入、停止、审批，并清晰区分进行中与已完成任务。";
+    const legacyAiUse = "工具通过本机 codex app-server 连接真实线程，不读取凭据；AI 参与协议接入、状态投影、多窗口会话交互和 Windows 发布验证。";
+    if (normalized.brief === legacyBrief) normalized.brief = base.brief;
+    if (normalized.aiUse === legacyAiUse) normalized.aiUse = base.aiUse;
+    normalized.tags = [...new Set([...normalized.tags, "macOS"])];
+    normalized.platforms = {
+      ...(normalized.platforms || {}),
+      mac: base.platforms.mac
+    };
+  }
   if (normalized.id === "icecream") {
     normalized.entry = "./projects/icecream/index.html";
     normalized.package = "./downloads/icecream-unity-project.zip";
