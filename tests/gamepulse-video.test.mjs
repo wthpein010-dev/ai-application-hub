@@ -25,6 +25,16 @@ test("GamePulse video page lazy-loads MP4 with default Chinese captions", () => 
   assert.doesNotMatch(html, /<video[^>]+\ssrc=/);
 });
 
+test("GamePulse video page returns to the application collection", () => {
+  const html = readFileSync(join(videoRoot, "index.html"), "utf8");
+  assert.equal(
+    (html.match(/href="\.\.\/\.\.\/\.\.\/index\.html#apps"/g) || []).length,
+    2,
+  );
+  assert.doesNotMatch(html, /index\.html#games/);
+  assert.match(html, /返回应用集合/);
+});
+
 test("GamePulse script and captions cover the six walkthrough chapters", () => {
   const captions = readFileSync(
     join(videoRoot, "gamepulse-mini-radar-demo.vtt"),
