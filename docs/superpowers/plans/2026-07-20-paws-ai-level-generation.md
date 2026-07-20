@@ -676,13 +676,13 @@ git add docs/superpowers/specs/2026-07-20-paws-ai-level-generation-design.md doc
 git commit -m "docs: complete paws ai level release"
 ```
 
-- [ ] **Step 3: Push current HEAD to `origin/main`**
+- [x] **Step 3: Push current HEAD to `origin/main`**
 
 Run: `git push origin HEAD:main`
 
 Expected: non-force fast-forward update succeeds.
 
-- [ ] **Step 4: Wait for GitHub Pages success**
+- [x] **Step 4: Wait for GitHub Pages success**
 
 Run: `gh run list --workflow pages-build-deployment --limit 3 --json databaseId,headSha,status,conclusion,url`
 
@@ -690,7 +690,7 @@ Then: `gh run watch <databaseId> --exit-status`
 
 Expected: workflow for the pushed SHA finishes with `conclusion: success`.
 
-- [ ] **Step 5: Run online HTTP checks**
+- [x] **Step 5: Run online HTTP checks**
 
 ```powershell
 $base = "https://wthpein010-dev.github.io/ai-application-hub/projects/paws-level-editor"
@@ -701,7 +701,7 @@ Invoke-WebRequest "$base/levels/level_0020_r2_%E7%AC%AC%E4%BA%8C%E5%85%B3%E6%A8%
 
 Expected: all status codes are 200 and the online index contains 30 entries with the requested default.
 
-- [ ] **Step 6: Run online Playwright acceptance**
+- [x] **Step 6: Run online Playwright acceptance**
 
 Run: `node tests/paws-level-editor-ai-browser-smoke.mjs --base-url "https://wthpein010-dev.github.io/ai-application-hub"`
 
