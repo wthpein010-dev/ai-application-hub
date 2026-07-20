@@ -1204,6 +1204,19 @@ function normalizeApp(app) {
       mac: base.platforms.mac
     };
   }
+  if (normalized.id === "gamepulse-mini-radar") {
+    const legacyName = "GamePulse 小游雷达";
+    const legacyBrief = "把国内微信小游戏热门榜、畅销榜与海外 US iOS Casual Top 10 放在同一张开发者工作台上。";
+    const legacyTags = ["小游戏排行", "微信小游戏", "iOS Casual", "产品洞察"];
+    if (normalized.name === legacyName) normalized.name = base.name;
+    if (normalized.brief === legacyBrief) normalized.brief = base.brief;
+    if (
+      normalized.tags.length === legacyTags.length &&
+      normalized.tags.every((tag, index) => tag === legacyTags[index])
+    ) {
+      normalized.tags = [...base.tags];
+    }
+  }
   if (normalized.id === "icecream") {
     normalized.entry = "./projects/icecream/index.html";
     normalized.package = "./downloads/icecream-unity-project.zip";

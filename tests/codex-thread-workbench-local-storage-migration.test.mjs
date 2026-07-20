@@ -47,6 +47,7 @@ function loadAppsWithStoredValue(stored) {
 test("old Windows-only workbench storage migrates to all four published entrances", () => {
   const defaults = loadDefaultApps();
   const workbench = defaults.find((app) => app.id === "codex-thread-workbench");
+  const gamePulseDefault = defaults.find((app) => app.id === "gamepulse-mini-radar");
   const oldWindowsOnlyWorkbench = {
     ...workbench,
     name: "我的 Codex 工作台",
@@ -60,8 +61,14 @@ test("old Windows-only workbench storage migrates to all four published entrance
       mac: "",
     },
   };
+  const oldGamePulse = {
+    ...gamePulseDefault,
+    name: "GamePulse 小游雷达",
+    brief: "把国内微信小游戏热门榜、畅销榜与海外 US iOS Casual Top 10 放在同一张开发者工作台上。",
+    tags: ["小游戏排行", "微信小游戏", "iOS Casual", "产品洞察"],
+  };
 
-  const apps = loadAppsWithStoredValue([oldWindowsOnlyWorkbench]);
+  const apps = loadAppsWithStoredValue([oldWindowsOnlyWorkbench, oldGamePulse]);
   const migrated = apps.find((app) => app.id === "codex-thread-workbench");
   const gamePulse = apps.find((app) => app.id === "gamepulse-mini-radar");
 
@@ -73,5 +80,25 @@ test("old Windows-only workbench storage migrates to all four published entrance
   assert.deepEqual(JSON.parse(JSON.stringify(migrated.platforms.windows)), JSON.parse(JSON.stringify(workbench.platforms.windows)));
   assert.deepEqual(JSON.parse(JSON.stringify(migrated.platforms.mac)), JSON.parse(JSON.stringify(workbench.platforms.mac)));
   assert.equal(migrated.video, workbench.video);
-  assert.equal(gamePulse.name, "小游戏每日排行");
+  assert.equal(gamePulse.name, gamePulseDefault.name);
+  assert.equal(gamePulse.brief, gamePulseDefault.brief);
+  assert.deepEqual(JSON.parse(JSON.stringify(gamePulse.tags)), JSON.parse(JSON.stringify(gamePulseDefault.tags)));
+});
+
+test("GamePulse migration preserves user-customized text and tags", () => {
+  const defaults = loadDefaultApps();
+  const gamePulseDefault = defaults.find((app) => app.id === "gamepulse-mini-radar");
+  const customizedGamePulse = {
+    ...gamePulseDefault,
+    name: "我的游戏雷达",
+    brief: "我的自定义榜单说明",
+    tags: ["我的标签", "保留这个"],
+  };
+
+  const apps = loadAppsWithStoredValue([customizedGamePulse]);
+  const gamePulse = apps.find((app) => app.id === "gamepulse-mini-radar");
+
+  assert.equal(gamePulse.name, customizedGamePulse.name);
+  assert.equal(gamePulse.brief, customizedGamePulse.brief);
+  assert.deepEqual(JSON.parse(JSON.stringify(gamePulse.tags)), customizedGamePulse.tags);
 });
