@@ -198,6 +198,29 @@ const defaultApps = [
     polish: 8
   },
   {
+    id: "paws-level-editor",
+    name: "关卡3D编辑器",
+    category: "关卡编辑与3D预览",
+    status: "engineering",
+    brief: "公开演示版关卡工作台：编辑示例关卡、切换 2D/3D 检查层级，并直接试玩验证。",
+    problem: "关卡布局、遮挡关系与实际试玩分散在不同工具中，修改后难以快速确认空间层级和可玩性。",
+    aiUse: "AI 参与关卡 JSON 兼容、2D/3D 编辑视图、试玩规则、静态发布、隐私边界和自动化验收。",
+    folder: "./projects/paws-level-editor/",
+    entry: "./projects/paws-level-editor/index.html",
+    video: "./projects/paws-level-editor/video/index.html",
+    package: "",
+    platforms: {
+      web: "./projects/paws-level-editor/index.html",
+      windows: "",
+      mac: ""
+    },
+    tags: ["关卡编辑", "Three.js", "2D/3D", "试玩"],
+    speed: 9,
+    impact: 9,
+    risk: 9,
+    polish: 9
+  },
+  {
     id: "fill-what",
     name: "填了个啥",
     category: "Unity 微信小游戏原型",
