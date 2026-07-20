@@ -30,8 +30,14 @@ test("every published video entry provides its own lazy-loaded tutorial video", 
   assert.equal(apps.length, 20, "the hub should keep its full project inventory");
 
   const appsWithoutVideo = apps.filter((app) => !app.video);
-  assert.equal(appsWithoutVideo.length, 1, "only the newest workbench may omit a video");
-  assert.equal(appsWithoutVideo[0].id, "codex-thread-workbench");
+  assert.equal(
+    appsWithoutVideo.length,
+    0,
+    `every published project should provide a tutorial video; missing: ${Array.from(
+      appsWithoutVideo,
+      (app) => app.id,
+    ).join(", ")}`,
+  );
 
   for (const app of apps.filter((app) => app.video)) {
     assert.notEqual(app.video, "./videos/placeholder.html", `${app.id} must not use the generic placeholder`);

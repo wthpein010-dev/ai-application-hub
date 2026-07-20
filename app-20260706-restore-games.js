@@ -296,18 +296,19 @@ const defaultApps = [
     name: "Codex 多会话工作台",
     category: "AI 开发桌面工具",
     status: "desktop",
-    brief: "在同一个 Windows 一级界面中同时查看和操作多个真实 Codex 线程，直接输入、停止、审批，并清晰区分进行中与已完成任务。",
+    brief: "在同一个 Windows 或 macOS 一级界面中同时查看和操作多个真实 Codex 线程，直接输入、停止、审批，并清晰区分进行中与已完成任务。",
     problem: "并行推进多个 Codex 任务时，频繁切换线程会打断判断，也难以及时发现等待输入、等待审批或已经完成的任务。",
-    aiUse: "工具通过本机 codex app-server 连接真实线程，不读取凭据；AI 参与协议接入、状态投影、多窗口会话交互和 Windows 发布验证。",
+    aiUse: "工具通过本机 codex app-server 连接真实线程，不读取凭据；AI 参与协议接入、状态投影、多窗口会话交互和 Windows、macOS 双架构发布验证。",
     folder: "./projects/codex-thread-workbench/",
     entry: "./projects/codex-thread-workbench/index.html",
+    video: "./projects/codex-thread-workbench/video/index.html",
     package: "https://wthpein010-dev.github.io/ai-application-hub/projects/codex-thread-workbench/download/",
     platforms: {
       web: { href: "./projects/codex-thread-workbench/index.html", label: "交互演示" },
       windows: { href: "https://wthpein010-dev.github.io/ai-application-hub/projects/codex-thread-workbench/download/", label: "Windows下载" },
-      mac: ""
+      mac: { href: "https://wthpein010-dev.github.io/ai-application-hub/projects/codex-thread-workbench/download/mac/", label: "Mac下载" }
     },
-    tags: ["Codex", "多线程", "桌面工作台", "Windows"],
+    tags: ["Codex", "多线程", "桌面工作台", "Windows", "macOS"],
     speed: 9,
     impact: 9,
     risk: 9,
