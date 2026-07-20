@@ -188,4 +188,3 @@ GitHub Pages 版本使用仓库内 `vendor/` 文件和相对路径，不依赖 N
 ## 发布
 
 在独立功能分支完成并验证后，快进合并到本地 `main`，推送 `origin/main`。GitHub Pages 当前从 `main` 发布；推送后轮询线上页面直到新提交可见，再执行在线验收。
-

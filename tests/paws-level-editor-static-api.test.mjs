@@ -189,6 +189,27 @@ test("shared file name validation accepts safe Unicode names and rejects paths",
   assert.equal(saved.fileName, "关卡副本.json");
 });
 
+test("percent-encodes a bundled file name before fetching it", async () => {
+  const requestedUrls = [];
+  const api = createApiClient({
+    fetchImpl: async (url) => {
+      requestedUrls.push(url);
+      return {
+        ok: true,
+        status: 200,
+        async json() {
+          return { name: "特殊文件名", tiles: [] };
+        },
+      };
+    },
+    storage: createStorage(),
+  });
+
+  await api.loadLevel("关卡#50%.json");
+
+  assert.deepEqual(requestedUrls, ["./levels/%E5%85%B3%E5%8D%A1%2350%25.json"]);
+});
+
 test("exposes the static demo support methods and returns detached values", async () => {
   const api = createApiClient({ fetchImpl: await createFetch(), storage: createStorage() });
   const health = await api.health();

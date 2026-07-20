@@ -264,6 +264,9 @@ try {
     document.querySelector("#connection-state")?.textContent?.includes("静态演示在线"));
 
   assert.equal(await page.locator('[role="option"]').count(), 1, "expected one bundled demo level");
+  const levelCardText = await page.locator('[role="option"]').textContent();
+  assert.doesNotMatch(levelCardText, /#undefined|Invalid Date/);
+  assert.match(levelCardText, /#\d{4,}/);
   await waitForWorkbench(page);
   await waitForNetworkAndTextures(page);
   assert.notEqual((await page.locator("#status-tiles").textContent())?.trim(), "—");

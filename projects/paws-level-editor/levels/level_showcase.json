@@ -1,5 +1,7 @@
 {
+  "id": 9001,
   "name": "3D层级展示关",
+  "modifiedAt": "2026-07-20T00:00:00.000Z",
   "format": "paws-level-editor-demo-v1",
   "designerNote": {
     "source": "公开演示专用；坐标与牌组均为自行生成，不含真实工程关卡数据。",

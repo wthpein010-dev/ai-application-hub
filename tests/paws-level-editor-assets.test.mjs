@@ -21,6 +21,7 @@ const requiredFiles = [
   "core/xorshift.mjs",
   "ui/editor-tools.mjs",
   "ui/inspector.mjs",
+  "ui/level-summary.mjs",
   "ui/workbench-controller.mjs",
   "views/canvas-2d.mjs",
   "views/three-3d.mjs",
@@ -92,10 +93,19 @@ test("public files contain no private level path or credential material", () => 
 test("published levels contain only the index and standalone showcase", () => {
   const levels = readdirSync(join(editorRoot, "levels")).sort();
   assert.deepEqual(levels, ["index.json", "level_showcase.json"]);
+  const index = JSON.parse(
+    readFileSync(join(editorRoot, "levels", "index.json"), "utf8"),
+  );
   const showcase = JSON.parse(
     readFileSync(join(editorRoot, "levels", "level_showcase.json"), "utf8"),
   );
   assert.match(showcase.designerNote.source, /公开演示专用/);
+  assert.equal(index.levels.length, 1);
+  const summary = index.levels[0];
+  assert.equal(Number.isInteger(summary.id) && summary.id > 0, true);
+  assert.equal(new Date(summary.modifiedAt).toISOString(), summary.modifiedAt);
+  assert.equal(showcase.id, summary.id);
+  assert.equal(showcase.modifiedAt, summary.modifiedAt);
 });
 
 test("entry uses relative GitHub Pages module and Three paths", () => {

@@ -1,0 +1,122 @@
+{
+  "schemaVersion": 1,
+  "recordedAt": "2026-07-20T03:58:30.702Z",
+  "recording": {
+    "browser": "system Chrome",
+    "preRollMs": 951,
+    "completedAt": "2026-07-20T03:59:58.713Z",
+    "durationMs": 88011
+  },
+  "timeline": {
+    "tools": 0,
+    "edit2d": 12005,
+    "view3d": 32005,
+    "play": 50003,
+    "persistence": 70003
+  },
+  "actions": {
+    "metadata": {
+      "cardText": "3D层级展示关#9001level_showcase.json34 tiles07/20",
+      "levelId": 9001,
+      "modifiedAt": "2026-07-20T00:00:00.000Z"
+    },
+    "edit2d": {
+      "drag": {
+        "uid": "tile-33",
+        "selectedBefore": "tile-33",
+        "selectedAfter": "tile-33",
+        "before": {
+          "x": 32,
+          "y": 40
+        },
+        "after": {
+          "x": 40,
+          "y": 48
+        }
+      },
+      "property": {
+        "field": "x",
+        "before": 40,
+        "after": 41
+      }
+    },
+    "edit3d": {
+      "cameraBefore": {
+        "position": [
+          3.5999999999999996,
+          5.2,
+          4.599999999999999
+        ],
+        "target": [
+          0,
+          0.35,
+          0
+        ]
+      },
+      "cameraAfter": {
+        "position": [
+          0.5505129690121952,
+          0.8403438418158985,
+          -7.556387919352916
+        ],
+        "target": [
+          0,
+          0.35,
+          0
+        ]
+      },
+      "selectedBefore": "tile-33",
+      "selectedAfter": "tile-7"
+    },
+    "play2d": {
+      "removedBefore": 0,
+      "removedAfter": 6
+    },
+    "play3d": {
+      "selectedBefore": "",
+      "selectedAfter": "tile-29"
+    },
+    "persistence": {
+      "originalProperty": 32,
+      "originalPosition": {
+        "x": 32,
+        "y": 40
+      },
+      "savedProperty": 41,
+      "savedPosition": {
+        "x": 41,
+        "y": 48
+      },
+      "savedToLocalStorage": true,
+      "reloadedProperty": 41,
+      "reloadedPosition": {
+        "x": 41,
+        "y": 48
+      },
+      "overrideRemoved": true,
+      "resetProperty": 32,
+      "resetPosition": {
+        "x": 32,
+        "y": 40
+      }
+    }
+  },
+  "errors": {
+    "console": [],
+    "page": []
+  },
+  "media": {
+    "file": "paws-level-editor-tutorial.mp4",
+    "sha256": "481094790de292203b3d9663c39fe8a4c2f7c2fd08bee2083dde9482c3caacef"
+  },
+  "sources": {
+    "projects/paws-level-editor/index.html": "beceb999bd40e5817d01c01f4d00dfe4b145a8c2ad6c4c879f863c5e8d33e63e",
+    "projects/paws-level-editor/app.mjs": "550278401cebcf10ebb91159d70ca9698340c38261817da2dceb7bdaa5ac9dbf",
+    "projects/paws-level-editor/ui/level-summary.mjs": "f7876ba36caaef6ac9123f98680aad02a65e5134f6ec1486f306e17f359b4713",
+    "projects/paws-level-editor/ui/workbench-controller.mjs": "10f86521d396de50f2952ada1566a4fd128e5f36b2e58689fe5f9c4e8c31f903",
+    "projects/paws-level-editor/levels/index.json": "7b7071b659670c03b2bcc776ac5fc2cae9a08f498c72e635108fec3f956dcb50",
+    "projects/paws-level-editor/levels/level_showcase.json": "4becdd02018ddeee7b8d5551c009c4fd00fe2e1ea90929e2be6005d8f92f939e",
+    "scripts/record-paws-level-editor-demo.mjs": "d8e447a84a6fba5181721fc057ad1af46ea82a174e01b64fa4f4e2b413cc32e9",
+    "scripts/paws-recording-support.mjs": "e5d2b2f02b67798c90d080a3202b97ecce50ffd738e31fc374d751ad18ae79c2"
+  }
+}

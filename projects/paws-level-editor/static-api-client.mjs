@@ -125,7 +125,7 @@ async function fetchJson(fetchImpl, url) {
 }
 
 async function loadBundled(fetchImpl, fileName) {
-  const value = await fetchJson(fetchImpl, `./levels/${fileName}`);
+  const value = await fetchJson(fetchImpl, `./levels/${encodeURIComponent(fileName)}`);
   return makeBundledRecord(fileName, value);
 }
 

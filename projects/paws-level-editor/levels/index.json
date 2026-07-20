@@ -1,10 +1,12 @@
 {
   "levels": [
     {
+      "id": 9001,
       "fileName": "level_showcase.json",
       "name": "3D层级展示关",
       "description": "公开演示专用的对称多层关卡",
-      "tileCount": 34
+      "tileCount": 34,
+      "modifiedAt": "2026-07-20T00:00:00.000Z"
     }
   ]
 }

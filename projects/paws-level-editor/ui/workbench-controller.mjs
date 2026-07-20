@@ -4,6 +4,7 @@ import { parseLevelDocument, serializeLevelDocument } from "../core/level-adapte
 import { validateLevel } from "../core/level-validator.mjs";
 import { createPlaySession } from "../core/play-engine.mjs";
 import { InspectorPanel } from "./inspector.mjs";
+import { formatLevelId, formatLevelModifiedAt } from "./level-summary.mjs";
 import { Canvas2DView } from "../views/canvas-2d.mjs";
 import { Three3DView } from "../views/three-3d.mjs";
 
@@ -242,7 +243,7 @@ export class WorkbenchController {
       name.textContent = level.name;
       const id = document.createElement("span");
       id.className = "level-id";
-      id.textContent = level.id === null ? (level.broken ? "BROKEN" : "NEW") : `#${String(level.id).padStart(4, "0")}`;
+      id.textContent = formatLevelId(level);
       head.append(name, id);
       const file = document.createElement("p");
       file.className = "level-file";
@@ -252,10 +253,7 @@ export class WorkbenchController {
       const count = document.createElement("span");
       count.textContent = level.tileCount === null ? "— tiles" : `${level.tileCount} tiles`;
       const date = document.createElement("span");
-      date.textContent = new Date(level.modifiedAt).toLocaleDateString("zh-CN", {
-        month: "2-digit",
-        day: "2-digit",
-      });
+      date.textContent = formatLevelModifiedAt(level.modifiedAt);
       meta.append(count, date);
       button.append(head, file, meta);
       button.addEventListener("click", () =>

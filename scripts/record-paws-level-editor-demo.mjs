@@ -1,12 +1,15 @@
+import assert from "node:assert/strict";
 import { spawn } from "node:child_process";
+import { createHash } from "node:crypto";
 import { createRequire } from "node:module";
 import { existsSync } from "node:fs";
-import { mkdir, rm } from "node:fs/promises";
+import { mkdir, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
-import { dirname, join, resolve } from "node:path";
+import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 
 import { startStaticServer } from "../tests/support/paws-static-server.mjs";
+import { withRecordingResources } from "./paws-recording-support.mjs";
 
 const require = createRequire(import.meta.url);
 const { chromium } = require("playwright");
@@ -15,12 +18,41 @@ const repoRoot = dirname(dirname(fileURLToPath(import.meta.url)));
 const videoRoot = join(repoRoot, "projects", "paws-level-editor", "video");
 const outputPath = join(videoRoot, "paws-level-editor-tutorial.mp4");
 const posterPath = join(videoRoot, "poster.jpg");
+const proofPath = join(videoRoot, "recording-proof.json");
 const recordingRoot = join(tmpdir(), "paws-level-editor-demo-recording");
 const ffmpegPath = process.env.FFMPEG_PATH || bundledFfmpeg;
 const targetDuration = 88;
+const sourceFiles = [
+  "projects/paws-level-editor/index.html",
+  "projects/paws-level-editor/app.mjs",
+  "projects/paws-level-editor/ui/level-summary.mjs",
+  "projects/paws-level-editor/ui/workbench-controller.mjs",
+  "projects/paws-level-editor/levels/index.json",
+  "projects/paws-level-editor/levels/level_showcase.json",
+  "scripts/record-paws-level-editor-demo.mjs",
+  "scripts/paws-recording-support.mjs",
+];
 
 function delay(milliseconds) {
   return new Promise((resolveDelay) => setTimeout(resolveDelay, milliseconds));
+}
+
+async function sha256File(path) {
+  return createHash("sha256").update(await readFile(path)).digest("hex");
+}
+
+async function sha256SourceFile(path) {
+  const normalized = (await readFile(path, "utf8")).replace(/\r\n/g, "\n");
+  return createHash("sha256").update(normalized, "utf8").digest("hex");
+}
+
+function markChapter(timeline, chapter, startedAt, expectedSeconds) {
+  const actualMs = Date.now() - startedAt;
+  assert.ok(
+    Math.abs(actualMs - expectedSeconds * 1000) <= 1_500,
+    `${chapter} should start near ${expectedSeconds}s, got ${actualMs}ms`,
+  );
+  timeline[chapter] = actualMs;
 }
 
 function run(command, args) {
@@ -199,6 +231,10 @@ async function clickVisibleTileIn3d(page) {
     const controller = window.pawsWorkbench;
     const renderer = controller.renderer;
     const rectangle = renderer.renderer.domElement.getBoundingClientRect();
+    const selectedUid =
+      controller.mode === "play"
+        ? controller.playSnapshot.selectedTileUid
+        : [...controller.selection][0];
     const source =
       controller.mode === "play"
         ? controller.playSnapshot.tiles.filter(
@@ -206,9 +242,10 @@ async function clickVisibleTileIn3d(page) {
               !tile.removed &&
               !Number.isInteger(tile.stashedSlot) &&
               !tile.covered &&
-              !tile.sideBlocked,
+              !tile.sideBlocked &&
+              tile.uid !== selectedUid,
           )
-        : controller.document.tiles;
+        : controller.document.tiles.filter((tile) => tile.uid !== selectedUid);
     for (const tile of source) {
       const mesh = renderer.meshes.get(tile.uid);
       if (!mesh) {
@@ -232,7 +269,7 @@ async function clickVisibleTileIn3d(page) {
           clientY: rectangle.top + point.y,
         });
         if (picked?.uid === tile.uid) {
-          return point;
+          return { uid: tile.uid, ...point };
         }
       }
     }
@@ -243,131 +280,318 @@ async function clickVisibleTileIn3d(page) {
   }
   const box = await page.locator(".level-canvas-3d").boundingBox();
   await page.mouse.click(box.x + target.x, box.y + target.y);
+  return target.uid;
 }
 
 async function recordEditor() {
   await rm(recordingRoot, { recursive: true, force: true });
   await mkdir(recordingRoot, { recursive: true });
-  const server = await startStaticServer({ root: repoRoot });
-  const { browser, label } = await launchBrowser();
-  let context;
-  let video;
-  const browserErrors = [];
-  try {
-    context = await browser.newContext({
-      deviceScaleFactor: 1,
-      recordVideo: {
-        dir: recordingRoot,
-        size: { width: 1280, height: 720 },
-      },
-      viewport: { width: 1280, height: 720 },
-    });
-    const page = await context.newPage();
-    video = page.video();
-    page.on("pageerror", (error) => browserErrors.push(error.message));
-    page.on("console", (message) => {
-      if (message.type() === "error") {
-        browserErrors.push(message.text());
-      }
-    });
+  const recording = await withRecordingResources({
+    startServer: () => startStaticServer({ root: repoRoot }),
+    launchBrowser,
+    createContext: (browser) =>
+      browser.newContext({
+        deviceScaleFactor: 1,
+        recordVideo: {
+          dir: recordingRoot,
+          size: { width: 1280, height: 720 },
+        },
+        viewport: { width: 1280, height: 720 },
+      }),
+    run: async ({ server, context, launch }) => {
+      const errors = { console: [], page: [] };
+      const rawStartedAt = Date.now();
+      const page = await context.newPage();
+      const video = page.video();
+      page.on("pageerror", (error) => errors.page.push(error.message));
+      page.on("console", (message) => {
+        if (message.type() === "error") {
+          errors.console.push(message.text());
+        }
+      });
 
-    const startedAt = Date.now();
-    await page.goto(
-      `${server.baseUrl}/projects/paws-level-editor/index.html`,
-      { waitUntil: "domcontentloaded" },
-    );
-    await waitForWorkbench(page);
+      await page.goto(
+        `${server.baseUrl}/projects/paws-level-editor/index.html`,
+        { waitUntil: "domcontentloaded" },
+      );
+      await waitForWorkbench(page);
+      await page.locator('[role="option"]').waitFor({ state: "visible" });
+      const metadata = await page.evaluate(() => {
+        const level = window.pawsWorkbench.levels[0];
+        return {
+          cardText: document.querySelector('[role="option"]')?.textContent ?? "",
+          levelId: level.id,
+          modifiedAt: level.modifiedAt,
+        };
+      });
+      assert.equal(Number.isInteger(metadata.levelId), true);
+      assert.equal(new Date(metadata.modifiedAt).toISOString(), metadata.modifiedAt);
+      assert.doesNotMatch(metadata.cardText, /#undefined|Invalid Date/);
 
-    // 00:00 — the real tool opens its bundled showcase automatically.
-    await page.locator('[role="option"]').waitFor({ state: "visible" });
-    await page.locator("#fit-view").click();
+      // The published timeline starts only after the auto-opened page is network/texture stable.
+      const startedAt = Date.now();
+      const proof = {
+        schemaVersion: 1,
+        recordedAt: new Date(startedAt).toISOString(),
+        recording: {
+          browser: launch.label,
+          preRollMs: startedAt - rawStartedAt,
+        },
+        timeline: {},
+        actions: { metadata },
+        errors,
+      };
 
-    // 00:12 — real 2D selection, drag and visible property edit.
-    await waitUntil(startedAt, 12);
-    const editTile = await visibleEditTile(page);
-    const canvas2d = await page.locator(".level-canvas-2d").boundingBox();
-    await page.mouse.click(canvas2d.x + editTile.x, canvas2d.y + editTile.y);
-    await delay(1700);
-    await page.mouse.move(canvas2d.x + editTile.x, canvas2d.y + editTile.y);
-    await page.mouse.down();
-    await page.mouse.move(
-      canvas2d.x + editTile.x + 42,
-      canvas2d.y + editTile.y + 18,
-      { steps: 28 },
-    );
-    await page.mouse.up();
-    await delay(2200);
-    const tileX = page.locator('[data-tile-field="x"]');
-    const currentX = Number(await tileX.inputValue());
-    await tileX.fill(String(currentX + 1));
-    await tileX.press("Tab");
-    await delay(2400);
+      // 00:00 — the real tool opens its bundled showcase automatically.
+      markChapter(proof.timeline, "tools", startedAt, 0);
+      await page.locator("#fit-view").click();
 
-    // 00:32 — switch to the real WebGL view, orbit the camera and pick a tile.
-    await waitUntil(startedAt, 32);
-    await page.locator("#view-3d").click();
-    await page.locator(".level-canvas-3d").waitFor({ state: "visible" });
-    await waitForWorkbench(page);
-    const canvas3d = await page.locator(".level-canvas-3d").boundingBox();
-    await page.mouse.move(
-      canvas3d.x + canvas3d.width * 0.68,
-      canvas3d.y + canvas3d.height * 0.48,
-    );
-    await page.mouse.down();
-    await page.mouse.move(
-      canvas3d.x + canvas3d.width * 0.38,
-      canvas3d.y + canvas3d.height * 0.38,
-      { steps: 45 },
-    );
-    await page.mouse.up();
-    await delay(2700);
-    await clickVisibleTileIn3d(page);
-    await delay(2600);
+      // 00:12 — real 2D selection, drag and visible property edit.
+      await waitUntil(startedAt, 12);
+      markChapter(proof.timeline, "edit2d", startedAt, 12);
+      const editTile = await visibleEditTile(page);
+      const originalPosition = await page.evaluate((uid) => {
+        const tile = window.pawsWorkbench.document.tiles.find((item) => item.uid === uid);
+        return { x: tile.x, y: tile.y };
+      }, editTile.uid);
+      const canvas2d = await page.locator(".level-canvas-2d").boundingBox();
+      assert.ok(canvas2d, "2D canvas should have a bounding box");
+      await page.mouse.click(canvas2d.x + editTile.x, canvas2d.y + editTile.y);
+      await page.waitForFunction(
+        (uid) => window.pawsWorkbench.selection.has(uid),
+        editTile.uid,
+      );
+      const selectedEditUid = await page.evaluate(
+        () => [...window.pawsWorkbench.selection][0],
+      );
+      assert.equal(selectedEditUid, editTile.uid);
+      const selectedBeforeDrag = await page.evaluate(
+        () => [...window.pawsWorkbench.selection].join(","),
+      );
+      await delay(1700);
+      await page.mouse.move(canvas2d.x + editTile.x, canvas2d.y + editTile.y);
+      await page.mouse.down();
+      await page.mouse.move(
+        canvas2d.x + editTile.x + 96,
+        canvas2d.y + editTile.y + 72,
+        { steps: 28 },
+      );
+      await page.mouse.up();
+      await page.waitForFunction(
+        ({ uid, before }) => {
+          const tile = window.pawsWorkbench.document.tiles.find((item) => item.uid === uid);
+          return tile.x !== before.x || tile.y !== before.y;
+        },
+        { uid: editTile.uid, before: originalPosition },
+      );
+      const draggedPosition = await page.evaluate((uid) => {
+        const tile = window.pawsWorkbench.document.tiles.find((item) => item.uid === uid);
+        return { x: tile.x, y: tile.y };
+      }, editTile.uid);
+      const selectedAfterDrag = await page.evaluate(
+        () => [...window.pawsWorkbench.selection].join(","),
+      );
+      assert.notDeepEqual(draggedPosition, originalPosition);
+      assert.equal(selectedAfterDrag, selectedBeforeDrag);
+      await delay(2200);
+      const tileX = page.locator('[data-tile-field="x"]');
+      const propertyBefore = Number(await tileX.inputValue());
+      const propertyAfter = propertyBefore + 1;
+      await tileX.fill(String(propertyAfter));
+      await tileX.press("Tab");
+      await page.waitForFunction(
+        ({ uid, expected }) =>
+          window.pawsWorkbench.document.tiles.find((tile) => tile.uid === uid)?.x === expected,
+        { uid: editTile.uid, expected: propertyAfter },
+      );
+      const savedPosition = await page.evaluate((uid) => {
+        const tile = window.pawsWorkbench.document.tiles.find((item) => item.uid === uid);
+        return { x: tile.x, y: tile.y };
+      }, editTile.uid);
+      assert.equal(savedPosition.x, propertyAfter);
+      proof.actions.edit2d = {
+        drag: {
+          uid: selectedEditUid,
+          selectedBefore: selectedBeforeDrag,
+          selectedAfter: selectedAfterDrag,
+          before: originalPosition,
+          after: draggedPosition,
+        },
+        property: { field: "x", before: propertyBefore, after: propertyAfter },
+      };
+      await delay(2400);
 
-    // 00:50 — enter play mode and change state through real 2D and 3D canvases.
-    await waitUntil(startedAt, 50);
-    await page.locator("#view-2d").click();
-    await page.locator("#mode-play").click();
-    await page.locator(".level-canvas-2d").waitFor({ state: "visible" });
-    await clickMatchingPairIn2d(page);
-    await delay(2800);
-    await page.locator("#view-3d").click();
-    await page.locator(".level-canvas-3d").waitFor({ state: "visible" });
-    await waitForWorkbench(page);
-    await clickVisibleTileIn3d(page);
-    await delay(2700);
+      // 00:32 — switch to the real WebGL view, orbit the camera and pick a different tile.
+      await waitUntil(startedAt, 32);
+      markChapter(proof.timeline, "view3d", startedAt, 32);
+      await page.locator("#view-3d").click();
+      await page.locator(".level-canvas-3d").waitFor({ state: "visible" });
+      await waitForWorkbench(page);
+      const cameraBefore = await page.evaluate(() => ({
+        position: window.pawsWorkbench.renderer.camera.position.toArray(),
+        target: window.pawsWorkbench.renderer.controls.target.toArray(),
+      }));
+      const selectedBefore3d = await page.evaluate(
+        () => [...window.pawsWorkbench.selection].join(","),
+      );
+      const canvas3d = await page.locator(".level-canvas-3d").boundingBox();
+      assert.ok(canvas3d, "3D canvas should have a bounding box");
+      await page.mouse.move(
+        canvas3d.x + canvas3d.width * 0.68,
+        canvas3d.y + canvas3d.height * 0.48,
+      );
+      await page.mouse.down();
+      await page.mouse.move(
+        canvas3d.x + canvas3d.width * 0.38,
+        canvas3d.y + canvas3d.height * 0.38,
+        { steps: 45 },
+      );
+      await page.mouse.up();
+      await delay(2700);
+      const cameraAfter = await page.evaluate(() => ({
+        position: window.pawsWorkbench.renderer.camera.position.toArray(),
+        target: window.pawsWorkbench.renderer.controls.target.toArray(),
+      }));
+      assert.notDeepEqual(cameraAfter, cameraBefore);
+      const selectedUid3d = await clickVisibleTileIn3d(page);
+      await page.waitForFunction(
+        (uid) => window.pawsWorkbench.selection.has(uid),
+        selectedUid3d,
+      );
+      const selectedAfter3d = await page.evaluate(
+        () => [...window.pawsWorkbench.selection].join(","),
+      );
+      assert.notEqual(selectedAfter3d, selectedBefore3d);
+      proof.actions.edit3d = {
+        cameraBefore,
+        cameraAfter,
+        selectedBefore: selectedBefore3d,
+        selectedAfter: selectedAfter3d,
+      };
+      await delay(2600);
 
-    // 01:10 — return to edit, save visibly, refresh to restore, then reset bundled data.
-    await waitUntil(startedAt, 70);
-    await page.locator("#mode-edit").click();
-    await page.locator("#view-2d").click();
-    await page.locator("#save-level").click();
-    await page.waitForFunction(() =>
-      document
-        .querySelector("#stage-toast")
-        ?.textContent?.includes("已保存到当前浏览器"),
-    );
-    await delay(2400);
-    await page.reload({ waitUntil: "domcontentloaded" });
-    await waitForWorkbench(page);
-    await delay(2500);
-    page.once("dialog", (dialog) => dialog.accept());
-    await page.locator("#reset-level").click();
-    await page.waitForFunction(() =>
-      document
-        .querySelector("#stage-toast")
-        ?.textContent?.includes("已恢复内置示例"),
-    );
-    await waitUntil(startedAt, targetDuration);
-    if (browserErrors.length) {
-      throw new Error(`Browser errors during recording:\n${browserErrors.join("\n")}`);
-    }
-  } finally {
-    await context?.close();
-    await browser.close();
-    await server.close();
-  }
-  return { browserLabel: label, webmPath: await video.path() };
+      // 00:50 — enter play mode and change state through real 2D and 3D canvases.
+      await waitUntil(startedAt, 50);
+      markChapter(proof.timeline, "play", startedAt, 50);
+      await page.locator("#view-2d").click();
+      await page.locator("#mode-play").click();
+      await page.locator(".level-canvas-2d").waitFor({ state: "visible" });
+      const removedBefore = await page.evaluate(() =>
+        window.pawsWorkbench.playSnapshot.tiles.filter((tile) => tile.removed).length,
+      );
+      await clickMatchingPairIn2d(page);
+      await page.waitForFunction(
+        (before) =>
+          window.pawsWorkbench.playSnapshot.tiles.filter((tile) => tile.removed).length >
+          before,
+        removedBefore,
+      );
+      const removedAfter = await page.evaluate(() =>
+        window.pawsWorkbench.playSnapshot.tiles.filter((tile) => tile.removed).length,
+      );
+      assert.ok(removedAfter > removedBefore);
+      proof.actions.play2d = { removedBefore, removedAfter };
+      await delay(2800);
+      await page.locator("#view-3d").click();
+      await page.locator(".level-canvas-3d").waitFor({ state: "visible" });
+      await waitForWorkbench(page);
+      const selectedBeforePlay3d = await page.evaluate(
+        () => window.pawsWorkbench.playSnapshot.selectedTileUid ?? "",
+      );
+      const selectedUidPlay3d = await clickVisibleTileIn3d(page);
+      await page.waitForFunction(
+        (before) => (window.pawsWorkbench.playSnapshot.selectedTileUid ?? "") !== before,
+        selectedBeforePlay3d,
+      );
+      const selectedAfterPlay3d = await page.evaluate(
+        () => window.pawsWorkbench.playSnapshot.selectedTileUid ?? "",
+      );
+      assert.notEqual(selectedAfterPlay3d, selectedBeforePlay3d);
+      assert.equal(selectedAfterPlay3d, selectedUidPlay3d);
+      proof.actions.play3d = {
+        selectedBefore: selectedBeforePlay3d,
+        selectedAfter: selectedAfterPlay3d,
+      };
+      await delay(2700);
+
+      // 01:10 — return to edit, save visibly, refresh to restore, then reset bundled data.
+      await waitUntil(startedAt, 70);
+      markChapter(proof.timeline, "persistence", startedAt, 70);
+      await page.locator("#mode-edit").click();
+      await page.locator("#view-2d").click();
+      const storageKey = "paws-level-editor-demo-v1:level_showcase.json";
+      await page.locator("#save-level").click();
+      await page.waitForFunction(() =>
+        document
+          .querySelector("#stage-toast")
+          ?.textContent?.includes("已保存到当前浏览器"),
+      );
+      await page.waitForFunction(
+        (key) => localStorage.getItem(key) !== null,
+        storageKey,
+      );
+      const savedToLocalStorage = await page.evaluate(
+        (key) => localStorage.getItem(key) !== null,
+        storageKey,
+      );
+      assert.equal(savedToLocalStorage, true);
+      await delay(2400);
+      await page.reload({ waitUntil: "domcontentloaded" });
+      await waitForWorkbench(page);
+      const reloadedPosition = await page.evaluate((uid) => {
+        const tile = window.pawsWorkbench.document.tiles.find((item) => item.uid === uid);
+        return { x: tile.x, y: tile.y };
+      }, editTile.uid);
+      assert.deepEqual(reloadedPosition, savedPosition);
+      await delay(2500);
+      page.once("dialog", (dialog) => dialog.accept());
+      await page.locator("#reset-level").click();
+      await page.waitForFunction(() =>
+        document
+          .querySelector("#stage-toast")
+          ?.textContent?.includes("已恢复内置示例"),
+      );
+      await waitForWorkbench(page);
+      const resetPosition = await page.evaluate((uid) => {
+        const tile = window.pawsWorkbench.document.tiles.find((item) => item.uid === uid);
+        return { x: tile.x, y: tile.y };
+      }, editTile.uid);
+      const overrideRemoved = await page.evaluate(
+        (key) => localStorage.getItem(key) === null,
+        storageKey,
+      );
+      assert.equal(overrideRemoved, true);
+      assert.deepEqual(resetPosition, originalPosition);
+      proof.actions.persistence = {
+        originalProperty: originalPosition.x,
+        originalPosition,
+        savedProperty: savedPosition.x,
+        savedPosition,
+        savedToLocalStorage,
+        reloadedProperty: reloadedPosition.x,
+        reloadedPosition,
+        overrideRemoved,
+        resetProperty: resetPosition.x,
+        resetPosition,
+      };
+
+      await waitUntil(startedAt, targetDuration);
+      assert.deepEqual(errors.console, []);
+      assert.deepEqual(errors.page, []);
+      proof.recording.completedAt = new Date().toISOString();
+      proof.recording.durationMs = Date.now() - startedAt;
+      return {
+        browserLabel: launch.label,
+        preRollMs: startedAt - rawStartedAt,
+        proof,
+        video,
+      };
+    },
+  });
+  return {
+    ...recording,
+    webmPath: await recording.video.path(),
+  };
 }
 
 async function main() {
@@ -385,6 +609,10 @@ async function main() {
     "error",
     "-i",
     recording.webmPath,
+    "-ss",
+    (recording.preRollMs / 1000).toFixed(3),
+    "-t",
+    String(targetDuration),
     "-vf",
     "scale=1280:720:flags=lanczos,fps=30",
     "-c:v",
@@ -428,8 +656,25 @@ async function main() {
     "null",
     "-",
   ]);
+  recording.proof.media = {
+    file: "paws-level-editor-tutorial.mp4",
+    sha256: await sha256File(outputPath),
+  };
+  recording.proof.sources = Object.fromEntries(
+    await Promise.all(
+      sourceFiles.map(async (relativePath) => [
+        relativePath,
+        await sha256SourceFile(join(repoRoot, ...relativePath.split("/"))),
+      ]),
+    ),
+  );
+  await writeFile(
+    proofPath,
+    `${JSON.stringify(recording.proof, null, 2)}\n`,
+    "utf8",
+  );
   console.log(
-    `Recorded ${outputPath}\nPoster ${posterPath}\nBrowser ${recording.browserLabel}\nSource ${recording.webmPath}`,
+    `Recorded ${outputPath}\nPoster ${posterPath}\nProof ${proofPath}\nBrowser ${recording.browserLabel}`,
   );
 }
 
