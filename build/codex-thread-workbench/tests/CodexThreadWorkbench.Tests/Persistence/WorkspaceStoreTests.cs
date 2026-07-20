@@ -67,6 +67,23 @@ public sealed class WorkspaceStoreTests : IDisposable
         Assert.Equal(800, settings.WindowHeight);
     }
 
+    [Fact]
+    public async Task SaveAsync_ConcurrentRequests_AllCompleteWithoutTempFileConflicts()
+    {
+        var store = new WorkspaceStore(_path);
+        var saves = Enumerable.Range(0, 24)
+            .Select(index => store.SaveAsync(new WorkspaceSettings
+            {
+                OpenThreadIds = Enumerable.Range(0, 10_000)
+                    .Select(thread => $"thread-{index}-{thread}")
+                    .ToList()
+            }));
+
+        await Task.WhenAll(saves);
+
+        Assert.True(File.Exists(_path));
+    }
+
     public void Dispose()
     {
         if (Directory.Exists(_directory))

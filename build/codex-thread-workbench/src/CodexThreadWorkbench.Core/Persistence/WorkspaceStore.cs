@@ -12,6 +12,7 @@ public sealed class WorkspaceStore
     };
 
     private readonly string _path;
+    private readonly SemaphoreSlim _saveGate = new(1, 1);
 
     public WorkspaceStore(string? path = null)
     {
@@ -63,27 +64,47 @@ public sealed class WorkspaceStore
         CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(settings);
-        var directory = Path.GetDirectoryName(_path)
-                        ?? throw new InvalidOperationException("工作台设置路径无效。");
-        Directory.CreateDirectory(directory);
-        var temporaryPath = _path + ".tmp";
-
-        await using (var stream = new FileStream(
-                         temporaryPath,
-                         FileMode.Create,
-                         FileAccess.Write,
-                         FileShare.None,
-                         bufferSize: 4096,
-                         useAsync: true))
+        var snapshot = CreateSnapshot(settings);
+        await _saveGate.WaitAsync(cancellationToken).ConfigureAwait(false);
+        try
         {
-            await JsonSerializer.SerializeAsync(
-                stream,
-                settings,
-                SerializerOptions,
-                cancellationToken);
-            await stream.FlushAsync(cancellationToken);
-        }
+            var directory = Path.GetDirectoryName(_path)
+                            ?? throw new InvalidOperationException("工作台设置路径无效。");
+            Directory.CreateDirectory(directory);
+            var temporaryPath = _path + ".tmp";
 
-        File.Move(temporaryPath, _path, overwrite: true);
+            await using (var stream = new FileStream(
+                             temporaryPath,
+                             FileMode.Create,
+                             FileAccess.Write,
+                             FileShare.None,
+                             bufferSize: 4096,
+                             useAsync: true))
+            {
+                await JsonSerializer.SerializeAsync(
+                    stream,
+                    snapshot,
+                    SerializerOptions,
+                    cancellationToken);
+                await stream.FlushAsync(cancellationToken);
+            }
+
+            File.Move(temporaryPath, _path, overwrite: true);
+        }
+        finally
+        {
+            _saveGate.Release();
+        }
     }
+
+    private static WorkspaceSettings CreateSnapshot(WorkspaceSettings settings) => new()
+    {
+        OpenThreadIds = [.. settings.OpenThreadIds],
+        MinimizedThreadIds = [.. settings.MinimizedThreadIds],
+        WindowLeft = settings.WindowLeft,
+        WindowTop = settings.WindowTop,
+        WindowWidth = settings.WindowWidth,
+        WindowHeight = settings.WindowHeight,
+        IsFullScreen = settings.IsFullScreen
+    };
 }

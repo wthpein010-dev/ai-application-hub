@@ -12,6 +12,7 @@ public sealed class MainViewModel : ObservableObject, IAsyncDisposable
     private readonly WorkspaceStore _workspaceStore;
     private readonly SynchronizationContext? _synchronizationContext;
     private readonly object _disposeGate = new();
+    private readonly SemaphoreSlim _workspaceSaveGate = new(1, 1);
     private Task? _disposeTask;
     private WorkspaceSettings _settings = new();
     private bool _isPickerOpen;
@@ -107,7 +108,7 @@ public sealed class MainViewModel : ObservableObject, IAsyncDisposable
             {
                 OnPropertyChanged(nameof(WindowModeText));
                 _settings.IsFullScreen = value;
-                _ = SaveWorkspaceAsync();
+                _ = SaveWorkspaceInBackgroundAsync();
             }
         }
     }
@@ -198,7 +199,7 @@ public sealed class MainViewModel : ObservableObject, IAsyncDisposable
         _settings.WindowTop = top;
         _settings.WindowWidth = width;
         _settings.WindowHeight = height;
-        _ = SaveWorkspaceAsync();
+        _ = SaveWorkspaceInBackgroundAsync();
     }
 
     public ValueTask DisposeAsync()
@@ -214,8 +215,14 @@ public sealed class MainViewModel : ObservableObject, IAsyncDisposable
     {
         _client.NotificationReceived -= OnNotificationReceived;
         _client.ApprovalRequested -= OnApprovalRequested;
-        await SaveWorkspaceAsync();
-        await _client.DisposeAsync();
+        try
+        {
+            await SaveWorkspaceAsync();
+        }
+        finally
+        {
+            await _client.DisposeAsync();
+        }
     }
 
     private async Task OpenPickerAsync()
@@ -280,7 +287,7 @@ public sealed class MainViewModel : ObservableObject, IAsyncDisposable
             _client,
             state,
             closeRequested: CloseThreadAsync,
-            stateChanged: _ => SaveWorkspaceAsync());
+            stateChanged: _ => SaveWorkspaceInBackgroundAsync());
 
     private async Task CloseThreadAsync(ThreadCardViewModel card)
     {
@@ -299,15 +306,40 @@ public sealed class MainViewModel : ObservableObject, IAsyncDisposable
         OnPropertyChanged(nameof(OpenThreads));
     }
 
-    private Task SaveWorkspaceAsync(CancellationToken cancellationToken = default)
+    private async Task SaveWorkspaceAsync(CancellationToken cancellationToken = default)
     {
-        _settings.OpenThreadIds =
-            OpenThreads.Select(thread => thread.ThreadId).ToList();
-        _settings.MinimizedThreadIds =
-            OpenThreads.Where(thread => thread.IsMinimized)
+        var snapshot = new WorkspaceSettings
+        {
+            OpenThreadIds = OpenThreads.Select(thread => thread.ThreadId).ToList(),
+            MinimizedThreadIds = OpenThreads.Where(thread => thread.IsMinimized)
                 .Select(thread => thread.ThreadId)
-                .ToList();
-        return _workspaceStore.SaveAsync(_settings, cancellationToken);
+                .ToList(),
+            WindowLeft = _settings.WindowLeft,
+            WindowTop = _settings.WindowTop,
+            WindowWidth = _settings.WindowWidth,
+            WindowHeight = _settings.WindowHeight,
+            IsFullScreen = _settings.IsFullScreen
+        };
+        await _workspaceSaveGate.WaitAsync(cancellationToken);
+        try
+        {
+            await _workspaceStore.SaveAsync(snapshot, cancellationToken);
+        }
+        finally
+        {
+            _workspaceSaveGate.Release();
+        }
+    }
+
+    private async Task SaveWorkspaceInBackgroundAsync()
+    {
+        try
+        {
+            await SaveWorkspaceAsync();
+        }
+        catch
+        {
+        }
     }
 
     private void OnNotificationReceived(CodexNotification notification) =>

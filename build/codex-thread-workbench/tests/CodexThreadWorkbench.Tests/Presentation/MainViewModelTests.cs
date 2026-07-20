@@ -59,6 +59,24 @@ public sealed class MainViewModelTests : IDisposable
         Assert.Equal(1, client.DisposeCalls);
     }
 
+    [Fact]
+    public async Task DisposeAsync_WhenWorkspaceSaveFails_StillDisposesClient()
+    {
+        Directory.CreateDirectory(_directory);
+        var workspacePath = Path.Combine(_directory, "workspace.json");
+        await using var temporaryFileLock = new FileStream(
+            workspacePath + ".tmp",
+            FileMode.Create,
+            FileAccess.ReadWrite,
+            FileShare.None);
+        var client = CreateClient(threadCount: 0);
+        var viewModel = new MainViewModel(client, new WorkspaceStore(workspacePath));
+
+        await Assert.ThrowsAsync<IOException>(() => viewModel.DisposeAsync().AsTask());
+
+        Assert.Equal(1, client.DisposeCalls);
+    }
+
     private static FakeCodexThreadClient CreateClient(int threadCount)
     {
         var client = new FakeCodexThreadClient();
