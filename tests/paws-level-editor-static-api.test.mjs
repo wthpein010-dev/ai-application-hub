@@ -24,6 +24,23 @@ function createStorage() {
   };
 }
 
+function createBoundaryFailingStorage() {
+  const values = new Map();
+  let failAfterSetKey = null;
+  return {
+    getItem(key) { return values.has(key) ? values.get(key) : null; },
+    setItem(key, value) {
+      values.set(key, String(value));
+      if (key === failAfterSetKey) {
+        failAfterSetKey = null;
+        throw new Error(`Injected write failure for ${key}`);
+      }
+    },
+    removeItem(key) { values.delete(key); },
+    failNextSetAfterMutation(key) { failAfterSetKey = key; },
+  };
+}
+
 async function createFetch() {
   const files = new Map([
     ["./levels/index.json", await readFile(join(levelsPath, "index.json"), "utf8")],
@@ -196,6 +213,64 @@ test("save-as rejects a browser-local file name without overwriting its record",
   );
 
   assert.deepEqual(await api.loadLevel("existing_local.json"), original);
+});
+
+test("save restores the exact prior record and manifest when the record write fails", async () => {
+  const storage = createBoundaryFailingStorage();
+  const api = createApiClient({
+    fetchImpl: await createFetch(),
+    storage,
+    now: () => "2026-07-20T00:00:00.000Z",
+  });
+  const saved = await api.saveLevel({
+    fileName: "transactional_local.json",
+    value: { id: 7301, name: "prior record", tiles: [] },
+    saveAs: true,
+  });
+  const recordKey = "paws-level-editor-demo-v1:transactional_local.json";
+  const manifestKey = "paws-level-editor-demo-v1:local-files";
+  const priorRecord = storage.getItem(recordKey);
+  const priorManifest = storage.getItem(manifestKey);
+  storage.failNextSetAfterMutation(recordKey);
+
+  await assert.rejects(
+    () => api.saveLevel({
+      fileName: "transactional_local.json",
+      value: { id: 7302, name: "must roll back", tiles: [] },
+      expectedVersion: saved.version,
+    }),
+    { code: "local-storage-write-failed" },
+  );
+
+  assert.equal(storage.getItem(recordKey), priorRecord);
+  assert.equal(storage.getItem(manifestKey), priorManifest);
+});
+
+test("save restores the exact prior record and manifest when the manifest write fails", async () => {
+  const storage = createBoundaryFailingStorage();
+  const api = createApiClient({
+    fetchImpl: await createFetch(),
+    storage,
+    now: () => "2026-07-20T00:00:00.000Z",
+  });
+  const recordKey = "paws-level-editor-demo-v1:new_import.json";
+  const manifestKey = "paws-level-editor-demo-v1:local-files";
+  storage.setItem(manifestKey, "[\"other.json\"]  ");
+  const priorRecord = storage.getItem(recordKey);
+  const priorManifest = storage.getItem(manifestKey);
+  storage.failNextSetAfterMutation(manifestKey);
+
+  await assert.rejects(
+    () => api.saveLevel({
+      fileName: "new_import.json",
+      value: { id: 7402, name: "must roll back imported record", tiles: [] },
+      saveAs: true,
+    }),
+    { code: "local-storage-write-failed" },
+  );
+
+  assert.equal(storage.getItem(recordKey), priorRecord);
+  assert.equal(storage.getItem(manifestKey), priorManifest);
 });
 
 test("reset rejects a local-only copy without deleting it", async () => {

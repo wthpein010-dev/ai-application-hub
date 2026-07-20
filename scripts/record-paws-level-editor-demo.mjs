@@ -25,6 +25,7 @@ const targetDuration = 88;
 const sourceFiles = [
   "projects/paws-level-editor/index.html",
   "projects/paws-level-editor/app.mjs",
+  "projects/paws-level-editor/ui/local-level-import.mjs",
   "projects/paws-level-editor/ui/level-summary.mjs",
   "projects/paws-level-editor/ui/workbench-controller.mjs",
   "projects/paws-level-editor/levels/index.json",

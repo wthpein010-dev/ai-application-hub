@@ -32,6 +32,27 @@ export function chooseImportedFileName(fileName, occupiedFileNames = []) {
   throw new LocalLevelImportError("无法生成可用的导入副本名称。", "name-exhausted");
 }
 
+export async function activateImportedLevel(
+  fileName,
+  { refreshLevels, getLevels, openLevel, getDocument },
+) {
+  await refreshLevels();
+  if (!getLevels().some((level) => level.fileName === fileName)) {
+    throw new LocalLevelImportError(
+      "导入关卡后无法刷新关卡列表。",
+      "import-refresh-failed",
+    );
+  }
+
+  await openLevel();
+  if (getDocument()?.fileName !== fileName) {
+    throw new LocalLevelImportError(
+      "导入关卡后无法打开该关卡。",
+      "import-open-failed",
+    );
+  }
+}
+
 export async function prepareImportedLevel(file, { occupiedFileNames = [] } = {}) {
   const fileName = chooseImportedFileName(file?.name, occupiedFileNames);
 

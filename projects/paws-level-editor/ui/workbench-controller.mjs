@@ -7,7 +7,7 @@ import { InspectorPanel } from "./inspector.mjs";
 import { formatLevelId, formatLevelModifiedAt } from "./level-summary.mjs";
 import { Canvas2DView } from "../views/canvas-2d.mjs";
 import { Three3DView } from "../views/three-3d.mjs";
-import { prepareImportedLevel } from "./local-level-import.mjs";
+import { activateImportedLevel, prepareImportedLevel } from "./local-level-import.mjs";
 
 function setPressed(button, active) {
   button.classList.toggle("is-active", active);
@@ -372,8 +372,12 @@ export class WorkbenchController {
         expectedVersion: "",
         saveAs: true,
       });
-      await this.refreshLevels();
-      await this.openLevel(fileName, { discardDirty: true });
+      await activateImportedLevel(fileName, {
+        refreshLevels: () => this.refreshLevels(),
+        getLevels: () => this.levels,
+        openLevel: () => this.openLevel(fileName, { discardDirty: true }),
+        getDocument: () => this.document,
+      });
       this.showToast(`已导入 ${fileName}，仅保存在当前浏览器。`);
     } catch (error) {
       this.showToast(error.message, "error");

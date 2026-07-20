@@ -1,18 +1,18 @@
 {
   "schemaVersion": 1,
-  "recordedAt": "2026-07-20T05:25:42.690Z",
+  "recordedAt": "2026-07-20T06:05:49.159Z",
   "recording": {
     "browser": "system Chrome",
-    "preRollMs": 963,
-    "completedAt": "2026-07-20T05:27:10.691Z",
-    "durationMs": 88001
+    "preRollMs": 976,
+    "completedAt": "2026-07-20T06:07:17.162Z",
+    "durationMs": 88003
   },
   "timeline": {
     "tools": 1,
-    "edit2d": 12006,
-    "view3d": 32004,
-    "play": 50002,
-    "persistence": 70001
+    "edit2d": 12011,
+    "view3d": 32015,
+    "play": 50006,
+    "persistence": 69999
   },
   "actions": {
     "metadata": {
@@ -107,16 +107,17 @@
   },
   "media": {
     "file": "paws-level-editor-tutorial.mp4",
-    "sha256": "5e9b2103eef2258c3dd3c9a9f562731b6b85bc00d9ad4cd988cf7dd4ef584782"
+    "sha256": "4dd76608c34ab86d4ab3d8679e29783b8339c9112f952b3360a4302c33c6bf6d"
   },
   "sources": {
     "projects/paws-level-editor/index.html": "61fe45c2c03e63c7eff62420c417a255ba9eacf9d3b2db7ea5ab36ed8440e4c6",
     "projects/paws-level-editor/app.mjs": "550278401cebcf10ebb91159d70ca9698340c38261817da2dceb7bdaa5ac9dbf",
+    "projects/paws-level-editor/ui/local-level-import.mjs": "651987b8d3c1ca4293218bb1289f48c6c706ce2ba502e0960e5ae02a6883d8e9",
     "projects/paws-level-editor/ui/level-summary.mjs": "f7876ba36caaef6ac9123f98680aad02a65e5134f6ec1486f306e17f359b4713",
-    "projects/paws-level-editor/ui/workbench-controller.mjs": "096a1227dea7d6a0a9ba08f4d809543c9c44956144d03a2a0e862bb3c9cbd80a",
+    "projects/paws-level-editor/ui/workbench-controller.mjs": "ffed90b9061f54d7ddf6566b47fc49c3a032d6d0956d5b4b6aeb0a1bd67082b8",
     "projects/paws-level-editor/levels/index.json": "7b7071b659670c03b2bcc776ac5fc2cae9a08f498c72e635108fec3f956dcb50",
     "projects/paws-level-editor/levels/level_showcase.json": "4becdd02018ddeee7b8d5551c009c4fd00fe2e1ea90929e2be6005d8f92f939e",
-    "scripts/record-paws-level-editor-demo.mjs": "d8e447a84a6fba5181721fc057ad1af46ea82a174e01b64fa4f4e2b413cc32e9",
+    "scripts/record-paws-level-editor-demo.mjs": "fe057a84347aecc2c39fa21c007dfba178feb6d5faddea7931b969d78d8ba5dd",
     "scripts/paws-recording-support.mjs": "e5d2b2f02b67798c90d080a3202b97ecce50ffd738e31fc374d751ad18ae79c2"
   }
 }

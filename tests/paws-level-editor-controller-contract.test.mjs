@@ -4,6 +4,8 @@ import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import test from "node:test";
 
+import * as localImport from "../projects/paws-level-editor/ui/local-level-import.mjs";
+
 const repoRoot = dirname(dirname(fileURLToPath(import.meta.url)));
 const controller = readFileSync(
   join(repoRoot, "projects", "paws-level-editor", "ui", "workbench-controller.mjs"),
@@ -63,4 +65,52 @@ test("controller imports a local JSON level into browser-local storage", () => {
   assert.match(controller, /occupiedFileNames:\s*this\.levels\.map\(\(level\) => level\.fileName\)/);
   assert.match(controller, /saveLevel\(\{[^}]*saveAs:\s*true/);
   assert.match(controller, /openLevel\(fileName,\s*\{\s*discardDirty:\s*true\s*\}\)/);
+});
+
+test("import activation rejects a refresh failure that was caught by the controller", async () => {
+  const refreshError = new Error("refresh failed");
+  let openCalled = false;
+
+  await assert.rejects(
+    () => localImport.activateImportedLevel("local_demo.json", {
+      async refreshLevels() {
+        try {
+          throw refreshError;
+        } catch {
+          // Mirrors refreshLevels rendering its own error state.
+        }
+      },
+      getLevels: () => [{ fileName: "level_showcase.json" }],
+      async openLevel() { openCalled = true; },
+      getDocument: () => ({ fileName: "level_showcase.json" }),
+    }),
+    { code: "import-refresh-failed" },
+  );
+  assert.equal(openCalled, false);
+});
+
+test("import activation rejects an open failure that was caught by the controller", async () => {
+  const openError = new Error("open failed");
+
+  await assert.rejects(
+    () => localImport.activateImportedLevel("local_demo.json", {
+      async refreshLevels() {},
+      getLevels: () => [{ fileName: "local_demo.json" }],
+      async openLevel() {
+        try {
+          throw openError;
+        } catch {
+          // Mirrors openLevel preserving the previously open document.
+        }
+      },
+      getDocument: () => ({ fileName: "level_showcase.json" }),
+    }),
+    { code: "import-open-failed" },
+  );
+});
+
+test("controller gates the import success toast on refreshed and opened postconditions", () => {
+  assert.match(controller, /activateImportedLevel\(fileName,\s*\{/);
+  assert.match(controller, /getLevels:\s*\(\)\s*=>\s*this\.levels/);
+  assert.match(controller, /getDocument:\s*\(\)\s*=>\s*this\.document/);
 });

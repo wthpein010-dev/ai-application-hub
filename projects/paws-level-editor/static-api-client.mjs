@@ -93,8 +93,7 @@ export function createApiClient({
         now(),
         Boolean(current?.bundled),
       );
-      writeStored(storage, fileName, saved);
-      rememberStoredFileName(storage, fileName);
+      persistStoredRecord(storage, fileName, saved);
       return clone(saved);
     },
     async login() { return { authenticated: true }; },
@@ -271,6 +270,54 @@ function writeStored(storage, fileName, record) {
   } catch (error) {
     throw new WorkbenchApiError("无法保存到浏览器本地存储。", { code: "local-storage-write-failed" });
   }
+}
+
+function persistStoredRecord(storage, fileName, record) {
+  const recordKey = storageKey(fileName);
+  const snapshot = [
+    [recordKey, readRawStorageValue(storage, recordKey)],
+    [STORAGE_MANIFEST_KEY, readRawStorageValue(storage, STORAGE_MANIFEST_KEY)],
+  ];
+  try {
+    writeStored(storage, fileName, record);
+    rememberStoredFileName(storage, fileName);
+  } catch (error) {
+    try {
+      restoreStorageSnapshot(storage, snapshot);
+    } catch {
+      throw new WorkbenchApiError(
+        "浏览器本地存储失败且无法恢复原状态。",
+        { code: "local-storage-rollback-failed" },
+      );
+    }
+    throw error;
+  }
+}
+
+function readRawStorageValue(storage, key) {
+  try {
+    return storage?.getItem(key) ?? null;
+  } catch {
+    throw new WorkbenchApiError("无法读取浏览器本地关卡。", {
+      code: "local-storage-read-failed",
+    });
+  }
+}
+
+function restoreStorageSnapshot(storage, snapshot) {
+  const failures = [];
+  for (const [key, value] of snapshot) {
+    try {
+      if (value === null) {
+        storage?.removeItem(key);
+      } else {
+        storage?.setItem(key, value);
+      }
+    } catch (error) {
+      failures.push(error);
+    }
+  }
+  if (failures.length) throw failures[0];
 }
 
 function readStoredFileNames(storage) {

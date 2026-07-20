@@ -282,6 +282,9 @@ try {
     importedFileName: null,
     importPersists: null,
     collisionFileName: null,
+    importedEditSaved: null,
+    importedWebgl: null,
+    importedPlayInteraction: null,
     mobileImportHidden: null,
   };
   const desktop = await browser.newContext({ viewport: { width: 1440, height: 900 } });
@@ -422,6 +425,89 @@ try {
     stateBeforeInvalidImport,
     "invalid JSON should not change the document, ordered level list, or browser storage",
   );
+
+  const importedAcceptanceFileName = "local_demo_import.json";
+  const importedOriginalTile = await page.evaluate((fileName) => {
+    assertCurrentImportedDocument(fileName);
+    const tile = window.pawsWorkbench.document.tiles[0];
+    window.pawsWorkbench.setSelection(new Set([tile.uid]));
+    return { uid: tile.uid, x: tile.x };
+
+    function assertCurrentImportedDocument(expectedFileName) {
+      if (window.pawsWorkbench.document.fileName !== expectedFileName) {
+        throw new Error(`Expected imported document ${expectedFileName}`);
+      }
+    }
+  }, importedAcceptanceFileName);
+  const importedModifiedX = importedOriginalTile.x + 1;
+  const importedTileX = page.locator('[data-tile-field="x"]');
+  await importedTileX.fill(String(importedModifiedX));
+  await importedTileX.press("Tab");
+  await page.waitForFunction(
+    ({ fileName, uid, x }) =>
+      window.pawsWorkbench.document.fileName === fileName
+      && window.pawsWorkbench.document.tiles.find((tile) => tile.uid === uid)?.x === x,
+    {
+      fileName: importedAcceptanceFileName,
+      uid: importedOriginalTile.uid,
+      x: importedModifiedX,
+    },
+  );
+  await page.locator("#save-level").click();
+  await page.waitForFunction(
+    ({ fileName, x }) => {
+      const raw = localStorage.getItem(`paws-level-editor-demo-v1:${fileName}`);
+      return raw && JSON.parse(raw).value.tiles[0].x === x;
+    },
+    { fileName: importedAcceptanceFileName, x: importedModifiedX },
+  );
+  summary.importedEditSaved = true;
+
+  await page.locator("#view-3d").click();
+  await page.locator(".level-canvas-3d").waitFor({ state: "visible" });
+  await waitForNetworkAndTextures(page);
+  assert.equal(
+    await page.evaluate(
+      (fileName) => window.pawsWorkbench.document.fileName === fileName,
+      importedAcceptanceFileName,
+    ),
+    true,
+    "the imported document should remain current in 3D",
+  );
+  summary.importedWebgl = await page.locator(".level-canvas-3d").evaluate((canvas) =>
+    Boolean(canvas.getContext("webgl2") || canvas.getContext("webgl")));
+  assert.equal(summary.importedWebgl, true, "the imported document should render in WebGL");
+
+  await page.locator("#mode-play").click();
+  await page.waitForFunction(
+    (fileName) =>
+      window.pawsWorkbench.mode === "play"
+      && window.pawsWorkbench.document.fileName === fileName,
+    importedAcceptanceFileName,
+  );
+  await page.locator("#view-2d").click();
+  await page.locator(".level-canvas-2d").waitFor({ state: "visible" });
+  await waitForNetworkAndTextures(page);
+  const importedRemovedBefore = await page.evaluate(() =>
+    window.pawsWorkbench.playSnapshot.tiles.filter((tile) => tile.removed).length);
+  await clickAvailablePairIn2d(page);
+  await page.waitForFunction(
+    (before) =>
+      window.pawsWorkbench.playSnapshot.tiles.filter((tile) => tile.removed).length > before,
+    importedRemovedBefore,
+  );
+  summary.importedPlayInteraction = await page.evaluate(
+    (before) =>
+      window.pawsWorkbench.playSnapshot.tiles.filter((tile) => tile.removed).length > before,
+    importedRemovedBefore,
+  );
+  assert.equal(
+    summary.importedPlayInteraction,
+    true,
+    "real play interaction should change the imported document play state",
+  );
+  await page.locator("#mode-edit").click();
+  await page.waitForFunction(() => window.pawsWorkbench.mode === "edit");
 
   await page.locator('[role="option"]', { hasText: "level_showcase.json" }).click();
   await page.waitForFunction(() =>
