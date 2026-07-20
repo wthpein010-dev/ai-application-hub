@@ -59,6 +59,32 @@ async function launchBrowser() {
   throw new Error(`无法启动 Chromium：\n${failures.join("\n")}`);
 }
 
+async function waitForNetworkAndTextures(page) {
+  await page.waitForLoadState("networkidle");
+  await page.waitForFunction(() => {
+    const renderer = window.pawsWorkbench?.renderer;
+    if (!renderer) return false;
+    if (
+      renderer.images instanceof Map
+      && [...renderer.images.values()].some((image) => !image.complete)
+    ) {
+      return false;
+    }
+    if (
+      renderer.textures instanceof Map
+      && [...renderer.textures.keys()].some(
+        (key) => typeof key === "string" && key.startsWith("loading:"),
+      )
+    ) {
+      return false;
+    }
+    return true;
+  });
+  await page.evaluate(() => new Promise((resolveFrame) => {
+    requestAnimationFrame(() => requestAnimationFrame(resolveFrame));
+  }));
+}
+
 let server;
 let browser;
 try {
@@ -177,6 +203,7 @@ try {
   assert.equal(generated.generation.report.solvable, true);
   assert.equal(generated.generation.report.steps, generated.tiles / 2);
   assert.equal(await page.locator('[role="option"]').count(), 31);
+  await waitForNetworkAndTextures(page);
 
   await page.locator("#view-3d").click();
   await page.locator(".level-canvas-3d").waitFor({ state: "visible" });
@@ -187,6 +214,7 @@ try {
   const webgl = await page.locator(".level-canvas-3d").evaluate((canvas) =>
     Boolean(canvas.getContext("webgl2") || canvas.getContext("webgl")));
   assert.equal(webgl, true);
+  await waitForNetworkAndTextures(page);
   if (!externalBaseUrl && updateArtifacts) {
     await page.screenshot({
       path: join(artifactsRoot, "paws-ai-level-desktop.png"),
@@ -217,6 +245,7 @@ try {
     };
   });
   assert.deepEqual(completed, { won: true, remaining: 0 });
+  await waitForNetworkAndTextures(page);
 
   await page.reload({ waitUntil: "networkidle" });
   await page.waitForFunction(() => window.pawsWorkbench?.levels?.length === 31);
