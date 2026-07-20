@@ -129,13 +129,34 @@ test("lists and loads a locally saved copy that is absent from the bundled index
 
   await api.saveLevel({
     fileName: "showcase_copy.json",
-    value: { name: "浏览器副本", tiles: [] },
+    value: {
+      id: 73501,
+      name: "浏览器副本",
+      tiles: [
+        { x: 0, y: 0, layer: 1, type: 1 },
+        { x: 8, y: 0, layer: 1, type: 1 },
+      ],
+    },
     saveAs: true,
   });
   const refreshed = createApiClient({ fetchImpl, storage });
   const levels = await refreshed.listLevels();
+  const summary = levels.find((level) => level.fileName === "showcase_copy.json");
 
-  assert.equal(levels.find((level) => level.fileName === "showcase_copy.json")?.local, true);
+  assert.deepEqual(
+    {
+      id: summary?.id,
+      tileCount: summary?.tileCount,
+      modifiedAt: summary?.modifiedAt,
+      local: summary?.local,
+    },
+    {
+      id: 73501,
+      tileCount: 2,
+      modifiedAt: "2026-07-20T00:00:00.000Z",
+      local: true,
+    },
+  );
   assert.equal((await refreshed.loadLevel("showcase_copy.json")).value.name, "浏览器副本");
 });
 

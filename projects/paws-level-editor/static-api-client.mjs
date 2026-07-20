@@ -181,7 +181,12 @@ function mergeStoredOnlySummary(fileName, storage) {
 function storedSummary(summary, stored) {
   return {
     ...summary,
+    id: stored.value?.id ?? summary.id,
     name: stored.value?.name ?? summary.name,
+    tileCount: Array.isArray(stored.value?.tiles)
+      ? stored.value.tiles.length
+      : summary.tileCount ?? null,
+    modifiedAt: stored.updatedAt || summary.modifiedAt || "",
     local: true,
     version: stored.version,
     updatedAt: stored.updatedAt,
