@@ -159,6 +159,20 @@ async function importSyntheticLevel(page, { name, value }) {
   });
 }
 
+async function snapshotLocalImportState(page) {
+  return page.evaluate(() => ({
+    fileName: window.pawsWorkbench.document.fileName,
+    serializedDocument: JSON.stringify(window.pawsWorkbench.document),
+    levelFileNames: window.pawsWorkbench.levels.map((level) => level.fileName),
+    localStorage: Object.fromEntries(
+      Object.keys(localStorage)
+        .filter((key) => key.startsWith("paws-level-editor-demo-v1:"))
+        .sort()
+        .map((key) => [key, localStorage.getItem(key)]),
+    ),
+  }));
+}
+
 async function clickAvailablePairIn2d(page) {
   const targets = await page.evaluate(() => {
     const controller = window.pawsWorkbench;
@@ -355,9 +369,17 @@ try {
   );
   summary.importPersists = true;
 
+  const collisionLevel = {
+    ...importedLevel,
+    id: 72021,
+    name: "浏览器重名导入副本",
+    unknownTopLevel: { preserve: "distinct-collision-payload" },
+  };
+  const originalRecordBeforeCollision = await page.evaluate(() =>
+    localStorage.getItem("paws-level-editor-demo-v1:local_demo.json"));
   await importSyntheticLevel(page, {
     name: "local_demo.json",
-    value: importedLevel,
+    value: collisionLevel,
   });
   await page.waitForFunction(() =>
     window.pawsWorkbench?.document?.fileName === "local_demo_import.json");
@@ -366,11 +388,29 @@ try {
   summary.collisionFileName = await page.evaluate(() =>
     window.pawsWorkbench.document.fileName);
   assert.equal(summary.collisionFileName, "local_demo_import.json");
-
-  const stateBeforeInvalidImport = await page.evaluate(() => ({
-    fileName: window.pawsWorkbench.document.fileName,
-    levelCount: window.pawsWorkbench.levels.length,
+  const storedCollision = await page.evaluate(() => ({
+    original: localStorage.getItem("paws-level-editor-demo-v1:local_demo.json"),
+    imported: JSON.parse(
+      localStorage.getItem("paws-level-editor-demo-v1:local_demo_import.json"),
+    ),
   }));
+  assert.equal(
+    storedCollision.original,
+    originalRecordBeforeCollision,
+    "same-name import should not mutate the original local record",
+  );
+  assert.equal(storedCollision.imported.value.id, collisionLevel.id);
+  assert.equal(storedCollision.imported.value.name, collisionLevel.name);
+  assert.deepEqual(
+    storedCollision.imported.value.unknownTopLevel,
+    collisionLevel.unknownTopLevel,
+  );
+  assert.notDeepEqual(
+    storedCollision.imported.value.unknownTopLevel,
+    importedLevel.unknownTopLevel,
+  );
+
+  const stateBeforeInvalidImport = await snapshotLocalImportState(page);
   await importSyntheticLevel(page, {
     name: "invalid.json",
     value: "{invalid JSON",
@@ -378,12 +418,9 @@ try {
   await page.waitForFunction(() =>
     document.querySelector("#stage-toast")?.textContent?.includes("不是合法 JSON"));
   assert.deepEqual(
-    await page.evaluate(() => ({
-      fileName: window.pawsWorkbench.document.fileName,
-      levelCount: window.pawsWorkbench.levels.length,
-    })),
+    await snapshotLocalImportState(page),
     stateBeforeInvalidImport,
-    "invalid JSON should not change the current document or level list",
+    "invalid JSON should not change the document, ordered level list, or browser storage",
   );
 
   await page.locator('[role="option"]', { hasText: "level_showcase.json" }).click();

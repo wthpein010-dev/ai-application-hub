@@ -143,6 +143,61 @@ test("save-as checks the bundled index without requesting a missing level resour
   assert.deepEqual(requestedUrls, ["./levels/index.json"]);
 });
 
+test("save-as rejects a bundled file name without overwriting the bundle", async () => {
+  const api = createApiClient({
+    fetchImpl: await createFetch(),
+    storage: createStorage(),
+    now: () => "2026-07-20T00:00:00.000Z",
+  });
+  const original = await api.loadLevel("level_showcase.json");
+
+  await assert.rejects(
+    () => api.saveLevel({
+      fileName: "level_showcase.json",
+      value: { id: 9999, name: "不得覆盖内置关卡", tiles: [] },
+      saveAs: true,
+    }),
+    (error) => {
+      assert.equal(error instanceof staticApi.WorkbenchApiError, true);
+      assert.equal(error.status, 409);
+      assert.equal(error.code, "file-exists");
+      return true;
+    },
+  );
+
+  assert.deepEqual(await api.loadLevel("level_showcase.json"), original);
+});
+
+test("save-as rejects a browser-local file name without overwriting its record", async () => {
+  const api = createApiClient({
+    fetchImpl: await createFetch(),
+    storage: createStorage(),
+    now: () => "2026-07-20T00:00:00.000Z",
+  });
+  await api.saveLevel({
+    fileName: "existing_local.json",
+    value: { id: 7001, name: "原始本地关卡", tiles: [] },
+    saveAs: true,
+  });
+  const original = await api.loadLevel("existing_local.json");
+
+  await assert.rejects(
+    () => api.saveLevel({
+      fileName: "existing_local.json",
+      value: { id: 7002, name: "不得覆盖本地关卡", tiles: [] },
+      saveAs: true,
+    }),
+    (error) => {
+      assert.equal(error instanceof staticApi.WorkbenchApiError, true);
+      assert.equal(error.status, 409);
+      assert.equal(error.code, "file-exists");
+      return true;
+    },
+  );
+
+  assert.deepEqual(await api.loadLevel("existing_local.json"), original);
+});
+
 test("reset rejects a local-only copy without deleting it", async () => {
   const storage = createStorage();
   const api = createApiClient({
