@@ -307,7 +307,7 @@ git add tests/paws-level-editor-browser-smoke.mjs docs/superpowers/plans/2026-07
 git commit -m "test: verify paws local level import"
 ```
 
-- [ ] **Step 6: Publish and verify**
+- [x] **Step 6: Publish and verify**
 
 Push `codex/paws-local-level-import`, verify `origin/main` is its ancestor, then non-force fast-forward the feature branch to `origin/main`. Wait for the Pages workflow for the new commit.
 
