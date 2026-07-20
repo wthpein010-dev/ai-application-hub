@@ -37,39 +37,54 @@ public sealed class CodexProcessLocatorTests
     [Fact]
     public void Find_UsesSandboxBinFallback()
     {
+        var userProfile = Path.Combine("Users", "test");
         var expected = Path.Combine(
-            Environment.GetFolderPath(Environment.SpecialFolder.UserProfile),
+            userProfile,
             ".codex",
             ".sandbox-bin",
             "codex.exe");
 
-        var actual = CodexProcessLocator.CreateDefault(
-            path => Path.GetFullPath(path) == Path.GetFullPath(expected)).Find();
+        var locator = new CodexProcessLocator(
+            isWindows: true,
+            pathValue: string.Empty,
+            userProfile,
+            path => path == expected);
 
-        Assert.Equal(expected, actual);
+        Assert.Equal(expected, locator.Find());
     }
 
     [Fact]
     public void Find_PrefersSandboxBinOverPackagedWindowsAppsPath()
     {
+        var userProfile = Path.Combine("Users", "test");
         var expected = Path.Combine(
-            Environment.GetFolderPath(Environment.SpecialFolder.UserProfile),
+            userProfile,
             ".codex",
             ".sandbox-bin",
             "codex.exe");
+        var packagedPath = Path.Combine(userProfile, "WindowsApps");
 
-        var actual = CodexProcessLocator.CreateDefault(
-            path => Path.GetFullPath(path) == Path.GetFullPath(expected) ||
-                    path.Contains("WindowsApps", StringComparison.OrdinalIgnoreCase)).Find();
+        var locator = new CodexProcessLocator(
+            isWindows: true,
+            pathValue: packagedPath,
+            userProfile,
+            path => path == expected ||
+                    path.Contains("WindowsApps", StringComparison.OrdinalIgnoreCase));
 
-        Assert.Equal(expected, actual);
+        Assert.Equal(expected, locator.Find());
     }
 
     [Fact]
     public void Find_WhenNoCandidateExists_ThrowsActionableError()
     {
+        var locator = new CodexProcessLocator(
+            isWindows: true,
+            pathValue: string.Empty,
+            userProfile: Path.Combine("Users", "test"),
+            exists: _ => false);
+
         var error = Assert.Throws<FileNotFoundException>(
-            () => CodexProcessLocator.CreateDefault(_ => false).Find());
+            () => locator.Find());
 
         Assert.Contains("Codex CLI", error.Message);
         Assert.Contains(".sandbox-bin", error.Message);
