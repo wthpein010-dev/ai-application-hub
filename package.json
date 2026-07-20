@@ -1,0 +1,12 @@
+{
+  "name": "codex-ai-hub",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "playwright:install": "playwright install chromium",
+    "test:paws-browser": "node --test tests/paws-level-editor-static-server.test.mjs && node tests/paws-level-editor-browser-smoke.mjs"
+  },
+  "devDependencies": {
+    "playwright": "1.61.1"
+  }
+}
