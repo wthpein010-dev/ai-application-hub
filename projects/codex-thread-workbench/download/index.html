@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="description" content="安全下载 Codex 多会话工作台 Windows x64 安装包，浏览器会自动重组并校验全部八个分片。" />
+  <meta name="theme-color" content="#f2f3f0" />
+  <title>下载 Windows 版｜Codex 多会话工作台</title>
+  <link rel="stylesheet" href="./styles.css?v=20260720" />
+</head>
+<body>
+  <header class="topbar">
+    <a href="../index.html" aria-label="返回 Codex 多会话工作台介绍页">← 返回产品介绍</a>
+    <span>Codex 多会话工作台</span>
+  </header>
+
+  <main>
+    <section class="download-card" aria-labelledby="download-title">
+      <div class="product-mark" aria-hidden="true">CW</div>
+      <p class="eyebrow">Windows x64 · 安全分片下载</p>
+      <h1 id="download-title">下载 Codex 多会话工作台</h1>
+      <p class="lead">
+        浏览器会依次获取 8 个分片，校验每片与完整 ZIP 的 SHA-256；只有全部匹配后才会保存文件。
+      </p>
+
+      <dl class="file-details">
+        <div>
+          <dt>文件</dt>
+          <dd data-role="file-name">CodexThreadWorkbench-Windows-x64.zip</dd>
+        </div>
+        <div>
+          <dt>大小</dt>
+          <dd data-role="file-size">65.6 MB</dd>
+        </div>
+        <div>
+          <dt>分片</dt>
+          <dd data-role="part-count">8 个</dd>
+        </div>
+        <div class="hash-row">
+          <dt>SHA-256</dt>
+          <dd data-role="sha256">1D78557926FB97F46CF7FAA068BA65BEE12C3C7EA9DC3F9235450A9AB17CF454</dd>
+        </div>
+      </dl>
+
+      <div class="status-panel" aria-live="polite">
+        <div class="status-heading">
+          <strong data-role="status">正在读取下载清单…</strong>
+          <span data-role="progress-text">0 MB / 65.6 MB · 0%</span>
+        </div>
+        <progress data-role="progress" max="100" value="0">0%</progress>
+        <p class="error" data-role="error" hidden></p>
+      </div>
+
+      <div class="actions">
+        <button class="primary-action" type="button" data-role="download-button" disabled>
+          开始下载 Windows 版
+        </button>
+        <button class="retry-action" type="button" data-role="retry-button" hidden>
+          重试
+        </button>
+      </div>
+
+      <p class="privacy-note">
+        下载与校验完全在此浏览器中完成，不上传本地文件，也不会跳转到第三方安装器。
+      </p>
+    </section>
+  </main>
+
+  <script type="module" src="./download.js?v=20260720"></script>
+</body>
+</html>
