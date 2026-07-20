@@ -21,6 +21,7 @@ const requiredFiles = [
   "core/xorshift.mjs",
   "ui/editor-tools.mjs",
   "ui/inspector.mjs",
+  "ui/local-level-import.mjs",
   "ui/level-summary.mjs",
   "ui/workbench-controller.mjs",
   "views/canvas-2d.mjs",
