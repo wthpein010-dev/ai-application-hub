@@ -301,10 +301,10 @@ const defaultApps = [
     aiUse: "工具通过本机 codex app-server 连接真实线程，不读取凭据；AI 参与协议接入、状态投影、多窗口会话交互和 Windows 发布验证。",
     folder: "./projects/codex-thread-workbench/",
     entry: "./projects/codex-thread-workbench/index.html",
-    package: "https://github.com/wthpein010-dev/ai-application-hub/releases/download/codex-thread-workbench-v1.0.0/CodexThreadWorkbench-Windows-x64.zip",
+    package: "https://wthpein010-dev.github.io/ai-application-hub/projects/codex-thread-workbench/download/",
     platforms: {
       web: { href: "./projects/codex-thread-workbench/index.html", label: "交互演示" },
-      windows: { href: "https://github.com/wthpein010-dev/ai-application-hub/releases/download/codex-thread-workbench-v1.0.0/CodexThreadWorkbench-Windows-x64.zip", label: "Windows下载" },
+      windows: { href: "https://wthpein010-dev.github.io/ai-application-hub/projects/codex-thread-workbench/download/", label: "Windows下载" },
       mac: ""
     },
     tags: ["Codex", "多线程", "桌面工作台", "Windows"],
@@ -841,6 +841,11 @@ function renderSelectedApp() {
   renderEditForm();
 }
 
+function isDirectPackageHref(href) {
+  const path = String(href || "").split(/[?#]/, 1)[0];
+  return /\.(?:zip|exe|msi|msix|appx|dmg|pkg|tar|gz|7z)$/i.test(path);
+}
+
 function renderPlatformShowcase(filtered) {
   if (!nodes.platformGrid) return;
   const list = filtered.length ? filtered : apps;
@@ -862,7 +867,8 @@ function renderPlatformShowcase(filtered) {
         <div class="platform-apps">
           ${available.map(app => {
             const href = platformValue(app, group.key) || app.entry;
-            const download = group.key === "web" ? "" : " download";
+            const download =
+              group.key !== "web" && isDirectPackageHref(href) ? " download" : "";
             return `<a href="${escapeHtml(projectHref(href))}"${download}>${escapeHtml(app.name)}</a>`;
           }).join("")}
         </div>
@@ -886,9 +892,11 @@ function renderActions(app, stopPropagation = false, mode = "default") {
   }
   const windows = platformValue(app, "windows") || app.package;
   const mac = platformValue(app, "mac");
+  const windowsDownload = isDirectPackageHref(windows) ? " download" : "";
+  const macDownload = isDirectPackageHref(mac) ? " download" : "";
   const webLink = web ? `<a class="primary-link" data-action="web" href="${escapeHtml(projectHref(web))}"${stop}>演示</a>` : "";
-  const windowsLink = windows ? `<a class="download-link" data-action="download" href="${escapeHtml(projectHref(windows))}" download${stop}>Wins下载</a>` : "";
-  const macLink = mac ? `<a class="mac-link" data-action="mac" href="${escapeHtml(projectHref(mac))}" download${stop}>Mac下载</a>` : "";
+  const windowsLink = windows ? `<a class="download-link" data-action="download" href="${escapeHtml(projectHref(windows))}"${windowsDownload}${stop}>Wins下载</a>` : "";
+  const macLink = mac ? `<a class="mac-link" data-action="mac" href="${escapeHtml(projectHref(mac))}"${macDownload}${stop}>Mac下载</a>` : "";
   const video = app.video
     ? `<a data-action="video" href="${escapeHtml(projectHref(videoHref(app)))}"${stop}>视频</a>`
     : "";
