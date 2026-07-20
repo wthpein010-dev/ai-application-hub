@@ -1,0 +1,183 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="color-scheme" content="dark" />
+    <meta name="theme-color" content="#111718" />
+    <title>关卡3D编辑器</title>
+    <link rel="stylesheet" href="./styles.css" />
+    <script type="importmap">
+      {
+        "imports": {
+          "three": "./vendor/three.module.js"
+        }
+      }
+    </script>
+  </head>
+  <body>
+    <div id="app" class="app-shell" data-mode="edit" data-view="2d">
+      <header class="app-header">
+        <div class="brand-lockup">
+          <div class="brand-mark" aria-hidden="true"><span></span><span></span><span></span></div>
+          <div>
+            <p class="eyebrow">PAWS / LEVEL LAB</p>
+            <h1>关卡3D编辑器</h1>
+          </div>
+        </div>
+
+        <div class="header-actions">
+          <button id="toggle-library" class="icon-button mobile-only" type="button" aria-label="打开关卡库">库</button>
+          <div id="connection-state" class="connection-state is-connecting" role="status">
+            <span class="status-dot"></span>
+            <span>正在连接关卡服务</span>
+          </div>
+          <button id="toggle-inspector" class="icon-button mobile-only" type="button" aria-label="打开属性面板">属性</button>
+        </div>
+      </header>
+
+      <div class="demo-banner" role="note">
+        公开演示版 · 仅使用独立示例关卡 · 保存到当前浏览器，不会写回工程
+      </div>
+
+      <div id="readonly-banner" class="readonly-banner" role="note">
+        当前设备为只读模式：可查看和试玩，编辑与保存仅在桌面 Chrome / Edge 开放。
+      </div>
+
+      <div class="workspace">
+        <aside id="library-panel" class="side-panel library-panel" aria-label="关卡库">
+          <div class="panel-heading">
+            <div>
+              <p class="section-kicker">PROJECT LEVELS</p>
+              <h2>关卡库</h2>
+            </div>
+            <span id="level-count" class="count-pill">—</span>
+          </div>
+
+          <label class="search-field">
+            <span class="sr-only">搜索关卡</span>
+            <span aria-hidden="true">⌕</span>
+            <input id="level-search" type="search" placeholder="按 ID、名称或文件名搜索" autocomplete="off" />
+          </label>
+
+          <div class="panel-action-row">
+            <button id="refresh-levels" class="secondary-button" type="button">刷新</button>
+            <button id="reset-level" class="secondary-button" type="button">恢复内置</button>
+            <button id="new-level" class="primary-button edit-only" type="button">＋ 新建</button>
+          </div>
+
+          <div id="level-list" class="level-list" role="listbox" aria-label="关卡列表">
+            <div class="loading-card">
+              <span class="loader"></span>
+              <p>正在读取示例关卡…</p>
+            </div>
+          </div>
+
+          <footer class="panel-footnote">
+            <span class="status-dot is-info"></span>
+            <span>运行时优先读取 designerNote.levelData</span>
+          </footer>
+        </aside>
+
+        <main class="stage-panel">
+          <div class="stage-toolbar">
+            <div class="mode-groups">
+              <div class="segmented-control" aria-label="工作模式">
+                <button id="mode-edit" type="button" class="is-active" aria-pressed="true">编辑</button>
+                <button id="mode-play" type="button" aria-pressed="false">试玩</button>
+              </div>
+              <div class="segmented-control" aria-label="视图模式">
+                <button id="view-2d" type="button" class="is-active" aria-pressed="true">2D</button>
+                <button id="view-3d" type="button" aria-pressed="false">3D</button>
+              </div>
+            </div>
+
+            <div id="edit-tools" class="tool-strip edit-only" aria-label="编辑工具">
+              <button type="button" data-tool="select" class="is-active" title="选择 (V)">选择</button>
+              <button type="button" data-tool="place" title="放置 (P)">放置</button>
+              <button type="button" data-tool="delete" title="删除 (D)">删除</button>
+              <button type="button" data-tool="box" title="框选 (B)">框选</button>
+              <button type="button" data-tool="pan" title="平移 (H)">平移</button>
+              <span class="tool-separator"></span>
+              <button id="undo" type="button" title="撤销 (Ctrl+Z)">↶</button>
+              <button id="redo" type="button" title="重做 (Ctrl+Y)">↷</button>
+              <button id="fit-view" type="button" title="适配画布 (F)">适配</button>
+            </div>
+
+            <div id="play-tools" class="tool-strip play-only" aria-label="试玩工具">
+              <button id="restart-play" type="button">重新开始</button>
+              <button id="rerandomize" type="button">重新随机</button>
+              <label class="seed-lock"><input id="lock-seed" type="checkbox" /> 锁定种子</label>
+              <button id="fit-play-view" type="button">适配</button>
+            </div>
+          </div>
+
+          <section id="canvas-host" class="canvas-host" aria-label="关卡画布">
+            <div id="empty-stage" class="empty-stage">
+              <div class="empty-symbol" aria-hidden="true">
+                <i></i><i></i><i></i><i></i>
+              </div>
+              <p class="section-kicker">WAITING FOR LEVEL</p>
+              <h2>从左侧打开一个关卡</h2>
+              <p>同一份数据可直接编辑、2D/3D 检查和试玩。</p>
+            </div>
+            <div id="stage-toast" class="stage-toast" role="status" aria-live="polite"></div>
+          </section>
+
+          <footer id="status-bar" class="status-bar">
+            <div><span class="status-label">关卡</span><strong id="status-level">未打开</strong></div>
+            <div><span class="status-label">砖块</span><strong id="status-tiles">—</strong></div>
+            <div><span class="status-label">层数</span><strong id="status-layers">—</strong></div>
+            <div><span class="status-label">坐标</span><strong id="status-coordinates">—</strong></div>
+            <div class="status-grow"><span class="status-label">随机种子</span><strong id="status-seed">—</strong></div>
+            <div id="validation-summary" class="validation-summary is-neutral"><span></span>未校验</div>
+          </footer>
+        </main>
+
+        <aside id="inspector-panel" class="side-panel inspector-panel" aria-label="属性面板">
+          <div class="panel-heading">
+            <div>
+              <p class="section-kicker">INSPECTOR</p>
+              <h2>属性与校验</h2>
+            </div>
+            <span id="dirty-indicator" class="dirty-indicator">已保存</span>
+          </div>
+          <div id="inspector" class="inspector-content">
+            <div class="inspector-empty">
+              <div>⌁</div>
+              <p>打开关卡后可编辑关卡和砖块属性。</p>
+            </div>
+          </div>
+        </aside>
+      </div>
+
+      <dialog id="conflict-dialog" class="workbench-dialog">
+        <form method="dialog">
+          <p class="section-kicker">VERSION CONFLICT</p>
+          <h2>关卡已被其他人修改</h2>
+          <p>当前内存修改仍保留。可以重新加载服务器版本，或把当前内容另存为新文件。</p>
+          <div class="dialog-actions stacked">
+            <button id="conflict-reload" value="reload" class="danger-button">重新加载服务器版本</button>
+            <button id="conflict-save-as" value="save-as" class="primary-button">保留修改并另存为</button>
+            <button value="cancel" class="secondary-button">稍后处理</button>
+          </div>
+        </form>
+      </dialog>
+
+      <dialog id="save-as-dialog" class="workbench-dialog">
+        <form id="save-as-form" method="dialog">
+          <p class="section-kicker">SAVE A COPY</p>
+          <h2>另存为新关卡</h2>
+          <label>JSON 文件名<input id="save-as-name" type="text" required pattern="[^/\\]+\.json" /></label>
+          <p id="save-as-error" class="form-error" role="alert"></p>
+          <div class="dialog-actions">
+            <button value="cancel" class="secondary-button">取消</button>
+            <button value="default" class="primary-button">保存副本</button>
+          </div>
+        </form>
+      </dialog>
+    </div>
+
+    <script type="module" src="./app.mjs"></script>
+  </body>
+</html>
