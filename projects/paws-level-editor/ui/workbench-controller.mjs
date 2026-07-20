@@ -7,6 +7,7 @@ import { InspectorPanel } from "./inspector.mjs";
 import { formatLevelId, formatLevelModifiedAt } from "./level-summary.mjs";
 import { Canvas2DView } from "../views/canvas-2d.mjs";
 import { Three3DView } from "../views/three-3d.mjs";
+import { prepareImportedLevel } from "./local-level-import.mjs";
 
 function setPressed(button, active) {
   button.classList.toggle("is-active", active);
@@ -88,6 +89,8 @@ export class WorkbenchController {
       refresh: byId("refresh-levels"),
       resetLevel: byId("reset-level"),
       newLevel: byId("new-level"),
+      importLevel: byId("import-level"),
+      importLevelInput: byId("import-level-input"),
       modeEdit: byId("mode-edit"),
       modePlay: byId("mode-play"),
       view2d: byId("view-2d"),
@@ -126,6 +129,10 @@ export class WorkbenchController {
     this.elements.refresh.addEventListener("click", () => this.refreshLevels());
     this.elements.resetLevel.addEventListener("click", () => this.resetCurrentLevel());
     this.elements.newLevel.addEventListener("click", () => this.createNewLevel());
+    this.elements.importLevel.addEventListener("click", () => this.requestLocalImport());
+    this.elements.importLevelInput.addEventListener("change", () =>
+      this.importLocalLevel(this.elements.importLevelInput.files?.[0]),
+    );
     this.elements.levelSearch.addEventListener("input", () => this.renderLevelList());
     this.elements.modeEdit.addEventListener("click", () => this.switchMode("edit"));
     this.elements.modePlay.addEventListener("click", () => this.switchMode("play"));
@@ -343,6 +350,35 @@ export class WorkbenchController {
       this.showToast("已恢复内置示例");
     } catch (error) {
       this.showToast(error.message, "error");
+    }
+  }
+
+  requestLocalImport() {
+    if (this.readonly) return;
+    if (this.isDirty() && !confirm("当前关卡有未保存修改，确定导入本地关卡吗？")) return;
+    this.elements.importLevelInput.value = "";
+    this.elements.importLevelInput.click();
+  }
+
+  async importLocalLevel(file) {
+    if (this.readonly || !file) return;
+    try {
+      const { fileName, value } = await prepareImportedLevel(file, {
+        occupiedFileNames: this.levels.map((level) => level.fileName),
+      });
+      await this.api.saveLevel({
+        fileName,
+        value,
+        expectedVersion: "",
+        saveAs: true,
+      });
+      await this.refreshLevels();
+      await this.openLevel(fileName, { discardDirty: true });
+      this.showToast(`已导入 ${fileName}，仅保存在当前浏览器。`);
+    } catch (error) {
+      this.showToast(error.message, "error");
+    } finally {
+      this.elements.importLevelInput.value = "";
     }
   }
 

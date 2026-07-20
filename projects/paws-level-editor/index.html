@@ -38,7 +38,7 @@
       </header>
 
       <div class="demo-banner" role="note">
-        公开演示版 · 仅使用独立示例关卡 · 保存到当前浏览器，不会写回工程
+        公开演示版 · 仅使用独立示例关卡 · 选中的本地 JSON 仅会读取并保存到当前浏览器，不会写回工程
       </div>
 
       <div id="readonly-banner" class="readonly-banner" role="note">
@@ -65,6 +65,8 @@
             <button id="refresh-levels" class="secondary-button" type="button">刷新</button>
             <button id="reset-level" class="secondary-button" type="button">恢复内置</button>
             <button id="new-level" class="primary-button edit-only" type="button">＋ 新建</button>
+            <button id="import-level" class="secondary-button edit-only" type="button">导入 JSON</button>
+            <input id="import-level-input" type="file" accept="application/json,.json" hidden />
           </div>
 
           <div id="level-list" class="level-list" role="listbox" aria-label="关卡列表">

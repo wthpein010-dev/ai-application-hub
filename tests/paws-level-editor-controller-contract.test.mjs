@@ -9,6 +9,10 @@ const controller = readFileSync(
   join(repoRoot, "projects", "paws-level-editor", "ui", "workbench-controller.mjs"),
   "utf8",
 );
+const page = readFileSync(
+  join(repoRoot, "projects", "paws-level-editor", "index.html"),
+  "utf8",
+);
 const openLevelBody = controller.slice(
   controller.indexOf("async openLevel("),
   controller.indexOf("async resetCurrentLevel("),
@@ -50,4 +54,13 @@ test("controller shares file name validation and displays API save errors", () =
   assert.match(controller, /if \(!isValidLevelFileName\(fileName\)\)/);
   assert.match(controller, /catch \(error\)[\s\S]*this\.showToast\(error\.message,\s*"error"\)/);
   assert.match(controller, /level_\$\{String\(this\.document\.id\)[^`]*_copy\.json/);
+});
+
+test("controller imports a local JSON level into browser-local storage", () => {
+  assert.match(page, /id="import-level"[^>]*>导入 JSON</);
+  assert.match(page, /id="import-level-input"[^>]*type="file"[^>]*accept="[^"]*\.json/);
+  assert.match(controller, /prepareImportedLevel\(file,\s*\{/);
+  assert.match(controller, /occupiedFileNames:\s*this\.levels\.map\(\(level\) => level\.fileName\)/);
+  assert.match(controller, /saveLevel\(\{[^}]*saveAs:\s*true/);
+  assert.match(controller, /openLevel\(fileName,\s*\{\s*discardDirty:\s*true\s*\}\)/);
 });
