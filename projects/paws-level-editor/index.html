@@ -66,6 +66,7 @@
             <button id="reset-level" class="secondary-button" type="button">恢复内置</button>
             <button id="new-level" class="primary-button edit-only" type="button">＋ 新建</button>
             <button id="import-level" class="secondary-button edit-only" type="button">导入 JSON</button>
+            <button id="generate-ai-level" class="ai-button edit-only" type="button">✦ AI 生成</button>
             <input id="import-level-input" type="file" accept="application/json,.json" hidden />
           </div>
 
@@ -153,6 +154,75 @@
           </div>
         </aside>
       </div>
+
+      <dialog id="ai-level-dialog" class="workbench-dialog ai-level-dialog">
+        <form id="ai-level-form" method="dialog">
+          <p class="section-kicker">LOCAL GENERATOR</p>
+          <h2>AI 生成关卡</h2>
+          <p class="dialog-intro">从已有布局学习分布，在浏览器内生成并自动验证可解。</p>
+
+          <fieldset>
+            <legend>难度</legend>
+            <div class="ai-choice-grid">
+              <label class="ai-choice">
+                <input type="radio" name="ai-difficulty" value="easy" />
+                <span><strong>简单</strong><small>更开阔，初始配对更多</small></span>
+              </label>
+              <label class="ai-choice">
+                <input type="radio" name="ai-difficulty" value="normal" checked />
+                <span><strong>标准</strong><small>层数与遮挡较均衡</small></span>
+              </label>
+              <label class="ai-choice">
+                <input type="radio" name="ai-difficulty" value="hard" />
+                <span><strong>困难</strong><small>依赖更深，初始配对更少</small></span>
+              </label>
+            </div>
+          </fieldset>
+
+          <fieldset>
+            <legend>布局</legend>
+            <div class="ai-choice-grid">
+              <label class="ai-choice">
+                <input type="radio" name="ai-layout" value="balanced" checked />
+                <span><strong>均衡布局</strong><small>对称且密度适中</small></span>
+              </label>
+              <label class="ai-choice">
+                <input type="radio" name="ai-layout" value="progressive" />
+                <span><strong>层层推进</strong><small>逐层解锁更明显</small></span>
+              </label>
+              <label class="ai-choice">
+                <input type="radio" name="ai-layout" value="open" />
+                <span><strong>开阔分布</strong><small>覆盖更少，范围更大</small></span>
+              </label>
+            </div>
+          </fieldset>
+
+          <fieldset>
+            <legend>参考</legend>
+            <div class="ai-choice-grid ai-choice-grid-reference">
+              <label class="ai-choice">
+                <input id="ai-reference-current" type="radio" name="ai-reference" value="current" />
+                <span><strong>当前关卡</strong><small>沿用当前布局倾向</small></span>
+              </label>
+              <label class="ai-choice">
+                <input type="radio" name="ai-reference" value="all" checked />
+                <span><strong>全部关卡</strong><small>学习已发布工程关卡</small></span>
+              </label>
+            </div>
+          </fieldset>
+
+          <p id="ai-level-hint" class="ai-level-hint">
+            约 60–72 张、5–6 层；从全部关卡学习，均衡布局，限制重叠并自动验证可解。
+          </p>
+          <p id="ai-level-error" class="form-error" role="alert"></p>
+          <div class="dialog-actions">
+            <button type="submit" value="cancel" class="secondary-button">取消</button>
+            <button id="confirm-ai-level" type="submit" value="generate" class="primary-button">
+              生成并打开
+            </button>
+          </div>
+        </form>
+      </dialog>
 
       <dialog id="conflict-dialog" class="workbench-dialog">
         <form method="dialog">

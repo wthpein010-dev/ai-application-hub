@@ -3,11 +3,20 @@ import { EditHistory, createAddTilesCommand, createDeleteTilesCommand, createMov
 import { parseLevelDocument, serializeLevelDocument } from "../core/level-adapter.mjs";
 import { validateLevel } from "../core/level-validator.mjs";
 import { createPlaySession } from "../core/play-engine.mjs";
+import { generateAiLevel } from "../core/ai-level-generator.mjs";
 import { InspectorPanel } from "./inspector.mjs";
 import { formatLevelId, formatLevelModifiedAt } from "./level-summary.mjs";
 import { Canvas2DView } from "../views/canvas-2d.mjs";
 import { Three3DView } from "../views/three-3d.mjs";
-import { activateImportedLevel, prepareImportedLevel } from "./local-level-import.mjs";
+import {
+  activateImportedLevel,
+  chooseImportedFileName,
+  prepareImportedLevel,
+} from "./local-level-import.mjs";
+import {
+  describeGenerationOptions,
+  normalizeGenerationOptions,
+} from "./ai-level-dialog.mjs";
 
 function setPressed(button, active) {
   button.classList.toggle("is-active", active);
@@ -55,6 +64,8 @@ export class WorkbenchController {
     this.renderer = null;
     this.toastTimer = null;
     this.uidCounter = 0;
+    this.aiGenerationPending = false;
+    this.lastAiGeneration = null;
     this.readonly = matchMedia("(max-width: 900px), (pointer: coarse)").matches;
     if (this.readonly) {
       this.mode = "play";
@@ -92,6 +103,13 @@ export class WorkbenchController {
       newLevel: byId("new-level"),
       importLevel: byId("import-level"),
       importLevelInput: byId("import-level-input"),
+      generateAi: byId("generate-ai-level"),
+      aiLevelDialog: byId("ai-level-dialog"),
+      aiLevelForm: byId("ai-level-form"),
+      aiLevelHint: byId("ai-level-hint"),
+      aiLevelError: byId("ai-level-error"),
+      aiCurrentReference: byId("ai-reference-current"),
+      confirmAiLevel: byId("confirm-ai-level"),
       modeEdit: byId("mode-edit"),
       modePlay: byId("mode-play"),
       view2d: byId("view-2d"),
@@ -134,6 +152,13 @@ export class WorkbenchController {
     this.elements.importLevelInput.addEventListener("change", () =>
       this.importLocalLevel(this.elements.importLevelInput.files?.[0]),
     );
+    this.elements.generateAi.addEventListener("click", () =>
+      this.requestAiGeneration());
+    this.elements.aiLevelForm.addEventListener("submit", (event) =>
+      this.submitAiGeneration(event));
+    this.elements.aiLevelForm.querySelectorAll("input[type=radio]").forEach((input) => {
+      input.addEventListener("change", () => this.updateAiGenerationHint());
+    });
     this.elements.levelSearch.addEventListener("input", () => this.renderLevelList());
     this.elements.modeEdit.addEventListener("click", () => this.switchMode("edit"));
     this.elements.modePlay.addEventListener("click", () => this.switchMode("play"));
@@ -389,6 +414,133 @@ export class WorkbenchController {
       this.showToast(error.message, "error");
     } finally {
       this.elements.importLevelInput.value = "";
+    }
+  }
+
+  requestAiGeneration() {
+    if (this.readonly || this.aiGenerationPending) {
+      return;
+    }
+    if (this.isDirty() && !confirm("当前关卡有未保存修改，确定生成并打开其他关卡吗？")) {
+      return;
+    }
+    this.elements.aiLevelError.textContent = "";
+    this.elements.aiCurrentReference.disabled = !this.document;
+    if (!this.document && this.elements.aiCurrentReference.checked) {
+      this.elements.aiLevelForm.querySelector(
+        'input[name="ai-reference"][value="all"]',
+      ).checked = true;
+    }
+    this.updateAiGenerationHint();
+    this.elements.aiLevelDialog.showModal();
+  }
+
+  updateAiGenerationHint() {
+    try {
+      const options = normalizeGenerationOptions(
+        new FormData(this.elements.aiLevelForm),
+      );
+      this.elements.aiLevelHint.textContent = describeGenerationOptions(options);
+      this.elements.aiLevelError.textContent = "";
+    } catch (error) {
+      this.elements.aiLevelError.textContent = error.message;
+    }
+  }
+
+  async submitAiGeneration(event) {
+    event.preventDefault();
+    if (event.submitter?.value === "cancel") {
+      this.elements.aiLevelDialog.close("cancel");
+      return;
+    }
+    let options;
+    try {
+      options = normalizeGenerationOptions(
+        new FormData(this.elements.aiLevelForm),
+      );
+    } catch (error) {
+      this.elements.aiLevelError.textContent = error.message;
+      return;
+    }
+    if (await this.generateAiLevelFromDialog(options)) {
+      this.elements.aiLevelDialog.close("generated");
+    }
+  }
+
+  async loadAiReferenceDocuments() {
+    const levels = this.levels.filter(({ bundled }) => bundled);
+    const settled = await Promise.allSettled(levels.map(async ({ fileName }) => {
+      const response = await this.api.loadLevel(fileName);
+      return parseLevelDocument(response.value, {
+        fileName,
+        version: response.version,
+      });
+    }));
+    const references = settled
+      .filter(({ status }) => status === "fulfilled")
+      .map(({ value }) => value);
+    if (!references.length) {
+      throw new Error("没有可用于学习的参考关卡。");
+    }
+    return references;
+  }
+
+  async generateAiLevelFromDialog(options) {
+    if (this.readonly || this.aiGenerationPending) {
+      return false;
+    }
+    this.aiGenerationPending = true;
+    this.elements.aiLevelError.textContent = "";
+    this.updateUI();
+    try {
+      const references = options.reference === "current"
+        ? [this.document].filter(Boolean)
+        : await this.loadAiReferenceDocuments();
+      if (!references.length) {
+        throw new Error("没有可用于学习的参考关卡。");
+      }
+      const requestedSeed = nextSeed();
+      const generated = generateAiLevel({
+        references,
+        difficulty: options.difficulty,
+        layout: options.layout,
+        seed: requestedSeed,
+      });
+      generated.document.designerNote.aiGeneration.options.reference =
+        options.reference;
+      const unsignedSeed = generated.seed >>> 0;
+      const fileName = chooseImportedFileName(
+        `ai_level_${unsignedSeed}.json`,
+        this.levels.map((level) => level.fileName),
+      );
+      await this.api.saveLevel({
+        fileName,
+        value: serializeLevelDocument(generated.document),
+        expectedVersion: "",
+        saveAs: true,
+      });
+      await activateImportedLevel(fileName, {
+        refreshLevels: () => this.refreshLevels(),
+        getLevels: () => this.levels,
+        openLevel: () => this.openLevel(fileName, { discardDirty: true }),
+        getDocument: () => this.document,
+      });
+      this.lastAiGeneration = {
+        fileName,
+        seed: unsignedSeed,
+        attempts: generated.attempts,
+        options: structuredClone(options),
+        report: structuredClone(generated.report),
+      };
+      this.showToast(`已生成可解关卡 ${fileName}，种子 ${unsignedSeed}。`);
+      return true;
+    } catch (error) {
+      this.elements.aiLevelError.textContent = error.message;
+      this.showToast(error.message, "error");
+      return false;
+    } finally {
+      this.aiGenerationPending = false;
+      this.updateUI();
     }
   }
 
@@ -857,6 +1009,12 @@ export class WorkbenchController {
     this.elements.undo.disabled = !this.history?.canUndo;
     this.elements.redo.disabled = !this.history?.canRedo;
     this.elements.resetLevel.disabled = !this.document?.bundled;
+    this.elements.generateAi.disabled = this.readonly || this.aiGenerationPending;
+    this.elements.confirmAiLevel.disabled = this.aiGenerationPending;
+    this.elements.confirmAiLevel.textContent = this.aiGenerationPending
+      ? "正在生成…"
+      : "生成并打开";
+    this.elements.aiCurrentReference.disabled = !this.document;
     this.elements.dirty.textContent = this.isDirty() ? "未保存" : "已保存";
     this.elements.dirty.classList.toggle("is-dirty", this.isDirty());
     this.elements.statusLevel.textContent = this.document?.name || this.document?.fileName || "未打开";
