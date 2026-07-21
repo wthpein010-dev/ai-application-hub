@@ -82,6 +82,7 @@ test("recording proof matches current media, sources, timeline and real state ch
     "projects/paws-level-editor/index.html",
     "projects/paws-level-editor/styles.css",
     "projects/paws-level-editor/app.mjs",
+    "projects/paws-level-editor/static-api-client.mjs",
     "projects/paws-level-editor/core/ai-level-generator.mjs",
     "projects/paws-level-editor/core/level-difficulty.mjs",
     "projects/paws-level-editor/core/level-solver.mjs",
@@ -128,6 +129,13 @@ test("recording proof matches current media, sources, timeline and real state ch
   assert.equal(actions.aiGeneration.tileCount, 200);
   assert.equal(actions.aiGeneration.layerCount, 15);
   assert.equal(actions.aiGeneration.targetScore, 60);
+  assert.deepEqual(actions.aiGeneration.board, { width: 7, height: 8 });
+  assert.equal(actions.aiGeneration.gridUnit, "sheep_7x8_mini8");
+  assert.deepEqual(actions.aiGeneration.designerBoard, { width: 7, height: 8 });
+  assert.equal(actions.aiGeneration.coordinatesInBounds, true);
+  assert.equal(actions.aiGeneration.source, "ai");
+  assert.equal(actions.aiGeneration.aiReferenceEligible, false);
+  assert.equal(actions.aiGeneration.referenceCount, 30);
   assert.equal(
     Math.abs(actions.aiGeneration.actualScore - actions.aiGeneration.targetScore) <= 5,
     true,
@@ -155,6 +163,9 @@ test("recording proof matches current media, sources, timeline and real state ch
   );
   assert.equal(actions.persistence.localCopyPreserved, true);
   assert.equal(actions.persistence.returnedToDefault, true);
+  assert.equal(actions.persistence.deletedFromStorage, true);
+  assert.equal(actions.persistence.absentFromCatalog, true);
+  assert.equal(actions.persistence.referenceCountAfterDelete, 30);
   assert.deepEqual(proof.errors.console, []);
   assert.deepEqual(proof.errors.page, []);
 });

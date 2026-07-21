@@ -27,6 +27,7 @@ const sourceFiles = [
   "projects/paws-level-editor/index.html",
   "projects/paws-level-editor/styles.css",
   "projects/paws-level-editor/app.mjs",
+  "projects/paws-level-editor/static-api-client.mjs",
   "projects/paws-level-editor/core/ai-level-generator.mjs",
   "projects/paws-level-editor/core/level-difficulty.mjs",
   "projects/paws-level-editor/core/level-solver.mjs",
@@ -385,6 +386,9 @@ async function recordEditor() {
       });
       const aiGeneration = await page.evaluate(() => {
         const controller = window.pawsWorkbench;
+        const catalogEntry = controller.levels.find(
+          ({ fileName }) => fileName === controller.document.fileName,
+        );
         return {
           fileName: controller.lastAiGeneration.fileName,
           reference: controller.lastAiGeneration.options.reference,
@@ -395,6 +399,22 @@ async function recordEditor() {
           actualScore: controller.lastAiGeneration.report.difficulty.score,
           rating: controller.lastAiGeneration.report.difficulty.rating.label,
           dimensions: controller.lastAiGeneration.report.difficulty.dimensions,
+          board: {
+            width: controller.document.board.width,
+            height: controller.document.board.height,
+          },
+          gridUnit: controller.document.gridUnit,
+          designerBoard: {
+            width: controller.document.designerNote.widthNum,
+            height: controller.document.designerNote.heightNum,
+          },
+          coordinatesInBounds: controller.document.tiles.every(
+            ({ x, y }) => x >= 0 && x <= 48 && y >= 0 && y <= 56,
+          ),
+          source: catalogEntry.source,
+          aiReferenceEligible: catalogEntry.aiReferenceEligible,
+          referenceCount:
+            controller.document.designerNote.aiGeneration.referenceCount,
         };
       });
       assert.match(aiGeneration.fileName, /^ai_level_\d+\.json$/);
@@ -403,6 +423,13 @@ async function recordEditor() {
       assert.equal(aiGeneration.tileCount, 200);
       assert.equal(aiGeneration.layerCount, 15);
       assert.equal(aiGeneration.targetScore, 60);
+      assert.deepEqual(aiGeneration.board, { width: 7, height: 8 });
+      assert.equal(aiGeneration.gridUnit, "sheep_7x8_mini8");
+      assert.deepEqual(aiGeneration.designerBoard, { width: 7, height: 8 });
+      assert.equal(aiGeneration.coordinatesInBounds, true);
+      assert.equal(aiGeneration.source, "ai");
+      assert.equal(aiGeneration.aiReferenceEligible, false);
+      assert.equal(aiGeneration.referenceCount, 30);
       assert.ok(Math.abs(aiGeneration.actualScore - aiGeneration.targetScore) <= 5);
       assert.equal(await page.locator('[role="option"]').count(), 31);
       proof.actions.aiGeneration = aiGeneration;
@@ -585,7 +612,7 @@ async function recordEditor() {
       };
       await delay(2700);
 
-      // 01:10 — save the generated copy, reload it, then return to the requested default.
+      // 01:10 — save, reload, delete the local AI copy and verify it is forgotten.
       await waitUntil(startedAt, 70);
       markChapter(proof.timeline, "persistence", startedAt, 70);
       await page.locator("#mode-edit").click();
@@ -625,10 +652,17 @@ async function recordEditor() {
       );
       assert.equal(localCopyPreserved, true);
       await delay(1_700);
-      await page.locator('[role="option"]', { hasText: defaultFileName }).click();
+      assert.equal(await page.locator("#delete-local-level").isEnabled(), true);
+      page.once("dialog", (dialog) => dialog.accept());
+      await page.locator("#delete-local-level").click();
       await page.waitForFunction(
-        (fileName) => window.pawsWorkbench?.document?.fileName === fileName,
-        defaultFileName,
+        ({ deletedFileName, requestedFileName }) =>
+          window.pawsWorkbench?.document?.fileName === requestedFileName
+          && window.pawsWorkbench?.levels?.length === 30
+          && localStorage.getItem(
+            `paws-level-editor-demo-v1:${deletedFileName}`,
+          ) === null,
+        { deletedFileName: generatedFileName, requestedFileName: defaultFileName },
       );
       await waitForWorkbench(page);
       const returnedToDefault = await page.evaluate(
@@ -636,6 +670,19 @@ async function recordEditor() {
         defaultFileName,
       );
       assert.equal(returnedToDefault, true);
+      const deletion = await page.evaluate(async (fileName) => ({
+        deletedFromStorage:
+          localStorage.getItem(`paws-level-editor-demo-v1:${fileName}`) === null,
+        absentFromCatalog:
+          !window.pawsWorkbench.levels.some((level) => level.fileName === fileName),
+        referenceCountAfterDelete:
+          (await window.pawsWorkbench.loadAiReferenceDocuments()).length,
+      }), generatedFileName);
+      assert.deepEqual(deletion, {
+        deletedFromStorage: true,
+        absentFromCatalog: true,
+        referenceCountAfterDelete: 30,
+      });
       proof.actions.persistence = {
         savedProperty: savedPosition.x,
         savedPosition,
@@ -644,6 +691,7 @@ async function recordEditor() {
         reloadedPosition,
         localCopyPreserved,
         returnedToDefault,
+        ...deletion,
       };
 
       await waitUntil(startedAt, targetDuration);

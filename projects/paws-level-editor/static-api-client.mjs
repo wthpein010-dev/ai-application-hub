@@ -2,6 +2,7 @@ const STORAGE_PREFIX = "paws-level-editor-demo-v1";
 const STORAGE_MANIFEST_KEY = `${STORAGE_PREFIX}:local-files`;
 const INDEX_URL = "./levels/index.json";
 const FILE_NAME_PATTERN = /^[^\u0000-\u001f<>:"/\\|?*]+\.json$/iu;
+const LOCAL_LEVEL_SOURCES = new Set(["import", "manual", "ai"]);
 
 export class WorkbenchApiError extends Error {
   constructor(message, { status = 500, code = "static-api-error" } = {}) {
@@ -41,7 +42,12 @@ export function createApiClient({
       }
       const bundledFileNames = new Set(index.levels.map((entry) => entry.fileName));
       const bundled = index.levels.map((entry) =>
-        mergeStoredSummary({ ...entry, bundled: true }, storage));
+        mergeStoredSummary({
+          ...entry,
+          bundled: true,
+          source: "bundled",
+          aiReferenceEligible: true,
+        }, storage));
       const localOnly = readStoredFileNames(storage)
         .filter((fileName) => !bundledFileNames.has(fileName))
         .map((fileName) => mergeStoredOnlySummary(fileName, storage))
@@ -66,7 +72,13 @@ export function createApiClient({
           && index.levels.some((entry) => entry.fileName === fileName),
       };
     },
-    async saveLevel({ fileName, value, expectedVersion = "", saveAs = false } = {}) {
+    async saveLevel({
+      fileName,
+      value,
+      expectedVersion = "",
+      saveAs = false,
+      source,
+    } = {}) {
       assertFileName(fileName);
       let current;
       if (saveAs) {
@@ -99,6 +111,7 @@ export function createApiClient({
         synchronizeLevelData(value),
         now(),
         Boolean(current?.bundled),
+        normalizeLocalSource(source ?? (current?.local ? current.source : "manual")),
       );
       persistStoredRecord(storage, fileName, saved);
       return clone(saved);
@@ -119,6 +132,29 @@ export function createApiClient({
       const bundled = await loadBundled(fetchImpl, fileName);
       removeStored(storage, fileName);
       return bundled;
+    },
+    async deleteLevel(fileName) {
+      assertFileName(fileName);
+      const index = await fetchJson(fetchImpl, INDEX_URL);
+      if (!Array.isArray(index?.levels)) {
+        throw new WorkbenchApiError("内置关卡索引格式无效。", {
+          code: "invalid-level-index",
+        });
+      }
+      if (index.levels.some((entry) => entry.fileName === fileName)) {
+        throw new WorkbenchApiError("内置关卡不能删除，请使用恢复内置。", {
+          status: 400,
+          code: "cannot-delete-bundled",
+        });
+      }
+      if (readRawStorageValue(storage, storageKey(fileName)) === null) {
+        throw new WorkbenchApiError("浏览器本地关卡不存在。", {
+          status: 404,
+          code: "local-level-not-found",
+        });
+      }
+      removeStored(storage, fileName);
+      return { fileName, deleted: true };
     },
   };
 }
@@ -155,11 +191,23 @@ function mergeStoredSummary(entry, storage) {
   const summary = clone(entry);
   try {
     const stored = readStored(storage, entry.fileName);
-    if (!stored) return { ...summary, local: false };
+    if (!stored) return {
+      ...summary,
+      local: false,
+      source: "bundled",
+      aiReferenceEligible: true,
+    };
     return storedSummary(summary, stored);
   } catch (error) {
     if (error instanceof WorkbenchApiError && error.code === "invalid-local-record") {
-      return { ...summary, local: false, localError: error.code, recoverable: true };
+      return {
+        ...summary,
+        local: false,
+        source: "bundled",
+        aiReferenceEligible: true,
+        localError: error.code,
+        recoverable: true,
+      };
     }
     throw error;
   }
@@ -186,6 +234,7 @@ function mergeStoredOnlySummary(fileName, storage) {
 }
 
 function storedSummary(summary, stored) {
+  const source = normalizeLocalSource(stored.source);
   return {
     ...summary,
     id: stored.value?.id ?? summary.id,
@@ -195,6 +244,8 @@ function storedSummary(summary, stored) {
       : summary.tileCount ?? null,
     modifiedAt: stored.updatedAt || summary.modifiedAt || "",
     local: true,
+    source,
+    aiReferenceEligible: Boolean(summary.bundled) || source !== "ai",
     version: stored.version,
     updatedAt: stored.updatedAt,
   };
@@ -209,19 +260,44 @@ function makeBundledRecord(fileName, value) {
     updatedAt: "",
     local: false,
     bundled: true,
+    source: "bundled",
   };
 }
 
-function makeLocalRecord(fileName, value, updatedAt, bundled) {
+function makeLocalRecord(fileName, value, updatedAt, bundled, source) {
   const clonedValue = clone(value);
   return {
     fileName,
     value: clonedValue,
-    version: `local-${stableHash({ fileName, value: clonedValue, updatedAt })}`,
+    version: `local-${stableHash({ fileName, value: clonedValue, updatedAt, source })}`,
     updatedAt,
     local: true,
     bundled,
+    source,
   };
+}
+
+function normalizeLocalSource(source) {
+  if (LOCAL_LEVEL_SOURCES.has(source)) return source;
+  return "manual";
+}
+
+function inferLocalSource(record) {
+  if (LOCAL_LEVEL_SOURCES.has(record?.source)) return record.source;
+  let note = record?.value?.designerNote;
+  if (typeof note === "string") {
+    try {
+      note = JSON.parse(note);
+    } catch {
+      note = null;
+    }
+  }
+  return note
+    && typeof note === "object"
+    && !Array.isArray(note)
+    && note.aiGeneration
+    ? "ai"
+    : "manual";
 }
 
 function synchronizeLevelData(value) {
@@ -270,7 +346,11 @@ function readStored(storage, fileName) {
     if (record?.fileName !== fileName || !record?.version || !Object.hasOwn(record, "value")) {
       throw new Error("invalid record");
     }
-    return clone({ ...record, local: true });
+    return clone({
+      ...record,
+      local: true,
+      source: inferLocalSource(record),
+    });
   } catch (error) {
     throw new WorkbenchApiError("浏览器本地关卡数据损坏。", { code: "invalid-local-record" });
   }
@@ -360,11 +440,24 @@ function rememberStoredFileName(storage, fileName) {
 }
 
 function removeStored(storage, fileName) {
+  const recordKey = storageKey(fileName);
+  const snapshot = [
+    [recordKey, readRawStorageValue(storage, recordKey)],
+    [STORAGE_MANIFEST_KEY, readRawStorageValue(storage, STORAGE_MANIFEST_KEY)],
+  ];
   try {
-    storage?.removeItem(storageKey(fileName));
+    storage?.removeItem(recordKey);
     const fileNames = readStoredFileNames(storage).filter((storedFileName) => storedFileName !== fileName);
     storage?.setItem(STORAGE_MANIFEST_KEY, JSON.stringify(fileNames));
   } catch (error) {
+    try {
+      restoreStorageSnapshot(storage, snapshot);
+    } catch {
+      throw new WorkbenchApiError(
+        "浏览器本地清除失败且无法恢复原状态。",
+        { code: "local-storage-rollback-failed" },
+      );
+    }
     throw new WorkbenchApiError("无法清除浏览器本地关卡。", { code: "local-storage-remove-failed" });
   }
 }

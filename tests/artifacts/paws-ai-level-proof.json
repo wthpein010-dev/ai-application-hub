@@ -5,22 +5,28 @@
   "generatedFileName": "ai_level_73125.json",
   "generatedTileCount": 200,
   "generatedLayerCount": 15,
-  "generatedDifficultyScore": 60,
+  "generatedBoard": {
+    "width": 7,
+    "height": 8,
+    "scale": 1.0166666666666666
+  },
+  "generatedDifficultyScore": 61,
   "generatedDifficultyRating": "困难入门",
   "generatedDifficultyDimensions": {
-    "structure": 81,
+    "structure": 85,
     "information": 47,
-    "choice": 57,
+    "choice": 56,
     "route": 59,
-    "endurance": 49
+    "endurance": 47
   },
   "generatedInitialPairs": 3,
-  "generatedAverageBlockers": 2.077319587628866,
+  "generatedAverageBlockers": 3.6752577319587627,
   "solverSteps": 100,
   "solverNodes": 100,
   "completedInPlay": true,
   "webgl": true,
   "persistedAfterReload": true,
+  "deletedAfterVerification": true,
   "consoleErrors": 0,
   "httpErrors": 0,
   "pageErrors": 0,

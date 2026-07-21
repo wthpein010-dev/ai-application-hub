@@ -64,6 +64,7 @@
           <div class="panel-action-row">
             <button id="refresh-levels" class="secondary-button" type="button">刷新</button>
             <button id="reset-level" class="secondary-button" type="button">恢复内置</button>
+            <button id="delete-local-level" class="danger-button edit-only" type="button">删除本地</button>
             <button id="new-level" class="primary-button edit-only" type="button">＋ 新建</button>
             <button id="import-level" class="secondary-button edit-only" type="button">导入 JSON</button>
             <button id="generate-ai-level" class="ai-button edit-only" type="button">✦ AI 生成</button>
@@ -178,7 +179,7 @@
         <form id="ai-level-form" method="dialog">
           <p class="section-kicker">LOCAL GENERATOR</p>
           <h2>AI 生成关卡</h2>
-          <p class="dialog-intro">从已有布局学习分布，在浏览器内生成并自动验证可解。</p>
+          <p class="dialog-intro">从内置、导入和手工关卡实时学习，在固定 7×8 棋盘内生成并自动验证可解。</p>
 
           <fieldset>
             <legend>难度</legend>
@@ -246,7 +247,7 @@
               </label>
               <label class="ai-choice">
                 <input type="radio" name="ai-reference" value="all" checked />
-                <span><strong>全部关卡</strong><small>学习已发布工程关卡</small></span>
+                <span><strong>全部关卡</strong><small>内置 + 导入 + 手工，排除 AI 结果</small></span>
               </label>
             </div>
           </fieldset>

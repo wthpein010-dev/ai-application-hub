@@ -102,13 +102,15 @@ test("controller loads references, generates, saves a collision-safe copy and op
   assert.match(controller, /scoreLevelDifficulty/);
   assert.match(controller, /from "\.\/ai-level-dialog\.mjs"/);
   assert.match(controller, /async loadAiReferenceDocuments\(/);
-  assert.match(controller, /this\.levels\.filter\(\(\{\s*bundled\s*\}\)\s*=>\s*bundled\)/);
+  assert.match(controller, /await this\.api\.listLevelCatalog\(\)/);
+  assert.match(controller, /this\.levels\.filter\(\(\{\s*aiReferenceEligible\s*\}\)\s*=>\s*aiReferenceEligible\)/);
   assert.match(controller, /generateAiLevel\(\{[\s\S]*references,[\s\S]*difficulty:[\s\S]*layout:[\s\S]*tileCount:[\s\S]*layerCount:[\s\S]*targetScore:/);
   assert.match(
     controller,
     /chooseImportedFileName\(\s*`ai_level_\$\{unsignedSeed\}\.json`,\s*this\.levels\.map/,
   );
   assert.match(controller, /value:\s*serializeLevelDocument\(generated\.document\)/);
+  assert.match(controller, /source:\s*"ai"/);
   assert.match(controller, /saveAs:\s*true/);
   assert.match(controller, /activateImportedLevel\(fileName,\s*\{/);
   assert.match(controller, /openLevel:\s*\(\)\s*=>\s*this\.openLevel\(fileName,\s*\{\s*discardDirty:\s*true\s*\}\)/);

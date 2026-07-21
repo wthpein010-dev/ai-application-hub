@@ -73,7 +73,32 @@ test("controller imports a local JSON level into browser-local storage", () => {
   assert.match(controller, /prepareImportedLevel\(file,\s*\{/);
   assert.match(controller, /occupiedFileNames:\s*this\.levels\.map\(\(level\) => level\.fileName\)/);
   assert.match(controller, /saveLevel\(\{[^}]*saveAs:\s*true/);
+  assert.match(controller, /saveLevel\(\{[^}]*source:\s*"import"/);
   assert.match(controller, /openLevel\(fileName,\s*\{\s*discardDirty:\s*true\s*\}\)/);
+});
+
+test("desktop users can delete only the current saved non-bundled local level", () => {
+  assert.match(page, /id="delete-local-level"[^>]*class="[^"]*edit-only[^"]*"[^>]*>删除本地</);
+  assert.match(controller, /deleteLocalLevel:\s*byId\("delete-local-level"\)/);
+  assert.match(controller, /deleteLocalLevel\.addEventListener\("click",\s*\(\)\s*=>\s*this\.deleteCurrentLevel\(\)\)/);
+  assert.match(
+    controller,
+    /deleteLocalLevel\.disabled\s*=\s*this\.readonly\s*\|\|\s*!this\.document\?\.local\s*\|\|\s*this\.document\?\.bundled/,
+  );
+  assert.match(controller, /async deleteCurrentLevel\(\)/);
+  assert.match(controller, /删除后无法撤销，AI 下次生成将不再学习这关/);
+  assert.match(controller, /api\.deleteLevel\(fileName\)/);
+  assert.match(controller, /this\.document\s*=\s*null/);
+  assert.match(controller, /this\.defaultFileName/);
+  assert.match(controller, /剩余 AI 学习参考/);
+});
+
+test("controller preserves local source metadata and marks manual saves", () => {
+  assert.match(openLevelBody, /this\.document\.local\s*=\s*response\.local\s*===\s*true/);
+  assert.match(openLevelBody, /this\.document\.source\s*=\s*response\.source/);
+  assert.match(controller, /const source\s*=\s*saveAs\s*\?\s*"manual"/);
+  assert.match(controller, /saveLevel\(\{\s*fileName,\s*value,\s*expectedVersion,\s*saveAs,\s*source\s*\}\)/);
+  assert.match(controller, /this\.document\.source\s*=\s*saved\.source/);
 });
 
 test("import activation rejects a refresh failure that was caught by the controller", async () => {

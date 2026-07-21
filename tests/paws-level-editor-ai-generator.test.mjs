@@ -76,6 +76,19 @@ const reference = makeDocument([
   tile("r6", 40, 24, 3, 3),
 ]);
 
+function assertFixedSevenByEight(document) {
+  assert.equal(document.board.width, 7);
+  assert.equal(document.board.height, 8);
+  assert.equal(document.gridUnit, "sheep_7x8_mini8");
+  assert.equal(document.original.gridUnit, "sheep_7x8_mini8");
+  assert.equal(document.designerNote.widthNum, 7);
+  assert.equal(document.designerNote.heightNum, 8);
+  assert.equal(
+    document.tiles.every(({ x, y }) => x >= 0 && x <= 48 && y >= 0 && y <= 56),
+    true,
+  );
+}
+
 test("statistics report layers, overlap, symmetry, exact stacks and initial pairs", () => {
   const stats = extractLevelStatistics(makeDocument([
     tile("a", 0, 0, 1, 1),
@@ -257,6 +270,8 @@ test("generator honors exact normalized size, layers and target difficulty", () 
   });
   const stats = extractLevelStatistics(generated.document);
 
+  assertFixedSevenByEight(generated.document);
+
   assert.equal(stats.tileCount, 202);
   assert.equal(stats.layerCount, 15);
   assert.equal(stats.effectiveLayerCount, 15);
@@ -284,7 +299,27 @@ test("generator honors exact normalized size, layers and target difficulty", () 
   const stages = generated.document.designerNote.aiGeneration.stagePlan;
   assert.equal(stages.find(({ key }) => key === "release").pressureTarget
     < stages.find(({ key }) => key === "crisis").pressureTarget, true);
-  assert.equal(stats.averageBlockers <= 2.5, true);
+  assert.equal(stats.averageBlockers <= 4, true);
+});
+
+test("200 tiles, 15 layers and score 60 stay solvable on the fixed board", () => {
+  const generated = generateAiLevel({
+    references: [reference],
+    difficulty: "normal",
+    layout: "balanced",
+    tileCount: 200,
+    layerCount: 15,
+    targetScore: 60,
+    seed: 20260721,
+  });
+  const stats = extractLevelStatistics(generated.document);
+
+  assertFixedSevenByEight(generated.document);
+  assert.equal(stats.tileCount, 200);
+  assert.equal(stats.layerCount, 15);
+  assert.equal(generated.report.solvable, true);
+  assert.equal(generated.report.steps, 100);
+  assert.equal(stats.maxExactStackDepth <= 2, true);
 });
 
 for (const difficulty of ["easy", "normal", "hard"]) {
@@ -301,6 +336,7 @@ for (const difficulty of ["easy", "normal", "hard"]) {
       const errors = validateLevel(generated.document)
         .filter(({ severity }) => severity === "error");
 
+      assertFixedSevenByEight(generated.document);
       assert.deepEqual(errors, []);
       assert.equal(generated.report.solvable, true);
       assert.equal(generated.report.steps, stats.tileCount / 2);

@@ -277,7 +277,10 @@ try {
     importedEditSaved: null,
     importedWebgl: null,
     importedPlayInteraction: null,
+    deletedLocalLevels: null,
+    aiReferenceCountsAfterDelete: null,
     mobileImportHidden: null,
+    mobileDeleteHidden: null,
   };
   const desktop = await browser.newContext({ viewport: { width: 1440, height: 900 } });
   const page = await desktop.newPage();
@@ -346,12 +349,18 @@ try {
     id: window.pawsWorkbench.document.id,
     name: window.pawsWorkbench.document.name,
     unknownTopLevel: window.pawsWorkbench.document.original.unknownTopLevel,
+    local: window.pawsWorkbench.document.local,
+    bundled: window.pawsWorkbench.document.bundled,
+    source: window.pawsWorkbench.document.source,
   }));
   assert.deepEqual(importedDocument, {
     fileName: "local_demo.json",
     id: importedLevel.id,
     name: importedLevel.name,
     unknownTopLevel: importedLevel.unknownTopLevel,
+    local: true,
+    bundled: false,
+    source: "import",
   });
   summary.importedFileName = importedDocument.fileName;
   const storedImport = await page.evaluate(() => {
@@ -361,6 +370,7 @@ try {
   assert.equal(storedImport?.fileName, "local_demo.json");
   assert.equal(storedImport?.value?.id, importedLevel.id);
   assert.equal(storedImport?.value?.name, importedLevel.name);
+  assert.equal(storedImport?.source, "import");
   assert.deepEqual(storedImport?.value?.unknownTopLevel, importedLevel.unknownTopLevel);
 
   await page.reload({ waitUntil: "networkidle" });
@@ -511,18 +521,74 @@ try {
   );
   await page.locator("#mode-edit").click();
   await page.waitForFunction(() => window.pawsWorkbench.mode === "edit");
+  assert.equal(await page.locator("#delete-local-level").isEnabled(), true);
+  const referenceCountBeforeDelete = await page.evaluate(async () =>
+    (await window.pawsWorkbench.loadAiReferenceDocuments()).length);
+  assert.equal(referenceCountBeforeDelete, bundledLevelCount + 2);
+  const localReferenceMetadata = await page.evaluate(() =>
+    window.pawsWorkbench.levels
+      .filter(({ fileName }) => fileName.startsWith("local_demo"))
+      .map(({ fileName, source, aiReferenceEligible }) => ({
+        fileName,
+        source,
+        aiReferenceEligible,
+      }))
+      .sort((left, right) => left.fileName.localeCompare(right.fileName)));
+  assert.deepEqual(localReferenceMetadata, [
+    { fileName: "local_demo_import.json", source: "import", aiReferenceEligible: true },
+    { fileName: "local_demo.json", source: "import", aiReferenceEligible: true },
+  ]);
 
-  await page.locator('[role="option"]', { hasText: defaultFileName }).click();
-  await page.waitForFunction((fileName) =>
-    window.pawsWorkbench?.document?.fileName === fileName, defaultFileName);
-  await waitForNetworkAndTextures(page);
-  await page.evaluate(async () => {
-    localStorage.removeItem("paws-level-editor-demo-v1:local_demo.json");
-    localStorage.removeItem("paws-level-editor-demo-v1:local_demo_import.json");
-    localStorage.setItem("paws-level-editor-demo-v1:local-files", "[]");
-    await window.pawsWorkbench.refreshLevels();
+  page.once("dialog", (dialog) => {
+    assert.match(dialog.message(), /删除后无法撤销，AI 下次生成将不再学习这关/);
+    dialog.accept();
   });
+  await page.locator("#delete-local-level").click();
+  await page.waitForFunction(({ deleted, fallback, expectedCount }) =>
+    window.pawsWorkbench?.document?.fileName === fallback
+    && window.pawsWorkbench?.levels?.length === expectedCount
+    && localStorage.getItem(`paws-level-editor-demo-v1:${deleted}`) === null,
+  {
+    deleted: "local_demo_import.json",
+    fallback: defaultFileName,
+    expectedCount: bundledLevelCount + 1,
+  });
+  await page.waitForFunction(() =>
+    document.querySelector("#stage-toast")?.textContent?.includes("剩余 AI 学习参考 31 关"));
+  const referenceCountAfterFirstDelete = await page.evaluate(async () =>
+    (await window.pawsWorkbench.loadAiReferenceDocuments()).length);
+  assert.equal(referenceCountAfterFirstDelete, bundledLevelCount + 1);
+
+  await page.reload({ waitUntil: "networkidle" });
+  await page.waitForFunction(() => window.pawsWorkbench?.levels?.length === 31);
+  assert.equal(
+    await page.locator('[role="option"] .level-file').allTextContents()
+      .then((names) => names.includes("local_demo_import.json")),
+    false,
+    "deleted local level must stay forgotten after reload",
+  );
+  await page.locator('[role="option"]', { hasText: "local_demo.json" }).click();
+  await page.waitForFunction(() =>
+    window.pawsWorkbench?.document?.fileName === "local_demo.json");
+  assert.equal(await page.locator("#delete-local-level").isEnabled(), true);
+  page.once("dialog", (dialog) => dialog.accept());
+  await page.locator("#delete-local-level").click();
+  await page.waitForFunction(({ fallback, expectedCount }) =>
+    window.pawsWorkbench?.document?.fileName === fallback
+    && window.pawsWorkbench?.levels?.length === expectedCount
+    && localStorage.getItem("paws-level-editor-demo-v1:local_demo.json") === null,
+  { fallback: defaultFileName, expectedCount: bundledLevelCount });
+  const referenceCountAfterSecondDelete = await page.evaluate(async () =>
+    (await window.pawsWorkbench.loadAiReferenceDocuments()).length);
+  assert.equal(referenceCountAfterSecondDelete, bundledLevelCount);
+  summary.deletedLocalLevels = ["local_demo_import.json", "local_demo.json"];
+  summary.aiReferenceCountsAfterDelete = [
+    referenceCountBeforeDelete,
+    referenceCountAfterFirstDelete,
+    referenceCountAfterSecondDelete,
+  ];
   assert.equal(await page.locator('[role="option"]').count(), bundledLevelCount);
+  await waitForNetworkAndTextures(page);
 
   await page.locator("#view-3d").click();
   await page.locator(".level-canvas-3d").waitFor({ state: "visible" });
@@ -684,6 +750,9 @@ try {
   summary.mobileImportHidden =
     await mobilePage.locator("#import-level").isHidden();
   assert.equal(summary.mobileImportHidden, true);
+  summary.mobileDeleteHidden =
+    await mobilePage.locator("#delete-local-level").isHidden();
+  assert.equal(summary.mobileDeleteHidden, true);
   assert.equal(await mobilePage.locator("#generate-ai-level").isHidden(), true);
   await assertNoHorizontalOverflow(mobilePage, "390x844");
   summary.mobileOverflow = false;

@@ -8,7 +8,9 @@ import { scoreLevelDifficulty } from "./level-difficulty.mjs";
 import { XorShift } from "./xorshift.mjs";
 
 const TILE_SIZE = 8;
-const ALGORITHM_VERSION = "paws-local-stat-v2";
+const ALGORITHM_VERSION = "paws-local-stat-v3-fixed-7x8";
+const AI_BOARD = Object.freeze({ width: 7, height: 8 });
+const AI_GRID_UNIT = "sheep_7x8_mini8";
 
 export const DIFFICULTY_PROFILES = Object.freeze({
   easy: Object.freeze({
@@ -472,8 +474,9 @@ function chooseChildAnchor({
   });
   const candidates = [];
   for (const { dx, dy } of offsets) {
-    const x = Math.min(maxX, Math.max(0, parent.x + dx));
-    const y = Math.min(maxY, Math.max(0, parent.y + dy));
+    const x = parent.x + dx;
+    const y = parent.y + dy;
+    if (x < 0 || x > maxX || y < 0 || y > maxY) continue;
     if (x === parent.x && y === parent.y) continue;
     const key = `${x}|${y}`;
     if (layerAnchors.has(key) || globalAnchors.has(key)) continue;
@@ -591,14 +594,7 @@ function buildDocument({
     throw new Error("五阶段结构未覆盖全部有效层。");
   }
   const board = {
-    width: Math.max(
-      layerCount > 20 ? 12 : 10,
-      Math.round(learned.board.width),
-    ),
-    height: Math.max(
-      layerCount > 20 ? 16 : 12,
-      Math.round(learned.board.height),
-    ),
+    ...AI_BOARD,
     scale: Number.isFinite(learned.board.scale) ? learned.board.scale : 1,
   };
   const tiles = buildTiles({
@@ -617,7 +613,7 @@ function buildDocument({
     id,
     name,
     difficulty: DIFFICULTY_LABELS[difficulty].value,
-    gridUnit: reference.gridUnit || "sheep_8x10_mini8",
+    gridUnit: AI_GRID_UNIT,
     tiles: [],
     stacks: [],
   };

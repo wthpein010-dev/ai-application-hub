@@ -28,6 +28,7 @@ function createStorage() {
 function createBoundaryFailingStorage() {
   const values = new Map();
   let failAfterSetKey = null;
+  let failAfterRemoveKey = null;
   return {
     getItem(key) { return values.has(key) ? values.get(key) : null; },
     setItem(key, value) {
@@ -37,8 +38,15 @@ function createBoundaryFailingStorage() {
         throw new Error(`Injected write failure for ${key}`);
       }
     },
-    removeItem(key) { values.delete(key); },
+    removeItem(key) {
+      values.delete(key);
+      if (key === failAfterRemoveKey) {
+        failAfterRemoveKey = null;
+        throw new Error(`Injected remove failure for ${key}`);
+      }
+    },
     failNextSetAfterMutation(key) { failAfterSetKey = key; },
+    failNextRemoveAfterMutation(key) { failAfterRemoveKey = key; },
   };
 }
 
@@ -169,6 +177,188 @@ test("lists and loads a locally saved copy that is absent from the bundled index
     },
   );
   assert.equal((await refreshed.loadLevel("showcase_copy.json")).value.name, "浏览器副本");
+});
+
+test("catalog exposes local source and live AI reference eligibility", async () => {
+  const storage = createStorage();
+  const api = createApiClient({
+    fetchImpl: await createFetch(),
+    storage,
+    now: () => "2026-07-21T00:00:00.000Z",
+  });
+
+  await api.saveLevel({
+    fileName: "import_reference.json",
+    value: { id: 7501, name: "导入参考", tiles: [{ x: 0, y: 0, layer: 1, type: 1 }] },
+    saveAs: true,
+    source: "import",
+  });
+  await api.saveLevel({
+    fileName: "ai_result.json",
+    value: {
+      id: 7502,
+      name: "AI 结果",
+      tiles: [{ x: 0, y: 0, layer: 1, type: 1 }],
+      designerNote: { aiGeneration: { seed: 7 } },
+    },
+    saveAs: true,
+    source: "ai",
+  });
+
+  const catalog = await api.listLevelCatalog();
+  const bundled = catalog.levels.find(({ fileName }) => fileName === defaultFileName);
+  const imported = catalog.levels.find(({ fileName }) => fileName === "import_reference.json");
+  const generated = catalog.levels.find(({ fileName }) => fileName === "ai_result.json");
+
+  assert.deepEqual(
+    { source: bundled?.source, eligible: bundled?.aiReferenceEligible },
+    { source: "bundled", eligible: true },
+  );
+  assert.deepEqual(
+    { source: imported?.source, eligible: imported?.aiReferenceEligible },
+    { source: "import", eligible: true },
+  );
+  assert.deepEqual(
+    { source: generated?.source, eligible: generated?.aiReferenceEligible },
+    { source: "ai", eligible: false },
+  );
+  assert.equal((await api.loadLevel("import_reference.json")).source, "import");
+  assert.equal((await api.loadLevel("ai_result.json")).source, "ai");
+});
+
+test("legacy local records infer AI source from designerNote", async () => {
+  const storage = createStorage();
+  storage.setItem("paws-level-editor-demo-v1:legacy_ai.json", JSON.stringify({
+    fileName: "legacy_ai.json",
+    value: {
+      name: "历史 AI",
+      tiles: [{ x: 0, y: 0, layer: 1, type: 1 }],
+      designerNote: JSON.stringify({ aiGeneration: { seed: 8 } }),
+    },
+    version: "legacy-ai-v1",
+    updatedAt: "2026-07-20T00:00:00.000Z",
+    local: true,
+    bundled: false,
+  }));
+  storage.setItem("paws-level-editor-demo-v1:legacy_manual.json", JSON.stringify({
+    fileName: "legacy_manual.json",
+    value: {
+      name: "历史手工",
+      tiles: [{ x: 0, y: 0, layer: 1, type: 1 }],
+      designerNote: {},
+    },
+    version: "legacy-manual-v1",
+    updatedAt: "2026-07-20T00:00:00.000Z",
+    local: true,
+    bundled: false,
+  }));
+  storage.setItem(
+    "paws-level-editor-demo-v1:local-files",
+    JSON.stringify(["legacy_ai.json", "legacy_manual.json"]),
+  );
+  const api = createApiClient({ fetchImpl: await createFetch(), storage });
+
+  const levels = await api.listLevels();
+  const legacyAi = levels.find(({ fileName }) => fileName === "legacy_ai.json");
+  const legacyManual = levels.find(({ fileName }) => fileName === "legacy_manual.json");
+
+  assert.deepEqual(
+    { source: legacyAi?.source, eligible: legacyAi?.aiReferenceEligible },
+    { source: "ai", eligible: false },
+  );
+  assert.deepEqual(
+    { source: legacyManual?.source, eligible: legacyManual?.aiReferenceEligible },
+    { source: "manual", eligible: true },
+  );
+});
+
+test("deletes a local-only level and removes it from the manifest", async () => {
+  const storage = createStorage();
+  const api = createApiClient({
+    fetchImpl: await createFetch(),
+    storage,
+    now: () => "2026-07-21T00:00:00.000Z",
+  });
+  await api.saveLevel({
+    fileName: "delete_me.json",
+    value: { name: "删除我", tiles: [] },
+    saveAs: true,
+    source: "import",
+  });
+
+  const deleted = await api.deleteLevel("delete_me.json");
+
+  assert.deepEqual(deleted, { fileName: "delete_me.json", deleted: true });
+  assert.equal(storage.getItem("paws-level-editor-demo-v1:delete_me.json"), null);
+  assert.deepEqual(JSON.parse(storage.getItem("paws-level-editor-demo-v1:local-files")), []);
+  assert.equal((await api.listLevels()).some(({ fileName }) => fileName === "delete_me.json"), false);
+});
+
+test("delete rejects bundled and missing local levels without mutation", async () => {
+  const storage = createStorage();
+  const api = createApiClient({ fetchImpl: await createFetch(), storage });
+
+  await assert.rejects(() => api.deleteLevel(defaultFileName), {
+    status: 400,
+    code: "cannot-delete-bundled",
+  });
+  await assert.rejects(() => api.deleteLevel("missing_local.json"), {
+    status: 404,
+    code: "local-level-not-found",
+  });
+  assert.equal(storage.getItem("paws-level-editor-demo-v1:local-files"), null);
+});
+
+test("delete restores the exact record and manifest when removal fails", async () => {
+  const storage = createBoundaryFailingStorage();
+  const api = createApiClient({
+    fetchImpl: await createFetch(),
+    storage,
+    now: () => "2026-07-21T00:00:00.000Z",
+  });
+  await api.saveLevel({
+    fileName: "rollback_delete.json",
+    value: { name: "必须恢复", tiles: [] },
+    saveAs: true,
+  });
+  const recordKey = "paws-level-editor-demo-v1:rollback_delete.json";
+  const manifestKey = "paws-level-editor-demo-v1:local-files";
+  const priorRecord = storage.getItem(recordKey);
+  const priorManifest = storage.getItem(manifestKey);
+  storage.failNextRemoveAfterMutation(recordKey);
+
+  await assert.rejects(() => api.deleteLevel("rollback_delete.json"), {
+    code: "local-storage-remove-failed",
+  });
+
+  assert.equal(storage.getItem(recordKey), priorRecord);
+  assert.equal(storage.getItem(manifestKey), priorManifest);
+});
+
+test("delete restores the exact record and manifest when manifest write fails", async () => {
+  const storage = createBoundaryFailingStorage();
+  const api = createApiClient({
+    fetchImpl: await createFetch(),
+    storage,
+    now: () => "2026-07-21T00:00:00.000Z",
+  });
+  await api.saveLevel({
+    fileName: "rollback_manifest.json",
+    value: { name: "清单失败必须恢复", tiles: [] },
+    saveAs: true,
+  });
+  const recordKey = "paws-level-editor-demo-v1:rollback_manifest.json";
+  const manifestKey = "paws-level-editor-demo-v1:local-files";
+  const priorRecord = storage.getItem(recordKey);
+  const priorManifest = storage.getItem(manifestKey);
+  storage.failNextSetAfterMutation(manifestKey);
+
+  await assert.rejects(() => api.deleteLevel("rollback_manifest.json"), {
+    code: "local-storage-remove-failed",
+  });
+
+  assert.equal(storage.getItem(recordKey), priorRecord);
+  assert.equal(storage.getItem(manifestKey), priorManifest);
 });
 
 test("save-as checks the bundled index without requesting a missing level resource", async () => {

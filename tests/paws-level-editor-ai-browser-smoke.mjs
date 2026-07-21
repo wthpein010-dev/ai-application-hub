@@ -195,9 +195,24 @@ try {
       name: controller.document.name,
       tiles: controller.document.tiles.length,
       layers: Math.max(...controller.document.tiles.map(({ layer }) => layer)),
+      board: controller.document.board,
+      gridUnit: controller.document.gridUnit,
+      designerBoard: {
+        width: controller.document.designerNote.widthNum,
+        height: controller.document.designerNote.heightNum,
+      },
+      coordinatesInBounds: controller.document.tiles.every(
+        ({ x, y }) => x >= 0 && x <= 48 && y >= 0 && y <= 56,
+      ),
       localEntries: controller.levels.filter(
         ({ local, fileName }) => local && fileName.startsWith("ai_level_"),
       ).length,
+      catalogEntry: controller.levels.find(
+        ({ fileName }) => fileName === controller.document.fileName,
+      ),
+      storedSource: JSON.parse(
+        localStorage.getItem(`paws-level-editor-demo-v1:${controller.document.fileName}`),
+      )?.source,
       generation: controller.lastAiGeneration,
     };
   });
@@ -205,17 +220,34 @@ try {
   assert.match(generated.name, /^AI 标准 · 均衡布局$/);
   assert.equal(generated.tiles, 200);
   assert.equal(generated.layers, 15);
+  assert.deepEqual(
+    { width: generated.board.width, height: generated.board.height },
+    { width: 7, height: 8 },
+  );
+  assert.equal(generated.gridUnit, "sheep_7x8_mini8");
+  assert.deepEqual(generated.designerBoard, { width: 7, height: 8 });
+  assert.equal(generated.coordinatesInBounds, true);
   assert.equal(generated.localEntries, 1);
+  assert.equal(generated.catalogEntry.source, "ai");
+  assert.equal(generated.catalogEntry.aiReferenceEligible, false);
+  assert.equal(generated.storedSource, "ai");
+  assert.equal(generated.generation.document, undefined);
   assert.equal(generated.generation.report.solvable, true);
   assert.equal(generated.generation.report.steps, generated.tiles / 2);
   assert.equal(generated.generation.report.statistics.effectiveLayerCount, 15);
   assert.equal(generated.generation.report.statistics.initialAccessiblePairs, 3);
-  assert.equal(generated.generation.report.statistics.averageBlockers <= 2.5, true);
+  assert.equal(generated.generation.report.statistics.averageBlockers <= 4, true);
   assert.equal(generated.generation.report.difficulty.valid, true);
   assert.equal(generated.generation.report.difficulty.releaseGate, "pass");
   assert.equal(
     Math.abs(generated.generation.report.difficulty.score - 60) <= 5,
     true,
+  );
+  assert.equal(
+    await page.evaluate(async () =>
+      (await window.pawsWorkbench.loadAiReferenceDocuments()).length),
+    30,
+    "AI-generated results must not feed the all-level learning set",
   );
   assert.deepEqual(
     Object.keys(generated.generation.report.difficulty.dimensions),
@@ -285,6 +317,14 @@ try {
     generated.fileName),
     true,
   );
+  assert.equal(await page.locator("#delete-local-level").isEnabled(), true);
+  page.once("dialog", (dialog) => dialog.accept());
+  await page.locator("#delete-local-level").click();
+  await page.waitForFunction(({ fileName, fallback }) =>
+    window.pawsWorkbench?.document?.fileName === fallback
+    && window.pawsWorkbench?.levels?.length === 30
+    && localStorage.getItem(`paws-level-editor-demo-v1:${fileName}`) === null,
+  { fileName: generated.fileName, fallback: requestedDefault });
 
   for (const [kind, entries] of Object.entries(errors)) {
     assert.deepEqual(entries, [], `${kind} errors:\n${entries.join("\n")}`);
@@ -296,6 +336,8 @@ try {
     generatedFileName: generated.fileName,
     generatedTileCount: generated.tiles,
     generatedLayerCount: generated.layers,
+    generatedBoard: generated.board,
+    generatedGridUnit: generated.gridUnit,
     generatedDifficultyScore: generated.generation.report.difficulty.score,
     generatedDifficultyRating: generated.generation.report.difficulty.rating.label,
     generatedDifficultyDimensions: generated.generation.report.difficulty.dimensions,
@@ -306,6 +348,7 @@ try {
     completedInPlay: completed.won,
     webgl,
     persistedAfterReload: true,
+    deletedAfterVerification: true,
     consoleErrors: errors.console.length,
     httpErrors: errors.http.length,
     pageErrors: errors.page.length,

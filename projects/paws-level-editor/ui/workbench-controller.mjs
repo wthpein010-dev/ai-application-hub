@@ -104,6 +104,7 @@ export class WorkbenchController {
       levelCount: byId("level-count"),
       refresh: byId("refresh-levels"),
       resetLevel: byId("reset-level"),
+      deleteLocalLevel: byId("delete-local-level"),
       newLevel: byId("new-level"),
       importLevel: byId("import-level"),
       importLevelInput: byId("import-level-input"),
@@ -157,6 +158,7 @@ export class WorkbenchController {
   bindEvents() {
     this.elements.refresh.addEventListener("click", () => this.refreshLevels());
     this.elements.resetLevel.addEventListener("click", () => this.resetCurrentLevel());
+    this.elements.deleteLocalLevel.addEventListener("click", () => this.deleteCurrentLevel());
     this.elements.newLevel.addEventListener("click", () => this.createNewLevel());
     this.elements.importLevel.addEventListener("click", () => this.requestLocalImport());
     this.elements.importLevelInput.addEventListener("change", () =>
@@ -350,6 +352,8 @@ export class WorkbenchController {
         version: response.version,
       });
       this.document.bundled = response.bundled === true;
+      this.document.local = response.local === true;
+      this.document.source = response.source;
       this.currentDifficulty = scoreLevelDifficulty(this.document, {
         maxNodes: 5000,
       });
@@ -411,6 +415,54 @@ export class WorkbenchController {
     }
   }
 
+  async deleteCurrentLevel() {
+    const { document } = this;
+    if (this.readonly || !document?.local || document.bundled) {
+      return;
+    }
+    const fileName = document.fileName;
+    if (!confirm(
+      `确定删除本地关卡 ${fileName} 吗？\n\n删除后无法撤销，AI 下次生成将不再学习这关。`,
+    )) {
+      return;
+    }
+    try {
+      await this.api.deleteLevel(fileName);
+      this.document = null;
+      this.history = null;
+      this.selection = new Set();
+      this.issues = [];
+      this.currentDifficulty = null;
+      this.playSession = null;
+      this.playSnapshot = null;
+      this.lastAiGeneration = null;
+      this.levels = [];
+      this.mountRenderer();
+      this.elements.emptyStage.hidden = false;
+      this.updateUI();
+      await this.refreshLevels();
+      if (!this.document) {
+        const fallback = this.levels.find(
+          ({ fileName: candidate }) => candidate === this.defaultFileName,
+        ) ?? this.levels[0];
+        if (fallback) {
+          await this.openLevel(fallback.fileName, { discardDirty: true });
+        }
+      }
+      if (!this.document) {
+        throw new Error(`已删除 ${fileName}，但默认关卡未能打开，请刷新后重试。`);
+      }
+      const referenceCount = this.levels.filter(
+        ({ aiReferenceEligible }) => aiReferenceEligible,
+      ).length;
+      this.showToast(
+        `已删除 ${fileName}；剩余 AI 学习参考 ${referenceCount} 关。`,
+      );
+    } catch (error) {
+      this.showToast(error.message, "error");
+    }
+  }
+
   requestLocalImport() {
     if (this.readonly) return;
     if (this.isDirty() && !confirm("当前关卡有未保存修改，确定导入本地关卡吗？")) return;
@@ -429,6 +481,7 @@ export class WorkbenchController {
         value,
         expectedVersion: "",
         saveAs: true,
+        source: "import",
       });
       await activateImportedLevel(fileName, {
         refreshLevels: () => this.refreshLevels(),
@@ -507,7 +560,11 @@ export class WorkbenchController {
   }
 
   async loadAiReferenceDocuments() {
-    const levels = this.levels.filter(({ bundled }) => bundled);
+    const catalog = await this.api.listLevelCatalog();
+    this.levels = catalog.levels;
+    this.defaultFileName = catalog.defaultFileName;
+    this.renderLevelList();
+    const levels = this.levels.filter(({ aiReferenceEligible }) => aiReferenceEligible);
     const settled = await Promise.allSettled(levels.map(async ({ fileName }) => {
       const response = await this.api.loadLevel(fileName);
       return parseLevelDocument(response.value, {
@@ -560,6 +617,7 @@ export class WorkbenchController {
         value: serializeLevelDocument(generated.document),
         expectedVersion: "",
         saveAs: true,
+        source: "ai",
       });
       await activateImportedLevel(fileName, {
         refreshLevels: () => this.refreshLevels(),
@@ -586,7 +644,8 @@ export class WorkbenchController {
       const statistics = generated.report.statistics;
       this.showToast(
         `已生成 ${statistics.tileCount} 张 / ${statistics.effectiveLayerCount} 层，`
-        + `难度 ${difficulty.score}（${difficulty.rating.label}），可解。`,
+        + `难度 ${difficulty.score}（${difficulty.rating.label}），可解；`
+        + `本次实时学习 ${references.length} 关。`,
       );
       return true;
     } catch (error) {
@@ -624,6 +683,9 @@ export class WorkbenchController {
       features: {},
       tiles: [],
     });
+    this.document.bundled = false;
+    this.document.local = false;
+    this.document.source = "manual";
     this.currentDifficulty = scoreLevelDifficulty(this.document, {
       maxNodes: 5000,
     });
@@ -998,11 +1060,18 @@ export class WorkbenchController {
 
   async performSave({ fileName, saveAs, expectedVersion }) {
     const value = serializeLevelDocument(this.document);
+    const source = saveAs
+      ? "manual"
+      : ["import", "manual", "ai"].includes(this.document.source)
+        ? this.document.source
+        : "manual";
     try {
-      const saved = await this.api.saveLevel({ fileName, value, expectedVersion, saveAs });
+      const saved = await this.api.saveLevel({ fileName, value, expectedVersion, saveAs, source });
       this.document.fileName = fileName;
       this.document.version = saved.version;
       this.document.bundled = saved.bundled === true;
+      this.document.local = saved.local === true;
+      this.document.source = saved.source;
       this.document.original = structuredClone(saved.value);
       try {
         this.document.designerNote = JSON.parse(saved.value.designerNote);
@@ -1076,6 +1145,8 @@ export class WorkbenchController {
     this.elements.undo.disabled = !this.history?.canUndo;
     this.elements.redo.disabled = !this.history?.canRedo;
     this.elements.resetLevel.disabled = !this.document?.bundled;
+    this.elements.deleteLocalLevel.disabled =
+      this.readonly || !this.document?.local || this.document?.bundled;
     this.elements.generateAi.disabled = this.readonly || this.aiGenerationPending;
     this.elements.confirmAiLevel.disabled = this.aiGenerationPending;
     this.elements.confirmAiLevel.textContent = this.aiGenerationPending
