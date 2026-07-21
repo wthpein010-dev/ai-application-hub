@@ -132,6 +132,7 @@
             <div><span class="status-label">关卡</span><strong id="status-level">未打开</strong></div>
             <div><span class="status-label">砖块</span><strong id="status-tiles">—</strong></div>
             <div><span class="status-label">层数</span><strong id="status-layers">—</strong></div>
+            <div><span class="status-label">难度</span><strong id="status-difficulty">—</strong></div>
             <div><span class="status-label">坐标</span><strong id="status-coordinates">—</strong></div>
             <div class="status-grow"><span class="status-label">随机种子</span><strong id="status-seed">—</strong></div>
             <div id="validation-summary" class="validation-summary is-neutral"><span></span>未校验</div>
@@ -180,6 +181,27 @@
           </fieldset>
 
           <fieldset>
+            <legend>精确参数</legend>
+            <div class="ai-parameter-grid">
+              <label class="ai-parameter">
+                <span>砖块数量</span>
+                <input id="ai-tile-count" name="ai-tile-count" type="number" min="20" max="400" step="1" value="200" inputmode="numeric" />
+                <small>奇数会自动补成偶数</small>
+              </label>
+              <label class="ai-parameter">
+                <span>有效层数</span>
+                <input id="ai-layer-count" name="ai-layer-count" type="number" min="1" max="40" step="1" value="15" inputmode="numeric" />
+                <small>只计算真实遮挡层</small>
+              </label>
+              <label class="ai-parameter">
+                <span>目标难度</span>
+                <input id="ai-target-score" name="ai-target-score" type="number" min="0" max="100" step="1" value="60" inputmode="numeric" />
+                <small>生成结果优先落在 ±5 分</small>
+              </label>
+            </div>
+          </fieldset>
+
+          <fieldset>
             <legend>布局</legend>
             <div class="ai-choice-grid">
               <label class="ai-choice">
@@ -212,7 +234,7 @@
           </fieldset>
 
           <p id="ai-level-hint" class="ai-level-hint">
-            约 60–72 张、5–6 层；从全部关卡学习，均衡布局，限制重叠并自动验证可解。
+            精确 200 张、15 个有效层，目标 60 分（困难入门）；从全部关卡学习，均衡布局。建议 190–230 张、14–20 层。
           </p>
           <p id="ai-level-error" class="form-error" role="alert"></p>
           <div class="dialog-actions">

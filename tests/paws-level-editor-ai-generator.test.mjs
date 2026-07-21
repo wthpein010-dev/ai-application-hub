@@ -10,6 +10,11 @@ import {
   mergeLevelStatistics,
 } from "../projects/paws-level-editor/core/level-statistics.mjs";
 import { solveLevel } from "../projects/paws-level-editor/core/level-solver.mjs";
+import {
+  DIFFICULTY_DIMENSION_WEIGHTS,
+  rateDifficultyScore,
+  scoreLevelDifficulty,
+} from "../projects/paws-level-editor/core/level-difficulty.mjs";
 import { validateLevel } from "../projects/paws-level-editor/core/level-validator.mjs";
 
 function tile(uid, x, y, layer, type) {
@@ -155,6 +160,131 @@ test("solver reports a deterministic node limit", () => {
   assert.equal(report.solvable, false);
   assert.equal(report.exhausted, true);
   assert.equal(report.nodes, 1);
+});
+
+test("difficulty score uses the Feishu five-dimension weights and a shared rating scale", () => {
+  assert.deepEqual(DIFFICULTY_DIMENSION_WEIGHTS, {
+    structure: 0.2,
+    information: 0.15,
+    choice: 0.2,
+    route: 0.35,
+    endurance: 0.1,
+  });
+  assert.deepEqual(rateDifficultyScore(39), { key: "relaxed", label: "教学 / 轻松" });
+  assert.deepEqual(rateDifficultyScore(60), { key: "hard-intro", label: "困难入门" });
+  assert.deepEqual(rateDifficultyScore(80), { key: "extreme", label: "极难挑战" });
+
+  const result = scoreLevelDifficulty(reference);
+  const expected = Math.round(
+    result.dimensions.structure * 0.2
+    + result.dimensions.information * 0.15
+    + result.dimensions.choice * 0.2
+    + result.dimensions.route * 0.35
+    + result.dimensions.endurance * 0.1,
+  );
+  assert.equal(result.score, expected);
+  assert.equal(Object.values(result.dimensions).every(Number.isFinite), true);
+  assert.equal(Object.values(result.dimensions).every((value) => value >= 0 && value <= 100), true);
+  assert.equal(result.valid, true);
+  assert.equal(result.releaseGate, "pass");
+  assert.equal(result.reasons.length >= 1 && result.reasons.length <= 3, true);
+});
+
+test("unsolvable is an invalid release gate instead of a 100 difficulty score", () => {
+  const blocked = makeDocument([
+    tile("left-a", 0, 0, 1, 2),
+    tile("blocked-a", 8, 0, 1, 1),
+    tile("right-a", 16, 0, 1, 3),
+    tile("left-b", 0, 24, 1, 4),
+    tile("blocked-b", 8, 24, 1, 1),
+    tile("right-b", 16, 24, 1, 5),
+  ]);
+
+  const result = scoreLevelDifficulty(blocked);
+
+  assert.equal(result.valid, false);
+  assert.equal(result.releaseGate, "blocked");
+  assert.equal(result.solver.solvable, false);
+  assert.equal(result.score < 100, true);
+  assert.match(result.gateReason, /不可解/);
+});
+
+test("difficulty profiles expose exact defaults and concise recommendations", () => {
+  assert.deepEqual(
+    Object.fromEntries(Object.entries(DIFFICULTY_PROFILES).map(([key, value]) => [key, {
+      defaultTileCount: value.defaultTileCount,
+      defaultLayerCount: value.defaultLayerCount,
+      defaultTargetScore: value.defaultTargetScore,
+      suggestedTiles: value.suggestedTiles,
+      suggestedLayers: value.suggestedLayers,
+    }])),
+    {
+      easy: {
+        defaultTileCount: 180,
+        defaultLayerCount: 12,
+        defaultTargetScore: 40,
+        suggestedTiles: [160, 200],
+        suggestedLayers: [10, 14],
+      },
+      normal: {
+        defaultTileCount: 200,
+        defaultLayerCount: 15,
+        defaultTargetScore: 60,
+        suggestedTiles: [190, 230],
+        suggestedLayers: [14, 20],
+      },
+      hard: {
+        defaultTileCount: 240,
+        defaultLayerCount: 32,
+        defaultTargetScore: 80,
+        suggestedTiles: [220, 280],
+        suggestedLayers: [28, 36],
+      },
+    },
+  );
+});
+
+test("generator honors exact normalized size, layers and target difficulty", () => {
+  const generated = generateAiLevel({
+    references: [reference],
+    difficulty: "normal",
+    layout: "balanced",
+    tileCount: 201,
+    layerCount: 15,
+    targetScore: 60,
+    seed: 73125,
+    maxAttempts: 4,
+  });
+  const stats = extractLevelStatistics(generated.document);
+
+  assert.equal(stats.tileCount, 202);
+  assert.equal(stats.layerCount, 15);
+  assert.equal(stats.effectiveLayerCount, 15);
+  assert.equal(generated.target.tileCount, 202);
+  assert.equal(generated.target.layerCount, 15);
+  assert.equal(generated.target.score, 60);
+  assert.equal(generated.report.difficulty.valid, true);
+  assert.equal(generated.report.difficulty.releaseGate, "pass");
+  assert.equal(Number.isFinite(generated.report.difficulty.score), true);
+  assert.equal(generated.document.designerNote.aiGeneration.difficulty.targetScore, 60);
+  assert.deepEqual(
+    generated.document.designerNote.aiGeneration.stagePlan.map(({ key }) => key),
+    ["surface", "shelter", "middle", "crisis", "release"],
+  );
+  assert.equal(
+    generated.document.designerNote.aiGeneration.stagePlan
+      .reduce((total, stage) => total + stage.tileCount, 0),
+    202,
+  );
+  assert.equal(
+    generated.document.designerNote.aiGeneration.stagePlan
+      .reduce((total, stage) => total + stage.layerCount, 0),
+    15,
+  );
+  const stages = generated.document.designerNote.aiGeneration.stagePlan;
+  assert.equal(stages.find(({ key }) => key === "release").pressureTarget
+    < stages.find(({ key }) => key === "crisis").pressureTarget, true);
+  assert.equal(stats.averageBlockers <= 2.5, true);
 });
 
 for (const difficulty of ["easy", "normal", "hard"]) {

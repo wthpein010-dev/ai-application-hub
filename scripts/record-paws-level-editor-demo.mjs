@@ -28,6 +28,7 @@ const sourceFiles = [
   "projects/paws-level-editor/styles.css",
   "projects/paws-level-editor/app.mjs",
   "projects/paws-level-editor/core/ai-level-generator.mjs",
+  "projects/paws-level-editor/core/level-difficulty.mjs",
   "projects/paws-level-editor/core/level-solver.mjs",
   "projects/paws-level-editor/core/level-statistics.mjs",
   "projects/paws-level-editor/ui/ai-level-dialog.mjs",
@@ -369,6 +370,9 @@ async function recordEditor() {
         await page.locator('input[name="ai-reference"][value="all"]').isChecked(),
         true,
       );
+      assert.equal(await page.locator("#ai-tile-count").inputValue(), "200");
+      assert.equal(await page.locator("#ai-layer-count").inputValue(), "15");
+      assert.equal(await page.locator("#ai-target-score").inputValue(), "60");
       await delay(1_500);
       await page.locator("#confirm-ai-level").click();
       await page.waitForFunction(() => {
@@ -386,12 +390,20 @@ async function recordEditor() {
           reference: controller.lastAiGeneration.options.reference,
           solvable: controller.lastAiGeneration.report.solvable,
           tileCount: controller.document.tiles.length,
+          layerCount: controller.lastAiGeneration.report.statistics.effectiveLayerCount,
+          targetScore: controller.lastAiGeneration.options.targetScore,
+          actualScore: controller.lastAiGeneration.report.difficulty.score,
+          rating: controller.lastAiGeneration.report.difficulty.rating.label,
+          dimensions: controller.lastAiGeneration.report.difficulty.dimensions,
         };
       });
       assert.match(aiGeneration.fileName, /^ai_level_\d+\.json$/);
       assert.equal(aiGeneration.reference, "all");
       assert.equal(aiGeneration.solvable, true);
-      assert.ok(aiGeneration.tileCount >= 60);
+      assert.equal(aiGeneration.tileCount, 200);
+      assert.equal(aiGeneration.layerCount, 15);
+      assert.equal(aiGeneration.targetScore, 60);
+      assert.ok(Math.abs(aiGeneration.actualScore - aiGeneration.targetScore) <= 5);
       assert.equal(await page.locator('[role="option"]').count(), 31);
       proof.actions.aiGeneration = aiGeneration;
       const generatedFileName = aiGeneration.fileName;

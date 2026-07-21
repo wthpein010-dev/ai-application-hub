@@ -6,6 +6,7 @@ import test from "node:test";
 
 import {
   describeGenerationOptions,
+  getDifficultyDefaults,
   normalizeGenerationOptions,
 } from "../projects/paws-level-editor/ui/ai-level-dialog.mjs";
 
@@ -22,20 +23,49 @@ test("AI generation options normalize the three intentional choices", () => {
   form.set("ai-difficulty", "hard");
   form.set("ai-layout", "progressive");
   form.set("ai-reference", "current");
+  form.set("ai-tile-count", "241");
+  form.set("ai-layer-count", "32");
+  form.set("ai-target-score", "80");
 
   assert.deepEqual(normalizeGenerationOptions(form), {
     difficulty: "hard",
     layout: "progressive",
     reference: "current",
+    tileCount: 242,
+    layerCount: 32,
+    targetScore: 80,
+    tileCountAdjusted: true,
   });
   assert.equal(
     describeGenerationOptions({
       difficulty: "hard",
       layout: "progressive",
       reference: "current",
+      tileCount: 242,
+      layerCount: 32,
+      targetScore: 80,
+      tileCountAdjusted: true,
     }),
-    "约 84–96 张、7–8 层；从当前关卡学习，层层推进，限制重叠并自动验证可解。",
+    "精确 242 张、32 个有效层，目标 80 分（极难挑战）；输入砖块数已自动补为偶数。从当前关卡学习，层层推进。建议 220–280 张、28–36 层。",
   );
+});
+
+test("difficulty presets expose the confirmed 200/15 baseline and deep hard template", () => {
+  assert.deepEqual(getDifficultyDefaults("easy"), {
+    tileCount: 180,
+    layerCount: 12,
+    targetScore: 40,
+  });
+  assert.deepEqual(getDifficultyDefaults("normal"), {
+    tileCount: 200,
+    layerCount: 15,
+    targetScore: 60,
+  });
+  assert.deepEqual(getDifficultyDefaults("hard"), {
+    tileCount: 240,
+    layerCount: 32,
+    targetScore: 80,
+  });
 });
 
 test("AI generation options reject values outside the compact choice set", () => {
@@ -53,15 +83,23 @@ test("AI dialog exposes exactly three difficulty, three layout and two reference
   assert.equal((page.match(/name="ai-difficulty"/g) ?? []).length, 3);
   assert.equal((page.match(/name="ai-layout"/g) ?? []).length, 3);
   assert.equal((page.match(/name="ai-reference"/g) ?? []).length, 2);
+  assert.equal((page.match(/name="ai-tile-count"/g) ?? []).length, 1);
+  assert.equal((page.match(/name="ai-layer-count"/g) ?? []).length, 1);
+  assert.equal((page.match(/name="ai-target-score"/g) ?? []).length, 1);
+  assert.match(page, /name="ai-tile-count"[^>]*value="200"/);
+  assert.match(page, /name="ai-layer-count"[^>]*value="15"/);
+  assert.match(page, /name="ai-target-score"[^>]*value="60"/);
+  assert.match(page, /id="status-difficulty"/);
   assert.match(page, /id="confirm-ai-level"[^>]*>\s*生成并打开/);
 });
 
 test("controller loads references, generates, saves a collision-safe copy and opens it", () => {
   assert.match(controller, /from "\.\.\/core\/ai-level-generator\.mjs"/);
+  assert.match(controller, /scoreLevelDifficulty/);
   assert.match(controller, /from "\.\/ai-level-dialog\.mjs"/);
   assert.match(controller, /async loadAiReferenceDocuments\(/);
   assert.match(controller, /this\.levels\.filter\(\(\{\s*bundled\s*\}\)\s*=>\s*bundled\)/);
-  assert.match(controller, /generateAiLevel\(\{[\s\S]*references,[\s\S]*difficulty:[\s\S]*layout:/);
+  assert.match(controller, /generateAiLevel\(\{[\s\S]*references,[\s\S]*difficulty:[\s\S]*layout:[\s\S]*tileCount:[\s\S]*layerCount:[\s\S]*targetScore:/);
   assert.match(
     controller,
     /chooseImportedFileName\(\s*`ai_level_\$\{unsignedSeed\}\.json`,\s*this\.levels\.map/,
@@ -70,6 +108,8 @@ test("controller loads references, generates, saves a collision-safe copy and op
   assert.match(controller, /saveAs:\s*true/);
   assert.match(controller, /activateImportedLevel\(fileName,\s*\{/);
   assert.match(controller, /openLevel:\s*\(\)\s*=>\s*this\.openLevel\(fileName,\s*\{\s*discardDirty:\s*true\s*\}\)/);
+  assert.match(controller, /难度\s*\$\{difficulty\.score\}/);
+  assert.match(controller, /statusDifficulty\.textContent/);
 });
 
 test("controller gates duplicate generation and disables current reference without a document", () => {

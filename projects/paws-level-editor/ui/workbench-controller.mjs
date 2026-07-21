@@ -4,6 +4,7 @@ import { parseLevelDocument, serializeLevelDocument } from "../core/level-adapte
 import { validateLevel } from "../core/level-validator.mjs";
 import { createPlaySession } from "../core/play-engine.mjs";
 import { generateAiLevel } from "../core/ai-level-generator.mjs";
+import { scoreLevelDifficulty } from "../core/level-difficulty.mjs";
 import { solveLevel } from "../core/level-solver.mjs";
 import { InspectorPanel } from "./inspector.mjs";
 import { formatLevelId, formatLevelModifiedAt } from "./level-summary.mjs";
@@ -16,6 +17,7 @@ import {
 } from "./local-level-import.mjs";
 import {
   describeGenerationOptions,
+  getDifficultyDefaults,
   normalizeGenerationOptions,
 } from "./ai-level-dialog.mjs";
 
@@ -67,6 +69,7 @@ export class WorkbenchController {
     this.uidCounter = 0;
     this.aiGenerationPending = false;
     this.lastAiGeneration = null;
+    this.currentDifficulty = null;
     this.readonly = matchMedia("(max-width: 900px), (pointer: coarse)").matches;
     if (this.readonly) {
       this.mode = "play";
@@ -110,6 +113,9 @@ export class WorkbenchController {
       aiLevelHint: byId("ai-level-hint"),
       aiLevelError: byId("ai-level-error"),
       aiCurrentReference: byId("ai-reference-current"),
+      aiTileCount: byId("ai-tile-count"),
+      aiLayerCount: byId("ai-layer-count"),
+      aiTargetScore: byId("ai-target-score"),
       confirmAiLevel: byId("confirm-ai-level"),
       modeEdit: byId("mode-edit"),
       modePlay: byId("mode-play"),
@@ -130,6 +136,7 @@ export class WorkbenchController {
       statusLevel: byId("status-level"),
       statusTiles: byId("status-tiles"),
       statusLayers: byId("status-layers"),
+      statusDifficulty: byId("status-difficulty"),
       statusCoordinates: byId("status-coordinates"),
       statusSeed: byId("status-seed"),
       validationSummary: byId("validation-summary"),
@@ -158,7 +165,20 @@ export class WorkbenchController {
     this.elements.aiLevelForm.addEventListener("submit", (event) =>
       this.submitAiGeneration(event));
     this.elements.aiLevelForm.querySelectorAll("input[type=radio]").forEach((input) => {
-      input.addEventListener("change", () => this.updateAiGenerationHint());
+      input.addEventListener("change", () => {
+        if (input.name === "ai-difficulty") {
+          this.applyAiDifficultyDefaults(input.value);
+          return;
+        }
+        this.updateAiGenerationHint();
+      });
+    });
+    [
+      this.elements.aiTileCount,
+      this.elements.aiLayerCount,
+      this.elements.aiTargetScore,
+    ].forEach((input) => {
+      input.addEventListener("input", () => this.updateAiGenerationHint());
     });
     this.elements.levelSearch.addEventListener("input", () => this.renderLevelList());
     this.elements.modeEdit.addEventListener("click", () => this.switchMode("edit"));
@@ -327,6 +347,9 @@ export class WorkbenchController {
         version: response.version,
       });
       this.document.bundled = response.bundled === true;
+      this.currentDifficulty = scoreLevelDifficulty(this.document, {
+        maxNodes: 5000,
+      });
       this.history = new EditHistory(this.document);
       this.history.markSaved();
       this.selection = new Set();
@@ -448,6 +471,18 @@ export class WorkbenchController {
     }
   }
 
+  applyAiDifficultyDefaults(difficulty) {
+    try {
+      const defaults = getDifficultyDefaults(difficulty);
+      this.elements.aiTileCount.value = String(defaults.tileCount);
+      this.elements.aiLayerCount.value = String(defaults.layerCount);
+      this.elements.aiTargetScore.value = String(defaults.targetScore);
+      this.updateAiGenerationHint();
+    } catch (error) {
+      this.elements.aiLevelError.textContent = error.message;
+    }
+  }
+
   async submitAiGeneration(event) {
     event.preventDefault();
     if (event.submitter?.value === "cancel") {
@@ -505,6 +540,9 @@ export class WorkbenchController {
         references,
         difficulty: options.difficulty,
         layout: options.layout,
+        tileCount: options.tileCount,
+        layerCount: options.layerCount,
+        targetScore: options.targetScore,
         seed: requestedSeed,
       });
       generated.document.designerNote.aiGeneration.options.reference =
@@ -541,7 +579,12 @@ export class WorkbenchController {
           statistics: generated.report.statistics,
         }),
       };
-      this.showToast(`已生成可解关卡 ${fileName}，种子 ${unsignedSeed}。`);
+      const difficulty = generated.report.difficulty;
+      const statistics = generated.report.statistics;
+      this.showToast(
+        `已生成 ${statistics.tileCount} 张 / ${statistics.effectiveLayerCount} 层，`
+        + `难度 ${difficulty.score}（${difficulty.rating.label}），可解。`,
+      );
       return true;
     } catch (error) {
       this.elements.aiLevelError.textContent = error.message;
@@ -578,6 +621,9 @@ export class WorkbenchController {
       features: {},
       tiles: [],
     });
+    this.currentDifficulty = scoreLevelDifficulty(this.document, {
+      maxNodes: 5000,
+    });
     this.history = new EditHistory(this.document);
     this.history.markSaved();
     this.selection = new Set();
@@ -595,6 +641,11 @@ export class WorkbenchController {
 
   validate(showToast = true) {
     this.issues = this.document ? validateLevel(this.document) : [];
+    if (showToast && this.document) {
+      this.currentDifficulty = scoreLevelDifficulty(this.document, {
+        maxNodes: 5000,
+      });
+    }
     this.updateUI();
     if (showToast && this.document) {
       this.showToast(
@@ -610,6 +661,7 @@ export class WorkbenchController {
       return;
     }
     this.history.execute(command);
+    this.currentDifficulty = null;
     this.validate(false);
     this.refreshRenderer();
     this.updateUI();
@@ -955,6 +1007,9 @@ export class WorkbenchController {
         this.document.designerNote = {};
       }
       this.history.markSaved();
+      this.currentDifficulty = scoreLevelDifficulty(this.document, {
+        maxNodes: 5000,
+      });
       await this.refreshLevels();
       this.updateUI();
       this.showToast(saveAs ? `已另存为 ${fileName}` : `已保存到当前浏览器：${fileName}`);
@@ -1033,6 +1088,13 @@ export class WorkbenchController {
     this.elements.statusLayers.textContent = this.document
       ? String(Math.max(0, ...activeTiles.map((tile) => tile.layer)))
       : "—";
+    this.elements.statusDifficulty.textContent = !this.document
+      ? "—"
+      : !this.currentDifficulty
+        ? "待重算"
+        : this.currentDifficulty.releaseGate === "blocked"
+          ? `${this.currentDifficulty.score} · 无效`
+          : `${this.currentDifficulty.score} · ${this.currentDifficulty.rating.label}`;
     this.elements.statusSeed.textContent = this.mode === "play" ? String(this.playSnapshot?.seed ?? this.seed) : "—";
     this.elements.lockSeed.checked = this.seedLocked;
     const errors = this.issues.filter((issue) => issue.severity === "error");

@@ -34,19 +34,42 @@ function countAccessiblePairs(tiles, coverage) {
     .reduce((total, count) => total + Math.floor(count / 2), 0);
 }
 
+function accessibleTiles(tiles, coverage) {
+  return tiles.filter((tile) => {
+    const state = coverage.get(tile.uid);
+    return !state?.covered && !state?.sideBlocked;
+  });
+}
+
 function countCrossLayerOverlap(tiles) {
   let count = 0;
   let possible = 0;
+  const participatingLayers = new Set();
+  const blockersByUid = new Map(tiles.map(({ uid }) => [uid, 0]));
+  const dependenciesByUid = new Map(tiles.map(({ uid }) => [uid, 0]));
   for (let leftIndex = 0; leftIndex < tiles.length; leftIndex += 1) {
     const left = tiles[leftIndex];
     for (let rightIndex = leftIndex + 1; rightIndex < tiles.length; rightIndex += 1) {
       const right = tiles[rightIndex];
       if (left.layer === right.layer) continue;
       possible += 1;
-      if (overlaps(left, right)) count += 1;
+      if (!overlaps(left, right)) continue;
+      count += 1;
+      participatingLayers.add(left.layer);
+      participatingLayers.add(right.layer);
+      const higher = left.layer > right.layer ? left : right;
+      const lower = higher === left ? right : left;
+      blockersByUid.set(lower.uid, (blockersByUid.get(lower.uid) ?? 0) + 1);
+      dependenciesByUid.set(higher.uid, (dependenciesByUid.get(higher.uid) ?? 0) + 1);
     }
   }
-  return { count, possible };
+  return {
+    count,
+    possible,
+    participatingLayers,
+    blockersByUid,
+    dependenciesByUid,
+  };
 }
 
 function maximumExactStackDepth(tiles) {
@@ -112,6 +135,41 @@ function collectCommonOffsets(tiles) {
     .slice(0, 12);
 }
 
+function averagePairDistance(tiles, board) {
+  if (tiles.length < 2) return 0;
+  const diagonal = Math.hypot(
+    Math.max(1, board.width * TILE_SIZE - TILE_SIZE),
+    Math.max(1, board.height * TILE_SIZE - TILE_SIZE),
+  );
+  const byType = new Map();
+  for (const tile of tiles) {
+    const values = byType.get(tile.type) ?? [];
+    values.push(tile);
+    byType.set(tile.type, values);
+  }
+  const distances = [];
+  for (const values of byType.values()) {
+    for (let index = 0; index + 1 < values.length; index += 2) {
+      distances.push(Math.hypot(
+        values[index].x - values[index + 1].x,
+        values[index].y - values[index + 1].y,
+      ) / diagonal);
+    }
+  }
+  return distances.length
+    ? distances.reduce((total, value) => total + value, 0) / distances.length
+    : 0;
+}
+
+function bottleneckConcentration(dependenciesByUid) {
+  const values = [...dependenciesByUid.values()].sort((left, right) => right - left);
+  const total = values.reduce((sum, value) => sum + value, 0);
+  if (!total) return 0;
+  const criticalCount = Math.max(1, Math.ceil(values.length * 0.1));
+  return values.slice(0, criticalCount)
+    .reduce((sum, value) => sum + value, 0) / total;
+}
+
 export function extractLevelStatistics(document) {
   const tiles = Array.isArray(document?.tiles)
     ? document.tiles.map((tile, index) => ({
@@ -135,6 +193,14 @@ export function extractLevelStatistics(document) {
   );
   const crossLayerOverlap = countCrossLayerOverlap(tiles);
   const coverage = computeCoverage(tiles);
+  const initiallyAccessible = accessibleTiles(tiles, coverage);
+  const initiallyBlocked = tiles.filter((tile) =>
+    (crossLayerOverlap.blockersByUid.get(tile.uid) ?? 0) > 0);
+  const blockerTotal = initiallyBlocked.reduce(
+    (total, tile) => total + (crossLayerOverlap.blockersByUid.get(tile.uid) ?? 0),
+    0,
+  );
+  const nonEmptyLayers = new Set(tiles.map(({ layer }) => layer));
   const maxAnchorX = Math.max(1, board.width * TILE_SIZE - TILE_SIZE);
   const maxAnchorY = Math.max(1, board.height * TILE_SIZE - TILE_SIZE);
 
@@ -158,6 +224,20 @@ export function extractLevelStatistics(document) {
         : 0,
     maxExactStackDepth: maximumExactStackDepth(tiles),
     initialAccessiblePairs: countAccessiblePairs(tiles, coverage),
+    initialAccessibleTiles: initiallyAccessible.length,
+    initialOpenRate: tiles.length ? initiallyAccessible.length / tiles.length : 0,
+    initialOpenPairRate: initiallyAccessible.length
+      ? Math.min(1, countAccessiblePairs(tiles, coverage) * 2 / initiallyAccessible.length)
+      : 0,
+    initialActiveTypeCount: new Set(initiallyAccessible.map(({ type }) => type)).size,
+    initialPairDistance: averagePairDistance(initiallyAccessible, board),
+    averageBlockers: initiallyBlocked.length ? blockerTotal / initiallyBlocked.length : 0,
+    bottleneckConcentration: bottleneckConcentration(
+      crossLayerOverlap.dependenciesByUid,
+    ),
+    effectiveLayerCount: crossLayerOverlap.participatingLayers.size
+      || Math.min(1, nonEmptyLayers.size),
+    nonEmptyLayerCount: nonEmptyLayers.size,
     symmetryScore: calculateSymmetryScore(tiles, board.width),
     maxDependencyDepth: calculateDependencyDepth(tiles),
   };

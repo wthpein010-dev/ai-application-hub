@@ -153,6 +153,9 @@ try {
   assert.equal(await page.locator('input[name="ai-difficulty"]').count(), 3);
   assert.equal(await page.locator('input[name="ai-layout"]').count(), 3);
   assert.equal(await page.locator('input[name="ai-reference"]').count(), 2);
+  assert.equal(await page.locator('input[name="ai-tile-count"]').inputValue(), "200");
+  assert.equal(await page.locator('input[name="ai-layer-count"]').inputValue(), "15");
+  assert.equal(await page.locator('input[name="ai-target-score"]').inputValue(), "60");
   assert.equal(
     await page.locator('input[name="ai-difficulty"][value="normal"]').isChecked(),
     true,
@@ -197,11 +200,25 @@ try {
   });
   assert.match(generated.fileName, /^ai_level_\d+(?:_import(?:_\d+)?)?\.json$/);
   assert.match(generated.name, /^AI 标准 · 均衡布局$/);
-  assert.equal(generated.tiles >= 60 && generated.tiles <= 72, true);
-  assert.equal(generated.layers >= 5 && generated.layers <= 6, true);
+  assert.equal(generated.tiles, 200);
+  assert.equal(generated.layers, 15);
   assert.equal(generated.localEntries, 1);
   assert.equal(generated.generation.report.solvable, true);
   assert.equal(generated.generation.report.steps, generated.tiles / 2);
+  assert.equal(generated.generation.report.statistics.effectiveLayerCount, 15);
+  assert.equal(generated.generation.report.statistics.initialAccessiblePairs, 3);
+  assert.equal(generated.generation.report.statistics.averageBlockers <= 2.5, true);
+  assert.equal(generated.generation.report.difficulty.valid, true);
+  assert.equal(generated.generation.report.difficulty.releaseGate, "pass");
+  assert.equal(
+    Math.abs(generated.generation.report.difficulty.score - 60) <= 5,
+    true,
+  );
+  assert.deepEqual(
+    Object.keys(generated.generation.report.difficulty.dimensions),
+    ["structure", "information", "choice", "route", "endurance"],
+  );
+  assert.match(await page.locator("#status-difficulty").textContent(), /^\d+ · /);
   assert.equal(await page.locator('[role="option"]').count(), 31);
   await waitForNetworkAndTextures(page);
 
@@ -276,6 +293,11 @@ try {
     generatedFileName: generated.fileName,
     generatedTileCount: generated.tiles,
     generatedLayerCount: generated.layers,
+    generatedDifficultyScore: generated.generation.report.difficulty.score,
+    generatedDifficultyRating: generated.generation.report.difficulty.rating.label,
+    generatedDifficultyDimensions: generated.generation.report.difficulty.dimensions,
+    generatedInitialPairs: generated.generation.report.statistics.initialAccessiblePairs,
+    generatedAverageBlockers: generated.generation.report.statistics.averageBlockers,
     solverSteps: generated.generation.report.steps,
     solverNodes: generated.generation.report.nodes,
     completedInPlay: completed.won,

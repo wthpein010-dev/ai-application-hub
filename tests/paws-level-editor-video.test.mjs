@@ -83,6 +83,7 @@ test("recording proof matches current media, sources, timeline and real state ch
     "projects/paws-level-editor/styles.css",
     "projects/paws-level-editor/app.mjs",
     "projects/paws-level-editor/core/ai-level-generator.mjs",
+    "projects/paws-level-editor/core/level-difficulty.mjs",
     "projects/paws-level-editor/core/level-solver.mjs",
     "projects/paws-level-editor/core/level-statistics.mjs",
     "projects/paws-level-editor/ui/ai-level-dialog.mjs",
@@ -124,7 +125,17 @@ test("recording proof matches current media, sources, timeline and real state ch
   assert.match(actions.aiGeneration.fileName, /^ai_level_\d+\.json$/);
   assert.equal(actions.aiGeneration.reference, "all");
   assert.equal(actions.aiGeneration.solvable, true);
-  assert.equal(actions.aiGeneration.tileCount >= 60, true);
+  assert.equal(actions.aiGeneration.tileCount, 200);
+  assert.equal(actions.aiGeneration.layerCount, 15);
+  assert.equal(actions.aiGeneration.targetScore, 60);
+  assert.equal(
+    Math.abs(actions.aiGeneration.actualScore - actions.aiGeneration.targetScore) <= 5,
+    true,
+  );
+  assert.deepEqual(
+    Object.keys(actions.aiGeneration.dimensions),
+    ["structure", "information", "choice", "route", "endurance"],
+  );
   assert.notDeepEqual(actions.edit2d.drag.before, actions.edit2d.drag.after);
   assert.equal(actions.edit2d.drag.selectedBefore, actions.edit2d.drag.uid);
   assert.equal(actions.edit2d.drag.selectedAfter, actions.edit2d.drag.uid);
