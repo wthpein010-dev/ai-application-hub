@@ -17,6 +17,10 @@ const controller = readFileSync(
   join(editorRoot, "ui", "workbench-controller.mjs"),
   "utf8",
 );
+const browserSmoke = readFileSync(
+  join(repoRoot, "tests", "paws-level-editor-ai-browser-smoke.mjs"),
+  "utf8",
+);
 
 test("AI generation options normalize the three intentional choices", () => {
   const form = new FormData();
@@ -118,4 +122,13 @@ test("controller gates duplicate generation and disables current reference witho
   assert.match(controller, /finally\s*\{[\s\S]*this\.aiGenerationPending\s*=\s*false/);
   assert.match(controller, /aiCurrentReference\.disabled\s*=\s*!this\.document/);
   assert.match(controller, /generateAi\.disabled\s*=\s*this\.readonly\s*\|\|\s*this\.aiGenerationPending/);
+});
+
+test("online browser acceptance allows for slow Pages resources without relaxing local waits", () => {
+  assert.match(
+    browserSmoke,
+    /const browserTimeout = externalBaseUrl \? 120_000 : 30_000;/,
+  );
+  assert.match(browserSmoke, /page\.setDefaultNavigationTimeout\(browserTimeout\)/);
+  assert.match(browserSmoke, /page\.setDefaultTimeout\(browserTimeout\)/);
 });

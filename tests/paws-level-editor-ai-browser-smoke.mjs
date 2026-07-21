@@ -16,6 +16,7 @@ const externalBaseUrl = baseUrlIndex >= 0
   ? process.argv[baseUrlIndex + 1]?.replace(/\/+$/, "")
   : "";
 const updateArtifacts = process.argv.includes("--update-artifacts");
+const browserTimeout = externalBaseUrl ? 120_000 : 30_000;
 
 function editorUrl(baseUrl) {
   return baseUrl.includes("/projects/paws-level-editor")
@@ -109,6 +110,8 @@ try {
     });
   });
   const page = await context.newPage();
+  page.setDefaultNavigationTimeout(browserTimeout);
+  page.setDefaultTimeout(browserTimeout);
   const errors = captureErrors(page);
 
   await page.goto(editorUrl(baseUrl), { waitUntil: "networkidle" });
