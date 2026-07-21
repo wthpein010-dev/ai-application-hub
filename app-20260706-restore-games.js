@@ -106,6 +106,32 @@ const defaultApps = [
     polish: 9
   },
   {
+    id: "gamepulse-mini-radar",
+    name: "小游戏每日排行",
+    category: "小游戏产品洞察",
+    status: "assistant",
+    brief: "把国内微信小游戏热门榜、畅销榜与海外美国 iOS 休闲前十放在同一张开发者工作台上。",
+    problem: "小游戏开发者需要快速发现国内轻休闲产品与海外休闲榜变化，同时保留可核验的原始名次和数据状态。",
+    aiUse: "AI 参与榜单清洗、轻休闲筛选、产品信号整理和异常回退；站点每天北京时间 07:10 后检查更新。",
+    folder: "https://gamepulse-mini-radar.polite-chord-7994.chatgpt.site",
+    entry: "https://gamepulse-mini-radar.polite-chord-7994.chatgpt.site",
+    video: "./projects/gamepulse-mini-radar/video/index.html",
+    package: "",
+    platforms: {
+      web: {
+        href: "https://gamepulse-mini-radar.polite-chord-7994.chatgpt.site",
+        label: "演示"
+      },
+      windows: "",
+      mac: ""
+    },
+    tags: ["小游戏排行", "微信小游戏", "iOS 休闲榜", "产品洞察"],
+    speed: 9,
+    impact: 9,
+    risk: 8,
+    polish: 9
+  },
+  {
     id: "icecream",
     name: "IceCream 冰激凌工坊",
     category: "Unity 微信小游戏",
@@ -270,18 +296,19 @@ const defaultApps = [
     name: "Codex 多会话工作台",
     category: "AI 开发桌面工具",
     status: "desktop",
-    brief: "在同一个 Windows 一级界面中同时查看和操作多个真实 Codex 线程，直接输入、停止、审批，并清晰区分进行中与已完成任务。",
+    brief: "在同一个 Windows 或 macOS 一级界面中同时查看和操作多个真实 Codex 线程，直接输入、停止、审批，并清晰区分进行中与已完成任务。",
     problem: "并行推进多个 Codex 任务时，频繁切换线程会打断判断，也难以及时发现等待输入、等待审批或已经完成的任务。",
-    aiUse: "工具通过本机 codex app-server 连接真实线程，不读取凭据；AI 参与协议接入、状态投影、多窗口会话交互和 Windows 发布验证。",
+    aiUse: "工具通过本机 codex app-server 连接真实线程，不读取凭据；AI 参与协议接入、状态投影、多窗口会话交互和 Windows、macOS 双架构发布验证。",
     folder: "./projects/codex-thread-workbench/",
     entry: "./projects/codex-thread-workbench/index.html",
-    package: "https://github.com/wthpein010-dev/ai-application-hub/releases/download/codex-thread-workbench-v1.0.0/CodexThreadWorkbench-Windows-x64.zip",
+    video: "./projects/codex-thread-workbench/video/index.html",
+    package: "https://wthpein010-dev.github.io/ai-application-hub/projects/codex-thread-workbench/download/",
     platforms: {
       web: { href: "./projects/codex-thread-workbench/index.html", label: "交互演示" },
-      windows: { href: "https://github.com/wthpein010-dev/ai-application-hub/releases/download/codex-thread-workbench-v1.0.0/CodexThreadWorkbench-Windows-x64.zip", label: "Windows下载" },
-      mac: ""
+      windows: { href: "https://wthpein010-dev.github.io/ai-application-hub/projects/codex-thread-workbench/download/", label: "Windows下载" },
+      mac: { href: "https://wthpein010-dev.github.io/ai-application-hub/projects/codex-thread-workbench/download/mac/", label: "Mac下载" }
     },
-    tags: ["Codex", "多线程", "桌面工作台", "Windows"],
+    tags: ["Codex", "多线程", "桌面工作台", "Windows", "macOS"],
     speed: 9,
     impact: 9,
     risk: 9,
@@ -815,6 +842,11 @@ function renderSelectedApp() {
   renderEditForm();
 }
 
+function isDirectPackageHref(href) {
+  const path = String(href || "").split(/[?#]/, 1)[0];
+  return /\.(?:zip|exe|msi|msix|appx|dmg|pkg|tar|gz|7z)$/i.test(path);
+}
+
 function renderPlatformShowcase(filtered) {
   if (!nodes.platformGrid) return;
   const list = filtered.length ? filtered : apps;
@@ -836,7 +868,8 @@ function renderPlatformShowcase(filtered) {
         <div class="platform-apps">
           ${available.map(app => {
             const href = platformValue(app, group.key) || app.entry;
-            const download = group.key === "web" ? "" : " download";
+            const download =
+              group.key !== "web" && isDirectPackageHref(href) ? " download" : "";
             return `<a href="${escapeHtml(projectHref(href))}"${download}>${escapeHtml(app.name)}</a>`;
           }).join("")}
         </div>
@@ -860,9 +893,11 @@ function renderActions(app, stopPropagation = false, mode = "default") {
   }
   const windows = platformValue(app, "windows") || app.package;
   const mac = platformValue(app, "mac");
+  const windowsDownload = isDirectPackageHref(windows) ? " download" : "";
+  const macDownload = isDirectPackageHref(mac) ? " download" : "";
   const webLink = web ? `<a class="primary-link" data-action="web" href="${escapeHtml(projectHref(web))}"${stop}>演示</a>` : "";
-  const windowsLink = windows ? `<a class="download-link" data-action="download" href="${escapeHtml(projectHref(windows))}" download${stop}>Wins下载</a>` : "";
-  const macLink = mac ? `<a class="mac-link" data-action="mac" href="${escapeHtml(projectHref(mac))}" download${stop}>Mac下载</a>` : "";
+  const windowsLink = windows ? `<a class="download-link" data-action="download" href="${escapeHtml(projectHref(windows))}"${windowsDownload}${stop}>Wins下载</a>` : "";
+  const macLink = mac ? `<a class="mac-link" data-action="mac" href="${escapeHtml(projectHref(mac))}"${macDownload}${stop}>Mac下载</a>` : "";
   const video = app.video
     ? `<a data-action="video" href="${escapeHtml(projectHref(videoHref(app)))}"${stop}>视频</a>`
     : "";
@@ -1157,6 +1192,30 @@ function normalizeApp(app) {
   }
   if (normalized.id === "hub" && normalized.brief === OLD_HUB_BRIEF) {
     normalized.brief = HUB_BRIEF;
+  }
+  if (normalized.id === "codex-thread-workbench" && app.platforms?.mac === "") {
+    const legacyBrief = "在同一个 Windows 一级界面中同时查看和操作多个真实 Codex 线程，直接输入、停止、审批，并清晰区分进行中与已完成任务。";
+    const legacyAiUse = "工具通过本机 codex app-server 连接真实线程，不读取凭据；AI 参与协议接入、状态投影、多窗口会话交互和 Windows 发布验证。";
+    if (normalized.brief === legacyBrief) normalized.brief = base.brief;
+    if (normalized.aiUse === legacyAiUse) normalized.aiUse = base.aiUse;
+    normalized.tags = [...new Set([...normalized.tags, "macOS"])];
+    normalized.platforms = {
+      ...(normalized.platforms || {}),
+      mac: base.platforms.mac
+    };
+  }
+  if (normalized.id === "gamepulse-mini-radar") {
+    const legacyName = "GamePulse 小游雷达";
+    const legacyBrief = "把国内微信小游戏热门榜、畅销榜与海外 US iOS Casual Top 10 放在同一张开发者工作台上。";
+    const legacyTags = ["小游戏排行", "微信小游戏", "iOS Casual", "产品洞察"];
+    if (normalized.name === legacyName) normalized.name = base.name;
+    if (normalized.brief === legacyBrief) normalized.brief = base.brief;
+    if (
+      normalized.tags.length === legacyTags.length &&
+      normalized.tags.every((tag, index) => tag === legacyTags[index])
+    ) {
+      normalized.tags = [...base.tags];
+    }
   }
   if (normalized.id === "icecream") {
     normalized.entry = "./projects/icecream/index.html";

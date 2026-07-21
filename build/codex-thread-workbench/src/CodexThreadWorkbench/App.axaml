@@ -1,0 +1,83 @@
+<Application x:Class="CodexThreadWorkbench.App"
+             xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:converters="using:CodexThreadWorkbench.Converters"
+             RequestedThemeVariant="Light">
+  <Application.Resources>
+    <FontFamily x:Key="AppFontFamily">Inter, Microsoft YaHei UI, PingFang SC, Noto Sans CJK SC, sans-serif</FontFamily>
+    <SolidColorBrush x:Key="WindowBackgroundBrush" Color="#EEF1F3" />
+    <SolidColorBrush x:Key="CardBackgroundBrush" Color="#FAFBFB" />
+    <SolidColorBrush x:Key="BorderBrush" Color="#D8DEE2" />
+    <SolidColorBrush x:Key="PrimaryBrush" Color="#2BAA76" />
+    <SolidColorBrush x:Key="PrimaryHoverBrush" Color="#239567" />
+    <SolidColorBrush x:Key="PrimaryTextBrush" Color="#1F272D" />
+    <SolidColorBrush x:Key="SecondaryTextBrush" Color="#66717A" />
+    <converters:ChatRoleToBrushConverter x:Key="ChatRoleToBrushConverter" />
+    <converters:ChatRoleToAlignmentConverter x:Key="ChatRoleToAlignmentConverter" />
+    <converters:StatusColorToBrushConverter x:Key="StatusColorToBrushConverter" />
+  </Application.Resources>
+
+  <Application.Styles>
+    <FluentTheme />
+    <Style Selector="TextBlock">
+      <Setter Property="FontFamily" Value="{StaticResource AppFontFamily}" />
+      <Setter Property="Foreground" Value="{StaticResource PrimaryTextBrush}" />
+    </Style>
+    <Style Selector="Button.toolbar">
+      <Setter Property="MinHeight" Value="34" />
+      <Setter Property="Padding" Value="13,0" />
+      <Setter Property="Margin" Value="4,0,0,0" />
+      <Setter Property="Background" Value="White" />
+      <Setter Property="Foreground" Value="{StaticResource PrimaryTextBrush}" />
+      <Setter Property="BorderBrush" Value="{StaticResource BorderBrush}" />
+      <Setter Property="BorderThickness" Value="1" />
+      <Setter Property="CornerRadius" Value="8" />
+      <Setter Property="FontSize" Value="13" />
+      <Setter Property="HorizontalContentAlignment" Value="Center" />
+      <Setter Property="VerticalContentAlignment" Value="Center" />
+    </Style>
+    <Style Selector="Button.toolbar:pointerover">
+      <Setter Property="Background" Value="#F1F5F4" />
+    </Style>
+    <Style Selector="Button.primary">
+      <Setter Property="MinHeight" Value="34" />
+      <Setter Property="Padding" Value="13,0" />
+      <Setter Property="Margin" Value="4,0,0,0" />
+      <Setter Property="Background" Value="{StaticResource PrimaryBrush}" />
+      <Setter Property="Foreground" Value="White" />
+      <Setter Property="BorderBrush" Value="{StaticResource PrimaryBrush}" />
+      <Setter Property="BorderThickness" Value="1" />
+      <Setter Property="CornerRadius" Value="8" />
+      <Setter Property="FontWeight" Value="SemiBold" />
+      <Setter Property="HorizontalContentAlignment" Value="Center" />
+      <Setter Property="VerticalContentAlignment" Value="Center" />
+    </Style>
+    <Style Selector="Button.primary:pointerover">
+      <Setter Property="Background" Value="{StaticResource PrimaryHoverBrush}" />
+    </Style>
+    <Style Selector="Button.icon">
+      <Setter Property="Width" Value="28" />
+      <Setter Property="Height" Value="28" />
+      <Setter Property="Padding" Value="0" />
+      <Setter Property="Background" Value="Transparent" />
+      <Setter Property="Foreground" Value="{StaticResource SecondaryTextBrush}" />
+      <Setter Property="BorderThickness" Value="0" />
+      <Setter Property="CornerRadius" Value="6" />
+      <Setter Property="HorizontalContentAlignment" Value="Center" />
+      <Setter Property="VerticalContentAlignment" Value="Center" />
+    </Style>
+    <Style Selector="Button.icon:pointerover">
+      <Setter Property="Background" Value="#E9EDEF" />
+    </Style>
+    <Style Selector="TextBox.input">
+      <Setter Property="Padding" Value="11,8" />
+      <Setter Property="Background" Value="White" />
+      <Setter Property="Foreground" Value="{StaticResource PrimaryTextBrush}" />
+      <Setter Property="BorderBrush" Value="{StaticResource BorderBrush}" />
+      <Setter Property="BorderThickness" Value="1" />
+      <Setter Property="CornerRadius" Value="8" />
+      <Setter Property="FontFamily" Value="{StaticResource AppFontFamily}" />
+      <Setter Property="FontSize" Value="13" />
+    </Style>
+  </Application.Styles>
+</Application>

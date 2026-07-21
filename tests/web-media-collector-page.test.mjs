@@ -6,7 +6,7 @@ import { fileURLToPath } from "node:url";
 
 const root = dirname(dirname(fileURLToPath(import.meta.url)));
 const hub = readFileSync(join(root, "index.html"), "utf8");
-assert.match(hub, /app-20260706-restore-games\.js\?v=20260716-button-order/);
+assert.match(hub, /app-20260706-restore-games\.js\?v=20260720-workbench-mac-video/);
 const runtimeScript = hub.match(/<script\s+src="\.\/([^"?]+)(?:\?[^\"]*)?"><\/script>/)?.[1] || "app.js";
 const app = readFileSync(join(root, runtimeScript), "utf8");
 const project = join(root, "projects", "\u670b\u53cb\u5708\u53d1\u56fe\u795e\u5668", "01_\u4f5c\u54c1\u4f53\u9a8c\u5165\u53e3", "\u7f51\u9875\u7d20\u6750\u4e00\u952e\u6536\u684c\u9762\u7248");

@@ -71,6 +71,7 @@ button {
 
 .back-link,
 .download-button,
+.video-button,
 .product-note a {
   text-decoration: none;
 }
@@ -128,7 +129,7 @@ button {
   display: flex;
   justify-content: flex-end;
   align-items: center;
-  gap: 11px;
+  gap: 8px;
 }
 
 .demo-label {
@@ -137,6 +138,7 @@ button {
   font-weight: 700;
 }
 
+.video-button,
 .download-button,
 .product-note a {
   display: inline-flex;
@@ -148,12 +150,35 @@ button {
   color: #fff;
   font-size: 12px;
   font-weight: 800;
+}
+
+.download-button,
+.product-note a {
   background: var(--ink);
+}
+
+.video-button {
+  border: 1px solid var(--line-strong);
+  color: var(--ink);
+  background: var(--card-soft);
+}
+
+.video-button:hover {
+  border-color: #aab7bd;
+  background: #fff;
+}
+
+.mac-download-button {
+  background: var(--primary-dark);
 }
 
 .download-button:hover,
 .product-note a:hover {
   background: #35424a;
+}
+
+.mac-download-button:hover {
+  background: #176e4d;
 }
 
 .workbench-shell {
@@ -595,6 +620,12 @@ button {
   font-size: 10px;
 }
 
+.product-note-actions {
+  display: flex;
+  flex: 0 0 auto;
+  gap: 8px;
+}
+
 .picker-backdrop {
   position: fixed;
   inset: 0;
@@ -790,6 +821,7 @@ body.theater .workbench {
   .product-actions {
     grid-column: 1 / -1;
     justify-content: space-between;
+    flex-wrap: wrap;
     padding-top: 8px;
     border-top: 1px solid var(--line);
   }
@@ -842,6 +874,11 @@ body.theater .workbench {
   .product-note {
     align-items: flex-start;
     flex-direction: column;
+  }
+
+  .product-note-actions {
+    width: 100%;
+    flex-wrap: wrap;
   }
 
   .approval-request {

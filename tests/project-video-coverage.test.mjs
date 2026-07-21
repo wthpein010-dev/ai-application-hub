@@ -25,12 +25,21 @@ function loadDefaultApps() {
   return context.globalThis.defaultApps;
 }
 
-test("every visible project provides its own lazy-loaded tutorial video", () => {
+test("every published video entry provides its own lazy-loaded tutorial video", () => {
   const apps = loadDefaultApps();
-  assert.equal(apps.length, 18, "the hub should keep its full project inventory");
+  assert.equal(apps.length, 20, "the hub should keep its full project inventory");
 
-  for (const app of apps) {
-    assert.ok(app.video, `${app.id} needs a dedicated video player path`);
+  const appsWithoutVideo = apps.filter((app) => !app.video);
+  assert.equal(
+    appsWithoutVideo.length,
+    0,
+    `every published project should provide a tutorial video; missing: ${Array.from(
+      appsWithoutVideo,
+      (app) => app.id,
+    ).join(", ")}`,
+  );
+
+  for (const app of apps.filter((app) => app.video)) {
     assert.notEqual(app.video, "./videos/placeholder.html", `${app.id} must not use the generic placeholder`);
 
     const videoPage = join(root, ...app.video.replace(/^\.\//, "").split("/"));
