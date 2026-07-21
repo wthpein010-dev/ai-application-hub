@@ -4,7 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="color-scheme" content="dark" />
-    <meta name="theme-color" content="#111718" />
+    <meta name="theme-color" content="#47bd7f" />
     <title>关卡3D编辑器</title>
     <link rel="icon" href="data:," />
     <link rel="stylesheet" href="./styles.css" />
@@ -109,14 +109,32 @@
             </div>
 
             <div id="play-tools" class="tool-strip play-only" aria-label="试玩工具">
-              <button id="restart-play" type="button">重新开始</button>
-              <button id="rerandomize" type="button">重新随机</button>
-              <label class="seed-lock"><input id="lock-seed" type="checkbox" /> 锁定种子</label>
-              <button id="fit-play-view" type="button">适配</button>
+              <button id="restart-play" class="gameplay-action-button" type="button" title="重新试玩">
+                <img class="gameplay-action-image" src="./assets/gameplay/btn_replay.png" alt="" />
+                <span class="sr-only">重新试玩</span>
+              </button>
+              <button id="rerandomize" class="gameplay-action-button" type="button" title="重新随机">
+                <img class="gameplay-action-image" src="./assets/gameplay/btn_random.png" alt="" />
+                <span class="sr-only">重新随机</span>
+              </button>
+              <div class="gameplay-play-aux">
+                <label class="seed-lock"><input id="lock-seed" type="checkbox" /> 锁定种子</label>
+                <button id="fit-play-view" type="button">适配舞台</button>
+              </div>
             </div>
           </div>
 
           <section id="canvas-host" class="canvas-host" aria-label="关卡画布">
+            <div class="gameplay-hud" aria-label="游戏舞台信息">
+              <button id="gameplay-fit" class="gameplay-setting-button" type="button" title="适配游戏舞台">
+                <img src="./assets/gameplay/Setting.png" alt="" />
+                <span class="sr-only">适配游戏舞台</span>
+              </button>
+              <div class="gameplay-title-card">
+                <span>当前关卡</span>
+                <strong id="gameplay-level-title">等待关卡</strong>
+              </div>
+            </div>
             <div id="empty-stage" class="empty-stage">
               <div class="empty-symbol" aria-hidden="true">
                 <i></i><i></i><i></i><i></i>

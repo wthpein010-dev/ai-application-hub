@@ -7,9 +7,10 @@ import {
   snapValue,
   topmostHit,
 } from "../ui/editor-tools.mjs";
-import { containImageRect } from "../core/view-model.mjs";
+import { GAMEPLAY_ASSETS } from "../core/gameplay-assets.mjs";
 
 const TILE_SIZE = 8;
+const TILE_ART_ASPECT = 135 / 120;
 
 export class Canvas2DView {
   constructor({
@@ -41,6 +42,7 @@ export class Canvas2DView {
     this.placeTemplate = { type: 1, layer: 1, presetColorType: 1 };
     this.viewport = { scale: 5, offsetX: 60, offsetY: 60 };
     this.images = new Map();
+    this.gameplayImages = new Map();
     this.pointerState = null;
     this.boxRectangle = null;
     this.destroyed = false;
@@ -145,7 +147,9 @@ export class Canvas2DView {
     const maxY = Math.max(...tiles.map((tile) => tile.y + TILE_SIZE));
     const boardWidth = Math.max(TILE_SIZE, maxX - minX);
     const boardHeight = Math.max(TILE_SIZE, maxY - minY);
-    const availableHeight = Math.max(120, this.height - (this.mode === "play" ? 120 : 50));
+    const topInset = 76;
+    const bottomInset = this.mode === "play" ? 285 : 50;
+    const availableHeight = Math.max(120, this.height - topInset - bottomInset);
     this.viewport.scale = Math.max(
       0.5,
       Math.min(11, Math.min((this.width - 80) / boardWidth, (availableHeight - 60) / boardHeight)),
@@ -153,7 +157,7 @@ export class Canvas2DView {
     this.viewport.offsetX =
       this.width / 2 - ((minX + maxX) / 2) * this.viewport.scale;
     this.viewport.offsetY =
-      availableHeight / 2 - ((minY + maxY) / 2) * this.viewport.scale + 20;
+      topInset + availableHeight / 2 - ((minY + maxY) / 2) * this.viewport.scale;
     this.draw();
   }
 
@@ -167,18 +171,25 @@ export class Canvas2DView {
     return topmostHit(this.boardTiles(), boardPoint);
   }
 
+  trayFrameLayout() {
+    const width = Math.min(228, Math.max(176, this.width * 0.29));
+    const height = width * (178 / 256);
+    return {
+      x: (this.width - width) / 2,
+      y: this.height - height - 104,
+      width,
+      height,
+    };
+  }
+
   trayLayout() {
-    const slotSize = Math.min(70, Math.max(48, this.width / 10));
-    const gap = 12;
-    const total = slotSize * 2 + gap;
-    const left = (this.width - total) / 2;
-    const top = this.height - slotSize - 18;
+    const frame = this.trayFrameLayout();
     return [0, 1].map((slot) => ({
       slot,
-      x: left + slot * (slotSize + gap),
-      y: top,
-      width: slotSize,
-      height: slotSize,
+      x: frame.x + frame.width * (slot === 0 ? 0.095 : 0.525),
+      y: frame.y + frame.height * 0.09,
+      width: frame.width * 0.38,
+      height: frame.height * 0.61,
     }));
   }
 
@@ -361,6 +372,22 @@ export class Canvas2DView {
     return image.complete && !image.failed && image.naturalWidth ? image : null;
   }
 
+  getGameplayImage(url) {
+    if (!this.gameplayImages.has(url)) {
+      const image = new Image();
+      image.decoding = "async";
+      image.onload = () => this.draw();
+      image.onerror = () => {
+        image.failed = true;
+        this.draw();
+      };
+      image.src = url;
+      this.gameplayImages.set(url, image);
+    }
+    const image = this.gameplayImages.get(url);
+    return image.complete && !image.failed && image.naturalWidth ? image : null;
+  }
+
   drawGrid(context) {
     if (this.mode !== "edit") {
       return;
@@ -393,6 +420,7 @@ export class Canvas2DView {
   drawTile(context, tile) {
     const position = boardToScreen(tile, this.viewport);
     const size = TILE_SIZE * this.viewport.scale;
+    const artHeight = size * TILE_ART_ASPECT;
     const selected =
       this.mode === "play" ? tile.uid === this.snapshot?.selectedTileUid : this.selection.has(tile.uid);
     context.save();
@@ -400,50 +428,48 @@ export class Canvas2DView {
     context.shadowColor = "rgba(0,0,0,.38)";
     context.shadowBlur = Math.min(10, size * 0.14);
     context.shadowOffsetY = Math.min(5, size * 0.08);
-    context.fillStyle = tile.faceDown ? "#263033" : "#e7e4d6";
-    context.beginPath();
-    context.roundRect(0, 0, size, size, Math.max(3, size * 0.08));
-    context.fill();
+    const blockBackground = this.getGameplayImage(GAMEPLAY_ASSETS.blockBackground);
+    if (blockBackground) {
+      context.drawImage(blockBackground, 0, 0, size, artHeight);
+    } else {
+      context.fillStyle = "#efffc4";
+      context.beginPath();
+      context.roundRect(0, 0, size, artHeight, Math.max(3, size * 0.08));
+      context.fill();
+      context.fillStyle = "#3f7d0a";
+      context.fillRect(0, size * 0.91, size, artHeight - size * 0.91);
+    }
     context.shadowColor = "transparent";
 
     if (!tile.faceDown) {
       const image = this.getImage(tile.type);
       if (image) {
-        const imageRect = containImageRect({
-          sourceWidth: image.naturalWidth,
-          sourceHeight: image.naturalHeight,
-          targetX: size * 0.07,
-          targetY: size * 0.07,
-          targetWidth: size * 0.86,
-          targetHeight: size * 0.86,
-        });
-        context.drawImage(image, imageRect.x, imageRect.y, imageRect.width, imageRect.height);
+        context.drawImage(image, 0, 0, size, artHeight);
       } else {
-        context.fillStyle = tile.type < 1 ? "#1d2728" : "#343e3f";
-        context.fillRect(size * 0.12, size * 0.12, size * 0.76, size * 0.76);
-        context.fillStyle = tile.type === 0 ? "#d5f06a" : tile.type === -1 ? "#6fd7cf" : "#eef0e9";
+        context.fillStyle = tile.type === 0 ? "#f7ca2f" : tile.type === -1 ? "#56cbd2" : "#31531e";
         context.font = `700 ${Math.max(9, size * 0.22)}px ${getComputedStyle(document.body).fontFamily}`;
         context.textAlign = "center";
         context.textBaseline = "middle";
         context.fillText(tile.type === 0 ? "R" : tile.type === -1 ? "FR" : tile.type, size / 2, size / 2);
       }
-    } else {
-      context.strokeStyle = "rgba(213,240,106,.35)";
-      context.lineWidth = Math.max(1, size * 0.035);
-      context.strokeRect(size * 0.22, size * 0.22, size * 0.56, size * 0.56);
-      context.fillStyle = "#d5f06a";
-      context.beginPath();
-      context.arc(size / 2, size / 2, Math.max(2, size * 0.07), 0, Math.PI * 2);
-      context.fill();
     }
 
-    if (tile.covered || tile.sideBlocked) {
-      context.fillStyle = tile.sideBlocked ? "rgba(242,180,93,.38)" : "rgba(7,12,13,.52)";
-      context.fillRect(0, 0, size, size);
+    if (tile.faceDown || tile.covered || tile.sideBlocked) {
+      const lockMask = this.getGameplayImage(GAMEPLAY_ASSETS.lockMask);
+      if (lockMask) {
+        context.globalAlpha = tile.sideBlocked && !tile.covered ? 0.48 : 0.64;
+        context.drawImage(lockMask, 0, 0, size, artHeight);
+        context.globalAlpha = 1;
+      } else {
+        context.fillStyle = tile.sideBlocked ? "rgba(82,84,22,.4)" : "rgba(24,35,18,.56)";
+        context.fillRect(0, 0, size, artHeight);
+      }
     }
-    context.strokeStyle = selected ? "#d5f06a" : tile.sideBlocked ? "#f2b45d" : "rgba(255,255,255,.2)";
+    context.strokeStyle = selected ? "#ffd42f" : tile.sideBlocked ? "#f2b45d" : "rgba(40,79,18,.28)";
     context.lineWidth = selected ? Math.max(2, size * 0.055) : 1;
-    context.strokeRect(0.5, 0.5, size - 1, size - 1);
+    context.beginPath();
+    context.roundRect(0.5, 0.5, size - 1, artHeight - 1, Math.max(3, size * 0.08));
+    context.stroke();
     if (this.mode === "edit" && size > 34) {
       context.fillStyle = "rgba(11,16,17,.82)";
       context.fillRect(3, 3, Math.min(28, size * 0.34), Math.min(17, size * 0.2));
@@ -460,27 +486,30 @@ export class Canvas2DView {
     if (this.mode !== "play") {
       return;
     }
+    const frame = this.trayFrameLayout();
     const layout = this.trayLayout();
     context.save();
-    for (const slot of layout) {
-      context.fillStyle = "rgba(9,14,15,.82)";
-      context.strokeStyle =
-        slot.slot === 1 && !this.snapshot?.secondSlotUnlocked
-          ? "rgba(242,180,93,.45)"
-          : "rgba(143,163,158,.32)";
-      context.lineWidth = 1;
+    const frameImage = this.getGameplayImage(GAMEPLAY_ASSETS.playTray);
+    if (frameImage) {
+      context.drawImage(frameImage, frame.x, frame.y, frame.width, frame.height);
+    } else {
+      context.fillStyle = "#9b5c1b";
+      context.strokeStyle = "#e8a436";
+      context.lineWidth = 5;
       context.beginPath();
-      context.roundRect(slot.x, slot.y, slot.width, slot.height, 9);
+      context.roundRect(frame.x, frame.y, frame.width, frame.height, 12);
       context.fill();
       context.stroke();
+    }
+    for (const slot of layout) {
       const uid = this.snapshot?.tray?.[slot.slot];
       if (!uid) {
-        context.fillStyle = "#65716f";
-        context.font = "10px monospace";
+        context.fillStyle = "rgba(255,226,151,.7)";
+        context.font = `800 ${Math.max(16, frame.width * 0.1)}px sans-serif`;
         context.textAlign = "center";
         context.textBaseline = "middle";
         context.fillText(
-          slot.slot === 1 && !this.snapshot?.secondSlotUnlocked ? "LOCK" : `SLOT ${slot.slot + 1}`,
+          slot.slot === 1 && !this.snapshot?.secondSlotUnlocked ? "×" : slot.slot === 1 ? "+" : "",
           slot.x + slot.width / 2,
           slot.y + slot.height / 2,
         );
@@ -492,20 +521,21 @@ export class Canvas2DView {
       }
       context.save();
       const scale = this.viewport.scale;
-      this.viewport.scale = slot.width / TILE_SIZE;
+      const tileSize = Math.min(slot.width * 0.88, (slot.height / TILE_ART_ASPECT) * 0.9);
+      this.viewport.scale = tileSize / TILE_SIZE;
       const originalOffset = { x: this.viewport.offsetX, y: this.viewport.offsetY };
-      this.viewport.offsetX = slot.x - tile.x * this.viewport.scale;
-      this.viewport.offsetY = slot.y - tile.y * this.viewport.scale;
+      this.viewport.offsetX = slot.x + (slot.width - tileSize) / 2 - tile.x * this.viewport.scale;
+      this.viewport.offsetY = slot.y + (slot.height - tileSize * TILE_ART_ASPECT) / 2 - tile.y * this.viewport.scale;
       this.drawTile(context, tile);
       this.viewport.scale = scale;
       this.viewport.offsetX = originalOffset.x;
       this.viewport.offsetY = originalOffset.y;
       context.restore();
     }
-    context.fillStyle = "#909b98";
-    context.font = "10px sans-serif";
+    context.fillStyle = "rgba(22,77,52,.84)";
+    context.font = "700 11px sans-serif";
     context.textAlign = "center";
-    context.fillText("右键牌面可暂存", this.width / 2, layout[0].y - 8);
+    context.fillText("右键可用砖块暂存", this.width / 2, frame.y - 8);
     context.restore();
   }
 
@@ -548,5 +578,6 @@ export class Canvas2DView {
     this.resizeObserver?.disconnect();
     this.canvas?.remove();
     this.images.clear();
+    this.gameplayImages.clear();
   }
 }

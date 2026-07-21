@@ -130,6 +130,8 @@ export class WorkbenchController {
       redo: byId("redo"),
       fit: byId("fit-view"),
       fitPlay: byId("fit-play-view"),
+      gameplayFit: byId("gameplay-fit"),
+      gameplayLevelTitle: byId("gameplay-level-title"),
       restart: byId("restart-play"),
       rerandomize: byId("rerandomize"),
       lockSeed: byId("lock-seed"),
@@ -192,6 +194,7 @@ export class WorkbenchController {
     this.elements.redo.addEventListener("click", () => this.redo());
     this.elements.fit.addEventListener("click", () => this.renderer?.fitCamera());
     this.elements.fitPlay.addEventListener("click", () => this.renderer?.fitCamera());
+    this.elements.gameplayFit.addEventListener("click", () => this.renderer?.fitCamera());
     this.elements.restart.addEventListener("click", () => this.restartPlay());
     this.elements.rerandomize.addEventListener("click", () => this.rerandomize());
     this.elements.lockSeed.addEventListener("change", () => {
@@ -1082,6 +1085,8 @@ export class WorkbenchController {
     this.elements.dirty.textContent = this.isDirty() ? "未保存" : "已保存";
     this.elements.dirty.classList.toggle("is-dirty", this.isDirty());
     this.elements.statusLevel.textContent = this.document?.name || this.document?.fileName || "未打开";
+    this.elements.gameplayLevelTitle.textContent =
+      this.document?.name || this.document?.fileName || "等待关卡";
     const tiles = this.mode === "play" ? this.playSnapshot?.tiles ?? [] : this.document?.tiles ?? [];
     const activeTiles = tiles.filter((tile) => !tile.removed);
     this.elements.statusTiles.textContent = this.document ? `${activeTiles.length} / ${tiles.length}` : "—";

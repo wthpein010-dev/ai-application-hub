@@ -12,6 +12,7 @@ const requiredFiles = [
   "styles.css",
   "app.mjs",
   "core/coverage.mjs",
+  "core/gameplay-assets.mjs",
   "core/ai-level-generator.mjs",
   "core/edit-history.mjs",
   "core/level-adapter.mjs",
@@ -38,6 +39,17 @@ const expectedBlockNames = [
   ...Array.from({ length: 32 }, (_, index) => `block_${index + 1}.png`),
   ...Array.from({ length: 6 }, (_, index) => `block_${index + 1001}.png`),
 ];
+
+const expectedGameplayAssets = new Map([
+  ["block_bg.png", { width: 120, height: 135 }],
+  ["ui_tile_lock_mask.png", { width: 120, height: 135 }],
+  ["bg-47bd7f.png", { width: 5, height: 5 }],
+  ["grass.png", { width: 94, height: 34 }],
+  ["Setting.png", { width: 69, height: 74 }],
+  ["btn_random.png", { width: 147, height: 122 }],
+  ["btn_replay.png", { width: 147, height: 122 }],
+  ["play_save2.png", { width: 256, height: 178 }],
+]);
 
 function naturalSort(left, right) {
   return left.localeCompare(right, undefined, { numeric: true });
@@ -93,6 +105,47 @@ test("public files contain no private level path or credential material", () => 
   const text = readPublicTextFiles(editorRoot);
   assert.doesNotMatch(text, /E:\\Mahjong|maque|cookie|password/i);
   assert.match(text, /level_0020_r2_第二关模板12\.json/);
+});
+
+test("gameplay skin publishes the selected Unity artwork at original dimensions", () => {
+  const gameplayRoot = join(editorRoot, "assets", "gameplay");
+  const names = readdirSync(gameplayRoot).filter((name) => name.endsWith(".png"));
+  assert.deepEqual(names.sort(naturalSort), [...expectedGameplayAssets.keys()].sort(naturalSort));
+  for (const [name, dimensions] of expectedGameplayAssets) {
+    assert.deepEqual(readPngSize(join(gameplayRoot, name)), dimensions, name);
+  }
+});
+
+test("editor stage and both renderers consume the gameplay skin without fake controls", () => {
+  const html = readFileSync(join(editorRoot, "index.html"), "utf8");
+  const css = readFileSync(join(editorRoot, "styles.css"), "utf8");
+  const assets = readFileSync(join(editorRoot, "core", "gameplay-assets.mjs"), "utf8");
+  const controller = readFileSync(join(editorRoot, "ui", "workbench-controller.mjs"), "utf8");
+  const canvas2d = readFileSync(join(editorRoot, "views", "canvas-2d.mjs"), "utf8");
+  const three3d = readFileSync(join(editorRoot, "views", "three-3d.mjs"), "utf8");
+
+  assert.match(html, /id="gameplay-fit"[^>]*title="适配游戏舞台"/);
+  assert.match(html, /id="gameplay-level-title"/);
+  assert.match(html, /id="restart-play"[\s\S]*assets\/gameplay\/btn_replay\.png/);
+  assert.match(html, /id="rerandomize"[\s\S]*assets\/gameplay\/btn_random\.png/);
+  assert.doesNotMatch(html, /<button[^>]*class="[^\"]*gameplay[^\"]*"[^>]*disabled/);
+
+  assert.match(css, /\.canvas-host\s*\{[\s\S]*bg-47bd7f\.png[\s\S]*grass\.png/);
+  assert.match(css, /\[data-mode="play"\][\s\S]*\.gameplay-action-image/);
+  assert.match(assets, /block_bg\.png/);
+  assert.match(assets, /ui_tile_lock_mask\.png/);
+  assert.match(assets, /play_save2\.png/);
+  assert.match(controller, /gameplayLevelTitle\.textContent/);
+  assert.match(controller, /gameplayFit\.addEventListener\("click"/);
+
+  assert.match(canvas2d, /GAMEPLAY_ASSETS\.blockBackground/);
+  assert.match(canvas2d, /GAMEPLAY_ASSETS\.lockMask/);
+  assert.match(canvas2d, /GAMEPLAY_ASSETS\.playTray/);
+  assert.match(canvas2d, /TILE_ART_ASPECT\s*=\s*135\s*\/\s*120/);
+  assert.match(three3d, /GAMEPLAY_ASSETS\.blockBackground/);
+  assert.match(three3d, /GAMEPLAY_ASSETS\.grass/);
+  assert.match(three3d, /GAMEPLAY_ASSETS\.playTray/);
+  assert.match(three3d, /0x3f7d0a/i);
 });
 
 test("published levels contain the index and 30 authorized project files", () => {

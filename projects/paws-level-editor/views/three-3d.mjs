@@ -1,7 +1,12 @@
 import * as THREE from "three";
 import { OrbitControls } from "../vendor/OrbitControls.js";
 
-import { buildRenderTiles, computeRenderBounds, containImageRect } from "../core/view-model.mjs";
+import { GAMEPLAY_ASSETS } from "../core/gameplay-assets.mjs";
+import { buildRenderTiles, computeRenderBounds } from "../core/view-model.mjs";
+
+function srgbColor(hex) {
+  return new THREE.Color(hex).convertSRGBToLinear();
+}
 
 function makeLabelTexture(label, { background = "#273032", foreground = "#edf0e9" } = {}) {
   const canvas = document.createElement("canvas");
@@ -23,20 +28,31 @@ function makeLabelTexture(label, { background = "#273032", foreground = "#edf0e9
   return texture;
 }
 
-function makeBlockTexture(image) {
+function drawTopCrop(context, image) {
+  const width = image.naturalWidth || image.width;
+  const height = image.naturalHeight || image.height;
+  const sourceSize = Math.min(width, height);
+  context.drawImage(image, 0, 0, sourceSize, sourceSize, 0, 0, 256, 256);
+}
+
+function makeBlockTexture(image, { blockBackground, lockMask, blocked = false, faceDown = false } = {}) {
   const canvas = document.createElement("canvas");
   canvas.width = 256;
   canvas.height = 256;
   const context = canvas.getContext("2d");
-  context.fillStyle = "#e7e4d6";
+  context.fillStyle = "#efffc4";
   context.fillRect(0, 0, canvas.width, canvas.height);
-  const imageRect = containImageRect({
-    sourceWidth: image.naturalWidth || image.width,
-    sourceHeight: image.naturalHeight || image.height,
-    targetWidth: canvas.width,
-    targetHeight: canvas.height,
-  });
-  context.drawImage(image, imageRect.x, imageRect.y, imageRect.width, imageRect.height);
+  if (blockBackground) {
+    drawTopCrop(context, blockBackground);
+  }
+  if (!faceDown && image) {
+    drawTopCrop(context, image);
+  }
+  if ((faceDown || blocked) && lockMask) {
+    context.globalAlpha = faceDown ? 0.72 : 0.56;
+    drawTopCrop(context, lockMask);
+    context.globalAlpha = 1;
+  }
   const texture = new THREE.CanvasTexture(canvas);
   texture.encoding = THREE.sRGBEncoding;
   return texture;
@@ -56,6 +72,8 @@ export class Three3DView {
     this.source = null;
     this.meshes = new Map();
     this.textures = new Map();
+    this.patternImages = new Map();
+    this.loadingPatterns = new Set();
     this.fallbackTextures = new Map();
     this.pointerStart = null;
     this.destroyed = false;
@@ -64,8 +82,8 @@ export class Three3DView {
   mount(host) {
     this.host = host;
     this.scene = new THREE.Scene();
-    this.scene.background = new THREE.Color(0x0d1213);
-    this.scene.fog = new THREE.Fog(0x0d1213, 12, 34);
+    this.scene.background = srgbColor(0x47bd7f);
+    this.scene.fog = new THREE.Fog(srgbColor(0x47bd7f), 18, 48);
     this.camera = new THREE.PerspectiveCamera(42, 1, 0.1, 100);
     this.camera.position.set(8, 10, 10);
     this.renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false, powerPreference: "high-performance" });
@@ -87,29 +105,76 @@ export class Three3DView {
 
     this.tileGroup = new THREE.Group();
     this.scene.add(this.tileGroup);
-    this.grid = new THREE.GridHelper(30, 30, 0x3f4b4a, 0x242d2e);
-    this.grid.position.y = 0;
+    this.groundGeometry = new THREE.PlaneGeometry(60, 60);
+    this.groundMaterial = new THREE.MeshBasicMaterial({
+      color: srgbColor(0x47bd7f),
+    });
+    this.ground = new THREE.Mesh(this.groundGeometry, this.groundMaterial);
+    this.ground.rotation.x = -Math.PI / 2;
+    this.ground.position.y = -0.04;
+    this.ground.receiveShadow = true;
+    this.scene.add(this.ground);
+
+    this.grassGeometry = new THREE.PlaneGeometry(1.5, 1.5 * (34 / 94));
+    this.grassMaterial = new THREE.MeshBasicMaterial({
+      transparent: true,
+      opacity: 0.58,
+      depthWrite: false,
+    });
+    this.grassGroup = new THREE.Group();
+    const grassPositions = [
+      [-7.2, -4.8, -0.18],
+      [-6.4, 4.2, 0.35],
+      [-2.7, 7.1, -0.26],
+      [3.9, 6.2, 0.2],
+      [7.1, 2.4, -0.38],
+      [6.5, -5.6, 0.28],
+      [1.9, -7.2, -0.2],
+      [-3.8, -6.8, 0.3],
+    ];
+    for (const [x, z, rotation] of grassPositions) {
+      const grass = new THREE.Mesh(this.grassGeometry, this.grassMaterial);
+      grass.rotation.x = -Math.PI / 2;
+      grass.rotation.z = rotation;
+      grass.position.set(x, -0.025, z);
+      this.grassGroup.add(grass);
+    }
+    this.scene.add(this.grassGroup);
+
+    this.grid = new THREE.GridHelper(30, 30, 0x257c50, 0x359a68);
+    this.grid.position.y = -0.015;
     this.scene.add(this.grid);
 
-    const ambient = new THREE.HemisphereLight(0xdcefe8, 0x151b1c, 1.35);
+    const ambient = new THREE.HemisphereLight(0xfffee8, 0x26744f, 1.45);
     this.scene.add(ambient);
     this.keyLight = new THREE.DirectionalLight(0xffffff, 1.35);
     this.keyLight.position.set(-7, 13, 7);
     this.keyLight.castShadow = true;
     this.keyLight.shadow.mapSize.set(1024, 1024);
     this.scene.add(this.keyLight);
-    const rim = new THREE.DirectionalLight(0x86f1df, 0.45);
+    const rim = new THREE.DirectionalLight(0xbfffa7, 0.42);
     rim.position.set(10, 7, -9);
     this.scene.add(rim);
 
     this.geometry = new THREE.BoxGeometry(1, 0.16, 1);
     this.sideMaterial = new THREE.MeshStandardMaterial({
-      color: 0x485052,
-      roughness: 0.68,
-      metalness: 0.05,
+      color: srgbColor(0x3f7d0a),
+      roughness: 0.74,
+      metalness: 0,
     });
-    this.backTexture = makeLabelTexture("PAWS", { background: "#263033", foreground: "#d5f06a" });
     this.textureLoader = new THREE.TextureLoader();
+    this.trayGeometry = new THREE.PlaneGeometry(3.2, 3.2 * (178 / 256));
+    this.trayMaterial = new THREE.MeshBasicMaterial({
+      color: 0x9b5c1b,
+      transparent: true,
+      side: THREE.DoubleSide,
+    });
+    this.trayMesh = new THREE.Mesh(this.trayGeometry, this.trayMaterial);
+    this.trayMesh.rotation.x = -Math.PI / 2;
+    this.trayMesh.position.y = 0.015;
+    this.trayMesh.visible = false;
+    this.scene.add(this.trayMesh);
+    this.loadGameplayArtwork();
     this.raycaster = new THREE.Raycaster();
     this.pointer = new THREE.Vector2();
 
@@ -148,6 +213,9 @@ export class Three3DView {
 
   setMode(mode) {
     this.mode = mode;
+    if (this.grid) {
+      this.grid.visible = mode === "edit";
+    }
     this.updateScene();
   }
 
@@ -162,47 +230,103 @@ export class Three3DView {
     this.renderer.setSize(width, height, false);
   }
 
+  loadGameplayArtwork() {
+    const loadImage = (url, onLoad) => {
+      this.textureLoader.load(
+        url,
+        (texture) => {
+          const image = texture.image;
+          texture.dispose();
+          onLoad(image);
+        },
+        undefined,
+        () => {},
+      );
+    };
+    loadImage(GAMEPLAY_ASSETS.blockBackground, (image) => {
+      this.blockBackgroundImage = image;
+      this.invalidateBlockTextures();
+    });
+    loadImage(GAMEPLAY_ASSETS.lockMask, (image) => {
+      this.lockMaskImage = image;
+      this.invalidateBlockTextures();
+    });
+    this.textureLoader.load(GAMEPLAY_ASSETS.grass, (texture) => {
+      texture.encoding = THREE.sRGBEncoding;
+      texture.anisotropy = Math.min(4, this.renderer.capabilities.getMaxAnisotropy());
+      this.grassTexture = texture;
+      this.grassMaterial.map = texture;
+      this.grassMaterial.needsUpdate = true;
+    });
+    this.textureLoader.load(GAMEPLAY_ASSETS.playTray, (texture) => {
+      texture.encoding = THREE.sRGBEncoding;
+      texture.anisotropy = Math.min(8, this.renderer.capabilities.getMaxAnisotropy());
+      this.playTrayTexture = texture;
+      this.trayMaterial.map = texture;
+      this.trayMaterial.color.setHex(0xffffff);
+      this.trayMaterial.needsUpdate = true;
+    });
+  }
+
+  invalidateBlockTextures() {
+    for (const texture of this.textures.values()) {
+      texture.dispose();
+    }
+    this.textures.clear();
+    this.updateScene();
+  }
+
+  loadPattern(record) {
+    if (!this.blockImageUrl || record.type <= 0 || this.loadingPatterns.has(record.type)) {
+      return;
+    }
+    this.loadingPatterns.add(record.type);
+    this.textureLoader.load(
+      this.blockImageUrl(record.type),
+      (texture) => {
+        this.patternImages.set(record.type, texture.image);
+        texture.dispose();
+        this.loadingPatterns.delete(record.type);
+        this.updateScene();
+      },
+      undefined,
+      () => {
+        this.loadingPatterns.delete(record.type);
+      },
+    );
+  }
+
   textureFor(record) {
-    if (record.faceDown) {
-      return this.backTexture;
+    const faceDown = record.faceDown || record.hiddenPattern;
+    const textureKey = `${record.type}:${faceDown ? "down" : "up"}:${record.blocked ? "blocked" : "free"}`;
+    if (this.textures.has(textureKey)) {
+      return this.textures.get(textureKey);
     }
-    if (this.textures.has(record.type)) {
-      return this.textures.get(record.type);
+    const pattern = this.patternImages.get(record.type);
+    if (this.blockBackgroundImage && (faceDown || pattern)) {
+      const texture = makeBlockTexture(pattern, {
+        blockBackground: this.blockBackgroundImage,
+        lockMask: this.lockMaskImage,
+        blocked: record.blocked,
+        faceDown,
+      });
+      texture.anisotropy = Math.min(8, this.renderer.capabilities.getMaxAnisotropy());
+      this.textures.set(textureKey, texture);
+      return texture;
     }
-    if (!this.fallbackTextures.has(record.type)) {
-      const label = record.type === 0 ? "R" : record.type === -1 ? "FR" : record.type;
+    this.loadPattern(record);
+    const fallbackKey = faceDown ? "face-down" : record.type;
+    if (!this.fallbackTextures.has(fallbackKey)) {
+      const label = faceDown ? "●" : record.type === 0 ? "R" : record.type === -1 ? "FR" : record.type;
       this.fallbackTextures.set(
-        record.type,
+        fallbackKey,
         makeLabelTexture(label, {
-          background: record.type === 0 ? "#293316" : record.type === -1 ? "#14312f" : "#e7e4d6",
-          foreground: record.type <= 0 ? "#edf0e9" : "#293032",
+          background: faceDown ? "#efffc4" : record.type === 0 ? "#fff2a7" : record.type === -1 ? "#b9f4e4" : "#efffc4",
+          foreground: faceDown ? "#31531e" : record.type <= 0 ? "#31531e" : "#293032",
         }),
       );
     }
-    if (
-      this.blockImageUrl &&
-      record.type !== 0 &&
-      record.type !== -1 &&
-      !this.textures.has(`loading:${record.type}`)
-    ) {
-      this.textures.set(`loading:${record.type}`, true);
-      this.textureLoader.load(
-        this.blockImageUrl(record.type),
-        (texture) => {
-          const blockTexture = makeBlockTexture(texture.image);
-          texture.dispose();
-          blockTexture.anisotropy = Math.min(8, this.renderer.capabilities.getMaxAnisotropy());
-          this.textures.set(record.type, blockTexture);
-          this.textures.delete(`loading:${record.type}`);
-          this.updateScene();
-        },
-        undefined,
-        () => {
-          this.textures.delete(`loading:${record.type}`);
-        },
-      );
-    }
-    return this.fallbackTextures.get(record.type);
+    return this.fallbackTextures.get(fallbackKey);
   }
 
   createMesh(record) {
@@ -232,18 +356,20 @@ export class Three3DView {
   }
 
   updateMesh(mesh, record) {
-    mesh.position.set(record.worldX, record.worldY, record.worldZ);
+    const baseY = record.worldY + 0.08;
+    mesh.position.set(record.worldX, baseY, record.worldZ);
     mesh.scale.set(record.width * 0.94, 1, record.depth * 0.94);
     mesh.userData.record = record;
+    mesh.userData.baseY = baseY;
     const top = mesh.userData.topMaterial;
     const texture = this.textureFor(record);
     if (top.map !== texture) {
       top.map = texture;
       top.needsUpdate = true;
     }
-    top.color.setHex(record.blocked ? 0x737978 : record.faceDown ? 0x8b9591 : 0xffffff);
-    top.emissive.setHex(record.selected ? 0x4c5c08 : record.sideBlocked ? 0x3a2105 : 0x000000);
-    top.emissiveIntensity = record.selected ? 0.9 : record.sideBlocked ? 0.45 : 0;
+    top.color.setHex(record.blocked ? 0xc7c9ad : 0xffffff);
+    top.emissive.setHex(record.selected ? 0x6b5900 : record.sideBlocked ? 0x3a2105 : 0x000000);
+    top.emissiveIntensity = record.selected ? 0.62 : record.sideBlocked ? 0.25 : 0;
     mesh.renderOrder = record.selected ? 10 : 0;
   }
 
@@ -273,6 +399,10 @@ export class Three3DView {
       this.updateMesh(mesh, record);
     }
     const bounds = computeRenderBounds(renderTiles);
+    const trayRecords = renderTiles.filter((record) => record.location === "tray");
+    this.trayMesh.visible = this.mode === "play";
+    this.trayMesh.position.z = trayRecords[0]?.worldZ ?? bounds.maxZ + 2;
+    this.grid.visible = this.mode === "edit";
     this.grid.scale.set(
       Math.max(0.35, Math.min(1, bounds.width / 30 + 0.25)),
       1,
@@ -286,9 +416,9 @@ export class Three3DView {
     }
     const renderTiles = buildRenderTiles(this.source, { blockImageUrl: this.blockImageUrl });
     const bounds = computeRenderBounds(renderTiles);
-    const size = Math.max(4, bounds.width, bounds.depth);
+    const size = Math.max(4, bounds.width, bounds.depth + (this.mode === "play" ? 3.4 : 0));
     const maxY = Math.max(1, ...renderTiles.map((tile) => tile.worldY));
-    this.controls.target.set(0, Math.min(maxY * 0.35, 2), 0);
+    this.controls.target.set(0, Math.min(maxY * 0.35, 2), this.mode === "play" ? 0.65 : 0);
     this.camera.position.set(size * 0.9, size * 1.05 + maxY, size * 1.15);
     this.camera.near = 0.1;
     this.camera.far = Math.max(100, size * 12);
@@ -354,7 +484,9 @@ export class Three3DView {
     for (const mesh of this.meshes.values()) {
       if (mesh.userData.record?.selected) {
         mesh.position.y =
-          mesh.userData.record.worldY + 0.025 + Math.sin(time + mesh.position.x) * 0.015;
+          mesh.userData.baseY + 0.025 + Math.sin(time + mesh.position.x) * 0.015;
+      } else if (Number.isFinite(mesh.userData.baseY)) {
+        mesh.position.y = mesh.userData.baseY;
       }
     }
     this.renderer.render(this.scene, this.camera);
@@ -372,11 +504,16 @@ export class Three3DView {
     this.meshes.clear();
     this.geometry?.dispose();
     this.sideMaterial?.dispose();
-    this.backTexture?.dispose();
-    for (const [key, texture] of this.textures) {
-      if (typeof key === "number") {
-        texture.dispose();
-      }
+    this.groundGeometry?.dispose();
+    this.groundMaterial?.dispose();
+    this.grassGeometry?.dispose();
+    this.grassMaterial?.dispose();
+    this.trayGeometry?.dispose();
+    this.trayMaterial?.dispose();
+    this.grassTexture?.dispose();
+    this.playTrayTexture?.dispose();
+    for (const texture of this.textures.values()) {
+      texture.dispose();
     }
     for (const texture of this.fallbackTextures.values()) {
       texture.dispose();
