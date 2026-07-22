@@ -42,6 +42,39 @@ public sealed class MainViewModelTests : IDisposable
     }
 
     [Fact]
+    public async Task InitializeAsync_AutoRefreshesOpenThreadStatusWithoutReplacingCard()
+    {
+        var client = CreateClient(threadCount: 1);
+        var store = new WorkspaceStore(Path.Combine(_directory, "workspace.json"));
+        await using var viewModel = new MainViewModel(client, store);
+        await viewModel.InitializeAsync();
+        var card = Assert.Single(viewModel.OpenThreads);
+        card.Draft = "不要丢失输入";
+
+        var runningSummary = client.Threads[0] with
+        {
+            Status = ThreadStatusKind.Running
+        };
+        client.ThreadStates[card.ThreadId] = new ThreadCardState(
+            runningSummary,
+            [],
+            ThreadStatusKind.Running,
+            ActiveTurnId: "external-turn");
+
+        var deadline = DateTimeOffset.UtcNow.AddSeconds(4);
+        while (card.Status != ThreadStatusKind.Running &&
+               DateTimeOffset.UtcNow < deadline)
+        {
+            await Task.Delay(50);
+        }
+
+        Assert.Equal(ThreadStatusKind.Running, card.Status);
+        Assert.Equal("external-turn", card.ActiveTurnId);
+        Assert.Same(card, Assert.Single(viewModel.OpenThreads));
+        Assert.Equal("不要丢失输入", card.Draft);
+    }
+
+    [Fact]
     public async Task DisposeAsync_WhenCalledConcurrently_WaitsForOneSharedShutdown()
     {
         var client = CreateClient(threadCount: 0);

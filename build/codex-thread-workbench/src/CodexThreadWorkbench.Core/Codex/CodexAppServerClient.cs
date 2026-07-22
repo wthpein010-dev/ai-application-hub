@@ -21,11 +21,15 @@ public sealed class CodexAppServerClient : ICodexThreadClient
     ];
 
     private readonly JsonRpcConnection _rpc;
+    private readonly CodexSessionActivityProbe _sessionActivityProbe;
     private bool _disposed;
 
-    public CodexAppServerClient(JsonRpcConnection rpc)
+    public CodexAppServerClient(
+        JsonRpcConnection rpc,
+        CodexSessionActivityProbe? sessionActivityProbe = null)
     {
         _rpc = rpc;
+        _sessionActivityProbe = sessionActivityProbe ?? new CodexSessionActivityProbe();
         _rpc.NotificationReceived += OnNotification;
         _rpc.ServerRequestReceived += OnServerRequest;
     }
@@ -119,6 +123,15 @@ public sealed class CodexAppServerClient : ICodexThreadClient
             : summary.Status == ThreadStatusKind.NotLoaded
                 ? FindLatestTurnStatus(thread)
                 : summary.Status;
+        if (activeTurnId is null &&
+            state is not (ThreadStatusKind.NeedsApproval or ThreadStatusKind.Error))
+        {
+            state = await _sessionActivityProbe.GetLatestStatusAsync(
+                        threadId,
+                        cancellationToken)
+                    ?? state;
+        }
+
         return new ThreadCardState(summary, messages, state, activeTurnId);
     }
 

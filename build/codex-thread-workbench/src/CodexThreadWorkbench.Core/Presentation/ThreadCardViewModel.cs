@@ -264,20 +264,43 @@ public sealed class ThreadCardViewModel : ObservableObject
             return;
         }
 
+        var interruptedTurnId = ActiveTurnId;
         IsBusy = true;
         ErrorMessage = string.Empty;
+        Status = ThreadStatusKind.Interrupted;
         try
         {
-            await _client.InterruptTurnAsync(ThreadId, ActiveTurnId);
+            await _client.InterruptTurnAsync(ThreadId, interruptedTurnId);
+            if (ActiveTurnId == interruptedTurnId)
+            {
+                ActiveTurnId = null;
+            }
         }
         catch (Exception error)
         {
+            if (ActiveTurnId == interruptedTurnId &&
+                Status == ThreadStatusKind.Interrupted)
+            {
+                Status = ThreadStatusKind.Running;
+            }
+
             ErrorMessage = error.Message;
         }
         finally
         {
             IsBusy = false;
         }
+    }
+
+    public void ApplyStatusSnapshot(ThreadCardState state)
+    {
+        if (state.Summary.Id != ThreadId || IsBusy)
+        {
+            return;
+        }
+
+        ActiveTurnId = state.ActiveTurnId;
+        Status = state.Status;
     }
 
     public void SetApproval(CodexApprovalRequest request)

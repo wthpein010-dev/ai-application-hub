@@ -12,8 +12,7 @@
     <SolidColorBrush x:Key="PrimaryHoverBrush" Color="#239567" />
     <SolidColorBrush x:Key="PrimaryTextBrush" Color="#1F272D" />
     <SolidColorBrush x:Key="SecondaryTextBrush" Color="#66717A" />
-    <converters:ChatRoleToBrushConverter x:Key="ChatRoleToBrushConverter" />
-    <converters:ChatRoleToAlignmentConverter x:Key="ChatRoleToAlignmentConverter" />
+    <converters:ChatRoleVisibilityConverter x:Key="ChatRoleVisibilityConverter" />
     <converters:StatusColorToBrushConverter x:Key="StatusColorToBrushConverter" />
   </Application.Resources>
 

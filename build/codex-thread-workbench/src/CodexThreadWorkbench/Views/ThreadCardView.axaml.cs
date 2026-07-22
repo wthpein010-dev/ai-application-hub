@@ -55,7 +55,7 @@ public partial class ThreadCardView : UserControl
         }
 
         Dispatcher.UIThread.Post(() =>
-            this.FindControl<ListBox>("MessagesList")?.ScrollIntoView(last));
+            this.FindControl<ScrollViewer>("MessagesScroller")?.ScrollToEnd());
     }
 
     private void MessageInput_OnKeyDown(object? sender, KeyEventArgs e)

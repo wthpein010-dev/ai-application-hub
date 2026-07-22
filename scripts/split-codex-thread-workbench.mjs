@@ -8,10 +8,11 @@ import {
 import { basename, join, resolve } from "node:path";
 
 const FILE_NAME = "CodexThreadWorkbench-Windows-x64.zip";
-const TOTAL_SIZE = 65_596_799;
+const RELEASE_DIRECTORY = "v1.2.0";
+const TOTAL_SIZE = 40_171_855;
 const CHUNK_SIZE = 8_388_608;
 const ARCHIVE_SHA256 =
-  "1D78557926FB97F46CF7FAA068BA65BEE12C3C7EA9DC3F9235450A9AB17CF454";
+  "64ECD8D394FBF472950D80F9595EF6D91D8BD3F04FC81F025A2B9C82020A54E9";
 
 const sha256 = bytes =>
   createHash("sha256").update(bytes).digest("hex").toUpperCase();
@@ -27,7 +28,7 @@ if (!sourceArgument || !outputArgument) {
   try {
     const sourcePath = resolve(sourceArgument);
     const outputDirectory = resolve(outputArgument);
-    const partsDirectory = join(outputDirectory, "parts");
+    const partsDirectory = join(outputDirectory, "parts", RELEASE_DIRECTORY);
     const source = await readFile(sourcePath);
     const sourceSha256 = sha256(source);
 
@@ -57,7 +58,7 @@ if (!sourceArgument || !outputArgument) {
       await writeFile(join(partsDirectory, partName), bytes);
       parts.push({
         index,
-        path: `parts/${partName}`,
+        path: `parts/${RELEASE_DIRECTORY}/${partName}`,
         size: bytes.byteLength,
         sha256: sha256(bytes)
       });

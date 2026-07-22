@@ -113,40 +113,58 @@
                      TextWrapping="Wrap" />
         </Border>
 
-        <ListBox x:Name="MessagesList"
-                 Grid.Row="2"
-                 Margin="8,7,8,4"
-                 Padding="2"
-                 ItemsSource="{Binding Messages}"
-                 Background="Transparent"
-                 BorderThickness="0"
-                 ScrollViewer.HorizontalScrollBarVisibility="Disabled"
-                 ScrollViewer.VerticalScrollBarVisibility="Auto">
-          <ListBox.Styles>
-            <Style Selector="ListBoxItem">
-              <Setter Property="Padding" Value="0" />
-              <Setter Property="Margin" Value="0,0,0,5" />
-              <Setter Property="Background" Value="Transparent" />
-              <Setter Property="BorderThickness" Value="0" />
-              <Setter Property="HorizontalContentAlignment" Value="Stretch" />
-              <Setter Property="Focusable" Value="False" />
-            </Style>
-          </ListBox.Styles>
-          <ListBox.ItemTemplate>
-            <DataTemplate>
-              <Border MaxWidth="560"
-                      Padding="10,7"
-                      HorizontalAlignment="{Binding Role, Converter={StaticResource ChatRoleToAlignmentConverter}}"
-                      Background="{Binding Role, Converter={StaticResource ChatRoleToBrushConverter}}"
-                      CornerRadius="8">
-                <TextBlock FontSize="12"
-                           LineHeight="18"
-                           Text="{Binding Text}"
-                           TextWrapping="Wrap" />
-              </Border>
-            </DataTemplate>
-          </ListBox.ItemTemplate>
-        </ListBox>
+        <ScrollViewer x:Name="MessagesScroller"
+                      Grid.Row="2"
+                      Margin="8,7,8,4"
+                      Padding="2"
+                      Background="Transparent"
+                      BorderThickness="0"
+                      HorizontalScrollBarVisibility="Disabled"
+                      VerticalScrollBarVisibility="Auto">
+          <ItemsControl x:Name="MessagesList"
+                        ItemsSource="{Binding Messages}">
+            <ItemsControl.Styles>
+              <Style Selector="ContentPresenter">
+                <Setter Property="Padding" Value="0" />
+                <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+              </Style>
+            </ItemsControl.Styles>
+            <ItemsControl.ItemTemplate>
+              <DataTemplate>
+                <Grid Margin="0,0,0,5">
+                  <Border x:Name="UserMessageBubble"
+                          MaxWidth="560"
+                          Padding="10,7"
+                          HorizontalAlignment="Right"
+                          Background="#E1F2EA"
+                          CornerRadius="8"
+                          IsVisible="{Binding Role, Converter={StaticResource ChatRoleVisibilityConverter}, ConverterParameter=User}">
+                    <TextBlock FontSize="12"
+                               LineHeight="18"
+                               Text="{Binding Text}"
+                               TextWrapping="Wrap" />
+                  </Border>
+
+                  <StackPanel x:Name="AssistantMessageBody"
+                              Margin="5,3,10,6"
+                              HorizontalAlignment="Stretch"
+                              IsVisible="{Binding Role, Converter={StaticResource ChatRoleVisibilityConverter}, ConverterParameter=Assistant}">
+                    <TextBlock x:Name="CodexRoleLabel"
+                               Margin="0,0,0,4"
+                               Foreground="{StaticResource SecondaryTextBrush}"
+                               FontSize="10"
+                               FontWeight="SemiBold"
+                               Text="Codex" />
+                    <TextBlock FontSize="12"
+                               LineHeight="19"
+                               Text="{Binding Text}"
+                               TextWrapping="Wrap" />
+                  </StackPanel>
+                </Grid>
+              </DataTemplate>
+            </ItemsControl.ItemTemplate>
+          </ItemsControl>
+        </ScrollViewer>
 
         <Border Grid.Row="3"
                 Padding="8"

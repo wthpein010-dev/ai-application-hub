@@ -56,6 +56,49 @@ public sealed class ThreadCardViewModelTests
     }
 
     [Fact]
+    public async Task StopAsync_ImmediatelyShowsStoppedWhileInterruptIsPending()
+    {
+        var client = new FakeCodexThreadClient { DelayInterrupt = true };
+        var viewModel = CreateViewModel(
+            client,
+            ThreadStatusKind.Running,
+            activeTurnId: "turn-1");
+
+        var stopTask = viewModel.StopAsync();
+        await client.InterruptStarted.Task.WaitAsync(TimeSpan.FromSeconds(2));
+
+        Assert.Equal(ThreadStatusKind.Interrupted, viewModel.Status);
+        Assert.Equal("已停止", viewModel.StatusText);
+        Assert.False(viewModel.IsRunning);
+        Assert.Equal("turn-1", viewModel.ActiveTurnId);
+
+        client.InterruptCompletion.TrySetResult();
+        await stopTask;
+
+        Assert.Null(viewModel.ActiveTurnId);
+    }
+
+    [Fact]
+    public async Task StopAsync_WhenInterruptFails_RestoresRunningState()
+    {
+        var client = new FakeCodexThreadClient
+        {
+            InterruptException = new InvalidOperationException("停止失败")
+        };
+        var viewModel = CreateViewModel(
+            client,
+            ThreadStatusKind.Running,
+            activeTurnId: "turn-1");
+
+        await viewModel.StopAsync();
+
+        Assert.Equal(ThreadStatusKind.Running, viewModel.Status);
+        Assert.Equal("turn-1", viewModel.ActiveTurnId);
+        Assert.True(viewModel.IsRunning);
+        Assert.Contains("停止失败", viewModel.ErrorMessage);
+    }
+
+    [Fact]
     public void ApplyNotification_AgentDeltaBuildsStreamingMessage()
     {
         var viewModel = CreateViewModel(
