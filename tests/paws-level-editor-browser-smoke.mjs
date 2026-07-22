@@ -24,6 +24,7 @@ const baseUrlIndex = process.argv.indexOf("--base-url");
 const externalBaseUrl = baseUrlIndex >= 0
   ? process.argv[baseUrlIndex + 1]?.replace(/\/+$/, "")
   : "";
+const browserTimeout = externalBaseUrl ? 120_000 : 30_000;
 const defaultFileName = "level_0020_r2_第二关模板12.json";
 const bundledLevelCount = 30;
 
@@ -309,6 +310,8 @@ try {
   };
   const desktop = await browser.newContext({ viewport: { width: 1440, height: 900 } });
   const page = await desktop.newPage();
+  page.setDefaultNavigationTimeout(browserTimeout);
+  page.setDefaultTimeout(browserTimeout);
   captureBrowserErrors(page, "desktop", browserErrors);
 
   await page.goto(`${baseUrl}/projects/paws-level-editor/index.html`, {
@@ -763,6 +766,8 @@ try {
     isMobile: true,
   });
   const mobilePage = await mobile.newPage();
+  mobilePage.setDefaultNavigationTimeout(browserTimeout);
+  mobilePage.setDefaultTimeout(browserTimeout);
   captureBrowserErrors(mobilePage, "390x844", browserErrors);
   await mobilePage.goto(`${baseUrl}/projects/paws-level-editor/index.html`, {
     waitUntil: "networkidle",
