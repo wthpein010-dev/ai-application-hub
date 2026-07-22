@@ -72,6 +72,23 @@ async function waitForNetworkAndTextures(page) {
       return false;
     }
     if (
+      renderer.gameplayImages instanceof Map
+      && [...renderer.gameplayImages.values()].some((image) => !image.complete)
+    ) {
+      return false;
+    }
+    if (
+      document.querySelector(".level-canvas-3d")
+      && (
+        !renderer.blockBackgroundImage
+        || !renderer.lockMaskImage
+        || !renderer.grassTexture
+        || !renderer.playTrayTexture
+      )
+    ) {
+      return false;
+    }
+    if (
       renderer.textures instanceof Map
       && [...renderer.textures.keys()].some(
         (key) => typeof key === "string" && key.startsWith("loading:"),

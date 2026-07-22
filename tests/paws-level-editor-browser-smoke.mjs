@@ -20,6 +20,10 @@ try {
 }
 
 const repoRoot = dirname(dirname(fileURLToPath(import.meta.url)));
+const baseUrlIndex = process.argv.indexOf("--base-url");
+const externalBaseUrl = baseUrlIndex >= 0
+  ? process.argv[baseUrlIndex + 1]?.replace(/\/+$/, "")
+  : "";
 const defaultFileName = "level_0020_r2_第二关模板12.json";
 const bundledLevelCount = 30;
 
@@ -107,6 +111,23 @@ async function waitForNetworkAndTextures(page) {
     if (
       renderer.images instanceof Map &&
       [...renderer.images.values()].some((image) => !image.complete)
+    ) {
+      return false;
+    }
+    if (
+      renderer.gameplayImages instanceof Map &&
+      [...renderer.gameplayImages.values()].some((image) => !image.complete)
+    ) {
+      return false;
+    }
+    if (
+      document.querySelector(".level-canvas-3d") &&
+      (
+        !renderer.blockBackgroundImage ||
+        !renderer.lockMaskImage ||
+        !renderer.grassTexture ||
+        !renderer.playTrayTexture
+      )
     ) {
       return false;
     }
@@ -265,9 +286,13 @@ let server = null;
 let summary = null;
 
 try {
-  server = await startStaticServer({ root: repoRoot });
+  if (!externalBaseUrl) {
+    server = await startStaticServer({ root: repoRoot });
+  }
+  const baseUrl = externalBaseUrl || server.baseUrl;
   browser = await launchChromium();
   summary = {
+    environment: externalBaseUrl ? "online" : "local",
     browser: `${browser.browserType().name()} ${browser.version()}`,
     desktopOverflow: null,
     mobileOverflow: null,
@@ -286,7 +311,7 @@ try {
   const page = await desktop.newPage();
   captureBrowserErrors(page, "desktop", browserErrors);
 
-  await page.goto(`${server.baseUrl}/projects/paws-level-editor/index.html`, {
+  await page.goto(`${baseUrl}/projects/paws-level-editor/index.html`, {
     waitUntil: "networkidle",
   });
   await page.locator("#connection-state").waitFor({ state: "visible" });
@@ -739,7 +764,7 @@ try {
   });
   const mobilePage = await mobile.newPage();
   captureBrowserErrors(mobilePage, "390x844", browserErrors);
-  await mobilePage.goto(`${server.baseUrl}/projects/paws-level-editor/index.html`, {
+  await mobilePage.goto(`${baseUrl}/projects/paws-level-editor/index.html`, {
     waitUntil: "networkidle",
   });
   await waitForWorkbench(mobilePage);
