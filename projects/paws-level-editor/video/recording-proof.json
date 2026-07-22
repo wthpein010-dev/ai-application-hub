@@ -1,18 +1,18 @@
 {
   "schemaVersion": 1,
-  "recordedAt": "2026-07-22T03:45:17.180Z",
+  "recordedAt": "2026-07-22T03:58:27.604Z",
   "recording": {
     "browser": "system Chrome",
-    "preRollMs": 1005,
-    "completedAt": "2026-07-22T03:46:45.185Z",
-    "durationMs": 88005
+    "preRollMs": 1213,
+    "completedAt": "2026-07-22T03:59:55.616Z",
+    "durationMs": 88013
   },
   "timeline": {
     "tools": 0,
-    "edit2d": 12001,
-    "view3d": 32008,
-    "play": 50004,
-    "persistence": 70012
+    "edit2d": 12009,
+    "view3d": 32002,
+    "play": 50010,
+    "persistence": 70000
   },
   "actions": {
     "metadata": {
@@ -22,7 +22,7 @@
       "modifiedAt": "2026-07-20T00:00:00.000Z"
     },
     "aiGeneration": {
-      "fileName": "ai_level_1524118851.json",
+      "fileName": "ai_level_89400168.json",
       "reference": "all",
       "solvable": true,
       "tileCount": 200,
@@ -132,14 +132,14 @@
   },
   "media": {
     "file": "paws-level-editor-tutorial.mp4",
-    "sha256": "6106d77c6b67a8e0a6ef7c9556bd13e0271493b6c5addb6b528c0a950fa760ed"
+    "sha256": "686a238bcc755bd48b91a582ede2c1e3a379d3db3e24ffb75f06e3421139eb3d"
   },
   "sources": {
     "projects/paws-level-editor/index.html": "1f9ef4bc8afbdf71f8439e98db54b60d59434a2fa36e453ff4227c1fd2e2ff9f",
     "projects/paws-level-editor/styles.css": "8057ac72a9430f8c09a271bb5c7a61d244d4d027f9f4924ab8c4a29c9519bea2",
     "projects/paws-level-editor/app.mjs": "550278401cebcf10ebb91159d70ca9698340c38261817da2dceb7bdaa5ac9dbf",
     "projects/paws-level-editor/static-api-client.mjs": "ed373714623928c3f2edfe8b378b8f4a0abdfac1197c88a1c6976e08a6a452c6",
-    "projects/paws-level-editor/core/ai-level-generator.mjs": "c56bc540dc19b9ef5fce55b8698bcc8f72c4bac15826c96f6d70ff4aa9c6a70c",
+    "projects/paws-level-editor/core/ai-level-generator.mjs": "f84b9a97748f4840f17ef329e4ccbcea2dd2547d68c9ef1b86a9c0107c460994",
     "projects/paws-level-editor/core/level-difficulty.mjs": "854ee69d136586c19493d18f1bcc308c7cc3bbca0a1a77e8483cf082516b0444",
     "projects/paws-level-editor/core/level-solver.mjs": "95a97b42973db91aaf118326b0bbf83bfda24168ff36fb5bc9b4b7703cd6c248",
     "projects/paws-level-editor/core/level-statistics.mjs": "e48189c09151890d234eee1e2733eb474d44f55ff1d9c31db616124896d8c653",

@@ -361,8 +361,9 @@ function chooseLayerPairs({
           ? [candidate.left, candidate.right].reduce((total, anchor) => {
             const parents = immediateUpperTiles.filter((upper) =>
               overlaps(anchor, upper));
-            return total + Math.min(...parents.map((parent) =>
-              parentUseCounts.get(parent) ?? 0));
+            const reuseCounts = parents.map((parent) =>
+              parentUseCounts.get(parent) ?? 0);
+            return total + (reuseCounts.length ? Math.min(...reuseCounts) : 0);
           }, 0)
           : 0;
         const overlapScore = layout === "progressive"
@@ -381,6 +382,9 @@ function chooseLayerPairs({
         };
       })
       .sort((left, right) => right.score - left.score);
+    if (ranked[0] && !Number.isFinite(ranked[0].score)) {
+      throw new Error(`第 ${layer} 层候选评分不是有限数。`);
+    }
     const chosen = ranked[0]?.candidate;
     if (!chosen) {
       throw new Error(
