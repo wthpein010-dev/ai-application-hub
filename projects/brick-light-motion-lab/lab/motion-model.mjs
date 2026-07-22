@@ -26,6 +26,11 @@ export function getRevealProgress(distance, tileWidth) {
   return smoothstep(tileWidth * 0.28, tileWidth * 0.88, Math.max(0, distance));
 }
 
+export function getPathPlaybackProgress(rawProgress, phase) {
+  const progress = clamp01(rawProgress);
+  return phase === 'returning' ? smoothstep(0, 1, progress) : progress;
+}
+
 export function sampleRecordedPath(points, progress) {
   if (!Array.isArray(points) || points.length === 0) {
     return { x: 0, y: 0 };

@@ -36,13 +36,13 @@ export const VISUAL_SCHEMES = Object.freeze([
   },
   {
     id: 'warm',
-    name: '颜色回温',
-    summary: '从冷淡低饱和状态柔和地回到正常色值。',
+    name: '慢启快亮',
+    summary: '前段保持压暗，后半程加速恢复，结束点干净明确。',
   },
   {
     id: 'soft-settle',
-    name: '轻弹归稳',
-    summary: '材质恢复末端加入不超过 1% 的一次性轻弹。',
+    name: '快启慢收',
+    summary: '先快速解除主要压暗，再用较长尾段慢慢归稳。',
   },
   {
     id: 'recommended',
@@ -192,26 +192,32 @@ function getChannelProgress(id, progress) {
   }
 
   if (id === 'warm') {
+    const delayed = smooth(progress ** 1.82);
     return {
-      ...all(eased),
-      baseGray: phase(progress, 0, 0.88),
-      baseSaturation: smooth(progress ** 1.55),
-      iconGray: phase(progress, 0.04, 0.9),
-      iconSaturation: smooth(progress ** 1.38),
-      iconOpacity: phase(progress, 0.1, 0.86),
+      ...all(delayed),
+      baseGray: smooth(progress ** 1.42),
+      baseSaturation: smooth(progress ** 2.35),
+      iconGray: smooth(progress ** 1.56),
+      iconSaturation: smooth(progress ** 2.6),
+      iconOpacity: phase(progress, 0.2, 0.96),
     };
   }
 
   if (id === 'soft-settle') {
-    const settle = smooth(progress ** 0.88);
-    return all(settle, pulse(progress, 0.56, 1, 0.01));
+    const quick = smooth(progress ** 0.46);
+    return {
+      ...all(quick, pulse(progress, 0.48, 1, 0.01)),
+      baseBrightness: phase(progress, 0, 0.5),
+      iconBrightness: phase(progress, 0, 0.46),
+      iconOpacity: phase(progress, 0, 0.5),
+    };
   }
 
   if (id === 'recommended') {
-    const body = phase(progress, 0.04, 0.94);
-    const icon = phase(progress, 0, 0.78);
+    const body = phase(progress, 0.14, 0.86);
+    const icon = phase(progress, 0, 0.46);
     return {
-      ...all(body, pulse(progress, 0.54, 1, 0.006)),
+      ...all(body, pulse(progress, 0.5, 1, 0.006)),
       iconGray: icon,
       iconBrightness: icon,
       iconSaturation: icon,

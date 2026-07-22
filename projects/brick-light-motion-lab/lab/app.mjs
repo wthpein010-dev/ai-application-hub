@@ -1,6 +1,7 @@
 import {
   clamp01,
   getRevealProgress,
+  getPathPlaybackProgress,
   sampleRecordedPath,
 } from './motion-model.mjs';
 import {
@@ -33,9 +34,9 @@ const SCHEME_DETAILS = [
   ['图案先行', '内容识别优先', '牌面图案先恢复，底板稍后跟进。'],
   ['底板先行', '材质存在感优先', '底板先恢复，牌面图案随后清晰。'],
   ['分段恢复', '停顿感清楚', '前半程解除主要压暗，短暂停顿后完成恢复。'],
-  ['饱和度慢回', '颜色自然回温', '低饱和状态逐渐回到正常绿色，不叠加额外遮罩。'],
-  ['同步恢复 + 1%', '轻微触感', '末端只做一次不超过 1% 的轻弹，并立即归稳。'],
-  ['图案略早 + 0.6%', '游戏推荐', '兼顾可识别性与触感，微回弹不超过 0.6%。'],
+  ['后程加速', '慢启后加速', '前段维持压暗，后半程集中恢复，结束点更明确。'],
+  ['快速解除 + 慢收', '快启长尾', '先快速恢复可见性，再用较长尾段归稳，并保留不超过 1% 的轻触感。'],
+  ['图案先行 + 收稳', '游戏推荐', '图案明确先醒，底板随后跟进，微回弹不超过 0.6%。'],
 ];
 
 const SCHEMES = VISUAL_SCHEMES.map((scheme, index) => ({
@@ -380,8 +381,8 @@ function animateAlongPath(state, points, duration, phase, runId) {
       scaledElapsed += Math.max(0, now - lastFrameAt) * playbackSession.speed;
       lastFrameAt = now;
       const raw = clamp01(scaledElapsed / Math.max(1, duration));
-      const eased = phase === 'returning' ? easeInOutCubic(raw) : easeOutCubic(raw);
-      const point = sampleRecordedPath(points, eased);
+      const pathProgress = getPathPlaybackProgress(raw, phase);
+      const point = sampleRecordedPath(points, pathProgress);
       updateCard(state, point, phase);
 
       if (raw < 1) {
@@ -564,16 +565,6 @@ function distanceBetween(a, b) {
 
 function clamp(value, min, max) {
   return Math.min(max, Math.max(min, value));
-}
-
-function easeOutCubic(value) {
-  return 1 - (1 - value) ** 3;
-}
-
-function easeInOutCubic(value) {
-  return value < 0.5
-    ? 4 * value ** 3
-    : 1 - ((-2 * value + 2) ** 3) / 2;
 }
 
 window.addEventListener('resize', () => {
