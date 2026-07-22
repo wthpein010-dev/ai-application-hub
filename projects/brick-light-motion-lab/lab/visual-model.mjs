@@ -1,0 +1,256 @@
+export const VISUAL_SCHEMES = Object.freeze([
+  {
+    id: 'clean',
+    name: '纯净渐亮',
+    summary: '底板与图案同步、匀净地恢复到正常材质。',
+  },
+  {
+    id: 'gray-first',
+    name: '灰度先退',
+    summary: '先解除灰暗感，再缓慢补足亮度与颜色。',
+  },
+  {
+    id: 'brightness-first',
+    name: '亮度先回',
+    summary: '先让砖块重新可见，颜色和清晰度随后跟上。',
+  },
+  {
+    id: 'color-late',
+    name: '色彩后到',
+    summary: '亮度先稳定，后半程再把色彩带回。',
+  },
+  {
+    id: 'icon-first',
+    name: '图案先醒',
+    summary: '牌面图案先清晰，底板随后恢复。',
+  },
+  {
+    id: 'base-first',
+    name: '底板先醒',
+    summary: '底板先回到正常材质，图案稍后清晰。',
+  },
+  {
+    id: 'two-stage',
+    name: '两段解暗',
+    summary: '先解除主要压暗，短暂停顿后完成恢复。',
+  },
+  {
+    id: 'warm',
+    name: '颜色回温',
+    summary: '从冷淡低饱和状态柔和地回到正常色值。',
+  },
+  {
+    id: 'soft-settle',
+    name: '轻弹归稳',
+    summary: '材质恢复末端加入不超过 1% 的一次性轻弹。',
+  },
+  {
+    id: 'recommended',
+    name: '游戏推荐',
+    summary: '图案略早清晰，配合不超过 0.6% 的微回弹。',
+  },
+]);
+
+export const VISUAL_SCHEME_IDS = Object.freeze(VISUAL_SCHEMES.map(({ id }) => id));
+
+export const DARK_VISUAL_STATE = Object.freeze({
+  baseGray: 0.58,
+  baseBrightness: 0.68,
+  baseSaturation: 0.4,
+  baseContrast: 0.88,
+  iconGray: 0.62,
+  iconBrightness: 0.66,
+  iconSaturation: 0.34,
+  iconContrast: 0.86,
+  iconOpacity: 0.62,
+  tileScale: 1,
+});
+
+export const LIGHT_VISUAL_STATE = Object.freeze({
+  baseGray: 0,
+  baseBrightness: 1,
+  baseSaturation: 1,
+  baseContrast: 1,
+  iconGray: 0,
+  iconBrightness: 1,
+  iconSaturation: 1,
+  iconContrast: 1,
+  iconOpacity: 1,
+  tileScale: 1,
+});
+
+const SCHEME_SET = new Set(VISUAL_SCHEME_IDS);
+
+export function getSchemeVisualState(id, reveal) {
+  const progress = clamp01(reveal);
+  if (progress === 0) {
+    return { ...DARK_VISUAL_STATE };
+  }
+  if (progress === 1) {
+    return { ...LIGHT_VISUAL_STATE };
+  }
+
+  const schemeId = SCHEME_SET.has(id) ? id : 'clean';
+  const channels = getChannelProgress(schemeId, progress);
+  return {
+    baseGray: mix(DARK_VISUAL_STATE.baseGray, LIGHT_VISUAL_STATE.baseGray, channels.baseGray),
+    baseBrightness: mix(DARK_VISUAL_STATE.baseBrightness, LIGHT_VISUAL_STATE.baseBrightness, channels.baseBrightness),
+    baseSaturation: mix(DARK_VISUAL_STATE.baseSaturation, LIGHT_VISUAL_STATE.baseSaturation, channels.baseSaturation),
+    baseContrast: mix(DARK_VISUAL_STATE.baseContrast, LIGHT_VISUAL_STATE.baseContrast, channels.baseContrast),
+    iconGray: mix(DARK_VISUAL_STATE.iconGray, LIGHT_VISUAL_STATE.iconGray, channels.iconGray),
+    iconBrightness: mix(DARK_VISUAL_STATE.iconBrightness, LIGHT_VISUAL_STATE.iconBrightness, channels.iconBrightness),
+    iconSaturation: mix(DARK_VISUAL_STATE.iconSaturation, LIGHT_VISUAL_STATE.iconSaturation, channels.iconSaturation),
+    iconContrast: mix(DARK_VISUAL_STATE.iconContrast, LIGHT_VISUAL_STATE.iconContrast, channels.iconContrast),
+    iconOpacity: mix(DARK_VISUAL_STATE.iconOpacity, LIGHT_VISUAL_STATE.iconOpacity, channels.iconOpacity),
+    tileScale: round(1 + channels.scale),
+  };
+}
+
+function getChannelProgress(id, progress) {
+  const eased = smooth(progress);
+  const all = (value, scale = 0) => ({
+    baseGray: value,
+    baseBrightness: value,
+    baseSaturation: value,
+    baseContrast: value,
+    iconGray: value,
+    iconBrightness: value,
+    iconSaturation: value,
+    iconContrast: value,
+    iconOpacity: value,
+    scale,
+  });
+
+  if (id === 'gray-first') {
+    const gray = phase(progress, 0, 0.62);
+    const body = phase(progress, 0.12, 1);
+    return {
+      ...all(body),
+      baseGray: gray,
+      iconGray: gray,
+      iconOpacity: phase(progress, 0.06, 0.82),
+    };
+  }
+
+  if (id === 'brightness-first') {
+    const brightness = phase(progress, 0, 0.58);
+    const color = phase(progress, 0.2, 1);
+    return {
+      ...all(color),
+      baseBrightness: brightness,
+      iconBrightness: brightness,
+      iconOpacity: phase(progress, 0.08, 0.7),
+    };
+  }
+
+  if (id === 'color-late') {
+    const visibility = phase(progress, 0, 0.66);
+    const color = phase(progress, 0.42, 1);
+    return {
+      ...all(visibility),
+      baseGray: color,
+      baseSaturation: color,
+      iconGray: color,
+      iconSaturation: color,
+      iconOpacity: phase(progress, 0.12, 0.72),
+    };
+  }
+
+  if (id === 'icon-first') {
+    const icon = phase(progress, 0, 0.64);
+    const base = phase(progress, 0.22, 1);
+    return {
+      ...all(base),
+      iconGray: icon,
+      iconBrightness: icon,
+      iconSaturation: icon,
+      iconContrast: icon,
+      iconOpacity: icon,
+    };
+  }
+
+  if (id === 'base-first') {
+    const base = phase(progress, 0, 0.62);
+    const icon = phase(progress, 0.24, 1);
+    return {
+      ...all(icon),
+      baseGray: base,
+      baseBrightness: base,
+      baseSaturation: base,
+      baseContrast: base,
+    };
+  }
+
+  if (id === 'two-stage') {
+    const stage = progress < 0.48
+      ? 0.58 * smooth(progress / 0.48)
+      : 0.58 + 0.42 * smooth((progress - 0.62) / 0.38);
+    return {
+      ...all(stage),
+      iconOpacity: phase(progress, 0.08, 0.72),
+    };
+  }
+
+  if (id === 'warm') {
+    return {
+      ...all(eased),
+      baseGray: phase(progress, 0, 0.88),
+      baseSaturation: smooth(progress ** 1.55),
+      iconGray: phase(progress, 0.04, 0.9),
+      iconSaturation: smooth(progress ** 1.38),
+      iconOpacity: phase(progress, 0.1, 0.86),
+    };
+  }
+
+  if (id === 'soft-settle') {
+    const settle = smooth(progress ** 0.88);
+    return all(settle, pulse(progress, 0.56, 1, 0.01));
+  }
+
+  if (id === 'recommended') {
+    const body = phase(progress, 0.04, 0.94);
+    const icon = phase(progress, 0, 0.78);
+    return {
+      ...all(body, pulse(progress, 0.54, 1, 0.006)),
+      iconGray: icon,
+      iconBrightness: icon,
+      iconSaturation: icon,
+      iconContrast: icon,
+      iconOpacity: icon,
+    };
+  }
+
+  return all(eased);
+}
+
+function clamp01(value) {
+  if (!Number.isFinite(value)) {
+    return 0;
+  }
+  return Math.min(1, Math.max(0, value));
+}
+
+function smooth(value) {
+  const progress = clamp01(value);
+  return progress * progress * (3 - 2 * progress);
+}
+
+function phase(value, start, end) {
+  if (start === end) {
+    return value < start ? 0 : 1;
+  }
+  return smooth((value - start) / (end - start));
+}
+
+function pulse(value, start, end, amplitude) {
+  const progress = clamp01((value - start) / (end - start));
+  return round(Math.sin(progress * Math.PI) * amplitude);
+}
+
+function mix(from, to, progress) {
+  return round(from + (to - from) * clamp01(progress));
+}
+
+function round(value) {
+  return Math.round(value * 1_000_000) / 1_000_000;
+}

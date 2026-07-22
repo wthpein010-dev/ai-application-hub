@@ -1,0 +1,87 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta
+      name="description"
+      content="比较上层砖块拖离后，下层砖块由暗变亮并在上层返回时恢复压暗的十种克制材质动效。"
+    />
+    <title>砖块点亮动效实验台</title>
+    <link rel="icon" href="data:," />
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <header class="hero">
+      <div class="hero__copy">
+        <p class="eyebrow"><span></span> MOTION LAB · 交互原型</p>
+        <h1>下层砖块，怎么从<span>暗</span>变<span>亮</span>？</h1>
+        <p class="hero__description">
+          上层砖块拖离、下层露出时触发点亮；松手后上层沿原路径返回，
+          下层随覆盖程度恢复压暗。十个方案只改变砖块自身材质的恢复顺序与节奏，
+          完全点亮后都与普通砖块一致。
+        </p>
+      </div>
+
+      <aside class="logic-card" aria-label="触发逻辑">
+        <div class="logic-card__title">统一触发逻辑</div>
+        <div class="logic-flow">
+          <span>拖离</span><i></i><span>露出</span><i></i><span>点亮</span><i></i><span>返程</span><i></i><span>压暗</span>
+        </div>
+        <p>28% 开始点亮 · 88% 完全点亮 · 返程连续反向同步 · 每 10 秒巡播下一项</p>
+      </aside>
+    </header>
+
+    <main>
+      <section class="control-deck" aria-label="演示控制">
+        <div class="control-deck__left">
+          <button class="button button--primary" id="play-selected" type="button">
+            <span class="button__icon">▶</span> 播放当前选择 · <span class="selected-name">10</span>
+          </button>
+          <button class="button" id="pause-all" type="button">
+            <span class="button__icon">■</span> 暂停并复位
+          </button>
+          <div class="speed-control" aria-label="动画倍速">
+            <span>倍速</span>
+            <button type="button" data-speed="0.25" aria-pressed="false">0.25×</button>
+            <button type="button" data-speed="0.4" aria-pressed="false">0.4×</button>
+            <button type="button" data-speed="0.55" aria-pressed="true">0.55×</button>
+            <button type="button" data-speed="0.7" aria-pressed="false">0.7×</button>
+            <button type="button" data-speed="0.85" aria-pressed="false">0.85×</button>
+            <button type="button" data-speed="1" aria-pressed="false">1×</button>
+          </div>
+          <label class="toggle">
+            <input id="path-toggle" type="checkbox" checked />
+            <span class="toggle__track"><span></span></span>
+            显示拖拽路径
+          </label>
+        </div>
+        <div class="control-deck__hint">
+          <span class="mouse-mark">↗</span>
+          也可以直接拖动每张卡片里的上层砖块
+        </div>
+        <div class="tour-status" id="tour-status" data-status="running" aria-live="polite">
+          首次巡播准备中 · 01 将在 0.8 秒后播放
+        </div>
+      </section>
+
+      <section class="selection-bar" id="selection-summary" aria-live="polite"></section>
+
+      <section class="cards" id="cards" aria-label="砖块点亮效果方案"></section>
+
+      <section class="handoff-note">
+        <div>
+          <p class="eyebrow"><span></span> UNITY HANDOFF</p>
+          <h2>确定方案后，程序只需复用同一条暴露进度</h2>
+        </div>
+        <p>
+          网页中的 <code>0 → 1</code> 暴露进度可直接映射为 Unity 动画参数：
+          拖出时正向播放，沿路径返回时反向播放。视觉效果不承担可点击判定，
+          逻辑仍以真实遮挡关系为准。
+        </p>
+      </section>
+    </main>
+
+    <script type="module" src="./app.mjs"></script>
+  </body>
+</html>

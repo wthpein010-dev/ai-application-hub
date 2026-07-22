@@ -58,6 +58,6 @@ test("the page cache key changes for the GamePulse release", () => {
   const html = readFileSync(join(root, "index.html"), "utf8");
   assert.match(
     html,
-    /app-20260706-restore-games\.js\?v=20260720-workbench-mac-video/,
+    /app-20260706-restore-games\.js\?v=20260722-brick-motion-v3/,
   );
 });

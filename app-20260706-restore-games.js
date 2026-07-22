@@ -544,6 +544,29 @@ const defaultApps = [
     risk: 8,
     polish: 8
   },
+  {
+    id: "brick-light-motion-lab",
+    name: "砖块点亮动效实验台",
+    category: "美术设计参考",
+    status: "engineering",
+    brief: "对比十种克制的砖块暗到亮、返程回暗方案，全部点亮后与普通砖块保持一致。",
+    problem: "用于美术、策划和程序共同选择层叠砖块露出后的点亮节奏，避免额外光效让单块砖过度突出。",
+    aiUse: "AI 参与动效方案拆分、暴露进度模型、交互原型、慢速对比、自动化测试和公开发布。",
+    folder: "./projects/brick-light-motion-lab/",
+    entry: "./projects/brick-light-motion-lab/index.html",
+    video: "./projects/brick-light-motion-lab/video/index.html",
+    package: "",
+    platforms: {
+      web: "./projects/brick-light-motion-lab/index.html",
+      windows: "",
+      mac: ""
+    },
+    tags: ["美术设计参考", "砖块动效", "交互原型", "暗亮切换"],
+    speed: 9,
+    impact: 8,
+    risk: 9,
+    polish: 9
+  },
 ];
 
 let apps = loadApps();

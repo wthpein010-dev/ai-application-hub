@@ -35,5 +35,5 @@ test("engineering cards use the same two-column action grid", () => {
 
 test("homepage refreshes both card assets after the button layout update", () => {
   assert.match(page, /styles\.css\?v=20260716-button-order/);
-  assert.match(page, /app-20260706-restore-games\.js\?v=20260720-workbench-mac-video/);
+  assert.match(page, /app-20260706-restore-games\.js\?v=20260722-brick-motion-v3/);
 });

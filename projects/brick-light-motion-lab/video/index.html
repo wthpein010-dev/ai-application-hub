@@ -1,0 +1,76 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="color-scheme" content="dark" />
+    <meta name="theme-color" content="#07101e" />
+    <title>砖块点亮动效实验台 · 演示视频</title>
+    <link rel="icon" href="data:," />
+    <link rel="stylesheet" href="../../../assets/subpage-shell.css" />
+    <link rel="stylesheet" href="./video.css" />
+  </head>
+  <body class="hub-subpage">
+    <a class="hub-home-link" href="../../../index.html#games">
+      <span class="hub-home-link__icon" aria-hidden="true">←</span>
+      返回主页
+    </a>
+
+    <header class="topbar">
+      <div class="brand-copy">
+        <p>ART MOTION REFERENCE / VIDEO</p>
+        <strong>砖块点亮动效实验台</strong>
+      </div>
+      <a href="../index.html">返回演示</a>
+    </header>
+
+    <main>
+      <p class="eyebrow">MATERIAL-ONLY MOTION</p>
+      <h1>从压暗到点亮，再沿原路径恢复压暗</h1>
+      <p class="intro">视频依次展示自动巡播、十种差异、六档慢速、手动抢占，以及拖出和返程的连续状态。</p>
+
+      <section class="player-shell" aria-label="演示视频播放器">
+        <video id="tutorialVideo" controls playsinline preload="metadata" data-src="./brick-light-motion-lab.mp4"></video>
+        <div class="load-overlay" id="loadOverlay">
+          <strong>砖块点亮动效实验</strong>
+          <p>约 35 秒，H.264 编码。点击后加载视频。</p>
+          <button id="loadVideo" type="button">加载并播放</button>
+        </div>
+      </section>
+
+      <section class="chapter-panel" aria-label="视频章节">
+        <h2>章节</h2>
+        <div class="chapters">
+          <button type="button" data-time="0"><time>00:00</time>自动巡播</button>
+          <button type="button" data-time="8"><time>00:08</time>方案差异</button>
+          <button type="button" data-time="17"><time>00:17</time>慢速与抢占</button>
+          <button type="button" data-time="25"><time>00:25</time>拖出与返程</button>
+        </div>
+      </section>
+    </main>
+
+    <script>
+      const video = document.querySelector('#tutorialVideo');
+      const overlay = document.querySelector('#loadOverlay');
+      const loadButton = document.querySelector('#loadVideo');
+
+      function loadVideo(autoplay = false) {
+        if (!video.src) {
+          video.src = video.dataset.src;
+          video.load();
+        }
+        overlay.hidden = true;
+        if (autoplay) video.play().catch(() => {});
+      }
+
+      loadButton.addEventListener('click', () => loadVideo(true));
+      document.querySelectorAll('[data-time]').forEach((button) => {
+        button.addEventListener('click', () => {
+          loadVideo();
+          video.currentTime = Number(button.dataset.time) || 0;
+          video.play().catch(() => {});
+        });
+      });
+    </script>
+  </body>
+</html>
