@@ -15,7 +15,9 @@ import {
   rateDifficultyScore,
   scoreLevelDifficulty,
 } from "../projects/paws-level-editor/core/level-difficulty.mjs";
-import { validateLevel } from "../projects/paws-level-editor/core/level-validator.mjs";
+import * as levelValidator from "../projects/paws-level-editor/core/level-validator.mjs";
+
+const { validateLevel } = levelValidator;
 
 function tile(uid, x, y, layer, type) {
   return {
@@ -131,6 +133,48 @@ test("AI validation permits edge-touching tiles", () => {
   assert.equal(
     validateLevel(document).some(({ code }) => code === "same-layer-overlap"),
     false,
+  );
+});
+
+test("AI validation rejects odd type counts inside individual layers", () => {
+  const document = makeDocument([
+    tile("layer-1-a", 0, 0, 1, 1),
+    tile("layer-2-a", 0, 16, 2, 1),
+    tile("layer-2-b", 16, 16, 2, 1),
+    tile("layer-2-c", 32, 16, 2, 1),
+  ]);
+  document.designerNote.aiGeneration = {};
+
+  const oddLayerIssue = validateLevel(document)
+    .find(({ code }) => code === "odd-layer-type");
+
+  assert.equal(oddLayerIssue?.severity, "error");
+  assert.deepEqual(
+    new Set(oddLayerIssue.tileUids),
+    new Set(["layer-1-a", "layer-2-a", "layer-2-b", "layer-2-c"]),
+  );
+});
+
+test("AI publish validation reruns the solver and blocks an unsolvable edit", () => {
+  assert.equal(typeof levelValidator.validateLevelForPublish, "function");
+  const document = makeDocument([
+    tile("edge-a", 0, 0, 1, 1),
+    tile("blocked-a", 8, 0, 1, 2),
+    tile("blocked-b", 16, 0, 1, 1),
+    tile("edge-b", 24, 0, 1, 2),
+  ]);
+  document.designerNote.aiGeneration = {};
+
+  assert.deepEqual(
+    validateLevel(document).filter(({ severity }) => severity === "error"),
+    [],
+  );
+  assert.equal(solveLevel(document).solvable, false);
+
+  const issues = levelValidator.validateLevelForPublish(document);
+  assert.equal(
+    issues.some(({ severity, code }) => severity === "error" && code === "unsolvable-ai-level"),
+    true,
   );
 });
 

@@ -103,6 +103,22 @@ test("multi-tile moves are atomic and reject new same-layer overlap or overflow"
   assert.deepEqual(valid.tiles.map(({ x, y }) => [x, y]), [[8, 0], [8, 8]]);
 });
 
+test("multi-tile moves reject overlap inside the moved selection", () => {
+  const source = [
+    tile("overlapping-a", 0, 0, 1),
+    tile("overlapping-b", 7, 0, 1),
+  ];
+  const document = documentWith(structuredClone(source));
+
+  const result = planTileMove(document, ["overlapping-a", "overlapping-b"], { dx: 8 });
+
+  assert.deepEqual(
+    { ok: result.ok, code: result.code },
+    { ok: false, code: "same-layer-overlap" },
+  );
+  assert.deepEqual(document.tiles, source);
+});
+
 test("layer views expose all, a cross-section, or one exact layer", () => {
   const tiles = [tile("l1", 0, 0, 1), tile("l2", 0, 0, 2), tile("l3", 0, 0, 3)];
   assert.deepEqual(

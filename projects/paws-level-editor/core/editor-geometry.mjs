@@ -152,6 +152,13 @@ export function planTileMove(document, tileUids, {
   if (moved.some((tile) => !Number.isInteger(tile.layer) || tile.layer < 1)) {
     return failure("invalid-layer", "移动后层级不能低于 1。");
   }
+  for (let leftIndex = 0; leftIndex < moved.length; leftIndex += 1) {
+    for (let rightIndex = leftIndex + 1; rightIndex < moved.length; rightIndex += 1) {
+      if (sameLayerCollision(moved[leftIndex], moved[rightIndex])) {
+        return failure("same-layer-overlap", "移动后的选中砖块之间存在同层面积重叠。");
+      }
+    }
+  }
   const unselected = source.filter(({ uid }) => !wanted.has(uid));
   if (moved.some((tile) => unselected.some((other) => sameLayerCollision(tile, other)))) {
     return failure("same-layer-overlap", "移动后会与同层砖块发生面积重叠。");

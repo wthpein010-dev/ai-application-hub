@@ -36,6 +36,14 @@ const createNewLevelBody = controller.slice(
   controller.indexOf("  createNewLevel()"),
   controller.indexOf("  isDirty()"),
 );
+const exportLevelBody = controller.slice(
+  controller.indexOf("  exportLevel()"),
+  controller.indexOf("  deleteTiles("),
+);
+const performSaveBody = controller.slice(
+  controller.indexOf("  async performSave("),
+  controller.indexOf("  onKeyDown("),
+);
 
 test("controller offers recovery for a recoverable bundled list entry", () => {
   assert.match(
@@ -176,6 +184,14 @@ test("controller routes high-frequency edits through safe geometry plans", () =>
   assert.match(controller, /selectAllVisible\(\)/);
   assert.match(controller, /executePlannedEdit\(plan/);
   assert.match(controller, /createMoveTilesCommand\([^)]*plan\.dx[^)]*plan\.dy[^)]*plan\.layerDelta/);
+});
+
+test("AI save-as and export rerun the release validator before producing output", () => {
+  assert.match(controller, /validateLevelForPublish/);
+  assert.match(exportLevelBody, /validateLevelForPublish\(this\.document\)/);
+  assert.match(exportLevelBody, /unsolvable|AI|发布/u);
+  assert.match(performSaveBody, /validateLevelForPublish\(this\.document\)/);
+  assert.match(performSaveBody, /return false/);
 });
 
 test("controller keyboard handler dispatches commands instead of interpreting modified tool keys", () => {

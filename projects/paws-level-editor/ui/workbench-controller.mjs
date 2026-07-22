@@ -1,7 +1,7 @@
 import { createApiClient, isValidLevelFileName } from "../static-api-client.mjs";
 import { EditHistory, createAddTilesCommand, createDeleteTilesCommand, createMoveTilesCommand, createPatchTilesCommand } from "../core/edit-history.mjs";
 import { parseLevelDocument, serializeLevelDocument } from "../core/level-adapter.mjs";
-import { validateLevel } from "../core/level-validator.mjs";
+import { validateLevel, validateLevelForPublish } from "../core/level-validator.mjs";
 import { createPlaySession } from "../core/play-engine.mjs";
 import { generateAiLevel } from "../core/ai-level-generator.mjs";
 import { scoreLevelDifficulty } from "../core/level-difficulty.mjs";
@@ -987,6 +987,14 @@ export class WorkbenchController {
 
   exportLevel() {
     if (!this.document) return;
+    if (this.document.designerNote?.aiGeneration) {
+      this.issues = validateLevelForPublish(this.document);
+      this.updateUI();
+      if (this.issues.some(({ severity }) => severity === "error")) {
+        this.showToast("AI 关卡未通过逐层配对和完整可解性校验，已阻止导出。", "error");
+        return;
+      }
+    }
     try {
       const download = createLevelDownload(this.document, {
         fileName: this.document.fileName,
@@ -1269,6 +1277,14 @@ export class WorkbenchController {
   }
 
   async performSave({ fileName, saveAs, expectedVersion }) {
+    if (this.document.designerNote?.aiGeneration) {
+      this.issues = validateLevelForPublish(this.document);
+      this.updateUI();
+      if (this.issues.some(({ severity }) => severity === "error")) {
+        this.showToast("AI 关卡未通过逐层配对和完整可解性校验，已阻止保存。", "error");
+        return false;
+      }
+    }
     const value = serializeLevelDocument(this.document);
     const source = saveAs
       ? "manual"

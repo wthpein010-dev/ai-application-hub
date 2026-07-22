@@ -4,6 +4,7 @@ import {
   overlapsWithPositiveArea,
   parseGridUnit,
 } from "./editor-geometry.mjs";
+import { solveLevel } from "./level-solver.mjs";
 
 const isSupportedType = (type) =>
   type === 0 ||
@@ -17,6 +18,7 @@ function issue(severity, code, message, tileUids = []) {
 
 export function validateLevel(document, {
   rejectSameLayerOverlap = Boolean(document?.designerNote?.aiGeneration),
+  rejectOddLayerTypeCounts = Boolean(document?.designerNote?.aiGeneration),
 } = {}) {
   const tiles = Array.isArray(document?.tiles) ? document.tiles : [];
   if (tiles.length === 0) {
@@ -149,6 +151,31 @@ export function validateLevel(document, {
     ));
   }
 
+  if (rejectOddLayerTypeCounts) {
+    const oddLayerTypeUids = new Set();
+    const oddLayerTypeGroups = [];
+    for (const [layer, layerTiles] of layerGroups) {
+      const layerTypeGroups = new Map();
+      for (const tile of layerTiles) {
+        const type = Number(tile.type);
+        (layerTypeGroups.get(type) ?? layerTypeGroups.set(type, []).get(type)).push(tile.uid);
+      }
+      for (const [type, tileUids] of layerTypeGroups) {
+        if (tileUids.length % 2 === 0) continue;
+        oddLayerTypeGroups.push(`第 ${layer} 层 / 图案 ${type}`);
+        tileUids.forEach((uid) => oddLayerTypeUids.add(uid));
+      }
+    }
+    if (oddLayerTypeGroups.length) {
+      issues.push(issue(
+        "error",
+        "odd-layer-type",
+        `AI 关卡存在 ${oddLayerTypeGroups.length} 组逐层图案数量不是偶数：${oddLayerTypeGroups.join("、")}。`,
+        [...oddLayerTypeUids],
+      ));
+    }
+  }
+
   for (const [type, tileUids] of typeGroups) {
     if (tileUids.length % 2 === 0) {
       continue;
@@ -164,5 +191,28 @@ export function validateLevel(document, {
     }
   }
 
+  return issues;
+}
+
+export function validateLevelForPublish(document, { maxNodes = 20000 } = {}) {
+  const issues = validateLevel(document);
+  if (
+    !document?.designerNote?.aiGeneration
+    || issues.some(({ severity }) => severity === "error")
+  ) {
+    return issues;
+  }
+
+  const report = solveLevel(document, { maxNodes });
+  if (!report.solvable) {
+    issues.push(issue(
+      "error",
+      "unsolvable-ai-level",
+      report.exhausted
+        ? `AI 关卡求解达到 ${report.nodes} 个搜索节点上限，无法确认可解，已阻止发布。`
+        : "AI 关卡编辑后已无法完整两两消除，已阻止发布。",
+      document.tiles.map((tile) => tile.uid),
+    ));
+  }
   return issues;
 }
