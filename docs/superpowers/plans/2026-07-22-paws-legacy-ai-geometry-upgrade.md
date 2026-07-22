@@ -17,4 +17,3 @@
 - Run the focused unit tests, every Paws test, module syntax checks, and `git diff --check`.
 - Run local browser generation, legacy migration, 3D, and solver-driven play acceptance.
 - Commit, push fast-forward to `origin/main`, wait for GitHub Pages, then repeat HTTP and browser acceptance online.
-
