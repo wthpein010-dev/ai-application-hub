@@ -141,8 +141,8 @@ test("legacy levels remain loadable when they contain historical overlap", () =>
   ]);
 
   assert.equal(
-    validateLevel(document).some(({ code }) => code === "same-layer-overlap"),
-    false,
+    validateLevel(document).find(({ code }) => code === "same-layer-overlap")?.severity,
+    "warning",
   );
   assert.equal(
     validateLevel(document, { rejectSameLayerOverlap: true })

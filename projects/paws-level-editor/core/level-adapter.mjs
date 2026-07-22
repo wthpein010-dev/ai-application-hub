@@ -1,3 +1,9 @@
+import {
+  DEFAULT_BOARD,
+  buildGridUnit,
+  parseGridUnit,
+} from "./editor-geometry.mjs";
+
 const TILE_DEFAULTS = Object.freeze({
   moldType: 1,
   metaType: 0,
@@ -12,6 +18,19 @@ function clone(value) {
 function numberOr(value, fallback) {
   const result = Number(value);
   return Number.isFinite(result) ? result : fallback;
+}
+
+function dimensionOr(value, fallback) {
+  if (value === undefined || value === null || value === "") return fallback;
+  return Number(value);
+}
+
+function safeGridUnit(width, height, fallback) {
+  try {
+    return buildGridUnit(width, height);
+  } catch {
+    return String(fallback || buildGridUnit(DEFAULT_BOARD.width, DEFAULT_BOARD.height));
+  }
 }
 
 function normalizeTile(tile, uid) {
@@ -91,6 +110,13 @@ export function parseLevelDocument(raw, { fileName = "", version = "" } = {}) {
     })
     .map(({ tile }, index) => normalizeTile(tile, `tile-${index + 1}`));
 
+  const parsedGridUnit = parseGridUnit(original.gridUnit);
+  const fallbackWidth = parsedGridUnit?.width ?? DEFAULT_BOARD.width;
+  const fallbackHeight = parsedGridUnit?.height ?? DEFAULT_BOARD.height;
+  const boardWidth = dimensionOr(designerNote.widthNum, fallbackWidth);
+  const boardHeight = dimensionOr(designerNote.heightNum, fallbackHeight);
+  const gridUnit = safeGridUnit(boardWidth, boardHeight, original.gridUnit);
+
   return {
     original,
     designerNote,
@@ -101,10 +127,10 @@ export function parseLevelDocument(raw, { fileName = "", version = "" } = {}) {
     id: numberOr(original.id, 0),
     name: String(original.name ?? ""),
     difficulty: String(original.difficulty ?? "Normal"),
-    gridUnit: String(original.gridUnit ?? "sheep_8x10_mini8"),
+    gridUnit,
     board: {
-      width: numberOr(designerNote.widthNum, 8),
-      height: numberOr(designerNote.heightNum, 10),
+      width: boardWidth,
+      height: boardHeight,
       scale: numberOr(designerNote.boardScale, 1),
     },
     random: {
@@ -153,11 +179,21 @@ export function serializeLevelDocument(document) {
   const saved = clone(document.original ?? {});
   const note = clone(document.designerNote ?? {});
   const levelData = tilesToLevelData(document.tiles ?? []);
+  const parsedGridUnit = parseGridUnit(document.gridUnit ?? saved.gridUnit);
+  const boardWidth = dimensionOr(
+    document.board?.width,
+    dimensionOr(note.widthNum, parsedGridUnit?.width ?? DEFAULT_BOARD.width),
+  );
+  const boardHeight = dimensionOr(
+    document.board?.height,
+    dimensionOr(note.heightNum, parsedGridUnit?.height ?? DEFAULT_BOARD.height),
+  );
+  const gridUnit = safeGridUnit(boardWidth, boardHeight, document.gridUnit ?? saved.gridUnit);
 
   saved.id = numberOr(document.id, numberOr(saved.id, 0));
   saved.name = String(document.name ?? "");
   saved.difficulty = String(document.difficulty ?? saved.difficulty ?? "Normal");
-  saved.gridUnit = String(document.gridUnit ?? saved.gridUnit ?? "sheep_8x10_mini8");
+  saved.gridUnit = gridUnit;
   saved.tiles = Object.values(levelData).flat().map((tile) => ({
     x: tile.rolNum,
     y: tile.rowNum,
@@ -169,8 +205,8 @@ export function serializeLevelDocument(document) {
     presetColorType: tile.presetColorType,
   }));
 
-  note.widthNum = numberOr(document.board?.width, numberOr(note.widthNum, 8));
-  note.heightNum = numberOr(document.board?.height, numberOr(note.heightNum, 10));
+  note.widthNum = boardWidth;
+  note.heightNum = boardHeight;
   note.boardScale = numberOr(document.board?.scale, numberOr(note.boardScale, 1));
   note.blockTypeCount = numberOr(
     document.random?.blockTypeCount,

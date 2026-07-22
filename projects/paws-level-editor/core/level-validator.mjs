@@ -1,3 +1,10 @@
+import {
+  BOARD_LIMITS,
+  TILE_SIZE,
+  overlapsWithPositiveArea,
+  parseGridUnit,
+} from "./editor-geometry.mjs";
+
 const isSupportedType = (type) =>
   type === 0 ||
   type === -1 ||
@@ -6,13 +13,6 @@ const isSupportedType = (type) =>
 
 function issue(severity, code, message, tileUids = []) {
   return { severity, code, message, tileUids };
-}
-
-function overlapsWithPositiveArea(left, right) {
-  return (
-    Math.abs(Number(left.x) - Number(right.x)) < 8
-    && Math.abs(Number(left.y) - Number(right.y)) < 8
-  );
 }
 
 export function validateLevel(document, {
@@ -28,22 +28,71 @@ export function validateLevel(document, {
     issues.push(issue("error", "odd-total", "砖块总数必须为偶数。", tiles.map((tile) => tile.uid)));
   }
 
-  const boardWidth = Number(document?.board?.width) * 8;
-  const boardHeight = Number(document?.board?.height) * 8;
+  const boardFieldsWidth = Number(document?.board?.width);
+  const boardFieldsHeight = Number(document?.board?.height);
+  const validBoardSize = (
+    Number.isInteger(boardFieldsWidth)
+    && boardFieldsWidth >= BOARD_LIMITS.minWidth
+    && boardFieldsWidth <= BOARD_LIMITS.maxWidth
+    && Number.isInteger(boardFieldsHeight)
+    && boardFieldsHeight >= BOARD_LIMITS.minHeight
+    && boardFieldsHeight <= BOARD_LIMITS.maxHeight
+  );
+  if (!validBoardSize) {
+    issues.push(issue(
+      "error",
+      "invalid-board-size",
+      `棋盘宽度需为 ${BOARD_LIMITS.minWidth}–${BOARD_LIMITS.maxWidth}，高度需为 ${BOARD_LIMITS.minHeight}–${BOARD_LIMITS.maxHeight}。`,
+    ));
+  }
+
+  const parsedGridUnit = parseGridUnit(document?.gridUnit);
+  if (
+    !parsedGridUnit
+    || parsedGridUnit.width !== boardFieldsWidth
+    || parsedGridUnit.height !== boardFieldsHeight
+  ) {
+    issues.push(issue("warning", "grid-unit-mismatch", "Grid Unit 与当前棋盘尺寸不一致。"));
+  }
+
+  const blockTypeCount = Number(document?.random?.blockTypeCount);
+  const fullTypeMin = Number(document?.random?.fullTypeMin);
+  const fullTypeMax = Number(document?.random?.fullTypeMax);
+  if (
+    !Number.isInteger(blockTypeCount)
+    || blockTypeCount < 1
+    || blockTypeCount > 32
+    || !Number.isInteger(fullTypeMin)
+    || fullTypeMin < 1
+    || fullTypeMin > 32
+    || !Number.isInteger(fullTypeMax)
+    || fullTypeMax < 1
+    || fullTypeMax > 32
+    || fullTypeMin > fullTypeMax
+  ) {
+    issues.push(issue("error", "invalid-random-range", "随机图案范围必须是 1–32，且最小值不能大于最大值。"));
+  }
+
+  const boardWidth = boardFieldsWidth * TILE_SIZE;
+  const boardHeight = boardFieldsHeight * TILE_SIZE;
   const anchors = new Map();
   const layerGroups = new Map();
   const typeGroups = new Map();
+  const uidGroups = new Map();
 
   for (const tile of tiles) {
     const type = Number(tile.type);
     (typeGroups.get(type) ?? typeGroups.set(type, []).get(type)).push(tile.uid);
+    (uidGroups.get(tile.uid) ?? uidGroups.set(tile.uid, []).get(tile.uid)).push(tile.uid);
 
     if (!Number.isInteger(tile.layer) || tile.layer < 1) {
       issues.push(issue("error", "invalid-layer", "砖块层级必须是大于 0 的整数。", [tile.uid]));
     }
+    if (!Number.isInteger(tile.x) || !Number.isInteger(tile.y)) {
+      issues.push(issue("error", "invalid-coordinate", "砖块 X/Y 坐标必须是整数。", [tile.uid]));
+    }
     if (
-      Number.isFinite(boardWidth) &&
-      Number.isFinite(boardHeight) &&
+      validBoardSize &&
       (tile.x < 0 || tile.y < 0 || tile.x + 8 > boardWidth || tile.y + 8 > boardHeight)
     ) {
       issues.push(issue("error", "out-of-board", "砖块超出棋盘范围。", [tile.uid]));
@@ -58,39 +107,46 @@ export function validateLevel(document, {
       .push(tile);
   }
 
+  for (const tileUids of uidGroups.values()) {
+    if (tileUids.length > 1) {
+      issues.push(issue("error", "duplicate-uid", "砖块 UID 必须唯一。", [...new Set(tileUids)]));
+    }
+  }
+
   for (const tileUids of anchors.values()) {
     if (tileUids.length > 1) {
       issues.push(issue("error", "duplicate-anchor", "同层存在完全重叠的砖块锚点。", tileUids));
     }
   }
 
-  if (rejectSameLayerOverlap) {
-    const overlappingUids = new Set();
-    let overlappingPairCount = 0;
-    for (const layerTiles of layerGroups.values()) {
-      for (let leftIndex = 0; leftIndex < layerTiles.length; leftIndex += 1) {
-        for (
-          let rightIndex = leftIndex + 1;
-          rightIndex < layerTiles.length;
-          rightIndex += 1
-        ) {
-          const left = layerTiles[leftIndex];
-          const right = layerTiles[rightIndex];
-          if (!overlapsWithPositiveArea(left, right)) continue;
-          overlappingPairCount += 1;
-          overlappingUids.add(left.uid);
-          overlappingUids.add(right.uid);
-        }
+  const overlappingUids = new Set();
+  let overlappingPairCount = 0;
+  for (const layerTiles of layerGroups.values()) {
+    for (let leftIndex = 0; leftIndex < layerTiles.length; leftIndex += 1) {
+      for (
+        let rightIndex = leftIndex + 1;
+        rightIndex < layerTiles.length;
+        rightIndex += 1
+      ) {
+        const left = layerTiles[leftIndex];
+        const right = layerTiles[rightIndex];
+        const exactAnchor = Number(left.x) === Number(right.x) && Number(left.y) === Number(right.y);
+        if (exactAnchor || !overlapsWithPositiveArea(left, right)) continue;
+        overlappingPairCount += 1;
+        overlappingUids.add(left.uid);
+        overlappingUids.add(right.uid);
       }
     }
-    if (overlappingPairCount > 0) {
-      issues.push(issue(
-        "error",
-        "same-layer-overlap",
-        `AI 关卡同层存在 ${overlappingPairCount} 组面积重叠的砖块。`,
-        [...overlappingUids],
-      ));
-    }
+  }
+  if (overlappingPairCount > 0) {
+    const severity = rejectSameLayerOverlap ? "error" : "warning";
+    const scope = rejectSameLayerOverlap ? "AI 关卡" : "当前关卡";
+    issues.push(issue(
+      severity,
+      "same-layer-overlap",
+      `${scope}同层存在 ${overlappingPairCount} 组面积重叠的砖块。`,
+      [...overlappingUids],
+    ));
   }
 
   for (const [type, tileUids] of typeGroups) {
