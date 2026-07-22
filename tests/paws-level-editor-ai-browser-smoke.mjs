@@ -89,12 +89,7 @@ async function waitForNetworkAndTextures(page) {
     ) {
       return false;
     }
-    if (
-      renderer.textures instanceof Map
-      && [...renderer.textures.keys()].some(
-        (key) => typeof key === "string" && key.startsWith("loading:"),
-      )
-    ) {
+    if (renderer.loadingPatterns instanceof Set && renderer.loadingPatterns.size > 0) {
       return false;
     }
     return true;

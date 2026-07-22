@@ -25,6 +25,12 @@ const externalBaseUrl = baseUrlIndex >= 0
   ? process.argv[baseUrlIndex + 1]?.replace(/\/+$/, "")
   : "";
 const browserTimeout = externalBaseUrl ? 120_000 : 30_000;
+
+function editorUrl(baseUrl) {
+  return baseUrl.includes("/projects/paws-level-editor")
+    ? `${baseUrl}/index.html`
+    : `${baseUrl}/projects/paws-level-editor/index.html`;
+}
 const defaultFileName = "level_0021_r2_第二关模板12.json";
 const bundledLevelCount = 22;
 
@@ -67,8 +73,17 @@ function captureBrowserErrors(page, label, errors) {
     }
   });
   page.on("requestfailed", (request) => {
+    const failure = request.failure()?.errorText ?? "failed";
+    if (
+      failure === "net::ERR_ABORTED"
+      && request.resourceType() === "image"
+      && /\/assets\/blocks\/block_\d+\.png(?:\?|$)/.test(request.url())
+    ) {
+      errors.lifecycleAbort.push(request.url());
+      return;
+    }
     errors.request.push(
-      `${label}: ${request.method()} ${request.url()} ${request.failure()?.errorText ?? "failed"}`,
+      `${label}: ${request.method()} ${request.url()} ${failure}`,
     );
   });
   page.on("response", (response) => {
@@ -132,11 +147,7 @@ async function waitForNetworkAndTextures(page) {
     ) {
       return false;
     }
-    if (
-      renderer.textures instanceof Map &&
-      [...renderer.textures.keys()].some((key) =>
-        typeof key === "string" && key.startsWith("loading:"))
-    ) {
+    if (renderer.loadingPatterns instanceof Set && renderer.loadingPatterns.size > 0) {
       return false;
     }
     return true;
@@ -156,6 +167,14 @@ async function assertNoHorizontalOverflow(page, label) {
     dimensions.scrollWidth <= dimensions.innerWidth,
     true,
     `${label} overflowed horizontally: ${JSON.stringify(dimensions)}`,
+  );
+}
+
+function assertNoRequestFailures(errors, checkpoint) {
+  assert.deepEqual(
+    errors.request,
+    [],
+    `request errors by ${checkpoint}:\n${errors.request.join("\n")}`,
   );
 }
 
@@ -323,7 +342,13 @@ async function clickEditableTileIn3d(page, uid = null) {
 }
 
 await assertBundledLevelIsValid();
-const browserErrors = { console: [], http: [], page: [], request: [] };
+const browserErrors = {
+  console: [],
+  http: [],
+  page: [],
+  request: [],
+  lifecycleAbort: [],
+};
 let browser = null;
 let server = null;
 let summary = null;
@@ -364,7 +389,7 @@ try {
   page.setDefaultTimeout(browserTimeout);
   captureBrowserErrors(page, "desktop", browserErrors);
 
-  await page.goto(`${baseUrl}/projects/paws-level-editor/index.html`, {
+  await page.goto(editorUrl(baseUrl), {
     waitUntil: "networkidle",
   });
   await page.locator("#connection-state").waitFor({ state: "visible" });
@@ -639,6 +664,8 @@ try {
   const referenceCountAfterFirstDelete = await page.evaluate(async () =>
     (await window.pawsWorkbench.loadAiReferenceDocuments()).length);
   assert.equal(referenceCountAfterFirstDelete, bundledLevelCount + 1);
+  await waitForNetworkAndTextures(page);
+  assertNoRequestFailures(browserErrors, "after first local deletion");
 
   await page.reload({ waitUntil: "networkidle" });
   await page.waitForFunction((expectedCount) =>
@@ -671,6 +698,7 @@ try {
   ];
   assert.equal(await page.locator('[role="option"]').count(), bundledLevelCount);
   await waitForNetworkAndTextures(page);
+  assertNoRequestFailures(browserErrors, "after deleting imported levels");
 
   await page.locator("#view-3d").click();
   await page.locator(".level-canvas-3d").waitFor({ state: "visible" });
@@ -866,6 +894,7 @@ try {
   await page.waitForFunction(() =>
     document.querySelector("#stage-toast")?.textContent?.includes("已保存到当前浏览器"));
   await waitForNetworkAndTextures(page);
+  assertNoRequestFailures(browserErrors, "after saving edited bundled level");
   assert.equal(
     await page.evaluate(
       (fileName) => localStorage.getItem(`paws-level-editor-demo-v1:${fileName}`) !== null,
@@ -896,6 +925,7 @@ try {
   await page.reload({ waitUntil: "networkidle" });
   await waitForWorkbench(page);
   await waitForNetworkAndTextures(page);
+  assertNoRequestFailures(browserErrors, "after reloading edited bundled level");
   assert.equal(
     await page.evaluate(
       ({ uid, x, y }) => {
@@ -921,6 +951,7 @@ try {
   await page.waitForFunction(() =>
     document.querySelector("#stage-toast")?.textContent?.includes("已恢复内置示例"));
   await waitForNetworkAndTextures(page);
+  assertNoRequestFailures(browserErrors, "after resetting bundled level");
   assert.equal(
     await page.evaluate(
       ({ uid, x, y }) => {
@@ -1058,6 +1089,7 @@ try {
   await page.locator("#view-3d").click();
   await page.locator(".level-canvas-3d").waitFor({ state: "visible" });
   await waitForNetworkAndTextures(page);
+  assertNoRequestFailures(browserErrors, "after new-level 3D inspection");
   const through3d = await page.evaluate(() => window.pawsWorkbench.renderer.meshes.size);
   await page.locator("#layer-view-mode").selectOption("single");
   await page.locator("#layer-view-next").click();
@@ -1112,6 +1144,8 @@ try {
   });
   await page.waitForFunction(() =>
     window.pawsWorkbench?.document?.fileName === "level_0000.json");
+  await waitForNetworkAndTextures(page);
+  assertNoRequestFailures(browserErrors, "after export round-trip import");
   summary.exportRoundTrip = await page.evaluate(() => ({
     fileName: window.pawsWorkbench.document.fileName,
     board: `${window.pawsWorkbench.document.board.width}x${window.pawsWorkbench.document.board.height}`,
@@ -1129,6 +1163,7 @@ try {
   await page.waitForFunction((fallback) =>
     window.pawsWorkbench?.document?.fileName === fallback, defaultFileName);
   await waitForNetworkAndTextures(page);
+  assertNoRequestFailures(browserErrors, "before AI generation");
 
   await page.locator("#generate-ai-level").click();
   await page.locator("#ai-level-dialog").waitFor({ state: "visible" });
@@ -1144,6 +1179,8 @@ try {
       && controller.document.tiles.length === 200
       && controller.lastAiGeneration?.report?.solvable;
   });
+  await waitForNetworkAndTextures(page);
+  assertNoRequestFailures(browserErrors, "after AI generation");
   summary.aiGeneration = await page.evaluate(() => {
     const controller = window.pawsWorkbench;
     const tiles = controller.document.tiles;
@@ -1185,6 +1222,7 @@ try {
   await page.locator("#view-3d").click();
   await page.locator(".level-canvas-3d").waitFor({ state: "visible" });
   await waitForNetworkAndTextures(page);
+  assertNoRequestFailures(browserErrors, "after first AI 3D view");
   assert.equal(
     await page.locator(".level-canvas-3d").evaluate((canvas) =>
       Boolean(canvas.getContext("webgl2") || canvas.getContext("webgl"))),
@@ -1194,10 +1232,12 @@ try {
   await page.locator("#view-2d").click();
   await page.locator(".level-canvas-2d").waitFor({ state: "visible" });
   await waitForNetworkAndTextures(page);
+  assertNoRequestFailures(browserErrors, "after returning AI to 2D");
 
   await page.locator("#mode-play").click();
   await page.waitForFunction(() => window.pawsWorkbench.mode === "play");
   await waitForNetworkAndTextures(page);
+  assertNoRequestFailures(browserErrors, "after starting AI play");
   assert.notEqual((await page.locator("#status-seed").textContent())?.trim(), "—");
   const removedBefore2dClick = await page.evaluate(() =>
     window.pawsWorkbench.playSnapshot.tiles.filter((tile) => tile.removed).length);
@@ -1291,6 +1331,8 @@ try {
     won: true,
     remaining: 0,
   });
+  await waitForNetworkAndTextures(page);
+  assertNoRequestFailures(browserErrors, "after AI playthrough");
   await desktop.close();
 
   const mobile = await browser.newContext({
@@ -1302,7 +1344,7 @@ try {
   mobilePage.setDefaultNavigationTimeout(browserTimeout);
   mobilePage.setDefaultTimeout(browserTimeout);
   captureBrowserErrors(mobilePage, "390x844", browserErrors);
-  await mobilePage.goto(`${baseUrl}/projects/paws-level-editor/index.html`, {
+  await mobilePage.goto(editorUrl(baseUrl), {
     waitUntil: "networkidle",
   });
   await waitForWorkbench(mobilePage);
@@ -1321,7 +1363,18 @@ try {
   summary.mobileOverflow = false;
   await mobile.close();
 
-  for (const [kind, entries] of Object.entries(browserErrors)) {
+  const lifecycleAbortUrls = [...new Set(browserErrors.lifecycleAbort)];
+  const lifecycleAbortChecks = await Promise.all(lifecycleAbortUrls.map(async (url) => {
+    const response = await fetch(url, { cache: "no-store" });
+    return { url, status: response.status };
+  }));
+  assert.equal(
+    lifecycleAbortChecks.every(({ status }) => status === 200),
+    true,
+    `lifecycle-aborted block assets must remain available:\n${JSON.stringify(lifecycleAbortChecks)}`,
+  );
+  for (const kind of ["console", "http", "page", "request"]) {
+    const entries = browserErrors[kind];
     assert.deepEqual(entries, [], `${kind} errors:\n${entries.join("\n")}`);
   }
   console.log(JSON.stringify({
@@ -1330,6 +1383,7 @@ try {
     httpErrors: 0,
     pageErrors: 0,
     requestFailures: 0,
+    verifiedLifecycleAborts: lifecycleAbortUrls.length,
   }));
 } finally {
   try {
