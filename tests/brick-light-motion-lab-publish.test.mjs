@@ -5,6 +5,13 @@ import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import vm from "node:vm";
 import { decodeMedia, inspectMedia } from "./media-inspect.mjs";
+import {
+  VISUAL_SCHEME_IDS,
+  getSchemeVisualState,
+} from "../projects/brick-light-motion-lab/lab/visual-model.mjs";
+import {
+  getPathPlaybackProgress,
+} from "../projects/brick-light-motion-lab/lab/motion-model.mjs";
 
 const root = dirname(dirname(fileURLToPath(import.meta.url)));
 const runtime = readFileSync(join(root, "app-20260706-restore-games.js"), "utf8");
@@ -73,9 +80,52 @@ test("the embedded lab exposes ten material-only schemes and six slow speeds", (
 
   assert.match(html, /十个方案/);
   assert.match(app, /VISUAL_SCHEMES/);
+  assert.match(app, /getPathPlaybackProgress\(raw, phase\)/);
+  assert.doesNotMatch(app, /easeOutCubic/);
   assert.match(visual, /id: 'recommended'/);
+  assert.match(visual, /name: '慢启快亮'/);
+  assert.match(visual, /name: '快启慢收'/);
   assert.match(playback, /\[0\.25, 0\.4, 0\.55, 0\.7, 0\.85, 1\]/);
   assert.doesNotMatch(combined, /柔光扩散|方向扫光|描边充能|波纹唤醒|bloom|sweep|edge-charge|wake-ripple|hybrid-ring/);
+});
+
+test("published schemes remain materially distinct and keep outbound pacing observable", () => {
+  const materialChannels = [
+    "baseGray",
+    "baseBrightness",
+    "baseSaturation",
+    "baseContrast",
+    "iconGray",
+    "iconBrightness",
+    "iconSaturation",
+    "iconContrast",
+    "iconOpacity",
+  ];
+  const samples = [0.15, 0.25, 0.35, 0.45, 0.55, 0.65, 0.75, 0.85];
+
+  for (let left = 0; left < VISUAL_SCHEME_IDS.length; left += 1) {
+    for (let right = left + 1; right < VISUAL_SCHEME_IDS.length; right += 1) {
+      const leftId = VISUAL_SCHEME_IDS[left];
+      const rightId = VISUAL_SCHEME_IDS[right];
+      const averageDistance = samples.map((reveal) => {
+        const leftState = getSchemeVisualState(leftId, reveal);
+        const rightState = getSchemeVisualState(rightId, reveal);
+        return Math.sqrt(materialChannels.reduce(
+          (sum, channel) => sum + (leftState[channel] - rightState[channel]) ** 2,
+          0,
+        ));
+      }).reduce((sum, distance) => sum + distance, 0) / samples.length;
+
+      assert.ok(
+        averageDistance >= 0.15,
+        `${leftId}/${rightId} average material distance ${averageDistance.toFixed(4)}`,
+      );
+    }
+  }
+
+  assert.equal(getPathPlaybackProgress(0.25, "dragging"), 0.25);
+  assert.equal(getPathPlaybackProgress(0.5, "dragging"), 0.5);
+  assert.equal(getPathPlaybackProgress(0.75, "dragging"), 0.75);
 });
 
 test("home page refreshes the runtime cache key for the new card", () => {
