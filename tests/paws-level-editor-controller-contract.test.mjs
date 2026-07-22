@@ -23,6 +23,10 @@ const resetLevelBody = controller.slice(
   controller.indexOf("async resetCurrentLevel("),
   controller.indexOf("createNewLevel()"),
 );
+const executeBody = controller.slice(
+  controller.indexOf("  execute(command)"),
+  controller.indexOf("  executePlannedEdit("),
+);
 
 test("controller offers recovery for a recoverable bundled list entry", () => {
   assert.match(
@@ -147,4 +151,32 @@ test("controller gates the import success toast on refreshed and opened postcond
   assert.match(controller, /activateImportedLevel\(fileName,\s*\{/);
   assert.match(controller, /getLevels:\s*\(\)\s*=>\s*this\.levels/);
   assert.match(controller, /getDocument:\s*\(\)\s*=>\s*this\.document/);
+});
+
+test("controller routes high-frequency edits through safe geometry plans", () => {
+  assert.match(controller, /commandFromKeyboardEvent/);
+  assert.match(controller, /planTilePlacement/);
+  assert.match(controller, /planTileMove/);
+  assert.match(controller, /findPastePlacement/);
+  assert.match(controller, /copySelection\(\)/);
+  assert.match(controller, /cutSelection\(\)/);
+  assert.match(controller, /pasteSelection\(\)/);
+  assert.match(controller, /duplicateSelection\(\)/);
+  assert.match(controller, /nudgeSelection\(dx,\s*dy\)/);
+  assert.match(controller, /nudgeSelectionLayer\(delta\)/);
+  assert.match(controller, /selectAllVisible\(\)/);
+  assert.match(controller, /executePlannedEdit\(plan/);
+  assert.match(controller, /createMoveTilesCommand\([^)]*plan\.dx[^)]*plan\.dy[^)]*plan\.layerDelta/);
+});
+
+test("controller keyboard handler dispatches commands instead of interpreting modified tool keys", () => {
+  assert.match(controller, /const command\s*=\s*commandFromKeyboardEvent\(event\)/);
+  assert.match(controller, /case "duplicate"/);
+  assert.match(controller, /case "nudge-layer"/);
+  assert.match(controller, /case "toggle-play"/);
+  assert.doesNotMatch(controller, /const shortcuts\s*=\s*\{\s*v:\s*"select"/);
+});
+
+test("history mutations stay disabled while a play session is active", () => {
+  assert.match(executeBody, /this\.mode\s*!==\s*"edit"/);
 });

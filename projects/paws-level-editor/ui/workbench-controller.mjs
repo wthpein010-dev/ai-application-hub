@@ -6,7 +6,14 @@ import { createPlaySession } from "../core/play-engine.mjs";
 import { generateAiLevel } from "../core/ai-level-generator.mjs";
 import { scoreLevelDifficulty } from "../core/level-difficulty.mjs";
 import { solveLevel } from "../core/level-solver.mjs";
+import {
+  filterTilesByLayerView,
+  findPastePlacement,
+  planTileMove,
+  planTilePlacement,
+} from "../core/editor-geometry.mjs";
 import { InspectorPanel } from "./inspector.mjs";
+import { commandFromKeyboardEvent } from "./editor-shortcuts.mjs";
 import { formatLevelId, formatLevelModifiedAt } from "./level-summary.mjs";
 import { Canvas2DView } from "../views/canvas-2d.mjs";
 import { Three3DView } from "../views/three-3d.mjs";
@@ -58,6 +65,7 @@ export class WorkbenchController {
     this.mode = "edit";
     this.view = "2d";
     this.tool = "select";
+    this.layerView = { mode: "all", layer: 1 };
     this.snapStep = 8;
     this.placement = { type: 1, layer: 1, presetColorType: 1 };
     this.playSession = null;
@@ -67,6 +75,7 @@ export class WorkbenchController {
     this.renderer = null;
     this.toastTimer = null;
     this.uidCounter = 0;
+    this.tileClipboard = [];
     this.aiGenerationPending = false;
     this.lastAiGeneration = null;
     this.currentDifficulty = null;
@@ -722,7 +731,7 @@ export class WorkbenchController {
   }
 
   execute(command) {
-    if (this.readonly || !this.history) {
+    if (this.readonly || this.mode !== "edit" || !this.history) {
       return;
     }
     this.history.execute(command);
@@ -730,6 +739,15 @@ export class WorkbenchController {
     this.validate(false);
     this.refreshRenderer();
     this.updateUI();
+  }
+
+  executePlannedEdit(plan, applyPlan) {
+    if (!plan?.ok) {
+      this.showToast(plan?.reason ?? "无法完成这次编辑。", "error");
+      return false;
+    }
+    applyPlan(plan);
+    return true;
   }
 
   patchDocument(path, value) {
@@ -763,30 +781,129 @@ export class WorkbenchController {
     this.updateUI();
   }
 
+  nextTileUid() {
+    return `tile-web-${Date.now()}-${++this.uidCounter}`;
+  }
+
   placeTile(tile) {
-    const uid = `tile-web-${Date.now()}-${++this.uidCounter}`;
-    this.execute(
-      createAddTilesCommand([
-        {
-          uid,
-          x: tile.x,
-          y: tile.y,
-          layer: tile.layer,
-          type: tile.type,
-          moldType: 1,
-          metaType: 0,
-          metaData: 0,
-          presetColorType: tile.presetColorType,
-        },
-      ]),
-    );
-    this.setSelection(new Set([uid]));
+    if (!this.document || this.mode !== "edit") return;
+    const candidate = {
+      uid: this.nextTileUid(),
+      x: tile.x,
+      y: tile.y,
+      layer: tile.layer,
+      type: tile.type,
+      moldType: 1,
+      metaType: 0,
+      metaData: 0,
+      presetColorType: tile.presetColorType,
+    };
+    const plan = planTilePlacement(this.document, candidate);
+    this.executePlannedEdit(plan, ({ tile: plannedTile, adjustedLayer }) => {
+      this.execute(createAddTilesCommand([plannedTile]));
+      this.setSelection(new Set([plannedTile.uid]));
+      if (adjustedLayer) {
+        this.showToast(`当前位置已有同层砖块，已自动放到第 ${plannedTile.layer} 层。`);
+      }
+    });
   }
 
   moveTiles(tileUids, { dx, dy }) {
-    if (tileUids.length && (dx || dy)) {
-      this.execute(createMoveTilesCommand(tileUids, dx, dy, 0));
+    if (!this.document || this.mode !== "edit" || !tileUids.length || (!dx && !dy)) return;
+    const plan = planTileMove(this.document, tileUids, { dx, dy });
+    this.executePlannedEdit(plan, () => {
+      this.execute(createMoveTilesCommand(tileUids, plan.dx, plan.dy, plan.layerDelta));
+    });
+  }
+
+  copySelection() {
+    if (!this.document || this.mode !== "edit" || !this.selection.size) return false;
+    const selected = this.document.tiles.filter(({ uid }) => this.selection.has(uid));
+    if (!selected.length) return false;
+    this.tileClipboard = structuredClone(selected);
+    this.showToast(`已复制 ${selected.length} 张砖块。`);
+    return true;
+  }
+
+  cutSelection() {
+    if (!this.copySelection()) return;
+    const count = this.selection.size;
+    this.deleteTiles([...this.selection]);
+    this.showToast(`已剪切 ${count} 张砖块。`);
+  }
+
+  addPastedTiles(sourceTiles, label) {
+    if (!this.document || this.mode !== "edit" || !sourceTiles.length) return false;
+    const plan = findPastePlacement(this.document, sourceTiles, { step: this.snapStep });
+    return this.executePlannedEdit(plan, ({ tiles }) => {
+      const additions = tiles.map((tile) => ({ ...tile, uid: this.nextTileUid() }));
+      this.execute(createAddTilesCommand(additions));
+      this.setSelection(new Set(additions.map(({ uid }) => uid)));
+      this.showToast(`${label} ${additions.length} 张砖块。`);
+    });
+  }
+
+  pasteSelection() {
+    if (!this.tileClipboard.length) {
+      this.showToast("剪贴板里没有砖块。", "error");
+      return false;
     }
+    return this.addPastedTiles(structuredClone(this.tileClipboard), "已粘贴");
+  }
+
+  duplicateSelection() {
+    if (!this.document || !this.selection.size) return false;
+    const selected = this.document.tiles.filter(({ uid }) => this.selection.has(uid));
+    return this.addPastedTiles(selected, "已复制副本");
+  }
+
+  nudgeSelection(dx, dy) {
+    if (!this.document || this.mode !== "edit" || !this.selection.size) return;
+    const tileUids = [...this.selection];
+    const plan = planTileMove(this.document, tileUids, { dx, dy });
+    this.executePlannedEdit(plan, () => {
+      this.execute(createMoveTilesCommand(tileUids, plan.dx, plan.dy, plan.layerDelta));
+    });
+  }
+
+  nudgeSelectionLayer(delta) {
+    if (!this.document || this.mode !== "edit" || !this.selection.size) return;
+    const tileUids = [...this.selection];
+    const plan = planTileMove(this.document, tileUids, { layerDelta: delta });
+    this.executePlannedEdit(plan, () => {
+      this.execute(createMoveTilesCommand(tileUids, plan.dx, plan.dy, plan.layerDelta));
+    });
+  }
+
+  selectAllVisible() {
+    if (!this.document || this.mode !== "edit") return;
+    const visible = filterTilesByLayerView(this.document.tiles, this.layerView)
+      .filter((tile) => !tile.removed && !Number.isInteger(tile.stashedSlot));
+    this.setSelection(new Set(visible.map(({ uid }) => uid)));
+  }
+
+  setLayerView(layerView) {
+    const maxLayer = Math.max(1, ...((this.document?.tiles ?? []).map(({ layer }) => Number(layer) || 1)));
+    const mode = ["all", "through", "single"].includes(layerView?.mode)
+      ? layerView.mode
+      : this.layerView.mode;
+    const layer = Math.max(1, Math.min(maxLayer, Math.trunc(Number(layerView?.layer ?? this.layerView.layer)) || 1));
+    this.layerView = { mode, layer };
+    this.renderer?.setLayerView?.(this.layerView);
+    this.updateUI();
+  }
+
+  cycleLayerView() {
+    if (this.mode !== "edit") return;
+    const modes = ["all", "through", "single"];
+    const index = modes.indexOf(this.layerView.mode);
+    this.setLayerView({ mode: modes[(index + 1) % modes.length] });
+  }
+
+  stepLayerView(delta) {
+    if (this.mode !== "edit") return;
+    const mode = this.layerView.mode === "all" ? "through" : this.layerView.mode;
+    this.setLayerView({ mode, layer: this.layerView.layer + delta });
   }
 
   deleteTiles(tileUids) {
@@ -920,6 +1037,7 @@ export class WorkbenchController {
     this.renderer.setSnapStep?.(this.snapStep);
     this.renderer.setPlaceTemplate?.(this.placement);
     this.renderer.setTool?.(this.tool);
+    this.renderer.setLayerView?.(this.layerView);
     if (this.mode === "play") {
       this.renderer.setPlaySnapshot(this.playSnapshot);
     } else {
@@ -1101,31 +1219,29 @@ export class WorkbenchController {
     if (target instanceof HTMLInputElement || target instanceof HTMLSelectElement || target instanceof HTMLTextAreaElement || this.root.querySelector("dialog[open]")) {
       return;
     }
-    if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === "z") {
-      event.preventDefault();
-      event.shiftKey ? this.redo() : this.undo();
-      return;
-    }
-    if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === "y") {
-      event.preventDefault();
-      this.redo();
-      return;
-    }
-    if (event.key === "Delete" && this.mode === "edit") {
-      event.preventDefault();
-      this.deleteTiles([]);
-      return;
-    }
-    if (event.key === "Escape") {
-      this.setSelection(new Set());
-      return;
-    }
-    const shortcuts = { v: "select", p: "place", d: "delete", b: "box", h: "pan" };
-    const tool = shortcuts[event.key.toLowerCase()];
-    if (tool) {
-      this.setTool(tool);
-    } else if (event.key.toLowerCase() === "f") {
-      this.renderer?.fitCamera();
+    const command = commandFromKeyboardEvent(event);
+    if (!command) return;
+    event.preventDefault();
+    switch (command.command) {
+      case "undo": this.undo(); break;
+      case "redo": this.redo(); break;
+      case "copy": this.copySelection(); break;
+      case "cut": this.cutSelection(); break;
+      case "paste": this.pasteSelection(); break;
+      case "duplicate": this.duplicateSelection(); break;
+      case "save": this.save(); break;
+      case "save-as": this.promptSaveAs(); break;
+      case "select-all": this.selectAllVisible(); break;
+      case "delete": this.deleteTiles([]); break;
+      case "clear-selection": this.setSelection(new Set()); break;
+      case "nudge": this.nudgeSelection(command.args.dx, command.args.dy); break;
+      case "nudge-layer": this.nudgeSelectionLayer(command.args.delta); break;
+      case "step-layer-view": this.stepLayerView(command.args.delta); break;
+      case "cycle-layer-view": this.cycleLayerView(); break;
+      case "toggle-play": this.switchMode(this.mode === "edit" ? "play" : "edit"); break;
+      case "fit": this.renderer?.fitCamera(); break;
+      case "tool": this.setTool(command.args.tool); break;
+      default: break;
     }
   }
 
