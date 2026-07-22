@@ -607,6 +607,29 @@ select:disabled {
   background: var(--line);
 }
 
+.layer-view-control {
+  color: var(--muted-2);
+  font-size: 10px;
+}
+
+.layer-view-mode {
+  min-height: 30px;
+  padding: 0 22px 0 8px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  color: var(--text);
+  background: var(--bg);
+  font-size: 11px;
+}
+
+.layer-view-current {
+  min-width: 28px;
+  color: var(--cyan);
+  font-family: var(--font-mono);
+  font-size: 10px;
+  text-align: center;
+}
+
 .seed-lock {
   display: flex;
   align-items: center;
@@ -1282,6 +1305,34 @@ select:disabled {
   color: var(--muted-2);
   font-size: 10px;
   line-height: 1.45;
+}
+
+.validation-item.is-warning {
+  border-left-color: #f2b45d;
+  background: rgb(242 180 93 / 0.08);
+}
+
+.validation-item button {
+  width: 100%;
+  padding: 0;
+  border: 0;
+  color: inherit;
+  background: transparent;
+  font: inherit;
+  line-height: inherit;
+  text-align: left;
+}
+
+.validation-item button:hover {
+  color: var(--cyan);
+}
+
+.selection-edit-hint {
+  grid-column: span 2;
+  margin: 0;
+  color: var(--muted-2);
+  font-size: 10px;
+  line-height: 1.5;
 }
 
 .workbench-dialog .ai-level-hint {

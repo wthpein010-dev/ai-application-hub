@@ -69,15 +69,15 @@ export class InspectorPanel {
             </select>
           </label>
           <label class="span-2">名称<input data-doc-field="name" value="${escapeHtml(document.name)}" ${readonly ? "disabled" : ""}></label>
-          <label class="span-2">Grid Unit<input data-doc-field="gridUnit" value="${escapeHtml(document.gridUnit)}" ${readonly ? "disabled" : ""}></label>
+          <label class="span-2">Grid Unit<input data-grid-unit value="${escapeHtml(document.gridUnit)}" readonly></label>
         </div>
       </section>
 
       <section class="inspector-section">
         <h3>棋盘与随机</h3>
         <div class="field-grid">
-          <label>宽度<input data-doc-field="board.width" type="number" min="1" value="${document.board.width}" ${readonly ? "disabled" : ""}></label>
-          <label>高度<input data-doc-field="board.height" type="number" min="1" value="${document.board.height}" ${readonly ? "disabled" : ""}></label>
+          <label>宽度<input data-board-field="width" type="number" min="4" max="16" value="${document.board.width}" ${readonly ? "disabled" : ""}></label>
+          <label>高度<input data-board-field="height" type="number" min="4" max="20" value="${document.board.height}" ${readonly ? "disabled" : ""}></label>
           <label>缩放<input data-doc-field="board.scale" type="number" step="0.05" min="0.1" value="${document.board.scale}" ${readonly ? "disabled" : ""}></label>
           <label>普通图案数<input data-doc-field="random.blockTypeCount" type="number" min="1" max="32" value="${document.random.blockTypeCount}" ${readonly ? "disabled" : ""}></label>
           <label>全随机最小<input data-doc-field="random.fullTypeMin" type="number" min="1" max="32" value="${document.random.fullTypeMin}" ${readonly ? "disabled" : ""}></label>
@@ -89,7 +89,7 @@ export class InspectorPanel {
         <h3>${selected.length ? `已选 ${selected.length} 张` : "放置参数"}</h3>
         <div class="field-grid">
           ${
-            selected.length
+            selected.length === 1
               ? `
                 <label>X<input data-tile-field="x" type="number" value="${fieldValue(selected, "x")}" ${readonly ? "disabled" : ""}></label>
                 <label>Y<input data-tile-field="y" type="number" value="${fieldValue(selected, "y")}" ${readonly ? "disabled" : ""}></label>
@@ -100,6 +100,15 @@ export class InspectorPanel {
                     <option value="2" ${fieldValue(selected, "presetColorType") === 2 ? "selected" : ""}>背面朝上</option>
                   </select>
                 </label>`
+              : selected.length > 1
+                ? `
+                  <p class="selection-edit-hint">多选时使用方向键微移，PageUp / PageDown 整体调层，避免绝对坐标把砖块压到同一点。</p>
+                  <label>翻转
+                    <select data-tile-field="presetColorType" ${readonly ? "disabled" : ""}>
+                      <option value="1" ${fieldValue(selected, "presetColorType") === 1 ? "selected" : ""}>普通正面</option>
+                      <option value="2" ${fieldValue(selected, "presetColorType") === 2 ? "selected" : ""}>背面朝上</option>
+                    </select>
+                  </label>`
               : `
                 <label>层级<input data-placement-field="layer" type="number" min="1" value="${placement.layer ?? 1}" ${readonly ? "disabled" : ""}></label>
                 <label>翻转
@@ -129,7 +138,7 @@ export class InspectorPanel {
         <h3>合法性检查 <span>${issues.length ? `${issues.length} 项` : "通过"}</span></h3>
         ${
           issues.length
-            ? `<ul class="validation-list">${issues.slice(0, 12).map((item) => `<li class="validation-item">${escapeHtml(item.message)}</li>`).join("")}</ul>`
+            ? `<ul class="validation-list">${issues.slice(0, 12).map((item, index) => `<li class="validation-item ${item.severity === "warning" ? "is-warning" : "is-error"}"><button type="button" data-issue-index="${index}" title="定位相关砖块">${escapeHtml(item.message)}</button></li>`).join("")}</ul>`
             : `<p class="validation-ok">✓ 当前关卡通过网页规则校验</p>`
         }
       </section>
@@ -137,6 +146,7 @@ export class InspectorPanel {
       <section class="inspector-section">
         <div class="inspector-actions">
           <button id="validate-level" type="button" class="secondary-button">重新校验</button>
+          <button id="export-level" type="button" class="secondary-button">导出 JSON</button>
           <button id="save-as-level" type="button" class="secondary-button" ${readonly ? "disabled" : ""}>另存为</button>
           <button id="save-level" type="button" class="primary-button" ${readonly ? "disabled" : ""}>保存到浏览器</button>
         </div>
@@ -150,6 +160,11 @@ export class InspectorPanel {
       input.addEventListener("change", () => {
         const numeric = input.type === "number";
         this.callbacks.onDocumentPatch?.(input.dataset.docField, numeric ? numberValue(input) : input.value);
+      });
+    });
+    this.host.querySelectorAll("[data-board-field]").forEach((input) => {
+      input.addEventListener("change", () => {
+        this.callbacks.onBoardPatch?.({ [input.dataset.boardField]: numberValue(input) });
       });
     });
     this.host.querySelectorAll("[data-tile-field]").forEach((input) => {
@@ -179,6 +194,12 @@ export class InspectorPanel {
       this.callbacks.onSelectionChange?.(new Set());
     });
     this.host.querySelector("#validate-level")?.addEventListener("click", () => this.callbacks.onValidate?.());
+    this.host.querySelectorAll("[data-issue-index]").forEach((button) => {
+      button.addEventListener("click", () => {
+        this.callbacks.onIssueFocus?.(this.state?.issues?.[Number(button.dataset.issueIndex)]);
+      });
+    });
+    this.host.querySelector("#export-level")?.addEventListener("click", () => this.callbacks.onExport?.());
     this.host.querySelector("#save-level")?.addEventListener("click", () => this.callbacks.onSave?.());
     this.host.querySelector("#save-as-level")?.addEventListener("click", () => this.callbacks.onSaveAs?.());
   }

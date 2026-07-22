@@ -107,6 +107,16 @@
               <button id="undo" type="button" title="撤销 (Ctrl+Z)">↶</button>
               <button id="redo" type="button" title="重做 (Ctrl+Y)">↷</button>
               <button id="fit-view" type="button" title="适配画布 (F)">适配</button>
+              <span class="tool-separator"></span>
+              <label class="layer-view-control" for="layer-view-mode">层</label>
+              <select id="layer-view-mode" class="layer-view-mode" title="层级观察模式 (L)">
+                <option value="all">全部</option>
+                <option value="through">截层</option>
+                <option value="single">单层</option>
+              </select>
+              <button id="layer-view-prev" type="button" title="查看上一层 ([)">−</button>
+              <output id="layer-view-current" class="layer-view-current">L1</output>
+              <button id="layer-view-next" type="button" title="查看下一层 (])">＋</button>
             </div>
 
             <div id="play-tools" class="tool-strip play-only" aria-label="试玩工具">

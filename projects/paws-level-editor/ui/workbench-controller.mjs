@@ -9,11 +9,13 @@ import { solveLevel } from "../core/level-solver.mjs";
 import {
   filterTilesByLayerView,
   findPastePlacement,
+  planBoardResize,
   planTileMove,
   planTilePlacement,
 } from "../core/editor-geometry.mjs";
 import { InspectorPanel } from "./inspector.mjs";
 import { commandFromKeyboardEvent } from "./editor-shortcuts.mjs";
+import { createLevelDownload, triggerLevelDownload } from "./level-export.mjs";
 import { formatLevelId, formatLevelModifiedAt } from "./level-summary.mjs";
 import { Canvas2DView } from "../views/canvas-2d.mjs";
 import { Three3DView } from "../views/three-3d.mjs";
@@ -90,11 +92,14 @@ export class WorkbenchController {
     this.bindEvents();
     this.inspector = new InspectorPanel({
       onDocumentPatch: (path, value) => this.patchDocument(path, value),
+      onBoardPatch: (patch) => this.patchBoard(patch),
       onTilePatch: (patch) => this.patchSelectedTiles(patch),
       onPlacementPatch: (patch) => this.patchPlacement(patch),
       onSnapStep: (step) => this.setSnapStep(step),
       onSelectionChange: (selection) => this.setSelection(selection),
       onValidate: () => this.validate(),
+      onIssueFocus: (issue) => this.focusIssue(issue),
+      onExport: () => this.exportLevel(),
       onSave: () => this.save(),
       onSaveAs: () => this.promptSaveAs(),
       onRestart: () => this.restartPlay(),
@@ -139,6 +144,10 @@ export class WorkbenchController {
       undo: byId("undo"),
       redo: byId("redo"),
       fit: byId("fit-view"),
+      layerViewMode: byId("layer-view-mode"),
+      layerViewPrev: byId("layer-view-prev"),
+      layerViewCurrent: byId("layer-view-current"),
+      layerViewNext: byId("layer-view-next"),
       fitPlay: byId("fit-play-view"),
       gameplayFit: byId("gameplay-fit"),
       gameplayLevelTitle: byId("gameplay-level-title"),
@@ -204,6 +213,11 @@ export class WorkbenchController {
     this.elements.undo.addEventListener("click", () => this.undo());
     this.elements.redo.addEventListener("click", () => this.redo());
     this.elements.fit.addEventListener("click", () => this.renderer?.fitCamera());
+    this.elements.layerViewMode.addEventListener("change", () => {
+      this.setLayerView({ mode: this.elements.layerViewMode.value });
+    });
+    this.elements.layerViewPrev.addEventListener("click", () => this.stepLayerView(-1));
+    this.elements.layerViewNext.addEventListener("click", () => this.stepLayerView(1));
     this.elements.fitPlay.addEventListener("click", () => this.renderer?.fitCamera());
     this.elements.gameplayFit.addEventListener("click", () => this.renderer?.fitCamera());
     this.elements.restart.addEventListener("click", () => this.restartPlay());
@@ -369,6 +383,10 @@ export class WorkbenchController {
       this.history = new EditHistory(this.document);
       this.history.markSaved();
       this.selection = new Set();
+      this.layerView = {
+        mode: "all",
+        layer: Math.max(1, ...this.document.tiles.map(({ layer }) => Number(layer) || 1)),
+      };
       this.validate(false);
       this.seed = nextSeed();
       this.playSession = null;
@@ -675,8 +693,8 @@ export class WorkbenchController {
       return;
     }
     const note = {
-      widthNum: 8,
-      heightNum: 10,
+      widthNum: 7,
+      heightNum: 8,
       boardScale: 1,
       blockTypeCount: 32,
       fullRandomTypeMin: 1,
@@ -687,7 +705,7 @@ export class WorkbenchController {
       id: 0,
       name: "新关卡",
       difficulty: "Normal",
-      gridUnit: "sheep_8x10_mini8",
+      gridUnit: "sheep_7x8_mini8",
       designerNote: JSON.stringify(note),
       features: {},
       tiles: [],
@@ -701,6 +719,7 @@ export class WorkbenchController {
     this.history = new EditHistory(this.document);
     this.history.markSaved();
     this.selection = new Set();
+    this.layerView = { mode: "all", layer: 1 };
     this.issues = validateLevel(this.document);
     this.elements.emptyStage.hidden = true;
     this.switchMode("edit");
@@ -762,11 +781,56 @@ export class WorkbenchController {
     });
   }
 
+  patchBoard(patch) {
+    if (!this.document || this.readonly || this.mode !== "edit") return;
+    const plan = planBoardResize(this.document, {
+      width: patch.width ?? this.document.board.width,
+      height: patch.height ?? this.document.board.height,
+    });
+    this.executePlannedEdit(plan, ({ board, gridUnit }) => {
+      const previousBoard = structuredClone(this.document.board);
+      const previousGridUnit = this.document.gridUnit;
+      this.execute({
+        label: "修改棋盘尺寸",
+        apply: (target) => {
+          target.board = structuredClone(board);
+          target.gridUnit = gridUnit;
+        },
+        revert: (target) => {
+          target.board = structuredClone(previousBoard);
+          target.gridUnit = previousGridUnit;
+        },
+      });
+    });
+  }
+
   patchSelectedTiles(patch) {
     if (!this.selection.size) {
       return;
     }
-    this.execute(createPatchTilesCommand([...this.selection], patch));
+    const remaining = { ...patch };
+    const positionKeys = ["x", "y", "layer"].filter((key) => Object.hasOwn(remaining, key));
+    if (positionKeys.length) {
+      if (this.selection.size !== 1) {
+        this.showToast("多选砖块请使用方向键微移或 PageUp / PageDown 调层。", "error");
+        return;
+      }
+      const uid = [...this.selection][0];
+      const tile = this.document.tiles.find((candidate) => candidate.uid === uid);
+      if (!tile) return;
+      const plan = planTileMove(this.document, [uid], {
+        dx: Object.hasOwn(remaining, "x") ? Number(remaining.x) - tile.x : 0,
+        dy: Object.hasOwn(remaining, "y") ? Number(remaining.y) - tile.y : 0,
+        layerDelta: Object.hasOwn(remaining, "layer") ? Number(remaining.layer) - tile.layer : 0,
+      });
+      if (!this.executePlannedEdit(plan, () => {
+        this.execute(createMoveTilesCommand([uid], plan.dx, plan.dy, plan.layerDelta));
+      })) return;
+      positionKeys.forEach((key) => delete remaining[key]);
+    }
+    if (Object.keys(remaining).length) {
+      this.execute(createPatchTilesCommand([...this.selection], remaining));
+    }
   }
 
   patchPlacement(patch) {
@@ -904,6 +968,34 @@ export class WorkbenchController {
     if (this.mode !== "edit") return;
     const mode = this.layerView.mode === "all" ? "through" : this.layerView.mode;
     this.setLayerView({ mode, layer: this.layerView.layer + delta });
+  }
+
+  focusIssue(issue) {
+    if (!this.document || !issue) return;
+    const wanted = new Set(issue.tileUids ?? []);
+    const targets = this.document.tiles.filter(({ uid }) => wanted.has(uid));
+    if (!targets.length) {
+      this.showToast(issue.message);
+      return;
+    }
+    const layer = Math.max(...targets.map((tile) => tile.layer));
+    this.setLayerView({ mode: "through", layer });
+    this.setSelection(new Set(targets.map(({ uid }) => uid)));
+    requestAnimationFrame(() => this.renderer?.fitCamera());
+    this.showToast(`已定位 ${targets.length} 张相关砖块。`);
+  }
+
+  exportLevel() {
+    if (!this.document) return;
+    try {
+      const download = createLevelDownload(this.document, {
+        fileName: this.document.fileName,
+      });
+      triggerLevelDownload(download);
+      this.showToast(`已导出 ${download.fileName}，可复制回 Unity 关卡目录。`);
+    } catch (error) {
+      this.showToast(error.message, "error");
+    }
   }
 
   deleteTiles(tileUids) {
@@ -1260,6 +1352,12 @@ export class WorkbenchController {
     });
     this.elements.undo.disabled = !this.history?.canUndo;
     this.elements.redo.disabled = !this.history?.canRedo;
+    const maxLayer = Math.max(1, ...((this.document?.tiles ?? []).map(({ layer }) => Number(layer) || 1)));
+    this.elements.layerViewMode.value = this.layerView.mode;
+    this.elements.layerViewMode.disabled = !this.document || this.readonly;
+    this.elements.layerViewPrev.disabled = !this.document || this.readonly || this.layerView.layer <= 1;
+    this.elements.layerViewNext.disabled = !this.document || this.readonly || this.layerView.layer >= maxLayer;
+    this.elements.layerViewCurrent.textContent = `L${this.layerView.layer}/${maxLayer}`;
     this.elements.resetLevel.disabled = !this.document?.bundled;
     this.elements.deleteLocalLevel.disabled =
       this.readonly || !this.document?.local || this.document?.bundled;

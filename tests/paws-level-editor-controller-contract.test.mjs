@@ -5,6 +5,7 @@ import { fileURLToPath } from "node:url";
 import test from "node:test";
 
 import * as localImport from "../projects/paws-level-editor/ui/local-level-import.mjs";
+import { createLevelDownload } from "../projects/paws-level-editor/ui/level-export.mjs";
 
 const repoRoot = dirname(dirname(fileURLToPath(import.meta.url)));
 const controller = readFileSync(
@@ -13,6 +14,10 @@ const controller = readFileSync(
 );
 const page = readFileSync(
   join(repoRoot, "projects", "paws-level-editor", "index.html"),
+  "utf8",
+);
+const inspector = readFileSync(
+  join(repoRoot, "projects", "paws-level-editor", "ui", "inspector.mjs"),
   "utf8",
 );
 const openLevelBody = controller.slice(
@@ -26,6 +31,10 @@ const resetLevelBody = controller.slice(
 const executeBody = controller.slice(
   controller.indexOf("  execute(command)"),
   controller.indexOf("  executePlannedEdit("),
+);
+const createNewLevelBody = controller.slice(
+  controller.indexOf("  createNewLevel()"),
+  controller.indexOf("  isDirty()"),
 );
 
 test("controller offers recovery for a recoverable bundled list entry", () => {
@@ -179,4 +188,61 @@ test("controller keyboard handler dispatches commands instead of interpreting mo
 
 test("history mutations stay disabled while a play session is active", () => {
   assert.match(executeBody, /this\.mode\s*!==\s*"edit"/);
+});
+
+test("toolbar exposes all, cross-section and single-layer inspection controls", () => {
+  assert.match(page, /id="layer-view-mode"[\s\S]*value="all"[\s\S]*value="through"[\s\S]*value="single"/);
+  assert.match(page, /id="layer-view-prev"/);
+  assert.match(page, /id="layer-view-current"/);
+  assert.match(page, /id="layer-view-next"/);
+  assert.match(controller, /layerViewMode\.addEventListener\("change"/);
+  assert.match(controller, /renderer\.setLayerView\?\.\(this\.layerView\)/);
+});
+
+test("inspector uses safe board patches, read-only grid units and clickable issues", () => {
+  assert.match(inspector, /data-grid-unit[^>]*readonly/);
+  assert.match(inspector, /data-board-field="width"/);
+  assert.match(inspector, /data-board-field="height"/);
+  assert.match(inspector, /onBoardPatch/);
+  assert.match(inspector, /data-issue-index/);
+  assert.match(inspector, /onIssueFocus/);
+  assert.match(controller, /planBoardResize/);
+  assert.match(controller, /focusIssue\(issue\)/);
+});
+
+test("multi-selection never exposes absolute X or Y editors", () => {
+  assert.match(inspector, /selected\.length\s*===\s*1[\s\S]*data-tile-field="x"[\s\S]*data-tile-field="y"/);
+  assert.match(inspector, /selected\.length\s*>\s*1[\s\S]*方向键微移/);
+});
+
+test("new manual levels use the real 7 by 8 Unity board", () => {
+  assert.match(createNewLevelBody, /widthNum:\s*7/);
+  assert.match(createNewLevelBody, /heightNum:\s*8/);
+  assert.match(createNewLevelBody, /gridUnit:\s*"sheep_7x8_mini8"/);
+  assert.doesNotMatch(createNewLevelBody, /sheep_8x10_mini8/);
+});
+
+test("JSON export serializes the current board and preserves unknown fields", async () => {
+  const download = createLevelDownload({
+    fileName: "level_demo.json",
+    original: { id: 9, customServerField: { enabled: true } },
+    designerNote: { customDesignerField: "keep" },
+    id: 9,
+    name: "导出关卡",
+    difficulty: "Normal",
+    gridUnit: "sheep_7x8_mini8",
+    board: { width: 7, height: 8, scale: 1 },
+    random: { blockTypeCount: 32, fullTypeMin: 1, fullTypeMax: 32 },
+    tiles: [
+      { uid: "a", x: 0, y: 0, layer: 1, type: 1 },
+      { uid: "b", x: 8, y: 0, layer: 1, type: 1 },
+    ],
+  });
+  assert.equal(download.fileName, "level_demo.json");
+  assert.equal(download.blob.type, "application/json");
+  assert.equal(await download.blob.text(), download.text);
+  const exported = JSON.parse(download.text);
+  assert.deepEqual(exported.customServerField, { enabled: true });
+  assert.equal(JSON.parse(exported.designerNote).customDesignerField, "keep");
+  assert.equal(exported.gridUnit, "sheep_7x8_mini8");
 });

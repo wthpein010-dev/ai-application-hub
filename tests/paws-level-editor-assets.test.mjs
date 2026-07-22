@@ -27,6 +27,7 @@ const requiredFiles = [
   "ui/ai-level-dialog.mjs",
   "ui/inspector.mjs",
   "ui/local-level-import.mjs",
+  "ui/level-export.mjs",
   "ui/level-summary.mjs",
   "ui/workbench-controller.mjs",
   "views/canvas-2d.mjs",
