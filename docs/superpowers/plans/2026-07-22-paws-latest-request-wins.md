@@ -28,11 +28,11 @@
 - Adds controller fields `openLevelEpoch: number` and `refreshLevelsEpoch: number`.
 - Preserves the public signatures of `openLevel()` and `refreshLevels()`.
 
-- [ ] **Step 1: Build a minimal real-controller harness**
+- [x] **Step 1: Build a minimal real-controller harness**
 
 Stub `matchMedia`, pass a non-DOM root, replace rendering/UI methods with event recording functions, and provide deferred `loadLevel` / `listLevelCatalog` API methods. Use valid two-tile raw level payloads so parsing, scoring and history creation remain real.
 
-- [ ] **Step 2: Write and verify RED races**
+- [x] **Step 2: Write and verify RED races**
 
 Start A then B, resolve B then A, and assert B remains active. Start old refresh then new refresh, resolve new then old, and assert only new catalog/default/connection commits. Run:
 
@@ -40,11 +40,11 @@ Start A then B, resolve B then A, and assert B remains active. Start old refresh
 
 Expected: both tests fail because the stale operations currently commit last.
 
-- [ ] **Step 3: Add minimal epoch guards**
+- [x] **Step 3: Add minimal epoch guards**
 
 Initialize both counters to 0. Increment the matching counter once an operation genuinely starts. For refresh, check after `listLevelCatalog()` and at catch entry. For open, check after `resetLevel()`, `loadLevel()`, `upgradeLocalAiLevelOnOpen()`, recovery reset, and at catch entry before any state or toast mutation.
 
-- [ ] **Step 4: Verify GREEN and recovery compatibility**
+- [x] **Step 4: Verify GREEN and recovery compatibility**
 
 Run the race test and existing controller contract/static API tests. Expected: latest-wins tests pass and recovery contracts remain green.
 

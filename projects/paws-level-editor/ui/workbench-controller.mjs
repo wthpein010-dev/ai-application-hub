@@ -87,6 +87,8 @@ export class WorkbenchController {
     this.aiGenerationPending = false;
     this.lastAiGeneration = null;
     this.currentDifficulty = null;
+    this.openLevelEpoch = 0;
+    this.refreshLevelsEpoch = 0;
     this.readonly = matchMedia("(max-width: 900px), (pointer: coarse)").matches;
     if (this.readonly) {
       this.mode = "play";
@@ -310,9 +312,11 @@ export class WorkbenchController {
   }
 
   async refreshLevels() {
+    const refreshEpoch = ++this.refreshLevelsEpoch;
     this.elements.levelList.innerHTML = `<div class="loading-card"><span class="loader"></span><p>正在读取工程关卡…</p></div>`;
     try {
       const catalog = await this.api.listLevelCatalog();
+      if (refreshEpoch !== this.refreshLevelsEpoch) return;
       this.levels = catalog.levels;
       this.defaultFileName = catalog.defaultFileName;
       this.renderLevelList();
@@ -326,6 +330,7 @@ export class WorkbenchController {
         });
       }
     } catch (error) {
+      if (refreshEpoch !== this.refreshLevelsEpoch) return;
       this.elements.levelList.innerHTML = `<div class="list-empty"><p>${error.message}</p></div>`;
       this.setConnection("error", error.message);
     }
@@ -385,13 +390,17 @@ export class WorkbenchController {
     if (!discardDirty && this.isDirty() && !confirm("当前关卡有未保存修改，确定打开其他关卡吗？")) {
       return;
     }
+    if (recoverable && !confirm("浏览器保存已损坏，是否清除并恢复内置示例？")) {
+      return;
+    }
+    const openEpoch = ++this.openLevelEpoch;
+    const isCurrentOpen = () => openEpoch === this.openLevelEpoch;
     if (recoverable) {
-      if (!confirm("浏览器保存已损坏，是否清除并恢复内置示例？")) {
-        return;
-      }
       try {
         await this.api.resetLevel(fileName);
+        if (!isCurrentOpen()) return;
       } catch (error) {
+        if (!isCurrentOpen()) return;
         this.showToast(error.message, "error");
         return;
       }
@@ -399,6 +408,7 @@ export class WorkbenchController {
     this.showToast(`正在打开 ${fileName}…`);
     try {
       const response = await this.api.loadLevel(fileName);
+      if (!isCurrentOpen()) return;
       const parsedDocument = parseLevelDocument(response.value, {
         fileName,
         version: response.version,
@@ -409,6 +419,7 @@ export class WorkbenchController {
         response,
         document: parsedDocument,
       });
+      if (!isCurrentOpen()) return;
       this.document = geometryUpgrade.document;
       this.document.bundled = response.bundled === true;
       this.document.local = response.local === true;
@@ -454,15 +465,18 @@ export class WorkbenchController {
       }
       this.elements.libraryPanel.classList.remove("is-open");
     } catch (error) {
+      if (!isCurrentOpen()) return;
       if (error.code === "invalid-local-record" && !recoveryAttempted) {
         if (confirm("浏览器保存已损坏，是否清除并恢复内置示例？")) {
           try {
             await this.api.resetLevel(fileName);
+            if (!isCurrentOpen()) return;
             return this.openLevel(fileName, {
               discardDirty: true,
               recoveryAttempted: true,
             });
           } catch (resetError) {
+            if (!isCurrentOpen()) return;
             this.showToast(resetError.message, "error");
             return;
           }
