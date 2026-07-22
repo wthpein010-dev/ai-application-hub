@@ -89,6 +89,7 @@ export class WorkbenchController {
     this.currentDifficulty = null;
     this.openLevelEpoch = 0;
     this.refreshLevelsEpoch = 0;
+    this.pendingIndependentOpenEpochs = new Set();
     this.readonly = matchMedia("(max-width: 900px), (pointer: coarse)").matches;
     if (this.readonly) {
       this.mode = "play";
@@ -321,7 +322,11 @@ export class WorkbenchController {
       this.defaultFileName = catalog.defaultFileName;
       this.renderLevelList();
       this.setConnection("online", "关卡库在线 · 编辑只保存到当前浏览器");
-      if (this.levels.length && !this.document) {
+      if (
+        this.levels.length
+        && !this.document
+        && this.pendingIndependentOpenEpochs.size === 0
+      ) {
         const level = this.levels.find(
           ({ fileName }) => fileName === this.defaultFileName,
         ) ?? this.levels[0];
@@ -400,6 +405,28 @@ export class WorkbenchController {
       return;
     }
     const openEpoch = ++this.openLevelEpoch;
+    const independentOpen = sourceRefreshEpoch === null;
+    if (independentOpen) {
+      this.pendingIndependentOpenEpochs.add(openEpoch);
+    }
+    try {
+      return await this.performOpenLevel(fileName, {
+        recoverable,
+        recoveryAttempted,
+        sourceRefreshEpoch,
+        openEpoch,
+      });
+    } finally {
+      if (independentOpen) {
+        this.pendingIndependentOpenEpochs.delete(openEpoch);
+      }
+    }
+  }
+
+  async performOpenLevel(
+    fileName,
+    { recoverable, recoveryAttempted, sourceRefreshEpoch, openEpoch },
+  ) {
     const isCurrentOpen = () =>
       openEpoch === this.openLevelEpoch
       && (sourceRefreshEpoch === null || sourceRefreshEpoch === this.refreshLevelsEpoch);

@@ -339,7 +339,7 @@ test("a stale refresh-owned open error cannot leak a toast", async () => {
   );
 });
 
-test("a newer refresh does not cancel an independent manual open", async () => {
+test("a refresh catalog cannot supersede an independent manual open that is still pending", async () => {
   const catalog = deferred();
   const manualLevel = deferred();
   const loadRequests = [];
@@ -347,22 +347,26 @@ test("a newer refresh does not cancel an independent manual open", async () => {
     listLevelCatalog: () => catalog.promise,
     loadLevel(fileName) {
       loadRequests.push(fileName);
-      return manualLevel.promise;
+      return fileName === "manual.json"
+        ? manualLevel.promise
+        : Promise.resolve(levelResponse(fileName, 4));
     },
   });
 
   const manualOpen = controller.openLevel("manual.json", { discardDirty: true });
+  let manualSettled = false;
+  manualOpen.then(() => { manualSettled = true; });
   const refresh = controller.refreshLevels();
-  manualLevel.resolve(levelResponse("manual.json", 3));
-  await manualOpen;
-  assert.equal(controller.document?.fileName, "manual.json");
-
   catalog.resolve({
     defaultFileName: "default.json",
     levels: [{ fileName: "default.json", name: "default" }],
   });
   await refresh;
+  assert.equal(manualSettled, false);
+  assert.deepEqual(loadRequests, ["manual.json"]);
 
+  manualLevel.resolve(levelResponse("manual.json", 3));
+  await manualOpen;
   assert.equal(controller.document?.fileName, "manual.json");
   assert.deepEqual(loadRequests, ["manual.json"]);
 });
