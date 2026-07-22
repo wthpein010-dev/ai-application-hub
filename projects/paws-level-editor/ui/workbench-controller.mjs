@@ -21,6 +21,7 @@ import { InspectorPanel } from "./inspector.mjs";
 import { commandFromKeyboardEvent } from "./editor-shortcuts.mjs";
 import { createLevelDownload, triggerLevelDownload } from "./level-export.mjs";
 import { formatLevelId, formatLevelModifiedAt } from "./level-summary.mjs";
+import { upgradeLocalAiLevelOnOpen } from "./legacy-ai-open-upgrade.mjs";
 import { Canvas2DView } from "../views/canvas-2d.mjs";
 import { Three3DView } from "../views/three-3d.mjs";
 import {
@@ -398,10 +399,17 @@ export class WorkbenchController {
     this.showToast(`正在打开 ${fileName}…`);
     try {
       const response = await this.api.loadLevel(fileName);
-      this.document = parseLevelDocument(response.value, {
+      const parsedDocument = parseLevelDocument(response.value, {
         fileName,
         version: response.version,
       });
+      const geometryUpgrade = await upgradeLocalAiLevelOnOpen({
+        api: this.api,
+        fileName,
+        response,
+        document: parsedDocument,
+      });
+      this.document = geometryUpgrade.document;
       this.document.bundled = response.bundled === true;
       this.document.local = response.local === true;
       this.document.source = response.source;
@@ -427,7 +435,19 @@ export class WorkbenchController {
       this.elements.emptyStage.hidden = true;
       this.renderLevelList();
       this.updateUI();
-      if (this.document.warnings.length) {
+      if (geometryUpgrade.status === "failed") {
+        this.showToast(
+          `旧 AI 关卡自动修复失败（${geometryUpgrade.reason}），已保留原始布局。`,
+          "error",
+        );
+      } else if (geometryUpgrade.status === "upgraded" && !geometryUpgrade.persisted) {
+        this.showToast(
+          `旧 AI 关卡已修复 ${geometryUpgrade.movedTileUids.length} 张砖块，但修复结果尚未写回浏览器：${geometryUpgrade.reason}`,
+          "error",
+        );
+      } else if (geometryUpgrade.status === "upgraded") {
+        this.showToast(`旧 AI 关卡已修复 ${geometryUpgrade.movedTileUids.length} 张砖块并保存。`);
+      } else if (this.document.warnings.length) {
         this.showToast(this.document.warnings.map((warning) => warning.message).join(" "), "error");
       } else {
         this.showToast(`已打开 ${this.document.name || fileName}`);

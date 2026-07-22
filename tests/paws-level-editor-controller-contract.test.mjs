@@ -6,6 +6,7 @@ import test from "node:test";
 
 import * as localImport from "../projects/paws-level-editor/ui/local-level-import.mjs";
 import { createLevelDownload } from "../projects/paws-level-editor/ui/level-export.mjs";
+import { upgradeLocalAiLevelOnOpen } from "../projects/paws-level-editor/ui/legacy-ai-open-upgrade.mjs";
 
 const repoRoot = dirname(dirname(fileURLToPath(import.meta.url)));
 const controller = readFileSync(
@@ -22,6 +23,10 @@ const inspector = readFileSync(
 );
 const threeView = readFileSync(
   join(repoRoot, "projects", "paws-level-editor", "views", "three-3d.mjs"),
+  "utf8",
+);
+const legacyOpenUpgrade = readFileSync(
+  join(repoRoot, "projects", "paws-level-editor", "ui", "legacy-ai-open-upgrade.mjs"),
   "utf8",
 );
 const openLevelBody = controller.slice(
@@ -124,6 +129,120 @@ test("controller preserves local source metadata and marks manual saves", () => 
   assert.match(controller, /const source\s*=\s*saveAs\s*\?\s*"manual"/);
   assert.match(controller, /saveLevel\(\{\s*fileName,\s*value,\s*expectedVersion,\s*saveAs,\s*source\s*\}\)/);
   assert.match(controller, /this\.document\.source\s*=\s*saved\.source/);
+});
+
+function legacyAiDocument() {
+  return {
+    original: { id: 88, name: "旧 AI 关卡", difficulty: "Normal" },
+    designerNote: { aiGeneration: { seed: 20260722 } },
+    fileName: "ai_legacy_overlap.json",
+    version: "v1",
+    id: 88,
+    name: "旧 AI 关卡",
+    difficulty: "Normal",
+    gridUnit: "sheep_7x8_mini8",
+    board: { width: 7, height: 8, scale: 1 },
+    random: { blockTypeCount: 32, fullTypeMin: 1, fullTypeMax: 32 },
+    tiles: [
+      { uid: "a", x: 0, y: 0, layer: 1, type: 1 },
+      { uid: "b", x: 7, y: 0, layer: 1, type: 2 },
+      { uid: "c", x: 16, y: 0, layer: 1, type: 2 },
+      { uid: "d", x: 24, y: 0, layer: 1, type: 1 },
+    ],
+    warnings: [],
+  };
+}
+
+test("opening a browser-local AI level upgrades and persists geometry with optimistic versioning", async () => {
+  const calls = [];
+  const result = await upgradeLocalAiLevelOnOpen({
+    api: {
+      async saveLevel(payload) {
+        calls.push(payload);
+        return { version: "v2", local: true, source: "ai" };
+      },
+    },
+    fileName: "ai_legacy_overlap.json",
+    response: { local: true, version: "v1", source: "ai" },
+    document: legacyAiDocument(),
+  });
+
+  assert.equal(result.status, "upgraded");
+  assert.equal(result.persisted, true);
+  assert.equal(result.document.version, "v2");
+  assert.equal(result.movedTileUids.length, 1);
+  assert.equal(calls.length, 1);
+  assert.equal(calls[0].fileName, "ai_legacy_overlap.json");
+  assert.equal(calls[0].expectedVersion, "v1");
+  assert.equal(calls[0].saveAs, false);
+  assert.equal(calls[0].source, "ai");
+  assert.equal(
+    calls[0].value.designerNote.includes("geometryUpgrade"),
+    true,
+  );
+});
+
+test("open-time geometry upgrade never mutates bundled or non-AI levels", async () => {
+  let saves = 0;
+  const api = { async saveLevel() { saves += 1; } };
+  const aiDocument = legacyAiDocument();
+  const bundled = await upgradeLocalAiLevelOnOpen({
+    api,
+    fileName: aiDocument.fileName,
+    response: { local: false, version: "bundled-v1", source: "bundled" },
+    document: aiDocument,
+  });
+  const manualDocument = {
+    ...legacyAiDocument(),
+    designerNote: {},
+  };
+  const manual = await upgradeLocalAiLevelOnOpen({
+    api,
+    fileName: manualDocument.fileName,
+    response: { local: true, version: "manual-v1", source: "manual" },
+    document: manualDocument,
+  });
+
+  assert.equal(bundled.status, "unchanged");
+  assert.equal(bundled.document, aiDocument);
+  assert.equal(manual.status, "unchanged");
+  assert.equal(manual.document, manualDocument);
+  assert.equal(saves, 0);
+});
+
+test("a failed legacy AI write-back still returns safe repaired geometry", async () => {
+  const result = await upgradeLocalAiLevelOnOpen({
+    api: {
+      async saveLevel() {
+        const error = new Error("浏览器版本已变化。");
+        error.code = "version-conflict";
+        throw error;
+      },
+    },
+    fileName: "ai_legacy_overlap.json",
+    response: { local: true, version: "v1", source: "ai" },
+    document: legacyAiDocument(),
+  });
+
+  assert.equal(result.status, "upgraded");
+  assert.equal(result.persisted, false);
+  assert.equal(result.document.version, "v1");
+  assert.equal(result.movedTileUids.length, 1);
+  assert.match(result.reason, /浏览器版本已变化/);
+  assert.notDeepEqual(
+    result.document.tiles.map(({ x, y }) => [x, y]),
+    legacyAiDocument().tiles.map(({ x, y }) => [x, y]),
+  );
+});
+
+test("controller upgrades local AI geometry before history and renderer initialization", () => {
+  assert.match(
+    controller,
+    /upgradeLocalAiLevelOnOpen\([\s\S]*new EditHistory\(this\.document\)/,
+  );
+  assert.match(legacyOpenUpgrade, /expectedVersion:\s*response\.version/);
+  assert.match(controller, /旧 AI 关卡已修复/);
+  assert.match(controller, /修复结果尚未写回浏览器/);
 });
 
 test("import activation rejects a refresh failure that was caught by the controller", async () => {
