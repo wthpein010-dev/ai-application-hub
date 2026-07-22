@@ -305,6 +305,8 @@ try {
     importedPlayInteraction: null,
     deletedLocalLevels: null,
     aiReferenceCountsAfterDelete: null,
+    aiGeneration: null,
+    aiPlaythrough: null,
     mobileImportHidden: null,
     mobileDeleteHidden: null,
   };
@@ -688,6 +690,71 @@ try {
     "reset should remove the localStorage override",
   );
 
+  await page.locator("#generate-ai-level").click();
+  await page.locator("#ai-level-dialog").waitFor({ state: "visible" });
+  await page.locator("#ai-reference-current").check();
+  await page.locator("#ai-tile-count").fill("200");
+  await page.locator("#ai-layer-count").fill("15");
+  await page.locator("#ai-target-score").fill("60");
+  await page.locator("#confirm-ai-level").click();
+  await page.waitForFunction(() => {
+    const controller = window.pawsWorkbench;
+    return !controller?.aiGenerationPending
+      && controller?.document?.designerNote?.aiGeneration
+      && controller.document.tiles.length === 200
+      && controller.lastAiGeneration?.report?.solvable;
+  });
+  summary.aiGeneration = await page.evaluate(() => {
+    const controller = window.pawsWorkbench;
+    const tiles = controller.document.tiles;
+    const globalTypes = new Map();
+    const layerTypes = new Map();
+    let sameLayerOverlapPairs = 0;
+    for (let leftIndex = 0; leftIndex < tiles.length; leftIndex += 1) {
+      const left = tiles[leftIndex];
+      globalTypes.set(left.type, (globalTypes.get(left.type) ?? 0) + 1);
+      const layerType = `${left.layer}|${left.type}`;
+      layerTypes.set(layerType, (layerTypes.get(layerType) ?? 0) + 1);
+      for (let rightIndex = leftIndex + 1; rightIndex < tiles.length; rightIndex += 1) {
+        const right = tiles[rightIndex];
+        if (
+          left.layer === right.layer
+          && Math.abs(left.x - right.x) < 8
+          && Math.abs(left.y - right.y) < 8
+        ) sameLayerOverlapPairs += 1;
+      }
+    }
+    return {
+      fileName: controller.document.fileName,
+      tileCount: tiles.length,
+      layerCount: new Set(tiles.map(({ layer }) => layer)).size,
+      sameLayerOverlapPairs,
+      globalTypesEven: [...globalTypes.values()].every((count) => count % 2 === 0),
+      layerTypesEven: [...layerTypes.values()].every((count) => count % 2 === 0),
+      solverSteps: controller.lastAiGeneration.report.steps,
+      difficultyScore: controller.lastAiGeneration.report.difficulty.score,
+    };
+  });
+  assert.equal(summary.aiGeneration.tileCount, 200);
+  assert.equal(summary.aiGeneration.layerCount, 15);
+  assert.equal(summary.aiGeneration.sameLayerOverlapPairs, 0);
+  assert.equal(summary.aiGeneration.globalTypesEven, true);
+  assert.equal(summary.aiGeneration.layerTypesEven, true);
+  assert.equal(summary.aiGeneration.solverSteps, 100);
+
+  await page.locator("#view-3d").click();
+  await page.locator(".level-canvas-3d").waitFor({ state: "visible" });
+  await waitForNetworkAndTextures(page);
+  assert.equal(
+    await page.locator(".level-canvas-3d").evaluate((canvas) =>
+      Boolean(canvas.getContext("webgl2") || canvas.getContext("webgl"))),
+    true,
+    "the generated AI level should render in WebGL",
+  );
+  await page.locator("#view-2d").click();
+  await page.locator(".level-canvas-2d").waitFor({ state: "visible" });
+  await waitForNetworkAndTextures(page);
+
   await page.locator("#mode-play").click();
   await page.waitForFunction(() => window.pawsWorkbench.mode === "play");
   await waitForNetworkAndTextures(page);
@@ -758,6 +825,32 @@ try {
     playStateAfter3d,
     "switching 2D to 3D should retain the interacted play state",
   );
+  summary.aiPlaythrough = await page.evaluate(async () => {
+    const controller = window.pawsWorkbench;
+    const solverUrl = new URL("./core/level-solver.mjs", window.location.href);
+    const { solveLevel } = await import(solverUrl.href);
+    const report = solveLevel(controller.document);
+    controller.restartPlay();
+    for (const [firstUid, secondUid] of report.moves) {
+      controller.playSession.interact(firstUid);
+      controller.playSession.interact(secondUid);
+    }
+    controller.playSnapshot = controller.playSession.getSnapshot();
+    controller.refreshRenderer();
+    controller.updateUI();
+    return {
+      solvable: report.solvable,
+      steps: report.steps,
+      won: controller.playSnapshot.won,
+      remaining: controller.playSnapshot.tiles.filter(({ removed }) => !removed).length,
+    };
+  });
+  assert.deepEqual(summary.aiPlaythrough, {
+    solvable: true,
+    steps: 100,
+    won: true,
+    remaining: 0,
+  });
   await desktop.close();
 
   const mobile = await browser.newContext({

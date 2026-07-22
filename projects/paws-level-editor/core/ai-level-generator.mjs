@@ -8,7 +8,7 @@ import { scoreLevelDifficulty } from "./level-difficulty.mjs";
 import { XorShift } from "./xorshift.mjs";
 
 const TILE_SIZE = 8;
-const ALGORITHM_VERSION = "paws-local-stat-v3-fixed-7x8";
+const ALGORITHM_VERSION = "paws-local-stat-v4-no-same-layer-overlap";
 const AI_BOARD = Object.freeze({ width: 7, height: 8 });
 const AI_GRID_UNIT = "sheep_7x8_mini8";
 
@@ -263,20 +263,6 @@ function buildStageStructure({ pairCount, layerCount, minimumTopPairs, targetSco
   };
 }
 
-function createsSideSandwich(positions, candidate) {
-  const next = new Set(positions);
-  next.add(`${candidate.left.x}|${candidate.left.y}`);
-  next.add(`${candidate.right.x}|${candidate.right.y}`);
-  for (const key of next) {
-    const [x, y] = key.split("|").map(Number);
-    if (next.has(`${x - TILE_SIZE}|${y}`)
-      && next.has(`${x + TILE_SIZE}|${y}`)) {
-      return true;
-    }
-  }
-  return false;
-}
-
 function candidateOverlapCount(candidate, placedTiles) {
   return [candidate.left, candidate.right]
     .reduce(
@@ -295,14 +281,20 @@ function learnedCentroid(learned) {
   };
 }
 
-function buildPairPool(board, learned, layout, rng) {
+function buildPairPool(board, learned, layout, rng, layerIndex) {
   const maxX = board.width * TILE_SIZE - TILE_SIZE;
   const maxY = board.height * TILE_SIZE - TILE_SIZE;
   const centroid = learnedCentroid(learned);
   const pool = [];
-  for (let leftX = 0; leftX < maxX - leftX; leftX += 4) {
+  const [xOffset, yOffset] = [
+    [0, 0],
+    [2, 2],
+    [4, 4],
+    [6, 6],
+  ][layerIndex % 4];
+  for (let leftX = xOffset; leftX < maxX - leftX; leftX += TILE_SIZE) {
     const rightX = maxX - leftX;
-    for (let y = 0; y <= maxY; y += 4) {
+    for (let y = yOffset; y <= maxY; y += TILE_SIZE) {
       const normalizedY = maxY > 0 ? y / maxY : 0.5;
       const normalizedLeftX = maxX > 0 ? leftX / maxX : 0.25;
       const centerDistance =
@@ -328,42 +320,86 @@ function chooseLayerPairs({
   pool,
   layout,
   placedTiles,
+  immediateUpperTiles,
+  lowerPool,
   occupiedAnchors,
 }) {
   const selected = [];
-  const positions = new Set();
+  const selectedAnchors = [];
+  const parentUseCounts = new Map();
   while (selected.length < count) {
+    const baseEligible = (candidate) => {
+      const keys = [
+        `${candidate.left.x}|${candidate.left.y}`,
+        `${candidate.right.x}|${candidate.right.y}`,
+      ];
+      return keys.every((key) => (occupiedAnchors.get(key) ?? 0) < 2)
+        && !overlaps(candidate.left, candidate.right)
+        && [candidate.left, candidate.right].every((anchor) =>
+          selectedAnchors.every((placed) => !overlaps(anchor, placed)));
+    };
+    const isCovered = (candidate) =>
+      [candidate.left, candidate.right].every((anchor) =>
+        immediateUpperTiles.some((upper) => overlaps(anchor, upper)));
+    const coveredCandidateAvailable = immediateUpperTiles.length
+      && pool.some((candidate) => baseEligible(candidate) && isCovered(candidate));
     const ranked = pool
-      .filter((candidate) => {
-        const keys = [
-          `${candidate.left.x}|${candidate.left.y}`,
-          `${candidate.right.x}|${candidate.right.y}`,
-        ];
-        return keys.every((key) => !occupiedAnchors.has(key))
-          && !createsSideSandwich(positions, candidate);
-      })
+      .filter((candidate) => baseEligible(candidate)
+        && (!coveredCandidateAvailable || isCovered(candidate)))
       .map((candidate) => {
         const overlapCount = candidateOverlapCount(candidate, placedTiles);
+        const extraBlockers = Math.max(0, overlapCount - 2);
+        const futureAnchors = [
+          ...selectedAnchors,
+          candidate.left,
+          candidate.right,
+        ];
+        const supportedLowerPairs = lowerPool.filter((lower) =>
+          [lower.left, lower.right].every((anchor) =>
+            futureAnchors.some((upper) => overlaps(anchor, upper)))).length;
+        const parentReuse = immediateUpperTiles.length
+          ? [candidate.left, candidate.right].reduce((total, anchor) => {
+            const parents = immediateUpperTiles.filter((upper) =>
+              overlaps(anchor, upper));
+            return total + Math.min(...parents.map((parent) =>
+              parentUseCounts.get(parent) ?? 0));
+          }, 0)
+          : 0;
         const overlapScore = layout === "progressive"
-          ? overlapCount * 80
+          ? -extraBlockers * 420
           : layout === "open"
-            ? -overlapCount * 100
-            : -Math.abs(overlapCount - LAYOUTS[layout].overlapTarget) * 28;
+            ? -extraBlockers * 760
+            : -extraBlockers * 600;
         return {
           candidate,
-          score: overlapScore + candidate.spatialScore + candidate.jitter,
+          score:
+            overlapScore
+            + supportedLowerPairs * 1000
+            - parentReuse * 240
+            + candidate.spatialScore
+            + candidate.jitter,
         };
       })
       .sort((left, right) => right.score - left.score);
     const chosen = ranked[0]?.candidate;
     if (!chosen) {
-      throw new Error(`第 ${layer} 层无法在重叠约束内放置 ${count} 对砖块。`);
+      throw new Error(
+        `第 ${layer} 层无法在重叠约束内放置 ${count} 对砖块`
+        + `（已放 ${selected.length} 对）。`,
+      );
     }
     selected.push(chosen);
     for (const anchor of [chosen.left, chosen.right]) {
       const key = `${anchor.x}|${anchor.y}`;
-      positions.add(key);
-      occupiedAnchors.add(key);
+      selectedAnchors.push(anchor);
+      occupiedAnchors.set(key, (occupiedAnchors.get(key) ?? 0) + 1);
+      const parents = immediateUpperTiles
+        .filter((upper) => overlaps(anchor, upper))
+        .sort((left, right) =>
+          (parentUseCounts.get(left) ?? 0) - (parentUseCounts.get(right) ?? 0));
+      if (parents[0]) {
+        parentUseCounts.set(parents[0], (parentUseCounts.get(parents[0]) ?? 0) + 1);
+      }
     }
   }
   return selected;
@@ -423,80 +459,6 @@ function buildTiles({
     left.layer - right.layer || left.y - right.y || left.x - right.x);
 }
 
-function distributeTopAnchors(count, minimum, maximum, center, rng) {
-  if (count === 1) return [Math.round(center)];
-  const lower = Math.max(minimum, Math.round(center - (count - 1) * 5));
-  const upper = Math.min(maximum, Math.round(center + (count - 1) * 5));
-  const span = Math.max(1, upper - lower);
-  return Array.from({ length: count }, (_, index) => {
-    const ratio = index / Math.max(1, count - 1);
-    const base = lower + span * ratio;
-    return Math.round(base + (rng.nextUint32() % 3) - 1);
-  });
-}
-
-function nearOffsets(layout, rng) {
-  const values = [];
-  for (let dx = -7; dx <= 7; dx += 1) {
-    for (let dy = -7; dy <= 7; dy += 1) {
-      if (dx === 0 && dy === 0) continue;
-      values.push({
-        dx,
-        dy,
-        distance: Math.abs(dx) + Math.abs(dy),
-        jitter: rng.nextUint32() / 0xffffffff,
-      });
-    }
-  }
-  return values.sort((left, right) => {
-    if (layout === "open") {
-      return right.distance - left.distance || left.jitter - right.jitter;
-    }
-    if (layout === "progressive") {
-      return left.distance - right.distance || left.jitter - right.jitter;
-    }
-    return Math.abs(left.distance - 8) - Math.abs(right.distance - 8)
-      || left.jitter - right.jitter;
-  });
-}
-
-function chooseChildAnchor({
-  parent,
-  offsets,
-  maxX,
-  maxY,
-  layerAnchors,
-  globalAnchors,
-}) {
-  const existing = [...globalAnchors].map((key) => {
-    const [x, y] = key.split("|").map(Number);
-    return { x, y };
-  });
-  const candidates = [];
-  for (const { dx, dy } of offsets) {
-    const x = parent.x + dx;
-    const y = parent.y + dy;
-    if (x < 0 || x > maxX || y < 0 || y > maxY) continue;
-    if (x === parent.x && y === parent.y) continue;
-    const key = `${x}|${y}`;
-    if (layerAnchors.has(key) || globalAnchors.has(key)) continue;
-    const anchor = { x, y };
-    if (!overlaps(anchor, parent)) continue;
-    const extraOverlaps = existing.filter((value) =>
-      overlaps(anchor, value)
-      && (value.x !== parent.x || value.y !== parent.y)).length;
-    candidates.push({ anchor, key, extraOverlaps });
-  }
-  const chosen = candidates.sort((left, right) =>
-    left.extraOverlaps - right.extraOverlaps)[0];
-  if (chosen) {
-    layerAnchors.add(chosen.key);
-    globalAnchors.add(chosen.key);
-    return chosen.anchor;
-  }
-  throw new Error("无法在塔群遮挡约束内放置下层砖块。");
-}
-
 function buildTowerPairLayers({
   board,
   learned,
@@ -504,68 +466,31 @@ function buildTowerPairLayers({
   layout,
   rng,
 }) {
-  const maxX = board.width * TILE_SIZE - TILE_SIZE;
-  const maxY = board.height * TILE_SIZE - TILE_SIZE;
-  const centroid = learnedCentroid(learned);
-  const centerY = centroid.y * maxY;
-  const topIndex = pairCounts.length - 1;
   const pairsByLayer = Array.from({ length: pairCounts.length }, () => []);
-  const globalAnchors = new Set();
-  const topYs = distributeTopAnchors(
-    pairCounts[topIndex],
-    4,
-    Math.max(4, maxY - 4),
-    centerY,
-    rng,
-  );
-  const sideInset = layout === "open" ? 2 : layout === "progressive" ? 14 : 8;
-  const topAnchors = new Set();
-  pairsByLayer[topIndex] = topYs.map((y, index) => {
-    const left = {
-      x: Math.min(maxX, sideInset + (index % 2) * 2),
-      y: Math.min(maxY, Math.max(0, y)),
-    };
-    const right = {
-      x: Math.max(0, maxX - sideInset - (index % 2) * 2),
-      y: left.y,
-    };
-    for (const anchor of [left, right]) {
-      const key = `${anchor.x}|${anchor.y}`;
-      if (topAnchors.has(key)) throw new Error("塔顶入口发生坐标冲突。");
-      topAnchors.add(key);
-      globalAnchors.add(key);
+  const pools = pairCounts.map((_, layerIndex) =>
+    buildPairPool(board, learned, layout, rng, layerIndex));
+  const placedTiles = [];
+  const occupiedAnchors = new Map();
+  for (let layerIndex = pairCounts.length - 1; layerIndex >= 0; layerIndex -= 1) {
+    const layer = layerIndex + 1;
+    const immediateUpperTiles = layerIndex === pairCounts.length - 1
+      ? []
+      : pairsByLayer[layerIndex + 1]
+        .flatMap(({ left, right }) => [left, right]);
+    const pairs = chooseLayerPairs({
+      count: pairCounts[layerIndex],
+      layer,
+      pool: pools[layerIndex],
+      layout,
+      placedTiles,
+      immediateUpperTiles,
+      lowerPool: pools[layerIndex - 1] ?? [],
+      occupiedAnchors,
+    });
+    pairsByLayer[layerIndex] = pairs;
+    for (const pair of pairs) {
+      placedTiles.push(pair.left, pair.right);
     }
-    return { left, right };
-  });
-
-  for (let layerIndex = topIndex - 1; layerIndex >= 0; layerIndex -= 1) {
-    const parents = pairsByLayer[layerIndex + 1];
-    const layerAnchors = new Set();
-    const offsets = nearOffsets(layout, rng);
-    pairsByLayer[layerIndex] = Array.from(
-      { length: pairCounts[layerIndex] },
-      (_, index) => {
-        const parent = parents[Math.floor(index * parents.length / pairCounts[layerIndex])];
-        return {
-          left: chooseChildAnchor({
-            parent: parent.left,
-            offsets,
-            maxX,
-            maxY,
-            layerAnchors,
-            globalAnchors,
-          }),
-          right: chooseChildAnchor({
-            parent: parent.right,
-            offsets: [...offsets].reverse(),
-            maxX,
-            maxY,
-            layerAnchors,
-            globalAnchors,
-          }),
-        };
-      },
-    );
   }
   return pairsByLayer;
 }
@@ -725,7 +650,7 @@ export function generateAiLevel({
       continue;
     }
     const statistics = extractLevelStatistics(document);
-    const errors = validateLevel(document)
+    const errors = validateLevel(document, { rejectSameLayerOverlap: true })
       .filter(({ severity }) => severity === "error");
     if (
       errors.length

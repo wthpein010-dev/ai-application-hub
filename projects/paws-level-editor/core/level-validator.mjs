@@ -8,7 +8,16 @@ function issue(severity, code, message, tileUids = []) {
   return { severity, code, message, tileUids };
 }
 
-export function validateLevel(document) {
+function overlapsWithPositiveArea(left, right) {
+  return (
+    Math.abs(Number(left.x) - Number(right.x)) < 8
+    && Math.abs(Number(left.y) - Number(right.y)) < 8
+  );
+}
+
+export function validateLevel(document, {
+  rejectSameLayerOverlap = Boolean(document?.designerNote?.aiGeneration),
+} = {}) {
   const tiles = Array.isArray(document?.tiles) ? document.tiles : [];
   if (tiles.length === 0) {
     return [issue("error", "empty-level", "关卡不能为空。")];
@@ -22,6 +31,7 @@ export function validateLevel(document) {
   const boardWidth = Number(document?.board?.width) * 8;
   const boardHeight = Number(document?.board?.height) * 8;
   const anchors = new Map();
+  const layerGroups = new Map();
   const typeGroups = new Map();
 
   for (const tile of tiles) {
@@ -44,11 +54,42 @@ export function validateLevel(document) {
 
     const anchor = `${tile.layer}|${tile.x}|${tile.y}`;
     (anchors.get(anchor) ?? anchors.set(anchor, []).get(anchor)).push(tile.uid);
+    (layerGroups.get(tile.layer) ?? layerGroups.set(tile.layer, []).get(tile.layer))
+      .push(tile);
   }
 
   for (const tileUids of anchors.values()) {
     if (tileUids.length > 1) {
       issues.push(issue("error", "duplicate-anchor", "同层存在完全重叠的砖块锚点。", tileUids));
+    }
+  }
+
+  if (rejectSameLayerOverlap) {
+    const overlappingUids = new Set();
+    let overlappingPairCount = 0;
+    for (const layerTiles of layerGroups.values()) {
+      for (let leftIndex = 0; leftIndex < layerTiles.length; leftIndex += 1) {
+        for (
+          let rightIndex = leftIndex + 1;
+          rightIndex < layerTiles.length;
+          rightIndex += 1
+        ) {
+          const left = layerTiles[leftIndex];
+          const right = layerTiles[rightIndex];
+          if (!overlapsWithPositiveArea(left, right)) continue;
+          overlappingPairCount += 1;
+          overlappingUids.add(left.uid);
+          overlappingUids.add(right.uid);
+        }
+      }
+    }
+    if (overlappingPairCount > 0) {
+      issues.push(issue(
+        "error",
+        "same-layer-overlap",
+        `AI 关卡同层存在 ${overlappingPairCount} 组面积重叠的砖块。`,
+        [...overlappingUids],
+      ));
     }
   }
 

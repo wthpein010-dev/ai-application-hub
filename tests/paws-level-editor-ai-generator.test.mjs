@@ -89,6 +89,68 @@ function assertFixedSevenByEight(document) {
   );
 }
 
+function sameLayerOverlapPairs(tiles) {
+  const pairs = [];
+  for (let leftIndex = 0; leftIndex < tiles.length; leftIndex += 1) {
+    for (let rightIndex = leftIndex + 1; rightIndex < tiles.length; rightIndex += 1) {
+      const left = tiles[leftIndex];
+      const right = tiles[rightIndex];
+      if (
+        left.layer === right.layer
+        && Math.abs(left.x - right.x) < 8
+        && Math.abs(left.y - right.y) < 8
+      ) {
+        pairs.push([left.uid, right.uid]);
+      }
+    }
+  }
+  return pairs;
+}
+
+test("AI validation rejects positive-area overlap on one layer", () => {
+  const document = makeDocument([
+    tile("left", 0, 0, 1, 1),
+    tile("overlapping", 7, 0, 1, 1),
+  ]);
+  document.designerNote.aiGeneration = {};
+
+  const overlapIssue = validateLevel(document)
+    .find(({ code }) => code === "same-layer-overlap");
+
+  assert.equal(Boolean(overlapIssue), true);
+  assert.deepEqual(overlapIssue.tileUids.sort(), ["left", "overlapping"]);
+});
+
+test("AI validation permits edge-touching tiles", () => {
+  const document = makeDocument([
+    tile("left", 0, 0, 1, 1),
+    tile("touching", 8, 0, 1, 1),
+  ]);
+  document.designerNote.aiGeneration = {};
+
+  assert.equal(
+    validateLevel(document).some(({ code }) => code === "same-layer-overlap"),
+    false,
+  );
+});
+
+test("legacy levels remain loadable when they contain historical overlap", () => {
+  const document = makeDocument([
+    tile("left", 0, 0, 1, 1),
+    tile("overlapping", 7, 0, 1, 1),
+  ]);
+
+  assert.equal(
+    validateLevel(document).some(({ code }) => code === "same-layer-overlap"),
+    false,
+  );
+  assert.equal(
+    validateLevel(document, { rejectSameLayerOverlap: true })
+      .some(({ code }) => code === "same-layer-overlap"),
+    true,
+  );
+});
+
 test("statistics report layers, overlap, symmetry, exact stacks and initial pairs", () => {
   const stats = extractLevelStatistics(makeDocument([
     tile("a", 0, 0, 1, 1),
@@ -299,7 +361,7 @@ test("generator honors exact normalized size, layers and target difficulty", () 
   const stages = generated.document.designerNote.aiGeneration.stagePlan;
   assert.equal(stages.find(({ key }) => key === "release").pressureTarget
     < stages.find(({ key }) => key === "crisis").pressureTarget, true);
-  assert.equal(stats.averageBlockers <= 4, true);
+  assert.equal(Math.abs(generated.report.difficulty.score - 60) <= 5, true);
 });
 
 test("200 tiles, 15 layers and score 60 stay solvable on the fixed board", () => {
@@ -320,6 +382,7 @@ test("200 tiles, 15 layers and score 60 stay solvable on the fixed board", () =>
   assert.equal(generated.report.solvable, true);
   assert.equal(generated.report.steps, 100);
   assert.equal(stats.maxExactStackDepth <= 2, true);
+  assert.equal(Math.abs(generated.report.difficulty.score - 60) <= 5, true);
 });
 
 for (const difficulty of ["easy", "normal", "hard"]) {
@@ -338,8 +401,29 @@ for (const difficulty of ["easy", "normal", "hard"]) {
 
       assertFixedSevenByEight(generated.document);
       assert.deepEqual(errors, []);
+      assert.deepEqual(sameLayerOverlapPairs(generated.document.tiles), []);
       assert.equal(generated.report.solvable, true);
       assert.equal(generated.report.steps, stats.tileCount / 2);
+      assert.equal(generated.document.tiles.length % 2, 0);
+
+      const globalTypes = new Map();
+      const layerTypes = new Map();
+      for (const tileValue of generated.document.tiles) {
+        globalTypes.set(
+          tileValue.type,
+          (globalTypes.get(tileValue.type) ?? 0) + 1,
+        );
+        const layerType = `${tileValue.layer}|${tileValue.type}`;
+        layerTypes.set(layerType, (layerTypes.get(layerType) ?? 0) + 1);
+      }
+      assert.equal(
+        [...globalTypes.values()].every((count) => count % 2 === 0),
+        true,
+      );
+      assert.equal(
+        [...layerTypes.values()].every((count) => count % 2 === 0),
+        true,
+      );
       assert.equal(
         stats.tileCount >= profile.tiles[0] && stats.tileCount <= profile.tiles[1],
         true,
