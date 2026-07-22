@@ -5,6 +5,10 @@ import test from "node:test";
 import { parseLevelDocument } from "../projects/paws-level-editor/core/level-adapter.mjs";
 import { solveLevel } from "../projects/paws-level-editor/core/level-solver.mjs";
 import { createPlaySession } from "../projects/paws-level-editor/core/play-engine.mjs";
+import {
+  assignRandomTypes,
+  isFirstRoundDocument,
+} from "../projects/paws-level-editor/core/random-assigner.mjs";
 
 function tile(uid, x, y, layer, type, presetColorType = 1) {
   return {
@@ -99,6 +103,81 @@ test("first round pairs odd-sized random layers onto one shared concrete type", 
       .every((records) => records.length % 2 === 0),
     true,
   );
+});
+
+test("first round rejects a bounded set of unsolvable assignments", () => {
+  const document = level([
+    tile("lower", 0, 0, 1, 0),
+    tile("upper", 0, 0, 2, -1),
+  ], {
+    fileName: "level_0099_r1_unsolvable.json",
+    gameplay: { gameLevelOrder: 1 },
+  });
+
+  assert.throws(
+    () => createPlaySession(document, 99),
+    (error) => error instanceof RangeError && /solvable first round assignment/i.test(error.message),
+  );
+});
+
+test("first-round candidate search stops at the configured attempt limit", () => {
+  let attempts = 0;
+
+  assert.throws(
+    () => assignRandomTypes([
+      tile("lower", 0, 0, 1, 0),
+      tile("upper", 0, 0, 2, -1),
+    ], {
+      firstRound: true,
+      seed: 99,
+      isSolvable: () => {
+        attempts += 1;
+        return false;
+      },
+      maxFirstRoundAttempts: 3,
+    }),
+    (error) => error instanceof RangeError && /after 3 attempts/i.test(error.message),
+  );
+  assert.equal(attempts, 3);
+});
+
+test("round detection gives the filename marker priority and falls back to metadata", () => {
+  assert.equal(isFirstRoundDocument({
+    fileName: "level_0099_r2_metadata_disagrees.json",
+    gameplay: { gameLevelOrder: 1 },
+  }), false);
+  assert.equal(isFirstRoundDocument({
+    fileName: "level_without_round_marker.json",
+    gameplay: { gameLevelOrder: 1 },
+  }), true);
+  assert.equal(isFirstRoundDocument({
+    fileName: "level_without_round_marker.json",
+    gameplay: { gameLevelOrder: 2 },
+  }), false);
+});
+
+test("first-round restart repeats one seed and changes the layer mapping for a new seed", () => {
+  const tiles = Array.from({ length: 8 }, (_, index) => tile(
+    `r1-random-${index}`,
+    (index % 2) * 16,
+    Math.floor(index / 2) * 16,
+    Math.floor(index / 2) + 1,
+    index % 2 === 0 ? 0 : -1,
+  ));
+  const session = createPlaySession(level(tiles, {
+    fileName: "level_0099_r1_restart.json",
+    gameplay: { gameLevelOrder: 1 },
+    random: { blockTypeCount: 8, fullTypeMin: 1, fullTypeMax: 8 },
+  }), 12);
+  const typeByLayer = () => session.getSnapshot().tiles
+    .filter(({ randomSourceType }) => Number.isInteger(randomSourceType))
+    .map(({ type }) => type);
+  const first = typeByLayer();
+
+  session.restart({ seed: 12 });
+  assert.deepEqual(typeByLayer(), first);
+  session.restart({ seed: 13 });
+  assert.notDeepEqual(typeByLayer(), first);
 });
 
 test("second round keeps both random pools globally paired", () => {

@@ -22,6 +22,7 @@ import {
 import { validateLevel } from "../projects/paws-level-editor/core/level-validator.mjs";
 import {
   buildRenderTiles,
+  computeSameLayerVisualBias,
   deriveDisplayTiles,
 } from "../projects/paws-level-editor/core/view-model.mjs";
 
@@ -308,6 +309,41 @@ test("visual depth separates only positive-area same-layer conflicts without mut
     reversed,
     new Map(render.map((record) => [record.uid, record.visualDepthBias])),
   );
+});
+
+test("visual depth colors stay stable when an earlier conflict is removed or stashed", () => {
+  const source = [
+    tile("a", 0, 0, 1),
+    tile("b", 7, 0, 1),
+    tile("c", 14, 0, 1),
+  ];
+  const biasesFor = (tiles) => new Map(
+    buildRenderTiles({ tiles })
+      .filter(({ uid }) => uid === "b" || uid === "c")
+      .map(({ uid, visualDepthBias }) => [uid, visualDepthBias]),
+  );
+  const baseline = biasesFor(source);
+
+  assert.deepEqual(biasesFor([
+    { ...source[0], removed: true },
+    source[1],
+    source[2],
+  ]), baseline);
+  assert.deepEqual(biasesFor([
+    { ...source[0], stashedSlot: 0 },
+    source[1],
+    source[2],
+  ]), baseline);
+});
+
+test("visual depth caps a dense 64-tile conflict at 0.04", () => {
+  const source = Array.from({ length: 64 }, (_, index) =>
+    tile(`dense-${String(index).padStart(2, "0")}`, 0, 0, 1));
+  const before = structuredClone(source);
+  const biases = [...computeSameLayerVisualBias(source).values()];
+
+  assert.equal(Math.max(...biases) <= 0.04, true);
+  assert.deepEqual(source, before);
 });
 
 test("both renderers expose layer views and 3D delete mode delegates the picked UID", () => {

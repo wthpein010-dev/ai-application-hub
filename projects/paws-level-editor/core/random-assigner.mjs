@@ -47,8 +47,12 @@ function assignFirstRound(result, blockTypeCount, rng) {
   const assignmentGroups = layers
     .filter((layer) => byLayer.get(layer).length % 2 === 0)
     .map((layer) => [layer]);
-  for (let index = 0; index < oddLayers.length; index += 2) {
-    assignmentGroups.push([oddLayers[index], oddLayers[index + 1]]);
+  const shuffledOddLayers = rng.shuffle(oddLayers);
+  for (let index = 0; index < shuffledOddLayers.length; index += 2) {
+    assignmentGroups.push(
+      [shuffledOddLayers[index], shuffledOddLayers[index + 1]]
+        .sort((left, right) => left - right),
+    );
   }
   assignmentGroups.sort((left, right) => left[0] - right[0]);
 
@@ -88,6 +92,8 @@ export function assignRandomTypes(
     fullTypeMin = 1,
     fullTypeMax = 32,
     firstRound = false,
+    isSolvable,
+    maxFirstRoundAttempts = 64,
   } = {},
 ) {
   const result = structuredClone(tiles ?? []);
@@ -97,8 +103,23 @@ export function assignRandomTypes(
     throw new RangeError("block type range is invalid");
   }
   if (firstRound) {
-    assignFirstRound(result, normalMax, rng);
-    return result;
+    const candidateGate = typeof isSolvable === "function" ? isSolvable : null;
+    const attemptLimit = candidateGate
+      ? Math.trunc(Number(maxFirstRoundAttempts))
+      : 1;
+    if (!Number.isInteger(attemptLimit) || attemptLimit < 1) {
+      throw new RangeError("first round attempt limit must be a positive integer");
+    }
+    for (let attempt = 0; attempt < attemptLimit; attempt += 1) {
+      const candidate = structuredClone(result);
+      assignFirstRound(candidate, normalMax, rng);
+      if (!candidateGate || candidateGate(candidate)) {
+        return candidate;
+      }
+    }
+    throw new RangeError(
+      `unable to find a solvable first round assignment after ${attemptLimit} attempts`,
+    );
   }
   assignGroup(result, 0, 1, normalMax, rng);
   assignGroup(result, -1, Math.trunc(fullTypeMin), Math.trunc(fullTypeMax), rng);

@@ -17,6 +17,8 @@
 - Second round retains the existing separate limited/full random pools.
 - Historical JSON coordinates, layers, types and coverage behavior remain byte-for-byte unaffected by render bias.
 - Same-layer edge touching and every cross-layer overlap receive zero render bias.
+- Every first-round candidate must pass `solveLevel`; if no bounded deterministic candidate is solvable, session creation rejects it explicitly.
+- Render conflict colors are computed from the complete session tile set and remain stable after removal/stashing; total visual bias is capped at `0.04`.
 
 ---
 
@@ -99,7 +101,37 @@ worldY: inTray ? 0.12 : Number((tile.layer * LAYER_HEIGHT + visualDepthBias).toF
 
 Run the geometry test and the complete AI generator test. Expected: depth tests pass and all generated AI overlap assertions remain 0.
 
-### Task 3: Full regression, browser proof and release
+### Task 3: Gate first-round assignments by real solvability and keep depth stable
+
+**Files:**
+- Modify: `projects/paws-level-editor/core/random-assigner.mjs`
+- Modify: `projects/paws-level-editor/core/play-engine.mjs`
+- Modify: `projects/paws-level-editor/core/view-model.mjs`
+- Modify: `tests/paws-level-editor-play-engine.test.mjs`
+- Modify: `tests/paws-level-editor-editor-geometry.test.mjs`
+
+**Interfaces:**
+- Extends: `assignRandomTypes(..., { firstRound, isSolvable, maxFirstRoundAttempts })` with an optional real-candidate gate used by the play engine.
+- Keeps: `isFirstRoundDocument(document)` filename marker priority and metadata fallback.
+- Extends: `computeSameLayerVisualBias(tiles, { step = 0.004, maxTotalBias = 0.04 })`.
+
+- [x] **Step 1: Write and verify RED regressions**
+
+Cover a two-tile r1 level whose two tiles share coordinates on consecutive layers and must be rejected as unsolvable; filename `_r2_` must override `gameLevelOrder=1`; a missing marker must fall back to `gameLevelOrder`; same-seed r1 restart must repeat while a different seed changes layer-to-type mapping. For depth, cover the A-B-C overlap chain before/after A is marked removed or stashed and a 64-tile dense conflict whose maximum bias must be `<= 0.04`.
+
+- [x] **Step 2: Implement deterministic bounded candidate search**
+
+Generate bounded deterministic first-round grouping/type candidates from the requested seed, using a configurable `maxFirstRoundAttempts` limit that defaults to 64. In `createPlaySession`, pass a candidate predicate that evaluates `solveLevel({ tiles: candidate })`. Return the first solvable candidate; if none is solvable, throw a clear `RangeError` instead of starting an unwinnable session. Keep ordinary r2 assignment unchanged and never mutate source tiles.
+
+- [x] **Step 3: Stabilize and cap render-only depth**
+
+Color the complete source tile set regardless of `removed` or `stashedSlot`, then scale the completed coloring with `effectiveStep = min(step, maxTotalBias / maxColor)`. Board tiles use their stable bias; tray tiles display zero. Do not mutate JSON or coverage inputs.
+
+- [x] **Step 4: Verify GREEN**
+
+Run the focused play-engine and geometry tests, followed by AI generator regressions. Expected: all new counterexamples pass, published r1 levels remain solvable, and AI same-layer overlap remains exactly zero.
+
+### Task 4: Full regression, browser proof and release
 
 **Files:**
 - Verify: all `tests/paws-level-editor-*.test.mjs`

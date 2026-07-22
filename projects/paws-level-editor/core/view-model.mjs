@@ -8,15 +8,21 @@ const TILE_SIZE = 8;
 const WORLD_TILE_SIZE = 1;
 const LAYER_HEIGHT = 0.22;
 
-export function computeSameLayerVisualBias(tiles, { step = 0.004 } = {}) {
+export function computeSameLayerVisualBias(
+  tiles,
+  { step = 0.004, maxTotalBias = 0.04 } = {},
+) {
   const biasStep = Number(step);
   if (!Number.isFinite(biasStep) || biasStep <= 0) {
     throw new RangeError("visual depth step must be a positive number");
   }
+  const totalBiasLimit = Number(maxTotalBias);
+  if (!Number.isFinite(totalBiasLimit) || totalBiasLimit <= 0) {
+    throw new RangeError("maximum visual depth bias must be a positive number");
+  }
   const source = Array.isArray(tiles) ? tiles : [];
   const result = new Map(source.map((tile) => [tile.uid, 0]));
-  const activeBoardTiles = source
-    .filter((tile) => !tile.removed && !Number.isInteger(tile.stashedSlot))
+  const orderedTiles = [...source]
     .sort((left, right) =>
       Number(left.layer) - Number(right.layer)
       || Number(left.y) - Number(right.y)
@@ -24,11 +30,11 @@ export function computeSameLayerVisualBias(tiles, { step = 0.004 } = {}) {
       || String(left.uid).localeCompare(String(right.uid)));
   const colors = new Map();
 
-  for (let index = 0; index < activeBoardTiles.length; index += 1) {
-    const tile = activeBoardTiles[index];
+  for (let index = 0; index < orderedTiles.length; index += 1) {
+    const tile = orderedTiles[index];
     const unavailable = new Set();
     for (let previousIndex = 0; previousIndex < index; previousIndex += 1) {
-      const previous = activeBoardTiles[previousIndex];
+      const previous = orderedTiles[previousIndex];
       if (Number(previous.layer) !== Number(tile.layer)) continue;
       if (!overlapsWithPositiveArea(previous, tile)) continue;
       unavailable.add(colors.get(previous.uid) ?? 0);
@@ -36,7 +42,16 @@ export function computeSameLayerVisualBias(tiles, { step = 0.004 } = {}) {
     let color = 0;
     while (unavailable.has(color)) color += 1;
     colors.set(tile.uid, color);
-    result.set(tile.uid, Number((color * biasStep).toFixed(6)));
+  }
+  const maxColor = Math.max(0, ...colors.values());
+  const effectiveStep = maxColor > 0
+    ? Math.min(biasStep, totalBiasLimit / maxColor)
+    : biasStep;
+  for (const [uid, color] of colors) {
+    result.set(
+      uid,
+      Math.min(totalBiasLimit, Number((color * effectiveStep).toFixed(6))),
+    );
   }
   return result;
 }

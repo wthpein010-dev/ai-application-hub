@@ -3,6 +3,7 @@ import {
   assignRandomTypes,
   isFirstRoundDocument,
 } from "./random-assigner.mjs";
+import { solveLevel } from "./level-solver.mjs";
 
 const isSpecialType = (type) => type >= 1001 && type <= 1006;
 
@@ -31,6 +32,7 @@ export function createPlaySession(document, seed = 1, options = {}) {
       ...(sourceDocument.random ?? {}),
       ...(options.random ?? {}),
       firstRound: options.firstRound ?? isFirstRoundDocument(sourceDocument),
+      isSolvable: (candidate) => solveLevel({ tiles: candidate }).solvable,
     });
     tiles = assigned.map((tile) => ({
       ...tile,
