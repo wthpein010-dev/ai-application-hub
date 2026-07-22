@@ -7,6 +7,10 @@ import { generateAiLevel } from "../core/ai-level-generator.mjs";
 import { scoreLevelDifficulty } from "../core/level-difficulty.mjs";
 import { solveLevel } from "../core/level-solver.mjs";
 import {
+  isGameplayMetadataIssue,
+  normalizeGameplayPatch,
+} from "../core/gameplay-metadata.mjs";
+import {
   filterTilesByLayerView,
   findPastePlacement,
   planBoardResize,
@@ -63,11 +67,12 @@ export class WorkbenchController {
     this.document = null;
     this.history = null;
     this.selection = new Set();
-    this.issues = [];
+    this.setIssues([]);
     this.mode = "edit";
     this.view = "2d";
     this.tool = "select";
     this.layerView = { mode: "all", layer: 1 };
+    this.layerSeparation = 0;
     this.snapStep = 8;
     this.placement = { type: 1, layer: 1, presetColorType: 1 };
     this.playSession = null;
@@ -87,12 +92,18 @@ export class WorkbenchController {
     }
   }
 
+  setIssues(issues) {
+    this.issues = issues;
+    this.renderer?.setIssues?.(this.issues);
+  }
+
   async init() {
     this.cacheElements();
     this.bindEvents();
     this.inspector = new InspectorPanel({
       onDocumentPatch: (path, value) => this.patchDocument(path, value),
       onBoardPatch: (patch) => this.patchBoard(patch),
+      onGameplayPatch: (patch) => this.patchGameplay(patch),
       onTilePatch: (patch) => this.patchSelectedTiles(patch),
       onPlacementPatch: (patch) => this.patchPlacement(patch),
       onSnapStep: (step) => this.setSnapStep(step),
@@ -148,6 +159,9 @@ export class WorkbenchController {
       layerViewPrev: byId("layer-view-prev"),
       layerViewCurrent: byId("layer-view-current"),
       layerViewNext: byId("layer-view-next"),
+      focus3dSelection: byId("focus-3d-selection"),
+      layerSeparation: byId("layer-separation"),
+      layerSeparationValue: byId("layer-separation-value"),
       fitPlay: byId("fit-play-view"),
       gameplayFit: byId("gameplay-fit"),
       gameplayLevelTitle: byId("gameplay-level-title"),
@@ -218,6 +232,20 @@ export class WorkbenchController {
     });
     this.elements.layerViewPrev.addEventListener("click", () => this.stepLayerView(-1));
     this.elements.layerViewNext.addEventListener("click", () => this.stepLayerView(1));
+    this.root.querySelectorAll("[data-camera-preset]").forEach((button) => {
+      button.addEventListener("click", () =>
+        this.renderer?.setCameraPreset(button.dataset.cameraPreset));
+    });
+    this.elements.focus3dSelection.addEventListener("click", () =>
+      this.renderer?.focusSelection());
+    this.elements.layerSeparation.addEventListener("input", () => {
+      this.layerSeparation = Math.max(
+        0,
+        Math.min(1, Number(this.elements.layerSeparation.value) / 100),
+      );
+      this.renderer?.setLayerSeparation?.(this.layerSeparation);
+      this.updateUI();
+    });
     this.elements.fitPlay.addEventListener("click", () => this.renderer?.fitCamera());
     this.elements.gameplayFit.addEventListener("click", () => this.renderer?.fitCamera());
     this.elements.restart.addEventListener("click", () => this.restartPlay());
@@ -458,7 +486,7 @@ export class WorkbenchController {
       this.document = null;
       this.history = null;
       this.selection = new Set();
-      this.issues = [];
+      this.setIssues([]);
       this.currentDifficulty = null;
       this.playSession = null;
       this.playSnapshot = null;
@@ -695,11 +723,18 @@ export class WorkbenchController {
     const note = {
       widthNum: 7,
       heightNum: 8,
+      levelKey: 0,
+      gameLevelOrder: 1,
+      cdNum: 0,
+      showLayerNum: true,
       boardScale: 1,
       blockTypeCount: 32,
       fullRandomTypeMin: 1,
       fullRandomTypeMax: 32,
+      blockTypeData: {},
       levelData: {},
+      goldBlockData: [],
+      cakeNum: 0,
     };
     this.document = parseLevelDocument({
       id: 0,
@@ -720,7 +755,7 @@ export class WorkbenchController {
     this.history.markSaved();
     this.selection = new Set();
     this.layerView = { mode: "all", layer: 1 };
-    this.issues = validateLevel(this.document);
+    this.setIssues(validateLevel(this.document));
     this.elements.emptyStage.hidden = true;
     this.switchMode("edit");
     this.mountRenderer(true);
@@ -733,7 +768,7 @@ export class WorkbenchController {
   }
 
   validate(showToast = true) {
-    this.issues = this.document ? validateLevel(this.document) : [];
+    this.setIssues(this.document ? validateLevel(this.document) : []);
     if (showToast && this.document) {
       this.currentDifficulty = scoreLevelDifficulty(this.document, {
         maxNodes: 5000,
@@ -774,10 +809,42 @@ export class WorkbenchController {
       return;
     }
     const before = structuredClone(getNested(this.document, path));
+    const previousLevelKey = this.document.gameplay?.levelKey;
     this.execute({
       label: `修改 ${path}`,
-      apply: (target) => setNested(target, path, structuredClone(value)),
-      revert: (target) => setNested(target, path, structuredClone(before)),
+      apply: (target) => {
+        setNested(target, path, structuredClone(value));
+        if (path === "id") {
+          target.gameplay ??= {};
+          target.gameplay.levelKey = Number(value);
+        }
+      },
+      revert: (target) => {
+        setNested(target, path, structuredClone(before));
+        if (path === "id") {
+          target.gameplay ??= {};
+          target.gameplay.levelKey = previousLevelKey;
+        }
+      },
+    });
+  }
+
+  patchGameplay(patch) {
+    if (!this.document || this.readonly || this.mode !== "edit") return;
+    let normalized;
+    try {
+      normalized = normalizeGameplayPatch(patch);
+    } catch (error) {
+      this.showToast(error.message, "error");
+      this.updateUI();
+      return;
+    }
+    if (!Object.keys(normalized).length) return;
+    const before = structuredClone(this.document.gameplay);
+    this.execute({
+      label: "修改游戏运行参数",
+      apply: (target) => Object.assign(target.gameplay, structuredClone(normalized)),
+      revert: (target) => { target.gameplay = structuredClone(before); },
     });
   }
 
@@ -987,13 +1054,21 @@ export class WorkbenchController {
 
   exportLevel() {
     if (!this.document) return;
-    if (this.document.designerNote?.aiGeneration) {
-      this.issues = validateLevelForPublish(this.document);
-      this.updateUI();
-      if (this.issues.some(({ severity }) => severity === "error")) {
-        this.showToast("AI 关卡未通过逐层配对和完整可解性校验，已阻止导出。", "error");
-        return;
-      }
+    const aiGenerated = Boolean(this.document.designerNote?.aiGeneration);
+    this.setIssues(aiGenerated
+      ? validateLevelForPublish(this.document)
+      : validateLevel(this.document));
+    this.updateUI();
+    const blocked = this.issues.some(({ severity, code }) =>
+      severity === "error" && (aiGenerated || isGameplayMetadataIssue(code)));
+    if (blocked) {
+      this.showToast(
+        aiGenerated
+          ? "AI 关卡未通过逐层配对和完整可解性校验，已阻止导出。"
+          : "Unity 游戏运行参数不合法，已阻止导出。",
+        "error",
+      );
+      return;
     }
     try {
       const download = createLevelDownload(this.document, {
@@ -1138,6 +1213,8 @@ export class WorkbenchController {
     this.renderer.setPlaceTemplate?.(this.placement);
     this.renderer.setTool?.(this.tool);
     this.renderer.setLayerView?.(this.layerView);
+    this.renderer.setLayerSeparation?.(this.layerSeparation);
+    this.renderer.setIssues?.(this.issues);
     if (this.mode === "play") {
       this.renderer.setPlaySnapshot(this.playSnapshot);
     } else {
@@ -1157,6 +1234,7 @@ export class WorkbenchController {
     } else {
       this.renderer.setDocument(this.document);
       this.renderer.setSelection(this.selection);
+      this.renderer.setIssues?.(this.issues);
     }
   }
 
@@ -1277,21 +1355,29 @@ export class WorkbenchController {
   }
 
   async performSave({ fileName, saveAs, expectedVersion }) {
-    if (this.document.designerNote?.aiGeneration) {
-      this.issues = validateLevelForPublish(this.document);
-      this.updateUI();
-      if (this.issues.some(({ severity }) => severity === "error")) {
-        this.showToast("AI 关卡未通过逐层配对和完整可解性校验，已阻止保存。", "error");
-        return false;
-      }
+    const aiGenerated = Boolean(this.document.designerNote?.aiGeneration);
+    this.setIssues(aiGenerated
+      ? validateLevelForPublish(this.document)
+      : validateLevel(this.document));
+    this.updateUI();
+    const blocked = this.issues.some(({ severity, code }) =>
+      severity === "error" && (aiGenerated || isGameplayMetadataIssue(code)));
+    if (blocked) {
+      this.showToast(
+        aiGenerated
+          ? "AI 关卡未通过逐层配对和完整可解性校验，已阻止保存。"
+          : "Unity 游戏运行参数不合法，已阻止保存。",
+        "error",
+      );
+      return false;
     }
-    const value = serializeLevelDocument(this.document);
-    const source = saveAs
-      ? "manual"
-      : ["import", "manual", "ai"].includes(this.document.source)
-        ? this.document.source
-        : "manual";
     try {
+      const value = serializeLevelDocument(this.document);
+      const source = saveAs
+        ? "manual"
+        : ["import", "manual", "ai"].includes(this.document.source)
+          ? this.document.source
+          : "manual";
       const saved = await this.api.saveLevel({ fileName, value, expectedVersion, saveAs, source });
       this.document.fileName = fileName;
       this.document.version = saved.version;
@@ -1299,11 +1385,10 @@ export class WorkbenchController {
       this.document.local = saved.local === true;
       this.document.source = saved.source;
       this.document.original = structuredClone(saved.value);
-      try {
-        this.document.designerNote = JSON.parse(saved.value.designerNote);
-      } catch {
-        this.document.designerNote = {};
-      }
+      const canonical = parseLevelDocument(saved.value);
+      this.document.designerNote = structuredClone(canonical.designerNote);
+      this.document.gameplay = structuredClone(canonical.gameplay);
+      this.setIssues(validateLevel(this.document));
       this.history.markSaved();
       this.currentDifficulty = scoreLevelDifficulty(this.document, {
         maxNodes: 5000,
@@ -1374,6 +1459,10 @@ export class WorkbenchController {
     this.elements.layerViewPrev.disabled = !this.document || this.readonly || this.layerView.layer <= 1;
     this.elements.layerViewNext.disabled = !this.document || this.readonly || this.layerView.layer >= maxLayer;
     this.elements.layerViewCurrent.textContent = `L${this.layerView.layer}/${maxLayer}`;
+    this.elements.layerSeparation.value = String(Math.round(this.layerSeparation * 100));
+    this.elements.layerSeparationValue.textContent = `${Math.round(this.layerSeparation * 100)}%`;
+    this.elements.layerSeparation.disabled = !this.document || this.view !== "3d";
+    this.elements.focus3dSelection.disabled = !this.document || this.view !== "3d";
     this.elements.resetLevel.disabled = !this.document?.bundled;
     this.elements.deleteLocalLevel.disabled =
       this.readonly || !this.document?.local || this.document?.bundled;

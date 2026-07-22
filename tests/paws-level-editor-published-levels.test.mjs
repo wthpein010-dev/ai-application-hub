@@ -17,14 +17,14 @@ import { syncPublishedLevels } from "../scripts/sync-paws-published-levels.mjs";
 const repoRoot = dirname(dirname(fileURLToPath(import.meta.url)));
 const editorRoot = join(repoRoot, "projects", "paws-level-editor");
 const levelsRoot = join(editorRoot, "levels");
-const requestedDefault = "level_0020_r2_第二关模板12.json";
+const requestedDefault = "level_0021_r2_第二关模板12.json";
 
-test("published catalog contains the 30 authorized project levels and requested default", async () => {
+test("published catalog contains the 22 current project levels and requested default", async () => {
   const catalog = JSON.parse(await readFile(join(levelsRoot, "index.json"), "utf8"));
 
-  assert.equal(catalog.levels.length, 30);
+  assert.equal(catalog.levels.length, 22);
   assert.equal(catalog.defaultFileName, requestedDefault);
-  assert.equal(new Set(catalog.levels.map(({ fileName }) => fileName)).size, 30);
+  assert.equal(new Set(catalog.levels.map(({ fileName }) => fileName)).size, 22);
   assert.equal(
     catalog.levels.some(({ fileName }) => fileName === "level_showcase.json"),
     false,
@@ -49,7 +49,7 @@ test("published catalog contains the 30 authorized project levels and requested 
       layerCount: selected?.layerCount,
     },
     {
-      id: 20,
+    id: 21,
       name: "第二关模板12",
       tileCount: 198,
       layerCount: 17,

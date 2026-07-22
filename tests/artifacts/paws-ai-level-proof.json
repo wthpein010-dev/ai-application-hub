@@ -1,28 +1,30 @@
 {
   "environment": "local",
-  "catalogCount": 30,
-  "defaultFileName": "level_0020_r2_第二关模板12.json",
+  "catalogCount": 22,
+  "defaultFileName": "level_0021_r2_第二关模板12.json",
   "generatedFileName": "ai_level_73125.json",
   "generatedTileCount": 200,
   "generatedLayerCount": 15,
   "generatedBoard": {
     "width": 7,
     "height": 8,
-    "scale": 1.0166666666666666
+    "scale": 1.0045454545454546
   },
-  "generatedDifficultyScore": 61,
+  "generatedGridUnit": "sheep_7x8_mini8",
+  "generatedDifficultyScore": 62,
   "generatedDifficultyRating": "困难入门",
   "generatedDifficultyDimensions": {
-    "structure": 85,
-    "information": 47,
-    "choice": 56,
-    "route": 59,
-    "endurance": 47
+    "structure": 84,
+    "information": 66,
+    "choice": 55,
+    "route": 57,
+    "endurance": 46
   },
   "generatedInitialPairs": 3,
-  "generatedAverageBlockers": 3.6752577319587627,
+  "generatedAverageBlockers": 3.806282722513089,
+  "hardGenerationMs": 2453,
   "solverSteps": 100,
-  "solverNodes": 100,
+  "solverNodes": 11168,
   "completedInPlay": true,
   "webgl": true,
   "persistedAfterReload": true,

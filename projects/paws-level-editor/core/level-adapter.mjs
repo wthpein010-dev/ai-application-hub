@@ -3,6 +3,7 @@ import {
   buildGridUnit,
   parseGridUnit,
 } from "./editor-geometry.mjs";
+import { assertGameplayMetadata } from "./gameplay-metadata.mjs";
 
 const TILE_DEFAULTS = Object.freeze({
   moldType: 1,
@@ -18,6 +19,10 @@ function clone(value) {
 function numberOr(value, fallback) {
   const result = Number(value);
   return Number.isFinite(result) ? result : fallback;
+}
+
+function definedOr(value, fallback) {
+  return value === undefined ? fallback : value;
 }
 
 function dimensionOr(value, fallback) {
@@ -116,6 +121,7 @@ export function parseLevelDocument(raw, { fileName = "", version = "" } = {}) {
   const boardWidth = dimensionOr(designerNote.widthNum, fallbackWidth);
   const boardHeight = dimensionOr(designerNote.heightNum, fallbackHeight);
   const gridUnit = safeGridUnit(boardWidth, boardHeight, original.gridUnit);
+  const id = numberOr(original.id, 0);
 
   return {
     original,
@@ -124,7 +130,7 @@ export function parseLevelDocument(raw, { fileName = "", version = "" } = {}) {
     version,
     source,
     warnings,
-    id: numberOr(original.id, 0),
+    id,
     name: String(original.name ?? ""),
     difficulty: String(original.difficulty ?? "Normal"),
     gridUnit,
@@ -137,6 +143,12 @@ export function parseLevelDocument(raw, { fileName = "", version = "" } = {}) {
       blockTypeCount: numberOr(designerNote.blockTypeCount, 32),
       fullTypeMin: numberOr(designerNote.fullRandomTypeMin, 1),
       fullTypeMax: numberOr(designerNote.fullRandomTypeMax, 32),
+    },
+    gameplay: {
+      levelKey: definedOr(designerNote.levelKey, id),
+      gameLevelOrder: definedOr(designerNote.gameLevelOrder, 1),
+      cdNum: definedOr(designerNote.cdNum, 0),
+      showLayerNum: definedOr(designerNote.showLayerNum, true),
     },
     tiles: normalized,
   };
@@ -220,6 +232,26 @@ export function serializeLevelDocument(document) {
     document.random?.fullTypeMax,
     numberOr(note.fullRandomTypeMax, 32),
   );
+  const gameplay = {
+    levelKey: saved.id,
+    gameLevelOrder: definedOr(
+      document.gameplay?.gameLevelOrder,
+      definedOr(note.gameLevelOrder, 1),
+    ),
+    cdNum: definedOr(document.gameplay?.cdNum, definedOr(note.cdNum, 0)),
+    showLayerNum: definedOr(
+      document.gameplay?.showLayerNum,
+      definedOr(note.showLayerNum, true),
+    ),
+  };
+  assertGameplayMetadata(gameplay);
+  note.levelKey = saved.id;
+  note.gameLevelOrder = gameplay.gameLevelOrder;
+  note.cdNum = gameplay.cdNum;
+  note.showLayerNum = gameplay.showLayerNum;
+  note.blockTypeData ??= {};
+  note.goldBlockData ??= [];
+  note.cakeNum = numberOr(note.cakeNum, 0);
   note.levelData = levelData;
   saved.designerNote = JSON.stringify(note);
 

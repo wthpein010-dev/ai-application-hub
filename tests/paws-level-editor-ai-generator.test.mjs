@@ -4,6 +4,7 @@ import test from "node:test";
 import {
   DIFFICULTY_PROFILES,
   generateAiLevel,
+  maxAverageBlockersForLayers,
 } from "../projects/paws-level-editor/core/ai-level-generator.mjs";
 import {
   extractLevelStatistics,
@@ -363,6 +364,14 @@ test("difficulty profiles expose exact defaults and concise recommendations", ()
   );
 });
 
+test("average blocker quality limits stay fixed at 4 through 15 layers and 6 beyond", () => {
+  assert.equal(maxAverageBlockersForLayers(1), 4);
+  assert.equal(maxAverageBlockersForLayers(15), 4);
+  assert.equal(maxAverageBlockersForLayers(16), 6);
+  assert.equal(maxAverageBlockersForLayers(32), 6);
+  assert.equal(maxAverageBlockersForLayers(40), 6);
+});
+
 test("generator honors exact normalized size, layers and target difficulty", () => {
   const generated = generateAiLevel({
     references: [reference],
@@ -426,6 +435,7 @@ test("200 tiles, 15 layers and score 60 stay solvable on the fixed board", () =>
   assert.equal(generated.report.solvable, true);
   assert.equal(generated.report.steps, 100);
   assert.equal(stats.maxExactStackDepth <= 2, true);
+  assert.equal(stats.averageBlockers <= 4, true);
   assert.equal(Math.abs(generated.report.difficulty.score - 60) <= 5, true);
 });
 
@@ -479,6 +489,12 @@ for (const difficulty of ["easy", "normal", "hard"]) {
       assert.equal(stats.initialAccessiblePairs >= profile.minInitialPairs, true);
       assert.equal(stats.overlapRatio <= profile.maxOverlap, true);
       assert.equal(stats.maxExactStackDepth <= 2, true);
+      assert.equal(
+        stats.averageBlockers <= (stats.layerCount > 15
+          ? 6
+          : 4),
+        true,
+      );
       assert.equal(
         generated.document.tiles.every(({ type }) => type >= 1 && type <= 32),
         true,

@@ -20,6 +20,10 @@ const inspector = readFileSync(
   join(repoRoot, "projects", "paws-level-editor", "ui", "inspector.mjs"),
   "utf8",
 );
+const threeView = readFileSync(
+  join(repoRoot, "projects", "paws-level-editor", "views", "three-3d.mjs"),
+  "utf8",
+);
 const openLevelBody = controller.slice(
   controller.indexOf("async openLevel("),
   controller.indexOf("async resetCurrentLevel("),
@@ -192,6 +196,25 @@ test("AI save-as and export rerun the release validator before producing output"
   assert.match(exportLevelBody, /unsolvable|AI|发布/u);
   assert.match(performSaveBody, /validateLevelForPublish\(this\.document\)/);
   assert.match(performSaveBody, /return false/);
+  assert.match(
+    performSaveBody,
+    /try\s*\{\s*const value\s*=\s*serializeLevelDocument\(this\.document\)/,
+    "serialization errors must stay inside the save error boundary",
+  );
+});
+
+test("every validation issue update is propagated to the active renderer", () => {
+  assert.match(
+    controller,
+    /setIssues\(issues\)\s*\{\s*this\.issues\s*=\s*issues;\s*this\.renderer\?\.setIssues\?\.\(this\.issues\);\s*\}/,
+  );
+  assert.equal(
+    [...controller.matchAll(/this\.issues\s*=/g)].length,
+    1,
+    "issue state must only be assigned by the renderer-synchronizing setter",
+  );
+  assert.match(exportLevelBody, /this\.setIssues\([\s\S]*validateLevelForPublish\(this\.document\)/);
+  assert.match(performSaveBody, /this\.setIssues\([\s\S]*validateLevelForPublish\(this\.document\)/);
 });
 
 test("controller keyboard handler dispatches commands instead of interpreting modified tool keys", () => {
@@ -261,4 +284,39 @@ test("JSON export serializes the current board and preserves unknown fields", as
   assert.deepEqual(exported.customServerField, { enabled: true });
   assert.equal(JSON.parse(exported.designerNote).customDesignerField, "keep");
   assert.equal(exported.gridUnit, "sheep_7x8_mini8");
+});
+
+test("3D inspection exposes camera presets, focus, exploded layers and relationships", () => {
+  for (const preset of ["iso", "top", "front", "side"]) {
+    assert.match(page, new RegExp(`data-camera-preset="${preset}"`));
+  }
+  assert.match(page, /id="focus-3d-selection"/);
+  assert.match(page, /id="layer-separation"[^>]*type="range"/);
+  assert.match(page, /id="layer-separation-value"/);
+  assert.match(controller, /querySelectorAll\("\[data-camera-preset\]"\)/);
+  assert.match(controller, /setCameraPreset\(button\.dataset\.cameraPreset\)/);
+  assert.match(controller, /focusSelection\(\)/);
+  assert.match(controller, /setLayerSeparation\?\.\(this\.layerSeparation\)/);
+  assert.match(controller, /setIssues\?\.\(this\.issues\)/);
+  assert.match(threeView, /analyzeTileRelations/);
+  assert.match(threeView, /buildIssueSeverityByUid/);
+  assert.match(threeView, /setCameraPreset\(preset\)/);
+  assert.match(threeView, /focusSelection\(\)/);
+  assert.match(threeView, /setLayerSeparation\(value\)/);
+  assert.match(threeView, /setIssues\(issues\)/);
+  assert.match(threeView, /upper-blocker/);
+  assert.match(threeView, /lower-dependent/);
+  assert.match(threeView, /side-blocker/);
+});
+
+test("inspector edits Unity gameplay metadata and controller keeps levelKey with ID", () => {
+  assert.match(inspector, /data-gameplay-field="gameLevelOrder"/);
+  assert.match(inspector, /data-gameplay-field="cdNum"/);
+  assert.match(inspector, /data-gameplay-field="showLayerNum"/);
+  assert.match(inspector, /Level Key/);
+  assert.match(inspector, /onGameplayPatch/);
+  assert.match(controller, /onGameplayPatch:\s*\(patch\)\s*=>\s*this\.patchGameplay\(patch\)/);
+  assert.match(controller, /patchGameplay\(patch\)/);
+  assert.match(controller, /path === "id"/);
+  assert.match(controller, /target\.gameplay\.levelKey\s*=\s*Number\(value\)/);
 });

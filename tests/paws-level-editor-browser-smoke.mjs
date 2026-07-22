@@ -25,8 +25,8 @@ const externalBaseUrl = baseUrlIndex >= 0
   ? process.argv[baseUrlIndex + 1]?.replace(/\/+$/, "")
   : "";
 const browserTimeout = externalBaseUrl ? 120_000 : 30_000;
-const defaultFileName = "level_0020_r2_第二关模板12.json";
-const bundledLevelCount = 30;
+const defaultFileName = "level_0021_r2_第二关模板12.json";
+const bundledLevelCount = 22;
 
 async function assertBundledLevelIsValid() {
   const levelPath = resolve(
@@ -40,7 +40,7 @@ async function assertBundledLevelIsValid() {
   const designerNote = typeof value.designerNote === "string"
     ? JSON.parse(value.designerNote)
     : value.designerNote;
-  assert.equal(value.id, 20);
+  assert.equal(value.id, 21);
   assert.equal(value.name, "第二关模板12");
   assert.equal(value.tiles.length, 198);
   assert.equal(Object.keys(designerNote.levelData).length, 17);
@@ -347,6 +347,8 @@ try {
     importedPlayInteraction: null,
     safeEditing: null,
     layerInspection: null,
+    threeInspection: null,
+    metadataRoundTrip: null,
     threeDeleteUndo: null,
     exportRoundTrip: null,
     deletedLocalLevels: null,
@@ -451,8 +453,8 @@ try {
   assert.deepEqual(storedImport?.value?.unknownTopLevel, importedLevel.unknownTopLevel);
 
   await page.reload({ waitUntil: "networkidle" });
-  await page.waitForFunction(() =>
-    window.pawsWorkbench?.levels?.length === 31);
+  await page.waitForFunction((expectedCount) =>
+    window.pawsWorkbench?.levels?.length === expectedCount, bundledLevelCount + 1);
   assert.equal(await page.locator('[role="option"]').count(), bundledLevelCount + 1);
   assert.equal(
     await page.locator('[role="option"] .level-file').allTextContents()
@@ -630,14 +632,17 @@ try {
     fallback: defaultFileName,
     expectedCount: bundledLevelCount + 1,
   });
-  await page.waitForFunction(() =>
-    document.querySelector("#stage-toast")?.textContent?.includes("剩余 AI 学习参考 31 关"));
+  await page.waitForFunction((expectedCount) =>
+    document.querySelector("#stage-toast")?.textContent?.includes(
+      `剩余 AI 学习参考 ${expectedCount} 关`,
+    ), bundledLevelCount + 1);
   const referenceCountAfterFirstDelete = await page.evaluate(async () =>
     (await window.pawsWorkbench.loadAiReferenceDocuments()).length);
   assert.equal(referenceCountAfterFirstDelete, bundledLevelCount + 1);
 
   await page.reload({ waitUntil: "networkidle" });
-  await page.waitForFunction(() => window.pawsWorkbench?.levels?.length === 31);
+  await page.waitForFunction((expectedCount) =>
+    window.pawsWorkbench?.levels?.length === expectedCount, bundledLevelCount + 1);
   assert.equal(
     await page.locator('[role="option"] .level-file').allTextContents()
       .then((names) => names.includes("local_demo_import.json")),
@@ -677,6 +682,139 @@ try {
     "3D canvas should expose a WebGL context",
   );
 
+  const relationSelection = await page.evaluate(async () => {
+    const controller = window.pawsWorkbench;
+    const moduleUrl = new URL("./core/tile-relations.mjs", window.location.href);
+    const { analyzeTileRelations } = await import(moduleUrl.href);
+    for (const tile of controller.document.tiles) {
+      const relations = analyzeTileRelations(controller.document.tiles, [tile.uid]);
+      if (!relations.edges.length) continue;
+      controller.setSelection(new Set([tile.uid]));
+      return { uid: tile.uid, edgeCount: relations.edges.length };
+    }
+    throw new Error("Expected a bundled tile with inspection relationships");
+  });
+  await page.waitForFunction(() =>
+    window.pawsWorkbench.renderer.relationGroup.children.length > 0);
+  const cameraPositions = [];
+  for (const preset of ["iso", "top", "front", "side"]) {
+    await page.locator(`[data-camera-preset="${preset}"]`).click();
+    cameraPositions.push(await page.evaluate(() =>
+      window.pawsWorkbench.renderer.camera.position.toArray().map((value) =>
+        Number(value.toFixed(3)))));
+  }
+  assert.equal(new Set(cameraPositions.map((position) => position.join(","))).size, 4);
+  await page.locator('[data-camera-preset="top"]').click();
+  await page.locator("#fit-view").click();
+  assert.deepEqual(
+    await page.evaluate(() => window.pawsWorkbench.renderer.camera.up.toArray()),
+    [0, 1, 0],
+    "fit after top view must restore a level Y-up camera",
+  );
+  const explodedBefore = await page.evaluate(() => {
+    const renderer = window.pawsWorkbench.renderer;
+    const highest = [...renderer.meshes.values()].sort(
+      (left, right) => right.userData.record.layer - left.userData.record.layer,
+    )[0];
+    return { uid: highest.userData.uid, y: highest.userData.baseY };
+  });
+  await page.locator("#layer-separation").fill("80");
+  const explodedAfter = await page.evaluate((uid) =>
+    window.pawsWorkbench.renderer.meshes.get(uid).userData.baseY, explodedBefore.uid);
+  assert.ok(explodedAfter > explodedBefore.y + 1, "exploded view should separate upper layers");
+  await page.locator("#focus-3d-selection").click();
+  const focusDistance = await page.evaluate((uid) => {
+    const renderer = window.pawsWorkbench.renderer;
+    return renderer.controls.target.distanceTo(renderer.meshes.get(uid).position);
+  }, relationSelection.uid);
+  assert.ok(focusDistance < 0.2, "focus should target the selected tile");
+  const issueColor = await page.evaluate((uid) => {
+    const controller = window.pawsWorkbench;
+    controller.setSelection(new Set());
+    controller.renderer.setIssues([{ severity: "error", tileUids: [uid] }]);
+    const color = controller.renderer.meshes.get(uid).userData.topMaterial.color.getHex();
+    controller.renderer.setIssues(controller.issues);
+    return color;
+  }, relationSelection.uid);
+  assert.equal(issueColor, 0xff7474);
+  await page.locator("#mode-play").click();
+  await page.waitForFunction(() =>
+    window.pawsWorkbench.mode === "play"
+    && window.pawsWorkbench.view === "3d"
+    && window.pawsWorkbench.renderer.mode === "play");
+  const playFrames = await page.evaluate(() => {
+    const renderer = window.pawsWorkbench.renderer;
+    const frame = () => ({
+      position: renderer.camera.position.toArray(),
+      target: renderer.controls.target.toArray(),
+    });
+    renderer.fitCamera();
+    const rememberedSeparation = frame();
+    renderer.setLayerSeparation(0);
+    renderer.fitCamera();
+    return { rememberedSeparation, zeroSeparation: frame() };
+  });
+  assert.deepEqual(
+    playFrames.rememberedSeparation,
+    playFrames.zeroSeparation,
+    "play camera framing must ignore the remembered edit explosion setting",
+  );
+  await page.locator("#mode-edit").click();
+  await page.waitForFunction(() =>
+    window.pawsWorkbench.mode === "edit"
+    && window.pawsWorkbench.view === "3d"
+    && window.pawsWorkbench.renderer.mode === "edit");
+  await page.locator("#layer-separation").fill("0");
+  summary.threeInspection = {
+    relationEdges: relationSelection.edgeCount,
+    cameraPresets: cameraPositions.length,
+    explodedDelta: Number((explodedAfter - explodedBefore.y).toFixed(3)),
+    focusDistance: Number(focusDistance.toFixed(4)),
+    issueColor,
+  };
+
+  const originalGameplay = await page.evaluate(() => ({
+    id: window.pawsWorkbench.document.id,
+    ...window.pawsWorkbench.document.gameplay,
+  }));
+  await page.evaluate(() => {
+    const controller = window.pawsWorkbench;
+    controller.document.gameplay.levelKey = controller.document.id + 1000;
+    controller.validate(false);
+  });
+  await page.locator("#save-level").click();
+  await page.waitForFunction(() =>
+    document.querySelector("#stage-toast")?.textContent?.includes("已保存到当前浏览器"));
+  assert.deepEqual(
+    await page.evaluate(() => ({
+      id: window.pawsWorkbench.document.id,
+      levelKey: window.pawsWorkbench.document.gameplay.levelKey,
+      stillMismatched: window.pawsWorkbench.issues.some(
+        ({ code }) => code === "level-key-mismatch",
+      ),
+    })),
+    { id: originalGameplay.id, levelKey: originalGameplay.id, stillMismatched: false },
+    "save must immediately apply the canonical serialized levelKey in memory",
+  );
+  const rejectedGameplayPatch = await page.evaluate(() => {
+    const controller = window.pawsWorkbench;
+    const before = {
+      stateId: controller.history.stateId,
+      gameplay: structuredClone(controller.document.gameplay),
+    };
+    controller.patchGameplay({ gameLevelOrder: 0, cdNum: 1.5 });
+    return {
+      before,
+      after: {
+        stateId: controller.history.stateId,
+        gameplay: structuredClone(controller.document.gameplay),
+      },
+      toast: document.querySelector("#stage-toast")?.textContent ?? "",
+    };
+  });
+  assert.deepEqual(rejectedGameplayPatch.after, rejectedGameplayPatch.before);
+  assert.match(rejectedGameplayPatch.toast, /挑战回合|限时秒数/);
+
   const originalTile = await page.evaluate(async () => {
     const controller = window.pawsWorkbench;
     const geometryUrl = new URL("./core/editor-geometry.mjs", window.location.href);
@@ -709,6 +847,21 @@ try {
     },
     { uid: originalTile.uid, ...modifiedTile },
   );
+  await page.locator('[data-doc-field="id"]').fill("121");
+  await page.locator('[data-doc-field="id"]').press("Tab");
+  await page.locator('[data-gameplay-field="gameLevelOrder"]').fill("4");
+  await page.locator('[data-gameplay-field="gameLevelOrder"]').press("Tab");
+  await page.locator('[data-gameplay-field="cdNum"]').fill("75");
+  await page.locator('[data-gameplay-field="cdNum"]').press("Tab");
+  await page.locator('[data-gameplay-field="showLayerNum"]').selectOption("false");
+  await page.waitForFunction(() => {
+    const { document } = window.pawsWorkbench;
+    return document.id === 121
+      && document.gameplay.levelKey === 121
+      && document.gameplay.gameLevelOrder === 4
+      && document.gameplay.cdNum === 75
+      && document.gameplay.showLayerNum === false;
+  });
   await page.locator("#save-level").click();
   await page.waitForFunction(() =>
     document.querySelector("#stage-toast")?.textContent?.includes("已保存到当前浏览器"));
@@ -721,6 +874,24 @@ try {
     true,
     "save should write the bundled level override to localStorage",
   );
+  const storedGameplay = await page.evaluate((fileName) => {
+    const record = JSON.parse(localStorage.getItem(`paws-level-editor-demo-v1:${fileName}`));
+    const note = JSON.parse(record.value.designerNote);
+    return {
+      id: record.value.id,
+      levelKey: note.levelKey,
+      gameLevelOrder: note.gameLevelOrder,
+      cdNum: note.cdNum,
+      showLayerNum: note.showLayerNum,
+    };
+  }, defaultFileName);
+  assert.deepEqual(storedGameplay, {
+    id: 121,
+    levelKey: 121,
+    gameLevelOrder: 4,
+    cdNum: 75,
+    showLayerNum: false,
+  });
 
   await page.reload({ waitUntil: "networkidle" });
   await waitForWorkbench(page);
@@ -736,6 +907,14 @@ try {
     true,
     "refresh should auto-open and restore the saved tile edit",
   );
+  assert.deepEqual(
+    await page.evaluate(() => ({
+      id: window.pawsWorkbench.document.id,
+      ...window.pawsWorkbench.document.gameplay,
+    })),
+    storedGameplay,
+  );
+  summary.metadataRoundTrip = storedGameplay;
 
   page.once("dialog", (dialog) => dialog.accept());
   await page.locator("#reset-level").click();
@@ -752,6 +931,13 @@ try {
     ),
     true,
     "reset should restore the bundled tile value",
+  );
+  assert.deepEqual(
+    await page.evaluate(() => ({
+      id: window.pawsWorkbench.document.id,
+      ...window.pawsWorkbench.document.gameplay,
+    })),
+    originalGameplay,
   );
   assert.equal(
     await page.evaluate(

@@ -13,6 +13,13 @@ function numberValue(input) {
   return Number.isFinite(value) ? value : 0;
 }
 
+function gameplayValue(input, key) {
+  if (key === "showLayerNum") return input.value === "true";
+  if (!input.value.trim() || input.validity?.valid === false) return Number.NaN;
+  const value = Number(input.value);
+  return Number.isFinite(value) ? value : Number.NaN;
+}
+
 function fieldValue(selection, key) {
   if (!selection.length) {
     return "";
@@ -58,6 +65,7 @@ export class InspectorPanel {
     const { document, issues = [], readonly = false, placement = {} } = state;
     const selected = document.tiles.filter((tile) => state.selection.has(tile.uid));
     const selectedType = selected.length ? fieldValue(selected, "type") : placement.type;
+    const validShowLayerNum = typeof document.gameplay?.showLayerNum === "boolean";
     this.host.innerHTML = `
       <section class="inspector-section">
         <h3>关卡信息 <span>${document.fileName ? escapeHtml(document.fileName) : "未命名"}</span></h3>
@@ -70,6 +78,22 @@ export class InspectorPanel {
           </label>
           <label class="span-2">名称<input data-doc-field="name" value="${escapeHtml(document.name)}" ${readonly ? "disabled" : ""}></label>
           <label class="span-2">Grid Unit<input data-grid-unit value="${escapeHtml(document.gridUnit)}" readonly></label>
+        </div>
+      </section>
+
+      <section class="inspector-section">
+        <h3>游戏运行 <span>Unity</span></h3>
+        <div class="field-grid">
+          <label>Level Key<input value="${escapeHtml(document.id)}" readonly title="始终与关卡 ID 同步"></label>
+          <label>挑战回合<input data-gameplay-field="gameLevelOrder" type="number" min="1" step="1" value="${escapeHtml(document.gameplay?.gameLevelOrder ?? 1)}" ${readonly ? "disabled" : ""}></label>
+          <label>限时秒数<input data-gameplay-field="cdNum" type="number" min="0" step="1" value="${escapeHtml(document.gameplay?.cdNum ?? 0)}" ${readonly ? "disabled" : ""}></label>
+          <label>游戏内层数
+            <select data-gameplay-field="showLayerNum" ${readonly ? "disabled" : ""}>
+              ${validShowLayerNum ? "" : '<option value="" disabled selected>非法值，请重新选择</option>'}
+              <option value="true" ${document.gameplay?.showLayerNum === true ? "selected" : ""}>显示</option>
+              <option value="false" ${document.gameplay?.showLayerNum === false ? "selected" : ""}>隐藏</option>
+            </select>
+          </label>
         </div>
       </section>
 
@@ -165,6 +189,13 @@ export class InspectorPanel {
     this.host.querySelectorAll("[data-board-field]").forEach((input) => {
       input.addEventListener("change", () => {
         this.callbacks.onBoardPatch?.({ [input.dataset.boardField]: numberValue(input) });
+      });
+    });
+    this.host.querySelectorAll("[data-gameplay-field]").forEach((input) => {
+      input.addEventListener("change", () => {
+        const key = input.dataset.gameplayField;
+        const value = gameplayValue(input, key);
+        this.callbacks.onGameplayPatch?.({ [key]: value });
       });
     });
     this.host.querySelectorAll("[data-tile-field]").forEach((input) => {

@@ -38,7 +38,7 @@
       </header>
 
       <div class="demo-banner" role="note">
-        已发布 30 个工程关卡 · 编辑和 AI 生成结果只保存到当前浏览器，不会写回工程
+        已同步 22 个当前工程关卡 · 编辑和 AI 生成结果只保存到当前浏览器，不会写回工程
       </div>
 
       <div id="readonly-banner" class="readonly-banner" role="note">
@@ -117,6 +117,26 @@
               <button id="layer-view-prev" type="button" title="查看上一层 ([)">−</button>
               <output id="layer-view-current" class="layer-view-current">L1</output>
               <button id="layer-view-next" type="button" title="查看下一层 (])">＋</button>
+            </div>
+
+            <div id="three-inspection-tools" class="tool-strip three-only edit-only" aria-label="3D 检查工具">
+              <span class="inspection-label">视角</span>
+              <button type="button" data-camera-preset="iso" title="等距视角">等距</button>
+              <button type="button" data-camera-preset="top" title="俯视">俯视</button>
+              <button type="button" data-camera-preset="front" title="正面视角">正面</button>
+              <button type="button" data-camera-preset="side" title="侧面视角">侧面</button>
+              <button id="focus-3d-selection" type="button" title="聚焦选中砖块；未选中时适配全关">聚焦</button>
+              <span class="tool-separator"></span>
+              <label class="layer-separation-control" for="layer-separation">
+                <span>层间距</span>
+                <input id="layer-separation" type="range" min="0" max="100" step="5" value="0" />
+                <output id="layer-separation-value">0%</output>
+              </label>
+              <span class="relationship-legend" aria-label="关系颜色说明">
+                <i class="is-upper"></i>上遮挡
+                <i class="is-lower"></i>下影响
+                <i class="is-side"></i>左右夹压
+              </span>
             </div>
 
             <div id="play-tools" class="tool-strip play-only" aria-label="试玩工具">

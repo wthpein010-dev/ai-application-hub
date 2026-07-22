@@ -22,7 +22,8 @@ const proofPath = join(videoRoot, "recording-proof.json");
 const recordingRoot = join(tmpdir(), "paws-level-editor-demo-recording");
 const ffmpegPath = process.env.FFMPEG_PATH || bundledFfmpeg;
 const targetDuration = 88;
-const defaultFileName = "level_0020_r2_第二关模板12.json";
+const defaultFileName = "level_0021_r2_第二关模板12.json";
+const bundledLevelCount = 22;
 const sourceFiles = [
   "projects/paws-level-editor/index.html",
   "projects/paws-level-editor/styles.css",
@@ -30,10 +31,13 @@ const sourceFiles = [
   "projects/paws-level-editor/static-api-client.mjs",
   "projects/paws-level-editor/core/ai-level-generator.mjs",
   "projects/paws-level-editor/core/editor-geometry.mjs",
+  "projects/paws-level-editor/core/gameplay-metadata.mjs",
+  "projects/paws-level-editor/core/level-adapter.mjs",
   "projects/paws-level-editor/core/level-difficulty.mjs",
   "projects/paws-level-editor/core/level-solver.mjs",
   "projects/paws-level-editor/core/level-statistics.mjs",
   "projects/paws-level-editor/core/level-validator.mjs",
+  "projects/paws-level-editor/core/tile-relations.mjs",
   "projects/paws-level-editor/core/view-model.mjs",
   "projects/paws-level-editor/ui/ai-level-dialog.mjs",
   "projects/paws-level-editor/ui/editor-shortcuts.mjs",
@@ -45,7 +49,7 @@ const sourceFiles = [
   "projects/paws-level-editor/views/canvas-2d.mjs",
   "projects/paws-level-editor/views/three-3d.mjs",
   "projects/paws-level-editor/levels/index.json",
-  "projects/paws-level-editor/levels/level_0020_r2_第二关模板12.json",
+  "projects/paws-level-editor/levels/level_0021_r2_第二关模板12.json",
   "scripts/record-paws-level-editor-demo.mjs",
   "scripts/paws-recording-support.mjs",
 ];
@@ -369,10 +373,10 @@ async function recordEditor() {
       await waitForWorkbench(page);
       await page.locator('[role="option"]').first().waitFor({ state: "visible" });
       await page.waitForFunction(
-        (requested) =>
+        ({ requested, expectedCount }) =>
           window.pawsWorkbench?.document?.fileName === requested
-          && window.pawsWorkbench?.levels?.length === 30,
-        defaultFileName,
+          && window.pawsWorkbench?.levels?.length === expectedCount,
+        { requested: defaultFileName, expectedCount: bundledLevelCount },
       );
       const metadata = await page.evaluate((requested) => {
         const controller = window.pawsWorkbench;
@@ -404,7 +408,7 @@ async function recordEditor() {
         errors,
       };
 
-      // 00:00 — show the 30-level library, requested default and local AI generation.
+      // 00:00 — show the current project library, requested default and local AI generation.
       markChapter(proof.timeline, "tools", startedAt, 0);
       await page.locator("#fit-view").click();
       await delay(1_200);
@@ -497,13 +501,16 @@ async function recordEditor() {
       assert.equal(aiGeneration.coordinatesInBounds, true);
       assert.equal(aiGeneration.source, "ai");
       assert.equal(aiGeneration.aiReferenceEligible, false);
-      assert.equal(aiGeneration.referenceCount, 30);
+      assert.equal(aiGeneration.referenceCount, bundledLevelCount);
       assert.equal(aiGeneration.sameLayerOverlapPairs, 0);
       assert.equal(aiGeneration.totalEven, true);
       assert.equal(aiGeneration.globalTypesEven, true);
       assert.equal(aiGeneration.layerTypesEven, true);
       assert.ok(Math.abs(aiGeneration.actualScore - aiGeneration.targetScore) <= 5);
-      assert.equal(await page.locator('[role="option"]').count(), 31);
+      assert.equal(
+        await page.locator('[role="option"]').count(),
+        bundledLevelCount + 1,
+      );
       proof.actions.aiGeneration = aiGeneration;
       const generatedFileName = aiGeneration.fileName;
       const generatedStorageKey = `paws-level-editor-demo-v1:${generatedFileName}`;
@@ -664,7 +671,62 @@ async function recordEditor() {
       proof.actions.layerInspection.single3d = await page.evaluate(() =>
         window.pawsWorkbench.renderer.meshes.size);
       assert.ok(proof.actions.layerInspection.single3d > 0);
+      await page.locator("#layer-view-mode").selectOption("all");
+      const cameraPresets = {};
+      for (const preset of ["iso", "top", "front", "side"]) {
+        await page.locator(`[data-camera-preset="${preset}"]`).click();
+        await delay(320);
+        cameraPresets[preset] = await page.evaluate(() =>
+          window.pawsWorkbench.renderer.camera.position.toArray());
+      }
+      assert.equal(
+        new Set(Object.values(cameraPresets).map((position) => position.join(","))).size,
+        4,
+      );
+      const explodedBefore = await page.evaluate(() => {
+        const renderer = window.pawsWorkbench.renderer;
+        const highest = [...renderer.meshes.values()].sort(
+          (left, right) => right.userData.record.layer - left.userData.record.layer,
+        )[0];
+        return { uid: highest.userData.uid, y: highest.userData.baseY };
+      });
+      await page.locator("#layer-separation").fill("75");
+      const explodedAfter = await page.evaluate((uid) =>
+        window.pawsWorkbench.renderer.meshes.get(uid).userData.baseY, explodedBefore.uid);
+      assert.ok(explodedAfter > explodedBefore.y + 1);
+      const relationSelection = await page.evaluate(async () => {
+        const controller = window.pawsWorkbench;
+        const moduleUrl = new URL("./core/tile-relations.mjs", window.location.href);
+        const { analyzeTileRelations } = await import(moduleUrl.href);
+        for (const tile of controller.document.tiles) {
+          const relations = analyzeTileRelations(controller.document.tiles, [tile.uid]);
+          if (!relations.edges.length) continue;
+          controller.setSelection(new Set([tile.uid]));
+          return { uid: tile.uid, edgeCount: relations.edges.length };
+        }
+        throw new Error("Expected a tile with 3D relationships");
+      });
+      await page.waitForFunction(() =>
+        window.pawsWorkbench.renderer.relationGroup.children.length > 0);
+      await page.locator("#focus-3d-selection").click();
+      const relationLines = await page.evaluate(() =>
+        window.pawsWorkbench.renderer.relationGroup.children.length);
+      const focusDistance = await page.evaluate((uid) => {
+        const renderer = window.pawsWorkbench.renderer;
+        return renderer.controls.target.distanceTo(renderer.meshes.get(uid).position);
+      }, relationSelection.uid);
+      assert.ok(focusDistance < 0.2);
       await delay(900);
+      const inspection = {
+        cameraPresets,
+        relationEdges: relationSelection.edgeCount,
+        relationLines,
+        explodedDelta: explodedAfter - explodedBefore.y,
+        focusDistance,
+      };
+      await page.locator("#layer-separation").fill("0");
+      await page.evaluate(() => window.pawsWorkbench.setSelection(new Set()));
+      await delay(500);
       const cameraBefore = await page.evaluate(() => ({
         position: window.pawsWorkbench.renderer.camera.position.toArray(),
         target: window.pawsWorkbench.renderer.controls.target.toArray(),
@@ -733,6 +795,7 @@ async function recordEditor() {
       proof.actions.edit3d = {
         cameraBefore,
         cameraAfter,
+        inspection,
         selectedBefore: selectedBefore3d,
         selectedAfter: selectedAfter3d,
         deleteUndo,
@@ -843,13 +906,17 @@ async function recordEditor() {
       page.once("dialog", (dialog) => dialog.accept());
       await page.locator("#delete-local-level").click();
       await page.waitForFunction(
-        ({ deletedFileName, requestedFileName }) =>
+        ({ deletedFileName, requestedFileName, expectedCount }) =>
           window.pawsWorkbench?.document?.fileName === requestedFileName
-          && window.pawsWorkbench?.levels?.length === 30
+          && window.pawsWorkbench?.levels?.length === expectedCount
           && localStorage.getItem(
             `paws-level-editor-demo-v1:${deletedFileName}`,
           ) === null,
-        { deletedFileName: generatedFileName, requestedFileName: defaultFileName },
+        {
+          deletedFileName: generatedFileName,
+          requestedFileName: defaultFileName,
+          expectedCount: bundledLevelCount,
+        },
       );
       await waitForWorkbench(page);
       const returnedToDefault = await page.evaluate(
@@ -868,7 +935,7 @@ async function recordEditor() {
       assert.deepEqual(deletion, {
         deletedFromStorage: true,
         absentFromCatalog: true,
-        referenceCountAfterDelete: 30,
+        referenceCountAfterDelete: bundledLevelCount,
       });
       proof.actions.persistence = {
         savedProperty: savedPosition.x,

@@ -8,9 +8,17 @@ import { scoreLevelDifficulty } from "./level-difficulty.mjs";
 import { XorShift } from "./xorshift.mjs";
 
 const TILE_SIZE = 8;
-const ALGORITHM_VERSION = "paws-local-stat-v4-no-same-layer-overlap";
+const ALGORITHM_VERSION = "paws-local-stat-v7-bounded-geometry";
 const AI_BOARD = Object.freeze({ width: 7, height: 8 });
 const AI_GRID_UNIT = "sheep_7x8_mini8";
+export const MAX_AVERAGE_BLOCKERS = 4;
+export const MAX_DEEP_LEVEL_AVERAGE_BLOCKERS = 6;
+
+export function maxAverageBlockersForLayers(layerCount) {
+  return Number(layerCount) > 15
+    ? MAX_DEEP_LEVEL_AVERAGE_BLOCKERS
+    : MAX_AVERAGE_BLOCKERS;
+}
 
 export const DIFFICULTY_PROFILES = Object.freeze({
   easy: Object.freeze({
@@ -373,6 +381,7 @@ function chooseLayerPairs({
             : -extraBlockers * 600;
         return {
           candidate,
+          extraBlockers,
           score:
             overlapScore
             + supportedLowerPairs * 1000
@@ -384,7 +393,9 @@ function chooseLayerPairs({
     if (ranked.some(({ score }) => !Number.isFinite(score))) {
       throw new Error(`第 ${layer} 层候选评分不是有限数。`);
     }
-    ranked.sort((left, right) => right.score - left.score);
+    ranked.sort((left, right) =>
+      left.extraBlockers - right.extraBlockers
+      || right.score - left.score);
     const chosen = ranked[0]?.candidate;
     if (!chosen) {
       throw new Error(
@@ -407,6 +418,126 @@ function chooseLayerPairs({
     }
   }
   return selected;
+}
+
+function buildLayerAnchorPool(board, layer) {
+  const maxX = board.width * TILE_SIZE - TILE_SIZE;
+  const maxY = board.height * TILE_SIZE - TILE_SIZE;
+  const offset = [0, 2, 4, 6][(layer - 1) % 4];
+  const anchors = [];
+  for (let x = offset; x <= maxX; x += TILE_SIZE) {
+    for (let y = offset; y <= maxY; y += TILE_SIZE) {
+      anchors.push({ x, y });
+    }
+  }
+  return anchors;
+}
+
+function optimizeTileGeometry(sourceTiles, board, rng) {
+  const tiles = sourceTiles.map((tile) => ({ ...tile }));
+  const pools = new Map(
+    [...new Set(tiles.map(({ layer }) => layer))]
+      .map((layer) => [layer, buildLayerAnchorPool(board, layer)]),
+  );
+  const layerPositions = new Map();
+  const anchorUses = new Map();
+  for (const tile of tiles) {
+    const position = `${tile.x}|${tile.y}`;
+    if (!layerPositions.has(tile.layer)) layerPositions.set(tile.layer, new Set());
+    layerPositions.get(tile.layer).add(position);
+    anchorUses.set(position, (anchorUses.get(position) ?? 0) + 1);
+  }
+  const blockerCounts = tiles.map((tile) =>
+    tiles.filter((candidate) =>
+      candidate.layer > tile.layer && overlaps(tile, candidate)).length);
+  let blockerTotal = blockerCounts.reduce((total, count) => total + count, 0);
+  let blockedTiles = blockerCounts.filter((count) => count > 0).length;
+  let bestAverage = blockedTiles ? blockerTotal / blockedTiles : 0;
+  let bestCoordinates = tiles.map(({ x, y }) => ({ x, y }));
+
+  const attemptMove = (objective, temperature) => {
+    const index = rng.nextInt(0, tiles.length);
+    const tile = tiles[index];
+    const pool = pools.get(tile.layer);
+    const candidate = pool[rng.nextInt(0, pool.length)];
+    const oldPosition = `${tile.x}|${tile.y}`;
+    const newPosition = `${candidate.x}|${candidate.y}`;
+    if (oldPosition === newPosition) return;
+    if (layerPositions.get(tile.layer).has(newPosition)) return;
+    if ((anchorUses.get(newPosition) ?? 0) >= 2) return;
+
+    const changes = new Map();
+    changes.set(index, tiles.filter((other) =>
+      other.layer > tile.layer && overlaps(candidate, other)).length);
+    for (let lowerIndex = 0; lowerIndex < tiles.length; lowerIndex += 1) {
+      const lower = tiles[lowerIndex];
+      if (lower.layer >= tile.layer) continue;
+      const oldHit = overlaps(lower, tile);
+      const newHit = overlaps(lower, candidate);
+      if (oldHit === newHit) continue;
+      changes.set(
+        lowerIndex,
+        blockerCounts[lowerIndex] - Number(oldHit) + Number(newHit),
+      );
+    }
+
+    let nextTotal = blockerTotal;
+    let nextBlocked = blockedTiles;
+    for (const [changedIndex, nextCount] of changes) {
+      const previousCount = blockerCounts[changedIndex];
+      nextTotal += nextCount - previousCount;
+      nextBlocked += Number(nextCount > 0) - Number(previousCount > 0);
+    }
+    const currentValue = objective(blockerTotal, blockedTiles);
+    const nextValue = objective(nextTotal, nextBlocked);
+    const delta = nextValue - currentValue;
+    const accept = delta <= 0
+      || rng.nextUint32() / 0xffffffff < Math.exp(-delta / Math.max(temperature, 0.00001));
+    if (!accept) return;
+
+    layerPositions.get(tile.layer).delete(oldPosition);
+    layerPositions.get(tile.layer).add(newPosition);
+    anchorUses.set(oldPosition, (anchorUses.get(oldPosition) ?? 1) - 1);
+    anchorUses.set(newPosition, (anchorUses.get(newPosition) ?? 0) + 1);
+    tile.x = candidate.x;
+    tile.y = candidate.y;
+    for (const [changedIndex, nextCount] of changes) {
+      blockerCounts[changedIndex] = nextCount;
+    }
+    blockerTotal = nextTotal;
+    blockedTiles = nextBlocked;
+    const average = blockedTiles ? blockerTotal / blockedTiles : 0;
+    if (average < bestAverage) {
+      bestAverage = average;
+      bestCoordinates = tiles.map(({ x, y }) => ({ x, y }));
+    }
+  };
+
+  const runPhase = (iterations, startTemperature, endTemperature, objective) => {
+    for (let iteration = 0; iteration < iterations; iteration += 1) {
+      const progress = iterations > 1 ? iteration / (iterations - 1) : 1;
+      const temperature = startTemperature
+        * Math.pow(endTemperature / startTemperature, progress);
+      attemptMove(objective, temperature);
+    }
+  };
+
+  const deepLevel = pools.size > 15;
+  const workCappedBudget = Math.floor(36_000_000 / Math.max(1, tiles.length));
+  const iterationBudget = deepLevel
+    ? 30_000
+    : Math.min(180_000, Math.max(45_000, workCappedBudget));
+  const firstPhaseIterations = Math.round(iterationBudget * 4 / 9);
+  const secondPhaseIterations = iterationBudget - firstPhaseIterations;
+  runPhase(firstPhaseIterations, 8, 0.02, (total) => total);
+  runPhase(secondPhaseIterations, 0.15, 0.00005, (total, blocked) =>
+    blocked ? total / blocked : 0);
+
+  return tiles.map((tile, index) => ({
+    ...tile,
+    x: bestCoordinates[index].x,
+    y: bestCoordinates[index].y,
+  }));
 }
 
 function buildTiles({
@@ -459,7 +590,7 @@ function buildTiles({
       pairOrdinal += 1;
     }
   }
-  return placedTiles.sort((left, right) =>
+  return optimizeTileGeometry(placedTiles, board, rng).sort((left, right) =>
     left.layer - right.layer || left.y - right.y || left.x - right.x);
 }
 
@@ -550,10 +681,15 @@ function buildDocument({
     ...(clone(reference.designerNote) ?? {}),
     widthNum: board.width,
     heightNum: board.height,
+    levelKey: id,
+    gameLevelOrder: 1,
+    cdNum: 0,
+    showLayerNum: true,
     boardScale: board.scale,
     blockTypeCount: 32,
     fullRandomTypeMin: 1,
     fullRandomTypeMax: 32,
+    blockTypeData: {},
     levelData: {},
     goldBlockData: [],
     cakeNum: 0,
@@ -591,6 +727,12 @@ function buildDocument({
       blockTypeCount: 32,
       fullTypeMin: 1,
       fullTypeMax: 32,
+    },
+    gameplay: {
+      levelKey: id,
+      gameLevelOrder: 1,
+      cdNum: 0,
+      showLayerNum: true,
     },
     tiles,
   };
@@ -660,6 +802,7 @@ export function generateAiLevel({
       errors.length
       || statistics.overlapRatio > profile.maxOverlap
       || statistics.maxExactStackDepth > 2
+      || statistics.averageBlockers > maxAverageBlockersForLayers(target.layerCount)
       || statistics.initialAccessiblePairs < profile.minInitialPairs
     ) {
       continue;

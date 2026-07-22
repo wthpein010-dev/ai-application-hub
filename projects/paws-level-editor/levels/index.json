@@ -1,15 +1,6 @@
 {
-  "defaultFileName": "level_0020_r2_第二关模板12.json",
+  "defaultFileName": "level_0021_r2_第二关模板12.json",
   "levels": [
-    {
-      "id": 0,
-      "fileName": "level_0000_r1_第0关-翻转砖块测试.json",
-      "name": "第0关-翻转砖块测试",
-      "difficulty": "Normal",
-      "tileCount": 50,
-      "layerCount": 2,
-      "modifiedAt": "2026-07-20T00:00:00.000Z"
-    },
     {
       "id": 1,
       "fileName": "level_0001_第一关.json",
@@ -17,78 +8,6 @@
       "difficulty": "Normal",
       "tileCount": 22,
       "layerCount": 3,
-      "modifiedAt": "2026-07-20T00:00:00.000Z"
-    },
-    {
-      "id": 2,
-      "fileName": "level_0002_羊了个羊关卡编辑器_before_20260610_sync.json",
-      "name": "羊了个羊编辑器关卡",
-      "difficulty": "Normal",
-      "tileCount": 86,
-      "layerCount": 13,
-      "modifiedAt": "2026-07-20T00:00:00.000Z"
-    },
-    {
-      "id": 2,
-      "fileName": "level_0002_r2_暂定第二关.json",
-      "name": "暂定第二关",
-      "difficulty": "Normal",
-      "tileCount": 112,
-      "layerCount": 13,
-      "modifiedAt": "2026-07-20T00:00:00.000Z"
-    },
-    {
-      "id": 3,
-      "fileName": "level_0003_r2_羊了个羊关卡编辑器.json",
-      "name": "羊了个羊关卡编辑器",
-      "difficulty": "Normal",
-      "tileCount": 126,
-      "layerCount": 14,
-      "modifiedAt": "2026-07-20T00:00:00.000Z"
-    },
-    {
-      "id": 5,
-      "fileName": "level_0005_羊了个羊关卡编辑器.json",
-      "name": "羊了个羊编辑器关卡",
-      "difficulty": "Normal",
-      "tileCount": 192,
-      "layerCount": 100,
-      "modifiedAt": "2026-07-20T00:00:00.000Z"
-    },
-    {
-      "id": 6,
-      "fileName": "level_0006_羊了个羊关卡编辑器.json",
-      "name": "羊了个羊关卡编辑器关卡6",
-      "difficulty": "Normal",
-      "tileCount": 248,
-      "layerCount": 17,
-      "modifiedAt": "2026-07-20T00:00:00.000Z"
-    },
-    {
-      "id": 7,
-      "fileName": "level_0007_羊了个羊关卡编辑器.json",
-      "name": "羊了个羊关卡编辑器关卡7",
-      "difficulty": "Normal",
-      "tileCount": 266,
-      "layerCount": 31,
-      "modifiedAt": "2026-07-20T00:00:00.000Z"
-    },
-    {
-      "id": 8,
-      "fileName": "level_0008_r1_羊了个羊编辑器关卡.json",
-      "name": "羊了个羊编辑器关卡",
-      "difficulty": "Normal",
-      "tileCount": 260,
-      "layerCount": 29,
-      "modifiedAt": "2026-07-20T00:00:00.000Z"
-    },
-    {
-      "id": 9,
-      "fileName": "level_0009_羊了个羊关卡编辑器.json",
-      "name": "羊了个羊编辑器关卡",
-      "difficulty": "Normal",
-      "tileCount": 388,
-      "layerCount": 34,
       "modifiedAt": "2026-07-20T00:00:00.000Z"
     },
     {
@@ -129,7 +48,7 @@
     },
     {
       "id": 14,
-      "fileName": "level_0014_新关卡第一关模板6.json",
+      "fileName": "level_0014_r1_新关卡第一关模板6.json",
       "name": "新关卡第一关模板6",
       "difficulty": "Normal",
       "tileCount": 24,
@@ -138,20 +57,11 @@
     },
     {
       "id": 15,
-      "fileName": "level_0015_第一关模板7.json",
+      "fileName": "level_0015_r1_第一关模板7.json",
       "name": "第一关模板7",
       "difficulty": "Normal",
       "tileCount": 24,
       "layerCount": 2,
-      "modifiedAt": "2026-07-20T00:00:00.000Z"
-    },
-    {
-      "id": 16,
-      "fileName": "level_0016_16第一关模板8.json",
-      "name": "16第一关模板8",
-      "difficulty": "Normal",
-      "tileCount": 24,
-      "layerCount": 3,
       "modifiedAt": "2026-07-20T00:00:00.000Z"
     },
     {
@@ -165,11 +75,11 @@
     },
     {
       "id": 20,
-      "fileName": "level_0020_r2_第二关模板12.json",
-      "name": "第二关模板12",
+      "fileName": "level_0020_r2_第二关模板1.json",
+      "name": "第二关模板1",
       "difficulty": "Normal",
-      "tileCount": 198,
-      "layerCount": 17,
+      "tileCount": 316,
+      "layerCount": 34,
       "modifiedAt": "2026-07-20T00:00:00.000Z"
     },
     {
@@ -183,11 +93,11 @@
     },
     {
       "id": 21,
-      "fileName": "level_0021_r2_第二关模板1.json",
-      "name": "第二关模板1",
+      "fileName": "level_0021_r2_第二关模板12.json",
+      "name": "第二关模板12",
       "difficulty": "Normal",
-      "tileCount": 316,
-      "layerCount": 34,
+      "tileCount": 198,
+      "layerCount": 17,
       "modifiedAt": "2026-07-20T00:00:00.000Z"
     },
     {
@@ -218,15 +128,6 @@
       "modifiedAt": "2026-07-20T00:00:00.000Z"
     },
     {
-      "id": 27,
-      "fileName": "level_0027_r2_27.json",
-      "name": "27",
-      "difficulty": "Normal",
-      "tileCount": 170,
-      "layerCount": 17,
-      "modifiedAt": "2026-07-20T00:00:00.000Z"
-    },
-    {
       "id": 28,
       "fileName": "level_0028_r2_28Video Layout Full Random Sample.json",
       "name": "28Video Layout Full Random Sample",
@@ -245,21 +146,39 @@
       "modifiedAt": "2026-07-20T00:00:00.000Z"
     },
     {
-      "id": 31,
-      "fileName": "level_0031_r1_第一关新模板.json",
-      "name": "第一关新模板",
+      "id": 33,
+      "fileName": "level_0033_r2_33第二关模板13.json",
+      "name": "33第二关模板13",
       "difficulty": "Normal",
-      "tileCount": 15,
-      "layerCount": 3,
+      "tileCount": 256,
+      "layerCount": 20,
       "modifiedAt": "2026-07-20T00:00:00.000Z"
     },
     {
-      "id": 32,
-      "fileName": "level_0032_r1_32第一关模板.json",
-      "name": "32第一关模板",
+      "id": 35,
+      "fileName": "level_0035_r2_35 第二关模板15.json",
+      "name": "35 第二关模板15",
       "difficulty": "Normal",
-      "tileCount": 18,
-      "layerCount": 3,
+      "tileCount": 134,
+      "layerCount": 15,
+      "modifiedAt": "2026-07-20T00:00:00.000Z"
+    },
+    {
+      "id": 37,
+      "fileName": "level_0037_r2_37 第二关 37第二关模板17.json",
+      "name": "37 第二关 37第二关模板17",
+      "difficulty": "Normal",
+      "tileCount": 222,
+      "layerCount": 17,
+      "modifiedAt": "2026-07-20T00:00:00.000Z"
+    },
+    {
+      "id": 39,
+      "fileName": "level_0039_r2_39第二关模板18.json",
+      "name": "39第二关模板18",
+      "difficulty": "Normal",
+      "tileCount": 206,
+      "layerCount": 24,
       "modifiedAt": "2026-07-20T00:00:00.000Z"
     },
     {
@@ -267,8 +186,17 @@
       "fileName": "level_0050_r2_50 第二关第一版.json",
       "name": "50 第二关第一版",
       "difficulty": "Normal",
-      "tileCount": 186,
+      "tileCount": 206,
       "layerCount": 42,
+      "modifiedAt": "2026-07-20T00:00:00.000Z"
+    },
+    {
+      "id": 51,
+      "fileName": "level_0051_r2_51第二关.json",
+      "name": "51第二关",
+      "difficulty": "Normal",
+      "tileCount": 172,
+      "layerCount": 44,
       "modifiedAt": "2026-07-20T00:00:00.000Z"
     }
   ]

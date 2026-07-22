@@ -1,40 +1,40 @@
 {
   "schemaVersion": 1,
-  "recordedAt": "2026-07-22T05:35:06.391Z",
+  "recordedAt": "2026-07-22T08:19:02.230Z",
   "recording": {
     "browser": "system Chrome",
-    "preRollMs": 1094,
-    "completedAt": "2026-07-22T05:36:34.392Z",
-    "durationMs": 88001
+    "preRollMs": 905,
+    "completedAt": "2026-07-22T08:20:30.236Z",
+    "durationMs": 88006
   },
   "timeline": {
     "tools": 0,
-    "edit2d": 12004,
-    "view3d": 32010,
-    "play": 50005,
-    "persistence": 70007
+    "edit2d": 12014,
+    "view3d": 32014,
+    "play": 50006,
+    "persistence": 70003
   },
   "actions": {
     "metadata": {
-      "cardText": "第二关模板12#0020level_0020_r2_第二关模板12.json198 tiles07/20",
-      "fileName": "level_0020_r2_第二关模板12.json",
-      "levelId": 20,
+      "cardText": "第二关模板12#0021level_0021_r2_第二关模板12.json198 tiles07/20",
+      "fileName": "level_0021_r2_第二关模板12.json",
+      "levelId": 21,
       "modifiedAt": "2026-07-20T00:00:00.000Z"
     },
     "aiGeneration": {
-      "fileName": "ai_level_3766108509.json",
+      "fileName": "ai_level_3279781183.json",
       "reference": "all",
       "solvable": true,
       "tileCount": 200,
       "layerCount": 15,
       "targetScore": 60,
-      "actualScore": 60,
+      "actualScore": 61,
       "rating": "困难入门",
       "dimensions": {
-        "structure": 83,
-        "information": 46,
-        "choice": 55,
-        "route": 59,
+        "structure": 84,
+        "information": 67,
+        "choice": 52,
+        "route": 54,
         "endurance": 45
       },
       "board": {
@@ -49,7 +49,7 @@
       "coordinatesInBounds": true,
       "source": "ai",
       "aiReferenceEligible": false,
-      "referenceCount": 30,
+      "referenceCount": 22,
       "sameLayerOverlapPairs": 0,
       "totalEven": true,
       "globalTypesEven": true,
@@ -61,11 +61,11 @@
         "selectedBefore": "tile-195",
         "selectedAfter": "tile-195",
         "before": {
-          "x": 12,
-          "y": 12
+          "x": 4,
+          "y": 4
         },
         "after": {
-          "x": 4,
+          "x": 12,
           "y": 4
         }
       },
@@ -89,32 +89,60 @@
     "edit3d": {
       "cameraBefore": {
         "position": [
-          7.2,
-          11.48,
-          9.2
+          1.4175700417596921,
+          1.3567331085742795,
+          -3.5
         ],
         "target": [
-          0,
-          1.0779999999999998,
-          0
+          -2,
+          0.3177918158793329,
+          -3.5
         ]
       },
       "cameraAfter": {
         "position": [
-          -2.063833622112675,
-          2.6266141303543464,
-          -15.428026090705975
+          -5.4192649359308644,
+          0.5420795516380388,
+          -4.508715177590631
         ],
         "target": [
-          0,
-          1.0779999999999998,
-          0
+          -2,
+          0.3177918158793329,
+          -3.5
         ]
       },
-      "selectedBefore": "tile-web-1784698524001-2",
-      "selectedAfter": "tile-177",
+      "inspection": {
+        "cameraPresets": {
+          "iso": [
+            10.623600000000001,
+            12.009599999999997,
+            14.755000000000003
+          ],
+          "top": [
+            0,
+            21.30525,
+            0.0009999999975258543
+          ],
+          "front": [
+            0,
+            6.992900000000001,
+            18.443749999999998
+          ],
+          "side": [
+            18.443749999999998,
+            6.992900000000001,
+            1.1293539700886997e-15
+          ]
+        },
+        "relationEdges": 6,
+        "relationLines": 1,
+        "explodedDelta": 2.3099999999999996,
+        "focusDistance": 0
+      },
+      "selectedBefore": "",
+      "selectedAfter": "tile-1",
       "deleteUndo": {
-        "uid": "tile-177",
+        "uid": "tile-1",
         "deletedCount": 201,
         "restoredCount": 202,
         "restored": true
@@ -126,30 +154,30 @@
     },
     "play3d": {
       "selectedBefore": "",
-      "selectedAfter": "tile-179"
+      "selectedAfter": "tile-168"
     },
     "export": {
-      "fileName": "ai_level_3766108509.json",
+      "fileName": "ai_level_3279781183.json",
       "gridUnit": "sheep_7x8_mini8",
       "tileCount": 202
     },
     "persistence": {
-      "savedProperty": 4,
+      "savedProperty": 12,
       "savedPosition": {
-        "x": 4,
+        "x": 12,
         "y": 4
       },
       "savedToLocalStorage": true,
-      "reloadedProperty": 4,
+      "reloadedProperty": 12,
       "reloadedPosition": {
-        "x": 4,
+        "x": 12,
         "y": 4
       },
       "localCopyPreserved": true,
       "returnedToDefault": true,
       "deletedFromStorage": true,
       "absentFromCatalog": true,
-      "referenceCountAfterDelete": 30
+      "referenceCountAfterDelete": 22
     }
   },
   "errors": {
@@ -158,32 +186,35 @@
   },
   "media": {
     "file": "paws-level-editor-tutorial.mp4",
-    "sha256": "28a9d7325a263d2d81ccd733109ae3490842ea355c2833c4cdd311e3aa1b6a95"
+    "sha256": "b57a80715ddd96063fbb4e1925b798a9ddd8293794590b263d4a5236a1655b88"
   },
   "sources": {
-    "projects/paws-level-editor/index.html": "4bc865a036e4f947edda28e1ff04298f4820298ecf193632d5c64efd233bc9b1",
-    "projects/paws-level-editor/styles.css": "4c2e87372356aed2fcebccba8a4acc712ef3274736b20750e47500862a7711b9",
+    "projects/paws-level-editor/index.html": "b3ffe4fb74ee14f80a30530e3289ab51296812e482bca2ef61171d9a1a977c3d",
+    "projects/paws-level-editor/styles.css": "931ad59eaca5f5c66775bc77daa24f70569ee31482dcf258859dc5d460b69825",
     "projects/paws-level-editor/app.mjs": "550278401cebcf10ebb91159d70ca9698340c38261817da2dceb7bdaa5ac9dbf",
     "projects/paws-level-editor/static-api-client.mjs": "ed373714623928c3f2edfe8b378b8f4a0abdfac1197c88a1c6976e08a6a452c6",
-    "projects/paws-level-editor/core/ai-level-generator.mjs": "ee45034272fb3c175d4f958e987f1aaa5236acf2c46bdfedd6eb9d701f77ad1d",
+    "projects/paws-level-editor/core/ai-level-generator.mjs": "eb50862026dcc1a0c523fb1eaf1ee758472617848adca4a8938eeae5ae9c22c1",
     "projects/paws-level-editor/core/editor-geometry.mjs": "4e718a15f0fb67959ecd22d7a8a4ebcc14c4aa5f224f5f1887937626e29f1f91",
+    "projects/paws-level-editor/core/gameplay-metadata.mjs": "5d8fa3d35d252e7ef824ae5c2c40dc329c06d2e6f2ce856a1ed4bf6ec2f284ff",
+    "projects/paws-level-editor/core/level-adapter.mjs": "4dc3645422db52049cecba3dfdc43c77daeea5dfec341a98e276efed74b6d42a",
     "projects/paws-level-editor/core/level-difficulty.mjs": "854ee69d136586c19493d18f1bcc308c7cc3bbca0a1a77e8483cf082516b0444",
     "projects/paws-level-editor/core/level-solver.mjs": "95a97b42973db91aaf118326b0bbf83bfda24168ff36fb5bc9b4b7703cd6c248",
     "projects/paws-level-editor/core/level-statistics.mjs": "e48189c09151890d234eee1e2733eb474d44f55ff1d9c31db616124896d8c653",
-    "projects/paws-level-editor/core/level-validator.mjs": "e42a3565bcb22d743972b9327d7166cf7538183757034f1d8f9556d2f4fe844b",
+    "projects/paws-level-editor/core/level-validator.mjs": "985bb657d171cb2514c50ff30ead45583303961887c9d08f89f7c18fa8490c28",
+    "projects/paws-level-editor/core/tile-relations.mjs": "75bf4ef64e5e7615b8936f3b7d727139cbbfcf016a8f902e6c5f58bfe5f59c57",
     "projects/paws-level-editor/core/view-model.mjs": "2d30adb8cab74cee2d315513de380e424d6c3a3f5a01ffe97f024b5624f50805",
     "projects/paws-level-editor/ui/ai-level-dialog.mjs": "4b9edeb251049f53b7d39c36db582fa840236ebfc7446a2410a80693afc57274",
     "projects/paws-level-editor/ui/editor-shortcuts.mjs": "6dd75fb89a98e46450fee11bb35088a5ac941bf40665f000a5a95918df102bca",
-    "projects/paws-level-editor/ui/inspector.mjs": "2971ca1187460002a52936600a5a4f4f777d66c09b20bdd9cdc5411082e5e5da",
+    "projects/paws-level-editor/ui/inspector.mjs": "e5f8ecea09fd8a6c723df7503e5ab63f9c2865c08604d88e48e33aed3835c127",
     "projects/paws-level-editor/ui/level-export.mjs": "44296631912418a227c9c01d701def1d3a71af75875dd9c3b50ba2f273f3493c",
     "projects/paws-level-editor/ui/local-level-import.mjs": "651987b8d3c1ca4293218bb1289f48c6c706ce2ba502e0960e5ae02a6883d8e9",
     "projects/paws-level-editor/ui/level-summary.mjs": "f7876ba36caaef6ac9123f98680aad02a65e5134f6ec1486f306e17f359b4713",
-    "projects/paws-level-editor/ui/workbench-controller.mjs": "aa616c549b71088097bdbeb3533e1f10f011310441533b52618f5ea679ee96a4",
+    "projects/paws-level-editor/ui/workbench-controller.mjs": "9f3691cc6712bd809aec146e131e78d0a368409706081f1dc9a50fac35d71686",
     "projects/paws-level-editor/views/canvas-2d.mjs": "e0ccc747b8b7eff08247dcb771d34069ff3c4ee3bf8c2de6c945ef845cb202d2",
-    "projects/paws-level-editor/views/three-3d.mjs": "a8fb85449d9186ca58623d7b9c45588a4ad4dc9f3e25f320026a54ab1373abee",
-    "projects/paws-level-editor/levels/index.json": "9192f432ae94035e5e4a8914218680d6500f282cc2bc29a8885f93ad39e13696",
-    "projects/paws-level-editor/levels/level_0020_r2_第二关模板12.json": "c60a1d78a6afe1e1078d944edb2b465f3b39da6121f8d8c08e3efbbf1f558dbd",
-    "scripts/record-paws-level-editor-demo.mjs": "669ab1b92983a33750db15da2af4a19937147f8504d53c4136096afdfbffc10c",
+    "projects/paws-level-editor/views/three-3d.mjs": "0e91373eab98fd25a6a32e158165169ecb46b59d453b14b54307dd0aeb009abd",
+    "projects/paws-level-editor/levels/index.json": "e994f86905608597d7731375205ae90488feb3e8de27988f23d618b6167f4249",
+    "projects/paws-level-editor/levels/level_0021_r2_第二关模板12.json": "596989213e96fb9ae83d0cbaf8eea7f7d0cda113c24506c36eda7500eeb28725",
+    "scripts/record-paws-level-editor-demo.mjs": "b4332b699dfe7ddb42f1f292373694933044882d5c9f0feaec08e5cbcff2736f",
     "scripts/paws-recording-support.mjs": "e5d2b2f02b67798c90d080a3202b97ecce50ffd738e31fc374d751ad18ae79c2"
   }
 }

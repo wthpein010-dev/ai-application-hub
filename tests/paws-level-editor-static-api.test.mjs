@@ -14,7 +14,7 @@ const { createApiClient } = staticApi;
 
 const root = dirname(dirname(fileURLToPath(import.meta.url)));
 const levelsPath = join(root, "projects", "paws-level-editor", "levels");
-const defaultFileName = "level_0020_r2_第二关模板12.json";
+const defaultFileName = "level_0021_r2_第二关模板12.json";
 
 function createStorage() {
   const values = new Map();
@@ -80,7 +80,7 @@ test("lists the catalog and loads the requested bundled default", async () => {
 
   const catalog = await api.listLevelCatalog();
   assert.equal(catalog.defaultFileName, defaultFileName);
-  assert.equal(catalog.levels.length, 30);
+  assert.equal(catalog.levels.length, 22);
   assert.equal(catalog.levels.some(({ fileName }) => fileName === defaultFileName), true);
   assert.deepEqual(await api.listLevels(), catalog.levels);
   assert.equal((await api.loadLevel(defaultFileName)).value.name, "第二关模板12");

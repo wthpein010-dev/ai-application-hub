@@ -10,7 +10,8 @@ const require = createRequire(import.meta.url);
 const { chromium } = require("playwright");
 const repoRoot = dirname(dirname(fileURLToPath(import.meta.url)));
 const artifactsRoot = join(repoRoot, "tests", "artifacts");
-const requestedDefault = "level_0020_r2_第二关模板12.json";
+const requestedDefault = "level_0021_r2_第二关模板12.json";
+const bundledLevelCount = 22;
 const baseUrlIndex = process.argv.indexOf("--base-url");
 const externalBaseUrl = baseUrlIndex >= 0
   ? process.argv[baseUrlIndex + 1]?.replace(/\/+$/, "")
@@ -136,15 +137,15 @@ try {
     const controller = window.pawsWorkbench;
     return controller?.document?.fileName === fileName && controller?.renderer;
   }, requestedDefault);
-  assert.equal(await page.locator('[role="option"]').count(), 30);
-  assert.equal(await page.locator("#level-count").textContent(), "30");
+  assert.equal(await page.locator('[role="option"]').count(), bundledLevelCount);
+  assert.equal(await page.locator("#level-count").textContent(), String(bundledLevelCount));
   assert.equal(
     await page.locator('[role="option"][aria-selected="true"] .level-file').textContent(),
     requestedDefault,
   );
   assert.equal((await page.locator("#status-level").textContent())?.trim(), "第二关模板12");
 
-  for (const query of ["第二关模板12", "level_0027_r2_27.json"]) {
+  for (const query of ["第二关模板12", "level_0051_r2_51第二关.json"]) {
     await page.locator("#level-search").fill(query);
     assert.equal(
       await page.locator('[role="option"]').count(),
@@ -153,7 +154,7 @@ try {
     );
   }
   await page.locator("#level-search").fill("");
-  assert.equal(await page.locator('[role="option"]').count(), 30);
+  assert.equal(await page.locator('[role="option"]').count(), bundledLevelCount);
 
   const onlineResources = await page.evaluate(async (fileName) => {
     const responses = await Promise.all([
@@ -253,7 +254,11 @@ try {
   assert.equal(generated.generation.report.steps, generated.tiles / 2);
   assert.equal(generated.generation.report.statistics.effectiveLayerCount, 15);
   assert.equal(generated.generation.report.statistics.initialAccessiblePairs, 3);
-  assert.equal(generated.generation.report.statistics.averageBlockers <= 4, true);
+  assert.equal(
+    generated.generation.report.statistics.averageBlockers <= 4,
+    true,
+    "standard AI levels must reject excessive average blockers instead of saturating scoring",
+  );
   assert.equal(generated.generation.report.difficulty.valid, true);
   assert.equal(generated.generation.report.difficulty.releaseGate, "pass");
   assert.equal(
@@ -263,7 +268,7 @@ try {
   assert.equal(
     await page.evaluate(async () =>
       (await window.pawsWorkbench.loadAiReferenceDocuments()).length),
-    30,
+    bundledLevelCount,
     "AI-generated results must not feed the all-level learning set",
   );
   assert.deepEqual(
@@ -271,7 +276,7 @@ try {
     ["structure", "information", "choice", "route", "endurance"],
   );
   assert.match(await page.locator("#status-difficulty").textContent(), /^\d+ · /);
-  assert.equal(await page.locator('[role="option"]').count(), 31);
+  assert.equal(await page.locator('[role="option"]').count(), bundledLevelCount + 1);
   await waitForNetworkAndTextures(page);
 
   await page.locator("#view-3d").click();
@@ -317,7 +322,8 @@ try {
   await waitForNetworkAndTextures(page);
 
   await page.reload({ waitUntil: "networkidle" });
-  await page.waitForFunction(() => window.pawsWorkbench?.levels?.length === 31);
+  await page.waitForFunction((expectedCount) =>
+    window.pawsWorkbench?.levels?.length === expectedCount, bundledLevelCount + 1);
   assert.equal(
     await page.locator('[role="option"] .level-file').allTextContents()
       .then((names) => names.includes(generated.fileName)),
@@ -337,18 +343,58 @@ try {
   assert.equal(await page.locator("#delete-local-level").isEnabled(), true);
   page.once("dialog", (dialog) => dialog.accept());
   await page.locator("#delete-local-level").click();
-  await page.waitForFunction(({ fileName, fallback }) =>
+  await page.waitForFunction(({ fileName, fallback, expectedCount }) =>
     window.pawsWorkbench?.document?.fileName === fallback
-    && window.pawsWorkbench?.levels?.length === 30
+    && window.pawsWorkbench?.levels?.length === expectedCount
     && localStorage.getItem(`paws-level-editor-demo-v1:${fileName}`) === null,
-  { fileName: generated.fileName, fallback: requestedDefault });
+  { fileName: generated.fileName, fallback: requestedDefault, expectedCount: bundledLevelCount });
+
+  await page.locator("#generate-ai-level").click();
+  await page.locator("#ai-level-dialog").waitFor({ state: "visible" });
+  await page.locator('input[name="ai-difficulty"][value="hard"]').check();
+  assert.equal(await page.locator('input[name="ai-tile-count"]').inputValue(), "240");
+  assert.equal(await page.locator('input[name="ai-layer-count"]').inputValue(), "32");
+  assert.equal(await page.locator('input[name="ai-target-score"]').inputValue(), "80");
+  const hardGenerationStartedAt = Date.now();
+  await page.locator("#confirm-ai-level").click();
+  await page.waitForFunction(() => {
+    const controller = window.pawsWorkbench;
+    return (
+      !controller?.aiGenerationPending
+      && controller?.lastAiGeneration?.options?.difficulty === "hard"
+      && controller?.document?.fileName === controller.lastAiGeneration.fileName
+    );
+  });
+  const hardGenerationMs = Date.now() - hardGenerationStartedAt;
+  const hardGenerated = await page.evaluate(() => ({
+    fileName: window.pawsWorkbench.document.fileName,
+    tiles: window.pawsWorkbench.document.tiles.length,
+    layers: Math.max(...window.pawsWorkbench.document.tiles.map(({ layer }) => layer)),
+    solvable: window.pawsWorkbench.lastAiGeneration.report.solvable,
+  }));
+  assert.deepEqual(
+    { tiles: hardGenerated.tiles, layers: hardGenerated.layers, solvable: hardGenerated.solvable },
+    { tiles: 240, layers: 32, solvable: true },
+  );
+  assert.equal(
+    hardGenerationMs < 5_000,
+    true,
+    `hard 240/32 browser generation took ${hardGenerationMs}ms (limit 5000ms)`,
+  );
+  page.once("dialog", (dialog) => dialog.accept());
+  await page.locator("#delete-local-level").click();
+  await page.waitForFunction(({ fileName, fallback, expectedCount }) =>
+    window.pawsWorkbench?.document?.fileName === fallback
+    && window.pawsWorkbench?.levels?.length === expectedCount
+    && localStorage.getItem(`paws-level-editor-demo-v1:${fileName}`) === null,
+  { fileName: hardGenerated.fileName, fallback: requestedDefault, expectedCount: bundledLevelCount });
 
   for (const [kind, entries] of Object.entries(errors)) {
     assert.deepEqual(entries, [], `${kind} errors:\n${entries.join("\n")}`);
   }
   const proof = {
     environment: externalBaseUrl ? "online" : "local",
-    catalogCount: 30,
+    catalogCount: bundledLevelCount,
     defaultFileName: requestedDefault,
     generatedFileName: generated.fileName,
     generatedTileCount: generated.tiles,
@@ -360,6 +406,7 @@ try {
     generatedDifficultyDimensions: generated.generation.report.difficulty.dimensions,
     generatedInitialPairs: generated.generation.report.statistics.initialAccessiblePairs,
     generatedAverageBlockers: generated.generation.report.statistics.averageBlockers,
+    hardGenerationMs,
     solverSteps: generated.generation.report.steps,
     solverNodes: generated.generation.report.nodes,
     completedInPlay: completed.won,

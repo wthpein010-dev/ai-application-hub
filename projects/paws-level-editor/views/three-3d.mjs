@@ -3,6 +3,10 @@ import { OrbitControls } from "../vendor/OrbitControls.js";
 
 import { GAMEPLAY_ASSETS } from "../core/gameplay-assets.mjs";
 import {
+  analyzeTileRelations,
+  buildIssueSeverityByUid,
+} from "../core/tile-relations.mjs";
+import {
   buildRenderTiles,
   computeRenderBounds,
   deriveDisplayTiles,
@@ -62,6 +66,18 @@ function makeBlockTexture(image, { blockBackground, lockMask, blocked = false, f
   return texture;
 }
 
+const RELATION_COLORS = Object.freeze({
+  "upper-blocker": 0xff9c48,
+  "lower-dependent": 0x4fb3ff,
+  "side-blocker": 0xb784ff,
+});
+
+const RELATION_PRIORITY = Object.freeze({
+  "lower-dependent": 1,
+  "side-blocker": 2,
+  "upper-blocker": 3,
+});
+
 export class Three3DView {
   constructor({
     blockImageUrl,
@@ -75,7 +91,9 @@ export class Three3DView {
     this.mode = "edit";
     this.tool = "select";
     this.layerView = { mode: "all", layer: 1 };
+    this.layerSeparation = 0;
     this.selection = new Set();
+    this.issueSeverity = new Map();
     this.source = null;
     this.meshes = new Map();
     this.textures = new Map();
@@ -112,6 +130,8 @@ export class Three3DView {
 
     this.tileGroup = new THREE.Group();
     this.scene.add(this.tileGroup);
+    this.relationGroup = new THREE.Group();
+    this.scene.add(this.relationGroup);
     this.groundGeometry = new THREE.PlaneGeometry(60, 60);
     this.groundMaterial = new THREE.MeshBasicMaterial({
       color: srgbColor(0x47bd7f),
@@ -236,6 +256,22 @@ export class Three3DView {
   setLayerView(layerView) {
     this.layerView = { ...this.layerView, ...layerView };
     this.updateScene();
+  }
+
+  setLayerSeparation(value) {
+    this.layerSeparation = Math.max(0, Math.min(1, Number(value) || 0));
+    this.updateScene();
+  }
+
+  setIssues(issues) {
+    this.issueSeverity = buildIssueSeverityByUid(issues);
+    this.updateScene();
+  }
+
+  layerOffset(tile) {
+    return this.mode === "edit"
+      ? Math.max(0, Number(tile.layer) - 1) * this.layerSeparation * 0.22
+      : 0;
   }
 
   displaySource() {
@@ -383,7 +419,8 @@ export class Three3DView {
   }
 
   updateMesh(mesh, record) {
-    const baseY = record.worldY + 0.08;
+    const explodedOffset = this.layerOffset(record);
+    const baseY = record.worldY + explodedOffset + 0.08;
     mesh.position.set(record.worldX, baseY, record.worldZ);
     mesh.scale.set(record.width * 0.94, 1, record.depth * 0.94);
     mesh.userData.record = record;
@@ -394,19 +431,94 @@ export class Three3DView {
       top.map = texture;
       top.needsUpdate = true;
     }
-    top.color.setHex(record.blocked ? 0xc7c9ad : 0xffffff);
-    top.emissive.setHex(record.selected ? 0x6b5900 : record.sideBlocked ? 0x3a2105 : 0x000000);
-    top.emissiveIntensity = record.selected ? 0.62 : record.sideBlocked ? 0.25 : 0;
+    let color = record.blocked ? 0xc7c9ad : 0xffffff;
+    let emissive = record.sideBlocked ? 0x3a2105 : 0x000000;
+    let emissiveIntensity = record.sideBlocked ? 0.25 : 0;
+    if (this.mode === "edit" && record.relationType) {
+      color = RELATION_COLORS[record.relationType];
+      emissive = RELATION_COLORS[record.relationType];
+      emissiveIntensity = 0.18;
+    }
+    if (this.mode === "edit" && record.issueSeverity === "warning") {
+      color = 0xffd65a;
+      emissive = 0x7f5900;
+      emissiveIntensity = 0.32;
+    }
+    if (this.mode === "edit" && record.issueSeverity === "error") {
+      color = 0xff7474;
+      emissive = 0x8c0000;
+      emissiveIntensity = 0.42;
+    }
+    if (record.selected) {
+      color = 0xffffff;
+      emissive = 0x6b5900;
+      emissiveIntensity = 0.62;
+    }
+    top.color.setHex(color);
+    top.emissive.setHex(emissive);
+    top.emissiveIntensity = emissiveIntensity;
     mesh.renderOrder = record.selected ? 10 : 0;
+  }
+
+  clearRelationshipLines() {
+    if (!this.relationGroup) return;
+    for (const line of [...this.relationGroup.children]) {
+      line.geometry?.dispose();
+      line.material?.dispose();
+      this.relationGroup.remove(line);
+    }
+  }
+
+  updateRelationshipLines(edges) {
+    this.clearRelationshipLines();
+    if (this.mode !== "edit" || !edges.length) return;
+    const pointsByType = new Map();
+    for (const edge of edges) {
+      const source = this.meshes.get(edge.sourceUid);
+      const target = this.meshes.get(edge.targetUid);
+      if (!source || !target) continue;
+      const points = pointsByType.get(edge.type) ?? [];
+      points.push(
+        source.position.clone().add(new THREE.Vector3(0, 0.14, 0)),
+        target.position.clone().add(new THREE.Vector3(0, 0.14, 0)),
+      );
+      pointsByType.set(edge.type, points);
+    }
+    for (const [type, points] of pointsByType) {
+      if (!points.length) continue;
+      const geometry = new THREE.BufferGeometry().setFromPoints(points);
+      const material = new THREE.LineBasicMaterial({
+        color: RELATION_COLORS[type],
+        transparent: true,
+        opacity: 0.94,
+        depthTest: false,
+      });
+      const lines = new THREE.LineSegments(geometry, material);
+      lines.renderOrder = 30;
+      this.relationGroup.add(lines);
+    }
   }
 
   updateScene() {
     if (!this.scene || !this.source) {
       return;
     }
-    const renderTiles = buildRenderTiles(this.displaySource(), { blockImageUrl: this.blockImageUrl }).map(
+    const displaySource = this.displaySource();
+    const relations = this.mode === "edit"
+      ? analyzeTileRelations(displaySource?.tiles, this.selection)
+      : { edges: [], relatedUids: new Set() };
+    const relationTypes = new Map();
+    for (const edge of relations.edges) {
+      const previous = relationTypes.get(edge.targetUid);
+      if (!previous || RELATION_PRIORITY[edge.type] > RELATION_PRIORITY[previous]) {
+        relationTypes.set(edge.targetUid, edge.type);
+      }
+    }
+    const renderTiles = buildRenderTiles(displaySource, { blockImageUrl: this.blockImageUrl }).map(
       (record) => ({
         ...record,
+        issueSeverity: this.issueSeverity.get(record.uid) ?? null,
+        relationType: relationTypes.get(record.uid) ?? null,
         selected:
           this.mode === "play"
             ? record.uid === this.source.selectedTileUid
@@ -425,6 +537,7 @@ export class Three3DView {
       const mesh = this.meshes.get(record.uid) ?? this.createMesh(record);
       this.updateMesh(mesh, record);
     }
+    this.updateRelationshipLines(relations.edges);
     const bounds = computeRenderBounds(renderTiles);
     const trayRecords = renderTiles.filter((record) => record.location === "tray");
     this.trayMesh.visible = this.mode === "play";
@@ -444,12 +557,82 @@ export class Three3DView {
     const renderTiles = buildRenderTiles(this.displaySource(), { blockImageUrl: this.blockImageUrl });
     const bounds = computeRenderBounds(renderTiles);
     const size = Math.max(4, bounds.width, bounds.depth + (this.mode === "play" ? 3.4 : 0));
-    const maxY = Math.max(1, ...renderTiles.map((tile) => tile.worldY));
+    const maxY = Math.max(
+      1,
+      ...renderTiles.map((tile) => tile.worldY + this.layerOffset(tile)),
+    );
+    this.camera.up.set(0, 1, 0);
     this.controls.target.set(0, Math.min(maxY * 0.35, 2), this.mode === "play" ? 0.65 : 0);
     this.camera.position.set(size * 0.9, size * 1.05 + maxY, size * 1.15);
     this.camera.near = 0.1;
     this.camera.far = Math.max(100, size * 12);
     this.camera.updateProjectionMatrix();
+    this.controls.update();
+  }
+
+  cameraFrame() {
+    const renderTiles = buildRenderTiles(this.displaySource(), { blockImageUrl: this.blockImageUrl });
+    const bounds = computeRenderBounds(renderTiles);
+    const maxY = Math.max(
+      1,
+      ...renderTiles.map((tile) => tile.worldY + this.layerOffset(tile)),
+    );
+    const size = Math.max(4, bounds.width, bounds.depth, maxY * 0.8);
+    return {
+      distance: Math.max(6, size * 1.7 + maxY * 0.35),
+      maxY,
+      target: new THREE.Vector3(
+        (bounds.minX + bounds.maxX) / 2,
+        Math.min(maxY * 0.42, maxY - 0.1),
+        (bounds.minZ + bounds.maxZ) / 2,
+      ),
+    };
+  }
+
+  setCameraPreset(preset) {
+    if (!this.camera || !this.controls) return;
+    const normalized = ["iso", "top", "front", "side"].includes(preset)
+      ? preset
+      : "iso";
+    const { distance, target } = this.cameraFrame();
+    const offsets = {
+      iso: [distance * 0.72, distance * 0.72, distance],
+      top: [0, distance * 1.35, 0.001],
+      front: [0, distance * 0.38, distance * 1.25],
+      side: [distance * 1.25, distance * 0.38, 0],
+    };
+    this.camera.up.set(0, normalized === "top" ? 0 : 1, normalized === "top" ? -1 : 0);
+    this.controls.target.copy(target);
+    this.camera.position.copy(target).add(new THREE.Vector3(...offsets[normalized]));
+    this.camera.near = 0.1;
+    this.camera.far = Math.max(100, distance * 12);
+    this.camera.updateProjectionMatrix();
+    this.camera.lookAt(target);
+    this.controls.update();
+  }
+
+  focusSelection() {
+    if (!this.camera || !this.controls) return;
+    const selectedMeshes = [...this.selection]
+      .map((uid) => this.meshes.get(uid))
+      .filter(Boolean);
+    if (!selectedMeshes.length) {
+      this.fitCamera();
+      return;
+    }
+    const box = new THREE.Box3();
+    for (const mesh of selectedMeshes) {
+      box.expandByObject(mesh);
+    }
+    const center = box.getCenter(new THREE.Vector3());
+    const size = box.getSize(new THREE.Vector3());
+    const direction = this.camera.position.clone().sub(this.controls.target);
+    if (direction.lengthSq() < Number.EPSILON) direction.set(1, 1, 1);
+    direction.normalize();
+    const distance = Math.max(3, Math.max(size.x, size.y, size.z) * 3.8);
+    this.controls.target.copy(center);
+    this.camera.position.copy(center).addScaledVector(direction, distance);
+    this.camera.lookAt(center);
     this.controls.update();
   }
 
@@ -532,6 +715,7 @@ export class Three3DView {
     for (const mesh of this.meshes.values()) {
       mesh.userData.topMaterial.dispose();
     }
+    this.clearRelationshipLines();
     this.meshes.clear();
     this.geometry?.dispose();
     this.sideMaterial?.dispose();

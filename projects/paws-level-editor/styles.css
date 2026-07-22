@@ -649,6 +649,64 @@ select:disabled {
   display: none;
 }
 
+.three-only {
+  display: none;
+}
+
+[data-mode="edit"][data-view="3d"] .three-only {
+  display: flex;
+}
+
+.inspection-label,
+.layer-separation-control,
+.relationship-legend {
+  color: var(--muted-2);
+  font-size: 10px;
+}
+
+.layer-separation-control {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.layer-separation-control input {
+  width: 86px;
+  accent-color: var(--cyan);
+}
+
+.layer-separation-control output {
+  min-width: 28px;
+  color: var(--cyan);
+  font-family: var(--font-mono);
+}
+
+.relationship-legend {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  white-space: nowrap;
+}
+
+.relationship-legend i {
+  width: 8px;
+  height: 8px;
+  margin-left: 3px;
+  border-radius: 50%;
+}
+
+.relationship-legend .is-upper {
+  background: #ff9c48;
+}
+
+.relationship-legend .is-lower {
+  background: #4fb3ff;
+}
+
+.relationship-legend .is-side {
+  background: #b784ff;
+}
+
 [data-mode="play"] .play-only {
   display: flex;
 }

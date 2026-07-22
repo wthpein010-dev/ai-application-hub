@@ -48,6 +48,27 @@ export function validateLevel(document, {
     ));
   }
 
+  if (document?.gameplay) {
+    const levelKey = document.gameplay.levelKey;
+    const levelId = Number(document.id);
+    if (!Number.isInteger(levelKey)) {
+      issues.push(issue("error", "invalid-level-key", "Level Key 必须是整数。"));
+    } else if (levelKey !== levelId) {
+      issues.push(issue("warning", "level-key-mismatch", "Level Key 与关卡 ID 不一致，保存时会自动同步。"));
+    }
+    const gameLevelOrder = document.gameplay.gameLevelOrder;
+    if (!Number.isInteger(gameLevelOrder) || gameLevelOrder < 1) {
+      issues.push(issue("error", "invalid-game-level-order", "挑战回合必须是大于 0 的整数。"));
+    }
+    const cdNum = document.gameplay.cdNum;
+    if (!Number.isInteger(cdNum) || cdNum < 0) {
+      issues.push(issue("error", "invalid-cd-num", "限时秒数必须是不小于 0 的整数，0 表示不限时。"));
+    }
+    if (typeof document.gameplay.showLayerNum !== "boolean") {
+      issues.push(issue("error", "invalid-show-layer-num", "显示层数必须为布尔值。"));
+    }
+  }
+
   const parsedGridUnit = parseGridUnit(document?.gridUnit);
   if (
     !parsedGridUnit
