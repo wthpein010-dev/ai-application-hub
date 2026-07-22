@@ -327,6 +327,7 @@ export class WorkbenchController {
         ) ?? this.levels[0];
         await this.openLevel(level.fileName, {
           recoverable: level.recoverable,
+          sourceRefreshEpoch: refreshEpoch,
         });
       }
     } catch (error) {
@@ -385,7 +386,12 @@ export class WorkbenchController {
 
   async openLevel(
     fileName,
-    { discardDirty = false, recoverable = false, recoveryAttempted = false } = {},
+    {
+      discardDirty = false,
+      recoverable = false,
+      recoveryAttempted = false,
+      sourceRefreshEpoch = null,
+    } = {},
   ) {
     if (!discardDirty && this.isDirty() && !confirm("当前关卡有未保存修改，确定打开其他关卡吗？")) {
       return;
@@ -394,7 +400,9 @@ export class WorkbenchController {
       return;
     }
     const openEpoch = ++this.openLevelEpoch;
-    const isCurrentOpen = () => openEpoch === this.openLevelEpoch;
+    const isCurrentOpen = () =>
+      openEpoch === this.openLevelEpoch
+      && (sourceRefreshEpoch === null || sourceRefreshEpoch === this.refreshLevelsEpoch);
     if (recoverable) {
       try {
         await this.api.resetLevel(fileName);
@@ -474,6 +482,7 @@ export class WorkbenchController {
             return this.openLevel(fileName, {
               discardDirty: true,
               recoveryAttempted: true,
+              sourceRefreshEpoch,
             });
           } catch (resetError) {
             if (!isCurrentOpen()) return;

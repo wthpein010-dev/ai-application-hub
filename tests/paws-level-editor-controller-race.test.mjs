@@ -243,6 +243,130 @@ test("the latest catalog refresh wins when an older response resolves last", asy
   assert.deepEqual(controller.levels.map(({ fileName }) => fileName), ["new.json"]);
 });
 
+test("a default open owned by a stale refresh cannot commit across a newer refresh", async () => {
+  const oldCatalog = deferred();
+  const newCatalog = deferred();
+  const oldLevel = deferred();
+  const newLevel = deferred();
+  const loadRequests = [];
+  let catalogCallCount = 0;
+  const { controller, events } = controllerHarness({
+    listLevelCatalog() {
+      catalogCallCount += 1;
+      return catalogCallCount === 1 ? oldCatalog.promise : newCatalog.promise;
+    },
+    loadLevel(fileName) {
+      loadRequests.push(fileName);
+      return fileName === "old.json" ? oldLevel.promise : newLevel.promise;
+    },
+  });
+
+  const oldRefresh = controller.refreshLevels();
+  oldCatalog.resolve({
+    defaultFileName: "old.json",
+    levels: [{ fileName: "old.json", name: "old" }],
+  });
+  await Promise.resolve();
+  assert.deepEqual(loadRequests, ["old.json"]);
+
+  const newRefresh = controller.refreshLevels();
+  oldLevel.resolve(levelResponse("old.json", 1));
+  await oldRefresh;
+  const documentAfterStaleOpen = controller.document?.fileName ?? null;
+
+  newCatalog.resolve({
+    defaultFileName: "new.json",
+    levels: [{ fileName: "new.json", name: "new" }],
+  });
+  await Promise.resolve();
+  newLevel.resolve(levelResponse("new.json", 2));
+  await newRefresh;
+
+  assert.equal(documentAfterStaleOpen, null);
+  assert.equal(controller.defaultFileName, "new.json");
+  assert.deepEqual(controller.levels.map(({ fileName }) => fileName), ["new.json"]);
+  assert.deepEqual(loadRequests, ["old.json", "new.json"]);
+  assert.equal(controller.document?.fileName, "new.json");
+  assert.equal(
+    events.some(([type, fileName]) => type === "render" && fileName === "old.json"),
+    false,
+  );
+  assert.equal(
+    events.some(([type, message]) => type === "toast" && /已打开 .*old\.json/.test(message)),
+    false,
+  );
+});
+
+test("a stale refresh-owned open error cannot leak a toast", async () => {
+  const oldCatalog = deferred();
+  const newCatalog = deferred();
+  const oldLevel = deferred();
+  const newLevel = deferred();
+  let catalogCallCount = 0;
+  const { controller, events } = controllerHarness({
+    listLevelCatalog() {
+      catalogCallCount += 1;
+      return catalogCallCount === 1 ? oldCatalog.promise : newCatalog.promise;
+    },
+    loadLevel(fileName) {
+      return fileName === "old.json" ? oldLevel.promise : newLevel.promise;
+    },
+  });
+
+  const oldRefresh = controller.refreshLevels();
+  oldCatalog.resolve({
+    defaultFileName: "old.json",
+    levels: [{ fileName: "old.json", name: "old" }],
+  });
+  await Promise.resolve();
+
+  const newRefresh = controller.refreshLevels();
+  oldLevel.reject(new Error("stale auto-open failure"));
+  await oldRefresh;
+  newCatalog.resolve({
+    defaultFileName: "new.json",
+    levels: [{ fileName: "new.json", name: "new" }],
+  });
+  await Promise.resolve();
+  newLevel.resolve(levelResponse("new.json", 2));
+  await newRefresh;
+
+  assert.equal(controller.document?.fileName, "new.json");
+  assert.equal(
+    events.some(([type, message]) =>
+      type === "toast" && message === "stale auto-open failure"),
+    false,
+  );
+});
+
+test("a newer refresh does not cancel an independent manual open", async () => {
+  const catalog = deferred();
+  const manualLevel = deferred();
+  const loadRequests = [];
+  const { controller } = controllerHarness({
+    listLevelCatalog: () => catalog.promise,
+    loadLevel(fileName) {
+      loadRequests.push(fileName);
+      return manualLevel.promise;
+    },
+  });
+
+  const manualOpen = controller.openLevel("manual.json", { discardDirty: true });
+  const refresh = controller.refreshLevels();
+  manualLevel.resolve(levelResponse("manual.json", 3));
+  await manualOpen;
+  assert.equal(controller.document?.fileName, "manual.json");
+
+  catalog.resolve({
+    defaultFileName: "default.json",
+    levels: [{ fileName: "default.json", name: "default" }],
+  });
+  await refresh;
+
+  assert.equal(controller.document?.fileName, "manual.json");
+  assert.deepEqual(loadRequests, ["manual.json"]);
+});
+
 test("a stale refresh error cannot replace a newer online connection state", async () => {
   const oldCatalog = deferred();
   const newCatalog = deferred();
