@@ -1,18 +1,18 @@
 {
   "schemaVersion": 1,
-  "recordedAt": "2026-07-22T08:19:02.230Z",
+  "recordedAt": "2026-07-22T10:12:24.840Z",
   "recording": {
     "browser": "system Chrome",
-    "preRollMs": 905,
-    "completedAt": "2026-07-22T08:20:30.236Z",
-    "durationMs": 88006
+    "preRollMs": 1288,
+    "completedAt": "2026-07-22T10:13:52.849Z",
+    "durationMs": 88009
   },
   "timeline": {
     "tools": 0,
-    "edit2d": 12014,
+    "edit2d": 12003,
     "view3d": 32014,
-    "play": 50006,
-    "persistence": 70003
+    "play": 50009,
+    "persistence": 70013
   },
   "actions": {
     "metadata": {
@@ -22,7 +22,7 @@
       "modifiedAt": "2026-07-20T00:00:00.000Z"
     },
     "aiGeneration": {
-      "fileName": "ai_level_3279781183.json",
+      "fileName": "ai_level_285562462.json",
       "reference": "all",
       "solvable": true,
       "tileCount": 200,
@@ -32,10 +32,10 @@
       "rating": "困难入门",
       "dimensions": {
         "structure": 84,
-        "information": 67,
+        "information": 65,
         "choice": 52,
-        "route": 54,
-        "endurance": 45
+        "route": 55,
+        "endurance": 46
       },
       "board": {
         "width": 7,
@@ -61,11 +61,11 @@
         "selectedBefore": "tile-195",
         "selectedAfter": "tile-195",
         "before": {
-          "x": 4,
+          "x": 12,
           "y": 4
         },
         "after": {
-          "x": 12,
+          "x": 4,
           "y": 4
         }
       },
@@ -89,25 +89,25 @@
     "edit3d": {
       "cameraBefore": {
         "position": [
-          1.4175700417596921,
-          1.3567331085742795,
+          3.417570041759693,
+          1.3505375647508222,
           -3.5
         ],
         "target": [
-          -2,
-          0.3177918158793329,
+          0,
+          0.3115962720558754,
           -3.5
         ]
       },
       "cameraAfter": {
         "position": [
-          -5.4192649359308644,
-          0.5420795516380388,
-          -4.508715177590631
+          -3.419265082904556,
+          0.5358840078145812,
+          -4.5087146793904065
         ],
         "target": [
-          -2,
-          0.3177918158793329,
+          0,
+          0.3115962720558754,
           -3.5
         ]
       },
@@ -137,7 +137,7 @@
         "relationEdges": 6,
         "relationLines": 1,
         "explodedDelta": 2.3099999999999996,
-        "focusDistance": 0
+        "focusDistance": 0.001029915987193819
       },
       "selectedBefore": "",
       "selectedAfter": "tile-1",
@@ -154,23 +154,23 @@
     },
     "play3d": {
       "selectedBefore": "",
-      "selectedAfter": "tile-168"
+      "selectedAfter": "tile-164"
     },
     "export": {
-      "fileName": "ai_level_3279781183.json",
+      "fileName": "ai_level_285562462.json",
       "gridUnit": "sheep_7x8_mini8",
       "tileCount": 202
     },
     "persistence": {
-      "savedProperty": 12,
+      "savedProperty": 4,
       "savedPosition": {
-        "x": 12,
+        "x": 4,
         "y": 4
       },
       "savedToLocalStorage": true,
-      "reloadedProperty": 12,
+      "reloadedProperty": 4,
       "reloadedPosition": {
-        "x": 12,
+        "x": 4,
         "y": 4
       },
       "localCopyPreserved": true,
@@ -186,7 +186,7 @@
   },
   "media": {
     "file": "paws-level-editor-tutorial.mp4",
-    "sha256": "b57a80715ddd96063fbb4e1925b798a9ddd8293794590b263d4a5236a1655b88"
+    "sha256": "201a1d13c3a9755e8dc20214bff483ea8cf3e88514c15fad51338f36c5a06071"
   },
   "sources": {
     "projects/paws-level-editor/index.html": "b3ffe4fb74ee14f80a30530e3289ab51296812e482bca2ef61171d9a1a977c3d",
@@ -198,6 +198,7 @@
     "projects/paws-level-editor/core/gameplay-metadata.mjs": "5d8fa3d35d252e7ef824ae5c2c40dc329c06d2e6f2ce856a1ed4bf6ec2f284ff",
     "projects/paws-level-editor/core/level-adapter.mjs": "4dc3645422db52049cecba3dfdc43c77daeea5dfec341a98e276efed74b6d42a",
     "projects/paws-level-editor/core/level-difficulty.mjs": "854ee69d136586c19493d18f1bcc308c7cc3bbca0a1a77e8483cf082516b0444",
+    "projects/paws-level-editor/core/legacy-ai-geometry-upgrade.mjs": "fb1be33b6f58eb2482549cc44178e24fdb9b3e00daf15b7bb6e01a955274c400",
     "projects/paws-level-editor/core/level-solver.mjs": "95a97b42973db91aaf118326b0bbf83bfda24168ff36fb5bc9b4b7703cd6c248",
     "projects/paws-level-editor/core/level-statistics.mjs": "e48189c09151890d234eee1e2733eb474d44f55ff1d9c31db616124896d8c653",
     "projects/paws-level-editor/core/level-validator.mjs": "985bb657d171cb2514c50ff30ead45583303961887c9d08f89f7c18fa8490c28",
@@ -209,12 +210,13 @@
     "projects/paws-level-editor/ui/level-export.mjs": "44296631912418a227c9c01d701def1d3a71af75875dd9c3b50ba2f273f3493c",
     "projects/paws-level-editor/ui/local-level-import.mjs": "651987b8d3c1ca4293218bb1289f48c6c706ce2ba502e0960e5ae02a6883d8e9",
     "projects/paws-level-editor/ui/level-summary.mjs": "f7876ba36caaef6ac9123f98680aad02a65e5134f6ec1486f306e17f359b4713",
-    "projects/paws-level-editor/ui/workbench-controller.mjs": "9f3691cc6712bd809aec146e131e78d0a368409706081f1dc9a50fac35d71686",
+    "projects/paws-level-editor/ui/legacy-ai-open-upgrade.mjs": "e413eab44f7b04289015f5eb98f37971ced2057085e902fb2b04e9ac9eb8f2bd",
+    "projects/paws-level-editor/ui/workbench-controller.mjs": "8c77ad98932385da6bf1b94ead3f1ac2aec15c038de6eb24e97dcdf88932847f",
     "projects/paws-level-editor/views/canvas-2d.mjs": "e0ccc747b8b7eff08247dcb771d34069ff3c4ee3bf8c2de6c945ef845cb202d2",
     "projects/paws-level-editor/views/three-3d.mjs": "0e91373eab98fd25a6a32e158165169ecb46b59d453b14b54307dd0aeb009abd",
     "projects/paws-level-editor/levels/index.json": "e994f86905608597d7731375205ae90488feb3e8de27988f23d618b6167f4249",
     "projects/paws-level-editor/levels/level_0021_r2_第二关模板12.json": "596989213e96fb9ae83d0cbaf8eea7f7d0cda113c24506c36eda7500eeb28725",
-    "scripts/record-paws-level-editor-demo.mjs": "b4332b699dfe7ddb42f1f292373694933044882d5c9f0feaec08e5cbcff2736f",
+    "scripts/record-paws-level-editor-demo.mjs": "75cd9c4f4a2104052a04f4acb01481c2660052361cea2871947225c4f67c545b",
     "scripts/paws-recording-support.mjs": "e5d2b2f02b67798c90d080a3202b97ecce50ffd738e31fc374d751ad18ae79c2"
   }
 }

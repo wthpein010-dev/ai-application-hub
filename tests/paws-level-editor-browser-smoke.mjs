@@ -378,6 +378,7 @@ try {
     exportRoundTrip: null,
     deletedLocalLevels: null,
     aiReferenceCountsAfterDelete: null,
+    legacyAiUpgrade: null,
     aiGeneration: null,
     aiPlaythrough: null,
     mobileImportHidden: null,
@@ -1158,6 +1159,97 @@ try {
     gridUnit: "sheep_7x8_mini8",
     tileCount: 6,
   });
+  page.once("dialog", (dialog) => dialog.accept());
+  await page.locator("#delete-local-level").click();
+  await page.waitForFunction((fallback) =>
+    window.pawsWorkbench?.document?.fileName === fallback, defaultFileName);
+  await waitForNetworkAndTextures(page);
+
+  const legacyAiFileName = "ai_legacy_overlap.json";
+  await page.evaluate(async (fileName) => {
+    const controller = window.pawsWorkbench;
+    const { serializeLevelDocument } = await import("./core/level-adapter.mjs");
+    const legacyDocument = {
+      original: { id: 880001, name: "旧 AI 重叠回归", difficulty: "Normal" },
+      designerNote: { aiGeneration: { seed: 20260722 } },
+      id: 880001,
+      name: "旧 AI 重叠回归",
+      difficulty: "Normal",
+      gridUnit: "sheep_7x8_mini8",
+      board: { width: 7, height: 8, scale: 1 },
+      random: { blockTypeCount: 32, fullTypeMin: 1, fullTypeMax: 32 },
+      gameplay: { gameLevelOrder: 1, cdNum: 0, showLayerNum: true },
+      tiles: [
+        { uid: "legacy-a", x: 0, y: 0, layer: 1, type: 1 },
+        { uid: "legacy-b", x: 7, y: 0, layer: 1, type: 2 },
+        { uid: "legacy-c", x: 16, y: 0, layer: 1, type: 2 },
+        { uid: "legacy-d", x: 24, y: 0, layer: 1, type: 1 },
+      ],
+      warnings: [],
+    };
+    await controller.api.saveLevel({
+      fileName,
+      value: serializeLevelDocument(legacyDocument),
+      expectedVersion: "",
+      saveAs: true,
+      source: "ai",
+    });
+    await controller.refreshLevels();
+    await controller.openLevel(fileName, { discardDirty: true });
+  }, legacyAiFileName);
+  await page.waitForFunction((fileName) =>
+    window.pawsWorkbench?.document?.fileName === fileName, legacyAiFileName);
+  await waitForNetworkAndTextures(page);
+  summary.legacyAiUpgrade = await page.evaluate(async (fileName) => {
+    const controller = window.pawsWorkbench;
+    const { parseLevelDocument } = await import("./core/level-adapter.mjs");
+    const { validateLevelForPublish } = await import("./core/level-validator.mjs");
+    const { solveLevel } = await import("./core/level-solver.mjs");
+    const tiles = controller.document.tiles;
+    let sameLayerOverlapPairs = 0;
+    for (let leftIndex = 0; leftIndex < tiles.length; leftIndex += 1) {
+      for (let rightIndex = leftIndex + 1; rightIndex < tiles.length; rightIndex += 1) {
+        const left = tiles[leftIndex];
+        const right = tiles[rightIndex];
+        if (
+          left.layer === right.layer
+          && Math.abs(left.x - right.x) < 8
+          && Math.abs(left.y - right.y) < 8
+        ) sameLayerOverlapPairs += 1;
+      }
+    }
+    const stored = await controller.api.loadLevel(fileName);
+    const persisted = parseLevelDocument(stored.value, {
+      fileName,
+      version: stored.version,
+    });
+    return {
+      moved: controller.document.designerNote.aiGeneration
+        .geometryUpgrade?.movedTileUids?.length ?? 0,
+      sameLayerOverlapPairs,
+      persistedRule: persisted.designerNote.aiGeneration.geometryUpgrade?.rule ?? "",
+      versionPersisted: controller.document.version === stored.version,
+      validationErrors: validateLevelForPublish(controller.document)
+        .filter(({ severity }) => severity === "error").length,
+      solverSteps: solveLevel(controller.document).steps,
+    };
+  }, legacyAiFileName);
+  assert.deepEqual(summary.legacyAiUpgrade, {
+    moved: 1,
+    sameLayerOverlapPairs: 0,
+    persistedRule: "same-layer-zero-overlap-v1",
+    versionPersisted: true,
+    validationErrors: 0,
+    solverSteps: 2,
+  });
+  await page.locator("#view-3d").click();
+  await page.locator(".level-canvas-3d").waitFor({ state: "visible" });
+  assert.equal(
+    await page.locator(".level-canvas-3d").evaluate((canvas) =>
+      Boolean(canvas.getContext("webgl2") || canvas.getContext("webgl"))),
+    true,
+  );
+  await page.locator("#view-2d").click();
   page.once("dialog", (dialog) => dialog.accept());
   await page.locator("#delete-local-level").click();
   await page.waitForFunction((fallback) =>
