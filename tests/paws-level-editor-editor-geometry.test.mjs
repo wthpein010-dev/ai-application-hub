@@ -20,7 +20,10 @@ import {
   serializeLevelDocument,
 } from "../projects/paws-level-editor/core/level-adapter.mjs";
 import { validateLevel } from "../projects/paws-level-editor/core/level-validator.mjs";
-import { deriveDisplayTiles } from "../projects/paws-level-editor/core/view-model.mjs";
+import {
+  buildRenderTiles,
+  deriveDisplayTiles,
+} from "../projects/paws-level-editor/core/view-model.mjs";
 
 const repoRoot = dirname(dirname(fileURLToPath(import.meta.url)));
 
@@ -265,6 +268,45 @@ test("display tiles derive coverage before applying through and single-layer vie
   assert.deepEqual(
     deriveDisplayTiles(source, { mode: "single", layer: 2 }).map(({ uid }) => uid),
     ["cover"],
+  );
+});
+
+test("visual depth separates only positive-area same-layer conflicts without mutating data", () => {
+  const source = [
+    tile("overlap-a", 0, 0, 1),
+    tile("overlap-b", 7, 0, 1),
+    tile("touching", 15, 0, 1),
+    tile("cross-layer", 0, 0, 2),
+    { ...tile("tray", 0, 0, 1), stashedSlot: 0 },
+  ];
+  const before = structuredClone(source);
+  const render = buildRenderTiles({ tiles: source });
+  const byUid = new Map(render.map((record) => [record.uid, record]));
+
+  assert.notEqual(
+    byUid.get("overlap-a").visualDepthBias,
+    byUid.get("overlap-b").visualDepthBias,
+  );
+  assert.equal(
+    Math.abs(
+      byUid.get("overlap-a").visualDepthBias
+      - byUid.get("overlap-b").visualDepthBias,
+    ) >= 0.004,
+    true,
+  );
+  assert.notEqual(byUid.get("overlap-a").worldY, byUid.get("overlap-b").worldY);
+  assert.equal(byUid.get("touching").visualDepthBias, 0);
+  assert.equal(byUid.get("cross-layer").visualDepthBias, 0);
+  assert.equal(byUid.get("tray").visualDepthBias, 0);
+  assert.deepEqual(source, before);
+
+  const reversed = new Map(
+    buildRenderTiles({ tiles: [...source].reverse() })
+      .map((record) => [record.uid, record.visualDepthBias]),
+  );
+  assert.deepEqual(
+    reversed,
+    new Map(render.map((record) => [record.uid, record.visualDepthBias])),
   );
 });
 

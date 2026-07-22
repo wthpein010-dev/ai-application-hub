@@ -1,5 +1,8 @@
 import { computeCoverage } from "./coverage.mjs";
-import { assignRandomTypes } from "./random-assigner.mjs";
+import {
+  assignRandomTypes,
+  isFirstRoundDocument,
+} from "./random-assigner.mjs";
 
 const isSpecialType = (type) => type >= 1001 && type <= 1006;
 
@@ -27,6 +30,7 @@ export function createPlaySession(document, seed = 1, options = {}) {
       seed: currentSeed,
       ...(sourceDocument.random ?? {}),
       ...(options.random ?? {}),
+      firstRound: options.firstRound ?? isFirstRoundDocument(sourceDocument),
     });
     tiles = assigned.map((tile) => ({
       ...tile,

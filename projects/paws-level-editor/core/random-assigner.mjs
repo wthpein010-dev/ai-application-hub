@@ -27,6 +27,59 @@ function assignGroup(result, sourceType, min, maxInclusive, rng) {
   });
 }
 
+function assignFirstRound(result, blockTypeCount, rng) {
+  const byLayer = new Map();
+  result.forEach((tile, index) => {
+    if (tile.type !== 0 && tile.type !== -1) return;
+    const layer = Number(tile.layer);
+    const indices = byLayer.get(layer) ?? [];
+    indices.push(index);
+    byLayer.set(layer, indices);
+  });
+  if (byLayer.size === 0) return;
+
+  const layers = [...byLayer.keys()].sort((left, right) => left - right);
+  const oddLayers = layers.filter((layer) => byLayer.get(layer).length % 2 !== 0);
+  if (oddLayers.length % 2 !== 0) {
+    throw new RangeError("first round random tile count must be even");
+  }
+
+  const assignmentGroups = layers
+    .filter((layer) => byLayer.get(layer).length % 2 === 0)
+    .map((layer) => [layer]);
+  for (let index = 0; index < oddLayers.length; index += 2) {
+    assignmentGroups.push([oddLayers[index], oddLayers[index + 1]]);
+  }
+  assignmentGroups.sort((left, right) => left[0] - right[0]);
+
+  const distinctTypeCount = Math.min(
+    32,
+    Math.max(blockTypeCount, assignmentGroups.length),
+  );
+  const shuffledTypes = rng.shuffle(
+    Array.from({ length: distinctTypeCount }, (_, index) => index + 1),
+  );
+  assignmentGroups.forEach((group, groupIndex) => {
+    const type = shuffledTypes[groupIndex] ?? 1;
+    for (const layer of group) {
+      for (const tileIndex of byLayer.get(layer)) {
+        const sourceType = result[tileIndex].type;
+        result[tileIndex] = {
+          ...result[tileIndex],
+          type,
+          randomSourceType: sourceType,
+        };
+      }
+    }
+  });
+}
+
+export function isFirstRoundDocument(document) {
+  const match = String(document?.fileName ?? "").match(/_r(\d+)(?:_|$)/i);
+  if (match) return Number(match[1]) === 1;
+  return Number(document?.gameplay?.gameLevelOrder) === 1;
+}
+
 export function assignRandomTypes(
   tiles,
   {
@@ -34,6 +87,7 @@ export function assignRandomTypes(
     blockTypeCount = 32,
     fullTypeMin = 1,
     fullTypeMax = 32,
+    firstRound = false,
   } = {},
 ) {
   const result = structuredClone(tiles ?? []);
@@ -41,6 +95,10 @@ export function assignRandomTypes(
   const normalMax = Math.trunc(blockTypeCount);
   if (normalMax < 1 || normalMax > 32) {
     throw new RangeError("block type range is invalid");
+  }
+  if (firstRound) {
+    assignFirstRound(result, normalMax, rng);
+    return result;
   }
   assignGroup(result, 0, 1, normalMax, rng);
   assignGroup(result, -1, Math.trunc(fullTypeMin), Math.trunc(fullTypeMax), rng);

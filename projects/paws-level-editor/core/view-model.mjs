@@ -1,9 +1,45 @@
 import { computeCoverage } from "./coverage.mjs";
-import { filterTilesByLayerView } from "./editor-geometry.mjs";
+import {
+  filterTilesByLayerView,
+  overlapsWithPositiveArea,
+} from "./editor-geometry.mjs";
 
 const TILE_SIZE = 8;
 const WORLD_TILE_SIZE = 1;
 const LAYER_HEIGHT = 0.22;
+
+export function computeSameLayerVisualBias(tiles, { step = 0.004 } = {}) {
+  const biasStep = Number(step);
+  if (!Number.isFinite(biasStep) || biasStep <= 0) {
+    throw new RangeError("visual depth step must be a positive number");
+  }
+  const source = Array.isArray(tiles) ? tiles : [];
+  const result = new Map(source.map((tile) => [tile.uid, 0]));
+  const activeBoardTiles = source
+    .filter((tile) => !tile.removed && !Number.isInteger(tile.stashedSlot))
+    .sort((left, right) =>
+      Number(left.layer) - Number(right.layer)
+      || Number(left.y) - Number(right.y)
+      || Number(left.x) - Number(right.x)
+      || String(left.uid).localeCompare(String(right.uid)));
+  const colors = new Map();
+
+  for (let index = 0; index < activeBoardTiles.length; index += 1) {
+    const tile = activeBoardTiles[index];
+    const unavailable = new Set();
+    for (let previousIndex = 0; previousIndex < index; previousIndex += 1) {
+      const previous = activeBoardTiles[previousIndex];
+      if (Number(previous.layer) !== Number(tile.layer)) continue;
+      if (!overlapsWithPositiveArea(previous, tile)) continue;
+      unavailable.add(colors.get(previous.uid) ?? 0);
+    }
+    let color = 0;
+    while (unavailable.has(color)) color += 1;
+    colors.set(tile.uid, color);
+    result.set(tile.uid, Number((color * biasStep).toFixed(6)));
+  }
+  return result;
+}
 
 export function deriveDisplayTiles(sourceTiles, layerView = { mode: "all", layer: 1 }) {
   const source = Array.isArray(sourceTiles) ? sourceTiles : [];
@@ -74,6 +110,7 @@ export function buildRenderTiles(
 ) {
   const sourceTiles = Array.isArray(documentOrSnapshot?.tiles) ? documentOrSnapshot.tiles : [];
   const visibleTiles = sourceTiles.filter((tile) => !tile.removed);
+  const depthBiasByUid = computeSameLayerVisualBias(sourceTiles);
   const bounds = boundsFromSource(sourceTiles);
   const centerX = (bounds.minX + bounds.maxX) / 2;
   const centerY = (bounds.minY + bounds.maxY) / 2;
@@ -81,6 +118,7 @@ export function buildRenderTiles(
 
   return visibleTiles.map((tile) => {
     const inTray = Number.isInteger(tile.stashedSlot);
+    const visualDepthBias = inTray ? 0 : (depthBiasByUid.get(tile.uid) ?? 0);
     const traySlot = inTray ? tile.stashedSlot : null;
     const worldX = inTray
       ? (traySlot - 0.5) * 1.35
@@ -95,7 +133,9 @@ export function buildRenderTiles(
       boardX: tile.x,
       boardY: tile.y,
       worldX,
-      worldY: inTray ? 0.12 : Number((tile.layer * LAYER_HEIGHT).toFixed(6)),
+      worldY: inTray
+        ? 0.12
+        : Number((tile.layer * LAYER_HEIGHT + visualDepthBias).toFixed(6)),
       worldZ,
       width: WORLD_TILE_SIZE,
       height: 0.16,
@@ -109,6 +149,7 @@ export function buildRenderTiles(
       selected: Boolean(tile.selected),
       location: inTray ? "tray" : "board",
       traySlot,
+      visualDepthBias,
     });
   });
 }

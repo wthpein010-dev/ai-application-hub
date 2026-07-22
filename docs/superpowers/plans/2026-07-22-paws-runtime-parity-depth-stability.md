@@ -13,7 +13,7 @@
 - AI generated geometry remains strictly zero-overlap on each layer; visual bias never relaxes validation.
 - Tile totals and every concrete generated type count remain even and pair-removable.
 - `_r1_` is first round, `_r2_` and later are not; missing markers fall back to `gameplay.gameLevelOrder === 1`.
-- First round merges `type=0` and `type=-1`, uses one concrete type per random layer, and rejects an odd random count on any layer.
+- First round merges `type=0` and `type=-1`, uses one concrete type per random layer, and pairs odd-sized layers onto one shared type so every concrete total remains even.
 - Second round retains the existing separate limited/full random pools.
 - Historical JSON coordinates, layers, types and coverage behavior remain byte-for-byte unaffected by render bias.
 - Same-layer edge touching and every cross-layer overlap receive zero render bias.
@@ -32,17 +32,17 @@
 - Extends: `assignRandomTypes(tiles, { firstRound, seed, blockTypeCount, fullTypeMin, fullTypeMax })`.
 - Consumes: `createPlaySession(document, seed, options)` with `options.firstRound` as an optional explicit override.
 
-- [ ] **Step 1: Write the first-round RED test**
+- [x] **Step 1: Write the first-round RED test**
 
-Create a three-layer document with four `type=0/-1` tiles per layer, `fileName: "level_0021_r1_test.json"`, `gameplay.gameLevelOrder: 1`, and `blockTypeCount: 2`. Assert that every layer has exactly one concrete type, the three layer types are distinct after range expansion, every type count is even, and all original tile objects remain unchanged.
+Create a three-layer document with four `type=0/-1` tiles per layer, `fileName: "level_0021_r1_test.json"`, `gameplay.gameLevelOrder: 1`, and `blockTypeCount: 2`. Assert that every layer has exactly one concrete type, the three layer types are distinct after range expansion, every type count is even, and all original tile objects remain unchanged. Add a real-data regression shape with 3/5/4 random tiles: the two odd layers share one type, the even layer uses another, and all global type totals are even.
 
-- [ ] **Step 2: Verify RED**
+- [x] **Step 2: Verify RED**
 
 Run: `node --test --test-name-pattern="first round" tests/paws-level-editor-play-engine.test.mjs`
 
 Expected: FAIL because the current assigner mixes multiple types inside a layer and no document-round classifier exists.
 
-- [ ] **Step 3: Implement the minimum Unity-style branch**
+- [x] **Step 3: Implement the minimum Unity-style branch**
 
 Add:
 
@@ -54,13 +54,13 @@ export function isFirstRoundDocument(document) {
 }
 ```
 
-For `firstRound: true`, collect both marker types, group indices by layer, reject odd group sizes, construct and shuffle a distinct type pool from `1..max(blockTypeCount, layerCount)` capped at 32, and assign one type to each layer. Preserve `randomSourceType` per tile. Pass `options.firstRound ?? isFirstRoundDocument(sourceDocument)` from `createPlaySession`.
+For `firstRound: true`, collect both marker types and group indices by layer. Treat every even layer as its own assignment group and pair adjacent odd layers into a shared assignment group. Construct and shuffle a distinct type pool from `1..max(blockTypeCount, assignmentGroupCount)` capped at 32, then assign one type per group. Preserve `randomSourceType` per tile. Pass `options.firstRound ?? isFirstRoundDocument(sourceDocument)` from `createPlaySession`.
 
-- [ ] **Step 4: Add characterization tests for existing play rules**
+- [x] **Step 4: Add characterization tests for existing play rules**
 
 Cover selection/cancel, flip mismatch and match, tray slots, special auto-removal, deadlock, deterministic restart, and a complete win. These use the real engine without mocks.
 
-- [ ] **Step 5: Verify GREEN**
+- [x] **Step 5: Verify GREEN**
 
 Run: `node --test tests/paws-level-editor-play-engine.test.mjs`
 
@@ -73,20 +73,20 @@ Expected: all new play-engine tests pass.
 - Modify: `tests/paws-level-editor-editor-geometry.test.mjs`
 
 **Interfaces:**
-- Produces: `computeSameLayerVisualBias(tiles, { step = 0.001 } = {}): Map<string, number>`.
+- Produces: `computeSameLayerVisualBias(tiles, { step = 0.004 } = {}): Map<string, number>`.
 - Extends each `buildRenderTiles` record with `visualDepthBias` and adds it to board `worldY` only.
 
-- [ ] **Step 1: Write the render-bias RED tests**
+- [x] **Step 1: Write the render-bias RED tests**
 
 Assert that two positive-area overlapping same-layer tiles get different biases; reversing input order preserves the UID-to-bias mapping; edge touching, cross-layer overlaps and tray tiles all get 0; source tile objects are unchanged.
 
-- [ ] **Step 2: Verify RED**
+- [x] **Step 2: Verify RED**
 
 Run: `node --test --test-name-pattern="visual depth" tests/paws-level-editor-editor-geometry.test.mjs`
 
 Expected: FAIL because the helper and `visualDepthBias` field do not exist.
 
-- [ ] **Step 3: Implement stable greedy conflict coloring**
+- [x] **Step 3: Implement stable greedy conflict coloring**
 
 Filter active board tiles, sort by layer/Y/X/UID, compare only equal layers with `overlapsWithPositiveArea`, and assign each tile the smallest non-conflicting non-negative color. Return `color * step`; tiles without conflicts return 0. `buildRenderTiles` computes the map once and uses:
 
@@ -95,7 +95,7 @@ const visualDepthBias = inTray ? 0 : (depthBiasByUid.get(tile.uid) ?? 0);
 worldY: inTray ? 0.12 : Number((tile.layer * LAYER_HEIGHT + visualDepthBias).toFixed(6));
 ```
 
-- [ ] **Step 4: Verify GREEN and unaffected AI output**
+- [x] **Step 4: Verify GREEN and unaffected AI output**
 
 Run the geometry test and the complete AI generator test. Expected: depth tests pass and all generated AI overlap assertions remain 0.
 
