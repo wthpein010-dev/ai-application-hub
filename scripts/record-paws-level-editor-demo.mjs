@@ -160,6 +160,21 @@ async function visibleEditTile(page) {
       (left, right) => right.layer - left.layer,
     );
     for (const tile of candidates) {
+      const target = [];
+      for (let y = tile.y % 8; y <= (controller.document.board.height - 1) * 8; y += 8) {
+        for (let x = tile.x % 8; x <= (controller.document.board.width - 1) * 8; x += 8) {
+          if (x === tile.x && y === tile.y) continue;
+          if (controller.document.tiles.some((other) =>
+            other.uid !== tile.uid
+            && other.layer === tile.layer
+            && Math.abs(other.x - x) < 8
+            && Math.abs(other.y - y) < 8)) {
+            continue;
+          }
+          target.push({ x, y });
+        }
+      }
+      if (!target.length) continue;
       for (const yOffset of offsets) {
         for (const xOffset of offsets) {
           const point = {
@@ -171,7 +186,13 @@ async function visibleEditTile(page) {
               renderer.viewport.offsetY,
           };
           if (renderer.hitBoardTile(point)?.uid === tile.uid) {
-            return { uid: tile.uid, ...point };
+            return {
+              uid: tile.uid,
+              ...point,
+              targetX: target[0].x,
+              targetY: target[0].y,
+              scale: renderer.viewport.scale,
+            };
           }
         }
       }
@@ -470,8 +491,10 @@ async function recordEditor() {
       await page.mouse.move(canvas2d.x + editTile.x, canvas2d.y + editTile.y);
       await page.mouse.down();
       await page.mouse.move(
-        canvas2d.x + editTile.x + 96,
-        canvas2d.y + editTile.y + 72,
+        canvas2d.x + editTile.x
+          + (editTile.targetX - originalPosition.x) * editTile.scale,
+        canvas2d.y + editTile.y
+          + (editTile.targetY - originalPosition.y) * editTile.scale,
         { steps: 28 },
       );
       await page.mouse.up();
@@ -492,21 +515,20 @@ async function recordEditor() {
       assert.notDeepEqual(draggedPosition, originalPosition);
       assert.equal(selectedAfterDrag, selectedBeforeDrag);
       await delay(2200);
-      const tileX = page.locator('[data-tile-field="x"]');
-      const propertyBefore = Number(await tileX.inputValue());
-      const propertyAfter = propertyBefore + 1;
-      await tileX.fill(String(propertyAfter));
-      await tileX.press("Tab");
+      const tileFlip = page.locator('[data-tile-field="presetColorType"]');
+      const propertyBefore = Number(await tileFlip.inputValue());
+      const propertyAfter = propertyBefore === 2 ? 1 : 2;
+      await tileFlip.selectOption(String(propertyAfter));
       await page.waitForFunction(
         ({ uid, expected }) =>
-          window.pawsWorkbench.document.tiles.find((tile) => tile.uid === uid)?.x === expected,
+          window.pawsWorkbench.document.tiles.find((tile) => tile.uid === uid)
+            ?.presetColorType === expected,
         { uid: editTile.uid, expected: propertyAfter },
       );
       const savedPosition = await page.evaluate((uid) => {
         const tile = window.pawsWorkbench.document.tiles.find((item) => item.uid === uid);
         return { x: tile.x, y: tile.y };
       }, editTile.uid);
-      assert.equal(savedPosition.x, propertyAfter);
       proof.actions.edit2d = {
         drag: {
           uid: selectedEditUid,
@@ -515,7 +537,11 @@ async function recordEditor() {
           before: originalPosition,
           after: draggedPosition,
         },
-        property: { field: "x", before: propertyBefore, after: propertyAfter },
+        property: {
+          field: "presetColorType",
+          before: propertyBefore,
+          after: propertyAfter,
+        },
       };
       await delay(2400);
 

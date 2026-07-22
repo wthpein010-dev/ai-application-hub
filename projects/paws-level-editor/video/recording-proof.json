@@ -1,18 +1,18 @@
 {
   "schemaVersion": 1,
-  "recordedAt": "2026-07-21T13:40:04.845Z",
+  "recordedAt": "2026-07-22T03:45:17.180Z",
   "recording": {
     "browser": "system Chrome",
-    "preRollMs": 892,
-    "completedAt": "2026-07-21T13:41:32.860Z",
-    "durationMs": 88015
+    "preRollMs": 1005,
+    "completedAt": "2026-07-22T03:46:45.185Z",
+    "durationMs": 88005
   },
   "timeline": {
     "tools": 0,
-    "edit2d": 12013,
-    "view3d": 32003,
-    "play": 50008,
-    "persistence": 70006
+    "edit2d": 12001,
+    "view3d": 32008,
+    "play": 50004,
+    "persistence": 70012
   },
   "actions": {
     "metadata": {
@@ -22,7 +22,7 @@
       "modifiedAt": "2026-07-20T00:00:00.000Z"
     },
     "aiGeneration": {
-      "fileName": "ai_level_3178191083.json",
+      "fileName": "ai_level_1524118851.json",
       "reference": "all",
       "solvable": true,
       "tileCount": 200,
@@ -31,11 +31,11 @@
       "actualScore": 60,
       "rating": "困难入门",
       "dimensions": {
-        "structure": 85,
-        "information": 47,
+        "structure": 83,
+        "information": 46,
         "choice": 55,
         "route": 59,
-        "endurance": 46
+        "endurance": 45
       },
       "board": {
         "width": 7,
@@ -57,18 +57,18 @@
         "selectedBefore": "tile-195",
         "selectedAfter": "tile-195",
         "before": {
-          "x": 8,
-          "y": 21
+          "x": 12,
+          "y": 12
         },
         "after": {
-          "x": 24,
-          "y": 37
+          "x": 4,
+          "y": 4
         }
       },
       "property": {
-        "field": "x",
-        "before": 24,
-        "after": 25
+        "field": "presetColorType",
+        "before": 1,
+        "after": 2
       }
     },
     "edit3d": {
@@ -108,16 +108,16 @@
       "selectedAfter": "tile-177"
     },
     "persistence": {
-      "savedProperty": 25,
+      "savedProperty": 4,
       "savedPosition": {
-        "x": 25,
-        "y": 37
+        "x": 4,
+        "y": 4
       },
       "savedToLocalStorage": true,
-      "reloadedProperty": 25,
+      "reloadedProperty": 4,
       "reloadedPosition": {
-        "x": 25,
-        "y": 37
+        "x": 4,
+        "y": 4
       },
       "localCopyPreserved": true,
       "returnedToDefault": true,
@@ -132,14 +132,14 @@
   },
   "media": {
     "file": "paws-level-editor-tutorial.mp4",
-    "sha256": "2986389e68410870b7236075dea720f68a26e9959351f6c3648e33272423e5fa"
+    "sha256": "6106d77c6b67a8e0a6ef7c9556bd13e0271493b6c5addb6b528c0a950fa760ed"
   },
   "sources": {
     "projects/paws-level-editor/index.html": "1f9ef4bc8afbdf71f8439e98db54b60d59434a2fa36e453ff4227c1fd2e2ff9f",
     "projects/paws-level-editor/styles.css": "8057ac72a9430f8c09a271bb5c7a61d244d4d027f9f4924ab8c4a29c9519bea2",
     "projects/paws-level-editor/app.mjs": "550278401cebcf10ebb91159d70ca9698340c38261817da2dceb7bdaa5ac9dbf",
     "projects/paws-level-editor/static-api-client.mjs": "ed373714623928c3f2edfe8b378b8f4a0abdfac1197c88a1c6976e08a6a452c6",
-    "projects/paws-level-editor/core/ai-level-generator.mjs": "5cd8ec497e7ee1b745484b2fdd9adc0b90a95179e9db17fd387d193cf76db8d9",
+    "projects/paws-level-editor/core/ai-level-generator.mjs": "c56bc540dc19b9ef5fce55b8698bcc8f72c4bac15826c96f6d70ff4aa9c6a70c",
     "projects/paws-level-editor/core/level-difficulty.mjs": "854ee69d136586c19493d18f1bcc308c7cc3bbca0a1a77e8483cf082516b0444",
     "projects/paws-level-editor/core/level-solver.mjs": "95a97b42973db91aaf118326b0bbf83bfda24168ff36fb5bc9b4b7703cd6c248",
     "projects/paws-level-editor/core/level-statistics.mjs": "e48189c09151890d234eee1e2733eb474d44f55ff1d9c31db616124896d8c653",
@@ -149,7 +149,7 @@
     "projects/paws-level-editor/ui/workbench-controller.mjs": "e4b470c044626104dd7ea08ee243cdec5bd6052094ca9e735020f99983069e9d",
     "projects/paws-level-editor/levels/index.json": "9192f432ae94035e5e4a8914218680d6500f282cc2bc29a8885f93ad39e13696",
     "projects/paws-level-editor/levels/level_0020_r2_第二关模板12.json": "c60a1d78a6afe1e1078d944edb2b465f3b39da6121f8d8c08e3efbbf1f558dbd",
-    "scripts/record-paws-level-editor-demo.mjs": "766e54c29709f5b0ebb178ab2849296a919952861ecd9dffa962b117a3c3ab07",
+    "scripts/record-paws-level-editor-demo.mjs": "8041bdb93c46486b7425f0929add93bd757eab5adf0818c609fd03ce3eab4236",
     "scripts/paws-recording-support.mjs": "e5d2b2f02b67798c90d080a3202b97ecce50ffd738e31fc374d751ad18ae79c2"
   }
 }

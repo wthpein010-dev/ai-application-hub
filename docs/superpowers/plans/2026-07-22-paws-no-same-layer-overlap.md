@@ -30,7 +30,7 @@
 - Consumes: `validateLevel(document, options?)` and `generateAiLevel(options)`.
 - Produces: test helper `sameLayerOverlapPairs(tiles)` and regression assertions for AI geometry, pairing, and solver completeness.
 
-- [ ] **Step 1: Add the validator regression tests**
+- [x] **Step 1: Add the validator regression tests**
 
 ```js
 function sameLayerOverlapPairs(tiles) {
@@ -74,13 +74,13 @@ test("AI validation permits edge-touching tiles", () => {
 });
 ```
 
-- [ ] **Step 2: Run the targeted tests and verify RED**
+- [x] **Step 2: Run the targeted tests and verify RED**
 
 Run: `node --test --test-name-pattern="AI validation|200 tiles" tests/paws-level-editor-ai-generator.test.mjs`
 
 Expected: the positive-area test fails because `same-layer-overlap` does not exist yet, and the existing 200-tile generated level still contains overlap pairs once the zero-overlap assertion is added.
 
-- [ ] **Step 3: Add generated-level invariant assertions**
+- [x] **Step 3: Add generated-level invariant assertions**
 
 In the existing nine-combination generator test, assert:
 
@@ -100,7 +100,7 @@ assert.equal(generated.document.tiles.length % 2, 0);
 assert.equal(generated.report.steps, generated.document.tiles.length / 2);
 ```
 
-- [ ] **Step 4: Run the generator test and verify RED**
+- [x] **Step 4: Run the generator test and verify RED**
 
 Run: `node --test tests/paws-level-editor-ai-generator.test.mjs`
 
@@ -117,7 +117,7 @@ Expected: at least one generated-level test fails with non-empty same-layer over
 - Consumes: existing 8×8 `overlaps(left, right)` geometry predicate.
 - Produces: `validateLevel(document, { rejectSameLayerOverlap } = {})`; generated tower layers whose same-layer footprints never intersect.
 
-- [ ] **Step 1: Add strict AI overlap validation**
+- [x] **Step 1: Add strict AI overlap validation**
 
 Update the validator signature and collect same-layer intersections:
 
@@ -136,46 +136,43 @@ Update the generator gate to call:
 validateLevel(document, { rejectSameLayerOverlap: true })
 ```
 
-- [ ] **Step 2: Prevent overlap while selecting each lower layer**
+- [x] **Step 2: Prevent overlap while selecting each complete layer**
 
-In `chooseChildAnchor`, reject candidates that intersect any coordinate already stored in `layerAnchors`:
-
-```js
-if ([...layerAnchors].some((value) => overlaps(anchor, value))) continue;
-```
-
-Store coordinate objects in `layerAnchors`; retain `globalAnchors` for cross-layer exact-anchor uniqueness.
-
-- [ ] **Step 3: Space tower-top anchors without overlap**
-
-Replace jittered top-Y placement with an interval-aware distribution:
+In `chooseLayerPairs`, reject a candidate pair when its two anchors intersect each other or any coordinate already selected for the layer:
 
 ```js
-const requiredSpan = (count - 1) * TILE_SIZE;
-if (requiredSpan > maximum - minimum) {
-  throw new Error("塔顶入口无法满足同层零重叠约束。");
-}
-const start = Math.max(
-  minimum,
-  Math.min(maximum - requiredSpan, Math.round(center - requiredSpan / 2)),
-);
-return Array.from({ length: count }, (_, index) => start + index * TILE_SIZE);
+if (overlaps(candidate.left, candidate.right)) continue;
+if ([candidate.left, candidate.right].some((anchor) =>
+  selectedAnchors.some((placed) => overlaps(anchor, placed)))) continue;
 ```
 
-Use the full legal Y range `0..maxY`; do not reduce spacing to force a candidate.
+Build from the top layer downward. Prefer candidates covered by the immediate upper layer while such candidates remain, then fall back to an open candidate when the real 8×8 support capacity is exhausted. Rank legal candidates using next-layer support, extra blockers, parent reuse, layout and spatial scores.
 
-- [ ] **Step 4: Run targeted tests and verify GREEN**
+- [x] **Step 3: Bound exact cross-layer stacks**
+
+Track exact-anchor use counts across layers and allow each anchor at most twice:
+
+```js
+if (keys.some((key) => (occupiedAnchors.get(key) ?? 0) >= 2)) continue;
+occupiedAnchors.set(key, (occupiedAnchors.get(key) ?? 0) + 1);
+```
+
+This preserves the existing `maxExactStackDepth <= 2` rule while providing enough cross-layer capacity for 240-tile hard levels.
+
+- [x] **Step 4: Run targeted tests and verify GREEN**
 
 Run: `node --test tests/paws-level-editor-ai-generator.test.mjs`
 
-Expected: every test passes; all nine generator combinations have zero same-layer overlaps, even global/layer type counts, and complete solver reports.
+Result: 24/24 generator tests pass; all nine generator combinations have zero same-layer overlaps, even global/layer type counts, and complete solver reports. A 27-case multi-seed diagnostic also passes these invariants.
 
-- [ ] **Step 5: Commit the focused implementation**
+- [x] **Step 5: Commit the focused implementation**
 
 ```bash
 git add projects/paws-level-editor/core/ai-level-generator.mjs projects/paws-level-editor/core/level-validator.mjs tests/paws-level-editor-ai-generator.test.mjs
 git commit -m "fix: prevent same-layer overlap in Paws AI levels"
 ```
+
+Result: committed as `2c78b80`.
 
 ### Task 3: Complete local, browser, and public verification
 
@@ -188,17 +185,19 @@ git commit -m "fix: prevent same-layer overlap in Paws AI levels"
 - Consumes: repository test commands and the existing Paws browser acceptance script.
 - Produces: fresh local and public evidence tied to the final commit SHA.
 
-- [ ] **Step 1: Run the full automated regression**
+- [x] **Step 1: Run the full automated regression**
 
-Run every `tests/*.test.mjs` file with Node's test runner, then run all repository `.mjs` files through `node --check` and run `git diff --check`.
+Run every Paws test file with Node's test runner, then run every checked-out Paws project/script/test `.mjs` file through `node --check` and run `git diff --check`. The sparse release checkout intentionally omits unrelated application files, so repository-wide tracked-file syntax scanning is not available here.
 
-Expected: zero failures and zero syntax or whitespace errors; only the existing Windows symlink permission test may skip.
+Result: 102 pass / 0 fail / 1 existing Windows symlink permission skip; 40 checked-out Paws modules pass syntax checks; `git diff --check` passes.
 
-- [ ] **Step 2: Run local desktop browser acceptance**
+- [x] **Step 2: Run local desktop browser acceptance**
 
 Run the existing static server and `tests/paws-level-editor-browser-smoke.mjs`. Generate the standard 200-tile/15-layer level, enter 3D, and complete the solver-driven playthrough.
 
 Expected: 7×8 board, zero same-layer overlap, 100 successful removal steps, and no console, page, request, or HTTP errors.
+
+Result: local Chromium generated 200 tiles / 15 layers / score 60, reported zero same-layer overlaps and even layer/global types, completed 100 solver steps with zero remaining tiles, and collected zero browser errors.
 
 - [ ] **Step 3: Push the verified commits**
 
