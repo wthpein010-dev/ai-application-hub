@@ -29,13 +29,21 @@ const sourceFiles = [
   "projects/paws-level-editor/app.mjs",
   "projects/paws-level-editor/static-api-client.mjs",
   "projects/paws-level-editor/core/ai-level-generator.mjs",
+  "projects/paws-level-editor/core/editor-geometry.mjs",
   "projects/paws-level-editor/core/level-difficulty.mjs",
   "projects/paws-level-editor/core/level-solver.mjs",
   "projects/paws-level-editor/core/level-statistics.mjs",
+  "projects/paws-level-editor/core/level-validator.mjs",
+  "projects/paws-level-editor/core/view-model.mjs",
   "projects/paws-level-editor/ui/ai-level-dialog.mjs",
+  "projects/paws-level-editor/ui/editor-shortcuts.mjs",
+  "projects/paws-level-editor/ui/inspector.mjs",
+  "projects/paws-level-editor/ui/level-export.mjs",
   "projects/paws-level-editor/ui/local-level-import.mjs",
   "projects/paws-level-editor/ui/level-summary.mjs",
   "projects/paws-level-editor/ui/workbench-controller.mjs",
+  "projects/paws-level-editor/views/canvas-2d.mjs",
+  "projects/paws-level-editor/views/three-3d.mjs",
   "projects/paws-level-editor/levels/index.json",
   "projects/paws-level-editor/levels/level_0020_r2_第二关模板12.json",
   "scripts/record-paws-level-editor-demo.mjs",
@@ -424,6 +432,27 @@ async function recordEditor() {
         const catalogEntry = controller.levels.find(
           ({ fileName }) => fileName === controller.document.fileName,
         );
+        const globalTypes = new Map();
+        const layerTypes = new Map();
+        let sameLayerOverlapPairs = 0;
+        for (let leftIndex = 0; leftIndex < controller.document.tiles.length; leftIndex += 1) {
+          const left = controller.document.tiles[leftIndex];
+          globalTypes.set(left.type, (globalTypes.get(left.type) ?? 0) + 1);
+          const layerType = String(left.layer) + "|" + String(left.type);
+          layerTypes.set(layerType, (layerTypes.get(layerType) ?? 0) + 1);
+          for (
+            let rightIndex = leftIndex + 1;
+            rightIndex < controller.document.tiles.length;
+            rightIndex += 1
+          ) {
+            const right = controller.document.tiles[rightIndex];
+            if (
+              left.layer === right.layer
+              && Math.abs(left.x - right.x) < 8
+              && Math.abs(left.y - right.y) < 8
+            ) sameLayerOverlapPairs += 1;
+          }
+        }
         return {
           fileName: controller.lastAiGeneration.fileName,
           reference: controller.lastAiGeneration.options.reference,
@@ -450,6 +479,10 @@ async function recordEditor() {
           aiReferenceEligible: catalogEntry.aiReferenceEligible,
           referenceCount:
             controller.document.designerNote.aiGeneration.referenceCount,
+          sameLayerOverlapPairs,
+          totalEven: controller.document.tiles.length % 2 === 0,
+          globalTypesEven: [...globalTypes.values()].every((count) => count % 2 === 0),
+          layerTypesEven: [...layerTypes.values()].every((count) => count % 2 === 0),
         };
       });
       assert.match(aiGeneration.fileName, /^ai_level_\d+\.json$/);
@@ -465,6 +498,10 @@ async function recordEditor() {
       assert.equal(aiGeneration.source, "ai");
       assert.equal(aiGeneration.aiReferenceEligible, false);
       assert.equal(aiGeneration.referenceCount, 30);
+      assert.equal(aiGeneration.sameLayerOverlapPairs, 0);
+      assert.equal(aiGeneration.totalEven, true);
+      assert.equal(aiGeneration.globalTypesEven, true);
+      assert.equal(aiGeneration.layerTypesEven, true);
       assert.ok(Math.abs(aiGeneration.actualScore - aiGeneration.targetScore) <= 5);
       assert.equal(await page.locator('[role="option"]').count(), 31);
       proof.actions.aiGeneration = aiGeneration;
@@ -557,7 +594,57 @@ async function recordEditor() {
           after: propertyAfter,
         },
       };
-      await delay(2400);
+      const tileCountBeforeShortcuts = await page.evaluate(
+        () => window.pawsWorkbench.document.tiles.length,
+      );
+      await page.locator(".level-canvas-2d").focus();
+      await page.keyboard.press("Control+C");
+      await page.keyboard.press("Control+V");
+      await page.waitForFunction(
+        (before) => window.pawsWorkbench.document.tiles.length === before + 1,
+        tileCountBeforeShortcuts,
+      );
+      await delay(700);
+      await page.keyboard.press("Control+D");
+      await page.waitForFunction(
+        (before) => window.pawsWorkbench.document.tiles.length === before + 2,
+        tileCountBeforeShortcuts,
+      );
+      await delay(900);
+      proof.actions.safeEditing = await page.evaluate((tileCountBefore) => {
+        const tiles = window.pawsWorkbench.document.tiles;
+        let sameLayerOverlapPairs = 0;
+        for (let left = 0; left < tiles.length; left += 1) {
+          for (let right = left + 1; right < tiles.length; right += 1) {
+            if (
+              tiles[left].layer === tiles[right].layer
+              && Math.abs(tiles[left].x - tiles[right].x) < 8
+              && Math.abs(tiles[left].y - tiles[right].y) < 8
+            ) sameLayerOverlapPairs += 1;
+          }
+        }
+        return {
+          tileCountBefore,
+          tileCountAfter: tiles.length,
+          sameLayerOverlapPairs,
+        };
+      }, tileCountBeforeShortcuts);
+      assert.deepEqual(proof.actions.safeEditing, {
+        tileCountBefore: 200,
+        tileCountAfter: 202,
+        sameLayerOverlapPairs: 0,
+      });
+      await page.locator("#layer-view-mode").selectOption("through");
+      await page.locator("#layer-view-prev").click();
+      await page.waitForFunction(() =>
+        window.pawsWorkbench.layerView.mode === "through"
+        && window.pawsWorkbench.layerView.layer === 14);
+      proof.actions.layerInspection = {
+        layer: 14,
+        through2d: await page.evaluate(() =>
+          window.pawsWorkbench.renderer.boardTiles().length),
+      };
+      await delay(1100);
 
       // 00:32 — switch to the real WebGL view, orbit the camera and pick a different tile.
       await waitUntil(startedAt, 32);
@@ -565,6 +652,19 @@ async function recordEditor() {
       await page.locator("#view-3d").click();
       await page.locator(".level-canvas-3d").waitFor({ state: "visible" });
       await waitForWorkbench(page);
+      proof.actions.layerInspection.through3d = await page.evaluate(() =>
+        window.pawsWorkbench.renderer.meshes.size);
+      assert.equal(
+        proof.actions.layerInspection.through3d,
+        proof.actions.layerInspection.through2d,
+      );
+      await page.locator("#layer-view-mode").selectOption("single");
+      await page.waitForFunction(() =>
+        window.pawsWorkbench.layerView.mode === "single");
+      proof.actions.layerInspection.single3d = await page.evaluate(() =>
+        window.pawsWorkbench.renderer.meshes.size);
+      assert.ok(proof.actions.layerInspection.single3d > 0);
+      await delay(900);
       const cameraBefore = await page.evaluate(() => ({
         position: window.pawsWorkbench.renderer.camera.position.toArray(),
         target: window.pawsWorkbench.renderer.controls.target.toArray(),
@@ -600,13 +700,44 @@ async function recordEditor() {
         () => [...window.pawsWorkbench.selection].join(","),
       );
       assert.notEqual(selectedAfter3d, selectedBefore3d);
+      await page.evaluate(() => window.pawsWorkbench.setSelection(new Set()));
+      await page.locator('[data-tool="delete"]').click();
+      const deletedUid3d = await clickVisibleTileIn3d(page);
+      await page.waitForFunction(
+        (uid) => !window.pawsWorkbench.document.tiles.some((tile) => tile.uid === uid),
+        deletedUid3d,
+      );
+      const deletedCount = await page.evaluate(
+        () => window.pawsWorkbench.document.tiles.length,
+      );
+      await delay(850);
+      await page.locator("#undo").click();
+      await page.waitForFunction(
+        (uid) => window.pawsWorkbench.document.tiles.some((tile) => tile.uid === uid),
+        deletedUid3d,
+      );
+      const restoredCount = await page.evaluate(
+        () => window.pawsWorkbench.document.tiles.length,
+      );
+      await page.locator('[data-tool="select"]').click();
+      const deleteUndo = {
+        uid: deletedUid3d,
+        deletedCount,
+        restoredCount,
+        restored: restoredCount === 202,
+      };
+      assert.deepEqual(
+        { deletedCount, restoredCount, restored: deleteUndo.restored },
+        { deletedCount: 201, restoredCount: 202, restored: true },
+      );
       proof.actions.edit3d = {
         cameraBefore,
         cameraAfter,
         selectedBefore: selectedBefore3d,
         selectedAfter: selectedAfter3d,
+        deleteUndo,
       };
-      await delay(2600);
+      await delay(1200);
 
       // 00:50 — enter play mode and change state through real 2D and 3D canvases.
       await waitUntil(startedAt, 50);
@@ -657,6 +788,22 @@ async function recordEditor() {
       markChapter(proof.timeline, "persistence", startedAt, 70);
       await page.locator("#mode-edit").click();
       await page.locator("#view-2d").click();
+      const [exportDownload] = await Promise.all([
+        page.waitForEvent("download"),
+        page.locator("#export-level").click(),
+      ]);
+      const exportedValue = JSON.parse(
+        await readFile(await exportDownload.path(), "utf8"),
+      );
+      proof.actions.export = {
+        fileName: exportDownload.suggestedFilename(),
+        gridUnit: exportedValue.gridUnit,
+        tileCount: exportedValue.tiles.length,
+      };
+      assert.equal(proof.actions.export.fileName, generatedFileName);
+      assert.equal(proof.actions.export.gridUnit, "sheep_7x8_mini8");
+      assert.equal(proof.actions.export.tileCount, 202);
+      await delay(1100);
       await page.locator("#save-level").click();
       await page.waitForFunction(() =>
         document

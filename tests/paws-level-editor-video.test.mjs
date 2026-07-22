@@ -84,13 +84,21 @@ test("recording proof matches current media, sources, timeline and real state ch
     "projects/paws-level-editor/app.mjs",
     "projects/paws-level-editor/static-api-client.mjs",
     "projects/paws-level-editor/core/ai-level-generator.mjs",
+    "projects/paws-level-editor/core/editor-geometry.mjs",
     "projects/paws-level-editor/core/level-difficulty.mjs",
     "projects/paws-level-editor/core/level-solver.mjs",
     "projects/paws-level-editor/core/level-statistics.mjs",
+    "projects/paws-level-editor/core/level-validator.mjs",
+    "projects/paws-level-editor/core/view-model.mjs",
     "projects/paws-level-editor/ui/ai-level-dialog.mjs",
+    "projects/paws-level-editor/ui/editor-shortcuts.mjs",
+    "projects/paws-level-editor/ui/inspector.mjs",
+    "projects/paws-level-editor/ui/level-export.mjs",
     "projects/paws-level-editor/ui/local-level-import.mjs",
     "projects/paws-level-editor/ui/level-summary.mjs",
     "projects/paws-level-editor/ui/workbench-controller.mjs",
+    "projects/paws-level-editor/views/canvas-2d.mjs",
+    "projects/paws-level-editor/views/three-3d.mjs",
     "projects/paws-level-editor/levels/index.json",
     "projects/paws-level-editor/levels/level_0020_r2_第二关模板12.json",
     "scripts/record-paws-level-editor-demo.mjs",
@@ -136,6 +144,10 @@ test("recording proof matches current media, sources, timeline and real state ch
   assert.equal(actions.aiGeneration.source, "ai");
   assert.equal(actions.aiGeneration.aiReferenceEligible, false);
   assert.equal(actions.aiGeneration.referenceCount, 30);
+  assert.equal(actions.aiGeneration.sameLayerOverlapPairs, 0);
+  assert.equal(actions.aiGeneration.totalEven, true);
+  assert.equal(actions.aiGeneration.globalTypesEven, true);
+  assert.equal(actions.aiGeneration.layerTypesEven, true);
   assert.equal(
     Math.abs(actions.aiGeneration.actualScore - actions.aiGeneration.targetScore) <= 5,
     true,
@@ -148,8 +160,19 @@ test("recording proof matches current media, sources, timeline and real state ch
   assert.equal(actions.edit2d.drag.selectedBefore, actions.edit2d.drag.uid);
   assert.equal(actions.edit2d.drag.selectedAfter, actions.edit2d.drag.uid);
   assert.notEqual(actions.edit2d.property.before, actions.edit2d.property.after);
+  assert.deepEqual(actions.safeEditing, {
+    tileCountBefore: 200,
+    tileCountAfter: 202,
+    sameLayerOverlapPairs: 0,
+  });
+  assert.equal(actions.layerInspection.through2d, actions.layerInspection.through3d);
+  assert.ok(actions.layerInspection.through2d > 0);
+  assert.ok(actions.layerInspection.single3d > 0);
   assert.notDeepEqual(actions.edit3d.cameraBefore, actions.edit3d.cameraAfter);
   assert.notEqual(actions.edit3d.selectedBefore, actions.edit3d.selectedAfter);
+  assert.equal(actions.edit3d.deleteUndo.deletedCount, 201);
+  assert.equal(actions.edit3d.deleteUndo.restoredCount, 202);
+  assert.equal(actions.edit3d.deleteUndo.restored, true);
   assert.ok(actions.play2d.removedAfter > actions.play2d.removedBefore);
   assert.notEqual(actions.play3d.selectedBefore, actions.play3d.selectedAfter);
   assert.equal(actions.persistence.savedToLocalStorage, true);
@@ -166,6 +189,9 @@ test("recording proof matches current media, sources, timeline and real state ch
   assert.equal(actions.persistence.deletedFromStorage, true);
   assert.equal(actions.persistence.absentFromCatalog, true);
   assert.equal(actions.persistence.referenceCountAfterDelete, 30);
+  assert.match(actions.export.fileName, /^ai_level_\d+\.json$/);
+  assert.equal(actions.export.gridUnit, "sheep_7x8_mini8");
+  assert.equal(actions.export.tileCount, 202);
   assert.deepEqual(proof.errors.console, []);
   assert.deepEqual(proof.errors.page, []);
 });

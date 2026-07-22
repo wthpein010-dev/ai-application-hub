@@ -159,6 +159,22 @@ async function assertNoHorizontalOverflow(page, label) {
   );
 }
 
+async function assertToolbarClearsInspector(page, label) {
+  const layout = await page.evaluate(() => {
+    const control = document.querySelector("#layer-view-prev")?.getBoundingClientRect();
+    const inspector = document.querySelector("#inspector-panel")?.getBoundingClientRect();
+    return control && inspector
+      ? { controlRight: control.right, inspectorLeft: inspector.left }
+      : null;
+  });
+  assert.ok(layout, label + " toolbar or inspector was missing");
+  assert.equal(
+    layout.controlRight <= layout.inspectorLeft,
+    true,
+    label + " layer toolbar overlapped the inspector: " + JSON.stringify(layout),
+  );
+}
+
 async function importSyntheticLevel(page, { name, value }) {
   const [chooser] = await Promise.all([
     page.waitForEvent("filechooser"),
@@ -280,6 +296,32 @@ async function clickAvailableTileIn3d(page) {
   return target;
 }
 
+async function clickEditableTileIn3d(page, uid = null) {
+  const target = await page.evaluate((wantedUid) => {
+    const renderer = window.pawsWorkbench.renderer;
+    const rectangle = renderer.renderer.domElement.getBoundingClientRect();
+    for (const [candidateUid, mesh] of renderer.meshes) {
+      if (wantedUid && candidateUid !== wantedUid) continue;
+      const projected = mesh.getWorldPosition(mesh.position.clone()).project(renderer.camera);
+      const point = {
+        x: (projected.x + 1) * rectangle.width / 2,
+        y: (1 - projected.y) * rectangle.height / 2,
+      };
+      const picked = renderer.pick({
+        clientX: rectangle.left + point.x,
+        clientY: rectangle.top + point.y,
+      });
+      if (picked?.uid === candidateUid) return { uid: candidateUid, ...point };
+    }
+    return null;
+  }, uid);
+  assert.ok(target, "expected a raycast-visible editable tile in the 3D canvas");
+  const canvasBox = await page.locator(".level-canvas-3d").boundingBox();
+  assert.ok(canvasBox, "editable 3D canvas should have a bounding box");
+  await page.mouse.click(canvasBox.x + target.x, canvasBox.y + target.y);
+  return target;
+}
+
 await assertBundledLevelIsValid();
 const browserErrors = { console: [], http: [], page: [], request: [] };
 let browser = null;
@@ -303,6 +345,10 @@ try {
     importedEditSaved: null,
     importedWebgl: null,
     importedPlayInteraction: null,
+    safeEditing: null,
+    layerInspection: null,
+    threeDeleteUndo: null,
+    exportRoundTrip: null,
     deletedLocalLevels: null,
     aiReferenceCountsAfterDelete: null,
     aiGeneration: null,
@@ -310,7 +356,7 @@ try {
     mobileImportHidden: null,
     mobileDeleteHidden: null,
   };
-  const desktop = await browser.newContext({ viewport: { width: 1440, height: 900 } });
+  const desktop = await browser.newContext({ viewport: { width: 1280, height: 720 } });
   const page = await desktop.newPage();
   page.setDefaultNavigationTimeout(browserTimeout);
   page.setDefaultTimeout(browserTimeout);
@@ -344,6 +390,7 @@ try {
   assert.equal(await page.locator("#reset-level").isEnabled(), true);
   assert.equal(await page.locator(".level-canvas-2d").isVisible(), true, "2D canvas should be visible");
   await assertNoHorizontalOverflow(page, "desktop");
+  await assertToolbarClearsInspector(page, "1280x720");
   summary.desktopOverflow = false;
 
   const importedLevel = {
@@ -474,7 +521,7 @@ try {
     assertCurrentImportedDocument(fileName);
     const tile = window.pawsWorkbench.document.tiles[0];
     window.pawsWorkbench.setSelection(new Set([tile.uid]));
-    return { uid: tile.uid, x: tile.x };
+    return { uid: tile.uid, y: tile.y };
 
     function assertCurrentImportedDocument(expectedFileName) {
       if (window.pawsWorkbench.document.fileName !== expectedFileName) {
@@ -482,27 +529,27 @@ try {
       }
     }
   }, importedAcceptanceFileName);
-  const importedModifiedX = importedOriginalTile.x + 1;
-  const importedTileX = page.locator('[data-tile-field="x"]');
-  await importedTileX.fill(String(importedModifiedX));
-  await importedTileX.press("Tab");
+  const importedModifiedY = importedOriginalTile.y + 1;
+  const importedTileY = page.locator('[data-tile-field="y"]');
+  await importedTileY.fill(String(importedModifiedY));
+  await importedTileY.press("Tab");
   await page.waitForFunction(
-    ({ fileName, uid, x }) =>
+    ({ fileName, uid, y }) =>
       window.pawsWorkbench.document.fileName === fileName
-      && window.pawsWorkbench.document.tiles.find((tile) => tile.uid === uid)?.x === x,
+      && window.pawsWorkbench.document.tiles.find((tile) => tile.uid === uid)?.y === y,
     {
       fileName: importedAcceptanceFileName,
       uid: importedOriginalTile.uid,
-      x: importedModifiedX,
+      y: importedModifiedY,
     },
   );
   await page.locator("#save-level").click();
   await page.waitForFunction(
-    ({ fileName, x }) => {
+    ({ fileName, y }) => {
       const raw = localStorage.getItem(`paws-level-editor-demo-v1:${fileName}`);
-      return raw && JSON.parse(raw).value.tiles[0].x === x;
+      return raw && JSON.parse(raw).value.tiles[0].y === y;
     },
-    { fileName: importedAcceptanceFileName, x: importedModifiedX },
+    { fileName: importedAcceptanceFileName, y: importedModifiedY },
   );
   summary.importedEditSaved = true;
 
@@ -630,18 +677,37 @@ try {
     "3D canvas should expose a WebGL context",
   );
 
-  const originalTile = await page.evaluate(() => {
-    const tile = window.pawsWorkbench.document.tiles[0];
-    window.pawsWorkbench.setSelection(new Set([tile.uid]));
-    return { uid: tile.uid, x: tile.x };
+  const originalTile = await page.evaluate(async () => {
+    const controller = window.pawsWorkbench;
+    const geometryUrl = new URL("./core/editor-geometry.mjs", window.location.href);
+    const { planTileMove } = await import(geometryUrl.href);
+    const deltas = [
+      { dx: 1, dy: 0 },
+      { dx: -1, dy: 0 },
+      { dx: 0, dy: 1 },
+      { dx: 0, dy: -1 },
+    ];
+    for (const tile of controller.document.tiles) {
+      for (const delta of deltas) {
+        if (planTileMove(controller.document, [tile.uid], delta).ok) {
+          controller.setSelection(new Set([tile.uid]));
+          return { uid: tile.uid, x: tile.x, y: tile.y, ...delta };
+        }
+      }
+    }
+    throw new Error("Expected a safely movable bundled tile");
   });
-  const modifiedX = originalTile.x + 1;
-  const tileX = page.locator('[data-tile-field="x"]');
-  await tileX.fill(String(modifiedX));
-  await tileX.press("Tab");
+  const modifiedTile = {
+    x: originalTile.x + originalTile.dx,
+    y: originalTile.y + originalTile.dy,
+  };
+  await page.evaluate(({ dx, dy }) => window.pawsWorkbench.nudgeSelection(dx, dy), originalTile);
   await page.waitForFunction(
-    ({ uid, x }) => window.pawsWorkbench.document.tiles.find((tile) => tile.uid === uid)?.x === x,
-    { uid: originalTile.uid, x: modifiedX },
+    ({ uid, x, y }) => {
+      const tile = window.pawsWorkbench.document.tiles.find((candidate) => candidate.uid === uid);
+      return tile?.x === x && tile?.y === y;
+    },
+    { uid: originalTile.uid, ...modifiedTile },
   );
   await page.locator("#save-level").click();
   await page.waitForFunction(() =>
@@ -661,8 +727,11 @@ try {
   await waitForNetworkAndTextures(page);
   assert.equal(
     await page.evaluate(
-      ({ uid, x }) => window.pawsWorkbench.document.tiles.find((tile) => tile.uid === uid)?.x === x,
-      { uid: originalTile.uid, x: modifiedX },
+      ({ uid, x, y }) => {
+        const tile = window.pawsWorkbench.document.tiles.find((candidate) => candidate.uid === uid);
+        return tile?.x === x && tile?.y === y;
+      },
+      { uid: originalTile.uid, ...modifiedTile },
     ),
     true,
     "refresh should auto-open and restore the saved tile edit",
@@ -675,8 +744,11 @@ try {
   await waitForNetworkAndTextures(page);
   assert.equal(
     await page.evaluate(
-      ({ uid, x }) => window.pawsWorkbench.document.tiles.find((tile) => tile.uid === uid)?.x === x,
-      originalTile,
+      ({ uid, x, y }) => {
+        const tile = window.pawsWorkbench.document.tiles.find((candidate) => candidate.uid === uid);
+        return tile?.x === x && tile?.y === y;
+      },
+      { uid: originalTile.uid, x: originalTile.x, y: originalTile.y },
     ),
     true,
     "reset should restore the bundled tile value",
@@ -689,6 +761,188 @@ try {
     null,
     "reset should remove the localStorage override",
   );
+
+  await page.locator("#new-level").click();
+  await page.waitForFunction(() => window.pawsWorkbench?.document?.name === "新关卡");
+  const newBoard = await page.evaluate(() => ({
+    board: window.pawsWorkbench.document.board,
+    gridUnit: window.pawsWorkbench.document.gridUnit,
+  }));
+  assert.deepEqual(newBoard, {
+    board: { width: 7, height: 8, scale: 1 },
+    gridUnit: "sheep_7x8_mini8",
+  });
+  await page.evaluate(() => {
+    const controller = window.pawsWorkbench;
+    for (const tile of [
+      { x: 0, y: 0, layer: 1, type: 1 },
+      { x: 8, y: 0, layer: 1, type: 1 },
+      { x: 40, y: 0, layer: 1, type: 2 },
+      { x: 48, y: 0, layer: 1, type: 2 },
+    ]) controller.placeTile({ ...tile, presetColorType: 1 });
+  });
+  await page.waitForFunction(() => window.pawsWorkbench.document.tiles.length === 4);
+
+  const rejectedMove = await page.evaluate(() => {
+    const controller = window.pawsWorkbench;
+    const target = controller.document.tiles.find(({ x, y }) => x === 8 && y === 0);
+    controller.setSelection(new Set([target.uid]));
+    return {
+      uid: target.uid,
+      x: target.x,
+      undoCount: controller.history.undoStack.length,
+    };
+  });
+  await page.keyboard.press("ArrowLeft");
+  await page.waitForFunction(() =>
+    document.querySelector("#stage-toast")?.textContent?.includes("同层砖块"));
+  assert.deepEqual(
+    await page.evaluate((expected) => {
+      const controller = window.pawsWorkbench;
+      return {
+        uid: expected.uid,
+        x: controller.document.tiles.find(({ uid }) => uid === expected.uid).x,
+        undoCount: controller.history.undoStack.length,
+      };
+    }, rejectedMove),
+    rejectedMove,
+    "overlap nudge should be rejected without adding history",
+  );
+
+  const resizeUndoCount = await page.evaluate(() => window.pawsWorkbench.history.undoStack.length);
+  await page.evaluate(() => window.pawsWorkbench.patchBoard({ width: 6 }));
+  await page.waitForFunction(() =>
+    document.querySelector("#stage-toast")?.textContent?.includes("裁掉"));
+  assert.deepEqual(
+    await page.evaluate(() => ({
+      width: window.pawsWorkbench.document.board.width,
+      undoCount: window.pawsWorkbench.history.undoStack.length,
+    })),
+    { width: 7, undoCount: resizeUndoCount },
+    "unsafe board shrink should be rejected atomically",
+  );
+
+  await page.evaluate(() => {
+    const controller = window.pawsWorkbench;
+    const source = controller.document.tiles.find(({ x, y }) => x === 0 && y === 0);
+    controller.setSelection(new Set([source.uid]));
+  });
+  await page.keyboard.press("Control+C");
+  await page.keyboard.press("Control+V");
+  await page.waitForFunction(() => window.pawsWorkbench.document.tiles.length === 5);
+  await page.keyboard.press("Control+D");
+  await page.waitForFunction(() => window.pawsWorkbench.document.tiles.length === 6);
+  await page.keyboard.press("ArrowRight");
+  await page.keyboard.press("PageUp");
+  await page.waitForFunction(() =>
+    window.pawsWorkbench.document.tiles.some(({ layer }) => layer === 2));
+
+  summary.safeEditing = await page.evaluate(() => {
+    const controller = window.pawsWorkbench;
+    const tiles = controller.document.tiles;
+    let sameLayerOverlapPairs = 0;
+    for (let left = 0; left < tiles.length; left += 1) {
+      for (let right = left + 1; right < tiles.length; right += 1) {
+        if (
+          tiles[left].layer === tiles[right].layer
+          && Math.abs(tiles[left].x - tiles[right].x) < 8
+          && Math.abs(tiles[left].y - tiles[right].y) < 8
+        ) sameLayerOverlapPairs += 1;
+      }
+    }
+    return {
+      board: `${controller.document.board.width}x${controller.document.board.height}`,
+      tileCount: tiles.length,
+      sameLayerOverlapPairs,
+      undoCount: controller.history.undoStack.length,
+    };
+  });
+  assert.deepEqual(
+    {
+      board: summary.safeEditing.board,
+      tileCount: summary.safeEditing.tileCount,
+      sameLayerOverlapPairs: summary.safeEditing.sameLayerOverlapPairs,
+    },
+    { board: "7x8", tileCount: 6, sameLayerOverlapPairs: 0 },
+  );
+
+  await page.locator("#layer-view-mode").selectOption("through");
+  await page.waitForFunction(() => window.pawsWorkbench.layerView.mode === "through");
+  const through2d = await page.evaluate(() => window.pawsWorkbench.renderer.boardTiles().length);
+  await page.locator("#view-3d").click();
+  await page.locator(".level-canvas-3d").waitFor({ state: "visible" });
+  await waitForNetworkAndTextures(page);
+  const through3d = await page.evaluate(() => window.pawsWorkbench.renderer.meshes.size);
+  await page.locator("#layer-view-mode").selectOption("single");
+  await page.locator("#layer-view-next").click();
+  await page.waitForFunction(() =>
+    window.pawsWorkbench.layerView.mode === "single"
+    && window.pawsWorkbench.layerView.layer === 2);
+  const single3d = await page.evaluate(() => window.pawsWorkbench.renderer.meshes.size);
+  await page.locator("#view-2d").click();
+  await page.locator(".level-canvas-2d").waitFor({ state: "visible" });
+  const single2d = await page.evaluate(() => window.pawsWorkbench.renderer.boardTiles().length);
+  summary.layerInspection = { through2d, through3d, single2d, single3d };
+  assert.deepEqual(summary.layerInspection, {
+    through2d: 5,
+    through3d: 5,
+    single2d: 1,
+    single3d: 1,
+  });
+
+  await page.locator("#view-3d").click();
+  await page.locator(".level-canvas-3d").waitFor({ state: "visible" });
+  await waitForNetworkAndTextures(page);
+  const layerTwoUid = await page.evaluate(() =>
+    window.pawsWorkbench.document.tiles.find(({ layer }) => layer === 2).uid);
+  await page.locator('[data-tool="delete"]').click();
+  await clickEditableTileIn3d(page, layerTwoUid);
+  await page.waitForFunction((uid) =>
+    !window.pawsWorkbench.document.tiles.some((tile) => tile.uid === uid), layerTwoUid);
+  const afterDeleteCount = await page.evaluate(() => window.pawsWorkbench.document.tiles.length);
+  await page.keyboard.press("Control+Z");
+  await page.waitForFunction((uid) =>
+    window.pawsWorkbench.document.tiles.some((tile) => tile.uid === uid), layerTwoUid);
+  const afterUndoCount = await page.evaluate(() => window.pawsWorkbench.document.tiles.length);
+  summary.threeDeleteUndo = {
+    deletedCount: afterDeleteCount,
+    restoredCount: afterUndoCount,
+  };
+  assert.deepEqual(summary.threeDeleteUndo, { deletedCount: 5, restoredCount: 6 });
+
+  const [download] = await Promise.all([
+    page.waitForEvent("download"),
+    page.locator("#export-level").click(),
+  ]);
+  const exportedText = await readFile(await download.path(), "utf8");
+  const exportedValue = JSON.parse(exportedText);
+  assert.equal(download.suggestedFilename(), "level_0000.json");
+  assert.equal(exportedValue.gridUnit, "sheep_7x8_mini8");
+  assert.equal(exportedValue.tiles.length, 6);
+  page.once("dialog", (dialog) => dialog.accept());
+  await importSyntheticLevel(page, {
+    name: download.suggestedFilename(),
+    value: exportedText,
+  });
+  await page.waitForFunction(() =>
+    window.pawsWorkbench?.document?.fileName === "level_0000.json");
+  summary.exportRoundTrip = await page.evaluate(() => ({
+    fileName: window.pawsWorkbench.document.fileName,
+    board: `${window.pawsWorkbench.document.board.width}x${window.pawsWorkbench.document.board.height}`,
+    gridUnit: window.pawsWorkbench.document.gridUnit,
+    tileCount: window.pawsWorkbench.document.tiles.length,
+  }));
+  assert.deepEqual(summary.exportRoundTrip, {
+    fileName: "level_0000.json",
+    board: "7x8",
+    gridUnit: "sheep_7x8_mini8",
+    tileCount: 6,
+  });
+  page.once("dialog", (dialog) => dialog.accept());
+  await page.locator("#delete-local-level").click();
+  await page.waitForFunction((fallback) =>
+    window.pawsWorkbench?.document?.fileName === fallback, defaultFileName);
+  await waitForNetworkAndTextures(page);
 
   await page.locator("#generate-ai-level").click();
   await page.locator("#ai-level-dialog").waitFor({ state: "visible" });
