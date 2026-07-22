@@ -1,18 +1,18 @@
 {
   "schemaVersion": 1,
-  "recordedAt": "2026-07-22T11:02:00.254Z",
+  "recordedAt": "2026-07-22T11:33:31.137Z",
   "recording": {
     "browser": "system Chrome",
-    "preRollMs": 1089,
-    "completedAt": "2026-07-22T11:03:28.261Z",
-    "durationMs": 88007
+    "preRollMs": 1088,
+    "completedAt": "2026-07-22T11:34:59.151Z",
+    "durationMs": 88014
   },
   "timeline": {
     "tools": 0,
-    "edit2d": 12013,
-    "view3d": 32004,
-    "play": 50008,
-    "persistence": 70001
+    "edit2d": 12001,
+    "view3d": 32010,
+    "play": 50002,
+    "persistence": 70009
   },
   "actions": {
     "metadata": {
@@ -22,7 +22,7 @@
       "modifiedAt": "2026-07-20T00:00:00.000Z"
     },
     "aiGeneration": {
-      "fileName": "ai_level_2996858368.json",
+      "fileName": "ai_level_3436867436.json",
       "reference": "all",
       "solvable": true,
       "tileCount": 200,
@@ -33,7 +33,7 @@
       "dimensions": {
         "structure": 84,
         "information": 68,
-        "choice": 51,
+        "choice": 50,
         "route": 53,
         "endurance": 45
       },
@@ -61,11 +61,11 @@
         "selectedBefore": "tile-195",
         "selectedAfter": "tile-195",
         "before": {
-          "x": 4,
+          "x": 12,
           "y": 4
         },
         "after": {
-          "x": 12,
+          "x": 4,
           "y": 4
         }
       },
@@ -89,25 +89,25 @@
     "edit3d": {
       "cameraBefore": {
         "position": [
-          0.41757004175969126,
-          1.3653779358018767,
+          4.417570041759693,
+          1.355017921047,
           -3.5
         ],
         "target": [
-          -3,
-          0.3264366431069304,
+          1,
+          0.3160766283520531,
           -3.5
         ]
       },
       "cameraAfter": {
         "position": [
-          -6.419264974282386,
-          0.5507243788656362,
-          -4.508715047589586
+          -2.4192649923810463,
+          0.5403643641107589,
+          -4.50871498624014
         ],
         "target": [
-          -3,
-          0.3264366431069304,
+          1,
+          0.3160766283520531,
           -3.5
         ]
       },
@@ -134,10 +134,10 @@
             1.1293539700886997e-15
           ]
         },
-        "relationEdges": 3,
+        "relationEdges": 6,
         "relationLines": 1,
         "explodedDelta": 2.3099999999999996,
-        "focusDistance": 0
+        "focusDistance": 0.0007894861442870882
       },
       "selectedBefore": "",
       "selectedAfter": "tile-1",
@@ -154,23 +154,23 @@
     },
     "play3d": {
       "selectedBefore": "",
-      "selectedAfter": "tile-167"
+      "selectedAfter": "tile-170"
     },
     "export": {
-      "fileName": "ai_level_2996858368.json",
+      "fileName": "ai_level_3436867436.json",
       "gridUnit": "sheep_7x8_mini8",
       "tileCount": 202
     },
     "persistence": {
-      "savedProperty": 12,
+      "savedProperty": 4,
       "savedPosition": {
-        "x": 12,
+        "x": 4,
         "y": 4
       },
       "savedToLocalStorage": true,
-      "reloadedProperty": 12,
+      "reloadedProperty": 4,
       "reloadedPosition": {
-        "x": 12,
+        "x": 4,
         "y": 4
       },
       "localCopyPreserved": true,
@@ -186,7 +186,7 @@
   },
   "media": {
     "file": "paws-level-editor-tutorial.mp4",
-    "sha256": "e2cd4e536c041e857ae8cc321ceea457bcc7209857b8a8515dbd9ce096655a4c"
+    "sha256": "76a3081789affb386a7e54dbad5c8e32456c181dd0165f900c0a42ec787f1462"
   },
   "sources": {
     "projects/paws-level-editor/index.html": "b3ffe4fb74ee14f80a30530e3289ab51296812e482bca2ef61171d9a1a977c3d",
@@ -203,7 +203,7 @@
     "projects/paws-level-editor/core/level-statistics.mjs": "e48189c09151890d234eee1e2733eb474d44f55ff1d9c31db616124896d8c653",
     "projects/paws-level-editor/core/level-validator.mjs": "985bb657d171cb2514c50ff30ead45583303961887c9d08f89f7c18fa8490c28",
     "projects/paws-level-editor/core/tile-relations.mjs": "75bf4ef64e5e7615b8936f3b7d727139cbbfcf016a8f902e6c5f58bfe5f59c57",
-    "projects/paws-level-editor/core/view-model.mjs": "7d192442ed02a80ea018362bd464176c30eb83593f3498e2ad129ef06bf00f39",
+    "projects/paws-level-editor/core/view-model.mjs": "381d2e8626728ddf4de320cbe5340ac96bc5063c67a174dfaed72602e17ecd6c",
     "projects/paws-level-editor/ui/ai-level-dialog.mjs": "4b9edeb251049f53b7d39c36db582fa840236ebfc7446a2410a80693afc57274",
     "projects/paws-level-editor/ui/editor-shortcuts.mjs": "6dd75fb89a98e46450fee11bb35088a5ac941bf40665f000a5a95918df102bca",
     "projects/paws-level-editor/ui/inspector.mjs": "e5f8ecea09fd8a6c723df7503e5ab63f9c2865c08604d88e48e33aed3835c127",
@@ -211,7 +211,7 @@
     "projects/paws-level-editor/ui/local-level-import.mjs": "651987b8d3c1ca4293218bb1289f48c6c706ce2ba502e0960e5ae02a6883d8e9",
     "projects/paws-level-editor/ui/level-summary.mjs": "f7876ba36caaef6ac9123f98680aad02a65e5134f6ec1486f306e17f359b4713",
     "projects/paws-level-editor/ui/legacy-ai-open-upgrade.mjs": "e413eab44f7b04289015f5eb98f37971ced2057085e902fb2b04e9ac9eb8f2bd",
-    "projects/paws-level-editor/ui/workbench-controller.mjs": "04abc9bfbccf1ca03039d5848ff3c60ad422f498b2225cd9c5207b0b6551b653",
+    "projects/paws-level-editor/ui/workbench-controller.mjs": "cae05496611b881af8a3d652b800fde5f9e15b9ae0525e07e7fc98bb0b9a9262",
     "projects/paws-level-editor/views/canvas-2d.mjs": "e0ccc747b8b7eff08247dcb771d34069ff3c4ee3bf8c2de6c945ef845cb202d2",
     "projects/paws-level-editor/views/three-3d.mjs": "0e91373eab98fd25a6a32e158165169ecb46b59d453b14b54307dd0aeb009abd",
     "projects/paws-level-editor/levels/index.json": "e994f86905608597d7731375205ae90488feb3e8de27988f23d618b6167f4249",
