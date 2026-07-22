@@ -22,6 +22,9 @@ globalThis.confirm = () => true;
 const { WorkbenchController } = await import(
   "../projects/paws-level-editor/ui/workbench-controller.mjs"
 );
+const { createPlaySession } = await import(
+  "../projects/paws-level-editor/core/play-engine.mjs"
+);
 
 function deferred() {
   let resolve;
@@ -83,6 +86,81 @@ function controllerHarness(api) {
   controller.setConnection = (state, message) => events.push(["connection", state, message]);
   return { controller, events };
 }
+
+function atomicRestartDocument() {
+  const tile = (uid, x, layer) => ({
+    uid,
+    x,
+    y: 0,
+    layer,
+    type: 0,
+    moldType: 1,
+    metaType: 0,
+    metaData: 0,
+    presetColorType: 1,
+  });
+  return {
+    fileName: "level_0099_r1_atomic_restart.json",
+    gameplay: { gameLevelOrder: 1 },
+    random: {
+      blockTypeCount: 4,
+      fullTypeMin: 1,
+      fullTypeMax: 4,
+      maxFirstRoundAttempts: 1,
+    },
+    tiles: [
+      tile("lower-a", 0, 1),
+      tile("lower-b", 16, 2),
+      tile("upper-b", 16, 3),
+      tile("upper-a", 0, 4),
+    ],
+  };
+}
+
+test("rerandomize preserves controller play state and reports a rejected seed", () => {
+  const { controller, events } = controllerHarness({});
+  controller.document = atomicRestartDocument();
+  controller.seed = 2;
+  controller.mode = "play";
+  controller.playSession = createPlaySession(controller.document, controller.seed);
+  controller.playSession.stash("upper-a", 0);
+  controller.playSession.interact("upper-b");
+  controller.playSnapshot = controller.playSession.getSnapshot();
+  const before = structuredClone(controller.playSnapshot);
+  const ownGetRandomValues = Object.getOwnPropertyDescriptor(
+    globalThis.crypto,
+    "getRandomValues",
+  );
+  Object.defineProperty(globalThis.crypto, "getRandomValues", {
+    configurable: true,
+    value(target) {
+      target[0] = 3;
+      return target;
+    },
+  });
+
+  try {
+    assert.doesNotThrow(() => controller.rerandomize());
+  } finally {
+    if (ownGetRandomValues) {
+      Object.defineProperty(globalThis.crypto, "getRandomValues", ownGetRandomValues);
+    } else {
+      delete globalThis.crypto.getRandomValues;
+    }
+  }
+
+  assert.equal(controller.seed, 2);
+  assert.deepEqual(controller.playSnapshot, before);
+  assert.deepEqual(controller.playSession.getSnapshot(), before);
+  assert.equal(
+    events.some(([type, message, level]) =>
+      type === "toast"
+      && level === "error"
+      && /无法使用新种子 3/.test(message)
+      && /solvable first round assignment/i.test(message)),
+    true,
+  );
+});
 
 test("the latest level-open request wins when an older request resolves last", async () => {
   const slow = deferred();

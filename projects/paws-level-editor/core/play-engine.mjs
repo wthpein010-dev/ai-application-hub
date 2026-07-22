@@ -26,29 +26,53 @@ export function createPlaySession(document, seed = 1, options = {}) {
   let won = false;
   let deadlocked = false;
 
-  function resetRuntime() {
-    const assigned = assignRandomTypes(sourceDocument.tiles ?? [], {
-      seed: currentSeed,
-      ...(sourceDocument.random ?? {}),
-      ...(options.random ?? {}),
-      firstRound: options.firstRound ?? isFirstRoundDocument(sourceDocument),
-      isSolvable: (candidate) => solveLevel({ tiles: candidate }).solvable,
-    });
-    tiles = assigned.map((tile) => ({
-      ...tile,
-      removed: false,
-      faceDown: tile.presetColorType === 2,
-      covered: false,
-      sideBlocked: false,
-      hiddenPattern: false,
-    }));
-    tray = [null, null];
-    selectedTileUid = null;
-    selectedTileWasFlip = false;
-    won = false;
-    deadlocked = false;
-    refreshCoverage();
-    updateEndState([]);
+  function resetRuntime(nextSeed = currentSeed) {
+    const tentativeSeed = Number(nextSeed) | 0;
+    const previous = {
+      currentSeed,
+      tiles,
+      tray,
+      selectedTileUid,
+      selectedTileWasFlip,
+      won,
+      deadlocked,
+    };
+    try {
+      const assigned = assignRandomTypes(sourceDocument.tiles ?? [], {
+        seed: tentativeSeed,
+        ...(sourceDocument.random ?? {}),
+        ...(options.random ?? {}),
+        firstRound: options.firstRound ?? isFirstRoundDocument(sourceDocument),
+        isSolvable: (candidate) => solveLevel({ tiles: candidate }).solvable,
+      });
+      tiles = assigned.map((tile) => ({
+        ...tile,
+        removed: false,
+        faceDown: tile.presetColorType === 2,
+        covered: false,
+        sideBlocked: false,
+        hiddenPattern: false,
+      }));
+      tray = [null, null];
+      selectedTileUid = null;
+      selectedTileWasFlip = false;
+      won = false;
+      deadlocked = false;
+      refreshCoverage();
+      updateEndState([]);
+      currentSeed = tentativeSeed;
+    } catch (error) {
+      ({
+        currentSeed,
+        tiles,
+        tray,
+        selectedTileUid,
+        selectedTileWasFlip,
+        won,
+        deadlocked,
+      } = previous);
+      throw error;
+    }
   }
 
   function findTile(uid) {
@@ -290,8 +314,7 @@ export function createPlaySession(document, seed = 1, options = {}) {
   }
 
   function restart({ seed: nextSeed = currentSeed } = {}) {
-    currentSeed = Number(nextSeed) | 0;
-    resetRuntime();
+    resetRuntime(nextSeed);
     return getSnapshot();
   }
 

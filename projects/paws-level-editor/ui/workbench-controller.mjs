@@ -1330,8 +1330,18 @@ export class WorkbenchController {
     if (!this.playSession) {
       return;
     }
-    this.seed = nextSeed();
-    this.playSnapshot = this.playSession.restart({ seed: this.seed });
+    const tentativeSeed = nextSeed();
+    try {
+      const snapshot = this.playSession.restart({ seed: tentativeSeed });
+      this.seed = tentativeSeed;
+      this.playSnapshot = snapshot;
+    } catch (error) {
+      if (!(error instanceof RangeError)) {
+        throw error;
+      }
+      this.showToast(`无法使用新种子 ${tentativeSeed}：${error.message}`, "error");
+      return;
+    }
     this.refreshRenderer();
     this.updateUI();
     this.showToast(`已使用新种子 ${this.seed}。`);

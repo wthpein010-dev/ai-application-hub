@@ -180,6 +180,34 @@ test("first-round restart repeats one seed and changes the layer mapping for a n
   assert.notDeepEqual(typeByLayer(), first);
 });
 
+test("a rejected first-round restart leaves the entire session unchanged", () => {
+  const document = level([
+    tile("lower-a", 0, 0, 1, 0),
+    tile("lower-b", 16, 0, 2, 0),
+    tile("upper-b", 16, 0, 3, 0),
+    tile("upper-a", 0, 0, 4, 0),
+  ], {
+    fileName: "level_0099_r1_atomic_restart.json",
+    gameplay: { gameLevelOrder: 1 },
+    random: {
+      blockTypeCount: 4,
+      fullTypeMin: 1,
+      fullTypeMax: 4,
+      maxFirstRoundAttempts: 1,
+    },
+  });
+  const session = createPlaySession(document, 2);
+  session.stash("upper-a", 0);
+  session.interact("upper-b");
+  const before = session.getSnapshot();
+
+  assert.throws(
+    () => session.restart({ seed: 3 }),
+    (error) => error instanceof RangeError && /solvable first round assignment/i.test(error.message),
+  );
+  assert.deepEqual(session.getSnapshot(), before);
+});
+
 test("second round keeps both random pools globally paired", () => {
   const tiles = Array.from({ length: 12 }, (_, index) => tile(
     `random-${index}`,
