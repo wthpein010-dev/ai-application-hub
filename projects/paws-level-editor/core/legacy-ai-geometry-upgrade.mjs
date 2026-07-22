@@ -93,23 +93,46 @@ function repairTiles(document) {
   return { tiles: repaired, movedTileUids };
 }
 
+function strictValidation(document) {
+  const errors = validateLevelForPublish(document)
+    .filter(({ severity }) => severity === "error");
+  if (errors.length) return { errors, solver: null };
+  return { errors, solver: solveLevel(document) };
+}
+
+function fullySolved({ errors, solver }, document) {
+  return !errors.length
+    && solver?.solvable
+    && solver.steps === document.tiles.length / 2;
+}
+
 export function upgradeLegacyAiGeometry(document) {
   if (!document?.designerNote?.aiGeneration) {
     return { status: "unchanged", document, movedTileUids: [] };
   }
   if (!Array.isArray(document.tiles)) return failure(document, "invalid-tiles");
 
+  if (
+    document.designerNote.aiGeneration.geometryUpgrade?.rule === GEOMETRY_RULE
+    && fullySolved(strictValidation(document), document)
+  ) {
+    return { status: "unchanged", document, movedTileUids: [] };
+  }
+
   const repaired = repairTiles(document);
   if (!repaired) return failure(document, "layer-capacity-exceeded");
+  if (!repaired.movedTileUids.length) {
+    const validation = strictValidation(document);
+    if (validation.errors.length) return failure(document, "publish-validation-failed");
+    if (!fullySolved(validation, document)) return failure(document, "solver-incomplete");
+    return { status: "unchanged", document, movedTileUids: [] };
+  }
 
   const candidate = structuredClone(document);
   candidate.tiles = repaired.tiles;
-  const errors = validateLevelForPublish(candidate)
-    .filter(({ severity, code }) => severity === "error" && code !== "unsolvable-ai-level");
-  if (errors.length) return failure(document, "publish-validation-failed");
-
-  const solver = solveLevel(candidate);
-  if (!solver.solvable || solver.steps !== candidate.tiles.length / 2) {
+  const validation = strictValidation(candidate);
+  if (validation.errors.length) return failure(document, "publish-validation-failed");
+  if (!fullySolved(validation, candidate)) {
     return failure(document, "solver-incomplete");
   }
   candidate.designerNote.aiGeneration.geometryUpgrade = {

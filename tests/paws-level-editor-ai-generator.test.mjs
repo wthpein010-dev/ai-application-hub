@@ -148,6 +148,26 @@ test("legacy AI geometry repair is deterministic and treats edge touching as saf
   });
 });
 
+test("legacy AI geometry repair is idempotent after a successful upgrade", () => {
+  const document = makeLegacyAiDocument([
+    tile("pair-a-left", 0, 0, 1, 1),
+    tile("pair-b-left", 7, 0, 1, 2),
+    tile("pair-b-right", 16, 0, 1, 2),
+    tile("pair-a-right", 24, 0, 1, 1),
+  ]);
+  const upgraded = upgradeLegacyAiGeometry(document);
+  const metadata = structuredClone(upgraded.document.designerNote.aiGeneration.geometryUpgrade);
+
+  const repeated = upgradeLegacyAiGeometry(upgraded.document);
+
+  assert.equal(upgraded.status, "upgraded");
+  assert.equal(repeated.status, "unchanged");
+  assert.equal(repeated.document, upgraded.document);
+  assert.deepEqual(repeated.document, upgraded.document);
+  assert.deepEqual(repeated.document.designerNote.aiGeneration.geometryUpgrade, metadata);
+  assert.deepEqual(repeated.movedTileUids, []);
+});
+
 test("legacy AI geometry repair preserves tile identity, fields, and Unity pairing parity", () => {
   const protectedTile = {
     ...tile("fixed-left", 0, 0, 1, 7),
@@ -201,7 +221,7 @@ test("legacy AI geometry repair refuses an unsolvable candidate without returnin
   assert.equal(result.document, document);
   assert.deepEqual(document, before);
   assert.equal(result.movedTileUids.length, 0);
-  assert.equal(result.reason, "solver-incomplete");
+  assert.equal(result.reason, "publish-validation-failed");
 });
 
 test("AI validation rejects positive-area overlap on one layer", () => {
