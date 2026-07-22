@@ -133,7 +133,7 @@ const defaultApps = [
   },
   {
     id: "icecream",
-    name: "IceCream 冰激凌工坊",
+    name: "吃了个冰",
     category: "Unity 微信小游戏",
     status: "game",
     brief: "面向微信小游戏的竖屏冰激凌配单游戏：按顾客需求选择口味、制作甜筒并连续闯过 10 个关卡。",
@@ -547,9 +547,10 @@ const defaultApps = [
   {
     id: "brick-light-motion-lab",
     name: "砖块点亮动效实验台",
-    category: "美术设计参考",
+    category: "美术参考",
     status: "engineering",
-    brief: "对比十种克制的砖块暗到亮、返程回暗方案，全部点亮后与普通砖块保持一致。",
+    badge: "美术参考",
+    brief: "作为砖块叠层显露的美术参考，用于比较材质、明暗与回退动效，帮助团队挑选克制一致的呈现。",
     problem: "用于美术、策划和程序共同选择层叠砖块露出后的点亮节奏，避免额外光效让单块砖过度突出。",
     aiUse: "AI 参与动效方案拆分、暴露进度模型、交互原型、慢速对比、自动化测试和公开发布。",
     folder: "./projects/brick-light-motion-lab/",
@@ -561,11 +562,34 @@ const defaultApps = [
       windows: "",
       mac: ""
     },
-    tags: ["美术设计参考", "砖块动效", "交互原型", "暗亮切换"],
+    tags: ["美术参考", "砖块动效", "交互原型", "暗亮切换"],
     speed: 9,
     impact: 8,
     risk: 9,
     polish: 9
+  },
+  {
+    id: "nang-keng-pai-pai-xiang",
+    name: "馕了个馕",
+    category: "Unity WebGL 小游戏",
+    status: "game",
+    brief: "原名《馕坑排排香》：把不同馕放入烤位，利用火候、温区与订单顺序完成十个竖屏解谜关卡。",
+    problem: "将离散回合、烤位温差与交付顺序组合成可单手体验的轻量解谜流程，并让每关都有可回放的通关解法。",
+    aiUse: "AI 参与玩法规则拆分、十关解法验证、UGUI 产品流、美术资源整理、WebGL 构建与发布验收。",
+    folder: "./projects/nang-keng-pai-pai-xiang/",
+    entry: "./projects/nang-keng-pai-pai-xiang/index.html",
+    video: "./projects/nang-keng-pai-pai-xiang/video/index.html",
+    package: "",
+    platforms: {
+      web: "./projects/nang-keng-pai-pai-xiang/index.html",
+      windows: "",
+      mac: ""
+    },
+    tags: ["Unity", "WebGL", "竖屏解谜", "馕坑排排香"],
+    speed: 8,
+    impact: 8,
+    risk: 7,
+    polish: 8
   },
 ];
 
@@ -826,7 +850,7 @@ function renderAppCard(app, index = 0, extraClass = "", actionMode = "default") 
     <article class="app-card${extraClass} ${app.id === state.selectedId ? "selected" : ""}" data-app-id="${escapeHtml(app.id)}" style="--card-order:${index}">
       <div class="card-topline">
         <div class="card-meta">
-          <span class="status-badge status-${escapeHtml(app.status)}">${escapeHtml(statusLabel[app.status])}</span>
+          <span class="status-badge status-${escapeHtml(app.status)}">${escapeHtml(app.badge || statusLabel[app.status])}</span>
           <span>${renderEditableText("app", "category", app.category, app.id)}</span>
         </div>
         ${renderRegionEditButton("app", "name", app.id, "name", "编辑此应用")}
@@ -842,7 +866,7 @@ function renderAppCard(app, index = 0, extraClass = "", actionMode = "default") 
 }
 
 function gameDisplayRank(app) {
-  if (app.id === "icecream") return -4;
+  if (app.id === "icecream") return Number.MAX_SAFE_INTEGER;
   if (app.id === "zhuanglege-sha") return -3;
   if (app.id === "xiang-le-ge-xiang") return -2;
   return defaultApps.findIndex(item => item.id === app.id);
@@ -1241,6 +1265,7 @@ function normalizeApp(app) {
     }
   }
   if (normalized.id === "icecream") {
+    if (normalized.name === "IceCream 冰激凌工坊") normalized.name = base.name;
     normalized.entry = "./projects/icecream/index.html";
     normalized.package = "./downloads/icecream-unity-project.zip";
     normalized.platforms = {
@@ -1249,6 +1274,12 @@ function normalizeApp(app) {
       mac: { href: "./downloads/icecream-wechat-minigame.zip", label: "微信包下载" }
     };
     normalized.status = "game";
+  }
+  if (normalized.id === "brick-light-motion-lab") {
+    normalized.badge = base.badge;
+    if (normalized.category === "美术设计参考") normalized.category = base.category;
+    if (normalized.brief === "对比十种克制的砖块暗到亮、返程回暗方案，全部点亮后与普通砖块保持一致。") normalized.brief = base.brief;
+    if (normalized.tags.join("|") === "美术设计参考|砖块动效|交互原型|暗亮切换") normalized.tags = base.tags;
   }
   if (normalized.id === "vita-mahjong") {
     normalized.category = "Unity H5 AI版";

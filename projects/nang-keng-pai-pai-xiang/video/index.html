@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#245b41" />
+    <title>馕了个馕 - 视频介绍</title>
+    <style>
+      :root { color-scheme: dark; font-family: "Microsoft YaHei", "PingFang SC", system-ui, sans-serif; background: #123f31; }
+      * { box-sizing: border-box; }
+      body { min-height: 100vh; margin: 0; padding: 84px 20px 36px; background: #123f31; color: #f7f6e7; }
+      .home-link { position: fixed; z-index: 2; top: 18px; left: 18px; display: inline-flex; align-items: center; min-height: 38px; padding: 0 14px; border: 1px solid rgba(255,255,255,.45); border-radius: 999px; color: #f7f6e7; background: rgba(12, 47, 36, .9); font-weight: 800; text-decoration: none; }
+      main { width: min(760px, 100%); margin: 0 auto; }
+      h1 { margin: 0; color: #ffe09a; font-size: 30px; }
+      p { margin: 12px 0 24px; color: #d9ebd1; line-height: 1.65; }
+      .player { overflow: hidden; border: 1px solid rgba(255,224,154,.42); border-radius: 8px; background: #0b2a21; box-shadow: 0 24px 60px rgba(0,0,0,.28); }
+      video { display: block; width: 100%; max-height: min(74vh, 760px); background: #071a14; }
+      .load { display: grid; min-height: 280px; place-items: center; padding: 24px; text-align: center; }
+      button { min-height: 42px; padding: 0 18px; border: 0; border-radius: 6px; color: #21442e; background: #ffe09a; font: inherit; font-weight: 800; cursor: pointer; }
+      .note { margin: 16px 0 0; color: #c9dec0; font-size: 14px; }
+      @media (max-width: 600px) { body { padding-inline: 14px; } h1 { font-size: 26px; } .home-link { top: 12px; left: 12px; } }
+    </style>
+  </head>
+  <body>
+    <a class="home-link" href="../../../index.html#games">返回主页</a>
+    <main>
+      <h1>馕了个馕</h1>
+      <p>从首页、首次教学到第一关操作，快速了解这款竖屏烘烤解谜小游戏。</p>
+      <section class="player" aria-label="馕了个馕介绍视频">
+        <div id="loadPanel" class="load">
+          <button id="loadVideo" type="button">播放介绍视频</button>
+        </div>
+        <video id="introVideo" controls playsinline preload="none" data-src="./nang-keng-pai-pai-xiang-intro.mp4">
+          <track kind="captions" srclang="zh-CN" label="简体中文" src="./nang-keng-pai-pai-xiang-intro.vtt" default />
+        </video>
+      </section>
+      <p class="note">视频时长约 24 秒。</p>
+    </main>
+    <script>
+      const button = document.querySelector("#loadVideo");
+      const panel = document.querySelector("#loadPanel");
+      const video = document.querySelector("#introVideo");
+      button.addEventListener("click", () => {
+        video.src = video.dataset.src;
+        panel.remove();
+        video.play().catch(() => {});
+      }, { once: true });
+    </script>
+  </body>
+</html>
