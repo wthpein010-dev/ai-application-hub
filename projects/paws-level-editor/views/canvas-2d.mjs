@@ -8,6 +8,7 @@ import {
   topmostHit,
 } from "../ui/editor-tools.mjs";
 import { GAMEPLAY_ASSETS } from "../core/gameplay-assets.mjs";
+import { deriveDisplayTiles } from "../core/view-model.mjs";
 
 const TILE_SIZE = 8;
 const TILE_ART_ASPECT = 135 / 120;
@@ -38,6 +39,7 @@ export class Canvas2DView {
     this.selection = new Set();
     this.mode = "edit";
     this.tool = "select";
+    this.layerView = { mode: "all", layer: 1 };
     this.snapStep = 8;
     this.placeTemplate = { type: 1, layer: 1, presetColorType: 1 };
     this.viewport = { scale: 5, offsetX: 60, offsetY: 60 };
@@ -99,6 +101,11 @@ export class Canvas2DView {
     }
   }
 
+  setLayerView(layerView) {
+    this.layerView = { ...this.layerView, ...layerView };
+    this.draw();
+  }
+
   setSnapStep(step) {
     this.snapStep = Number(step);
   }
@@ -127,7 +134,7 @@ export class Canvas2DView {
   currentTiles() {
     return this.mode === "play"
       ? this.snapshot?.tiles ?? []
-      : this.document?.tiles ?? [];
+      : deriveDisplayTiles(this.document?.tiles, this.layerView);
   }
 
   boardTiles() {

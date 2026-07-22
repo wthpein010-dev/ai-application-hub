@@ -1,4 +1,7 @@
 import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
+import { dirname, join } from "node:path";
+import { fileURLToPath } from "node:url";
 import test from "node:test";
 
 import {
@@ -17,6 +20,9 @@ import {
   serializeLevelDocument,
 } from "../projects/paws-level-editor/core/level-adapter.mjs";
 import { validateLevel } from "../projects/paws-level-editor/core/level-validator.mjs";
+import { deriveDisplayTiles } from "../projects/paws-level-editor/core/view-model.mjs";
+
+const repoRoot = dirname(dirname(fileURLToPath(import.meta.url)));
 
 function tile(uid, x, y, layer, type = 1) {
   return { uid, x, y, layer, type, moldType: 1, metaType: 0, metaData: 0, presetColorType: 1 };
@@ -218,4 +224,48 @@ test("manual overlap is visible as a warning while AI overlap remains an error",
     designerNote: { aiGeneration: { algorithm: "test" } },
   }).find(({ code }) => code === "same-layer-overlap");
   assert.equal(aiIssue?.severity, "error");
+});
+
+test("display tiles derive coverage before applying through and single-layer views", () => {
+  const source = [
+    tile("left", 0, 8, 1, 1),
+    tile("center", 8, 8, 1, 2),
+    tile("right", 16, 8, 1, 3),
+    tile("cover", 8, 8, 2, 4),
+  ];
+
+  const all = deriveDisplayTiles(source, { mode: "all", layer: 1 });
+  const center = all.find(({ uid }) => uid === "center");
+  assert.deepEqual(
+    (({ covered, sideBlocked, hiddenPattern }) => ({ covered, sideBlocked, hiddenPattern }))(center),
+    { covered: true, sideBlocked: true, hiddenPattern: true },
+  );
+  assert.equal(source.some((record) => "covered" in record), false);
+
+  assert.deepEqual(
+    deriveDisplayTiles(source, { mode: "through", layer: 1 }).map(({ uid }) => uid),
+    ["left", "center", "right"],
+  );
+  assert.deepEqual(
+    deriveDisplayTiles(source, { mode: "single", layer: 2 }).map(({ uid }) => uid),
+    ["cover"],
+  );
+});
+
+test("both renderers expose layer views and 3D delete mode delegates the picked UID", () => {
+  const canvas = readFileSync(
+    join(repoRoot, "projects", "paws-level-editor", "views", "canvas-2d.mjs"),
+    "utf8",
+  );
+  const three = readFileSync(
+    join(repoRoot, "projects", "paws-level-editor", "views", "three-3d.mjs"),
+    "utf8",
+  );
+
+  assert.match(canvas, /setLayerView\(layerView\)/);
+  assert.match(canvas, /deriveDisplayTiles\(/);
+  assert.match(three, /setLayerView\(layerView\)/);
+  assert.match(three, /setTool\(tool\)/);
+  assert.match(three, /onDelete/);
+  assert.match(three, /this\.tool\s*===\s*"delete"[\s\S]*this\.callbacks\.onDelete\(\[record\.uid\]\)/);
 });

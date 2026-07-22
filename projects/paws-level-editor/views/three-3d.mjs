@@ -2,7 +2,11 @@ import * as THREE from "three";
 import { OrbitControls } from "../vendor/OrbitControls.js";
 
 import { GAMEPLAY_ASSETS } from "../core/gameplay-assets.mjs";
-import { buildRenderTiles, computeRenderBounds } from "../core/view-model.mjs";
+import {
+  buildRenderTiles,
+  computeRenderBounds,
+  deriveDisplayTiles,
+} from "../core/view-model.mjs";
 
 function srgbColor(hex) {
   return new THREE.Color(hex).convertSRGBToLinear();
@@ -62,12 +66,15 @@ export class Three3DView {
   constructor({
     blockImageUrl,
     onSelectionChange = () => {},
+    onDelete = () => {},
     onPlayInteract = () => {},
     onStash = () => {},
   } = {}) {
     this.blockImageUrl = blockImageUrl;
-    this.callbacks = { onSelectionChange, onPlayInteract, onStash };
+    this.callbacks = { onSelectionChange, onDelete, onPlayInteract, onStash };
     this.mode = "edit";
+    this.tool = "select";
+    this.layerView = { mode: "all", layer: 1 };
     this.selection = new Set();
     this.source = null;
     this.meshes = new Map();
@@ -217,6 +224,26 @@ export class Three3DView {
       this.grid.visible = mode === "edit";
     }
     this.updateScene();
+  }
+
+  setTool(tool) {
+    this.tool = tool;
+    if (this.renderer?.domElement) {
+      this.renderer.domElement.style.cursor = tool === "delete" ? "not-allowed" : "default";
+    }
+  }
+
+  setLayerView(layerView) {
+    this.layerView = { ...this.layerView, ...layerView };
+    this.updateScene();
+  }
+
+  displaySource() {
+    if (this.mode === "play") return this.source;
+    return {
+      ...this.source,
+      tiles: deriveDisplayTiles(this.source?.tiles, this.layerView),
+    };
   }
 
   resize() {
@@ -377,7 +404,7 @@ export class Three3DView {
     if (!this.scene || !this.source) {
       return;
     }
-    const renderTiles = buildRenderTiles(this.source, { blockImageUrl: this.blockImageUrl }).map(
+    const renderTiles = buildRenderTiles(this.displaySource(), { blockImageUrl: this.blockImageUrl }).map(
       (record) => ({
         ...record,
         selected:
@@ -414,7 +441,7 @@ export class Three3DView {
     if (!this.source) {
       return;
     }
-    const renderTiles = buildRenderTiles(this.source, { blockImageUrl: this.blockImageUrl });
+    const renderTiles = buildRenderTiles(this.displaySource(), { blockImageUrl: this.blockImageUrl });
     const bounds = computeRenderBounds(renderTiles);
     const size = Math.max(4, bounds.width, bounds.depth + (this.mode === "play" ? 3.4 : 0));
     const maxY = Math.max(1, ...renderTiles.map((tile) => tile.worldY));
@@ -464,6 +491,10 @@ export class Three3DView {
       return;
     }
     if (button === 0) {
+      if (this.tool === "delete") {
+        this.callbacks.onDelete([record.uid]);
+        return;
+      }
       const next = new Set(event.shiftKey || event.altKey ? this.selection : []);
       if (event.altKey) {
         next.delete(record.uid);

@@ -1,6 +1,28 @@
+import { computeCoverage } from "./coverage.mjs";
+import { filterTilesByLayerView } from "./editor-geometry.mjs";
+
 const TILE_SIZE = 8;
 const WORLD_TILE_SIZE = 1;
 const LAYER_HEIGHT = 0.22;
+
+export function deriveDisplayTiles(sourceTiles, layerView = { mode: "all", layer: 1 }) {
+  const source = Array.isArray(sourceTiles) ? sourceTiles : [];
+  const coverage = computeCoverage(source);
+  const derived = source.map((tile) => {
+    const state = coverage.get(tile.uid) ?? {
+      covered: false,
+      sideBlocked: false,
+      hiddenPattern: false,
+    };
+    return {
+      ...tile,
+      covered: state.covered,
+      sideBlocked: state.sideBlocked,
+      hiddenPattern: state.hiddenPattern,
+    };
+  });
+  return filterTilesByLayerView(derived, layerView);
+}
 
 export function containImageRect({
   sourceWidth,
