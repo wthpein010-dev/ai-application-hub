@@ -6,6 +6,7 @@ import {
   generateAiLevel,
   maxAverageBlockersForLayers,
 } from "../projects/paws-level-editor/core/ai-level-generator.mjs";
+import { upgradeLegacyAiGeometry } from "../projects/paws-level-editor/core/legacy-ai-geometry-upgrade.mjs";
 import {
   extractLevelStatistics,
   mergeLevelStatistics,
@@ -18,7 +19,7 @@ import {
 } from "../projects/paws-level-editor/core/level-difficulty.mjs";
 import * as levelValidator from "../projects/paws-level-editor/core/level-validator.mjs";
 
-const { validateLevel } = levelValidator;
+const { validateLevel, validateLevelForPublish } = levelValidator;
 
 function tile(uid, x, y, layer, type) {
   return {
@@ -109,6 +110,99 @@ function sameLayerOverlapPairs(tiles) {
   }
   return pairs;
 }
+
+function makeLegacyAiDocument(tiles, options = {}) {
+  const document = makeDocument(tiles, options);
+  document.designerNote.aiGeneration = { algorithmVersion: "paws-local-stat-v6" };
+  return document;
+}
+
+function typeCounts(tiles) {
+  return Object.fromEntries(tiles.reduce((counts, tileValue) => {
+    counts.set(tileValue.type, (counts.get(tileValue.type) ?? 0) + 1);
+    return counts;
+  }, new Map()));
+}
+
+test("legacy AI geometry repair is deterministic and treats edge touching as safe", () => {
+  const document = makeLegacyAiDocument([
+    tile("pair-a-left", 0, 0, 1, 1),
+    tile("pair-b-left", 7, 0, 1, 2),
+    tile("pair-b-right", 16, 0, 1, 2),
+    tile("pair-a-right", 24, 0, 1, 1),
+  ]);
+
+  const first = upgradeLegacyAiGeometry(document);
+  const repeated = upgradeLegacyAiGeometry(document);
+
+  assert.equal(first.status, "upgraded");
+  assert.deepEqual(first, repeated);
+  assert.equal(first.document.tiles.find(({ uid }) => uid === "pair-b-left").x, 8);
+  assert.deepEqual(sameLayerOverlapPairs(first.document.tiles), []);
+  assert.deepEqual(validateLevelForPublish(first.document).filter(({ severity }) => severity === "error"), []);
+  assert.equal(solveLevel(first.document).steps, first.document.tiles.length / 2);
+  assert.deepEqual(first.document.designerNote.aiGeneration.geometryUpgrade, {
+    rule: "same-layer-zero-overlap-v1",
+    movedTileUids: ["pair-b-left"],
+    sameLayerOverlapPairs: 0,
+  });
+});
+
+test("legacy AI geometry repair preserves tile identity, fields, and Unity pairing parity", () => {
+  const protectedTile = {
+    ...tile("fixed-left", 0, 0, 1, 7),
+    moldType: 23,
+    metaType: 24,
+    metaData: 25,
+    presetColorType: 26,
+    goldBlock: { reward: "fish" },
+    customPayload: { preserved: true },
+  };
+  const document = makeLegacyAiDocument([
+    protectedTile,
+    tile("random-zero-left", 7, 0, 1, 0),
+    tile("random-full-left", 16, 0, 1, -1),
+    tile("random-full-right", 24, 0, 1, -1),
+    tile("random-zero-right", 32, 0, 1, 0),
+    { ...tile("fixed-right", 40, 0, 1, 7), customPayload: { preserved: "right" } },
+  ]);
+  const before = structuredClone(document);
+
+  const result = upgradeLegacyAiGeometry(document);
+
+  assert.equal(result.status, "upgraded");
+  assert.deepEqual(document, before);
+  assert.deepEqual(
+    result.document.tiles.map(({ uid, type, layer, moldType, metaType, metaData, presetColorType, goldBlock, customPayload }) => ({
+      uid, type, layer, moldType, metaType, metaData, presetColorType, goldBlock, customPayload,
+    })),
+    before.tiles.map(({ uid, type, layer, moldType, metaType, metaData, presetColorType, goldBlock, customPayload }) => ({
+      uid, type, layer, moldType, metaType, metaData, presetColorType, goldBlock, customPayload,
+    })),
+  );
+  assert.deepEqual(typeCounts(result.document.tiles), typeCounts(before.tiles));
+  assert.equal(Object.values(typeCounts(result.document.tiles)).every((count) => count % 2 === 0), true);
+  assert.deepEqual(validateLevelForPublish(result.document).filter(({ severity }) => severity === "error"), []);
+  assert.equal(solveLevel(result.document).steps, result.document.tiles.length / 2);
+});
+
+test("legacy AI geometry repair refuses an unsolvable candidate without returning a partial document", () => {
+  const document = makeLegacyAiDocument([
+    tile("edge-a", 0, 0, 1, 1),
+    tile("blocked-a", 7, 0, 1, 2),
+    tile("blocked-b", 16, 0, 1, 1),
+    tile("edge-b", 24, 0, 1, 2),
+  ]);
+  const before = structuredClone(document);
+
+  const result = upgradeLegacyAiGeometry(document);
+
+  assert.equal(result.status, "failed");
+  assert.equal(result.document, document);
+  assert.deepEqual(document, before);
+  assert.equal(result.movedTileUids.length, 0);
+  assert.equal(result.reason, "solver-incomplete");
+});
 
 test("AI validation rejects positive-area overlap on one layer", () => {
   const document = makeDocument([
