@@ -47,9 +47,6 @@
       const buildUrl = 'Build';
       const loaderUrl = buildUrl + '/WebGL.loader.js';
       const config = {
-        dataUrl: buildUrl + '/WebGL.data',
-        frameworkUrl: buildUrl + '/WebGL.framework.js',
-        codeUrl: buildUrl + '/WebGL.wasm',
         streamingAssetsUrl: 'StreamingAssets',
         companyName: "Internal",
         productName: "馕坑排排香",
@@ -58,19 +55,80 @@
         devicePixelRatio: Math.min(window.devicePixelRatio || 1, 2)
       };
 
-      const script = document.createElement('script');
-      script.src = loaderUrl;
-      script.onload = () => {
-        createUnityInstance(canvas, config, (progress) => {
-          progressBarFull.style.width = `${Math.round(progress * 100)}%`;
-        }).then((unityInstance) => {
-          loadingBar.style.display = 'none';
-          fullscreenButton.addEventListener('click', () => unityInstance.SetFullscreen(1));
-        }).catch((error) => {
-          unityShowBanner(String(error), 'error');
-        });
-      };
-      document.body.appendChild(script);
+      const compressedAssets = [
+        { key: 'dataUrl', url: buildUrl + '/WebGL.data.gz', size: 15803435, type: 'application/octet-stream' },
+        { key: 'frameworkUrl', url: buildUrl + '/WebGL.framework.js.gz', size: 88288, type: 'text/javascript' },
+        { key: 'codeUrl', url: buildUrl + '/WebGL.wasm.gz', size: 3443318, type: 'application/wasm' }
+      ];
+      const assetProgress = new Map(compressedAssets.map(asset => [asset.key, 0]));
+      const assetUrls = [];
+
+      function updateDownloadProgress() {
+        const loaded = compressedAssets.reduce((sum, asset) => sum + assetProgress.get(asset.key) * asset.size, 0);
+        const total = compressedAssets.reduce((sum, asset) => sum + asset.size, 0);
+        progressBarFull.style.width = `${Math.round((loaded / total) * 75)}%`;
+      }
+
+      async function decompressAsset(asset) {
+        if (!window.DecompressionStream) {
+          throw new Error('\u5f53\u524d\u6d4f\u89c8\u5668\u4e0d\u652f\u6301\u8d44\u6e90\u89e3\u538b\uff0c\u8bf7\u66f4\u65b0\u6d4f\u89c8\u5668\u540e\u91cd\u8bd5\u3002');
+        }
+
+        const response = await fetch(asset.url, { cache: 'force-cache' });
+        if (!response.ok) {
+          throw new Error(`\u8d44\u6e90\u52a0\u8f7d\u5931\u8d25\uff1a${response.status}`);
+        }
+
+        const reader = response.body?.getReader();
+        const chunks = [];
+        let loaded = 0;
+        if (reader) {
+          while (true) {
+            const result = await reader.read();
+            if (result.done) break;
+            chunks.push(result.value);
+            loaded += result.value.byteLength;
+            assetProgress.set(asset.key, Math.min(loaded / asset.size, 1));
+            updateDownloadProgress();
+          }
+        } else {
+          chunks.push(new Uint8Array(await response.arrayBuffer()));
+        }
+
+        assetProgress.set(asset.key, 1);
+        updateDownloadProgress();
+        const compressed = new Blob(chunks);
+        const decompressed = await new Response(
+          compressed.stream().pipeThrough(new DecompressionStream("gzip"))
+        ).arrayBuffer();
+        const objectUrl = URL.createObjectURL(new Blob([decompressed], { type: asset.type }));
+        assetUrls.push(objectUrl);
+        return [asset.key, objectUrl];
+      }
+
+      async function startUnity() {
+        try {
+          Object.assign(config, Object.fromEntries(await Promise.all(compressedAssets.map(decompressAsset))));
+          const script = document.createElement('script');
+          script.src = loaderUrl;
+          script.onload = () => {
+            createUnityInstance(canvas, config, (progress) => {
+              progressBarFull.style.width = `${75 + Math.round(progress * 25)}%`;
+            }).then((unityInstance) => {
+              loadingBar.style.display = 'none';
+              fullscreenButton.addEventListener('click', () => unityInstance.SetFullscreen(1));
+            }).catch((error) => {
+              unityShowBanner(String(error), 'error');
+            });
+          };
+          script.onerror = () => unityShowBanner('\u52a0\u8f7d\u5668\u542f\u52a8\u5931\u8d25\uff0c\u8bf7\u5237\u65b0\u91cd\u8bd5\u3002', 'error');
+          document.body.appendChild(script);
+        } catch (error) {
+          unityShowBanner(error.message || String(error), 'error');
+        }
+      }
+
+      startUnity();
     </script>
   </body>
 </html>
