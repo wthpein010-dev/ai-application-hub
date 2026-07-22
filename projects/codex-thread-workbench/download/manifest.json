@@ -1,57 +1,39 @@
 {
   "version": 1,
   "fileName": "CodexThreadWorkbench-Windows-x64.zip",
-  "totalSize": 65596799,
+  "totalSize": 40171855,
   "chunkSize": 8388608,
-  "sha256": "1D78557926FB97F46CF7FAA068BA65BEE12C3C7EA9DC3F9235450A9AB17CF454",
+  "sha256": "64ECD8D394FBF472950D80F9595EF6D91D8BD3F04FC81F025A2B9C82020A54E9",
   "parts": [
     {
       "index": 0,
-      "path": "parts/part-000.bin",
+      "path": "parts/v1.2.0/part-000.bin",
       "size": 8388608,
-      "sha256": "2C61B53EBC14C111569DFD9EDEB120577CE2ADB30A4FBD9AD4622293CDA4D970"
+      "sha256": "B8ED108308F473A6B4843C0CE71C31CE1C7D32799EC09D60A2F31FC24660416F"
     },
     {
       "index": 1,
-      "path": "parts/part-001.bin",
+      "path": "parts/v1.2.0/part-001.bin",
       "size": 8388608,
-      "sha256": "963E6E5A26D1443775227E8E1C2764DFED0CE329981642E14B2CA5FD45A082AE"
+      "sha256": "2B421CE9C7C35F31C0D0ADD04AA20426E13A25E9A94A3F68E55C46169A2997D2"
     },
     {
       "index": 2,
-      "path": "parts/part-002.bin",
+      "path": "parts/v1.2.0/part-002.bin",
       "size": 8388608,
-      "sha256": "A4980A86A118061CF9597C734820284B427C59C1868681F36541F4D77FE3A03D"
+      "sha256": "06F98F38BB2BC1C1B9A4B43231193E8C45D4E52396B86DADC8942ED6FA19A202"
     },
     {
       "index": 3,
-      "path": "parts/part-003.bin",
+      "path": "parts/v1.2.0/part-003.bin",
       "size": 8388608,
-      "sha256": "AA7CAA7E328D2527CBED44664FF97BAAEB7432676BB0E8D636F88647BB9A84AF"
+      "sha256": "1F58CD7DD80858EE6D6D67666BF8B42F216FC2518C604CA5E8EEC9CF5762140B"
     },
     {
       "index": 4,
-      "path": "parts/part-004.bin",
-      "size": 8388608,
-      "sha256": "CF593A3462D1885E5289090A7B6F052E25240BE73F6E1A3261D1E0298BC831D7"
-    },
-    {
-      "index": 5,
-      "path": "parts/part-005.bin",
-      "size": 8388608,
-      "sha256": "D719D0CDD6893FBCF8EC03A65DC3ED2718B37B689E45964F67A011BCD30E4C56"
-    },
-    {
-      "index": 6,
-      "path": "parts/part-006.bin",
-      "size": 8388608,
-      "sha256": "1ED63ACC3FE50142C1EC8AB81082DC1AAB9DC65347C68F627F648823D0169267"
-    },
-    {
-      "index": 7,
-      "path": "parts/part-007.bin",
-      "size": 6876543,
-      "sha256": "2F776214A87FBB7969367157E5060D61FED25FFF7A35FEE3E775C8BB6EBD5D75"
+      "path": "parts/v1.2.0/part-004.bin",
+      "size": 6617423,
+      "sha256": "DBFD63885BCE1BB5031CD4371F1DFAB4FAB8AD0694368383F172E1EF13E76017"
     }
   ]
 }

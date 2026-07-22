@@ -72,6 +72,35 @@ test("project page presents direct multi-thread conversation controls", async ()
   assert.doesNotMatch(html, /releases\/download\/codex-thread-workbench-v1\.0\.0/);
 });
 
+test("project preview uses green user bubbles and non-interactive message text", async () => {
+  const css = await read("../projects/codex-thread-workbench/styles.css");
+
+  assert.match(
+    css,
+    /\.message-list\s*\{[^}]*user-select:\s*none/s,
+  );
+  assert.match(
+    css,
+    /\.message-user\s*>\s*p\s*\{[^}]*background:\s*#e7f4eb/s,
+  );
+  assert.doesNotMatch(css, /\.message(?:-[\w-]+)?(?::hover|\s*:hover)/);
+});
+
+test("project and download pages identify the Windows 1.2.0 update", async () => {
+  const [projectHtml, downloadHtml] = await Promise.all([
+    read("../projects/codex-thread-workbench/index.html"),
+    read("../projects/codex-thread-workbench/download/index.html"),
+  ]);
+
+  assert.match(projectHtml, /Windows v1\.2\.0/);
+  assert.match(downloadHtml, /5 个分片/);
+  assert.match(downloadHtml, /40\.2 MB/);
+  assert.match(
+    downloadHtml,
+    /64ECD8D394FBF472950D80F9595EF6D91D8BD3F04FC81F025A2B9C82020A54E9/,
+  );
+});
+
 test("download page exposes progress, verification, failure and retry states", async () => {
   const [html, controller] = await Promise.all([
     read("../projects/codex-thread-workbench/download/index.html"),
