@@ -241,7 +241,7 @@ async function clickMatchingPairIn2d(page) {
         .slice(index + 1)
         .find((candidate) => candidate.type === candidates[index].type);
       if (pair) {
-        return [candidates[index].point, pair.point];
+        return [candidates[index], pair];
       }
     }
     return [];
@@ -250,8 +250,22 @@ async function clickMatchingPairIn2d(page) {
     throw new Error("No visible matching pair was available for the 2D play recording");
   }
   const box = await page.locator(".level-canvas-2d").boundingBox();
-  for (const target of targets) {
-    await page.mouse.click(box.x + target.x, box.y + target.y);
+  for (let index = 0; index < targets.length; index += 1) {
+    const target = targets[index];
+    await page.mouse.click(box.x + target.point.x, box.y + target.point.y);
+    if (index === 0) {
+      await page.waitForFunction(
+        (uid) => window.pawsWorkbench.playSnapshot.selectedTileUid === uid,
+        target.uid,
+      );
+    } else {
+      await page.waitForFunction(
+        (uids) => uids.every((uid) =>
+          window.pawsWorkbench.playSnapshot.tiles
+            .find((tile) => tile.uid === uid)?.removed),
+        targets.map(({ uid }) => uid),
+      );
+    }
     await delay(850);
   }
 }

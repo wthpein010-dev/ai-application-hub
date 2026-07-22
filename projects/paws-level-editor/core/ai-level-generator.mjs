@@ -380,11 +380,11 @@ function chooseLayerPairs({
             + candidate.spatialScore
             + candidate.jitter,
         };
-      })
-      .sort((left, right) => right.score - left.score);
-    if (ranked[0] && !Number.isFinite(ranked[0].score)) {
+      });
+    if (ranked.some(({ score }) => !Number.isFinite(score))) {
       throw new Error(`第 ${layer} 层候选评分不是有限数。`);
     }
+    ranked.sort((left, right) => right.score - left.score);
     const chosen = ranked[0]?.candidate;
     if (!chosen) {
       throw new Error(
