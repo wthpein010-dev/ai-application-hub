@@ -27,6 +27,16 @@ internal sealed class FakeCodexThreadClient : ICodexThreadClient
 
     public Exception? SendException { get; set; }
 
+    public Exception? InterruptException { get; set; }
+
+    public bool DelayInterrupt { get; set; }
+
+    public TaskCompletionSource InterruptStarted { get; } =
+        new(TaskCreationOptions.RunContinuationsAsynchronously);
+
+    public TaskCompletionSource InterruptCompletion { get; } =
+        new(TaskCreationOptions.RunContinuationsAsynchronously);
+
     public int DisposeCalls { get; private set; }
 
     public bool DelayDispose { get; set; }
@@ -97,13 +107,22 @@ internal sealed class FakeCodexThreadClient : ICodexThreadClient
         return Task.CompletedTask;
     }
 
-    public Task InterruptTurnAsync(
+    public async Task InterruptTurnAsync(
         string threadId,
         string turnId,
         CancellationToken cancellationToken = default)
     {
         LastInterrupt = (threadId, turnId);
-        return Task.CompletedTask;
+        InterruptStarted.TrySetResult();
+        if (DelayInterrupt)
+        {
+            await InterruptCompletion.Task.WaitAsync(cancellationToken);
+        }
+
+        if (InterruptException is not null)
+        {
+            throw InterruptException;
+        }
     }
 
     public Task RespondToApprovalAsync(

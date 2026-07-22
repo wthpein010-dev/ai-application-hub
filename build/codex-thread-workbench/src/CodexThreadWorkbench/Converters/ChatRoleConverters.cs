@@ -1,41 +1,21 @@
 using System.Globalization;
-using Avalonia;
 using Avalonia.Data.Converters;
-using Avalonia.Layout;
 using Avalonia.Media;
 using CodexThreadWorkbench.Models;
 
 namespace CodexThreadWorkbench.Converters;
 
-public sealed class ChatRoleToBrushConverter : IValueConverter
+public sealed class ChatRoleVisibilityConverter : IValueConverter
 {
     public object Convert(
         object? value,
         Type targetType,
         object? parameter,
         CultureInfo culture) =>
-        value is ChatRole.User
-            ? new SolidColorBrush(Color.Parse("#E1F2EA"))
-            : new SolidColorBrush(Color.Parse("#EDF0F1"));
-
-    public object ConvertBack(
-        object? value,
-        Type targetType,
-        object? parameter,
-        CultureInfo culture) =>
-        throw new NotSupportedException();
-}
-
-public sealed class ChatRoleToAlignmentConverter : IValueConverter
-{
-    public object Convert(
-        object? value,
-        Type targetType,
-        object? parameter,
-        CultureInfo culture) =>
-        value is ChatRole.User
-            ? HorizontalAlignment.Right
-            : HorizontalAlignment.Left;
+        value is ChatRole role &&
+        parameter is string requestedRole &&
+        Enum.TryParse<ChatRole>(requestedRole, ignoreCase: true, out var parsedRole) &&
+        role == parsedRole;
 
     public object ConvertBack(
         object? value,

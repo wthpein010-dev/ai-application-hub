@@ -127,4 +127,61 @@ public sealed class CodexAppServerClientTests
         Assert.Equal(ThreadStatusKind.Completed, state.Status);
         Assert.Null(state.ActiveTurnId);
     }
+
+    [Fact]
+    public async Task ReadThreadAsync_WhenAppServerStatusIsStale_UsesSessionActivity()
+    {
+        var sessionsRoot = Path.Combine(
+            Path.GetTempPath(),
+            "CodexThreadWorkbench.ClientActivity.Tests",
+            Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(sessionsRoot);
+        await File.WriteAllLinesAsync(
+            Path.Combine(sessionsRoot, "rollout-thread-1.jsonl"),
+        [
+            """{"type":"event_msg","payload":{"type":"task_started"}}"""
+        ]);
+        try
+        {
+            await using var transport = new FakeJsonLineTransport();
+            await using var connection = new JsonRpcConnection(transport);
+            await using var client = new CodexAppServerClient(
+                connection,
+                new CodexSessionActivityProbe(sessionsRoot));
+
+            var pending = client.ReadThreadAsync("thread-1");
+            using var request = JsonDocument.Parse(await transport.ReadWrittenAsync());
+            var id = request.RootElement.GetProperty("id").GetInt64();
+            transport.EnqueueIncoming(
+                $$"""
+                {
+                  "id":{{id}},
+                  "result":{
+                    "thread":{
+                      "id":"thread-1",
+                      "name":"仍在进行的任务",
+                      "preview":"预览",
+                      "cwd":"C:\\work",
+                      "updatedAt":1784510000,
+                      "status":{"type":"notLoaded"},
+                      "turns":[{
+                        "id":"old-turn",
+                        "status":"interrupted",
+                        "items":[]
+                      }]
+                    }
+                  }
+                }
+                """);
+
+            var state = await pending;
+
+            Assert.Equal(ThreadStatusKind.Running, state.Status);
+            Assert.Null(state.ActiveTurnId);
+        }
+        finally
+        {
+            Directory.Delete(sessionsRoot, recursive: true);
+        }
+    }
 }

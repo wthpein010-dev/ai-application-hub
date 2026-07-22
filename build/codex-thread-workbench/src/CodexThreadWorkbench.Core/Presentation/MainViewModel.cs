@@ -8,12 +8,15 @@ namespace CodexThreadWorkbench.Presentation;
 public sealed class MainViewModel : ObservableObject, IAsyncDisposable
 {
     private const int MaximumOpenThreads = 6;
+    private static readonly TimeSpan StatusRefreshInterval = TimeSpan.FromSeconds(2);
     private readonly ICodexThreadClient _client;
     private readonly WorkspaceStore _workspaceStore;
     private readonly SynchronizationContext? _synchronizationContext;
     private readonly object _disposeGate = new();
     private readonly SemaphoreSlim _workspaceSaveGate = new(1, 1);
+    private readonly CancellationTokenSource _statusRefreshCancellation = new();
     private Task? _disposeTask;
+    private Task? _statusRefreshTask;
     private WorkspaceSettings _settings = new();
     private bool _isPickerOpen;
     private bool _isConnecting;
@@ -172,6 +175,8 @@ public sealed class MainViewModel : ObservableObject, IAsyncDisposable
                 OpenThreads.Select(thread => thread.ThreadId).ToArray(),
                 cancellationToken);
             await SaveWorkspaceAsync(cancellationToken);
+            _statusRefreshTask ??= PollOpenThreadStatusesAsync(
+                _statusRefreshCancellation.Token);
         }
         catch (Exception error)
         {
@@ -215,13 +220,69 @@ public sealed class MainViewModel : ObservableObject, IAsyncDisposable
     {
         _client.NotificationReceived -= OnNotificationReceived;
         _client.ApprovalRequested -= OnApprovalRequested;
+        _statusRefreshCancellation.Cancel();
         try
         {
+            if (_statusRefreshTask is not null)
+            {
+                await _statusRefreshTask;
+            }
+
             await SaveWorkspaceAsync();
         }
         finally
         {
+            _statusRefreshCancellation.Dispose();
             await _client.DisposeAsync();
+        }
+    }
+
+    private async Task PollOpenThreadStatusesAsync(CancellationToken cancellationToken)
+    {
+        using var timer = new PeriodicTimer(StatusRefreshInterval);
+        try
+        {
+            while (await timer.WaitForNextTickAsync(cancellationToken))
+            {
+                await RefreshOpenThreadStatusesAsync(cancellationToken);
+            }
+        }
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+        {
+        }
+    }
+
+    private async Task RefreshOpenThreadStatusesAsync(CancellationToken cancellationToken)
+    {
+        var threadIds = OpenThreads
+            .Select(thread => thread.ThreadId)
+            .ToArray();
+        if (threadIds.Length == 0)
+        {
+            return;
+        }
+
+        try
+        {
+            var states = await Task.WhenAll(
+                threadIds.Select(id => _client.ReadThreadAsync(id, cancellationToken)));
+            Dispatch(() =>
+            {
+                foreach (var state in states)
+                {
+                    var card = OpenThreads.FirstOrDefault(
+                        thread => thread.ThreadId == state.Summary.Id);
+                    card?.ApplyStatusSnapshot(state);
+                }
+            });
+        }
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+        {
+            throw;
+        }
+        catch
+        {
+            // A later tick retries transient app-server read failures.
         }
     }
 
