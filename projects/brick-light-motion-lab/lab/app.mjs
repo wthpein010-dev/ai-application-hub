@@ -39,15 +39,15 @@ const CRITICAL_RESOURCES = [
 
 const SCHEME_DETAILS = [
   ['同步恢复', '最克制基线', '底板与图案共用同一平滑曲线，适合作为程序实现基准。'],
-  ['灰度先行', '先脱离禁用感', '先恢复灰度通道，亮度、饱和度和清晰度随后补足。'],
-  ['亮度先行', '可见性优先', '先恢复亮度，再带回颜色与对比度。'],
-  ['后半程着色', '两段感明确', '明度较早稳定，色彩集中在后半程恢复。'],
-  ['图案先行', '内容识别优先', '牌面图案先恢复，底板稍后跟进。'],
-  ['底板先行', '材质存在感优先', '底板先恢复，牌面图案随后清晰。'],
-  ['分段恢复', '停顿感清楚', '前半程解除主要压暗，短暂停顿后完成恢复。'],
-  ['后程加速', '慢启后加速', '前段维持压暗，后半程集中恢复，结束点更明确。'],
-  ['快速解除 + 慢收', '快启长尾', '先快速恢复可见性，再用较长尾段归稳，并保留不超过 1% 的轻触感。'],
-  ['图案先行 + 收稳', '游戏推荐', '图案明确先醒，底板随后跟进，微回弹不超过 0.6%。'],
+  ['横向分片', '从上到下打开', '五条横向亮态分片按 6% 进度错位依次展开。'],
+  ['纵向分片', '从左到右打开', '五条纵向亮态分片依次展开，返程严格反向闭合。'],
+  ['九格拼合', '中心到四周', '中心格先出现，再拼入四角和四边。'],
+  ['中心遮罩', '由内向外', '亮态矩形从中心同步向砖块四边扩展。'],
+  ['整体缩放', '弹出收稳', '下层砖块从 82% 弹至 106%，最后稳定在 100%。'],
+  ['纵向形变', '压扁后展开', '保持水平中心不动，从纵向压扁状态展开并轻微过冲。'],
+  ['透视翻面', '轻微 3D', '从 -72° 绕 Y 轴翻至正面，避免完整翻牌的夸张感。'],
+  ['四边退暗', '中心先显现', '四片压暗覆盖分别向上、下、左、右边缘退出。'],
+  ['遮罩 + 回弹', '游戏推荐', '中心遮罩先揭示，图案略早恢复，再用轻回弹收稳。'],
 ];
 
 const SCHEMES = VISUAL_SCHEMES.map((scheme, index) => ({
@@ -209,6 +209,16 @@ function cardTemplate(scheme) {
         <div class="tile lower-tile" aria-label="下层砖块">
           <img class="tile__base" src="${ASSET_ROOT}/block_bg.png" alt="" draggable="false" />
           <img class="tile__icon" src="${ASSET_ROOT}/Blocks/block_10.png" alt="" draggable="false" />
+          <div class="lower-tile__bright" aria-hidden="true">${lowerTileImages()}</div>
+          <div class="transition-segments" aria-hidden="true">
+            ${Array.from({ length: 9 }, (_, index) => `<span class="transition-segment transition-segment--${index}">${lowerTileImages()}</span>`).join('')}
+          </div>
+          <div class="edge-covers" aria-hidden="true">
+            <i class="edge-cover edge-cover--top"></i>
+            <i class="edge-cover edge-cover--bottom"></i>
+            <i class="edge-cover edge-cover--left"></i>
+            <i class="edge-cover edge-cover--right"></i>
+          </div>
         </div>
         <button class="tile upper-tile tile-button" type="button" aria-label="拖动上层砖块，查看下层点亮效果">
           <img class="tile__base" src="${ASSET_ROOT}/block_bg.png" alt="" draggable="false" />
@@ -228,6 +238,13 @@ function cardTemplate(scheme) {
         <button class="choice-button" type="button" data-action="choose">选择此方案</button>
       </div>
     </div>
+  `;
+}
+
+function lowerTileImages() {
+  return `
+    <img class="tile__base" src="${ASSET_ROOT}/block_bg.png" alt="" draggable="false" />
+    <img class="tile__icon" src="${ASSET_ROOT}/Blocks/block_10.png" alt="" draggable="false" />
   `;
 }
 
@@ -506,6 +523,21 @@ function setRevealVariables(stage, schemeId, reveal) {
   set('--icon-contrast', visual.iconContrast.toFixed(4));
   set('--icon-opacity', visual.iconOpacity.toFixed(4));
   set('--tile-scale', visual.tileScale.toFixed(4));
+  set('--mask-progress', visual.maskProgress.toFixed(4));
+  set('--mask-reverse-progress', visual.maskReverseProgress.toFixed(4));
+  set('--mask-inset', `${((1 - visual.maskProgress) * 50).toFixed(2)}%`);
+  set('--tile-scale-x', visual.tileScaleX.toFixed(4));
+  set('--tile-scale-y', visual.tileScaleY.toFixed(4));
+  set('--tile-rotate-y', `${visual.tileRotateY.toFixed(4)}deg`);
+  set('--tile-perspective', `${visual.tilePerspective}px`);
+  for (let index = 0; index < 9; index += 1) {
+    set(`--segment-${index}`, (visual.segmentProgress[index] ?? visual.maskProgress).toFixed(4));
+  }
+  for (let index = 0; index < 4; index += 1) {
+    const edge = visual.edgeProgress[index] ?? visual.maskProgress;
+    set(`--edge-${index}`, edge.toFixed(4));
+    set(`--edge-${index}-offset`, `${(edge * 100).toFixed(2)}%`);
+  }
 }
 
 function getStateLabel(reveal, phase) {

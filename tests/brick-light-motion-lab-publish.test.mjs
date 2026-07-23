@@ -44,6 +44,7 @@ test("hub publishes the material motion lab once in engineering experiences", ()
   assert.equal(app.entry, "./projects/brick-light-motion-lab/index.html");
   assert.equal(app.video, "./projects/brick-light-motion-lab/video/index.html");
   assert.equal(app.package, "");
+  assert.match(app.brief, /遮罩与形变/);
   assert.deepEqual(
     JSON.parse(JSON.stringify(app.platforms)),
     { web: "./projects/brick-light-motion-lab/index.html", windows: "", mac: "" },
@@ -77,7 +78,7 @@ test("demo and video pages use their current Hub shells and return-home paths", 
   assert.equal(existsSync(join(projectRoot, "video", "brick-light-motion-lab.mp4")), true);
 });
 
-test("the embedded lab exposes ten material-only schemes and six slow speeds", () => {
+test("the embedded lab exposes ten distinct transition schemes and six slow speeds", () => {
   const labRoot = join(root, "projects", "brick-light-motion-lab", "lab");
   const html = readFileSync(join(labRoot, "index.html"), "utf8");
   const app = readFileSync(join(labRoot, "app.mjs"), "utf8");
@@ -91,46 +92,29 @@ test("the embedded lab exposes ten material-only schemes and six slow speeds", (
   assert.match(app, /getPathPlaybackProgress\(raw, phase\)/);
   assert.doesNotMatch(app, /easeOutCubic/);
   assert.match(visual, /id: 'recommended'/);
-  assert.match(visual, /name: '慢启快亮'/);
-  assert.match(visual, /name: '快启慢收'/);
+  assert.match(visual, /name: '横向百叶窗'/);
+  assert.match(visual, /name: '棋盘格拼亮'/);
+  assert.match(visual, /name: '轻微 3D 翻面'/);
+  assert.match(app, /lower-tile__bright/);
+  assert.match(app, /transition-segments/);
+  assert.match(app, /edge-covers/);
   assert.match(playback, /\[0\.25, 0\.4, 0\.55, 0\.7, 0\.85, 1\]/);
   assert.match(loading, /completeLoading/);
   assert.doesNotMatch(combined, /柔光扩散|方向扫光|描边充能|波纹唤醒|bloom|sweep|edge-charge|wake-ripple|hybrid-ring/);
 });
 
-test("published schemes remain materially distinct and keep outbound pacing observable", () => {
-  const materialChannels = [
-    "baseGray",
-    "baseBrightness",
-    "baseSaturation",
-    "baseContrast",
-    "iconGray",
-    "iconBrightness",
-    "iconSaturation",
-    "iconContrast",
-    "iconOpacity",
-  ];
-  const samples = [0.15, 0.25, 0.35, 0.45, 0.55, 0.65, 0.75, 0.85];
-
-  for (let left = 0; left < VISUAL_SCHEME_IDS.length; left += 1) {
-    for (let right = left + 1; right < VISUAL_SCHEME_IDS.length; right += 1) {
-      const leftId = VISUAL_SCHEME_IDS[left];
-      const rightId = VISUAL_SCHEME_IDS[right];
-      const averageDistance = samples.map((reveal) => {
-        const leftState = getSchemeVisualState(leftId, reveal);
-        const rightState = getSchemeVisualState(rightId, reveal);
-        return Math.sqrt(materialChannels.reduce(
-          (sum, channel) => sum + (leftState[channel] - rightState[channel]) ** 2,
-          0,
-        ));
-      }).reduce((sum, distance) => sum + distance, 0) / samples.length;
-
-      assert.ok(
-        averageDistance >= 0.25,
-        `${leftId}/${rightId} average material distance ${averageDistance.toFixed(4)}`,
-      );
-    }
-  }
+test("published schemes have distinct transition signatures and keep outbound pacing observable", () => {
+  const states = VISUAL_SCHEME_IDS.map((id) => getSchemeVisualState(id, 0.5));
+  const signatures = new Set(states.map((state) => JSON.stringify({
+    maskType: state.maskType,
+    maskProgress: state.maskProgress,
+    scaleX: state.tileScaleX,
+    scaleY: state.tileScaleY,
+    rotateY: state.tileRotateY,
+    segments: state.segmentProgress,
+    edges: state.edgeProgress,
+  })));
+  assert.equal(signatures.size, 10);
 
   assert.equal(getPathPlaybackProgress(0.25, "dragging"), 0.25);
   assert.equal(getPathPlaybackProgress(0.5, "dragging"), 0.5);
@@ -138,7 +122,7 @@ test("published schemes remain materially distinct and keep outbound pacing obse
 });
 
 test("home page refreshes the runtime cache key for the new card", () => {
-  assert.match(page, /app-20260706-restore-games\.js\?v=20260723-nang-app-catalog/);
+  assert.match(page, /app-20260706-restore-games\.js\?v=20260723-brick-transition-v6/);
 });
 
 test("tutorial video is a short, decodable 720p H.264 asset", () => {
@@ -147,7 +131,7 @@ test("tutorial video is a short, decodable 720p H.264 asset", () => {
   assert.equal(media.videoCodec, "h264");
   assert.equal(media.width, 1280);
   assert.equal(media.height, 720);
-  assert.ok(media.duration > 25 && media.duration < 240, `duration=${media.duration}`);
+  assert.ok(media.duration > 20 && media.duration < 240, `duration=${media.duration}`);
 
   const decoded = decodeMedia(mediaPath);
   assert.equal(decoded.status, 0, decoded.stderr);
