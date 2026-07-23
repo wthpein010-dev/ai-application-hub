@@ -132,6 +132,10 @@ test("tutorial video is a short, decodable 720p H.264 asset", () => {
   assert.equal(media.width, 1280);
   assert.equal(media.height, 720);
   assert.ok(media.duration > 20 && media.duration < 240, `duration=${media.duration}`);
+  const videoPage = readFileSync(join(root, "projects", "brick-light-motion-lab", "video", "index.html"), "utf8");
+  const chapterTimes = [...videoPage.matchAll(/data-time="(\d+)"/g)].map((match) => Number(match[1]));
+  assert.ok(chapterTimes.length >= 5);
+  assert.ok(chapterTimes.every((time) => time < media.duration), `${chapterTimes.join(",")} / ${media.duration}`);
 
   const decoded = decodeMedia(mediaPath);
   assert.equal(decoded.status, 0, decoded.stderr);
