@@ -570,12 +570,13 @@ const defaultApps = [
   },
   {
     id: "nang-keng-pai-pai-xiang",
-    name: "馕了个馕",
-    category: "Unity WebGL 小游戏",
-    status: "game",
-    brief: "原名《馕坑排排香》：把不同馕放入烤位，利用火候、温区与订单顺序完成十个竖屏解谜关卡。",
-    problem: "将离散回合、烤位温差与交付顺序组合成可单手体验的轻量解谜流程，并让每关都有可回放的通关解法。",
-    aiUse: "AI 参与玩法规则拆分、十关解法验证、UGUI 产品流、美术资源整理、WebGL 构建与发布验收。",
+    name: "馕饼拍拍响",
+    category: "Unity WebGL 休闲体验",
+    status: "content",
+    badge: "休闲体验",
+    brief: "围绕新疆馕设计的竖屏休闲解谜体验：把不同馕放入烤位，利用火候、温区与订单顺序完成十个普通模式关卡。",
+    problem: "将离散回合、烤位温差与交付顺序组合成可单手体验的轻量解谜流程，并用纯图形表达馕种类、熟度与订单。",
+    aiUse: "AI 参与玩法规则、十关解法、纯图形馕资源、UGUI 产品流、WebGL 构建与发布验收。",
     folder: "./projects/nang-keng-pai-pai-xiang/",
     entry: "./projects/nang-keng-pai-pai-xiang/index.html",
     video: "./projects/nang-keng-pai-pai-xiang/video/index.html",
@@ -585,7 +586,7 @@ const defaultApps = [
       windows: "",
       mac: ""
     },
-    tags: ["Unity", "WebGL", "竖屏解谜", "馕坑排排香"],
+    tags: ["Unity", "WebGL", "竖屏解谜", "新疆馕"],
     speed: 8,
     impact: 8,
     risk: 7,
@@ -1280,6 +1281,24 @@ function normalizeApp(app) {
     if (normalized.category === "美术参考") normalized.category = base.category;
     if (normalized.brief === "对比十种克制的砖块暗到亮、返程回暗方案，全部点亮后与普通砖块保持一致。") normalized.brief = base.brief;
     if (normalized.tags.join("|") === "美术参考|砖块动效|交互原型|暗亮切换") normalized.tags = base.tags;
+  }
+  if (normalized.id === "nang-keng-pai-pai-xiang") {
+    normalized.name = base.name;
+    normalized.category = base.category;
+    normalized.status = base.status;
+    normalized.badge = base.badge;
+    normalized.brief = base.brief;
+    normalized.problem = base.problem;
+    normalized.aiUse = base.aiUse;
+    normalized.entry = base.entry;
+    normalized.video = base.video;
+    normalized.package = "";
+    normalized.platforms = {
+      web: base.platforms.web,
+      windows: "",
+      mac: ""
+    };
+    normalized.tags = [...base.tags];
   }
   if (normalized.id === "vita-mahjong") {
     normalized.category = "Unity H5 AI版";
