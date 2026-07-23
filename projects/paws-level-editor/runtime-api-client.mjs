@@ -12,7 +12,7 @@ export async function createRuntimeApiClient({
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), probeTimeoutMs);
     try {
-      const response = await fetchImpl("/api/health", {
+      const response = await fetchImpl("./api/health.json", {
         credentials: "same-origin",
         headers: { accept: "application/json" },
         signal: controller.signal,
@@ -32,4 +32,3 @@ export async function createRuntimeApiClient({
   }
   return createStaticApiClient({ fetchImpl, storage, ...(now ? { now } : {}) });
 }
-

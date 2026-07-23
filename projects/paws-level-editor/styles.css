@@ -803,20 +803,10 @@ select:disabled {
 
 .canvas-host {
   --gameplay-ground: url("./assets/gameplay/bg-47bd7f.png");
-  --gameplay-grass: url("./assets/gameplay/grass.png");
   position: relative;
   min-height: 0;
   overflow: hidden;
   background-color: #47bd7f;
-  background-image:
-    var(--gameplay-grass),
-    var(--gameplay-grass),
-    var(--gameplay-grass),
-    var(--gameplay-grass),
-    var(--gameplay-grass);
-  background-repeat: no-repeat;
-  background-position: 7% 18%, 91% 28%, 15% 66%, 83% 73%, 48% 88%;
-  background-size: 56px auto, 45px auto, 50px auto, 58px auto, 42px auto;
   box-shadow: inset 0 0 65px rgb(16 99 66 / 0.16);
 }
 
@@ -840,9 +830,19 @@ select:disabled {
   pointer-events: none;
 }
 
-.canvas-host > canvas {
-  position: relative;
+.level-grass-field {
+  position: absolute;
   z-index: 2;
+  inset: 0;
+  display: block;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+
+.canvas-host > .level-canvas {
+  position: relative;
+  z-index: 3;
   display: block;
   width: 100%;
   height: 100%;

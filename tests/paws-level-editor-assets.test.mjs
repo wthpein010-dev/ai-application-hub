@@ -124,6 +124,7 @@ test("editor stage and both renderers consume the gameplay skin without fake con
   const css = readFileSync(join(editorRoot, "styles.css"), "utf8");
   const assets = readFileSync(join(editorRoot, "core", "gameplay-assets.mjs"), "utf8");
   const controller = readFileSync(join(editorRoot, "ui", "workbench-controller.mjs"), "utf8");
+  const grassField = readFileSync(join(editorRoot, "ui", "grass-field.mjs"), "utf8");
   const canvas2d = readFileSync(join(editorRoot, "views", "canvas-2d.mjs"), "utf8");
   const three3d = readFileSync(join(editorRoot, "views", "three-3d.mjs"), "utf8");
 
@@ -133,13 +134,16 @@ test("editor stage and both renderers consume the gameplay skin without fake con
   assert.match(html, /id="rerandomize"[\s\S]*assets\/gameplay\/btn_random\.png/);
   assert.doesNotMatch(html, /<button[^>]*class="[^\"]*gameplay[^\"]*"[^>]*disabled/);
 
-  assert.match(css, /\.canvas-host\s*\{[\s\S]*bg-47bd7f\.png[\s\S]*grass\.png/);
+  assert.match(css, /\.canvas-host\s*\{[\s\S]*bg-47bd7f\.png/);
+  assert.match(css, /\.level-grass-field\s*\{[\s\S]*pointer-events:\s*none/);
   assert.match(css, /\[data-mode="play"\][\s\S]*\.gameplay-action-image/);
   assert.match(assets, /block_bg\.png/);
   assert.match(assets, /ui_tile_lock_mask\.png/);
   assert.match(assets, /play_save2\.png/);
   assert.match(controller, /gameplayLevelTitle\.textContent/);
   assert.match(controller, /gameplayFit\.addEventListener\("click"/);
+  assert.match(grassField, /GAMEPLAY_ASSETS\.grass/);
+  assert.match(grassField, /drawGrassAtlasPatch/);
 
   assert.match(canvas2d, /GAMEPLAY_ASSETS\.blockBackground/);
   assert.match(canvas2d, /GAMEPLAY_ASSETS\.lockMask/);

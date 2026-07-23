@@ -18,6 +18,7 @@ import {
   planTilePlacement,
 } from "../core/editor-geometry.mjs";
 import { InspectorPanel } from "./inspector.mjs";
+import { GrassField } from "./grass-field.mjs";
 import { commandFromKeyboardEvent } from "./editor-shortcuts.mjs";
 import { createLevelDownload, triggerLevelDownload } from "./level-export.mjs";
 import { formatLevelId, formatLevelModifiedAt } from "./level-summary.mjs";
@@ -111,6 +112,7 @@ export class WorkbenchController {
   async init() {
     this.cacheElements();
     this.bindEvents();
+    this.grassField = new GrassField().mount(this.elements.canvasHost);
     this.inspector = new InspectorPanel({
       onDocumentPatch: (path, value) => this.patchDocument(path, value),
       onBoardPatch: (patch) => this.patchBoard(patch),
@@ -321,6 +323,10 @@ export class WorkbenchController {
         event.preventDefault();
       }
     });
+    window.addEventListener("pagehide", () => {
+      this.catalogUnsubscribe?.();
+      this.grassField?.destroy();
+    }, { once: true });
   }
 
   async connect() {

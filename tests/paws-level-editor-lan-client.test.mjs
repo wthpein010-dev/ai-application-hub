@@ -32,7 +32,7 @@ test("runtime selection uses LAN only after an explicit same-origin LAN health r
 
   assert.equal(api.runtimeMode, "lan");
   assert.equal(api.canDeleteBundled, true);
-  assert.equal(requests[0].url, "/api/health");
+  assert.equal(requests[0].url, "./api/health.json");
   assert.equal(requests[0].options.credentials, "same-origin");
 });
 
@@ -112,4 +112,3 @@ test("LAN catalog subscription parses catalog events and closes cleanly", () => 
   unsubscribe();
   assert.equal(source.closed, true);
 });
-

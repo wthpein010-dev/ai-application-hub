@@ -3,6 +3,12 @@ import { OrbitControls } from "../vendor/OrbitControls.js";
 
 import { GAMEPLAY_ASSETS } from "../core/gameplay-assets.mjs";
 import {
+  GRASS_ATLAS_REGIONS,
+  GRASS_PATCHES,
+  drawGrassAtlasPatch,
+  grassPulseScale,
+} from "../core/grass-layout.mjs";
+import {
   analyzeTileRelations,
   buildIssueSeverityByUid,
 } from "../core/tile-relations.mjs";
@@ -66,6 +72,21 @@ function makeBlockTexture(image, { blockBackground, lockMask, blocked = false, f
   return texture;
 }
 
+function makeGrassTexture(image, variant) {
+  const region = GRASS_ATLAS_REGIONS[variant];
+  const canvas = document.createElement("canvas");
+  canvas.width = region.width;
+  canvas.height = region.height;
+  const context = canvas.getContext("2d");
+  drawGrassAtlasPatch(context, image, variant, {
+    centerX: canvas.width / 2,
+    baseY: canvas.height,
+  });
+  const texture = new THREE.CanvasTexture(canvas);
+  texture.encoding = THREE.sRGBEncoding;
+  return texture;
+}
+
 const RELATION_COLORS = Object.freeze({
   "upper-blocker": 0xff9c48,
   "lower-dependent": 0x4fb3ff,
@@ -101,6 +122,11 @@ export class Three3DView {
     this.loadingPatterns = new Set();
     this.fallbackTextures = new Map();
     this.pointerStart = null;
+    this.reducedMotionQuery = matchMedia("(prefers-reduced-motion: reduce)");
+    this.reducedMotion = this.reducedMotionQuery.matches;
+    this.onReducedMotionChange = (event) => {
+      this.reducedMotion = event.matches;
+    };
     this.destroyed = false;
   }
 
@@ -142,30 +168,10 @@ export class Three3DView {
     this.ground.receiveShadow = true;
     this.scene.add(this.ground);
 
-    this.grassGeometry = new THREE.PlaneGeometry(1.5, 1.5 * (34 / 94));
-    this.grassMaterial = new THREE.MeshBasicMaterial({
-      transparent: true,
-      opacity: 0.58,
-      depthWrite: false,
-    });
     this.grassGroup = new THREE.Group();
-    const grassPositions = [
-      [-7.2, -4.8, -0.18],
-      [-6.4, 4.2, 0.35],
-      [-2.7, 7.1, -0.26],
-      [3.9, 6.2, 0.2],
-      [7.1, 2.4, -0.38],
-      [6.5, -5.6, 0.28],
-      [1.9, -7.2, -0.2],
-      [-3.8, -6.8, 0.3],
-    ];
-    for (const [x, z, rotation] of grassPositions) {
-      const grass = new THREE.Mesh(this.grassGeometry, this.grassMaterial);
-      grass.rotation.x = -Math.PI / 2;
-      grass.rotation.z = rotation;
-      grass.position.set(x, -0.025, z);
-      this.grassGroup.add(grass);
-    }
+    this.grassGeometries = new Map();
+    this.grassMaterials = new Map();
+    this.grassTextures = new Map();
     this.scene.add(this.grassGroup);
 
     this.grid = new THREE.GridHelper(30, 30, 0x257c50, 0x359a68);
@@ -207,6 +213,7 @@ export class Three3DView {
 
     this.abortController = new AbortController();
     const { signal } = this.abortController;
+    this.reducedMotionQuery.addEventListener?.("change", this.onReducedMotionChange);
     this.renderer.domElement.addEventListener(
       "pointerdown",
       (event) => {
@@ -293,6 +300,50 @@ export class Three3DView {
     this.renderer.setSize(width, height, false);
   }
 
+  buildGrassField(image) {
+    for (const child of [...this.grassGroup.children]) this.grassGroup.remove(child);
+    for (const geometry of this.grassGeometries.values()) geometry.dispose();
+    for (const material of this.grassMaterials.values()) material.dispose();
+    for (const texture of this.grassTextures.values()) texture.dispose();
+    this.grassGeometries.clear();
+    this.grassMaterials.clear();
+    this.grassTextures.clear();
+
+    for (const [variant, region] of Object.entries(GRASS_ATLAS_REGIONS)) {
+      const texture = makeGrassTexture(image, variant);
+      texture.anisotropy = Math.min(4, this.renderer.capabilities.getMaxAnisotropy());
+      const geometry = new THREE.PlaneGeometry(region.width * 0.025, region.height * 0.025);
+      const material = new THREE.MeshBasicMaterial({
+        map: texture,
+        transparent: true,
+        alphaTest: 0.02,
+        side: THREE.DoubleSide,
+        depthWrite: false,
+      });
+      this.grassTextures.set(variant, texture);
+      this.grassGeometries.set(variant, geometry);
+      this.grassMaterials.set(variant, material);
+    }
+
+    for (const patch of GRASS_PATCHES) {
+      const geometry = this.grassGeometries.get(patch.variant);
+      const material = this.grassMaterials.get(patch.variant);
+      const height = GRASS_ATLAS_REGIONS[patch.variant].height * 0.025;
+      const x = (patch.normalizedX - 0.5) * 18;
+      const z = (patch.normalizedY - 0.5) * 18;
+      const grass = new THREE.Mesh(geometry, material);
+      grass.position.set(x, -0.025 + height / 2, z);
+      grass.rotation.y = Math.atan2(-x, -z) + patch.rotationRadians;
+      grass.userData.baseY = -0.025;
+      grass.userData.height = height;
+      grass.userData.patchId = patch.id;
+      this.grassGroup.add(grass);
+    }
+    this.grassTexture = this.grassTextures.get("Grass1");
+    this.grassGeometry = this.grassGeometries.get("Grass1");
+    this.grassMaterial = this.grassMaterials.get("Grass1");
+  }
+
   loadGameplayArtwork() {
     const loadImage = (url, onLoad) => {
       this.textureLoader.load(
@@ -300,6 +351,7 @@ export class Three3DView {
         (texture) => {
           const image = texture.image;
           texture.dispose();
+          if (this.destroyed) return;
           onLoad(image);
         },
         undefined,
@@ -314,13 +366,7 @@ export class Three3DView {
       this.lockMaskImage = image;
       this.invalidateBlockTextures();
     });
-    this.textureLoader.load(GAMEPLAY_ASSETS.grass, (texture) => {
-      texture.encoding = THREE.sRGBEncoding;
-      texture.anisotropy = Math.min(4, this.renderer.capabilities.getMaxAnisotropy());
-      this.grassTexture = texture;
-      this.grassMaterial.map = texture;
-      this.grassMaterial.needsUpdate = true;
-    });
+    loadImage(GAMEPLAY_ASSETS.grass, (image) => this.buildGrassField(image));
     this.textureLoader.load(GAMEPLAY_ASSETS.playTray, (texture) => {
       texture.encoding = THREE.sRGBEncoding;
       texture.anisotropy = Math.min(8, this.renderer.capabilities.getMaxAnisotropy());
@@ -694,7 +740,8 @@ export class Three3DView {
     }
     this.animationFrame = requestAnimationFrame(() => this.animate());
     this.controls.update();
-    const time = performance.now() * 0.004;
+    const seconds = performance.now() / 1000;
+    const time = seconds * 4;
     for (const mesh of this.meshes.values()) {
       if (mesh.userData.record?.selected) {
         mesh.position.y =
@@ -702,6 +749,13 @@ export class Three3DView {
       } else if (Number.isFinite(mesh.userData.baseY)) {
         mesh.position.y = mesh.userData.baseY;
       }
+    }
+    const grassScale = grassPulseScale(seconds, {
+      reducedMotion: this.reducedMotion || document.visibilityState !== "visible",
+    });
+    for (const grass of this.grassGroup.children) {
+      grass.scale.y = grassScale;
+      grass.position.y = grass.userData.baseY + grass.userData.height * grassScale / 2;
     }
     this.renderer.render(this.scene, this.camera);
   }
@@ -711,6 +765,7 @@ export class Three3DView {
     cancelAnimationFrame(this.animationFrame);
     this.abortController?.abort();
     this.resizeObserver?.disconnect();
+    this.reducedMotionQuery.removeEventListener?.("change", this.onReducedMotionChange);
     this.controls?.dispose();
     for (const mesh of this.meshes.values()) {
       mesh.userData.topMaterial.dispose();
@@ -721,11 +776,11 @@ export class Three3DView {
     this.sideMaterial?.dispose();
     this.groundGeometry?.dispose();
     this.groundMaterial?.dispose();
-    this.grassGeometry?.dispose();
-    this.grassMaterial?.dispose();
+    for (const geometry of this.grassGeometries.values()) geometry.dispose();
+    for (const material of this.grassMaterials.values()) material.dispose();
+    for (const texture of this.grassTextures.values()) texture.dispose();
     this.trayGeometry?.dispose();
     this.trayMaterial?.dispose();
-    this.grassTexture?.dispose();
     this.playTrayTexture?.dispose();
     for (const texture of this.textures.values()) {
       texture.dispose();
