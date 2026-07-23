@@ -11,7 +11,7 @@ const { chromium } = require("playwright");
 const repoRoot = dirname(dirname(fileURLToPath(import.meta.url)));
 const artifactsRoot = join(repoRoot, "tests", "artifacts");
 const requestedDefault = "level_0021_r2_第二关模板12.json";
-const bundledLevelCount = 22;
+const bundledLevelCount = 23;
 const baseUrlIndex = process.argv.indexOf("--base-url");
 const externalBaseUrl = baseUrlIndex >= 0
   ? process.argv[baseUrlIndex + 1]?.replace(/\/+$/, "")

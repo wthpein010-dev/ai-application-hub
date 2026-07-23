@@ -182,6 +182,15 @@
       "modifiedAt": "2026-07-20T00:00:00.000Z"
     },
     {
+      "id": 40,
+      "fileName": "level_0040_r2_40第二关模板19.json",
+      "name": "40第二关模板19",
+      "difficulty": "Normal",
+      "tileCount": 316,
+      "layerCount": 24,
+      "modifiedAt": "2026-07-20T00:00:00.000Z"
+    },
+    {
       "id": 50,
       "fileName": "level_0050_r2_50 第二关第一版.json",
       "name": "50 第二关第一版",

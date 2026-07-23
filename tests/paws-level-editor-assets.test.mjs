@@ -155,15 +155,15 @@ test("editor stage and both renderers consume the gameplay skin without fake con
   assert.match(three3d, /0x3f7d0a/i);
 });
 
-test("published levels contain the index and 22 authorized project files", () => {
+test("published levels contain the index and 23 authorized project files", () => {
   const levels = readdirSync(join(editorRoot, "levels")).sort();
-  assert.equal(levels.length, 23);
+  assert.equal(levels.length, 24);
   assert.equal(levels.includes("index.json"), true);
   assert.equal(levels.includes("level_showcase.json"), false);
   const index = JSON.parse(
     readFileSync(join(editorRoot, "levels", "index.json"), "utf8"),
   );
-  assert.equal(index.levels.length, 22);
+  assert.equal(index.levels.length, 23);
   assert.equal(index.defaultFileName, "level_0021_r2_第二关模板12.json");
   assert.deepEqual(
     levels.filter((name) => name !== "index.json"),
@@ -198,7 +198,7 @@ test("public copy describes the project library and browser-local AI boundary", 
     join(editorRoot, "ui", "workbench-controller.mjs"),
     "utf8",
   );
-  assert.match(html, /已同步 22 个当前工程关卡/);
+  assert.match(html, /已同步 23 个当前工程关卡/);
   assert.match(html, /编辑和 AI 生成结果只保存到当前浏览器/);
   assert.doesNotMatch(html, /仅使用独立示例关卡/);
   assert.doesNotMatch(html, /正在读取示例关卡/);

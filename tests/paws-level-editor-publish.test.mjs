@@ -31,7 +31,7 @@ test("hub publishes one 关卡3D编辑器 engineering card", () => {
   assert.equal(matches[0].name, "关卡3D编辑器");
   assert.equal(matches[0].status, "engineering");
   assert.equal(matches[0].video, "./projects/paws-level-editor/video/index.html");
-  assert.match(matches[0].brief, /22 个当前工程关卡/);
+  assert.match(matches[0].brief, /23 个当前工程关卡/);
   assert.match(matches[0].brief, /AI 生成/);
   assert.equal(matches[0].tags.includes("AI关卡"), true);
 });

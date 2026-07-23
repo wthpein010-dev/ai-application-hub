@@ -80,7 +80,7 @@ test("lists the catalog and loads the requested bundled default", async () => {
 
   const catalog = await api.listLevelCatalog();
   assert.equal(catalog.defaultFileName, defaultFileName);
-  assert.equal(catalog.levels.length, 22);
+  assert.equal(catalog.levels.length, 23);
   assert.equal(catalog.levels.some(({ fileName }) => fileName === defaultFileName), true);
   assert.deepEqual(await api.listLevels(), catalog.levels);
   assert.equal((await api.loadLevel(defaultFileName)).value.name, "第二关模板12");

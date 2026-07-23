@@ -32,7 +32,7 @@ function editorUrl(baseUrl) {
     : `${baseUrl}/projects/paws-level-editor/index.html`;
 }
 const defaultFileName = "level_0021_r2_第二关模板12.json";
-const bundledLevelCount = 22;
+const bundledLevelCount = 23;
 
 async function assertBundledLevelIsValid() {
   const levelPath = resolve(

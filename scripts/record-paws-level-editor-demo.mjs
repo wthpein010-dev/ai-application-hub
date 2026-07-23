@@ -23,7 +23,7 @@ const recordingRoot = join(tmpdir(), "paws-level-editor-demo-recording");
 const ffmpegPath = process.env.FFMPEG_PATH || bundledFfmpeg;
 const targetDuration = 88;
 const defaultFileName = "level_0021_r2_第二关模板12.json";
-const bundledLevelCount = 22;
+const bundledLevelCount = 23;
 const sourceFiles = [
   "projects/paws-level-editor/index.html",
   "projects/paws-level-editor/styles.css",

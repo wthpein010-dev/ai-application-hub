@@ -19,12 +19,12 @@ const editorRoot = join(repoRoot, "projects", "paws-level-editor");
 const levelsRoot = join(editorRoot, "levels");
 const requestedDefault = "level_0021_r2_第二关模板12.json";
 
-test("published catalog contains the 22 current project levels and requested default", async () => {
+test("published catalog contains the 23 current project levels and requested default", async () => {
   const catalog = JSON.parse(await readFile(join(levelsRoot, "index.json"), "utf8"));
 
-  assert.equal(catalog.levels.length, 22);
+  assert.equal(catalog.levels.length, 23);
   assert.equal(catalog.defaultFileName, requestedDefault);
-  assert.equal(new Set(catalog.levels.map(({ fileName }) => fileName)).size, 22);
+  assert.equal(new Set(catalog.levels.map(({ fileName }) => fileName)).size, 23);
   assert.equal(
     catalog.levels.some(({ fileName }) => fileName === "level_showcase.json"),
     false,
