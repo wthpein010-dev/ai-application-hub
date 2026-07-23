@@ -8,6 +8,10 @@
     <meta name="description" content="十种克制的砖块暗到亮、返程回暗材质动效对比实验台。" />
     <title>砖块点亮动效实验台 · 美术设计参考</title>
     <link rel="icon" href="data:," />
+    <link rel="preload" as="document" href="./lab/index.html" fetchpriority="high" />
+    <link rel="preload" as="image" href="./lab/assets/block_bg.png" fetchpriority="high" />
+    <link rel="preload" as="image" href="./lab/assets/Blocks/block_1.png" fetchpriority="high" />
+    <link rel="preload" as="image" href="./lab/assets/Blocks/block_10.png" fetchpriority="high" />
     <link rel="stylesheet" href="../../assets/subpage-shell.css" />
     <link rel="stylesheet" href="./shell.css" />
   </head>
@@ -29,11 +33,57 @@
     </header>
 
     <main class="demo-frame-shell">
+      <div
+        class="frame-loading"
+        id="motionLabLoading"
+        role="progressbar"
+        aria-label="砖块动效实验台加载进度"
+        aria-valuemin="0"
+        aria-valuemax="100"
+        aria-valuenow="18"
+      >
+        <div class="frame-loading__content">
+          <strong>正在打开交互实验台</strong>
+          <span id="motionLabLoadingText">优先加载动效模块与砖块资源…</span>
+          <i aria-hidden="true"><b id="motionLabLoadingBar"></b></i>
+          <small id="motionLabLoadingValue">18%</small>
+        </div>
+      </div>
       <iframe
+        id="motionLabFrame"
         src="./lab/index.html"
         title="砖块点亮动效实验台交互演示"
         allow="fullscreen"
+        loading="eager"
+        fetchpriority="high"
       ></iframe>
     </main>
+    <script>
+      const frame = document.querySelector('#motionLabFrame');
+      const loading = document.querySelector('#motionLabLoading');
+      const loadingText = document.querySelector('#motionLabLoadingText');
+      const loadingBar = document.querySelector('#motionLabLoadingBar');
+      const loadingValue = document.querySelector('#motionLabLoadingValue');
+
+      function updateLoading(progress, message) {
+        loading.setAttribute('aria-valuenow', String(progress));
+        loading.setAttribute('aria-valuetext', message);
+        loadingText.textContent = message;
+        loadingBar.style.width = `${progress}%`;
+        loadingValue.textContent = `${progress}%`;
+      }
+
+      updateLoading(32, '页面外壳已就绪，正在连接交互实验台…');
+      frame.addEventListener('load', () => {
+        updateLoading(100, '交互实验台已就绪');
+        window.setTimeout(() => loading.classList.add('is-ready'), 140);
+        const releaseBackground = () => document.body.classList.add('background-ready');
+        if ('requestIdleCallback' in window) {
+          window.requestIdleCallback(releaseBackground, { timeout: 1200 });
+        } else {
+          window.setTimeout(releaseBackground, 350);
+        }
+      }, { once: true });
+    </script>
   </body>
 </html>

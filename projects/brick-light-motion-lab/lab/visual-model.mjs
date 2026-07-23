@@ -122,43 +122,43 @@ function getChannelProgress(id, progress) {
   });
 
   if (id === 'gray-first') {
-    const gray = phase(progress, 0, 0.62);
-    const body = phase(progress, 0.12, 1);
+    const gray = phase(progress, 0, 0.4);
+    const body = phase(progress, 0.38, 1);
     return {
       ...all(body),
       baseGray: gray,
       iconGray: gray,
-      iconOpacity: phase(progress, 0.06, 0.82),
+      iconOpacity: phase(progress, 0.32, 0.78),
     };
   }
 
   if (id === 'brightness-first') {
-    const brightness = phase(progress, 0, 0.58);
-    const color = phase(progress, 0.2, 1);
+    const brightness = phase(progress, 0, 0.4);
+    const color = phase(progress, 0.38, 1);
     return {
       ...all(color),
       baseBrightness: brightness,
       iconBrightness: brightness,
-      iconOpacity: phase(progress, 0.08, 0.7),
+      iconOpacity: phase(progress, 0.08, 0.58),
     };
   }
 
   if (id === 'color-late') {
-    const visibility = phase(progress, 0, 0.66);
-    const color = phase(progress, 0.42, 1);
+    const visibility = phase(progress, 0, 0.42);
+    const color = phase(progress, 0.55, 0.95);
     return {
       ...all(visibility),
-      baseGray: color,
+      baseGray: visibility,
       baseSaturation: color,
-      iconGray: color,
+      iconGray: visibility,
       iconSaturation: color,
-      iconOpacity: phase(progress, 0.12, 0.72),
+      iconOpacity: visibility,
     };
   }
 
   if (id === 'icon-first') {
-    const icon = phase(progress, 0, 0.64);
-    const base = phase(progress, 0.22, 1);
+    const icon = phase(progress, 0, 0.42);
+    const base = phase(progress, 0.38, 0.94);
     return {
       ...all(base),
       iconGray: icon,
@@ -170,8 +170,8 @@ function getChannelProgress(id, progress) {
   }
 
   if (id === 'base-first') {
-    const base = phase(progress, 0, 0.62);
-    const icon = phase(progress, 0.24, 1);
+    const base = phase(progress, 0, 0.42);
+    const icon = phase(progress, 0.38, 0.94);
     return {
       ...all(icon),
       baseGray: base,
@@ -182,42 +182,45 @@ function getChannelProgress(id, progress) {
   }
 
   if (id === 'two-stage') {
-    const stage = progress < 0.48
-      ? 0.58 * smooth(progress / 0.48)
-      : 0.58 + 0.42 * smooth((progress - 0.62) / 0.38);
+    const first = phase(progress, 0, 0.32);
+    const second = phase(progress, 0.68, 1);
+    const staged = (split) => split * first + (1 - split) * second;
     return {
-      ...all(stage),
-      iconOpacity: phase(progress, 0.08, 0.72),
+      baseGray: staged(0.55),
+      baseBrightness: staged(0.78),
+      baseSaturation: staged(0.38),
+      baseContrast: staged(0.68),
+      iconGray: staged(0.55),
+      iconBrightness: staged(0.8),
+      iconSaturation: staged(0.38),
+      iconContrast: staged(0.68),
+      iconOpacity: staged(0.88),
+      scale: 0,
     };
   }
 
   if (id === 'warm') {
-    const delayed = smooth(progress ** 1.82);
-    return {
-      ...all(delayed),
-      baseGray: smooth(progress ** 1.42),
-      baseSaturation: smooth(progress ** 2.35),
-      iconGray: smooth(progress ** 1.56),
-      iconSaturation: smooth(progress ** 2.6),
-      iconOpacity: phase(progress, 0.2, 0.96),
-    };
+    const delayed = phase(progress, 0.42, 0.88);
+    return all(delayed);
   }
 
   if (id === 'soft-settle') {
-    const quick = smooth(progress ** 0.46);
+    const quick = progress < 0.3
+      ? 0.62 * smooth(progress / 0.3)
+      : 0.62 + 0.38 * smooth((progress - 0.3) / 0.7);
     return {
-      ...all(quick, pulse(progress, 0.48, 1, 0.01)),
-      baseBrightness: phase(progress, 0, 0.5),
-      iconBrightness: phase(progress, 0, 0.46),
-      iconOpacity: phase(progress, 0, 0.5),
+      ...all(quick, pulse(progress, 0.34, 1, 0.01)),
+      baseBrightness: phase(progress, 0, 0.34),
+      iconBrightness: phase(progress, 0, 0.3),
+      iconOpacity: phase(progress, 0, 0.34),
     };
   }
 
   if (id === 'recommended') {
-    const body = phase(progress, 0.14, 0.86);
-    const icon = phase(progress, 0, 0.46);
+    const body = phase(progress, 0.1, 0.8);
+    const icon = phase(progress, 0, 0.32);
     return {
-      ...all(body, pulse(progress, 0.5, 1, 0.006)),
+      ...all(body, pulse(progress, 0.45, 1, 0.006)),
       iconGray: icon,
       iconBrightness: icon,
       iconSaturation: icon,

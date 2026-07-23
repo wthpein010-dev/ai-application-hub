@@ -547,9 +547,9 @@ const defaultApps = [
   {
     id: "brick-light-motion-lab",
     name: "砖块点亮动效实验台",
-    category: "美术参考",
+    category: "美术设计参考",
     status: "engineering",
-    badge: "美术参考",
+    badge: "美术设计参考",
     brief: "作为砖块叠层显露的美术参考，用于比较材质、明暗与回退动效，帮助团队挑选克制一致的呈现。",
     problem: "用于美术、策划和程序共同选择层叠砖块露出后的点亮节奏，避免额外光效让单块砖过度突出。",
     aiUse: "AI 参与动效方案拆分、暴露进度模型、交互原型、慢速对比、自动化测试和公开发布。",
@@ -562,7 +562,7 @@ const defaultApps = [
       windows: "",
       mac: ""
     },
-    tags: ["美术参考", "砖块动效", "交互原型", "暗亮切换"],
+    tags: ["美术设计参考", "砖块动效", "交互原型", "暗亮切换"],
     speed: 9,
     impact: 8,
     risk: 9,
@@ -1277,9 +1277,9 @@ function normalizeApp(app) {
   }
   if (normalized.id === "brick-light-motion-lab") {
     normalized.badge = base.badge;
-    if (normalized.category === "美术设计参考") normalized.category = base.category;
+    if (normalized.category === "美术参考") normalized.category = base.category;
     if (normalized.brief === "对比十种克制的砖块暗到亮、返程回暗方案，全部点亮后与普通砖块保持一致。") normalized.brief = base.brief;
-    if (normalized.tags.join("|") === "美术设计参考|砖块动效|交互原型|暗亮切换") normalized.tags = base.tags;
+    if (normalized.tags.join("|") === "美术参考|砖块动效|交互原型|暗亮切换") normalized.tags = base.tags;
   }
   if (normalized.id === "vita-mahjong") {
     normalized.category = "Unity H5 AI版";

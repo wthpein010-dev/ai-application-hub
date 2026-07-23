@@ -9,9 +9,33 @@
     />
     <title>砖块点亮动效实验台</title>
     <link rel="icon" href="data:," />
+    <link rel="preload" as="style" href="./styles.css" />
+    <link rel="modulepreload" href="./app.mjs" />
+    <link rel="preload" as="image" href="./assets/block_bg.png" fetchpriority="high" />
+    <link rel="preload" as="image" href="./assets/Blocks/block_1.png" fetchpriority="high" />
+    <link rel="preload" as="image" href="./assets/Blocks/block_10.png" fetchpriority="high" />
     <link rel="stylesheet" href="./styles.css" />
   </head>
   <body>
+    <div
+      class="lab-loading"
+      id="lab-loading"
+      role="progressbar"
+      aria-label="砖块动效实验台加载进度"
+      aria-valuemin="0"
+      aria-valuemax="100"
+      aria-valuenow="8"
+      aria-describedby="lab-loading-status"
+    >
+      <div class="lab-loading__panel">
+        <span class="lab-loading__eyebrow">MOTION LAB</span>
+        <strong>正在准备砖块动效实验台</strong>
+        <p id="lab-loading-status" aria-live="polite">正在读取核心模块…</p>
+        <div class="lab-loading__track" aria-hidden="true"><i id="lab-loading-bar"></i></div>
+        <span class="lab-loading__value" id="lab-loading-value">8%</span>
+      </div>
+    </div>
+
     <header class="hero">
       <div class="hero__copy">
         <p class="eyebrow"><span></span> MOTION LAB · 交互原型</p>

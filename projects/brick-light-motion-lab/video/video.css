@@ -119,6 +119,61 @@ video {
   cursor: pointer;
 }
 
+#loadVideo:disabled {
+  cursor: wait;
+  opacity: 0.72;
+}
+
+.video-load-progress {
+  width: min(320px, 72vw);
+}
+
+.video-load-progress i,
+.video-buffer-status i {
+  display: block;
+  height: 5px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: rgb(255 255 255 / 0.12);
+}
+
+.video-load-progress b,
+.video-buffer-status b {
+  display: block;
+  width: 8%;
+  height: 100%;
+  border-radius: inherit;
+  background: #a7ef64;
+  transition: width 180ms ease;
+}
+
+.video-load-progress span {
+  display: block;
+  margin-top: 7px;
+  color: #d4e4da;
+  font: 700 11px/1 ui-monospace, monospace;
+  text-align: right;
+}
+
+.video-buffer-status {
+  position: absolute;
+  right: 14px;
+  bottom: 48px;
+  left: 14px;
+  z-index: 3;
+  padding: 10px 12px;
+  border: 1px solid rgb(182 227 204 / 0.2);
+  border-radius: 8px;
+  color: #dbe9e1;
+  background: rgb(5 16 9 / 0.9);
+  font-size: 11px;
+}
+
+.video-buffer-status span {
+  display: block;
+  margin-bottom: 7px;
+}
+
 [hidden] {
   display: none !important;
 }

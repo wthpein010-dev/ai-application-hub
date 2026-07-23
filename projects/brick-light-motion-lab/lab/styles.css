@@ -19,6 +19,76 @@
   box-sizing: border-box;
 }
 
+.lab-loading {
+  position: fixed;
+  z-index: 1000;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  color: #f3f7ef;
+  background: #07140d;
+  transition: opacity 240ms ease, visibility 240ms ease;
+}
+
+.lab-loading.is-complete {
+  visibility: hidden;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.lab-loading__panel {
+  width: min(420px, 100%);
+  padding: 26px;
+  border: 1px solid rgba(167, 220, 176, 0.18);
+  border-radius: 16px;
+  background: #0e2417;
+  box-shadow: 0 24px 70px rgba(0, 0, 0, 0.3);
+}
+
+.lab-loading__eyebrow {
+  display: block;
+  margin-bottom: 10px;
+  color: #a7ef64;
+  font: 700 10px/1.2 ui-monospace, monospace;
+  letter-spacing: 0.16em;
+}
+
+.lab-loading strong {
+  display: block;
+  font-size: 18px;
+}
+
+.lab-loading p {
+  margin: 9px 0 17px;
+  color: #9db0a1;
+  font-size: 12px;
+}
+
+.lab-loading__track {
+  height: 5px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.lab-loading__track i {
+  display: block;
+  width: 8%;
+  height: 100%;
+  border-radius: inherit;
+  background: #a7ef64;
+  transition: width 180ms ease;
+}
+
+.lab-loading__value {
+  display: block;
+  margin-top: 8px;
+  color: #c7d6cb;
+  font: 700 11px/1 ui-monospace, monospace;
+  text-align: right;
+}
+
 html {
   min-width: 320px;
   background: var(--page);

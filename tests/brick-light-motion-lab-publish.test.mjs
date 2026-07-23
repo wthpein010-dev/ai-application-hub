@@ -31,7 +31,7 @@ function loadDefaults() {
   return context.globalThis.defaultApps;
 }
 
-test("hub publishes the material motion lab once at the end of engineering experiences", () => {
+test("hub publishes the material motion lab once in engineering experiences", () => {
   const defaults = loadDefaults();
   const matches = defaults.filter((app) => app.id === "brick-light-motion-lab");
   assert.equal(matches.length, 1);
@@ -49,8 +49,6 @@ test("hub publishes the material motion lab once at the end of engineering exper
     { web: "./projects/brick-light-motion-lab/index.html", windows: "", mac: "" },
   );
 
-  const engineering = defaults.filter((item) => item.status === "engineering");
-  assert.equal(engineering.at(-1).id, app.id);
 });
 
 test("demo and video pages use the Hub shell and return-home path", () => {
@@ -65,7 +63,20 @@ test("demo and video pages use the Hub shell and return-home path", () => {
   }
 
   assert.match(demo, /src="\.\/lab\/index\.html"/);
+  assert.match(demo, /id="motionLabLoading"/);
+  assert.match(demo, /role="progressbar"/);
+  assert.match(demo, /loading="eager"/);
+  assert.match(demo, /fetchpriority="high"/);
+  assert.match(demo, /requestIdleCallback/);
+  assert.match(demo, /background-ready/);
   assert.match(video, /id="loadVideo"/);
+  assert.match(video, /video-load-model\.mjs/);
+  assert.match(video, /loadedmetadata/);
+  assert.match(video, /waiting/);
+  assert.match(video, /canplay/);
+  assert.match(video, /playing/);
+  assert.match(video, /error/);
+  assert.match(video, /id="videoBufferStatus"/);
   assert.match(video, /data-src="\.\/brick-light-motion-lab\.mp4"/);
   assert.equal(existsSync(join(projectRoot, "video", "brick-light-motion-lab.mp4")), true);
 });
@@ -76,6 +87,7 @@ test("the embedded lab exposes ten material-only schemes and six slow speeds", (
   const app = readFileSync(join(labRoot, "app.mjs"), "utf8");
   const visual = readFileSync(join(labRoot, "visual-model.mjs"), "utf8");
   const playback = readFileSync(join(labRoot, "playback-model.mjs"), "utf8");
+  const loading = readFileSync(join(labRoot, "loading-model.mjs"), "utf8");
   const combined = `${html}\n${app}\n${visual}`;
 
   assert.match(html, /十个方案/);
@@ -86,6 +98,7 @@ test("the embedded lab exposes ten material-only schemes and six slow speeds", (
   assert.match(visual, /name: '慢启快亮'/);
   assert.match(visual, /name: '快启慢收'/);
   assert.match(playback, /\[0\.25, 0\.4, 0\.55, 0\.7, 0\.85, 1\]/);
+  assert.match(loading, /completeLoading/);
   assert.doesNotMatch(combined, /柔光扩散|方向扫光|描边充能|波纹唤醒|bloom|sweep|edge-charge|wake-ripple|hybrid-ring/);
 });
 
@@ -117,7 +130,7 @@ test("published schemes remain materially distinct and keep outbound pacing obse
       }).reduce((sum, distance) => sum + distance, 0) / samples.length;
 
       assert.ok(
-        averageDistance >= 0.15,
+        averageDistance >= 0.25,
         `${leftId}/${rightId} average material distance ${averageDistance.toFixed(4)}`,
       );
     }
@@ -129,7 +142,7 @@ test("published schemes remain materially distinct and keep outbound pacing obse
 });
 
 test("home page refreshes the runtime cache key for the new card", () => {
-  assert.match(page, /app-20260706-restore-games\.js\?v=20260722-brick-motion-v3/);
+  assert.match(page, /app-20260706-restore-games\.js\?v=20260723-brick-motion-v4-loading/);
 });
 
 test("tutorial video is a short, decodable 720p H.264 asset", () => {

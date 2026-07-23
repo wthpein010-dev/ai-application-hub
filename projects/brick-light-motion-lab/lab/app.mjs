@@ -18,6 +18,12 @@ import {
   VISUAL_SCHEMES,
   getSchemeVisualState,
 } from './visual-model.mjs';
+import {
+  completeLoading,
+  createLoadingState,
+  markLoadingStage,
+  settleLoadingResource,
+} from './loading-model.mjs';
 
 const ASSET_ROOT = './assets';
 const TILE_WIDTH = 104;
@@ -25,6 +31,11 @@ const OUT_DURATION = 720;
 const HOLD_DURATION = 420;
 const RETURN_DURATION = 620;
 const REDUCED_MOTION = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+const CRITICAL_RESOURCES = [
+  './assets/block_bg.png',
+  './assets/Blocks/block_1.png',
+  './assets/Blocks/block_10.png',
+];
 
 const SCHEME_DETAILS = [
   ['同步恢复', '最克制基线', '底板与图案共用同一平滑曲线，适合作为程序实现基准。'],
@@ -67,6 +78,10 @@ const playSelectedButton = document.querySelector('#play-selected');
 const pauseAllButton = document.querySelector('#pause-all');
 const pathToggle = document.querySelector('#path-toggle');
 const tourStatus = document.querySelector('#tour-status');
+const loadingOverlay = document.querySelector('#lab-loading');
+const loadingStatus = document.querySelector('#lab-loading-status');
+const loadingBar = document.querySelector('#lab-loading-bar');
+const loadingValue = document.querySelector('#lab-loading-value');
 const speedButtons = [...document.querySelectorAll('[data-speed]')];
 const cardStates = new Map();
 
@@ -74,19 +89,84 @@ let selectedScheme = 'recommended';
 let playbackSession = createPlaybackSession(SCHEMES.map((scheme) => scheme.id));
 let tourToken = 0;
 let tourMessage = '首次巡播准备中 · 01 将在 0.8 秒后播放';
+let loadingState = markLoadingStage(createLoadingState(CRITICAL_RESOURCES), 'module');
 
 document.body.classList.toggle('show-path', pathToggle.checked);
+updateLoadingUi('核心模块已读取，正在生成方案卡片…');
 renderCards();
+loadingState = markLoadingStage(loadingState, 'cards');
+updateLoadingUi('十个方案已生成，正在解码砖块资源…');
 selectScheme(selectedScheme);
 bindGlobalControls();
 updatePlaybackUi();
+initializeLab();
 
-if (REDUCED_MOTION) {
-  playbackSession = interruptPlayback(playbackSession);
-  tourMessage = '系统已启用减少动态效果 · 可手动选择方案';
-  updatePlaybackUi();
-} else {
-  startAutoTour();
+async function initializeLab() {
+  const slowNotice = window.setTimeout(() => {
+    if (!loadingState.complete) updateLoadingUi('资源较大，仍在加载，请稍候…');
+  }, 3000);
+
+  await waitForCriticalImages();
+  window.clearTimeout(slowNotice);
+  loadingState = completeLoading(loadingState);
+  updateLoadingUi(loadingState.failedResources.size > 0 ? '核心资源已结算，个别资源使用浏览器回退。' : '核心资源已就绪。');
+  loadingOverlay?.classList.add('is-complete');
+  document.body.dataset.ready = 'true';
+
+  if (REDUCED_MOTION) {
+    playbackSession = interruptPlayback(playbackSession);
+    tourMessage = '系统已启用减少动态效果 · 可手动选择方案';
+    updatePlaybackUi();
+  } else {
+    startAutoTour();
+  }
+}
+
+async function waitForCriticalImages() {
+  const imagesBySource = new Map();
+  document.querySelectorAll('.tile img').forEach((image) => {
+    const source = image.getAttribute('src');
+    if (source && !imagesBySource.has(source)) imagesBySource.set(source, image);
+  });
+
+  await Promise.all(CRITICAL_RESOURCES.map(async (url) => {
+    const ok = await waitForImage(imagesBySource.get(url));
+    loadingState = settleLoadingResource(loadingState, url, ok);
+    updateLoadingUi(`正在解码砖块资源 ${loadingState.settledResources.size}/${loadingState.resources.size}…`);
+  }));
+}
+
+function waitForImage(image, timeoutMs = 8000) {
+  if (!image) return Promise.resolve(false);
+  return new Promise((resolve) => {
+    let settled = false;
+    const finish = async (ok) => {
+      if (settled) return;
+      settled = true;
+      window.clearTimeout(timeout);
+      image.removeEventListener('load', onLoad);
+      image.removeEventListener('error', onError);
+      if (ok && typeof image.decode === 'function') {
+        try { await image.decode(); } catch { /* load success remains authoritative */ }
+      }
+      resolve(ok && image.naturalWidth > 0);
+    };
+    const onLoad = () => finish(true);
+    const onError = () => finish(false);
+    const timeout = window.setTimeout(() => finish(image.complete && image.naturalWidth > 0), timeoutMs);
+    image.addEventListener('load', onLoad, { once: true });
+    image.addEventListener('error', onError, { once: true });
+    if (image.complete) queueMicrotask(() => finish(image.naturalWidth > 0));
+  });
+}
+
+function updateLoadingUi(message) {
+  const progress = loadingState.progress;
+  if (loadingStatus) loadingStatus.textContent = message;
+  if (loadingBar) loadingBar.style.width = `${progress}%`;
+  if (loadingValue) loadingValue.textContent = `${progress}%`;
+  loadingOverlay?.setAttribute('aria-valuenow', String(progress));
+  loadingOverlay?.setAttribute('aria-valuetext', message);
 }
 
 function renderCards() {

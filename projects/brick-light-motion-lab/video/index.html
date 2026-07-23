@@ -33,8 +33,16 @@
         <video id="tutorialVideo" controls playsinline preload="metadata" data-src="./brick-light-motion-lab.mp4"></video>
         <div class="load-overlay" id="loadOverlay">
           <strong>砖块点亮动效实验</strong>
-          <p>约 35 秒，H.264 编码。点击后加载视频。</p>
+          <p id="videoLoadMessage">约 35 秒，H.264 编码。点击后加载视频。</p>
+          <div class="video-load-progress" id="videoLoadProgress" hidden>
+            <i aria-hidden="true"><b id="videoLoadBar"></b></i>
+            <span id="videoLoadValue">0%</span>
+          </div>
           <button id="loadVideo" type="button">加载并播放</button>
+        </div>
+        <div class="video-buffer-status" id="videoBufferStatus" role="status" aria-live="polite" hidden>
+          <span id="videoBufferText">视频缓冲中…</span>
+          <i aria-hidden="true"><b id="videoBufferBar"></b></i>
         </div>
       </section>
 
@@ -49,26 +57,90 @@
       </section>
     </main>
 
-    <script>
+    <script type="module">
+      import { getBufferedPercent } from './video-load-model.mjs';
+
       const video = document.querySelector('#tutorialVideo');
       const overlay = document.querySelector('#loadOverlay');
       const loadButton = document.querySelector('#loadVideo');
+      const loadMessage = document.querySelector('#videoLoadMessage');
+      const loadProgress = document.querySelector('#videoLoadProgress');
+      const loadBar = document.querySelector('#videoLoadBar');
+      const loadValue = document.querySelector('#videoLoadValue');
+      const bufferStatus = document.querySelector('#videoBufferStatus');
+      const bufferText = document.querySelector('#videoBufferText');
+      const bufferBar = document.querySelector('#videoBufferBar');
+      let pendingTime = null;
+      let failed = false;
 
-      function loadVideo(autoplay = false) {
+      function bufferedEnd() {
+        return video.buffered.length > 0 ? video.buffered.end(video.buffered.length - 1) : 0;
+      }
+
+      function updateProgress(ready = false, message = '正在缓冲视频…') {
+        const percent = getBufferedPercent(bufferedEnd(), video.duration, ready);
+        loadProgress.hidden = false;
+        loadMessage.textContent = message;
+        loadBar.style.width = `${percent}%`;
+        loadValue.textContent = `${percent}%`;
+        bufferText.textContent = `${message} ${percent}%`;
+        bufferBar.style.width = `${percent}%`;
+      }
+
+      function loadVideo(autoplay = false, seekTime = null) {
+        if (failed) {
+          video.removeAttribute('src');
+          video.load();
+          failed = false;
+        }
+        if (Number.isFinite(seekTime)) pendingTime = seekTime;
+        overlay.hidden = false;
+        loadButton.disabled = true;
+        loadButton.textContent = '正在加载…';
+        updateProgress(false, '正在连接视频资源…');
         if (!video.src) {
           video.src = video.dataset.src;
           video.load();
         }
-        overlay.hidden = true;
         if (autoplay) video.play().catch(() => {});
       }
 
       loadButton.addEventListener('click', () => loadVideo(true));
+      video.addEventListener('loadedmetadata', () => {
+        if (pendingTime !== null) {
+          video.currentTime = pendingTime;
+          pendingTime = null;
+        }
+        updateProgress(false, '已读取视频信息，正在缓冲…');
+      });
+      video.addEventListener('progress', () => updateProgress(false));
+      video.addEventListener('waiting', () => {
+        updateProgress(false, '视频缓冲中…');
+        bufferStatus.hidden = false;
+      });
+      video.addEventListener('canplay', () => {
+        updateProgress(true, '视频可以播放');
+        window.setTimeout(() => { overlay.hidden = true; }, 120);
+        bufferStatus.hidden = true;
+        loadButton.disabled = false;
+        loadButton.textContent = '加载并播放';
+      });
+      video.addEventListener('playing', () => {
+        overlay.hidden = true;
+        bufferStatus.hidden = true;
+      });
+      video.addEventListener('error', () => {
+        failed = true;
+        overlay.hidden = false;
+        loadProgress.hidden = true;
+        bufferStatus.hidden = true;
+        loadMessage.textContent = '视频加载失败，请检查网络后重试。';
+        loadButton.disabled = false;
+        loadButton.textContent = '重新加载';
+      });
       document.querySelectorAll('[data-time]').forEach((button) => {
         button.addEventListener('click', () => {
-          loadVideo();
-          video.currentTime = Number(button.dataset.time) || 0;
-          video.play().catch(() => {});
+          loadVideo(true, Number(button.dataset.time) || 0);
         });
       });
     </script>
