@@ -51,17 +51,14 @@ test("hub publishes the material motion lab once in engineering experiences", ()
 
 });
 
-test("demo and video pages use the Hub shell and return-home path", () => {
+test("demo and video pages use their current Hub shells and return-home paths", () => {
   const projectRoot = join(root, "projects", "brick-light-motion-lab");
   const demo = readFileSync(join(projectRoot, "index.html"), "utf8");
   const video = readFileSync(join(projectRoot, "video", "index.html"), "utf8");
 
-  for (const html of [demo, video]) {
-    assert.match(html, /subpage-shell\.css/);
-    assert.match(html, /class="hub-home-link"/);
-    assert.match(html, /href="\.\.\/\.\.\/index\.html#games"|href="\.\.\/\.\.\/\.\.\/index\.html#games"/);
-  }
-
+  assert.match(demo, /subpage-shell\.css/);
+  assert.match(demo, /class="hub-home-link"/);
+  assert.match(demo, /href="\.\.\/\.\.\/index\.html#games"/);
   assert.match(demo, /src="\.\/lab\/index\.html"/);
   assert.match(demo, /id="motionLabLoading"/);
   assert.match(demo, /role="progressbar"/);
@@ -69,14 +66,13 @@ test("demo and video pages use the Hub shell and return-home path", () => {
   assert.match(demo, /fetchpriority="high"/);
   assert.match(demo, /requestIdleCallback/);
   assert.match(demo, /background-ready/);
+  assert.match(video, /data-hub-video-page/);
+  assert.match(video, /class="hub-video-home"/);
+  assert.match(video, /href="\.\.\/\.\.\/\.\.\/index\.html"/);
+  assert.match(video, /hub-video-player\.css/);
+  assert.match(video, /hub-video-player\.js/);
+  assert.match(video, /class="hub-video-stage"/);
   assert.match(video, /id="loadVideo"/);
-  assert.match(video, /video-load-model\.mjs/);
-  assert.match(video, /loadedmetadata/);
-  assert.match(video, /waiting/);
-  assert.match(video, /canplay/);
-  assert.match(video, /playing/);
-  assert.match(video, /error/);
-  assert.match(video, /id="videoBufferStatus"/);
   assert.match(video, /data-src="\.\/brick-light-motion-lab\.mp4"/);
   assert.equal(existsSync(join(projectRoot, "video", "brick-light-motion-lab.mp4")), true);
 });
@@ -142,7 +138,7 @@ test("published schemes remain materially distinct and keep outbound pacing obse
 });
 
 test("home page refreshes the runtime cache key for the new card", () => {
-  assert.match(page, /app-20260706-restore-games\.js\?v=20260723-brick-motion-v4-loading/);
+  assert.match(page, /app-20260706-restore-games\.js\?v=20260723-nang-app-catalog/);
 });
 
 test("tutorial video is a short, decodable 720p H.264 asset", () => {

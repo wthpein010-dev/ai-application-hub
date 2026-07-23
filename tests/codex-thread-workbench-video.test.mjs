@@ -53,13 +53,12 @@ test("Workbench video page lazy-loads MP4 with default Chinese captions", () => 
   assert.doesNotMatch(html, /<video[^>]+\ssrc=/);
 });
 
-test("Workbench video page returns to the Hub games collection", () => {
+test("Workbench video page returns to the Hub home through the shared player shell", () => {
   const html = readFileSync(join(videoRoot, "index.html"), "utf8");
-  assert.equal(
-    (html.match(/href="\.\.\/\.\.\/\.\.\/index\.html#games"/g) || []).length,
-    2,
-  );
-  assert.match(html, /返回工具集合/);
+  assert.match(html, /class="hub-video-home"/);
+  assert.match(html, /href="\.\.\/\.\.\/\.\.\/index\.html"/);
+  assert.match(html, /hub-video-player\.css/);
+  assert.match(html, /hub-video-player\.js/);
 });
 
 test("Workbench script and captions cover six non-overlapping single-line chapters", () => {

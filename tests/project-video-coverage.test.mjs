@@ -84,7 +84,7 @@ test("every video page follows the shared Hub player contract", () => {
     assert.match(html, /class="hub-video-home"/);
     assert.match(
       html,
-      new RegExp(`href="${escapeRegExp(`${relativeRoot}/index.html`)}"`),
+      new RegExp(`href="${escapeRegExp(`${relativeRoot}/index.html`)}(?:#[^"]*)?"`),
     );
     assert.match(html, /class="hub-video-stage"/);
     assert.match(html, /<video[^>]+preload="none"[^>]+data-src=/);

@@ -35,17 +35,19 @@ test("codex reviewer exposes and migrates its video entry", () => {
 
 test("home page cache key refreshes the current runtime metadata", () => {
   const home = readFileSync(join(root, "index.html"), "utf8");
-  assert.match(home, /app-20260706-restore-games\.js\?v=20260722-brick-motion-v3/);
+  assert.match(home, /app-20260706-restore-games\.js\?v=20260723-nang-app-catalog/);
 });
 
 test("codex reviewer video page lazy-loads media and subtitles", () => {
   const page = readFileSync(join(root, "projects", "Codex对话评分工具", "视频资源", "演示视频.html"), "utf8");
+  assert.match(page, /data-hub-video-page/);
   assert.match(page, /id="loadVideo"/);
-  assert.match(page, /id="walkthroughVideo"/);
+  assert.match(page, /id="introVideo"/);
   assert.doesNotMatch(page, /<video\s+[^>]*\ssrc=/);
   assert.match(page, /codex-reviewer-intro\.mp4/);
   assert.match(page, /codex-reviewer-intro\.vtt/);
-  assert.match(page, /overflow-x:\s*hidden/);
+  assert.match(page, /hub-video-player\.css/);
+  assert.match(page, /hub-video-player\.js/);
 });
 
 test("storyboard avoids JavaScript escape sequences in example paths", () => {

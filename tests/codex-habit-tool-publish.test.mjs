@@ -21,8 +21,11 @@ test("preview and video pages both provide a return path to the hub", () => {
   assert.equal(existsSync(preview), true, "preview page should exist");
   assert.equal(existsSync(video), true, "video page should exist");
   assert.match(readFileSync(preview, "utf8"), /\.\.\/\.\.\/index\.html#apps/);
-  assert.match(readFileSync(video, "utf8"), /\.\.\/index\.html#apps/);
-  assert.match(readFileSync(video, "utf8"), /codex-habit-tool-demo\.mp4/);
+  const videoPage = readFileSync(video, "utf8");
+  assert.match(videoPage, /class="hub-video-home"/);
+  assert.match(videoPage, /href="\.\.\/index\.html"/);
+  assert.match(videoPage, /hub-video-player\.css/);
+  assert.match(videoPage, /codex-habit-tool-demo\.mp4/);
 });
 
 test("both operating-system download archives are shipped", () => {

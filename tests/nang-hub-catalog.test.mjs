@@ -54,8 +54,8 @@ function loadAppsWithStoredValue(stored) {
 test("brick lighting card uses the orange art-reference badge and revised description", () => {
   const brick = catalogBlock("brick-light-motion-lab");
 
-  assert.match(brick, /badge: "美术参考"/);
-  assert.match(brick, /category: "美术参考"/);
+  assert.match(brick, /badge: "美术设计参考"/);
+  assert.match(brick, /category: "美术设计参考"/);
   assert.match(brick, /brief: "[^"]*美术[^"]*参考[^"]*"/);
   assert.match(runtime, /app\.badge \|\| statusLabel\[app\.status\]/);
 });
@@ -79,12 +79,15 @@ test("Nang experience is published in apps with demo and video only", () => {
 
   const preview = readFileSync(join(root, "projects", "nang-keng-pai-pai-xiang", "index.html"), "utf8");
   const video = readFileSync(join(root, "projects", "nang-keng-pai-pai-xiang", "video", "index.html"), "utf8");
+  const captions = readFileSync(join(root, "projects", "nang-keng-pai-pai-xiang", "video", "nang-keng-pai-pai-xiang-intro.vtt"), "utf8");
   assert.match(preview, /href="\.\.\/\.\.\/index\.html#apps"/);
   assert.doesNotMatch(preview, /index\.html#games/);
   assert.match(video, /id="loadVideo"/);
   assert.match(video, /data-src="\.\/nang-keng-pai-pai-xiang-intro\.mp4"/);
   assert.match(video, /href="\.\.\/\.\.\/\.\.\/index\.html#apps"/);
   assert.doesNotMatch(video, /index\.html#games/);
+  assert.match(captions, /从首页进入馕饼拍拍响/);
+  assert.doesNotMatch(captions, /馕坑排排香/);
 });
 
 test("stored Nang game metadata migrates to the apps catalog", () => {

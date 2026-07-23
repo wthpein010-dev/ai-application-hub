@@ -155,7 +155,7 @@ try {
       });
 
       assert.ok(layout.homeLeft >= 0 && layout.homeTop >= 0, app.id + " home action placement");
-      assert.equal(layout.homeHref.endsWith("/index.html"), true, app.id + " home action target");
+      assert.equal(layout.homeHref.split("#")[0].endsWith("/index.html"), true, app.id + " home action target");
       assert.ok(layout.stageWidth <= 960.1, app.id + " stage max width");
       assert.ok(Math.abs(layout.stageWidth / layout.stageHeight - 16 / 9) <= 0.01, app.id + " stage ratio");
       assert.ok(layout.scrollWidth <= layout.viewportWidth, app.id + " horizontal overflow");
