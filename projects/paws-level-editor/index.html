@@ -37,7 +37,7 @@
         </div>
       </header>
 
-      <div class="demo-banner" role="note">
+      <div id="demo-banner" class="demo-banner" role="note">
         已同步 22 个当前工程关卡 · 编辑和 AI 生成结果只保存到当前浏览器，不会写回工程
       </div>
 
@@ -65,6 +65,9 @@
             <button id="refresh-levels" class="secondary-button" type="button">刷新</button>
             <button id="reset-level" class="secondary-button" type="button">恢复内置</button>
             <button id="delete-local-level" class="danger-button edit-only" type="button">删除本地</button>
+            <button id="open-trash" class="secondary-button lan-only" type="button">
+              回收站 <span id="trash-count" class="button-count">0</span>
+            </button>
             <button id="new-level" class="primary-button edit-only" type="button">＋ 新建</button>
             <button id="import-level" class="secondary-button edit-only" type="button">导入 JSON</button>
             <button id="generate-ai-level" class="ai-button edit-only" type="button">✦ AI 生成</button>
@@ -304,6 +307,35 @@
             <button id="conflict-reload" value="reload" class="danger-button">重新加载服务器版本</button>
             <button id="conflict-save-as" value="save-as" class="primary-button">保留修改并另存为</button>
             <button value="cancel" class="secondary-button">稍后处理</button>
+          </div>
+        </form>
+      </dialog>
+
+      <dialog id="trash-dialog" class="workbench-dialog trash-dialog">
+        <div class="dialog-static-form">
+          <p class="section-kicker">UNITY PROJECT TRASH</p>
+          <div class="dialog-title-row">
+            <div>
+              <h2>工程回收站</h2>
+              <p>删除的 JSON 与 Unity `.meta` 保存在 EditorLevels\_Trash，可安全恢复。</p>
+            </div>
+            <button id="close-trash" class="secondary-button" type="button">关闭</button>
+          </div>
+          <div id="trash-list" class="trash-list" aria-live="polite"></div>
+          <p id="trash-error" class="form-error" role="alert"></p>
+        </div>
+      </dialog>
+
+      <dialog id="login-dialog" class="workbench-dialog">
+        <form id="login-form" method="dialog">
+          <p class="section-kicker">LAN WRITE ACCESS</p>
+          <h2>输入本次工作台口令</h2>
+          <p>浏览与试玩不需要口令；保存、删除和恢复工程文件时才验证。</p>
+          <label>口令<input id="login-password" type="password" required autocomplete="current-password" /></label>
+          <p id="login-error" class="form-error" role="alert"></p>
+          <div class="dialog-actions">
+            <button type="submit" value="cancel" class="secondary-button">取消</button>
+            <button type="submit" value="login" class="primary-button">验证并继续</button>
           </div>
         </form>
       </dialog>

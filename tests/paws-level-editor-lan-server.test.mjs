@@ -151,3 +151,35 @@ test("SSE sends an initial catalog event and an immediate service mutation event
   }
   assert.match(received, /"reason":"level-deleted"/);
 });
+
+test("SSE reports JSON files added directly to the Unity level directory", async (t) => {
+  const data = await fixture();
+  const { server, baseUrl } = await start(data);
+  const abort = new AbortController();
+  t.after(async () => {
+    abort.abort();
+    await closeServer(server);
+    await rm(data.root, { recursive: true, force: true });
+  });
+
+  const stream = await fetch(`${baseUrl}/api/events`, { signal: abort.signal });
+  assert.equal(stream.status, 200);
+  const reader = stream.body.getReader();
+  const decoder = new TextDecoder();
+  let received = decoder.decode((await reader.read()).value, { stream: true });
+  assert.match(received, /"reason":"connected"/);
+
+  await writeFile(
+    path.join(data.levelDir, "level_0002_外部新增.json"),
+    `${JSON.stringify({ id: 2, name: "外部新增", tiles: [] })}\n`,
+    "utf8",
+  );
+
+  const deadline = Date.now() + 3000;
+  while (!received.includes('"reason":"filesystem-change"') && Date.now() < deadline) {
+    const chunk = await reader.read();
+    if (chunk.done) break;
+    received += decoder.decode(chunk.value, { stream: true });
+  }
+  assert.match(received, /"reason":"filesystem-change"/);
+});

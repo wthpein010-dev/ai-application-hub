@@ -32,8 +32,18 @@ export function createApiClient({
   }
 
   return {
+    runtimeMode: "static",
+    canDeleteBundled: false,
+    canResetBundled: true,
     async health() {
-      return { online: true, authenticated: true, writable: true, staticDemo: true };
+      return {
+        mode: "static",
+        online: true,
+        authenticated: true,
+        writable: true,
+        staticDemo: true,
+        canDeleteBundled: false,
+      };
     },
     async listLevelCatalog() {
       const index = await fetchJson(fetchImpl, INDEX_URL);
@@ -156,6 +166,14 @@ export function createApiClient({
       removeStored(storage, fileName);
       return { fileName, deleted: true };
     },
+    async listTrash() { return []; },
+    async restoreLevel() {
+      throw new WorkbenchApiError("公网演示没有工程回收站。", {
+        status: 400,
+        code: "trash-unavailable",
+      });
+    },
+    subscribeCatalog() { return () => {}; },
   };
 }
 

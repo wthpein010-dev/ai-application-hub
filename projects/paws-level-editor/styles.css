@@ -345,6 +345,30 @@ select:disabled {
   min-width: 0;
 }
 
+.lan-only {
+  display: none !important;
+}
+
+[data-runtime-mode="lan"] .lan-only {
+  display: inline-flex !important;
+}
+
+.button-count {
+  display: inline-flex;
+  min-width: 18px;
+  min-height: 18px;
+  align-items: center;
+  justify-content: center;
+  margin-left: 4px;
+  padding: 0 5px;
+  border-radius: 999px;
+  color: var(--bg);
+  background: var(--accent);
+  font-family: var(--font-mono);
+  font-size: 9px;
+  font-weight: 800;
+}
+
 .primary-button,
 .secondary-button,
 .danger-button,
@@ -1224,6 +1248,64 @@ select:disabled {
   padding: 24px;
 }
 
+.dialog-static-form {
+  padding: 24px;
+}
+
+.trash-dialog {
+  width: min(680px, calc(100vw - 32px));
+}
+
+.dialog-title-row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 18px;
+}
+
+.dialog-title-row > div {
+  min-width: 0;
+}
+
+.trash-list {
+  display: grid;
+  max-height: min(54vh, 520px);
+  gap: 8px;
+  overflow: auto;
+}
+
+.trash-card {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 12px;
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: 9px;
+  background: var(--surface-2);
+}
+
+.trash-card strong,
+.trash-card span {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.trash-card span {
+  margin-top: 3px;
+  color: var(--muted);
+  font-family: var(--font-mono);
+  font-size: 9px;
+}
+
+.trash-empty {
+  padding: 28px 12px;
+  color: var(--muted);
+  text-align: center;
+}
+
 .workbench-dialog h2 {
   margin: 5px 0 9px;
   font-size: 21px;
@@ -1499,6 +1581,10 @@ select:disabled {
   }
 
   .edit-only {
+    display: none !important;
+  }
+
+  #open-trash {
     display: none !important;
   }
 

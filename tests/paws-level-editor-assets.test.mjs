@@ -105,7 +105,8 @@ test("all published block images preserve the expected 120 by 135 dimensions", (
 
 test("public files contain no private level path or credential material", () => {
   const text = readPublicTextFiles(editorRoot);
-  assert.doesNotMatch(text, /E:\\Mahjong|maque|cookie|password/i);
+  assert.doesNotMatch(text, /E:\\Mahjong|maque|WORKBENCH_PASSWORD\s*=|paws_lan_session=/i);
+  assert.match(text, /type="password"/);
   assert.match(text, /level_0021_r2_第二关模板12\.json/);
 });
 
@@ -224,14 +225,18 @@ test("static editor exposes the built-in reset control and controller flow", () 
   assert.match(controller, /已恢复内置示例/);
 });
 
-test("static controller starts against the browser API without an authentication flow", () => {
+test("runtime starts with static storage and exposes authentication only for LAN writes", () => {
   const controller = readFileSync(
     join(editorRoot, "ui", "workbench-controller.mjs"),
     "utf8",
   );
+  const app = readFileSync(join(editorRoot, "app.mjs"), "utf8");
   const inspector = readFileSync(join(editorRoot, "ui", "inspector.mjs"), "utf8");
   assert.match(controller, /from "\.\.\/static-api-client\.mjs"/);
   assert.match(controller, /if \(!health\.online\)/);
-  assert.doesNotMatch(controller, /promptLogin|submitLogin|loginDialog|authenticated/);
+  assert.match(app, /createRuntimeApiClient/);
+  assert.match(controller, /withWriteAuthentication/);
+  assert.match(controller, /authentication-required/);
+  assert.match(controller, /loginDialog/);
   assert.match(inspector, />保存到浏览器</);
 });

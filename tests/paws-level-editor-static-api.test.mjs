@@ -590,7 +590,14 @@ test("exposes the static demo support methods and returns detached values", asyn
   const loaded = await api.loadLevel(defaultFileName);
   loaded.value.name = "mutated only in the caller";
 
-  assert.deepEqual(health, { online: true, authenticated: true, writable: true, staticDemo: true });
+  assert.deepEqual(health, {
+    mode: "static",
+    online: true,
+    authenticated: true,
+    writable: true,
+    staticDemo: true,
+    canDeleteBundled: false,
+  });
   assert.deepEqual(await api.login(), { authenticated: true });
   assert.deepEqual(await api.logout(), { authenticated: true });
   assert.equal(api.blockImageUrl("1001/bonus"), "./assets/blocks/block_1001%2Fbonus.png");

@@ -1,6 +1,8 @@
+import { createRuntimeApiClient } from "./runtime-api-client.mjs";
 import { WorkbenchController } from "./ui/workbench-controller.mjs";
 
-const controller = new WorkbenchController();
+const api = await createRuntimeApiClient();
+const controller = new WorkbenchController(undefined, { api });
 controller.init().catch((error) => {
   const connection = document.querySelector("#connection-state");
   connection.className = "connection-state is-error";

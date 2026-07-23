@@ -70,11 +70,11 @@ test("controller recovers an invalid bundled local record instead of trapping th
   assert.doesNotMatch(resetLevelBody, /recoveryAttempted/);
 });
 
-test("controller enables reset only for bundled levels", () => {
-  assert.match(controller, /if \(!document\?\.bundled\)/);
+test("controller enables browser reset only in static mode", () => {
+  assert.match(controller, /if \(!this\.canResetBundled\s*\|\|\s*!document\?\.bundled\)/);
   assert.match(
     controller,
-    /resetLevel\.disabled\s*=\s*!this\.document\?\.bundled/,
+    /resetLevel\.disabled\s*=\s*!this\.canResetBundled\s*\|\|\s*!this\.document\?\.bundled/,
   );
 });
 
@@ -107,17 +107,25 @@ test("controller imports a local JSON level into browser-local storage", () => {
   assert.match(controller, /openLevel\(fileName,\s*\{\s*discardDirty:\s*true\s*\}\)/);
 });
 
-test("desktop users can delete only the current saved non-bundled local level", () => {
+test("static users delete browser-local levels while LAN users move project levels to trash", () => {
   assert.match(page, /id="delete-local-level"[^>]*class="[^"]*edit-only[^"]*"[^>]*>删除本地</);
+  assert.match(page, /id="open-trash"/);
+  assert.match(page, /id="trash-dialog"/);
+  assert.match(page, /id="trash-list"/);
+  assert.match(page, /id="login-dialog"/);
   assert.match(controller, /deleteLocalLevel:\s*byId\("delete-local-level"\)/);
   assert.match(controller, /deleteLocalLevel\.addEventListener\("click",\s*\(\)\s*=>\s*this\.deleteCurrentLevel\(\)\)/);
   assert.match(
     controller,
-    /deleteLocalLevel\.disabled\s*=\s*this\.readonly\s*\|\|\s*!this\.document\?\.local\s*\|\|\s*this\.document\?\.bundled/,
+    /const canDeleteCurrent[\s\S]*this\.canDeleteBundled[\s\S]*this\.document\?\.local/,
   );
   assert.match(controller, /async deleteCurrentLevel\(\)/);
-  assert.match(controller, /删除后无法撤销，AI 下次生成将不再学习这关/);
-  assert.match(controller, /api\.deleteLevel\(fileName\)/);
+  assert.match(controller, /移动到工程 _Trash，可在回收站恢复/);
+  assert.match(controller, /api\.deleteLevel\(fileName,\s*\{\s*expectedVersion:/);
+  assert.match(controller, /withWriteAuthentication/);
+  assert.match(controller, /api\.restoreLevel\(trashId\)/);
+  assert.match(controller, /api\.subscribeCatalog/);
+  assert.match(controller, /服务器已删除当前关卡/);
   assert.match(controller, /this\.document\s*=\s*null/);
   assert.match(controller, /this\.defaultFileName/);
   assert.match(controller, /剩余 AI 学习参考/);

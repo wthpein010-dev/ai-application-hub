@@ -63,7 +63,11 @@ export class WorkbenchController {
   constructor(root = document.querySelector("#app"), { api = createApiClient() } = {}) {
     this.root = root;
     this.api = api;
+    this.runtimeMode = api.runtimeMode ?? "static";
+    this.canDeleteBundled = api.canDeleteBundled === true;
+    this.canResetBundled = api.canResetBundled !== false;
     this.levels = [];
+    this.trashLevels = [];
     this.defaultFileName = "";
     this.document = null;
     this.history = null;
@@ -90,6 +94,9 @@ export class WorkbenchController {
     this.openLevelEpoch = 0;
     this.refreshLevelsEpoch = 0;
     this.pendingIndependentOpenEpochs = new Set();
+    this.catalogUnsubscribe = null;
+    this.catalogSyncTimer = null;
+    this.loginResolver = null;
     this.readonly = matchMedia("(max-width: 900px), (pointer: coarse)").matches;
     if (this.readonly) {
       this.mode = "play";
@@ -128,12 +135,19 @@ export class WorkbenchController {
     const byId = (id) => this.root.querySelector(`#${id}`);
     this.elements = {
       connection: byId("connection-state"),
+      demoBanner: byId("demo-banner"),
       levelList: byId("level-list"),
       levelSearch: byId("level-search"),
       levelCount: byId("level-count"),
       refresh: byId("refresh-levels"),
       resetLevel: byId("reset-level"),
       deleteLocalLevel: byId("delete-local-level"),
+      openTrash: byId("open-trash"),
+      trashCount: byId("trash-count"),
+      trashDialog: byId("trash-dialog"),
+      trashList: byId("trash-list"),
+      trashError: byId("trash-error"),
+      closeTrash: byId("close-trash"),
       newLevel: byId("new-level"),
       importLevel: byId("import-level"),
       importLevelInput: byId("import-level-input"),
@@ -180,6 +194,10 @@ export class WorkbenchController {
       statusSeed: byId("status-seed"),
       validationSummary: byId("validation-summary"),
       conflictDialog: byId("conflict-dialog"),
+      loginDialog: byId("login-dialog"),
+      loginForm: byId("login-form"),
+      loginPassword: byId("login-password"),
+      loginError: byId("login-error"),
       saveAsDialog: byId("save-as-dialog"),
       saveAsForm: byId("save-as-form"),
       saveAsName: byId("save-as-name"),
@@ -195,6 +213,8 @@ export class WorkbenchController {
     this.elements.refresh.addEventListener("click", () => this.refreshLevels());
     this.elements.resetLevel.addEventListener("click", () => this.resetCurrentLevel());
     this.elements.deleteLocalLevel.addEventListener("click", () => this.deleteCurrentLevel());
+    this.elements.openTrash.addEventListener("click", () => this.openTrash());
+    this.elements.closeTrash.addEventListener("click", () => this.elements.trashDialog.close());
     this.elements.newLevel.addEventListener("click", () => this.createNewLevel());
     this.elements.importLevel.addEventListener("click", () => this.requestLocalImport());
     this.elements.importLevelInput.addEventListener("change", () =>
@@ -266,6 +286,17 @@ export class WorkbenchController {
       this.elements.libraryPanel.classList.remove("is-open");
     });
     this.elements.saveAsForm.addEventListener("submit", (event) => this.submitSaveAs(event));
+    this.elements.loginForm.addEventListener("submit", (event) => this.submitLogin(event));
+    this.elements.loginDialog.addEventListener("close", () => {
+      if (!this.loginResolver) return;
+      this.loginResolver(
+        this.elements.loginDialog.returnValue === "login"
+          ? this.elements.loginPassword.value
+          : null,
+      );
+      this.loginResolver = null;
+      this.elements.loginPassword.value = "";
+    });
     this.elements.saveAsDialog.addEventListener("close", () => {
       if (this.saveAsResolver) {
         this.saveAsResolver(
@@ -285,6 +316,7 @@ export class WorkbenchController {
     this.root.querySelector("#conflict-save-as").addEventListener("click", () => this.promptSaveAs());
     window.addEventListener("keydown", (event) => this.onKeyDown(event));
     window.addEventListener("beforeunload", (event) => {
+      this.catalogUnsubscribe?.();
       if (this.isDirty()) {
         event.preventDefault();
       }
@@ -299,8 +331,20 @@ export class WorkbenchController {
         this.setConnection("error", health.directoryError || "关卡目录不可读");
         return;
       }
-      this.setConnection("online", "关卡库在线 · 编辑只保存到当前浏览器");
+      this.runtimeMode = health.mode === "lan" ? "lan" : this.runtimeMode;
+      this.canDeleteBundled = health.canDeleteBundled === true || this.canDeleteBundled;
+      this.canResetBundled = this.runtimeMode !== "lan" && this.canResetBundled;
+      this.applyRuntimeMode();
+      this.setConnection("online", this.connectionText());
       await this.refreshLevels();
+      if (this.runtimeMode === "lan") {
+        await this.refreshTrash();
+        this.catalogUnsubscribe?.();
+        this.catalogUnsubscribe = this.api.subscribeCatalog(
+          (event) => this.scheduleCatalogSync(event),
+          () => this.setConnection("connecting", "内网同步连接正在重试"),
+        );
+      }
     } catch (error) {
       this.setConnection("error", error.message);
       this.showToast(error.message, "error");
@@ -321,7 +365,7 @@ export class WorkbenchController {
       this.levels = catalog.levels;
       this.defaultFileName = catalog.defaultFileName;
       this.renderLevelList();
-      this.setConnection("online", "关卡库在线 · 编辑只保存到当前浏览器");
+      this.setConnection("online", this.connectionText());
       if (
         this.levels.length
         && !this.document
@@ -421,6 +465,91 @@ export class WorkbenchController {
         this.pendingIndependentOpenEpochs.delete(openEpoch);
       }
     }
+  }
+
+  connectionText() {
+    return this.runtimeMode === "lan"
+      ? "内网工程模式 · 改动同步到所有用户"
+      : "关卡库在线 · 编辑只保存到当前浏览器";
+  }
+
+  applyRuntimeMode() {
+    this.root.dataset.runtimeMode = this.runtimeMode;
+    if (this.runtimeMode === "lan") {
+      this.elements.demoBanner.textContent =
+        "内网工程模式 · 直接读写 Unity EditorLevels · 删除进入工程 _Trash 并同步所有用户";
+      this.elements.deleteLocalLevel.textContent = "移到回收站";
+      return;
+    }
+    this.elements.deleteLocalLevel.textContent = "删除本地";
+  }
+
+  submitLogin(event) {
+    event.preventDefault();
+    if (event.submitter?.value === "cancel") {
+      this.elements.loginDialog.close("cancel");
+      return;
+    }
+    if (!this.elements.loginPassword.value) {
+      this.elements.loginError.textContent = "请输入本次服务启动时设置的口令。";
+      return;
+    }
+    this.elements.loginDialog.close("login");
+  }
+
+  requestLogin() {
+    this.elements.loginError.textContent = "";
+    this.elements.loginPassword.value = "";
+    return new Promise((resolve) => {
+      this.loginResolver = resolve;
+      this.elements.loginDialog.showModal();
+      this.elements.loginPassword.focus();
+    });
+  }
+
+  async withWriteAuthentication(operation) {
+    try {
+      return await operation();
+    } catch (error) {
+      if (error.code !== "authentication-required") throw error;
+      const password = await this.requestLogin();
+      if (password === null) {
+        const cancelled = new Error("已取消写回工程。");
+        cancelled.code = "authentication-cancelled";
+        throw cancelled;
+      }
+      await this.api.login(password);
+      return operation();
+    }
+  }
+
+  scheduleCatalogSync(event) {
+    clearTimeout(this.catalogSyncTimer);
+    this.catalogSyncTimer = setTimeout(() => this.synchronizeCatalog(event), 60);
+  }
+
+  async synchronizeCatalog(event) {
+    const openFileName = this.document?.fileName;
+    const dirty = this.isDirty();
+    await Promise.all([this.refreshLevels(), this.refreshTrash()]);
+    if (!openFileName || this.levels.some(({ fileName }) => fileName === openFileName)) return;
+    if (dirty) {
+      this.showToast(
+        "服务器已删除当前关卡；未保存内容仍保留，请另存为新关卡或先从回收站恢复。",
+        "error",
+      );
+      this.updateUI();
+      return;
+    }
+    this.clearCurrentDocument();
+    const fallback = this.levels.find(({ fileName }) => fileName === this.defaultFileName)
+      ?? this.levels[0];
+    if (fallback) await this.openLevel(fallback.fileName, { discardDirty: true });
+    this.showToast(
+      event?.reason === "level-restored"
+        ? "工程回收站已变化，关卡库已同步。"
+        : "当前关卡已被其他用户移到回收站，已打开默认关。",
+    );
   }
 
   async performOpenLevel(
@@ -524,7 +653,7 @@ export class WorkbenchController {
 
   async resetCurrentLevel() {
     const { document } = this;
-    if (!document?.bundled) {
+    if (!this.canResetBundled || !document?.bundled) {
       return;
     }
     if (!confirm("确定清除当前浏览器保存并恢复内置示例吗？")) {
@@ -542,30 +671,27 @@ export class WorkbenchController {
 
   async deleteCurrentLevel() {
     const { document } = this;
-    if (this.readonly || !document?.local || document.bundled) {
+    const canDeleteCurrent = this.canDeleteBundled
+      ? Boolean(document?.fileName && document?.version)
+      : Boolean(document?.local && !document?.bundled);
+    if (this.readonly || !canDeleteCurrent) {
       return;
     }
     const fileName = document.fileName;
-    if (!confirm(
-      `确定删除本地关卡 ${fileName} 吗？\n\n删除后无法撤销，AI 下次生成将不再学习这关。`,
-    )) {
+    const confirmation = this.runtimeMode === "lan"
+      ? `确定删除工程关卡 ${fileName} 吗？\n\nJSON 与 .meta 将移动到工程 _Trash，可在回收站恢复；AI 会立即忘记这关的结构。`
+      : `确定删除本地关卡 ${fileName} 吗？\n\n删除后无法撤销，AI 下次生成将不再学习这关。`;
+    if (!confirm(confirmation)) {
       return;
     }
     try {
-      await this.api.deleteLevel(fileName);
-      this.document = null;
-      this.history = null;
-      this.selection = new Set();
-      this.setIssues([]);
-      this.currentDifficulty = null;
-      this.playSession = null;
-      this.playSnapshot = null;
-      this.lastAiGeneration = null;
+      await this.withWriteAuthentication(() => this.api.deleteLevel(fileName, {
+        expectedVersion: document.version,
+      }));
+      this.clearCurrentDocument();
       this.levels = [];
-      this.mountRenderer();
-      this.elements.emptyStage.hidden = false;
-      this.updateUI();
       await this.refreshLevels();
+      if (this.runtimeMode === "lan") await this.refreshTrash();
       if (!this.document) {
         const fallback = this.levels.find(
           ({ fileName: candidate }) => candidate === this.defaultFileName,
@@ -581,10 +707,98 @@ export class WorkbenchController {
         ({ aiReferenceEligible }) => aiReferenceEligible,
       ).length;
       this.showToast(
-        `已删除 ${fileName}；剩余 AI 学习参考 ${referenceCount} 关。`,
+        this.runtimeMode === "lan"
+          ? `已移到工程 _Trash：${fileName}；剩余 AI 学习参考 ${referenceCount} 关。`
+          : `已删除 ${fileName}；剩余 AI 学习参考 ${referenceCount} 关。`,
       );
     } catch (error) {
       this.showToast(error.message, "error");
+    }
+  }
+
+  clearCurrentDocument() {
+    this.document = null;
+    this.history = null;
+    this.selection = new Set();
+    this.setIssues([]);
+    this.currentDifficulty = null;
+    this.playSession = null;
+    this.playSnapshot = null;
+    this.lastAiGeneration = null;
+    this.mountRenderer();
+    this.elements.emptyStage.hidden = false;
+    this.updateUI();
+  }
+
+  async refreshTrash() {
+    if (this.runtimeMode !== "lan") {
+      this.trashLevels = [];
+      this.elements.trashCount.textContent = "0";
+      return;
+    }
+    try {
+      this.trashLevels = await this.api.listTrash();
+      this.elements.trashCount.textContent = String(this.trashLevels.length);
+      if (this.elements.trashDialog.open) this.renderTrash();
+    } catch (error) {
+      this.elements.trashError.textContent = error.message;
+    }
+  }
+
+  async openTrash() {
+    if (this.runtimeMode !== "lan" || this.readonly) return;
+    this.elements.trashError.textContent = "";
+    this.elements.trashList.innerHTML =
+      '<div class="trash-empty"><span class="loader"></span><p>正在读取工程 _Trash…</p></div>';
+    this.elements.trashDialog.showModal();
+    await this.refreshTrash();
+    this.renderTrash();
+  }
+
+  renderTrash() {
+    this.elements.trashList.replaceChildren();
+    if (!this.trashLevels.length) {
+      const empty = document.createElement("div");
+      empty.className = "trash-empty";
+      empty.textContent = "回收站为空。";
+      this.elements.trashList.append(empty);
+      return;
+    }
+    for (const entry of this.trashLevels) {
+      const card = document.createElement("div");
+      card.className = "trash-card";
+      const copy = document.createElement("div");
+      const name = document.createElement("strong");
+      name.textContent = entry.name || entry.fileName;
+      const meta = document.createElement("span");
+      const deletedAt = new Date(entry.deletedAt);
+      const time = Number.isNaN(deletedAt.getTime())
+        ? "未知时间"
+        : deletedAt.toLocaleString("zh-CN", { hour12: false });
+      meta.textContent = `${entry.fileName} · ${entry.tileCount ?? "—"} 张 · ${time}`;
+      copy.append(name, meta);
+      const restore = document.createElement("button");
+      restore.type = "button";
+      restore.className = "primary-button";
+      restore.textContent = "恢复";
+      restore.disabled = entry.broken === true;
+      restore.addEventListener("click", () => this.restoreTrashLevel(entry.trashId));
+      card.append(copy, restore);
+      this.elements.trashList.append(card);
+    }
+  }
+
+  async restoreTrashLevel(trashId) {
+    this.elements.trashError.textContent = "";
+    try {
+      const restored = await this.withWriteAuthentication(() => this.api.restoreLevel(trashId));
+      await Promise.all([this.refreshLevels(), this.refreshTrash()]);
+      this.elements.trashDialog.close();
+      await this.openLevel(restored.fileName, { discardDirty: true });
+      this.showToast(`已从工程 _Trash 恢复 ${restored.fileName}`);
+    } catch (error) {
+      if (error.code === "authentication-cancelled") return;
+      this.elements.trashError.textContent = error.message;
     }
   }
 
@@ -601,20 +815,24 @@ export class WorkbenchController {
       const { fileName, value } = await prepareImportedLevel(file, {
         occupiedFileNames: this.levels.map((level) => level.fileName),
       });
-      await this.api.saveLevel({
+      await this.withWriteAuthentication(() => this.api.saveLevel({
         fileName,
         value,
         expectedVersion: "",
         saveAs: true,
         source: "import",
-      });
+      }));
       await activateImportedLevel(fileName, {
         refreshLevels: () => this.refreshLevels(),
         getLevels: () => this.levels,
         openLevel: () => this.openLevel(fileName, { discardDirty: true }),
         getDocument: () => this.document,
       });
-      this.showToast(`已导入 ${fileName}，仅保存在当前浏览器。`);
+      this.showToast(
+        this.runtimeMode === "lan"
+          ? `已导入并写入工程：${fileName}`
+          : `已导入 ${fileName}，仅保存在当前浏览器。`,
+      );
     } catch (error) {
       this.showToast(error.message, "error");
     } finally {
@@ -737,13 +955,13 @@ export class WorkbenchController {
         `ai_level_${unsignedSeed}.json`,
         this.levels.map((level) => level.fileName),
       );
-      await this.api.saveLevel({
+      await this.withWriteAuthentication(() => this.api.saveLevel({
         fileName,
         value: serializeLevelDocument(generated.document),
         expectedVersion: "",
         saveAs: true,
         source: "ai",
-      });
+      }));
       await activateImportedLevel(fileName, {
         refreshLevels: () => this.refreshLevels(),
         getLevels: () => this.levels,
@@ -1458,7 +1676,8 @@ export class WorkbenchController {
         : ["import", "manual", "ai"].includes(this.document.source)
           ? this.document.source
           : "manual";
-      const saved = await this.api.saveLevel({ fileName, value, expectedVersion, saveAs, source });
+      const saved = await this.withWriteAuthentication(() =>
+        this.api.saveLevel({ fileName, value, expectedVersion, saveAs, source }));
       this.document.fileName = fileName;
       this.document.version = saved.version;
       this.document.bundled = saved.bundled === true;
@@ -1475,7 +1694,13 @@ export class WorkbenchController {
       });
       await this.refreshLevels();
       this.updateUI();
-      this.showToast(saveAs ? `已另存为 ${fileName}` : `已保存到当前浏览器：${fileName}`);
+      this.showToast(
+        saveAs
+          ? `已另存为 ${fileName}`
+          : this.runtimeMode === "lan"
+            ? `已保存到 Unity 工程：${fileName}`
+            : `已保存到当前浏览器：${fileName}`,
+      );
       return true;
     } catch (error) {
       if (error.status === 409 && error.code === "version-conflict") {
@@ -1521,6 +1746,7 @@ export class WorkbenchController {
   updateUI() {
     this.root.dataset.mode = this.mode;
     this.root.dataset.view = this.view;
+    this.root.dataset.runtimeMode = this.runtimeMode;
     setPressed(this.elements.modeEdit, this.mode === "edit");
     setPressed(this.elements.modePlay, this.mode === "play");
     setPressed(this.elements.view2d, this.view === "2d");
@@ -1543,9 +1769,11 @@ export class WorkbenchController {
     this.elements.layerSeparationValue.textContent = `${Math.round(this.layerSeparation * 100)}%`;
     this.elements.layerSeparation.disabled = !this.document || this.view !== "3d";
     this.elements.focus3dSelection.disabled = !this.document || this.view !== "3d";
-    this.elements.resetLevel.disabled = !this.document?.bundled;
-    this.elements.deleteLocalLevel.disabled =
-      this.readonly || !this.document?.local || this.document?.bundled;
+    this.elements.resetLevel.disabled = !this.canResetBundled || !this.document?.bundled;
+    const canDeleteCurrent = this.canDeleteBundled
+      ? Boolean(this.document?.fileName && this.document?.version)
+      : Boolean(this.document?.local && !this.document?.bundled);
+    this.elements.deleteLocalLevel.disabled = this.readonly || !canDeleteCurrent;
     this.elements.generateAi.disabled = this.readonly || this.aiGenerationPending;
     this.elements.confirmAiLevel.disabled = this.aiGenerationPending;
     this.elements.confirmAiLevel.textContent = this.aiGenerationPending
