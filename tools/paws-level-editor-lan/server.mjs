@@ -51,7 +51,10 @@ export function createPawsLanServer({
       const url = new URL(request.url, `http://${request.headers.host ?? "localhost"}`);
       const { pathname } = url;
 
-      if (request.method === "GET" && pathname === "/api/health") {
+      if (
+        request.method === "GET"
+        && (pathname === "/api/health" || pathname === "/api/health.json")
+      ) {
         let directoryError = null;
         try {
           await store.listLevelCatalog({ defaultFileName });
