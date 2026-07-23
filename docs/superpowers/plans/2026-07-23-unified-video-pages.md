@@ -2,7 +2,7 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Make all 21 Hub tutorial video pages share one responsive 16:9 player, visual system, lazy loading behavior, and fixed Return Home action.
+**Goal:** Make all 22 Hub tutorial video pages share one responsive 16:9 player, visual system, lazy loading behavior, and fixed Return Home action.
 
 **Architecture:** Root CSS and JavaScript assets define the visual and behavior contract. A Node generator reads published Hub metadata and every page's existing media references, then rewrites only the 21 declared video pages to a shared static shell. Generated pages keep relative media URLs and work from GitHub Pages or a copied local Hub folder.
 
@@ -127,11 +127,11 @@ Run: `node --test tests/project-video-coverage.test.mjs`
 
 Expected: FAIL because pages have not adopted the contract.
 
-### Task 3: Generate 21 static pages from one template
+### Task 3: Generate 22 static pages from one template
 
 **Files:**
 - Create: `scripts/standardize-hub-video-pages.mjs`
-- Modify: the 21 `app.video` paths declared in `app-20260706-restore-games.js`
+- Modify: the 22 `app.video` paths declared in `app-20260706-restore-games.js`
 - Test: `tests/project-video-coverage.test.mjs`
 
 **Interfaces:**
@@ -186,7 +186,7 @@ node scripts/standardize-hub-video-pages.mjs
 node --test tests/project-video-coverage.test.mjs
 ```
 
-Expected: generator reports exactly 21 pages; both coverage tests PASS.
+Expected: generator reports exactly 22 pages; both coverage tests PASS.
 
 - [ ] **Step 4: Commit feature implementation**
 
@@ -234,7 +234,7 @@ git commit -m "test: smoke test unified video pages"
 
 **Interfaces:**
 - Consumes: final commits, SSH write access, the Pages deployment, and public URLs.
-- Produces: published `main` and a durable record of the shared 21-page player contract.
+- Produces: published `main` and a durable record of the shared 22-page player contract.
 
 - [ ] **Step 1: Recheck remote and update scope**
 
@@ -247,4 +247,3 @@ Push scoped commits to `origin/main`, wait for Pages, then open the public Hub a
 - [ ] **Step 3: Update project memory**
 
 Record final SHA, Pages result, shared asset paths, scope of 21 pages, and verification evidence. Do not record credentials, private keys, cookies, or tokens.
-

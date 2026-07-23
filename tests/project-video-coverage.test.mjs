@@ -1,7 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { existsSync, readFileSync } from "node:fs";
-import { dirname, join, resolve } from "node:path";
+import { dirname, join, relative, resolve, sep } from "node:path";
 import { fileURLToPath } from "node:url";
 import vm from "node:vm";
 
@@ -25,9 +25,13 @@ function loadDefaultApps() {
   return context.globalThis.defaultApps;
 }
 
+function escapeRegExp(value) {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
 test("every published video entry provides its own lazy-loaded tutorial video", () => {
   const apps = loadDefaultApps();
-  assert.equal(apps.length, 21, "the hub should keep its full project inventory");
+  assert.equal(apps.length, 22, "the hub should keep its full project inventory");
 
   const appsWithoutVideo = apps.filter((app) => !app.video);
   assert.equal(
@@ -65,4 +69,42 @@ test("engineering cards retain the demo action and expose a tutorial video when 
   assert.match(engineeringRenderer, /mode === "engineering"/);
   assert.match(engineeringRenderer, /data-action="web"/);
   assert.match(engineeringRenderer, /data-action="video"/);
+});
+
+test("every video page follows the shared Hub player contract", () => {
+  assert.equal(existsSync(join(root, "assets", "hub-video-player.css")), true);
+  assert.equal(existsSync(join(root, "assets", "hub-video-player.js")), true);
+
+  for (const app of loadDefaultApps()) {
+    const pagePath = join(root, ...app.video.replace(/^\.\//, "").split("/"));
+    const html = readFileSync(pagePath, "utf8");
+    const relativeRoot = relative(dirname(pagePath), root).replaceAll(sep, "/") || ".";
+
+    assert.match(html, /data-hub-video-page/);
+    assert.match(html, /class="hub-video-home"/);
+    assert.match(
+      html,
+      new RegExp(`href="${escapeRegExp(`${relativeRoot}/index.html`)}"`),
+    );
+    assert.match(html, /class="hub-video-stage"/);
+    assert.match(html, /<video[^>]+preload="none"[^>]+data-src=/);
+    assert.match(
+      html,
+      new RegExp(`href="${escapeRegExp(`${relativeRoot}/assets/hub-video-player.css`)}"`),
+    );
+    assert.match(
+      html,
+      new RegExp(`src="${escapeRegExp(`${relativeRoot}/assets/hub-video-player.js`)}"`),
+    );
+  }
+});
+
+test("brick motion video retains the latest remote walkthrough heading", () => {
+  const pagePath = join(root, "projects", "brick-light-motion-lab", "video", "index.html");
+  const html = readFileSync(pagePath, "utf8");
+  const heading = String.fromCodePoint(20174, 21387, 26263, 21040, 28857, 20142);
+  const entities = Array.from(heading, (character) => "&#" + character.codePointAt(0) + ";").join("");
+
+  assert.match(html, new RegExp(entities));
+  assert.equal((html.match(/data-time="/g) || []).length, 4);
 });

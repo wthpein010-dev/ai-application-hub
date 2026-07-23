@@ -1,148 +1,40 @@
 <!doctype html>
 <html lang="zh-CN">
   <head>
-    <meta charset="UTF-8" />
+    <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="color-scheme" content="dark" />
-    <meta name="theme-color" content="#07101e" />
-    <title>砖块点亮动效实验台 · 演示视频</title>
     <link rel="icon" href="data:," />
-    <link rel="stylesheet" href="../../../assets/subpage-shell.css" />
-    <link rel="stylesheet" href="./video.css" />
+    <title>&#30742;&#22359;&#28857;&#20142;&#21160;&#25928;&#23454;&#39564;&#21488; &#20171;&#32461;&#35270;&#39057;</title>
+    <link rel="stylesheet" href="../../../assets/hub-video-player.css" />
   </head>
-  <body class="hub-subpage">
-    <a class="hub-home-link" href="../../../index.html#games">
-      <span class="hub-home-link__icon" aria-hidden="true">←</span>
-      返回主页
-    </a>
-
-    <header class="topbar">
-      <div class="brand-copy">
-        <p>ART MOTION REFERENCE / VIDEO</p>
-        <strong>砖块点亮动效实验台</strong>
-      </div>
-      <a href="../index.html">返回演示</a>
-    </header>
-
-    <main>
-      <p class="eyebrow">MATERIAL-ONLY MOTION</p>
-      <h1>从压暗到点亮，再沿原路径恢复压暗</h1>
-      <p class="intro">视频依次展示自动巡播、十种差异、六档慢速、手动抢占，以及拖出和返程的连续状态。</p>
-
-      <section class="player-shell" aria-label="演示视频播放器">
-        <video id="tutorialVideo" controls playsinline preload="metadata" data-src="./brick-light-motion-lab.mp4"></video>
-        <div class="load-overlay" id="loadOverlay">
-          <strong>砖块点亮动效实验</strong>
-          <p id="videoLoadMessage">约 35 秒，H.264 编码。点击后加载视频。</p>
-          <div class="video-load-progress" id="videoLoadProgress" hidden>
-            <i aria-hidden="true"><b id="videoLoadBar"></b></i>
-            <span id="videoLoadValue">0%</span>
+  <body data-hub-video-page>
+    <a class="hub-video-home" href="../../../index.html">&#36820;&#22238;&#20027;&#39029;</a>
+    <main class="hub-video-page">
+      <p class="hub-video-kicker">&#25945;&#31243;&#35270;&#39057;</p>
+      <h1>&#20174;&#21387;&#26263;&#21040;&#28857;&#20142;&#65292;&#20877;&#27839;&#21407;&#36335;&#24452;&#24674;&#22797;&#21387;&#26263;</h1>
+      <p class="hub-video-description">&#35270;&#39057;&#20381;&#27425;&#23637;&#31034;&#33258;&#21160;&#24033;&#25773;&#12289;&#21313;&#31181;&#24046;&#24322;&#12289;&#20845;&#26723;&#24930;&#36895;&#12289;&#25163;&#21160;&#25250;&#21344;&#65292;&#20197;&#21450;&#25302;&#20986;&#21644;&#36820;&#31243;&#30340;&#36830;&#32493;&#29366;&#24577;&#12290;</p>
+      <section class="hub-video-player" aria-label="&#30742;&#22359;&#28857;&#20142;&#21160;&#25928;&#23454;&#39564;&#21488; &#20171;&#32461;&#35270;&#39057;">
+        <div class="hub-video-stage">
+          <div class="hub-video-load-card" id="loadCard" role="status">
+            <strong>&#20934;&#22791;&#25773;&#25918;&#20171;&#32461;&#35270;&#39057;</strong>
+            <p data-hub-video-message>&#28857;&#20987;&#21518;&#20877;&#21152;&#36733;&#35270;&#39057;&#65292;&#36991;&#20813;&#25171;&#24320;&#39029;&#38754;&#26102;&#31561;&#24453;&#12290;</p>
+            <button id="loadVideo" type="button">&#21152;&#36733;&#24182;&#25773;&#25918;&#35270;&#39057;</button>
           </div>
-          <button id="loadVideo" type="button">加载并播放</button>
-        </div>
-        <div class="video-buffer-status" id="videoBufferStatus" role="status" aria-live="polite" hidden>
-          <span id="videoBufferText">视频缓冲中…</span>
-          <i aria-hidden="true"><b id="videoBufferBar"></b></i>
+          <video id="introVideo" controls playsinline preload="none" data-src="./brick-light-motion-lab.mp4" hidden></video>
         </div>
       </section>
-
-      <section class="chapter-panel" aria-label="视频章节">
-        <h2>章节</h2>
-        <div class="chapters">
-          <button type="button" data-time="0"><time>00:00</time>自动巡播</button>
-          <button type="button" data-time="8"><time>00:08</time>方案差异</button>
-          <button type="button" data-time="17"><time>00:17</time>慢速与抢占</button>
-          <button type="button" data-time="25"><time>00:25</time>拖出与返程</button>
-        </div>
-      </section>
+      <nav class="hub-video-actions" aria-label="&#35270;&#39057;&#30456;&#20851;&#20837;&#21475;">
+        <a href="./brick-light-motion-lab.mp4">&#25171;&#24320; MP4</a>
+        <a href="../index.html">&#25171;&#24320;&#39033;&#30446;</a>
+      </nav>
+    <section class="hub-video-chapters" aria-label="&#35270;&#39057;&#31456;&#33410;">
+      <button class="hub-video-chapter" type="button" data-time="0"><time>00:00</time>&#33258;&#21160;&#24033;&#25773;</button>
+      <button class="hub-video-chapter" type="button" data-time="8"><time>00:08</time>&#26041;&#26696;&#24046;&#24322;</button>
+      <button class="hub-video-chapter" type="button" data-time="17"><time>00:17</time>&#24930;&#36895;&#19982;&#25250;&#21344;</button>
+      <button class="hub-video-chapter" type="button" data-time="25"><time>00:25</time>&#25302;&#20986;&#19982;&#36820;&#31243;</button>
+    </section>
     </main>
-
-    <script type="module">
-      import { getBufferedPercent } from './video-load-model.mjs';
-
-      const video = document.querySelector('#tutorialVideo');
-      const overlay = document.querySelector('#loadOverlay');
-      const loadButton = document.querySelector('#loadVideo');
-      const loadMessage = document.querySelector('#videoLoadMessage');
-      const loadProgress = document.querySelector('#videoLoadProgress');
-      const loadBar = document.querySelector('#videoLoadBar');
-      const loadValue = document.querySelector('#videoLoadValue');
-      const bufferStatus = document.querySelector('#videoBufferStatus');
-      const bufferText = document.querySelector('#videoBufferText');
-      const bufferBar = document.querySelector('#videoBufferBar');
-      let pendingTime = null;
-      let failed = false;
-
-      function bufferedEnd() {
-        return video.buffered.length > 0 ? video.buffered.end(video.buffered.length - 1) : 0;
-      }
-
-      function updateProgress(ready = false, message = '正在缓冲视频…') {
-        const percent = getBufferedPercent(bufferedEnd(), video.duration, ready);
-        loadProgress.hidden = false;
-        loadMessage.textContent = message;
-        loadBar.style.width = `${percent}%`;
-        loadValue.textContent = `${percent}%`;
-        bufferText.textContent = `${message} ${percent}%`;
-        bufferBar.style.width = `${percent}%`;
-      }
-
-      function loadVideo(autoplay = false, seekTime = null) {
-        if (failed) {
-          video.removeAttribute('src');
-          video.load();
-          failed = false;
-        }
-        if (Number.isFinite(seekTime)) pendingTime = seekTime;
-        overlay.hidden = false;
-        loadButton.disabled = true;
-        loadButton.textContent = '正在加载…';
-        updateProgress(false, '正在连接视频资源…');
-        if (!video.src) {
-          video.src = video.dataset.src;
-          video.load();
-        }
-        if (autoplay) video.play().catch(() => {});
-      }
-
-      loadButton.addEventListener('click', () => loadVideo(true));
-      video.addEventListener('loadedmetadata', () => {
-        if (pendingTime !== null) {
-          video.currentTime = pendingTime;
-          pendingTime = null;
-        }
-        updateProgress(false, '已读取视频信息，正在缓冲…');
-      });
-      video.addEventListener('progress', () => updateProgress(false));
-      video.addEventListener('waiting', () => {
-        updateProgress(false, '视频缓冲中…');
-        bufferStatus.hidden = false;
-      });
-      video.addEventListener('canplay', () => {
-        updateProgress(true, '视频可以播放');
-        window.setTimeout(() => { overlay.hidden = true; }, 120);
-        bufferStatus.hidden = true;
-        loadButton.disabled = false;
-        loadButton.textContent = '加载并播放';
-      });
-      video.addEventListener('playing', () => {
-        overlay.hidden = true;
-        bufferStatus.hidden = true;
-      });
-      video.addEventListener('error', () => {
-        failed = true;
-        overlay.hidden = false;
-        loadProgress.hidden = true;
-        bufferStatus.hidden = true;
-        loadMessage.textContent = '视频加载失败，请检查网络后重试。';
-        loadButton.disabled = false;
-        loadButton.textContent = '重新加载';
-      });
-      document.querySelectorAll('[data-time]').forEach((button) => {
-        button.addEventListener('click', () => {
-          loadVideo(true, Number(button.dataset.time) || 0);
-        });
-      });
-    </script>
+    <script type="module" src="../../../assets/hub-video-player.js"></script>
   </body>
 </html>

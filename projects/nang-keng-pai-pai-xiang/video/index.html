@@ -3,48 +3,32 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <meta name="theme-color" content="#245b41" />
-    <title>馕了个馕 - 视频介绍</title>
-    <style>
-      :root { color-scheme: dark; font-family: "Microsoft YaHei", "PingFang SC", system-ui, sans-serif; background: #123f31; }
-      * { box-sizing: border-box; }
-      body { min-height: 100vh; margin: 0; padding: 84px 20px 36px; background: #123f31; color: #f7f6e7; }
-      .home-link { position: fixed; z-index: 2; top: 18px; left: 18px; display: inline-flex; align-items: center; min-height: 38px; padding: 0 14px; border: 1px solid rgba(255,255,255,.45); border-radius: 999px; color: #f7f6e7; background: rgba(12, 47, 36, .9); font-weight: 800; text-decoration: none; }
-      main { width: min(760px, 100%); margin: 0 auto; }
-      h1 { margin: 0; color: #ffe09a; font-size: 30px; }
-      p { margin: 12px 0 24px; color: #d9ebd1; line-height: 1.65; }
-      .player { overflow: hidden; border: 1px solid rgba(255,224,154,.42); border-radius: 8px; background: #0b2a21; box-shadow: 0 24px 60px rgba(0,0,0,.28); }
-      video { display: block; width: 100%; max-height: min(74vh, 760px); background: #071a14; }
-      .load { display: grid; min-height: 280px; place-items: center; padding: 24px; text-align: center; }
-      button { min-height: 42px; padding: 0 18px; border: 0; border-radius: 6px; color: #21442e; background: #ffe09a; font: inherit; font-weight: 800; cursor: pointer; }
-      .note { margin: 16px 0 0; color: #c9dec0; font-size: 14px; }
-      @media (max-width: 600px) { body { padding-inline: 14px; } h1 { font-size: 26px; } .home-link { top: 12px; left: 12px; } }
-    </style>
+    <meta name="color-scheme" content="dark" />
+    <link rel="icon" href="data:," />
+    <title>&#39317;&#20102;&#20010;&#39317; &#20171;&#32461;&#35270;&#39057;</title>
+    <link rel="stylesheet" href="../../../assets/hub-video-player.css" />
   </head>
-  <body>
-    <a class="home-link" href="../../../index.html#games">返回主页</a>
-    <main>
-      <h1>馕了个馕</h1>
-      <p>从首页、首次教学到第一关操作，快速了解这款竖屏烘烤解谜小游戏。</p>
-      <section class="player" aria-label="馕了个馕介绍视频">
-        <div id="loadPanel" class="load">
-          <button id="loadVideo" type="button">播放介绍视频</button>
+  <body data-hub-video-page>
+    <a class="hub-video-home" href="../../../index.html">&#36820;&#22238;&#20027;&#39029;</a>
+    <main class="hub-video-page">
+      <p class="hub-video-kicker">&#25945;&#31243;&#35270;&#39057;</p>
+      <h1>&#39317;&#20102;&#20010;&#39317; &#20171;&#32461;&#35270;&#39057;</h1>
+      <p class="hub-video-description">&#21407;&#21517;&#12298;&#39317;&#22353;&#25490;&#25490;&#39321;&#12299;&#65306;&#25226;&#19981;&#21516;&#39317;&#25918;&#20837;&#28900;&#20301;&#65292;&#21033;&#29992;&#28779;&#20505;&#12289;&#28201;&#21306;&#19982;&#35746;&#21333;&#39034;&#24207;&#23436;&#25104;&#21313;&#20010;&#31446;&#23631;&#35299;&#35868;&#20851;&#21345;&#12290;</p>
+      <section class="hub-video-player" aria-label="&#39317;&#20102;&#20010;&#39317; &#20171;&#32461;&#35270;&#39057;">
+        <div class="hub-video-stage">
+          <div class="hub-video-load-card" id="loadCard" role="status">
+            <strong>&#20934;&#22791;&#25773;&#25918;&#20171;&#32461;&#35270;&#39057;</strong>
+            <p data-hub-video-message>&#28857;&#20987;&#21518;&#20877;&#21152;&#36733;&#35270;&#39057;&#65292;&#36991;&#20813;&#25171;&#24320;&#39029;&#38754;&#26102;&#31561;&#24453;&#12290;</p>
+            <button id="loadVideo" type="button">&#21152;&#36733;&#24182;&#25773;&#25918;&#35270;&#39057;</button>
+          </div>
+          <video id="introVideo" controls playsinline preload="none" data-src="./nang-keng-pai-pai-xiang-intro.mp4" hidden><track kind="captions" srclang="zh-CN" label="&#31616;&#20307;&#20013;&#25991;" src="./nang-keng-pai-pai-xiang-intro.vtt" default /></video>
         </div>
-        <video id="introVideo" controls playsinline preload="none" data-src="./nang-keng-pai-pai-xiang-intro.mp4">
-          <track kind="captions" srclang="zh-CN" label="简体中文" src="./nang-keng-pai-pai-xiang-intro.vtt" default />
-        </video>
       </section>
-      <p class="note">视频时长约 24 秒。</p>
+      <nav class="hub-video-actions" aria-label="&#35270;&#39057;&#30456;&#20851;&#20837;&#21475;">
+        <a href="./nang-keng-pai-pai-xiang-intro.mp4">&#25171;&#24320; MP4</a>
+        <a href="../index.html">&#25171;&#24320;&#39033;&#30446;</a>
+      </nav>
     </main>
-    <script>
-      const button = document.querySelector("#loadVideo");
-      const panel = document.querySelector("#loadPanel");
-      const video = document.querySelector("#introVideo");
-      button.addEventListener("click", () => {
-        video.src = video.dataset.src;
-        panel.remove();
-        video.play().catch(() => {});
-      }, { once: true });
-    </script>
+    <script type="module" src="../../../assets/hub-video-player.js"></script>
   </body>
 </html>

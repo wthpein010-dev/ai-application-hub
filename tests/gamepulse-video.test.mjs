@@ -25,24 +25,18 @@ test("GamePulse video page lazy-loads MP4 with default Chinese captions", () => 
   assert.doesNotMatch(html, /<video[^>]+\ssrc=/);
 });
 
-test("GamePulse video page returns to the application collection", () => {
+test("GamePulse video page returns to the Hub home top", () => {
   const html = readFileSync(join(videoRoot, "index.html"), "utf8");
-  assert.equal(
-    (html.match(/href="\.\.\/\.\.\/\.\.\/index\.html#apps"/g) || []).length,
-    2,
-  );
+  assert.match(html, /class="hub-video-home" href="\.\.\/\.\.\/\.\.\/index\.html"/);
+  assert.doesNotMatch(html, /index\.html#/);
   assert.doesNotMatch(html, /index\.html#games/);
-  assert.match(html, /返回应用集合/);
 });
 
-test("GamePulse video shell uses the public Chinese product name", () => {
+test("GamePulse video shell uses the shared Hub player assets", () => {
   const html = readFileSync(join(videoRoot, "index.html"), "utf8");
-  assert.match(html, /小游戏每日排行视频说明/);
-  assert.match(html, /打开小游戏每日排行/);
-  assert.doesNotMatch(html, /GamePulse 小游雷达视频说明/);
-  assert.doesNotMatch(html, /GAMEPULSE \/ 75S WALKTHROUGH/);
-  assert.doesNotMatch(html, /准备播放 GamePulse/);
-  assert.doesNotMatch(html, /打开 GamePulse/);
+  assert.match(html, /data-hub-video-page/);
+  assert.match(html, /assets\/hub-video-player\.css/);
+  assert.match(html, /assets\/hub-video-player\.js/);
 });
 
 test("GamePulse script and captions cover the six walkthrough chapters", () => {

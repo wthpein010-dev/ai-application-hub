@@ -6,7 +6,7 @@ Make every video destination opened from the AI Application Hub use one responsi
 
 ## Scope
 
-This change covers the 21 video entries declared by `app-20260706-restore-games.js`:
+This change covers the 22 video entries declared by `app-20260706-restore-games.js`:
 
 - AI Application Hub
 - Mini Game Daily Ranking
@@ -80,4 +80,4 @@ The player uses static HTML, CSS, and standard HTML5 video APIs supported by cur
 
 Automated checks will extend video coverage to assert that each card video path exists and follows the shared contract: fixed home action, home URL resolving to Hub root, one 16:9 stage, lazy source, and an explicit load button.
 
-Browser verification will cover all 21 paths for layout and console errors, plus representative landscape and portrait videos for actual load/play behavior at desktop and mobile viewports. The public GitHub Pages URLs will be retested after deployment.
+Browser verification will cover all 22 paths for layout and console errors, plus representative landscape and portrait videos for actual load/play behavior at desktop and mobile viewports. The public GitHub Pages URLs will be retested after deployment.
