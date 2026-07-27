@@ -279,11 +279,11 @@ const defaultApps = [
     folder: "./projects/codex-quota-bar/",
     entry: "./projects/codex-quota-bar/index.html",
     video: "./projects/codex-quota-bar/video/index.html",
-    package: "./downloads/CodexQuotaBar-Windows-x64.zip",
+    package: "https://github.com/wthpein010-dev/ai-application-hub/releases/download/codex-quota-bar-v1.0.0/CodexQuotaBar-Windows-x64.zip",
     platforms: {
       web: { href: "./projects/codex-quota-bar/index.html", label: "演示" },
-      windows: { href: "./downloads/CodexQuotaBar-Windows-x64.zip", label: "Wins下载" },
-      mac: { href: "./downloads/CodexQuotaBar-macOS.zip", label: "Mac下载" }
+      windows: { href: "https://github.com/wthpein010-dev/ai-application-hub/releases/download/codex-quota-bar-v1.0.0/CodexQuotaBar-Windows-x64.zip", label: "Wins下载" },
+      mac: { href: "https://github.com/wthpein010-dev/ai-application-hub/releases/download/codex-quota-bar-v1.0.0/CodexQuotaBar-macOS.zip", label: "Mac下载" }
     },
     tags: ["Codex", "内置桌宠", "任务提示", "跨平台"],
     speed: 9,

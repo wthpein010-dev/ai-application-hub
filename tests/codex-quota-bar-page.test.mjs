@@ -24,6 +24,10 @@ test("Codex quota page explains the pet dashboard without simulating live quota"
   assert.match(html, /Windows 与 macOS/);
   assert.match(html, /CodexQuotaBar-Windows-x64\.zip/);
   assert.match(html, /CodexQuotaBar-macOS\.zip/);
+  assert.equal(
+    (html.match(/releases\/download\/codex-quota-bar-v1\.0\.0/g) || []).length,
+    2,
+  );
   assert.match(html, /\.\/video\/index\.html/);
   assert.match(html, /\.\/assets\/suit-hamster\.gif/);
   assert.equal(existsSync(project("assets", "suit-hamster.gif")), true);
