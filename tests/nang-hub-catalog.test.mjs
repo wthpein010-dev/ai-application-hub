@@ -60,13 +60,13 @@ test("brick lighting card uses the orange art-reference badge and revised descri
   assert.match(runtime, /app\.badge \|\| statusLabel\[app\.status\]/);
 });
 
-test("Nang experience is published in apps with demo and video only", () => {
+test("Nang mini-game is published in the games catalog with demo and video only", () => {
   const nang = catalogBlock("nang-keng-pai-pai-xiang");
 
-  assert.match(nang, /name: "馕饼拍拍响"/);
-  assert.match(nang, /category: "Unity WebGL 休闲体验"/);
-  assert.match(nang, /status: "content"/);
-  assert.match(nang, /badge: "休闲体验"/);
+  assert.match(nang, /name: "馕了个馕"/);
+  assert.match(nang, /category: "Unity WebGL 小游戏"/);
+  assert.match(nang, /status: "game"/);
+  assert.match(nang, /badge: "小游戏"/);
   assert.match(nang, /entry: "\.\/projects\/nang-keng-pai-pai-xiang\/index\.html"/);
   assert.match(nang, /video: "\.\/projects\/nang-keng-pai-pai-xiang\/video\/index\.html"/);
   assert.match(nang, /package: ""/);
@@ -80,25 +80,25 @@ test("Nang experience is published in apps with demo and video only", () => {
   const preview = readFileSync(join(root, "projects", "nang-keng-pai-pai-xiang", "index.html"), "utf8");
   const video = readFileSync(join(root, "projects", "nang-keng-pai-pai-xiang", "video", "index.html"), "utf8");
   const captions = readFileSync(join(root, "projects", "nang-keng-pai-pai-xiang", "video", "nang-keng-pai-pai-xiang-intro.vtt"), "utf8");
-  assert.match(preview, /href="\.\.\/\.\.\/index\.html#apps"/);
-  assert.doesNotMatch(preview, /index\.html#games/);
+  assert.match(preview, /href="\.\.\/\.\.\/index\.html#games"/);
+  assert.doesNotMatch(preview, /index\.html#apps/);
   assert.match(video, /id="loadVideo"/);
   assert.match(video, /data-src="\.\/nang-keng-pai-pai-xiang-intro\.mp4"/);
-  assert.match(video, /href="\.\.\/\.\.\/\.\.\/index\.html#apps"/);
-  assert.doesNotMatch(video, /index\.html#games/);
-  assert.match(captions, /从首页进入馕饼拍拍响/);
+  assert.match(video, /href="\.\.\/\.\.\/\.\.\/index\.html#games"/);
+  assert.doesNotMatch(video, /index\.html#apps/);
+  assert.match(captions, /从首页进入馕了个馕/);
   assert.doesNotMatch(captions, /馕坑排排香/);
 });
 
-test("stored Nang game metadata migrates to the apps catalog", () => {
+test("stored Nang metadata migrates to the games catalog", () => {
   const defaults = loadDefaultApps();
   const current = defaults.find((app) => app.id === "nang-keng-pai-pai-xiang");
   const stored = {
     ...current,
-    name: "馕了个馕",
-    category: "Unity WebGL 小游戏",
-    status: "game",
-    badge: "",
+    name: "馕饼拍拍响",
+    category: "Unity WebGL 休闲体验",
+    status: "content",
+    badge: "休闲体验",
     package: "./downloads/should-not-remain.zip",
     platforms: {
       web: current.platforms.web,
@@ -109,17 +109,17 @@ test("stored Nang game metadata migrates to the apps catalog", () => {
 
   const migrated = loadAppsWithStoredValue([stored]).find((app) => app.id === current.id);
 
-  assert.equal(migrated.name, "馕饼拍拍响");
-  assert.equal(migrated.category, "Unity WebGL 休闲体验");
-  assert.equal(migrated.status, "content");
-  assert.equal(migrated.badge, "休闲体验");
+  assert.equal(migrated.name, "馕了个馕");
+  assert.equal(migrated.category, "Unity WebGL 小游戏");
+  assert.equal(migrated.status, "game");
+  assert.equal(migrated.badge, "小游戏");
   assert.equal(migrated.package, "");
   assert.equal(migrated.platforms.windows, "");
   assert.equal(migrated.platforms.mac, "");
 });
 
-test("homepage refreshes the Nang catalog runtime for existing visitors", () => {
-  assert.match(home, /app-20260706-restore-games\.js\?v=20260723-nang-app-catalog/);
+test("homepage refreshes the Nang game catalog runtime for existing visitors", () => {
+  assert.match(home, /app-20260706-restore-games\.js\?v=20260727-nang-game-catalog/);
 });
 
 test("Nang WebGL build self-decompresses Gzip without server compression headers", () => {
