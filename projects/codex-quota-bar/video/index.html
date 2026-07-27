@@ -13,7 +13,7 @@
     <main class="hub-video-page">
       <p class="hub-video-kicker">&#25945;&#31243;&#35270;&#39057;</p>
       <h1>Codex &#29992;&#37327;&#24748;&#28014;&#26465; &#20171;&#32461;&#35270;&#39057;</h1>
-      <p class="hub-video-description">&#25226; Codex &#26700;&#23456;&#12289;&#37266;&#30446;&#30340;&#21097;&#20313;&#30334;&#20998;&#27604;&#21644;&#36827;&#24230;&#26465;&#36148;&#21512;&#25104;&#19968;&#20010;&#24748;&#28014;&#24037;&#20855;&#65292;&#20219;&#21153;&#23436;&#25104;&#26102;&#29992;&#20013;&#25991;&#20391;&#26639;&#25552;&#31034;&#12290;</p>
+      <p class="hub-video-description">新版把额度数字和进度条贴在宠物上方：优先沿用 Codex 桌宠，没有时自动使用内置西装仓鼠；任务完成后在不遮挡额度的位置显示中文提示。</p>
       <section class="hub-video-player" aria-label="Codex &#29992;&#37327;&#24748;&#28014;&#26465; &#20171;&#32461;&#35270;&#39057;">
         <div class="hub-video-stage">
           <div class="hub-video-load-card" id="loadCard" role="status">
@@ -21,13 +21,20 @@
             <p data-hub-video-message>&#28857;&#20987;&#21518;&#20877;&#21152;&#36733;&#35270;&#39057;&#65292;&#36991;&#20813;&#25171;&#24320;&#39029;&#38754;&#26102;&#31561;&#24453;&#12290;</p>
             <button id="loadVideo" type="button">&#21152;&#36733;&#24182;&#25773;&#25918;&#35270;&#39057;</button>
           </div>
-          <video id="introVideo" controls playsinline preload="none" data-src="./codex-quota-bar-demo.mp4" hidden><track kind="captions" srclang="zh-CN" label="&#31616;&#20307;&#20013;&#25991;" src="./codex-quota-bar-demo.vtt" default /></video>
+          <video id="introVideo" controls playsinline preload="none" data-src="./codex-quota-bar-demo.mp4" poster="./poster.jpg" hidden><track kind="captions" src="./codex-quota-bar-demo.vtt" srclang="zh-CN" label="&#31616;&#20307;&#20013;&#25991;" default /></video>
         </div>
       </section>
       <nav class="hub-video-actions" aria-label="&#35270;&#39057;&#30456;&#20851;&#20837;&#21475;">
         <a href="./codex-quota-bar-demo.mp4">&#25171;&#24320; MP4</a>
         <a href="../index.html">&#25171;&#24320;&#39033;&#30446;</a>
       </nav>
+      <section class="hub-video-chapters" aria-label="视频章节">
+        <button class="hub-video-chapter" type="button" data-time="0"><time>00:00</time><span>额度数字与进度条</span></button>
+        <button class="hub-video-chapter" type="button" data-time="8"><time>00:08</time><span>Codex 桌宠优先</span></button>
+        <button class="hub-video-chapter" type="button" data-time="16"><time>00:16</time><span>内置西装仓鼠兜底</span></button>
+        <button class="hub-video-chapter" type="button" data-time="24"><time>00:24</time><span>中文任务完成提示</span></button>
+        <button class="hub-video-chapter" type="button" data-time="32"><time>00:32</time><span>开机启动与双平台包</span></button>
+      </section>
     </main>
     <script type="module" src="../../../assets/hub-video-player.js"></script>
   </body>

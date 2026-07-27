@@ -3,7 +3,8 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <meta name="description" content="Codex 用量悬浮条：与桌宠融合的紧凑额度提醒工具，提供 Windows 与 macOS 下载。" />
+    <meta name="description" content="Codex 用量悬浮条：Codex 桌宠优先、内置西装仓鼠兜底的紧凑额度提醒工具，提供 Windows 与 macOS 下载。" />
+    <link rel="icon" href="data:," />
     <title>Codex 用量悬浮条</title>
     <link rel="stylesheet" href="../../assets/subpage-shell.css" />
     <link rel="stylesheet" href="./styles.css" />
@@ -22,24 +23,38 @@
         <div class="intro-copy">
           <p class="eyebrow">CODEX QUOTA BAR / DESKTOP TOOL</p>
           <h1 id="page-title">Codex 用量悬浮条</h1>
-          <p class="lead">桌宠身边的紧凑用量视图：把主额度、低额度提示与任务完成状态收进一个始终置顶的小窗口，工作时一眼就能读完。</p>
+          <p class="lead">额度面板贴在桌宠上方，醒目的数字和进度条始终是视觉重点。检测到 Codex 桌宠就直接融合；没有桌宠时，自动启用内置西装仓鼠。</p>
           <div class="intro-links"><a class="primary-link" href="#downloads">下载桌面工具</a><a class="text-link" href="./video/index.html">查看视频说明 <span aria-hidden="true">→</span></a></div>
         </div>
         <figure class="product-preview">
-          <figcaption>效果示意</figcaption>
-          <img src="./assets/compact-pet-quota.webp" width="402" height="177" alt="桌宠旁显示 67% 剩余额度、任务已完成卡片和额度详情卡片的 Codex 用量悬浮条" />
-          <p>运行中的紧凑桌宠融合视图</p>
+          <figcaption><span>效果示意</span><small>内置桌宠模式</small></figcaption>
+          <div class="desktop-preview" role="img" aria-label="西装仓鼠上方显示 67% 剩余额度和进度条，右侧显示中文任务完成提示">
+            <div class="pet-column">
+              <div class="quota-strip">
+                <div class="quota-heading"><span>剩余额度</span><span>刚刚更新</span></div>
+                <strong>67%</strong>
+                <div class="quota-progress" aria-hidden="true"><span></span></div>
+              </div>
+              <div class="pet-stage"><img src="./assets/suit-hamster.gif" width="133" height="142" alt="" /></div>
+            </div>
+            <div class="task-toast">
+              <span>任务已完成</span>
+              <strong>发布包已构建</strong>
+              <small>中文提示自动避让额度面板</small>
+            </div>
+          </div>
+          <p>Codex 桌宠优先；无可用桌宠时自动使用内置西装仓鼠，始终只显示一个宠物。</p>
         </figure>
       </section>
       <section class="details" aria-labelledby="details-title">
         <div class="section-heading"><p class="eyebrow">WHAT STAYS VISIBLE</p><h2 id="details-title">关键状态，保持在手边。</h2></div>
         <div class="feature-list">
           <article class="feature feature-meter"><p class="feature-kicker">PROMINENT QUOTA</p><strong>67%</strong><div><h3>额度与进度条</h3><p>主额度用醒目的百分比和横向进度条呈现，扫一眼就知道当前余量。</p></div></article>
-          <article class="feature"><p class="feature-kicker">PET MODE</p><div><h3>桌宠融合</h3><p>检测到可用桌宠时，额度视图可贴靠在身边；点击桌宠即可展开完整信息。</p></div></article>
-          <article class="feature"><p class="feature-kicker">TASK STATUS</p><div><h3>任务已完成</h3><p>完成卡片在任务结束时短暂出现，让进度提醒不再打断当前工作。</p></div></article>
-          <article class="feature"><p class="feature-kicker">DESKTOP FLOW</p><div><h3>开机启动与托盘</h3><p>支持随系统启动，并通过托盘控制显示与隐藏，让桌面保持轻量。</p></div></article>
+          <article class="feature"><p class="feature-kicker">PET PRIORITY</p><div><h3>Codex 桌宠优先</h3><p>检测到 Codex 自带桌宠时直接融合；没有时自动启用内置西装仓鼠，界面只显示一个宠物。</p></div></article>
+          <article class="feature"><p class="feature-kicker">TASK STATUS</p><div><h3>任务已完成</h3><p>中文完成卡片会在宠物右侧安全区短暂出现，与额度面板互不遮挡。</p></div></article>
+          <article class="feature"><p class="feature-kicker">DESKTOP FLOW</p><div><h3>开机启动与托盘</h3><p>默认随系统启动；托盘可控制显示、隐藏和宠物开关，让桌面保持轻量。</p></div></article>
           <article class="feature"><p class="feature-kicker">LOCAL FIRST</p><div><h3>本机数据与隐私</h3><p>用量信息仅在本机工具内处理，不读取或上传 auth.json。</p></div></article>
-          <article class="feature"><p class="feature-kicker">TWO PLATFORMS</p><div><h3>Windows 与 macOS</h3><p>提供两种桌面系统的安装包，按当前设备选择下载即可。</p></div></article>
+          <article class="feature"><p class="feature-kicker">TWO PLATFORMS</p><div><h3>Windows 与 macOS</h3><p>两个工具包都已内置兜底宠物资源，新电脑没有 Codex 桌宠也能直接使用。</p></div></article>
         </div>
       </section>
       <section class="downloads" id="downloads" aria-labelledby="downloads-title">
