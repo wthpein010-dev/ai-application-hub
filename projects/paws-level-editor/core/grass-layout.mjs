@@ -5,12 +5,23 @@ const SPINE_STAGE_HALF_HEIGHT = SPINE_STAGE_HEIGHT / 2;
 const GRASS_ANIMATION_SECONDS = 1.0667;
 
 export const GRASS_VISUAL_SCALE = 0.5;
-export const GRASS_ROTATION_RADIANS = Math.PI;
 
 export const GRASS_ATLAS_REGIONS = Object.freeze({
   Grass1: Object.freeze({ x: 2, y: 3, width: 53, height: 29, rotated: false }),
   Grass2: Object.freeze({ x: 57, y: 2, width: 30, height: 35, rotated: true }),
 });
+
+const GRASS_ROTATION_BY_VARIANT = Object.freeze({
+  Grass1: 0,
+  Grass2: Math.PI,
+});
+
+export function grassVariantRotationRadians(variant) {
+  if (!Object.hasOwn(GRASS_ROTATION_BY_VARIANT, variant)) {
+    throw new TypeError(`Unknown grass atlas region: ${variant}`);
+  }
+  return GRASS_ROTATION_BY_VARIANT[variant];
+}
 
 const SPINE_PATCHES = [
   ["Grass1_1", "Grass1", -79, 579, 0],

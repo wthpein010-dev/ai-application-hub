@@ -5,10 +5,10 @@ import { GAMEPLAY_ASSETS } from "../core/gameplay-assets.mjs";
 import {
   GRASS_ATLAS_REGIONS,
   GRASS_PATCHES,
-  GRASS_ROTATION_RADIANS,
   GRASS_VISUAL_SCALE,
   drawGrassAtlasPatch,
   grassPulseScale,
+  grassVariantRotationRadians,
 } from "../core/grass-layout.mjs";
 import {
   analyzeTileRelations,
@@ -83,7 +83,7 @@ function makeGrassTexture(image, variant) {
   drawGrassAtlasPatch(context, image, variant, {
     centerX: canvas.width / 2,
     baseY: canvas.height,
-    rotationRadians: GRASS_ROTATION_RADIANS,
+    rotationRadians: grassVariantRotationRadians(variant),
   });
   const texture = new THREE.CanvasTexture(canvas);
   texture.encoding = THREE.sRGBEncoding;

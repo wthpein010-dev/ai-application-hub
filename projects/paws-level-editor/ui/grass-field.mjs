@@ -1,10 +1,10 @@
 import { GAMEPLAY_ASSETS } from "../core/gameplay-assets.mjs";
 import {
   GRASS_PATCHES,
-  GRASS_ROTATION_RADIANS,
   GRASS_VISUAL_SCALE,
   drawGrassAtlasPatch,
   grassPulseScale,
+  grassVariantRotationRadians,
 } from "../core/grass-layout.mjs";
 
 const SPINE_STAGE_WIDTH = 640;
@@ -109,7 +109,7 @@ export class GrassField {
         pixelScale: scale,
         scaleY: pulse,
         alpha: 0.94,
-        rotationRadians: GRASS_ROTATION_RADIANS + patch.rotationRadians,
+        rotationRadians: grassVariantRotationRadians(patch.variant) + patch.rotationRadians,
       });
     }
   }

@@ -420,7 +420,7 @@ async function recordEditor() {
       await page.locator("#fit-view").click();
       await page.waitForFunction(() => window.pawsWorkbench?.grassField?.imageReady);
       const grass2d = await page.evaluate(async () => {
-        const { GRASS_ROTATION_RADIANS, GRASS_VISUAL_SCALE } = await import(
+        const { GRASS_VISUAL_SCALE, grassVariantRotationRadians } = await import(
           new URL("./core/grass-layout.mjs", window.location.href).href
         );
         const samples = [];
@@ -441,7 +441,10 @@ async function recordEditor() {
           canvasCount: document.querySelectorAll(".level-grass-field").length,
           imageReady: window.pawsWorkbench.grassField.imageReady,
           visualScale: GRASS_VISUAL_SCALE,
-          rotationRadians: GRASS_ROTATION_RADIANS,
+          variantRotations: {
+            Grass1: grassVariantRotationRadians("Grass1"),
+            Grass2: grassVariantRotationRadians("Grass2"),
+          },
           animated: Math.max(...samples) - Math.min(...samples) > 0.1,
         };
       });
@@ -449,7 +452,10 @@ async function recordEditor() {
         canvasCount: 1,
         imageReady: true,
         visualScale: 0.5,
-        rotationRadians: Math.PI,
+        variantRotations: {
+          Grass1: 0,
+          Grass2: Math.PI,
+        },
         animated: true,
       });
       proof.actions.grass = { twoD: grass2d };

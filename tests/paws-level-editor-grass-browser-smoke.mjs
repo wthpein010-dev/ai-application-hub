@@ -122,7 +122,7 @@ try {
     depthWriteDisabled: true,
     geometrySizes: [[0.6625000000000001, 0.36250000000000004], [0.375, 0.4375]],
     textureSizes: [[53, 29], [30, 35]],
-    alphaCentroids: [0.492, 0.545],
+    alphaCentroids: [0.474, 0.545],
   });
   await page.waitForFunction(() => {
     const grass = window.pawsWorkbench.renderer?.grassGroup?.children[0];

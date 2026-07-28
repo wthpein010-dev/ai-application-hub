@@ -162,7 +162,10 @@ test("recording proof matches current media, sources, timeline and real state ch
     canvasCount: 1,
     imageReady: true,
     visualScale: 0.5,
-    rotationRadians: Math.PI,
+    variantRotations: {
+      Grass1: 0,
+      Grass2: Math.PI,
+    },
     animated: true,
   });
   assert.equal(actions.grass.threeD.patchCount, 12);

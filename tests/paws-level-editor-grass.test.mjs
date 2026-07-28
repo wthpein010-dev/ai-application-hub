@@ -5,10 +5,10 @@ import test from "node:test";
 import {
   GRASS_ATLAS_REGIONS,
   GRASS_PATCHES,
-  GRASS_ROTATION_RADIANS,
   GRASS_VISUAL_SCALE,
   drawGrassAtlasPatch,
   grassPulseScale,
+  grassVariantRotationRadians,
 } from "../projects/paws-level-editor/core/grass-layout.mjs";
 
 const root = new URL("../projects/paws-level-editor/", import.meta.url);
@@ -22,33 +22,57 @@ function closeTo(actual, expected, tolerance = 0.0001) {
   );
 }
 
-test("grass uses one half-size and 180-degree visual transform", () => {
+test("wide grass is upright while the small grass keeps its existing rotation", () => {
   assert.equal(GRASS_VISUAL_SCALE, 0.5);
-  assert.equal(GRASS_ROTATION_RADIANS, Math.PI);
+  assert.equal(grassVariantRotationRadians("Grass1"), 0);
+  assert.equal(grassVariantRotationRadians("Grass2"), Math.PI);
+  assert.throws(
+    () => grassVariantRotationRadians("UnknownGrass"),
+    /Unknown grass atlas region/,
+  );
 
-  const calls = [];
-  const context = {
+  const wideCalls = [];
+  const wideContext = {
     globalAlpha: 1,
-    save: () => calls.push(["save"]),
-    restore: () => calls.push(["restore"]),
-    translate: (...args) => calls.push(["translate", ...args]),
-    rotate: (...args) => calls.push(["rotate", ...args]),
-    drawImage: (...args) => calls.push(["drawImage", ...args]),
+    save: () => wideCalls.push(["save"]),
+    restore: () => wideCalls.push(["restore"]),
+    translate: (...args) => wideCalls.push(["translate", ...args]),
+    rotate: (...args) => wideCalls.push(["rotate", ...args]),
+    drawImage: (...args) => wideCalls.push(["drawImage", ...args]),
   };
-  drawGrassAtlasPatch(context, {}, "Grass1", {
+  drawGrassAtlasPatch(wideContext, {}, "Grass1", {
     centerX: 100,
     baseY: 80,
     pixelScale: 2,
-    rotationRadians: GRASS_ROTATION_RADIANS,
+    rotationRadians: grassVariantRotationRadians("Grass1"),
   });
 
-  assert.deepEqual(calls.slice(0, 3), [
+  assert.deepEqual(wideCalls.slice(0, 3), [
     ["save"],
     ["translate", 100, 51],
-    ["rotate", Math.PI],
+    ["rotate", 0],
   ]);
-  assert.deepEqual(calls.at(-2).slice(-4), [-53, -29, 106, 58]);
-  assert.deepEqual(calls.at(-1), ["restore"]);
+  assert.deepEqual(wideCalls.at(-2).slice(-4), [-53, -29, 106, 58]);
+  assert.deepEqual(wideCalls.at(-1), ["restore"]);
+
+  const smallCalls = [];
+  const smallContext = {
+    globalAlpha: 1,
+    save: () => smallCalls.push(["save"]),
+    restore: () => smallCalls.push(["restore"]),
+    translate: (...args) => smallCalls.push(["translate", ...args]),
+    rotate: (...args) => smallCalls.push(["rotate", ...args]),
+    drawImage: (...args) => smallCalls.push(["drawImage", ...args]),
+  };
+  drawGrassAtlasPatch(smallContext, {}, "Grass2", {
+    centerX: 100,
+    baseY: 80,
+    rotationRadians: grassVariantRotationRadians("Grass2"),
+  });
+  assert.deepEqual(
+    smallCalls.filter(([name]) => name === "rotate"),
+    [["rotate", Math.PI], ["rotate", -Math.PI / 2]],
+  );
 });
 
 test("grass layout preserves the two Unity atlas regions and all 12 Spine bones", () => {
@@ -115,7 +139,8 @@ test("2D and play mount one non-interactive grass canvas behind the level render
   assert.match(field, /GAMEPLAY_ASSETS\.grass/);
   assert.match(field, /drawGrassAtlasPatch/);
   assert.match(field, /GRASS_VISUAL_SCALE/);
-  assert.match(field, /GRASS_ROTATION_RADIANS/);
+  assert.match(field, /grassVariantRotationRadians\(patch\.variant\)/);
+  assert.doesNotMatch(field, /GRASS_ROTATION_RADIANS/);
   assert.match(field, /document\.visibilityState/);
   assert.match(field, /prefers-reduced-motion: reduce/);
   assert.match(styles, /\.level-grass-field\s*\{[^}]*position:\s*absolute;[^}]*z-index:\s*2;[^}]*pointer-events:\s*none;/s);
@@ -127,7 +152,8 @@ test("3D uses the shared layout, cropped canvases, upright double-sided planes a
   const source = await readProject("views/three-3d.mjs");
   assert.match(source, /GRASS_PATCHES/);
   assert.match(source, /GRASS_VISUAL_SCALE/);
-  assert.match(source, /GRASS_ROTATION_RADIANS/);
+  assert.match(source, /grassVariantRotationRadians\(variant\)/);
+  assert.doesNotMatch(source, /GRASS_ROTATION_RADIANS/);
   assert.match(source, /drawGrassAtlasPatch/);
   assert.match(source, /new THREE\.CanvasTexture/);
   assert.match(source, /side:\s*THREE\.DoubleSide/);
