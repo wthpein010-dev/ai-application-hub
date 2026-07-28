@@ -5,6 +5,9 @@ import test from "node:test";
 import {
   GRASS_ATLAS_REGIONS,
   GRASS_PATCHES,
+  GRASS_ROTATION_RADIANS,
+  GRASS_VISUAL_SCALE,
+  drawGrassAtlasPatch,
   grassPulseScale,
 } from "../projects/paws-level-editor/core/grass-layout.mjs";
 
@@ -18,6 +21,35 @@ function closeTo(actual, expected, tolerance = 0.0001) {
     `expected ${actual} to be within ${tolerance} of ${expected}`,
   );
 }
+
+test("grass uses one half-size and 180-degree visual transform", () => {
+  assert.equal(GRASS_VISUAL_SCALE, 0.5);
+  assert.equal(GRASS_ROTATION_RADIANS, Math.PI);
+
+  const calls = [];
+  const context = {
+    globalAlpha: 1,
+    save: () => calls.push(["save"]),
+    restore: () => calls.push(["restore"]),
+    translate: (...args) => calls.push(["translate", ...args]),
+    rotate: (...args) => calls.push(["rotate", ...args]),
+    drawImage: (...args) => calls.push(["drawImage", ...args]),
+  };
+  drawGrassAtlasPatch(context, {}, "Grass1", {
+    centerX: 100,
+    baseY: 80,
+    pixelScale: 2,
+    rotationRadians: GRASS_ROTATION_RADIANS,
+  });
+
+  assert.deepEqual(calls.slice(0, 3), [
+    ["save"],
+    ["translate", 100, 51],
+    ["rotate", Math.PI],
+  ]);
+  assert.deepEqual(calls.at(-2).slice(-4), [-53, -29, 106, 58]);
+  assert.deepEqual(calls.at(-1), ["restore"]);
+});
 
 test("grass layout preserves the two Unity atlas regions and all 12 Spine bones", () => {
   assert.deepEqual(GRASS_ATLAS_REGIONS.Grass1, {
@@ -82,6 +114,8 @@ test("2D and play mount one non-interactive grass canvas behind the level render
   assert.match(field, /class GrassField/);
   assert.match(field, /GAMEPLAY_ASSETS\.grass/);
   assert.match(field, /drawGrassAtlasPatch/);
+  assert.match(field, /GRASS_VISUAL_SCALE/);
+  assert.match(field, /GRASS_ROTATION_RADIANS/);
   assert.match(field, /document\.visibilityState/);
   assert.match(field, /prefers-reduced-motion: reduce/);
   assert.match(styles, /\.level-grass-field\s*\{[^}]*position:\s*absolute;[^}]*z-index:\s*2;[^}]*pointer-events:\s*none;/s);
@@ -92,6 +126,8 @@ test("2D and play mount one non-interactive grass canvas behind the level render
 test("3D uses the shared layout, cropped canvases, upright double-sided planes and shared pulse", async () => {
   const source = await readProject("views/three-3d.mjs");
   assert.match(source, /GRASS_PATCHES/);
+  assert.match(source, /GRASS_VISUAL_SCALE/);
+  assert.match(source, /GRASS_ROTATION_RADIANS/);
   assert.match(source, /drawGrassAtlasPatch/);
   assert.match(source, /new THREE\.CanvasTexture/);
   assert.match(source, /side:\s*THREE\.DoubleSide/);

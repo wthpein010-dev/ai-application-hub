@@ -1,6 +1,8 @@
 import { GAMEPLAY_ASSETS } from "../core/gameplay-assets.mjs";
 import {
   GRASS_PATCHES,
+  GRASS_ROTATION_RADIANS,
+  GRASS_VISUAL_SCALE,
   drawGrassAtlasPatch,
   grassPulseScale,
 } from "../core/grass-layout.mjs";
@@ -92,34 +94,23 @@ export class GrassField {
   draw(seconds) {
     this.clear();
     if (!this.imageReady || !this.context || !this.width || !this.height) return;
-    const scale = Math.min(this.width, this.height * 0.8) / SPINE_STAGE_WIDTH;
+    const scale = Math.min(this.width, this.height * 0.8)
+      / SPINE_STAGE_WIDTH
+      * GRASS_VISUAL_SCALE;
     const pulse = grassPulseScale(seconds, { reducedMotion: this.isReducedMotion() });
     this.lastPulseScale = pulse;
     this.context.imageSmoothingEnabled = true;
     for (const patch of GRASS_PATCHES) {
       const centerX = patch.normalizedX * this.width;
       const baseY = patch.normalizedY * this.height;
-      if (patch.rotationRadians) {
-        this.context.save();
-        this.context.translate(centerX, baseY);
-        this.context.rotate(patch.rotationRadians);
-        drawGrassAtlasPatch(this.context, this.image, patch.variant, {
-          centerX: 0,
-          baseY: 0,
-          pixelScale: scale,
-          scaleY: pulse,
-          alpha: 0.94,
-        });
-        this.context.restore();
-      } else {
-        drawGrassAtlasPatch(this.context, this.image, patch.variant, {
-          centerX,
-          baseY,
-          pixelScale: scale,
-          scaleY: pulse,
-          alpha: 0.94,
-        });
-      }
+      drawGrassAtlasPatch(this.context, this.image, patch.variant, {
+        centerX,
+        baseY,
+        pixelScale: scale,
+        scaleY: pulse,
+        alpha: 0.94,
+        rotationRadians: GRASS_ROTATION_RADIANS + patch.rotationRadians,
+      });
     }
   }
 

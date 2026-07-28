@@ -5,6 +5,8 @@ import { GAMEPLAY_ASSETS } from "../core/gameplay-assets.mjs";
 import {
   GRASS_ATLAS_REGIONS,
   GRASS_PATCHES,
+  GRASS_ROTATION_RADIANS,
+  GRASS_VISUAL_SCALE,
   drawGrassAtlasPatch,
   grassPulseScale,
 } from "../core/grass-layout.mjs";
@@ -81,6 +83,7 @@ function makeGrassTexture(image, variant) {
   drawGrassAtlasPatch(context, image, variant, {
     centerX: canvas.width / 2,
     baseY: canvas.height,
+    rotationRadians: GRASS_ROTATION_RADIANS,
   });
   const texture = new THREE.CanvasTexture(canvas);
   texture.encoding = THREE.sRGBEncoding;
@@ -312,7 +315,10 @@ export class Three3DView {
     for (const [variant, region] of Object.entries(GRASS_ATLAS_REGIONS)) {
       const texture = makeGrassTexture(image, variant);
       texture.anisotropy = Math.min(4, this.renderer.capabilities.getMaxAnisotropy());
-      const geometry = new THREE.PlaneGeometry(region.width * 0.025, region.height * 0.025);
+      const geometry = new THREE.PlaneGeometry(
+        region.width * 0.025 * GRASS_VISUAL_SCALE,
+        region.height * 0.025 * GRASS_VISUAL_SCALE,
+      );
       const material = new THREE.MeshBasicMaterial({
         map: texture,
         transparent: true,
@@ -328,7 +334,7 @@ export class Three3DView {
     for (const patch of GRASS_PATCHES) {
       const geometry = this.grassGeometries.get(patch.variant);
       const material = this.grassMaterials.get(patch.variant);
-      const height = GRASS_ATLAS_REGIONS[patch.variant].height * 0.025;
+      const height = GRASS_ATLAS_REGIONS[patch.variant].height * 0.025 * GRASS_VISUAL_SCALE;
       const x = (patch.normalizedX - 0.5) * 18;
       const z = (patch.normalizedY - 0.5) * 18;
       const grass = new THREE.Mesh(geometry, material);

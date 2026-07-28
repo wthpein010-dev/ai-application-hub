@@ -85,15 +85,34 @@ try {
   const three = await page.evaluate(() => {
     const renderer = window.pawsWorkbench.renderer;
     const children = renderer.grassGroup.children;
+    const alphaCentroids = [...renderer.grassTextures.values()].map((texture) => {
+      const canvas = texture.image;
+      const bytes = canvas.getContext("2d").getImageData(0, 0, canvas.width, canvas.height).data;
+      let alpha = 0;
+      let weightedY = 0;
+      for (let y = 0; y < canvas.height; y += 1) {
+        for (let x = 0; x < canvas.width; x += 1) {
+          const value = bytes[(y * canvas.width + x) * 4 + 3];
+          alpha += value;
+          weightedY += y * value;
+        }
+      }
+      return Number((weightedY / alpha / canvas.height).toFixed(3));
+    });
     return {
       count: children.length,
       upright: children.every((grass) => Math.abs(grass.rotation.x) < 0.00001),
       doubleSided: [...renderer.grassMaterials.values()].every((material) => material.side === 2),
       depthWriteDisabled: [...renderer.grassMaterials.values()].every((material) => material.depthWrite === false),
+      geometrySizes: [...renderer.grassGeometries.values()].map((geometry) => [
+        geometry.parameters.width,
+        geometry.parameters.height,
+      ]),
       textureSizes: [...renderer.grassTextures.values()].map((texture) => [
         texture.image.width,
         texture.image.height,
       ]),
+      alphaCentroids,
     };
   });
   assert.deepEqual(three, {
@@ -101,7 +120,9 @@ try {
     upright: true,
     doubleSided: true,
     depthWriteDisabled: true,
+    geometrySizes: [[0.6625000000000001, 0.36250000000000004], [0.375, 0.4375]],
     textureSizes: [[53, 29], [30, 35]],
+    alphaCentroids: [0.492, 0.545],
   });
   await page.waitForFunction(() => {
     const grass = window.pawsWorkbench.renderer?.grassGroup?.children[0];

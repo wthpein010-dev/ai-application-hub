@@ -4,6 +4,9 @@ const SPINE_STAGE_HALF_WIDTH = SPINE_STAGE_WIDTH / 2;
 const SPINE_STAGE_HALF_HEIGHT = SPINE_STAGE_HEIGHT / 2;
 const GRASS_ANIMATION_SECONDS = 1.0667;
 
+export const GRASS_VISUAL_SCALE = 0.5;
+export const GRASS_ROTATION_RADIANS = Math.PI;
+
 export const GRASS_ATLAS_REGIONS = Object.freeze({
   Grass1: Object.freeze({ x: 2, y: 3, width: 53, height: 29, rotated: false }),
   Grass2: Object.freeze({ x: 57, y: 2, width: 30, height: 35, rotated: true }),
@@ -74,6 +77,7 @@ export function drawGrassAtlasPatch(
     pixelScale = 1,
     scaleY = 1,
     alpha = 1,
+    rotationRadians = 0,
   },
 ) {
   const region = GRASS_ATLAS_REGIONS[variant];
@@ -84,6 +88,8 @@ export function drawGrassAtlasPatch(
   const y = baseY - height;
   context.save();
   context.globalAlpha = alpha;
+  context.translate(centerX, baseY - height / 2);
+  context.rotate(rotationRadians);
   if (!region.rotated) {
     context.drawImage(
       image,
@@ -91,13 +97,12 @@ export function drawGrassAtlasPatch(
       region.y,
       region.width,
       region.height,
-      x,
-      y,
+      -width / 2,
+      -height / 2,
       width,
       height,
     );
   } else {
-    context.translate(x, baseY);
     context.rotate(-Math.PI / 2);
     context.drawImage(
       image,
@@ -105,8 +110,8 @@ export function drawGrassAtlasPatch(
       region.y,
       region.height,
       region.width,
-      0,
-      0,
+      -height / 2,
+      -width / 2,
       height,
       width,
     );
