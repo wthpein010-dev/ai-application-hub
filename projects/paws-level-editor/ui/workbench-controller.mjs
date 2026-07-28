@@ -30,6 +30,7 @@ import { createLevelDownload, triggerLevelDownload } from "./level-export.mjs";
 import { formatLevelId, formatLevelModifiedAt } from "./level-summary.mjs";
 import { createLastOpenedLevelStore } from "./last-opened-level.mjs";
 import { upgradeLocalAiLevelOnOpen } from "./legacy-ai-open-upgrade.mjs";
+import { runPlayTool } from "./play-tool-command.mjs";
 import { Canvas2DView } from "../views/canvas-2d.mjs";
 import { Three3DView } from "../views/three-3d.mjs";
 import {
@@ -214,6 +215,8 @@ export class WorkbenchController {
       restart: byId("restart-play"),
       rerandomize: byId("rerandomize"),
       lockSeed: byId("lock-seed"),
+      playTools: byId("play-tools"),
+      playToolButtons: [...this.root.querySelectorAll("[data-play-tool]")],
       statusLevel: byId("status-level"),
       statusTiles: byId("status-tiles"),
       statusLayers: byId("status-layers"),
@@ -302,6 +305,9 @@ export class WorkbenchController {
     this.elements.gameplayFit.addEventListener("click", () => this.renderer?.fitCamera());
     this.elements.restart.addEventListener("click", () => this.restartPlay());
     this.elements.rerandomize.addEventListener("click", () => this.rerandomize());
+    this.elements.playToolButtons.forEach((button) => {
+      button.addEventListener("click", () => this.usePlayTool(button.dataset.playTool));
+    });
     this.elements.lockSeed.addEventListener("change", () => {
       this.seedLocked = this.elements.lockSeed.checked;
     });
@@ -1720,6 +1726,58 @@ export class WorkbenchController {
     this.updateUI();
   }
 
+  usePlayTool(toolName) {
+    if (!this.playSession || this.mode !== "play") {
+      return;
+    }
+    const events = runPlayTool(this.playSession, toolName);
+    if (events.length === 0) {
+      return;
+    }
+    this.playSnapshot = this.playSession.getSnapshot();
+    this.refreshRenderer();
+    this.presentPlayToolEvents(events);
+    this.updateUI();
+  }
+
+  presentPlayToolEvents(events) {
+    const rejectedMessages = {
+      "insufficient-tiles": "剩余砖块不足，无法随机",
+      "no-shuffle-pair": "当前局面无法生成可用配对",
+      "no-pair": "没有可配对的砖块",
+      "empty-history": "暂无可撤回的砖块",
+      "spent": "该道具本局已使用",
+    };
+    const rejected = events.find(({ type }) => type === "tool-rejected");
+    if (rejected) {
+      this.showToast(rejectedMessages[rejected.reason] ?? "当前无法使用该道具", "error");
+      return;
+    }
+    if (events.some(({ type }) => type === "won" || type === "deadlocked")) {
+      this.presentPlayEvents(events);
+      return;
+    }
+    this.pulsePlayTools();
+    if (events.some(({ type }) => type === "tool-shuffled")) {
+      this.showToast("砖块已重新随机。");
+    } else if (events.some(({ type }) => type === "tool-match-removed")) {
+      this.showToast("配对道具已清除一对砖块。");
+    } else if (events.some(({ type }) => type === "tool-undone")) {
+      this.showToast("已撤回最近暂存的砖块。");
+    }
+  }
+
+  pulsePlayTools() {
+    const dock = this.elements.playTools;
+    dock.classList.remove("play-tool-used");
+    void dock.offsetWidth;
+    dock.classList.add("play-tool-used");
+    clearTimeout(this.playToolPulseTimer);
+    this.playToolPulseTimer = setTimeout(() => {
+      dock.classList.remove("play-tool-used");
+    }, 260);
+  }
+
   presentPlayEvents(events) {
     if (events.some((event) => event.type === "won")) {
       this.showToast("关卡完成！所有砖块已清除。");
@@ -1983,6 +2041,15 @@ export class WorkbenchController {
           : `${this.currentDifficulty.score} · ${this.currentDifficulty.rating.label}`;
     this.elements.statusSeed.textContent = this.mode === "play" ? String(this.playSnapshot?.seed ?? this.seed) : "—";
     this.elements.lockSeed.checked = this.seedLocked;
+    this.elements.playToolButtons.forEach((button) => {
+      const remaining = this.playSnapshot?.tools?.[button.dataset.playTool]?.remaining ?? 0;
+      button.disabled = this.mode !== "play" || !this.playSession || remaining <= 0;
+      button.querySelector(".play-tool-count").textContent = String(remaining);
+      button.setAttribute(
+        "aria-label",
+        `${button.title}，剩余 ${remaining} 次`,
+      );
+    });
     const errors = this.issues.filter((issue) => issue.severity === "error");
     this.elements.validationSummary.className = `validation-summary ${!this.document ? "is-neutral" : errors.length ? "is-error" : "is-valid"}`;
     this.elements.validationSummary.innerHTML = `<span></span>${!this.document ? "未校验" : errors.length ? `${errors.length} 项错误` : "校验通过"}`;

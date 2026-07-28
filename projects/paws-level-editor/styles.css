@@ -810,6 +810,7 @@ select:disabled {
 .play-tool-button:disabled {
   cursor: default;
   filter: grayscale(0.24) drop-shadow(0 3px 4px rgb(12 67 64 / 0.14));
+  opacity: 1;
 }
 
 .play-tool-button:disabled::after {
@@ -820,6 +821,22 @@ select:disabled {
   background: rgba(0, 0, 0, .4);
   content: "";
   pointer-events: none;
+}
+
+.play-tool-dock.play-tool-used {
+  animation: play-tool-used 240ms ease-out;
+}
+
+@keyframes play-tool-used {
+  45% {
+    transform: translateX(-50%) scale(1.045);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .play-tool-dock.play-tool-used {
+    animation: none;
+  }
 }
 
 [data-mode="play"] .edit-only {

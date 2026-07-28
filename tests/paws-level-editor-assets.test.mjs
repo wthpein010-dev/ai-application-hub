@@ -31,6 +31,7 @@ const requiredFiles = [
   "ui/local-level-import.mjs",
   "ui/level-export.mjs",
   "ui/level-summary.mjs",
+  "ui/play-tool-command.mjs",
   "ui/workbench-controller.mjs",
   "views/canvas-2d.mjs",
   "views/three-3d.mjs",
@@ -161,6 +162,8 @@ test("editor stage and both renderers consume the gameplay skin without fake con
   assert.match(css, /\.level-grass-field\s*\{[\s\S]*pointer-events:\s*none/);
   assert.match(css, /\[data-mode="play"\][\s\S]*\.play-tool-button/);
   assert.match(css, /\.play-tool-button:disabled::after\s*\{[\s\S]*rgba\(0,\s*0,\s*0,\s*\.4\)/);
+  assert.match(css, /\.play-tool-button:disabled\s*\{[^}]*opacity:\s*1/);
+  assert.match(css, /@keyframes play-tool-used/);
   assert.match(assets, /block_bg\.png/);
   assert.match(assets, /ui_tile_lock_mask\.png/);
   assert.match(assets, /btn_magnet\.png/);
@@ -168,6 +171,14 @@ test("editor stage and both renderers consume the gameplay skin without fake con
   assert.match(assets, /play_save2\.png/);
   assert.match(controller, /gameplayLevelTitle\.textContent/);
   assert.match(controller, /gameplayFit\.addEventListener\("click"/);
+  assert.match(controller, /playToolButtons/);
+  assert.match(controller, /data-play-tool/);
+  assert.match(controller, /usePlayTool\(toolName\)/);
+  assert.match(controller, /剩余砖块不足，无法随机/);
+  assert.match(controller, /当前局面无法生成可用配对/);
+  assert.match(controller, /没有可配对的砖块/);
+  assert.match(controller, /暂无可撤回的砖块/);
+  assert.match(controller, /classList\.add\("play-tool-used"\)/);
   assert.match(grassField, /GAMEPLAY_ASSETS\.grass/);
   assert.match(grassField, /drawGrassAtlasPatch/);
 
