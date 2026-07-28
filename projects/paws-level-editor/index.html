@@ -143,19 +143,11 @@
               </span>
             </div>
 
-            <div id="play-tools" class="tool-strip play-only" aria-label="试玩工具">
-              <button id="restart-play" class="gameplay-action-button" type="button" title="重新试玩">
-                <img class="gameplay-action-image" src="./assets/gameplay/btn_replay.png" alt="" />
-                <span class="sr-only">重新试玩</span>
-              </button>
-              <button id="rerandomize" class="gameplay-action-button" type="button" title="重新随机">
-                <img class="gameplay-action-image" src="./assets/gameplay/btn_random.png" alt="" />
-                <span class="sr-only">重新随机</span>
-              </button>
-              <div class="gameplay-play-aux">
-                <label class="seed-lock"><input id="lock-seed" type="checkbox" /> 锁定种子</label>
-                <button id="fit-play-view" type="button">适配舞台</button>
-              </div>
+            <div id="play-controls" class="tool-strip play-only" aria-label="试玩控制">
+              <button id="restart-play" type="button" title="重新试玩">重新试玩</button>
+              <button id="rerandomize" type="button" title="更换随机种子">换种子</button>
+              <label class="seed-lock"><input id="lock-seed" type="checkbox" /> 锁定种子</label>
+              <button id="fit-play-view" type="button">适配舞台</button>
             </div>
           </div>
 
@@ -179,6 +171,20 @@
               <p>同一份数据可直接编辑、2D/3D 检查和试玩。</p>
             </div>
             <div id="stage-toast" class="stage-toast" role="status" aria-live="polite"></div>
+            <div id="play-tools" class="play-tool-dock play-only" aria-label="游戏道具">
+              <button id="play-tool-shuffle" class="play-tool-button" data-play-tool="shuffle" type="button" title="随机" aria-label="随机">
+                <img src="./assets/gameplay/btn_random.png" alt="" draggable="false" />
+                <span class="play-tool-count" aria-hidden="true">1</span>
+              </button>
+              <button id="play-tool-match" class="play-tool-button" data-play-tool="match" type="button" title="配对" aria-label="配对">
+                <img src="./assets/gameplay/btn_magnet.png" alt="" draggable="false" />
+                <span class="play-tool-count" aria-hidden="true">1</span>
+              </button>
+              <button id="play-tool-undo" class="play-tool-button" data-play-tool="undo" type="button" title="撤回" aria-label="撤回">
+                <img src="./assets/gameplay/btn_rollback.png" alt="" draggable="false" />
+                <span class="play-tool-count" aria-hidden="true">1</span>
+              </button>
+            </div>
           </section>
 
           <footer id="status-bar" class="status-bar">

@@ -50,6 +50,8 @@ const expectedGameplayAssets = new Map([
   ["grass.png", { width: 94, height: 34 }],
   ["Setting.png", { width: 69, height: 74 }],
   ["btn_random.png", { width: 147, height: 122 }],
+  ["btn_magnet.png", { width: 147, height: 122 }],
+  ["btn_rollback.png", { width: 147, height: 122 }],
   ["btn_replay.png", { width: 147, height: 122 }],
   ["play_save2.png", { width: 256, height: 178 }],
 ]);
@@ -148,15 +150,21 @@ test("editor stage and both renderers consume the gameplay skin without fake con
 
   assert.match(html, /id="gameplay-fit"[^>]*title="适配游戏舞台"/);
   assert.match(html, /id="gameplay-level-title"/);
-  assert.match(html, /id="restart-play"[\s\S]*assets\/gameplay\/btn_replay\.png/);
-  assert.match(html, /id="rerandomize"[\s\S]*assets\/gameplay\/btn_random\.png/);
+  assert.match(html, /id="restart-play"[^>]*title="重新试玩"/);
+  assert.match(html, /id="play-tool-shuffle"[\s\S]*assets\/gameplay\/btn_random\.png/);
+  assert.match(html, /id="play-tool-match"[\s\S]*assets\/gameplay\/btn_magnet\.png/);
+  assert.match(html, /id="play-tool-undo"[\s\S]*assets\/gameplay\/btn_rollback\.png/);
+  assert.match(html, /class="play-tool-dock play-only"/);
   assert.doesNotMatch(html, /<button[^>]*class="[^\"]*gameplay[^\"]*"[^>]*disabled/);
 
   assert.match(css, /\.canvas-host\s*\{[\s\S]*bg-47bd7f\.png/);
   assert.match(css, /\.level-grass-field\s*\{[\s\S]*pointer-events:\s*none/);
-  assert.match(css, /\[data-mode="play"\][\s\S]*\.gameplay-action-image/);
+  assert.match(css, /\[data-mode="play"\][\s\S]*\.play-tool-button/);
+  assert.match(css, /\.play-tool-button:disabled::after\s*\{[\s\S]*rgba\(0,\s*0,\s*0,\s*\.4\)/);
   assert.match(assets, /block_bg\.png/);
   assert.match(assets, /ui_tile_lock_mask\.png/);
+  assert.match(assets, /btn_magnet\.png/);
+  assert.match(assets, /btn_rollback\.png/);
   assert.match(assets, /play_save2\.png/);
   assert.match(controller, /gameplayLevelTitle\.textContent/);
   assert.match(controller, /gameplayFit\.addEventListener\("click"/);
