@@ -10,6 +10,7 @@ import {
 import { GAMEPLAY_ASSETS } from "../core/gameplay-assets.mjs";
 import { deriveDisplayTiles } from "../core/view-model.mjs";
 import { buildFillCells } from "../core/fill-tool.mjs";
+import { buildFieldGridLayout } from "../core/field-grid-layout.mjs";
 
 const TILE_SIZE = 8;
 const TILE_ART_ASPECT = 135 / 120;
@@ -429,31 +430,53 @@ export class Canvas2DView {
     return image.complete && !image.failed && image.naturalWidth ? image : null;
   }
 
-  drawGrid(context) {
-    if (this.mode !== "edit") {
+  drawFieldGrid(context) {
+    if (this.mode !== "edit" || !this.document?.board) {
       return;
     }
-    const scale = this.viewport.scale;
-    const step = scale < 1.2 ? 8 : scale < 3 ? 4 : 1;
-    const left = screenToBoard({ x: 0, y: 0 }, this.viewport);
-    const right = screenToBoard({ x: this.width, y: this.height }, this.viewport);
+    const layout = buildFieldGridLayout(this.document.board);
+    const drawLines = (lines, strokeStyle, lineWidth) => {
+      context.strokeStyle = strokeStyle;
+      context.lineWidth = lineWidth;
+      context.beginPath();
+      for (const line of lines) {
+        const first = boardToScreen({ x: line.x1, y: line.y1 }, this.viewport);
+        const second = boardToScreen({ x: line.x2, y: line.y2 }, this.viewport);
+        context.moveTo(first.x, first.y);
+        context.lineTo(second.x, second.y);
+      }
+      context.stroke();
+    };
+
     context.save();
-    context.lineWidth = 1;
-    for (let x = Math.floor(left.x / step) * step; x <= right.x; x += step) {
-      const screen = boardToScreen({ x, y: 0 }, this.viewport);
-      context.strokeStyle = x % 8 === 0 ? "rgba(143,163,158,.16)" : "rgba(143,163,158,.06)";
-      context.beginPath();
-      context.moveTo(Math.round(screen.x) + 0.5, 0);
-      context.lineTo(Math.round(screen.x) + 0.5, this.height);
-      context.stroke();
+    drawLines(layout.centerLines, "rgba(255,255,255,0.5)", 1);
+    drawLines(layout.majorLines, "rgba(255,255,255,0.72)", 1);
+
+    const first = boardToScreen(
+      { x: layout.bounds.minX, y: layout.bounds.minY },
+      this.viewport,
+    );
+    const second = boardToScreen(
+      { x: layout.bounds.maxX, y: layout.bounds.maxY },
+      this.viewport,
+    );
+    context.strokeStyle = "rgba(255,224,51,0.85)";
+    context.lineWidth = 2;
+    context.strokeRect(first.x, first.y, second.x - first.x, second.y - first.y);
+
+    context.fillStyle = "rgba(255,255,255,0.86)";
+    context.font = "11px sans-serif";
+    for (const label of layout.labels) {
+      const screen = boardToScreen({ x: label.x, y: label.y }, this.viewport);
+      context.textAlign = label.axis === "x" ? "center" : "right";
+      context.textBaseline = label.axis === "x" ? "top" : "middle";
+      context.fillText(String(label.value), screen.x, screen.y);
     }
-    for (let y = Math.floor(left.y / step) * step; y <= right.y; y += step) {
-      const screen = boardToScreen({ x: 0, y }, this.viewport);
-      context.strokeStyle = y % 8 === 0 ? "rgba(143,163,158,.16)" : "rgba(143,163,158,.06)";
-      context.beginPath();
-      context.moveTo(0, Math.round(screen.y) + 0.5);
-      context.lineTo(this.width, Math.round(screen.y) + 0.5);
-      context.stroke();
+    context.textAlign = "center";
+    context.textBaseline = "middle";
+    for (const label of layout.axisLabels) {
+      const screen = boardToScreen({ x: label.x, y: label.y }, this.viewport);
+      context.fillText(label.text, screen.x, screen.y);
     }
     context.restore();
   }
@@ -616,7 +639,7 @@ export class Canvas2DView {
     }
     const context = this.context;
     context.clearRect(0, 0, this.width, this.height);
-    this.drawGrid(context);
+    this.drawFieldGrid(context);
     const tiles = this.boardTiles().sort(
       (left, right) => left.layer - right.layer || left.y - right.y || left.x - right.x,
     );

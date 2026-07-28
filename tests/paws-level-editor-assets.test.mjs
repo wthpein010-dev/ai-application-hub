@@ -16,6 +16,7 @@ const requiredFiles = [
   "core/gameplay-metadata.mjs",
   "core/ai-level-generator.mjs",
   "core/edit-history.mjs",
+  "core/field-grid-layout.mjs",
   "core/level-adapter.mjs",
   "core/level-solver.mjs",
   "core/level-statistics.mjs",
@@ -165,6 +166,9 @@ test("editor stage and both renderers consume the gameplay skin without fake con
   assert.match(canvas2d, /GAMEPLAY_ASSETS\.blockBackground/);
   assert.match(canvas2d, /GAMEPLAY_ASSETS\.lockMask/);
   assert.match(canvas2d, /GAMEPLAY_ASSETS\.playTray/);
+  assert.match(canvas2d, /buildFieldGridLayout/);
+  assert.match(canvas2d, /drawFieldGrid/);
+  assert.doesNotMatch(canvas2d, /drawGrid\(context\)/);
   assert.match(canvas2d, /TILE_ART_ASPECT\s*=\s*135\s*\/\s*120/);
   assert.match(three3d, /GAMEPLAY_ASSETS\.blockBackground/);
   assert.match(three3d, /GAMEPLAY_ASSETS\.grass/);
