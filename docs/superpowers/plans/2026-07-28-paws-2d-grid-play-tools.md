@@ -685,7 +685,7 @@ git add tests/paws-level-editor-browser-smoke.mjs
 git commit -m "test(paws): cover grid and play tools in browser"
 ```
 
-### Task 8: Fresh media, full gates, release, and online acceptance
+### Task 8: Fresh media, Paws full gates, release, and online acceptance
 
 **Files:**
 - Modify: `scripts/record-paws-level-editor-demo.mjs`
@@ -729,9 +729,14 @@ Run: `node tests/paws-level-editor-ai-browser-smoke.mjs`
 
 Expected: all commands exit `0`, video is H.264 `1280 × 720` and `75–110` seconds, and browser error collections remain empty.
 
-- [ ] **Step 5: Run the complete repository test and module syntax gates**
+- [ ] **Step 5: Run the complete Paws test and module syntax gates**
 
-Run: `node --test`
+Run:
+
+```powershell
+$tests = rg --files tests -g 'paws-level-editor*.test.mjs'
+node --test $tests
+```
 
 Run:
 
@@ -740,7 +745,7 @@ $files = rg --files projects/paws-level-editor tools/paws-level-editor-lan scrip
 foreach ($file in $files) { node --check $file; if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE } }
 ```
 
-Expected: the repository suite has `0` failures, with only the documented Windows ordinary-user symlink permission test allowed to skip, and every checked module exits `0`.
+Expected: all `225+` Paws tests have `0` failures, with only the documented Windows ordinary-user symlink permission test allowed to skip, and every checked module exits `0`. The release worktree intentionally uses sparse checkout for Paws and cannot run unrelated project tests whose tracked application/media files are not checked out.
 
 - [ ] **Step 6: Review final diff and commit the verified release**
 
