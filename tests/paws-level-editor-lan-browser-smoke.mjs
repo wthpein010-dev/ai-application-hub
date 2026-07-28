@@ -21,8 +21,10 @@ const require = createRequire(import.meta.url);
 const { chromium } = require("playwright");
 const repositoryRoot = path.dirname(path.dirname(fileURLToPath(import.meta.url)));
 const webRoot = path.join(repositoryRoot, "projects", "paws-level-editor");
-const publishedLevelDir = path.join(webRoot, "levels");
-const blockAssetDir = path.join(webRoot, "assets", "blocks");
+const publishedLevelDir = process.env.PAWS_LAN_BROWSER_LEVEL_SOURCE_DIR
+  || path.join(webRoot, "levels");
+const blockAssetDir = process.env.PAWS_LAN_BROWSER_BLOCK_ASSET_DIR
+  || path.join(webRoot, "assets", "blocks");
 const defaultFileName = "level_0021_r2_第二关模板12.json";
 const password = "browser-test-only";
 
@@ -51,7 +53,14 @@ async function createFixture() {
   assert.ok(fallbackFileName, "a fallback published level is required");
   for (const fileName of [defaultFileName, fallbackFileName]) {
     await copyFile(path.join(publishedLevelDir, fileName), path.join(levelDir, fileName));
-    await writeFile(path.join(levelDir, `${fileName}.meta`), `guid: ${fileName}\n`, "utf8");
+    try {
+      await copyFile(
+        path.join(publishedLevelDir, `${fileName}.meta`),
+        path.join(levelDir, `${fileName}.meta`),
+      );
+    } catch {
+      await writeFile(path.join(levelDir, `${fileName}.meta`), `guid: ${fileName}\n`, "utf8");
+    }
   }
   return { root, levelDir, fallbackFileName };
 }
@@ -148,7 +157,10 @@ try {
     pageA.waitForFunction((name) =>
       window.pawsWorkbench.levels.some((level) => level.fileName === name), defaultFileName),
   ]);
-  assert.match(await readFile(path.join(fixture.levelDir, `${defaultFileName}.meta`), "utf8"), /^guid:/);
+  assert.match(
+    await readFile(path.join(fixture.levelDir, `${defaultFileName}.meta`), "utf8"),
+    /^guid:\s*[0-9a-f]+$/im,
+  );
   await pageA.waitForTimeout(50);
   assert.equal(browserErrors.length, 4, `unexpected authentication errors:\n${browserErrors.join("\n")}`);
   assert.equal(

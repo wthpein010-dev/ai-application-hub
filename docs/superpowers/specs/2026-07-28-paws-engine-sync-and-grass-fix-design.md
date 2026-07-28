@@ -1,7 +1,7 @@
 # Paws 工程同步与草地修正设计
 
-日期：2026-07-28  
-状态：已确认直接实施  
+日期：2026-07-28
+状态：已确认直接实施
 适用范围：`projects/paws-level-editor` 公网页面与 `tools/paws-level-editor-lan` 内网工程工作台
 
 ## 目标

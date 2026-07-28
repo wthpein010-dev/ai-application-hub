@@ -248,7 +248,11 @@ try {
   assert.equal(generated.generation.report.solvable, true);
   assert.equal(generated.generation.report.steps, generated.tiles / 2);
   assert.equal(generated.generation.report.statistics.effectiveLayerCount, 15);
-  assert.equal(generated.generation.report.statistics.initialAccessiblePairs, 3);
+  assert.equal(
+    generated.generation.report.statistics.initialAccessiblePairs >= 3,
+    true,
+    "standard AI levels must expose at least the profile minimum of three opening pairs",
+  );
   assert.equal(
     generated.generation.report.statistics.averageBlockers <= 4,
     true,

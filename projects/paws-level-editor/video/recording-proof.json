@@ -189,8 +189,8 @@
     "sha256": "584aceab3c09a63cda419ebf11a140b5cc68c9920b3e9a3505075ec475a5c564"
   },
   "sources": {
-    "projects/paws-level-editor/index.html": "d20535291e9466dd4a5bb17961bb6ac710f49f2ab56761b438b41517adeb78e6",
-    "projects/paws-level-editor/styles.css": "061150c13b7b46ee893287d8e81d0fa051443627a5f31b0d742a43ed4976b9dd",
+    "projects/paws-level-editor/index.html": "0a70cd3f2b93208c4a18d185b29e6df41692464325d5603125622be4f0e3900b",
+    "projects/paws-level-editor/styles.css": "4f6da28b4f72ba190b7d73b31f0ccda3fc6b9216ae7f3daffadfbe528f971c94",
     "projects/paws-level-editor/app.mjs": "d54ca4e1fa3c1aa524e63f9b7a743d8b883710c1ff340a8e290190d293e485c7",
     "projects/paws-level-editor/static-api-client.mjs": "a37e3bcaa2bfed9ddf10aa800fb5fbaa025bc751398e4201eddf236e4e740c84",
     "projects/paws-level-editor/core/ai-level-generator.mjs": "eb50862026dcc1a0c523fb1eaf1ee758472617848adca4a8938eeae5ae9c22c1",
@@ -206,16 +206,16 @@
     "projects/paws-level-editor/core/view-model.mjs": "381d2e8626728ddf4de320cbe5340ac96bc5063c67a174dfaed72602e17ecd6c",
     "projects/paws-level-editor/ui/ai-level-dialog.mjs": "4b9edeb251049f53b7d39c36db582fa840236ebfc7446a2410a80693afc57274",
     "projects/paws-level-editor/ui/editor-shortcuts.mjs": "6dd75fb89a98e46450fee11bb35088a5ac941bf40665f000a5a95918df102bca",
-    "projects/paws-level-editor/ui/inspector.mjs": "e5f8ecea09fd8a6c723df7503e5ab63f9c2865c08604d88e48e33aed3835c127",
+    "projects/paws-level-editor/ui/inspector.mjs": "6d8d196170945b2d0bb4fd53fda7bce36a244e9b6417d85a48d015bcea131f3e",
     "projects/paws-level-editor/ui/level-export.mjs": "44296631912418a227c9c01d701def1d3a71af75875dd9c3b50ba2f273f3493c",
     "projects/paws-level-editor/ui/local-level-import.mjs": "651987b8d3c1ca4293218bb1289f48c6c706ce2ba502e0960e5ae02a6883d8e9",
     "projects/paws-level-editor/ui/level-summary.mjs": "f7876ba36caaef6ac9123f98680aad02a65e5134f6ec1486f306e17f359b4713",
     "projects/paws-level-editor/ui/legacy-ai-open-upgrade.mjs": "e413eab44f7b04289015f5eb98f37971ced2057085e902fb2b04e9ac9eb8f2bd",
-    "projects/paws-level-editor/ui/workbench-controller.mjs": "2b8ece97c8230c039d6dd1709e766ae5fb2185c83fab639d1de3cff534374a78",
-    "projects/paws-level-editor/views/canvas-2d.mjs": "e0ccc747b8b7eff08247dcb771d34069ff3c4ee3bf8c2de6c945ef845cb202d2",
-    "projects/paws-level-editor/views/three-3d.mjs": "ebf7a8a8a027a820e7dfaa4944ee39c3bcb35f6f3683f0815d2d17da251a94c1",
-    "projects/paws-level-editor/levels/index.json": "acdb46b7899e7dccd1dcf17642863be52f78e14b56b6a322937b942ad1ccc123",
-    "projects/paws-level-editor/levels/level_0021_r2_第二关模板12.json": "596989213e96fb9ae83d0cbaf8eea7f7d0cda113c24506c36eda7500eeb28725",
+    "projects/paws-level-editor/ui/workbench-controller.mjs": "891e4bbfda28df55974353e84e723e9ddcd2cd62456b52c6058ed611b8cc0d39",
+    "projects/paws-level-editor/views/canvas-2d.mjs": "217831d8ed35934970282c1bb5032aa68dbe29c780473af64a799099b47e8047",
+    "projects/paws-level-editor/views/three-3d.mjs": "3711290d0ac82665f5aa69c44b5fed878983bae300f67e0562559f64680cf8ba",
+    "projects/paws-level-editor/levels/index.json": "0ebe5bb7629dce68b6c922d434c1c2a5e8942e65cf1d6771aefbe2b27d3c80a2",
+    "projects/paws-level-editor/levels/level_0021_r2_第二关模板12.json": "c7787830ed553ae16de6516408c8247f3ad9152c2ef78ed33e6c75d8f05aae68",
     "scripts/record-paws-level-editor-demo.mjs": "918edc0d8cfb9589414bbe49b71a3be2a983b0d6058d07ef89bbfb2d6a6b30ff",
     "scripts/paws-recording-support.mjs": "e5d2b2f02b67798c90d080a3202b97ecce50ffd738e31fc374d751ad18ae79c2"
   }
