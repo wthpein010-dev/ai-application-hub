@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { createHash } from "node:crypto";
 import { once } from "node:events";
 import {
   access,
@@ -59,7 +60,8 @@ async function createFixture() {
         path.join(levelDir, `${fileName}.meta`),
       );
     } catch {
-      await writeFile(path.join(levelDir, `${fileName}.meta`), `guid: ${fileName}\n`, "utf8");
+      const guid = createHash("md5").update(fileName, "utf8").digest("hex");
+      await writeFile(path.join(levelDir, `${fileName}.meta`), `guid: ${guid}\n`, "utf8");
     }
   }
   return { root, levelDir, fallbackFileName };
