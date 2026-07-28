@@ -6,6 +6,7 @@ import { createPlaySession } from "../core/play-engine.mjs";
 import { generateAiLevel } from "../core/ai-level-generator.mjs";
 import { scoreLevelDifficulty } from "../core/level-difficulty.mjs";
 import { solveLevel } from "../core/level-solver.mjs";
+import { buildFillCells, planFillPlacement } from "../core/fill-tool.mjs";
 import {
   isGameplayMetadataIssue,
   normalizeGameplayPatch,
@@ -90,7 +91,7 @@ export class WorkbenchController {
     this.layerView = { mode: "all", layer: 1 };
     this.layerSeparation = 0;
     this.snapStep = 8;
-    this.placement = { type: 1, layer: 1, presetColorType: 1 };
+    this.placement = { type: 1, layer: 1, presetColorType: 1, fillStartLayer: 1 };
     this.playSession = null;
     this.playSnapshot = null;
     this.seed = nextSeed();
@@ -1253,6 +1254,28 @@ export class WorkbenchController {
     });
   }
 
+  fillTiles({ start, end }) {
+    if (!this.document || this.mode !== "edit") return;
+    try {
+      const cells = buildFillCells(start, end, this.document.board);
+      const { additions, skipped } = planFillPlacement(this.document, cells, {
+        startLayer: this.placement.fillStartLayer,
+        uidFactory: () => this.nextTileUid(),
+      });
+      if (!additions.length) {
+        this.showToast(`没有可平铺的位置${skipped.length ? `，已跳过 ${skipped.length} 格` : ""}。`, "error");
+        return;
+      }
+      this.execute(createAddTilesCommand(additions));
+      this.setSelection(new Set(additions.map(({ uid }) => uid)));
+      this.showToast(
+        `已平铺 ${additions.length} 张全随机砖块${skipped.length ? `，跳过 ${skipped.length} 格` : ""}。`,
+      );
+    } catch (error) {
+      this.showToast(error.message, "error");
+    }
+  }
+
   moveTiles(tileUids, { dx, dy }) {
     if (!this.document || this.mode !== "edit" || !tileUids.length || (!dx && !dy)) return;
     const plan = planTileMove(this.document, tileUids, { dx, dy });
@@ -1435,7 +1458,7 @@ export class WorkbenchController {
     if (this.readonly || this.mode !== "edit") {
       return;
     }
-    if (this.view === "3d" && ["place", "box", "pan"].includes(tool)) {
+    if (this.view === "3d" && ["place", "fill", "box", "pan"].includes(tool)) {
       this.showToast("3D 编辑检查支持点选、删除和属性修改；放置与拖动请切换到 2D。");
       return;
     }
@@ -1490,7 +1513,7 @@ export class WorkbenchController {
     }
     this.view = view;
     this.root.dataset.view = view;
-    if (view === "3d" && ["place", "box", "pan"].includes(this.tool)) {
+    if (view === "3d" && ["place", "fill", "box", "pan"].includes(this.tool)) {
       this.tool = "select";
     }
     if (this.document) {
@@ -1511,6 +1534,7 @@ export class WorkbenchController {
       onSelectionChange: (selection) => this.setSelection(selection),
       onMove: (uids, delta) => this.moveTiles(uids, delta),
       onPlace: (tile) => this.placeTile(tile),
+      onFill: (gesture) => this.fillTiles(gesture),
       onDelete: (uids) => this.deleteTiles(uids),
       onPlayInteract: (uid) => this.interactPlay(uid),
       onStash: (uid) => this.stashTile(uid),
@@ -1781,7 +1805,7 @@ export class WorkbenchController {
       button.classList.toggle("is-active", button.dataset.tool === this.tool);
       button.disabled =
         this.readonly ||
-        (this.view === "3d" && ["place", "box", "pan"].includes(button.dataset.tool));
+        (this.view === "3d" && ["place", "fill", "box", "pan"].includes(button.dataset.tool));
     });
     this.elements.undo.disabled = !this.history?.canUndo;
     this.elements.redo.disabled = !this.history?.canRedo;

@@ -9,6 +9,7 @@ import {
 } from "../ui/editor-tools.mjs";
 import { GAMEPLAY_ASSETS } from "../core/gameplay-assets.mjs";
 import { deriveDisplayTiles } from "../core/view-model.mjs";
+import { buildFillCells } from "../core/fill-tool.mjs";
 
 const TILE_SIZE = 8;
 const TILE_ART_ASPECT = 135 / 120;
@@ -19,6 +20,7 @@ export class Canvas2DView {
     onSelectionChange = () => {},
     onMove = () => {},
     onPlace = () => {},
+    onFill = () => {},
     onDelete = () => {},
     onPlayInteract = () => {},
     onStash = () => {},
@@ -29,6 +31,7 @@ export class Canvas2DView {
       onSelectionChange,
       onMove,
       onPlace,
+      onFill,
       onDelete,
       onPlayInteract,
       onStash,
@@ -41,7 +44,7 @@ export class Canvas2DView {
     this.tool = "select";
     this.layerView = { mode: "all", layer: 1 };
     this.snapStep = 8;
-    this.placeTemplate = { type: 1, layer: 1, presetColorType: 1 };
+    this.placeTemplate = { type: 1, layer: 1, presetColorType: 1, fillStartLayer: 1 };
     this.viewport = { scale: 5, offsetX: 60, offsetY: 60 };
     this.images = new Map();
     this.gameplayImages = new Map();
@@ -97,7 +100,13 @@ export class Canvas2DView {
     this.tool = tool;
     if (this.canvas) {
       this.canvas.style.cursor =
-        tool === "pan" ? "grab" : tool === "place" ? "crosshair" : tool === "delete" ? "not-allowed" : "default";
+        tool === "pan"
+          ? "grab"
+          : ["place", "fill"].includes(tool)
+            ? "crosshair"
+            : tool === "delete"
+              ? "not-allowed"
+              : "default";
     }
   }
 
@@ -261,6 +270,21 @@ export class Canvas2DView {
       return;
     }
 
+    if (this.tool === "fill" && event.button === 0) {
+      const cell = {
+        x: snapValue(boardPoint.x - TILE_SIZE / 2, 1),
+        y: snapValue(boardPoint.y - TILE_SIZE / 2, 1),
+      };
+      this.pointerState = {
+        kind: "fill",
+        pointerId: event.pointerId,
+        startBoard: cell,
+        currentBoard: cell,
+      };
+      this.draw();
+      return;
+    }
+
     if (this.tool === "delete" && event.button === 0 && hit) {
       this.callbacks.onDelete([hit.uid]);
       return;
@@ -315,6 +339,11 @@ export class Canvas2DView {
       this.boxRectangle.y2 = board.y;
     } else if (this.pointerState.kind === "drag") {
       this.pointerState.current = point;
+    } else if (this.pointerState.kind === "fill") {
+      this.pointerState.currentBoard = {
+        x: snapValue(board.x - TILE_SIZE / 2, 1),
+        y: snapValue(board.y - TILE_SIZE / 2, 1),
+      };
     }
     this.draw();
   }
@@ -338,6 +367,11 @@ export class Canvas2DView {
       if (delta.dx || delta.dy) {
         this.callbacks.onMove([...this.selection], delta);
       }
+    } else if (state.kind === "fill") {
+      this.callbacks.onFill({
+        start: state.startBoard,
+        end: state.currentBoard,
+      });
     }
     this.cancelPointer();
   }
@@ -546,6 +580,36 @@ export class Canvas2DView {
     context.restore();
   }
 
+  drawFillPreview(context) {
+    if (this.pointerState?.kind !== "fill" || !this.document?.board) {
+      return;
+    }
+    const cells = buildFillCells(
+      this.pointerState.startBoard,
+      this.pointerState.currentBoard,
+      this.document.board,
+    );
+    const size = TILE_SIZE * this.viewport.scale;
+    const artHeight = size * TILE_ART_ASPECT;
+    const firstLayer = Math.max(1, Math.round(Number(this.placeTemplate.fillStartLayer) || 1));
+    context.save();
+    context.setLineDash([5, 4]);
+    context.textAlign = "center";
+    context.textBaseline = "middle";
+    context.font = `700 ${Math.max(9, size * 0.16)}px monospace`;
+    for (const [index, cell] of cells.entries()) {
+      const position = boardToScreen(cell, this.viewport);
+      context.fillStyle = "rgba(86,203,210,.26)";
+      context.strokeStyle = "#6fd7cf";
+      context.lineWidth = 1.5;
+      context.fillRect(position.x, position.y, size, artHeight);
+      context.strokeRect(position.x, position.y, size, artHeight);
+      context.fillStyle = "#efffff";
+      context.fillText(`L${firstLayer + index}`, position.x + size / 2, position.y + artHeight / 2);
+    }
+    context.restore();
+  }
+
   draw() {
     if (!this.context || !this.width || this.destroyed) {
       return;
@@ -559,6 +623,7 @@ export class Canvas2DView {
     for (const tile of tiles) {
       this.drawTile(context, tile);
     }
+    this.drawFillPreview(context);
     this.drawTray(context);
     if (this.boxRectangle) {
       const first = boardToScreen(

@@ -51,8 +51,7 @@ async function assertBundledLevelIsValid() {
   assert.equal(value.tiles.length, 198);
   assert.equal(Object.keys(designerNote.levelData).length, 17);
   const types = new Set(value.tiles.map((tile) => tile.type));
-  assert.equal(types.has(0), true, "default should retain local-random type 0");
-  assert.equal(types.has(-1), true, "default should retain full-random type -1");
+  assert.deepEqual([...types], [-1], "current Unity default should remain fully random");
   assert.equal(new Set(value.tiles.map((tile) => tile.layer)).size, 17);
   const document = parseLevelDocument(value, {
     fileName: defaultFileName,
@@ -1083,6 +1082,50 @@ try {
     },
     { board: "7x8", tileCount: 6, sameLayerOverlapPairs: 0 },
   );
+
+  await page.evaluate(() => window.pawsWorkbench.setSelection(new Set()));
+  await page.locator('[data-tool="fill"]').click();
+  await page.locator('[data-placement-field="fillStartLayer"]').fill("20");
+  await page.locator('[data-placement-field="fillStartLayer"]').press("Enter");
+  const fillGesture = await page.evaluate(() => {
+    const renderer = window.pawsWorkbench.renderer;
+    const rectangle = renderer.canvas.getBoundingClientRect();
+    const screenPoint = ({ x, y }) => ({
+      x: rectangle.left + renderer.viewport.offsetX + (x + 4) * renderer.viewport.scale,
+      y: rectangle.top + renderer.viewport.offsetY + (y + 4) * renderer.viewport.scale,
+    });
+    return {
+      start: screenPoint({ x: 0, y: 0 }),
+      end: screenPoint({ x: 3, y: 0 }),
+      historyBefore: window.pawsWorkbench.history.undoStack.length,
+    };
+  });
+  await page.mouse.move(fillGesture.start.x, fillGesture.start.y);
+  await page.mouse.down();
+  await page.mouse.move(fillGesture.end.x, fillGesture.end.y, { steps: 8 });
+  await page.mouse.up();
+  summary.fillTool = await page.evaluate((historyBefore) => {
+    const controller = window.pawsWorkbench;
+    const additions = controller.document.tiles
+      .filter(({ layer }) => layer >= 20)
+      .sort((left, right) => left.layer - right.layer);
+    return {
+      count: additions.length,
+      types: additions.map(({ type }) => type),
+      layers: additions.map(({ layer }) => layer),
+      positions: additions.map(({ x, y }) => [x, y]),
+      historyDelta: controller.history.undoStack.length - historyBefore,
+    };
+  }, fillGesture.historyBefore);
+  assert.deepEqual(summary.fillTool, {
+    count: 4,
+    types: [-1, -1, -1, -1],
+    layers: [20, 21, 22, 23],
+    positions: [[0, 0], [1, 0], [2, 0], [3, 0]],
+    historyDelta: 1,
+  });
+  await page.keyboard.press("Control+Z");
+  await page.waitForFunction(() => window.pawsWorkbench.document.tiles.length === 6);
 
   await page.locator("#layer-view-mode").selectOption("through");
   await page.waitForFunction(() => window.pawsWorkbench.layerView.mode === "through");

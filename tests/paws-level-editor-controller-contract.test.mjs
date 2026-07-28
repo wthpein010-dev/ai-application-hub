@@ -21,6 +21,10 @@ const inspector = readFileSync(
   join(repoRoot, "projects", "paws-level-editor", "ui", "inspector.mjs"),
   "utf8",
 );
+const canvas2d = readFileSync(
+  join(repoRoot, "projects", "paws-level-editor", "views", "canvas-2d.mjs"),
+  "utf8",
+);
 const threeView = readFileSync(
   join(repoRoot, "projects", "paws-level-editor", "views", "three-3d.mjs"),
   "utf8",
@@ -364,6 +368,24 @@ test("toolbar exposes all, cross-section and single-layer inspection controls", 
   assert.match(page, /id="layer-view-next"/);
   assert.match(controller, /layerViewMode\.addEventListener\("change"/);
   assert.match(controller, /renderer\.setLayerView\?\.\(this\.layerView\)/);
+});
+
+test("full-random fill is a 2D gesture with a configurable start layer and one history command", () => {
+  assert.match(page, /data-tool="fill"[^>]*>平铺</);
+  assert.match(inspector, /data-placement-field="fillStartLayer"[^>]*min="1"/);
+  assert.match(controller, /import\s*\{[^}]*buildFillCells[^}]*planFillPlacement[^}]*\}\s*from "\.\.\/core\/fill-tool\.mjs"/);
+  assert.match(controller, /this\.placement\s*=\s*\{[^}]*fillStartLayer:\s*1/);
+  assert.match(controller, /onFill:\s*\(gesture\)\s*=>\s*this\.fillTiles\(gesture\)/);
+  assert.match(
+    controller,
+    /fillTiles\(\{\s*start,\s*end\s*\}\)[\s\S]*buildFillCells\(start,\s*end,\s*this\.document\.board\)[\s\S]*planFillPlacement\([\s\S]*createAddTilesCommand\(additions\)/,
+  );
+  assert.match(canvas2d, /onFill\s*=\s*\(\)\s*=>\s*\{\}/);
+  assert.match(canvas2d, /kind:\s*"fill"[\s\S]*startBoard[\s\S]*currentBoard/);
+  assert.match(canvas2d, /callbacks\.onFill\(\{\s*start:\s*state\.startBoard,\s*end:\s*state\.currentBoard,?\s*\}\)/);
+  assert.match(canvas2d, /drawFillPreview\(context\)/);
+  assert.match(controller, /\["place",\s*"fill",\s*"box",\s*"pan"\]\.includes\(tool\)/);
+  assert.match(controller, /\["place",\s*"fill",\s*"box",\s*"pan"\]\.includes\(this\.tool\)/);
 });
 
 test("inspector uses safe board patches, read-only grid units and clickable issues", () => {

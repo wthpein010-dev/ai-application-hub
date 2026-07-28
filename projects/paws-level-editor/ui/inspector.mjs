@@ -135,6 +135,7 @@ export class InspectorPanel {
                   </label>`
               : `
                 <label>层级<input data-placement-field="layer" type="number" min="1" value="${placement.layer ?? 1}" ${readonly ? "disabled" : ""}></label>
+                <label>平铺起点层<input data-placement-field="fillStartLayer" type="number" min="1" step="1" value="${placement.fillStartLayer ?? 1}" ${readonly ? "disabled" : ""}></label>
                 <label>翻转
                   <select data-placement-field="presetColorType" ${readonly ? "disabled" : ""}>
                     <option value="1" ${placement.presetColorType !== 2 ? "selected" : ""}>普通正面</option>
