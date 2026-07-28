@@ -152,6 +152,36 @@ test("Nang WebGL manifest cache-busts the exact published build sizes", () => {
   assert.match(preview, new RegExp(`WebGL\\.wasm\\.gz' \\+ buildVersion, size: ${wasmSize}`));
 });
 
+test("Nang WebGL retries a transient asset fetch before failing", async () => {
+  const projectRoot = join(root, "projects", "nang-keng-pai-pai-xiang");
+  const preview = readFileSync(join(projectRoot, "index.html"), "utf8");
+  const script = /<script>([\s\S]*?)<\/script>/.exec(preview)?.[1] ?? "";
+  const start = script.indexOf("async function fetchAssetWithRetry");
+  const end = script.indexOf("async function decompressAsset", start);
+  assert.ok(start >= 0, "missing asset fetch retry helper");
+  assert.ok(end > start, "retry helper must be defined before decompression");
+
+  let attempts = 0;
+  const context = {
+    fetch: async () => {
+      attempts += 1;
+      if (attempts === 1) throw new TypeError("network error");
+      return { ok: true, status: 200 };
+    },
+    setTimeout: (callback) => callback(),
+    globalThis: {},
+  };
+  const source = [
+    script.slice(start, end),
+    "globalThis.fetchAssetWithRetry = fetchAssetWithRetry;",
+  ].join("\n");
+  vm.runInNewContext(source, context);
+
+  const response = await context.globalThis.fetchAssetWithRetry("Build/WebGL.data.gz?v=test");
+  assert.equal(response.ok, true);
+  assert.equal(attempts, 2);
+});
+
 test("IceCream is named 吃了个冰 and ranks after every other mini-game", () => {
   const icecream = catalogBlock("icecream");
   const ranker = runtime.slice(runtime.indexOf("function gameDisplayRank"), runtime.indexOf("function handleAppCardClick"));

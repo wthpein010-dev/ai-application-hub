@@ -70,15 +70,30 @@
         progressBarFull.style.width = `${Math.round((loaded / total) * 75)}%`;
       }
 
+      async function fetchAssetWithRetry(url, maxAttempts = 3) {
+        let lastError;
+        for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
+          try {
+            const response = await fetch(url, { cache: 'force-cache' });
+            if (!response.ok) {
+              throw new Error(`\u8d44\u6e90\u52a0\u8f7d\u5931\u8d25\uff1a${response.status}`);
+            }
+            return response;
+          } catch (error) {
+            lastError = error;
+            if (attempt === maxAttempts) throw error;
+            await new Promise(resolve => setTimeout(resolve, attempt * 600));
+          }
+        }
+        throw lastError;
+      }
+
       async function decompressAsset(asset) {
         if (!window.DecompressionStream) {
           throw new Error('\u5f53\u524d\u6d4f\u89c8\u5668\u4e0d\u652f\u6301\u8d44\u6e90\u89e3\u538b\uff0c\u8bf7\u66f4\u65b0\u6d4f\u89c8\u5668\u540e\u91cd\u8bd5\u3002');
         }
 
-        const response = await fetch(asset.url, { cache: 'force-cache' });
-        if (!response.ok) {
-          throw new Error(`\u8d44\u6e90\u52a0\u8f7d\u5931\u8d25\uff1a${response.status}`);
-        }
+        const response = await fetchAssetWithRetry(asset.url);
 
         const reader = response.body?.getReader();
         const chunks = [];
