@@ -1,7 +1,8 @@
 import assert from "node:assert/strict";
 import { createRequire } from "node:module";
-import { readFile } from "node:fs/promises";
-import { dirname, resolve } from "node:path";
+import { mkdir, readFile } from "node:fs/promises";
+import { tmpdir } from "node:os";
+import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
 import { parseLevelDocument } from "../projects/paws-level-editor/core/level-adapter.mjs";
@@ -25,6 +26,7 @@ const externalBaseUrl = baseUrlIndex >= 0
   ? process.argv[baseUrlIndex + 1]?.replace(/\/+$/, "")
   : "";
 const browserTimeout = externalBaseUrl ? 120_000 : 30_000;
+const visualArtifactsRoot = join(tmpdir(), "paws-level-editor-browser-smoke");
 
 function editorUrl(baseUrl) {
   return baseUrl.includes("/projects/paws-level-editor")
@@ -267,6 +269,43 @@ async function clickAvailablePairIn2d(page) {
     await page.mouse.click(canvasBox.x + target.x, canvasBox.y + target.y);
   }
   return targets;
+}
+
+async function stashAvailableTileIn2d(page) {
+  const target = await page.evaluate(() => {
+    const controller = window.pawsWorkbench;
+    const renderer = controller.renderer;
+    const candidates = controller.playSnapshot.tiles.filter((tile) =>
+      !tile.removed &&
+      !Number.isInteger(tile.stashedSlot) &&
+      !tile.covered &&
+      !tile.sideBlocked);
+    for (const tile of candidates) {
+      for (const yOffset of [0.5, 2, 4, 6, 7.5]) {
+        for (const xOffset of [0.5, 2, 4, 6, 7.5]) {
+          const point = {
+            x: (tile.x + xOffset) * renderer.viewport.scale + renderer.viewport.offsetX,
+            y: (tile.y + yOffset) * renderer.viewport.scale + renderer.viewport.offsetY,
+          };
+          if (renderer.hitBoardTile(point)?.uid === tile.uid) {
+            return { uid: tile.uid, ...point };
+          }
+        }
+      }
+    }
+    return null;
+  });
+  assert.ok(target, "expected an unobscured tile that can enter the tray");
+  const canvasBox = await page.locator(".level-canvas-2d").boundingBox();
+  assert.ok(canvasBox, "2D canvas should have a bounding box");
+  await page.mouse.click(canvasBox.x + target.x, canvasBox.y + target.y, {
+    button: "right",
+  });
+  await page.waitForFunction(
+    (uid) => window.pawsWorkbench.playSnapshot.tray.includes(uid),
+    target.uid,
+  );
+  return target.uid;
 }
 
 async function clickAvailableTileIn3d(page) {
@@ -1431,12 +1470,135 @@ try {
   await page.locator(".level-canvas-2d").waitFor({ state: "visible" });
   await waitForNetworkAndTextures(page);
   assertNoRequestFailures(browserErrors, "after returning AI to 2D");
+  await mkdir(visualArtifactsRoot, { recursive: true });
+  await page.screenshot({
+    path: join(visualArtifactsRoot, "paws-2d-grid-desktop.png"),
+    fullPage: true,
+  });
 
   await page.locator("#mode-play").click();
   await page.waitForFunction(() => window.pawsWorkbench.mode === "play");
   await waitForNetworkAndTextures(page);
   assertNoRequestFailures(browserErrors, "after starting AI play");
   assert.notEqual((await page.locator("#status-seed").textContent())?.trim(), "—");
+  const initialPlayTools = await page.evaluate(() =>
+    window.pawsWorkbench.playSnapshot.tools);
+  assert.deepEqual(initialPlayTools, {
+    shuffle: { remaining: 1 },
+    match: { remaining: 1 },
+    undo: { remaining: 1 },
+  });
+  for (const toolName of ["shuffle", "match", "undo"]) {
+    const button = page.locator(`[data-play-tool="${toolName}"]`);
+    assert.equal(await button.isVisible(), true, `${toolName} tool should be visible`);
+    assert.equal(await button.isEnabled(), true, `${toolName} tool should start enabled`);
+    assert.equal(
+      (await button.locator(".play-tool-count").textContent())?.trim(),
+      "1",
+      `${toolName} tool should show one use`,
+    );
+  }
+
+  const stashedForUndo = await stashAvailableTileIn2d(page);
+  await page.locator("#play-tool-undo").click();
+  await page.waitForFunction(
+    (uid) =>
+      window.pawsWorkbench.playSnapshot.tools.undo.remaining === 0
+      && !window.pawsWorkbench.playSnapshot.tray.includes(uid),
+    stashedForUndo,
+  );
+  assert.equal(await page.locator("#play-tool-undo").isDisabled(), true);
+  assert.equal(
+    (await page.locator("#play-tool-undo .play-tool-count").textContent())?.trim(),
+    "0",
+  );
+
+  const removedBeforeToolMatch = await page.evaluate(() =>
+    window.pawsWorkbench.playSnapshot.tiles.filter(({ removed }) => removed).length);
+  await page.locator("#play-tool-match").click();
+  await page.waitForFunction(
+    (before) =>
+      window.pawsWorkbench.playSnapshot.tools.match.remaining === 0
+      && window.pawsWorkbench.playSnapshot.tiles.filter(({ removed }) => removed).length
+        === before + 2,
+    removedBeforeToolMatch,
+  );
+  assert.equal(await page.locator("#play-tool-match").isDisabled(), true);
+
+  const playStateAfterTwoTools = await page.evaluate(() =>
+    JSON.stringify(window.pawsWorkbench.playSnapshot));
+  await page.locator("#view-3d").click();
+  await page.locator(".level-canvas-3d").waitFor({ state: "visible" });
+  await waitForNetworkAndTextures(page);
+  assert.equal(
+    await page.evaluate(() => JSON.stringify(window.pawsWorkbench.playSnapshot)),
+    playStateAfterTwoTools,
+    "2D to 3D must retain match and undo inventory",
+  );
+  const beforeToolShuffle = await page.evaluate(() => {
+    const boardTiles = window.pawsWorkbench.playSnapshot.tiles
+      .filter(({ removed, stashedSlot }) => !removed && !Number.isInteger(stashedSlot));
+    return {
+      identity: boardTiles.map(({ uid, x, y, layer, faceDown }) => ({
+        uid,
+        x,
+        y,
+        layer,
+        faceDown,
+      })),
+      types: boardTiles.map(({ type }) => type).sort((left, right) => left - right),
+    };
+  });
+  await page.locator("#play-tool-shuffle").click();
+  await page.waitForFunction(() =>
+    window.pawsWorkbench.playSnapshot.tools.shuffle.remaining === 0);
+  const afterToolShuffle = await page.evaluate(() => {
+    const boardTiles = window.pawsWorkbench.playSnapshot.tiles
+      .filter(({ removed, stashedSlot }) => !removed && !Number.isInteger(stashedSlot));
+    return {
+      identity: boardTiles.map(({ uid, x, y, layer, faceDown }) => ({
+        uid,
+        x,
+        y,
+        layer,
+        faceDown,
+      })),
+      types: boardTiles.map(({ type }) => type).sort((left, right) => left - right),
+      tools: window.pawsWorkbench.playSnapshot.tools,
+    };
+  });
+  assert.deepEqual(afterToolShuffle.identity, beforeToolShuffle.identity);
+  assert.deepEqual(afterToolShuffle.types, beforeToolShuffle.types);
+  assert.deepEqual(afterToolShuffle.tools, {
+    shuffle: { remaining: 0 },
+    match: { remaining: 0 },
+    undo: { remaining: 0 },
+  });
+  assert.equal(await page.locator("#play-tool-shuffle").isDisabled(), true);
+  await page.screenshot({
+    path: join(visualArtifactsRoot, "paws-play-tools-3d-desktop.png"),
+    fullPage: true,
+  });
+
+  await page.locator("#view-2d").click();
+  await page.locator(".level-canvas-2d").waitFor({ state: "visible" });
+  await waitForNetworkAndTextures(page);
+  assert.deepEqual(
+    await page.evaluate(() => window.pawsWorkbench.playSnapshot.tools),
+    afterToolShuffle.tools,
+    "3D to 2D must retain all consumed tool uses",
+  );
+  await page.locator("#restart-play").click();
+  await page.waitForFunction(() =>
+    Object.values(window.pawsWorkbench.playSnapshot.tools)
+      .every(({ remaining }) => remaining === 1));
+  summary.playTools = {
+    undoRestoredUid: stashedForUndo,
+    matchRemoved: 2,
+    sharedAcrossViews: true,
+    restartRestoredUses: true,
+  };
+
   const removedBefore2dClick = await page.evaluate(() =>
     window.pawsWorkbench.playSnapshot.tiles.filter((tile) => tile.removed).length);
   await clickAvailablePairIn2d(page);
@@ -1557,8 +1719,21 @@ try {
     await mobilePage.locator("#delete-local-level").isHidden();
   assert.equal(summary.mobileDeleteHidden, true);
   assert.equal(await mobilePage.locator("#generate-ai-level").isHidden(), true);
+  for (const toolName of ["shuffle", "match", "undo"]) {
+    const button = mobilePage.locator(`[data-play-tool="${toolName}"]`);
+    assert.equal(await button.isVisible(), true, `${toolName} should be visible on mobile`);
+    assert.equal(
+      (await button.locator(".play-tool-count").textContent())?.trim(),
+      "1",
+      `${toolName} should show one mobile use`,
+    );
+  }
   await assertNoHorizontalOverflow(mobilePage, "390x844");
   summary.mobileOverflow = false;
+  await mobilePage.screenshot({
+    path: join(visualArtifactsRoot, "paws-play-tools-mobile.png"),
+    fullPage: true,
+  });
   await mobile.close();
 
   const lifecycleAbortUrls = [...new Set(browserErrors.lifecycleAbort)];
@@ -1582,6 +1757,7 @@ try {
     pageErrors: 0,
     requestFailures: 0,
     verifiedLifecycleAborts: lifecycleAbortUrls.length,
+    visualArtifactsRoot,
   }));
 } finally {
   try {
