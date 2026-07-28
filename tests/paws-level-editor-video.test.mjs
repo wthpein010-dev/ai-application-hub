@@ -119,7 +119,6 @@ test("recording proof matches current media, sources, timeline and real state ch
     "projects/paws-level-editor/views/canvas-2d.mjs",
     "projects/paws-level-editor/views/three-3d.mjs",
     "projects/paws-level-editor/levels/index.json",
-    "projects/paws-level-editor/levels/level_0021_r2_第二关模板12.json",
     "scripts/record-paws-level-editor-demo.mjs",
     "scripts/paws-recording-support.mjs",
   ];
@@ -175,7 +174,7 @@ test("recording proof matches current media, sources, timeline and real state ch
   assert.equal(actions.aiGeneration.coordinatesInBounds, true);
   assert.equal(actions.aiGeneration.source, "ai");
   assert.equal(actions.aiGeneration.aiReferenceEligible, false);
-  assert.equal(actions.aiGeneration.referenceCount, 23);
+  assert.equal(actions.aiGeneration.referenceCount, 1);
   assert.equal(actions.aiGeneration.sameLayerOverlapPairs, 0);
   assert.equal(actions.aiGeneration.totalEven, true);
   assert.equal(actions.aiGeneration.globalTypesEven, true);
@@ -300,7 +299,7 @@ test("recording proof matches current media, sources, timeline and real state ch
   assert.equal(actions.persistence.returnedToDefault, true);
   assert.equal(actions.persistence.deletedFromStorage, true);
   assert.equal(actions.persistence.absentFromCatalog, true);
-  assert.equal(actions.persistence.referenceCountAfterDelete, 23);
+  assert.equal(actions.persistence.referenceCountAfterDelete, 1);
   assert.match(actions.export.fileName, /^ai_level_\d+\.json$/);
   assert.equal(actions.export.gridUnit, "sheep_7x8_mini8");
   assert.equal(actions.export.tileCount, 202);

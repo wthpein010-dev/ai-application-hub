@@ -3,7 +3,6 @@ import { createHash } from "node:crypto";
 import { once } from "node:events";
 import {
   access,
-  copyFile,
   mkdir,
   mkdtemp,
   readFile,
@@ -22,12 +21,41 @@ const require = createRequire(import.meta.url);
 const { chromium } = require("playwright");
 const repositoryRoot = path.dirname(path.dirname(fileURLToPath(import.meta.url)));
 const webRoot = path.join(repositoryRoot, "projects", "paws-level-editor");
-const publishedLevelDir = process.env.PAWS_LAN_BROWSER_LEVEL_SOURCE_DIR
-  || path.join(webRoot, "levels");
 const blockAssetDir = process.env.PAWS_LAN_BROWSER_BLOCK_ASSET_DIR
   || path.join(webRoot, "assets", "blocks");
-const defaultFileName = "level_0021_r2_第二关模板12.json";
+const defaultFileName = "level_browser_default.json";
+const fallbackFileName = "level_browser_fallback.json";
 const password = "browser-test-only";
+
+function fixtureLevel(id, name, offset = 0) {
+  const tiles = [
+    { x: offset, y: 0, layer: 1, type: 1, presetColorType: 1 },
+    { x: offset + 16, y: 0, layer: 1, type: 1, presetColorType: 1 },
+  ];
+  return {
+    id,
+    name,
+    difficulty: "Normal",
+    gridUnit: "sheep_7x8_mini8",
+    designerNote: JSON.stringify({
+      widthNum: 7,
+      heightNum: 8,
+      levelKey: id,
+      gameLevelOrder: 1,
+      cdNum: 0,
+      showLayerNum: true,
+      boardScale: 1,
+      blockTypeCount: 32,
+      fullRandomTypeMin: 1,
+      fullRandomTypeMax: 32,
+      blockTypeData: {},
+      levelData: { 1: tiles },
+      goldBlockData: [],
+      cakeNum: 0,
+    }),
+    tiles,
+  };
+}
 
 function collectBrowserErrors(page, label, errors) {
   page.on("pageerror", (error) => errors.push(`${label} page: ${error.message}`));
@@ -48,21 +76,18 @@ async function createFixture() {
   const root = await mkdtemp(path.join(tmpdir(), "paws-lan-browser-"));
   const levelDir = path.join(root, "EditorLevels");
   await mkdir(levelDir, { recursive: true });
-  const published = (await readdir(publishedLevelDir))
-    .filter((name) => name.endsWith(".json") && name !== "index.json");
-  const fallbackFileName = published.find((name) => name !== defaultFileName);
-  assert.ok(fallbackFileName, "a fallback published level is required");
-  for (const fileName of [defaultFileName, fallbackFileName]) {
-    await copyFile(path.join(publishedLevelDir, fileName), path.join(levelDir, fileName));
-    try {
-      await copyFile(
-        path.join(publishedLevelDir, `${fileName}.meta`),
-        path.join(levelDir, `${fileName}.meta`),
-      );
-    } catch {
-      const guid = createHash("md5").update(fileName, "utf8").digest("hex");
-      await writeFile(path.join(levelDir, `${fileName}.meta`), `guid: ${guid}\n`, "utf8");
-    }
+  const levels = new Map([
+    [defaultFileName, fixtureLevel(81001, "LAN 默认测试关卡")],
+    [fallbackFileName, fixtureLevel(81002, "LAN 回退测试关卡", 8)],
+  ]);
+  for (const [fileName, value] of levels) {
+    const guid = createHash("md5").update(fileName, "utf8").digest("hex");
+    await writeFile(
+      path.join(levelDir, fileName),
+      `${JSON.stringify(value, null, 2)}\n`,
+      "utf8",
+    );
+    await writeFile(path.join(levelDir, `${fileName}.meta`), `guid: ${guid}\n`, "utf8");
   }
   return { root, levelDir, fallbackFileName };
 }

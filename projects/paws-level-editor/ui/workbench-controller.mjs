@@ -445,7 +445,9 @@ export class WorkbenchController {
     if (!visible.length) {
       const empty = document.createElement("div");
       empty.className = "list-empty";
-      empty.innerHTML = "<p>没有匹配的关卡。</p>";
+      empty.innerHTML = this.levels.length === 0 && !query
+        ? "<p>内置关卡库已清空，可新建或导入 JSON。</p>"
+        : "<p>没有匹配的关卡。</p>";
       this.elements.levelList.append(empty);
       return;
     }
@@ -751,9 +753,6 @@ export class WorkbenchController {
         if (fallback) {
           await this.openLevel(fallback.fileName, { discardDirty: true });
         }
-      }
-      if (!this.document) {
-        throw new Error(`已删除 ${fileName}，但默认关卡未能打开，请刷新后重试。`);
       }
       const referenceCount = this.levels.filter(
         ({ aiReferenceEligible }) => aiReferenceEligible,

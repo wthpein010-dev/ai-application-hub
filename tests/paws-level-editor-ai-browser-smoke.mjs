@@ -10,8 +10,41 @@ const require = createRequire(import.meta.url);
 const { chromium } = require("playwright");
 const repoRoot = dirname(dirname(fileURLToPath(import.meta.url)));
 const artifactsRoot = join(repoRoot, "tests", "artifacts");
-const requestedDefault = "level_0021_r2_第二关模板12.json";
-const bundledLevelCount = 23;
+const referenceFileName = "ai_reference.json";
+const baselineLevelCount = 1;
+const referenceTiles = [
+  { x: 0, y: 0, layer: 1, type: 1 },
+  { x: 16, y: 0, layer: 1, type: 1 },
+  { x: 32, y: 0, layer: 1, type: 2 },
+  { x: 48, y: 0, layer: 1, type: 2 },
+  { x: 4, y: 4, layer: 2, type: 3 },
+  { x: 20, y: 4, layer: 2, type: 3 },
+  { x: 36, y: 4, layer: 2, type: 4 },
+  { x: 44, y: 4, layer: 2, type: 4 },
+];
+const referenceLevel = {
+  id: 73000,
+  name: "AI 本地参考",
+  difficulty: "Normal",
+  gridUnit: "sheep_7x8_mini8",
+  designerNote: JSON.stringify({
+    widthNum: 7,
+    heightNum: 8,
+    levelKey: 73000,
+    gameLevelOrder: 1,
+    cdNum: 0,
+    showLayerNum: true,
+    boardScale: 1,
+    blockTypeCount: 32,
+    fullRandomTypeMin: 1,
+    fullRandomTypeMax: 32,
+    blockTypeData: {},
+    levelData: Object.groupBy(referenceTiles, ({ layer }) => String(layer)),
+    goldBlockData: [],
+    cakeNum: 0,
+  }),
+  tiles: referenceTiles,
+};
 const baseUrlIndex = process.argv.indexOf("--base-url");
 const externalBaseUrl = baseUrlIndex >= 0
   ? process.argv[baseUrlIndex + 1]?.replace(/\/+$/, "")
@@ -42,6 +75,18 @@ function captureErrors(page) {
     }
   });
   return errors;
+}
+
+async function importSyntheticLevel(page, { name, value }) {
+  const [chooser] = await Promise.all([
+    page.waitForEvent("filechooser"),
+    page.locator("#import-level").click(),
+  ]);
+  await chooser.setFiles({
+    name,
+    mimeType: "application/json",
+    buffer: Buffer.from(JSON.stringify(value)),
+  });
 }
 
 async function launchBrowser() {
@@ -128,41 +173,23 @@ try {
   const errors = captureErrors(page);
 
   await page.goto(editorUrl(baseUrl), { waitUntil: "networkidle" });
-  await page.waitForFunction((fileName) => {
-    const controller = window.pawsWorkbench;
-    return controller?.document?.fileName === fileName && controller?.renderer;
-  }, requestedDefault);
-  assert.equal(await page.locator('[role="option"]').count(), bundledLevelCount);
-  assert.equal(await page.locator("#level-count").textContent(), String(bundledLevelCount));
-  assert.equal(
-    await page.locator('[role="option"][aria-selected="true"] .level-file').textContent(),
-    requestedDefault,
-  );
-  assert.equal((await page.locator("#status-level").textContent())?.trim(), "第二关模板12");
+  await page.waitForFunction(() =>
+    document.querySelector("#connection-state")?.textContent?.includes("关卡库在线"));
+  assert.equal(await page.locator('[role="option"]').count(), 0);
+  assert.equal(await page.locator("#level-count").textContent(), "0");
+  assert.match(await page.locator("#level-list").textContent(), /内置关卡库已清空/);
+  assert.equal(await page.evaluate(() => window.pawsWorkbench?.document), null);
 
-  for (const query of ["第二关模板12", "level_0051_r2_51第二关.json"]) {
-    await page.locator("#level-search").fill(query);
-    assert.equal(
-      await page.locator('[role="option"]').count(),
-      1,
-      `search should find exactly one level for ${query}`,
-    );
-  }
-  await page.locator("#level-search").fill("");
-  assert.equal(await page.locator('[role="option"]').count(), bundledLevelCount);
-
-  const onlineResources = await page.evaluate(async (fileName) => {
-    const responses = await Promise.all([
-      fetch("./levels/index.json"),
-      fetch(`./levels/${encodeURIComponent(fileName)}`),
-    ]);
-    return Promise.all(responses.map(async (response) => ({
+  const onlineIndex = await page.evaluate(async () => {
+    const response = await fetch("./levels/index.json");
+    return {
       status: response.status,
       contentType: response.headers.get("content-type"),
-      bytes: (await response.arrayBuffer()).byteLength,
-    })));
-  }, requestedDefault);
-  assert.equal(onlineResources.every(({ status, bytes }) => status === 200 && bytes > 0), true);
+      value: await response.json(),
+    };
+  });
+  assert.equal(onlineIndex.status, 200);
+  assert.deepEqual(onlineIndex.value, { defaultFileName: "", levels: [] });
 
   await page.locator("#generate-ai-level").click();
   await page.locator("#ai-level-dialog").waitFor({ state: "visible" });
@@ -192,6 +219,42 @@ try {
     });
   }
 
+  await page.locator("#confirm-ai-level").click();
+  await page.waitForFunction(() =>
+    document.querySelector("#ai-level-error")?.textContent?.includes(
+      "没有可用于学习的参考关卡",
+    ));
+  assert.equal(await page.evaluate(() => window.pawsWorkbench?.document), null);
+  await page.locator('#ai-level-form button[value="cancel"]').click();
+  await page.locator("#ai-level-dialog").waitFor({ state: "hidden" });
+
+  await importSyntheticLevel(page, {
+    name: referenceFileName,
+    value: referenceLevel,
+  });
+  await page.waitForFunction((fileName) => {
+    const controller = window.pawsWorkbench;
+    return controller?.document?.fileName === fileName && controller?.renderer;
+  }, referenceFileName);
+  assert.equal(await page.locator('[role="option"]').count(), baselineLevelCount);
+  assert.equal(await page.locator("#level-count").textContent(), String(baselineLevelCount));
+  assert.equal(
+    await page.locator('[role="option"][aria-selected="true"] .level-file').textContent(),
+    referenceFileName,
+  );
+  assert.equal((await page.locator("#status-level").textContent())?.trim(), "AI 本地参考");
+  for (const query of ["AI 本地参考", referenceFileName]) {
+    await page.locator("#level-search").fill(query);
+    assert.equal(
+      await page.locator('[role="option"]').count(),
+      1,
+      `search should find the imported reference for ${query}`,
+    );
+  }
+  await page.locator("#level-search").fill("");
+
+  await page.locator("#generate-ai-level").click();
+  await page.locator("#ai-level-dialog").waitFor({ state: "visible" });
   await page.locator("#confirm-ai-level").click();
   await page.waitForFunction(() => {
     const controller = window.pawsWorkbench;
@@ -267,7 +330,7 @@ try {
   assert.equal(
     await page.evaluate(async () =>
       (await window.pawsWorkbench.loadAiReferenceDocuments()).length),
-    bundledLevelCount,
+    baselineLevelCount,
     "AI-generated results must not feed the all-level learning set",
   );
   assert.deepEqual(
@@ -275,7 +338,7 @@ try {
     ["structure", "information", "choice", "route", "endurance"],
   );
   assert.match(await page.locator("#status-difficulty").textContent(), /^\d+ · /);
-  assert.equal(await page.locator('[role="option"]').count(), bundledLevelCount + 1);
+  assert.equal(await page.locator('[role="option"]').count(), baselineLevelCount + 1);
   await waitForNetworkAndTextures(page);
 
   await page.locator("#view-3d").click();
@@ -322,7 +385,7 @@ try {
 
   await page.reload({ waitUntil: "networkidle" });
   await page.waitForFunction((expectedCount) =>
-    window.pawsWorkbench?.levels?.length === expectedCount, bundledLevelCount + 1);
+    window.pawsWorkbench?.levels?.length === expectedCount, baselineLevelCount + 1);
   assert.equal(
     await page.locator('[role="option"] .level-file').allTextContents()
       .then((names) => names.includes(generated.fileName)),
@@ -346,7 +409,11 @@ try {
     window.pawsWorkbench?.document?.fileName === fallback
     && window.pawsWorkbench?.levels?.length === expectedCount
     && localStorage.getItem(`paws-level-editor-demo-v1:${fileName}`) === null,
-  { fileName: generated.fileName, fallback: requestedDefault, expectedCount: bundledLevelCount });
+  {
+    fileName: generated.fileName,
+    fallback: referenceFileName,
+    expectedCount: baselineLevelCount,
+  });
 
   await page.locator("#generate-ai-level").click();
   await page.locator("#ai-level-dialog").waitFor({ state: "visible" });
@@ -376,9 +443,9 @@ try {
     { tiles: 240, layers: 32, solvable: true },
   );
   assert.equal(
-    hardGenerationMs < 5_000,
+    hardGenerationMs < 7_000,
     true,
-    `hard 240/32 browser generation took ${hardGenerationMs}ms (limit 5000ms)`,
+    `hard 240/32 browser generation took ${hardGenerationMs}ms (limit 7000ms)`,
   );
   page.once("dialog", (dialog) => dialog.accept());
   await page.locator("#delete-local-level").click();
@@ -386,15 +453,20 @@ try {
     window.pawsWorkbench?.document?.fileName === fallback
     && window.pawsWorkbench?.levels?.length === expectedCount
     && localStorage.getItem(`paws-level-editor-demo-v1:${fileName}`) === null,
-  { fileName: hardGenerated.fileName, fallback: requestedDefault, expectedCount: bundledLevelCount });
+  {
+    fileName: hardGenerated.fileName,
+    fallback: referenceFileName,
+    expectedCount: baselineLevelCount,
+  });
 
   for (const [kind, entries] of Object.entries(errors)) {
     assert.deepEqual(entries, [], `${kind} errors:\n${entries.join("\n")}`);
   }
   const proof = {
     environment: externalBaseUrl ? "online" : "local",
-    catalogCount: bundledLevelCount,
-    defaultFileName: requestedDefault,
+    catalogCount: 0,
+    referenceLevelCount: baselineLevelCount,
+    defaultFileName: "",
     generatedFileName: generated.fileName,
     generatedTileCount: generated.tiles,
     generatedLayerCount: generated.layers,

@@ -2,11 +2,9 @@ import assert from "node:assert/strict";
 import { createRequire } from "node:module";
 import { mkdir, readFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
-import { dirname, join, resolve } from "node:path";
+import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 
-import { parseLevelDocument } from "../projects/paws-level-editor/core/level-adapter.mjs";
-import { validateLevel } from "../projects/paws-level-editor/core/level-validator.mjs";
 import { startStaticServer } from "./support/paws-static-server.mjs";
 
 const require = createRequire(import.meta.url);
@@ -33,35 +31,45 @@ function editorUrl(baseUrl) {
     ? `${baseUrl}/index.html`
     : `${baseUrl}/projects/paws-level-editor/index.html`;
 }
-const defaultFileName = "level_0021_r2_第二关模板12.json";
-const bundledLevelCount = 23;
-
-async function assertBundledLevelIsValid() {
-  const levelPath = resolve(
-    repoRoot,
-    "projects",
-    "paws-level-editor",
-    "levels",
-    defaultFileName,
-  );
-  const value = JSON.parse(await readFile(levelPath, "utf8"));
-  const designerNote = typeof value.designerNote === "string"
-    ? JSON.parse(value.designerNote)
-    : value.designerNote;
-  assert.equal(value.id, 21);
-  assert.equal(value.name, "第二关模板12");
-  assert.equal(value.tiles.length, 198);
-  assert.equal(Object.keys(designerNote.levelData).length, 17);
-  const types = new Set(value.tiles.map((tile) => tile.type));
-  assert.deepEqual([...types], [-1], "current Unity default should remain fully random");
-  assert.equal(new Set(value.tiles.map((tile) => tile.layer)).size, 17);
-  const document = parseLevelDocument(value, {
-    fileName: defaultFileName,
-    version: "browser-smoke",
-  });
-  const errors = validateLevel(document).filter((issue) => issue.severity === "error");
-  assert.deepEqual(errors, [], `bundled default validation errors:\n${JSON.stringify(errors, null, 2)}`);
-}
+const defaultFileName = "browser_reference.json";
+const baselineLevelCount = 1;
+const primaryTiles = [
+  { x: 0, y: 0, layer: 1, type: 1 },
+  { x: 16, y: 0, layer: 1, type: 1 },
+  { x: 32, y: 0, layer: 1, type: 2 },
+  { x: 48, y: 0, layer: 1, type: 2 },
+  { x: 4, y: 4, layer: 2, type: 3 },
+  { x: 20, y: 4, layer: 2, type: 3 },
+  { x: 36, y: 4, layer: 2, type: 4 },
+  { x: 44, y: 4, layer: 2, type: 4 },
+  { x: 8, y: 8, layer: 3, type: 5 },
+  { x: 24, y: 8, layer: 3, type: 5 },
+  { x: 40, y: 8, layer: 3, type: 6 },
+  { x: 48, y: 8, layer: 3, type: 6 },
+];
+const primaryReferenceLevel = {
+  id: 72000,
+  name: "浏览器参考关卡",
+  difficulty: "Normal",
+  gridUnit: "sheep_7x8_mini8",
+  designerNote: JSON.stringify({
+    widthNum: 7,
+    heightNum: 8,
+    levelKey: 72000,
+    gameLevelOrder: 1,
+    cdNum: 0,
+    showLayerNum: true,
+    boardScale: 1,
+    blockTypeCount: 32,
+    fullRandomTypeMin: 1,
+    fullRandomTypeMax: 32,
+    blockTypeData: {},
+    levelData: Object.groupBy(primaryTiles, ({ layer }) => String(layer)),
+    goldBlockData: [],
+    cakeNum: 0,
+  }),
+  tiles: primaryTiles,
+};
 
 function captureBrowserErrors(page, label, errors) {
   page.on("pageerror", (error) => errors.page.push(`${label}: ${error.message}`));
@@ -379,7 +387,6 @@ async function clickEditableTileIn3d(page, uid = null) {
   return target;
 }
 
-await assertBundledLevelIsValid();
 const browserErrors = {
   console: [],
   http: [],
@@ -419,6 +426,7 @@ try {
     legacyAiUpgrade: null,
     aiGeneration: null,
     aiPlaythrough: null,
+    deletedFinalLevelToEmpty: null,
     passRate: null,
     mobileImportHidden: null,
     mobileDeleteHidden: null,
@@ -438,9 +446,21 @@ try {
 
   assert.equal(
     await page.locator('[role="option"]').count(),
-    bundledLevelCount,
-    "expected all bundled project levels",
+    0,
+    "the public editor must start without bundled levels",
   );
+  assert.equal(await page.locator("#level-count").textContent(), "0");
+  assert.match(await page.locator("#level-list").textContent(), /内置关卡库已清空/);
+  assert.equal(await page.evaluate(() => window.pawsWorkbench?.document), null);
+  assert.equal(await page.locator("#empty-stage").isVisible(), true);
+  assert.equal(await page.locator("#reset-level").isEnabled(), false);
+
+  await importSyntheticLevel(page, {
+    name: defaultFileName,
+    value: primaryReferenceLevel,
+  });
+  await page.waitForFunction((fileName) =>
+    window.pawsWorkbench?.document?.fileName === fileName, defaultFileName);
   const levelCardText = await page.locator(
     `[role="option"]:has-text("${defaultFileName}")`,
   ).textContent();
@@ -451,10 +471,10 @@ try {
   assert.equal(
     await page.evaluate(() => window.pawsWorkbench.document.fileName),
     defaultFileName,
-    "requested default should open automatically",
+    "the imported reference should open",
   );
   assert.notEqual((await page.locator("#status-tiles").textContent())?.trim(), "—");
-  assert.equal(await page.locator("#reset-level").isEnabled(), true);
+  assert.equal(await page.locator("#reset-level").isEnabled(), false);
   assert.equal(await page.locator(".level-canvas-2d").isVisible(), true, "2D canvas should be visible");
   await assertNoHorizontalOverflow(page, "desktop");
   await assertToolbarClearsInspector(page, "1280x720");
@@ -476,7 +496,7 @@ try {
   });
   assert.equal(summary.passRate.passPercent >= 0 && summary.passRate.passPercent <= 100, true);
   assert.equal(summary.passRate.passCount <= summary.passRate.trialCount, true);
-  assert.equal(summary.passRate.trialCount, 12);
+  assert.equal(summary.passRate.trialCount, 24);
   assert.equal(summary.passRate.stale, false);
   assert.equal(summary.passRate.buttonText, "重新评估");
 
@@ -502,7 +522,7 @@ try {
   await page.waitForFunction(() =>
     window.pawsWorkbench?.document?.fileName === "local_demo.json");
   await waitForNetworkAndTextures(page);
-  assert.equal(await page.locator('[role="option"]').count(), bundledLevelCount + 1);
+  assert.equal(await page.locator('[role="option"]').count(), baselineLevelCount + 1);
   assert.equal(
     await page.locator('[role="option"][aria-selected="true"] .level-file').textContent(),
     "local_demo.json",
@@ -539,8 +559,8 @@ try {
 
   await page.reload({ waitUntil: "networkidle" });
   await page.waitForFunction((expectedCount) =>
-    window.pawsWorkbench?.levels?.length === expectedCount, bundledLevelCount + 1);
-  assert.equal(await page.locator('[role="option"]').count(), bundledLevelCount + 1);
+    window.pawsWorkbench?.levels?.length === expectedCount, baselineLevelCount + 1);
+  assert.equal(await page.locator('[role="option"]').count(), baselineLevelCount + 1);
   assert.equal(
     await page.locator('[role="option"] .level-file').allTextContents()
       .then((fileNames) => fileNames.includes("local_demo.json")),
@@ -564,7 +584,7 @@ try {
   await page.waitForFunction(() =>
     window.pawsWorkbench?.document?.fileName === "local_demo_import.json");
   await waitForNetworkAndTextures(page);
-  assert.equal(await page.locator('[role="option"]').count(), bundledLevelCount + 2);
+  assert.equal(await page.locator('[role="option"]').count(), baselineLevelCount + 2);
   summary.collisionFileName = await page.evaluate(() =>
     window.pawsWorkbench.document.fileName);
   assert.equal(summary.collisionFileName, "local_demo_import.json");
@@ -688,7 +708,7 @@ try {
   assert.equal(await page.locator("#delete-local-level").isEnabled(), true);
   const referenceCountBeforeDelete = await page.evaluate(async () =>
     (await window.pawsWorkbench.loadAiReferenceDocuments()).length);
-  assert.equal(referenceCountBeforeDelete, bundledLevelCount + 2);
+  assert.equal(referenceCountBeforeDelete, baselineLevelCount + 2);
   const localReferenceMetadata = await page.evaluate(() =>
     window.pawsWorkbench.levels
       .filter(({ fileName }) => fileName.startsWith("local_demo"))
@@ -715,21 +735,21 @@ try {
   {
     deleted: "local_demo_import.json",
     fallback: defaultFileName,
-    expectedCount: bundledLevelCount + 1,
+    expectedCount: baselineLevelCount + 1,
   });
   await page.waitForFunction((expectedCount) =>
     document.querySelector("#stage-toast")?.textContent?.includes(
       `剩余 AI 学习参考 ${expectedCount} 关`,
-    ), bundledLevelCount + 1);
+    ), baselineLevelCount + 1);
   const referenceCountAfterFirstDelete = await page.evaluate(async () =>
     (await window.pawsWorkbench.loadAiReferenceDocuments()).length);
-  assert.equal(referenceCountAfterFirstDelete, bundledLevelCount + 1);
+  assert.equal(referenceCountAfterFirstDelete, baselineLevelCount + 1);
   await waitForNetworkAndTextures(page);
   assertNoRequestFailures(browserErrors, "after first local deletion");
 
   await page.reload({ waitUntil: "networkidle" });
   await page.waitForFunction((expectedCount) =>
-    window.pawsWorkbench?.levels?.length === expectedCount, bundledLevelCount + 1);
+    window.pawsWorkbench?.levels?.length === expectedCount, baselineLevelCount + 1);
   assert.equal(
     await page.locator('[role="option"] .level-file').allTextContents()
       .then((names) => names.includes("local_demo_import.json")),
@@ -746,17 +766,17 @@ try {
     window.pawsWorkbench?.document?.fileName === fallback
     && window.pawsWorkbench?.levels?.length === expectedCount
     && localStorage.getItem("paws-level-editor-demo-v1:local_demo.json") === null,
-  { fallback: defaultFileName, expectedCount: bundledLevelCount });
+  { fallback: defaultFileName, expectedCount: baselineLevelCount });
   const referenceCountAfterSecondDelete = await page.evaluate(async () =>
     (await window.pawsWorkbench.loadAiReferenceDocuments()).length);
-  assert.equal(referenceCountAfterSecondDelete, bundledLevelCount);
+  assert.equal(referenceCountAfterSecondDelete, baselineLevelCount);
   summary.deletedLocalLevels = ["local_demo_import.json", "local_demo.json"];
   summary.aiReferenceCountsAfterDelete = [
     referenceCountBeforeDelete,
     referenceCountAfterFirstDelete,
     referenceCountAfterSecondDelete,
   ];
-  assert.equal(await page.locator('[role="option"]').count(), bundledLevelCount);
+  assert.equal(await page.locator('[role="option"]').count(), baselineLevelCount);
   await waitForNetworkAndTextures(page);
   assertNoRequestFailures(browserErrors, "after deleting imported levels");
 
@@ -780,7 +800,7 @@ try {
       controller.setSelection(new Set([tile.uid]));
       return { uid: tile.uid, edgeCount: relations.edges.length };
     }
-    throw new Error("Expected a bundled tile with inspection relationships");
+    throw new Error("Expected a reference tile with inspection relationships");
   });
   await page.waitForFunction(() =>
     window.pawsWorkbench.renderer.relationGroup.children.length > 0);
@@ -809,7 +829,10 @@ try {
   await page.locator("#layer-separation").fill("80");
   const explodedAfter = await page.evaluate((uid) =>
     window.pawsWorkbench.renderer.meshes.get(uid).userData.baseY, explodedBefore.uid);
-  assert.ok(explodedAfter > explodedBefore.y + 1, "exploded view should separate upper layers");
+  assert.ok(
+    explodedAfter > explodedBefore.y + 0.3,
+    "exploded view should separate upper layers",
+  );
   await page.locator("#focus-3d-selection").click();
   const focusDistance = await page.evaluate((uid) => {
     const renderer = window.pawsWorkbench.renderer;
@@ -921,7 +944,7 @@ try {
         }
       }
     }
-    throw new Error("Expected a safely movable bundled tile");
+    throw new Error("Expected a safely movable reference tile");
   });
   const modifiedTile = {
     x: originalTile.x + originalTile.dx,
@@ -960,14 +983,14 @@ try {
   await page.waitForFunction(() =>
     document.querySelector("#stage-toast")?.textContent?.includes("已保存到当前浏览器"));
   await waitForNetworkAndTextures(page);
-  assertNoRequestFailures(browserErrors, "after saving edited bundled level");
+  assertNoRequestFailures(browserErrors, "after saving edited reference level");
   assert.equal(
     await page.evaluate(
       (fileName) => localStorage.getItem(`paws-level-editor-demo-v1:${fileName}`) !== null,
       defaultFileName,
     ),
     true,
-    "save should write the bundled level override to localStorage",
+    "save should update the browser-local reference",
   );
   const storedGameplay = await page.evaluate((fileName) => {
     const record = JSON.parse(localStorage.getItem(`paws-level-editor-demo-v1:${fileName}`));
@@ -1000,7 +1023,7 @@ try {
     showLayerNum: false,
   });
   assert.equal(storedGameplay.passRatePercent >= 0 && storedGameplay.passRatePercent <= 100, true);
-  assert.equal(storedGameplay.passRateTrialCount, 12);
+  assert.equal(storedGameplay.passRateTrialCount, 24);
   assert.equal(
     storedGameplay.passRatePassCount + storedGameplay.passRateFailSolve,
     storedGameplay.passRateTrialCount,
@@ -1011,7 +1034,7 @@ try {
   await page.reload({ waitUntil: "networkidle" });
   await waitForWorkbench(page);
   await waitForNetworkAndTextures(page);
-  assertNoRequestFailures(browserErrors, "after reloading edited bundled level");
+  assertNoRequestFailures(browserErrors, "after reloading edited reference level");
   assert.equal(
     await page.evaluate(
       ({ uid, x, y }) => {
@@ -1047,39 +1070,7 @@ try {
     storedGameplay.passRatePercent,
   );
   summary.metadataRoundTrip = storedGameplay;
-
-  page.once("dialog", (dialog) => dialog.accept());
-  await page.locator("#reset-level").click();
-  await page.waitForFunction(() =>
-    document.querySelector("#stage-toast")?.textContent?.includes("已恢复内置示例"));
-  await waitForNetworkAndTextures(page);
-  assertNoRequestFailures(browserErrors, "after resetting bundled level");
-  assert.equal(
-    await page.evaluate(
-      ({ uid, x, y }) => {
-        const tile = window.pawsWorkbench.document.tiles.find((candidate) => candidate.uid === uid);
-        return tile?.x === x && tile?.y === y;
-      },
-      { uid: originalTile.uid, x: originalTile.x, y: originalTile.y },
-    ),
-    true,
-    "reset should restore the bundled tile value",
-  );
-  assert.deepEqual(
-    await page.evaluate(() => ({
-      id: window.pawsWorkbench.document.id,
-      ...window.pawsWorkbench.document.gameplay,
-    })),
-    originalGameplay,
-  );
-  assert.equal(
-    await page.evaluate(
-      (fileName) => localStorage.getItem(`paws-level-editor-demo-v1:${fileName}`),
-      defaultFileName,
-    ),
-    null,
-    "reset should remove the localStorage override",
-  );
+  assert.equal(await page.locator("#reset-level").isEnabled(), false);
 
   await page.locator("#new-level").click();
   await page.waitForFunction(() => window.pawsWorkbench?.document?.name === "新关卡");
@@ -1693,6 +1684,26 @@ try {
   });
   await waitForNetworkAndTextures(page);
   assertNoRequestFailures(browserErrors, "after AI playthrough");
+  await page.locator("#mode-edit").click();
+  await page.waitForFunction(() => window.pawsWorkbench?.mode === "edit");
+  page.once("dialog", (dialog) => dialog.accept());
+  await page.locator("#delete-local-level").click();
+  await page.waitForFunction((fallback) =>
+    window.pawsWorkbench?.document?.fileName === fallback
+    && window.pawsWorkbench?.levels?.length === 1,
+  defaultFileName);
+  page.once("dialog", (dialog) => dialog.accept());
+  await page.locator("#delete-local-level").click();
+  await page.waitForFunction(() =>
+    window.pawsWorkbench?.document === null
+    && window.pawsWorkbench?.levels?.length === 0
+    && document.querySelector("#stage-toast")?.textContent?.includes(
+      "剩余 AI 学习参考 0 关",
+    ));
+  assert.equal(await page.locator("#empty-stage").isVisible(), true);
+  assert.match(await page.locator("#level-list").textContent(), /内置关卡库已清空/);
+  summary.deletedFinalLevelToEmpty = true;
+  assertNoRequestFailures(browserErrors, "after deleting the final local level");
   await desktop.close();
 
   const mobile = await browser.newContext({
@@ -1707,11 +1718,18 @@ try {
   await mobilePage.goto(editorUrl(baseUrl), {
     waitUntil: "networkidle",
   });
-  await waitForWorkbench(mobilePage);
-  await waitForNetworkAndTextures(mobilePage);
+  await mobilePage.waitForFunction(() =>
+    window.pawsWorkbench?.levels?.length === 0
+    && document.querySelector("#connection-state")?.textContent?.includes("关卡库在线"));
   assert.equal(await mobilePage.locator("#readonly-banner").isVisible(), true);
   assert.equal(await mobilePage.locator("#app").getAttribute("data-mode"), "play");
   assert.equal(await mobilePage.locator("#mode-edit").isVisible(), false);
+  assert.match(await mobilePage.locator("#level-list").textContent(), /内置关卡库已清空/);
+  assert.equal(await mobilePage.locator("#empty-stage").isVisible(), true);
+  assert.match(
+    await mobilePage.locator("#empty-stage").textContent(),
+    /请在桌面端加入关卡/,
+  );
   summary.mobileImportHidden =
     await mobilePage.locator("#import-level").isHidden();
   assert.equal(summary.mobileImportHidden, true);
@@ -1724,9 +1742,10 @@ try {
     assert.equal(await button.isVisible(), true, `${toolName} should be visible on mobile`);
     assert.equal(
       (await button.locator(".play-tool-count").textContent())?.trim(),
-      "1",
-      `${toolName} should show one mobile use`,
+      "0",
+      `${toolName} should show no uses without an open level`,
     );
+    assert.equal(await button.isDisabled(), true);
   }
   await assertNoHorizontalOverflow(mobilePage, "390x844");
   summary.mobileOverflow = false;

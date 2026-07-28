@@ -228,7 +228,7 @@ const defaultApps = [
     name: "关卡3D编辑器",
     category: "关卡编辑与3D预览",
     status: "engineering",
-    brief: "已同步 23 个当前工程关卡：可导入本地 JSON、浏览器内 AI 生成可解关卡，并在 2D/3D 中编辑和试玩验证。",
+    brief: "内置关卡库已清空：可导入本地 JSON、浏览器内 AI 生成可解关卡，并在 2D/3D 中编辑和试玩验证。",
     problem: "关卡布局、遮挡关系与实际试玩分散在不同工具中，修改后难以快速确认空间层级和可玩性。",
     aiUse: "AI 参与关卡统计学习、受约束布局生成、自动求解、JSON 兼容、2D/3D 编辑视图和自动化验收。",
     folder: "./projects/paws-level-editor/",
@@ -1240,6 +1240,12 @@ function normalizeApp(app) {
   }
   if (normalized.id === "hub" && normalized.brief === OLD_HUB_BRIEF) {
     normalized.brief = HUB_BRIEF;
+  }
+  if (
+    normalized.id === "paws-level-editor"
+    && normalized.brief === "已同步 23 个当前工程关卡：可导入本地 JSON、浏览器内 AI 生成可解关卡，并在 2D/3D 中编辑和试玩验证。"
+  ) {
+    normalized.brief = base.brief;
   }
   if (normalized.id === "codex-thread-workbench" && app.platforms?.mac === "") {
     const legacyBrief = "在同一个 Windows 一级界面中同时查看和操作多个真实 Codex 线程，直接输入、停止、审批，并清晰区分进行中与已完成任务。";

@@ -22,8 +22,41 @@ const proofPath = join(videoRoot, "recording-proof.json");
 const recordingRoot = join(tmpdir(), "paws-level-editor-demo-recording");
 const ffmpegPath = process.env.FFMPEG_PATH || bundledFfmpeg;
 const targetDuration = 88;
-const defaultFileName = "level_0021_r2_第二关模板12.json";
-const bundledLevelCount = 23;
+const defaultFileName = "video_reference.json";
+const baselineLevelCount = 1;
+const referenceTiles = [
+  { x: 0, y: 0, layer: 1, type: 1 },
+  { x: 16, y: 0, layer: 1, type: 1 },
+  { x: 32, y: 0, layer: 1, type: 2 },
+  { x: 48, y: 0, layer: 1, type: 2 },
+  { x: 4, y: 4, layer: 2, type: 3 },
+  { x: 20, y: 4, layer: 2, type: 3 },
+  { x: 36, y: 4, layer: 2, type: 4 },
+  { x: 44, y: 4, layer: 2, type: 4 },
+];
+const referenceLevel = {
+  id: 74000,
+  name: "视频本地参考",
+  difficulty: "Normal",
+  gridUnit: "sheep_7x8_mini8",
+  designerNote: JSON.stringify({
+    widthNum: 7,
+    heightNum: 8,
+    levelKey: 74000,
+    gameLevelOrder: 1,
+    cdNum: 0,
+    showLayerNum: true,
+    boardScale: 1,
+    blockTypeCount: 32,
+    fullRandomTypeMin: 1,
+    fullRandomTypeMax: 32,
+    blockTypeData: {},
+    levelData: Object.groupBy(referenceTiles, ({ layer }) => String(layer)),
+    goldBlockData: [],
+    cakeNum: 0,
+  }),
+  tiles: referenceTiles,
+};
 const sourceFiles = [
   "projects/paws-level-editor/index.html",
   "projects/paws-level-editor/styles.css",
@@ -61,7 +94,6 @@ const sourceFiles = [
   "projects/paws-level-editor/views/canvas-2d.mjs",
   "projects/paws-level-editor/views/three-3d.mjs",
   "projects/paws-level-editor/levels/index.json",
-  "projects/paws-level-editor/levels/level_0021_r2_第二关模板12.json",
   "scripts/record-paws-level-editor-demo.mjs",
   "scripts/paws-recording-support.mjs",
 ];
@@ -432,13 +464,22 @@ async function recordEditor() {
         `${server.baseUrl}/projects/paws-level-editor/index.html`,
         { waitUntil: "domcontentloaded" },
       );
+      await page.waitForFunction(() =>
+        window.pawsWorkbench?.levels?.length === 0
+        && document.querySelector("#connection-state")?.textContent?.includes("关卡库在线"));
+      assert.match(await page.locator("#level-list").textContent(), /内置关卡库已清空/);
+      await page.locator("#import-level-input").setInputFiles({
+        name: defaultFileName,
+        mimeType: "application/json",
+        buffer: Buffer.from(JSON.stringify(referenceLevel)),
+      });
       await waitForWorkbench(page);
       await page.locator('[role="option"]').first().waitFor({ state: "visible" });
       await page.waitForFunction(
         ({ requested, expectedCount }) =>
           window.pawsWorkbench?.document?.fileName === requested
           && window.pawsWorkbench?.levels?.length === expectedCount,
-        { requested: defaultFileName, expectedCount: bundledLevelCount },
+        { requested: defaultFileName, expectedCount: baselineLevelCount },
       );
       const metadata = await page.evaluate((requested) => {
         const controller = window.pawsWorkbench;
@@ -470,7 +511,7 @@ async function recordEditor() {
         errors,
       };
 
-      // 00:00 — show the current project library, requested default and local AI generation.
+      // 00:00 — show the empty-bundle banner, imported local reference and AI generation.
       markChapter(proof.timeline, "tools", startedAt, 0);
       await page.locator("#fit-view").click();
       await page.waitForFunction(() => window.pawsWorkbench?.grassField?.imageReady);
@@ -603,7 +644,7 @@ async function recordEditor() {
       assert.equal(aiGeneration.coordinatesInBounds, true);
       assert.equal(aiGeneration.source, "ai");
       assert.equal(aiGeneration.aiReferenceEligible, false);
-      assert.equal(aiGeneration.referenceCount, bundledLevelCount);
+      assert.equal(aiGeneration.referenceCount, baselineLevelCount);
       assert.equal(aiGeneration.sameLayerOverlapPairs, 0);
       assert.equal(aiGeneration.totalEven, true);
       assert.equal(aiGeneration.globalTypesEven, true);
@@ -611,7 +652,7 @@ async function recordEditor() {
       assert.ok(Math.abs(aiGeneration.actualScore - aiGeneration.targetScore) <= 5);
       assert.equal(
         await page.locator('[role="option"]').count(),
-        bundledLevelCount + 1,
+        baselineLevelCount + 1,
       );
       proof.actions.aiGeneration = aiGeneration;
       await page.locator("#evaluate-pass-rate").click();
@@ -1284,7 +1325,7 @@ async function recordEditor() {
         {
           deletedFileName: generatedFileName,
           requestedFileName: defaultFileName,
-          expectedCount: bundledLevelCount,
+          expectedCount: baselineLevelCount,
         },
       );
       await waitForWorkbench(page);
@@ -1304,7 +1345,7 @@ async function recordEditor() {
       assert.deepEqual(deletion, {
         deletedFromStorage: true,
         absentFromCatalog: true,
-        referenceCountAfterDelete: bundledLevelCount,
+        referenceCountAfterDelete: baselineLevelCount,
       });
       proof.actions.persistence = {
         savedProperty: savedPosition.x,
@@ -1381,7 +1422,7 @@ async function main() {
     "-loglevel",
     "error",
     "-ss",
-    "00:00:38",
+    "00:00:32.5",
     "-i",
     outputPath,
     "-frames:v",

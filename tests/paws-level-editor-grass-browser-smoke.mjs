@@ -10,6 +10,37 @@ const { chromium } = require("playwright");
 const repositoryRoot = dirname(dirname(fileURLToPath(import.meta.url)));
 const server = await startStaticServer({ root: repositoryRoot });
 const editorUrl = `${server.baseUrl}/projects/paws-level-editor/index.html`;
+const grassFixture = {
+  id: 82001,
+  name: "草地浏览器测试",
+  difficulty: "Normal",
+  gridUnit: "sheep_7x8_mini8",
+  designerNote: JSON.stringify({
+    widthNum: 7,
+    heightNum: 8,
+    levelKey: 82001,
+    gameLevelOrder: 1,
+    cdNum: 0,
+    showLayerNum: true,
+    boardScale: 1,
+    blockTypeCount: 32,
+    fullRandomTypeMin: 1,
+    fullRandomTypeMax: 32,
+    blockTypeData: {},
+    levelData: {
+      1: [
+        { x: 0, y: 0, layer: 1, type: 1, presetColorType: 1 },
+        { x: 16, y: 0, layer: 1, type: 1, presetColorType: 1 },
+      ],
+    },
+    goldBlockData: [],
+    cakeNum: 0,
+  }),
+  tiles: [
+    { x: 0, y: 0, layer: 1, type: 1, presetColorType: 1 },
+    { x: 16, y: 0, layer: 1, type: 1, presetColorType: 1 },
+  ],
+};
 
 async function launchBrowser() {
   for (const options of [
@@ -38,13 +69,28 @@ function collectErrors(page, label, errors) {
   });
 }
 
-async function waitForGrass(page) {
-  await page.waitForFunction(() => {
+async function waitForGrass(page, { requireDocument = true } = {}) {
+  await page.waitForFunction((needsDocument) => {
     const controller = window.pawsWorkbench;
-    return controller?.document
+    return controller
+      && (!needsDocument || controller.document)
       && controller.grassField?.imageReady
       && document.querySelectorAll(".level-grass-field").length === 1;
+  }, requireDocument);
+}
+
+async function importGrassFixture(page, fileName) {
+  await page.waitForFunction(() =>
+    window.pawsWorkbench?.levels?.length === 0
+    && document.querySelector("#connection-state")?.textContent?.includes("关卡库在线"));
+  await page.locator("#import-level-input").setInputFiles({
+    name: fileName,
+    mimeType: "application/json",
+    buffer: Buffer.from(JSON.stringify(grassFixture)),
   });
+  await page.waitForFunction((expectedFileName) =>
+    window.pawsWorkbench?.document?.fileName === expectedFileName,
+  fileName);
 }
 
 async function grassFrameSamples(page) {
@@ -75,6 +121,7 @@ try {
   const page = await normal.newPage();
   collectErrors(page, "normal", errors);
   await page.goto(editorUrl);
+  await importGrassFixture(page, "grass_normal.json");
   await waitForGrass(page);
   const normalFrames = await grassFrameSamples(page);
   assert.deepEqual(normalFrames.samples.map(({ pulseScale }) => pulseScale), [1.3, 0.9]);
@@ -144,6 +191,7 @@ try {
   const reducedPage = await reduced.newPage();
   collectErrors(reducedPage, "reduced", errors);
   await reducedPage.goto(editorUrl);
+  await importGrassFixture(reducedPage, "grass_reduced.json");
   await waitForGrass(reducedPage);
   const reducedFrames = await grassFrameSamples(reducedPage);
   assert.deepEqual(reducedFrames.samples.map(({ pulseScale }) => pulseScale), [1, 1]);
@@ -167,7 +215,7 @@ try {
   const mobilePage = await mobile.newPage();
   collectErrors(mobilePage, "mobile", errors);
   await mobilePage.goto(editorUrl);
-  await waitForGrass(mobilePage);
+  await waitForGrass(mobilePage, { requireDocument: false });
   const mobileState = await mobilePage.evaluate(() => ({
     mode: window.pawsWorkbench.mode,
     canvasCount: document.querySelectorAll(".level-grass-field").length,

@@ -38,7 +38,7 @@
       </header>
 
       <div id="demo-banner" class="demo-banner" role="note">
-        已同步 23 个当前工程关卡 · 编辑和 AI 生成结果只保存到当前浏览器，不会写回工程
+        内置关卡库已清空 · 编辑和 AI 生成结果只保存到当前浏览器，不会写回工程
       </div>
 
       <div id="readonly-banner" class="readonly-banner" role="note">
@@ -167,8 +167,14 @@
                 <i></i><i></i><i></i><i></i>
               </div>
               <p class="section-kicker">WAITING FOR LEVEL</p>
-              <h2>从左侧打开一个关卡</h2>
-              <p>同一份数据可直接编辑、2D/3D 检查和试玩。</p>
+              <h2>
+                <span class="edit-only">新建或导入一个关卡</span>
+                <span class="mobile-only">请在桌面端加入关卡</span>
+              </h2>
+              <p>
+                <span class="edit-only">加入 JSON 后即可编辑、2D/3D 检查和试玩。</span>
+                <span class="mobile-only">加入后即可在当前设备查看与试玩。</span>
+              </p>
             </div>
             <div id="stage-toast" class="stage-toast" role="status" aria-live="polite"></div>
             <div id="play-tools" class="play-tool-dock play-only" aria-label="游戏道具">
@@ -219,7 +225,7 @@
         <form id="ai-level-form" method="dialog">
           <p class="section-kicker">LOCAL GENERATOR</p>
           <h2>AI 生成关卡</h2>
-          <p class="dialog-intro">从内置、导入和手工关卡实时学习，在固定 7×8 棋盘内生成并自动验证可解。</p>
+          <p class="dialog-intro">从导入、手工和内网工程关卡实时学习，在固定 7×8 棋盘内生成并自动验证可解。</p>
 
           <fieldset>
             <legend>难度</legend>
@@ -287,7 +293,7 @@
               </label>
               <label class="ai-choice">
                 <input type="radio" name="ai-reference" value="all" checked />
-                <span><strong>全部关卡</strong><small>内置 + 导入 + 手工，排除 AI 结果</small></span>
+                <span><strong>全部关卡</strong><small>导入 + 手工 + 内网工程，排除 AI 结果</small></span>
               </label>
             </div>
           </fieldset>

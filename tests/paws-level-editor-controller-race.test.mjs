@@ -182,6 +182,46 @@ test("rerandomize preserves controller play state and reports a rejected seed", 
   );
 });
 
+test("deleting the final browser-local level returns to the empty library without an error", async () => {
+  const deleted = [];
+  const { controller, events } = controllerHarness({
+    runtimeMode: "static",
+    async deleteLevel(fileName, options) {
+      deleted.push([fileName, options]);
+      return { fileName, deleted: true };
+    },
+    async listLevelCatalog() {
+      return { defaultFileName: "", levels: [] };
+    },
+  });
+  controller.document = editableDocument("only-local.json");
+  controller.history = new EditHistory(controller.document);
+
+  await controller.deleteCurrentLevel();
+
+  assert.deepEqual(deleted, [[
+    "only-local.json",
+    { expectedVersion: "version-7" },
+  ]]);
+  assert.equal(controller.document, null);
+  assert.deepEqual(controller.levels, []);
+  assert.equal(controller.elements.emptyStage.hidden, false);
+  assert.equal(
+    events.some(([type, message, level]) =>
+      type === "toast"
+      && level === "error"
+      && /默认关卡未能打开/.test(message)),
+    false,
+  );
+  assert.equal(
+    events.some(([type, message, level]) =>
+      type === "toast"
+      && level === "normal"
+      && message === "已删除 only-local.json；剩余 AI 学习参考 0 关。"),
+    true,
+  );
+});
+
 test("the latest level-open request wins when an older request resolves last", async () => {
   const slow = deferred();
   const fast = deferred();

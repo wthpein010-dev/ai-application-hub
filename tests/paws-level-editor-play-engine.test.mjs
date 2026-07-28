@@ -1,9 +1,7 @@
 import assert from "node:assert/strict";
-import { readFile, readdir } from "node:fs/promises";
+import { readdir } from "node:fs/promises";
 import test from "node:test";
 
-import { parseLevelDocument } from "../projects/paws-level-editor/core/level-adapter.mjs";
-import { solveLevel } from "../projects/paws-level-editor/core/level-solver.mjs";
 import { createPlaySession } from "../projects/paws-level-editor/core/play-engine.mjs";
 import {
   assignRandomTypes,
@@ -601,44 +599,10 @@ test("ordinary pairs can clear a level and emit one win", () => {
   assert.equal(session.getSnapshot().won, true);
 });
 
-test("every published r1 level keeps layer-mono random types and plays to a win", async () => {
+test("the cleared published library exposes no r1 level fixtures", async () => {
   const levelsRoot = new URL("../projects/paws-level-editor/levels/", import.meta.url);
   const fileNames = (await readdir(levelsRoot))
     .filter((fileName) => /_r1_/i.test(fileName))
     .sort();
-  assert.equal(fileNames.length > 0, true);
-
-  for (const fileName of fileNames) {
-    const raw = JSON.parse(await readFile(new URL(fileName, levelsRoot), "utf8"));
-    const document = parseLevelDocument(raw, { fileName });
-    const markerLayers = new Set(
-      document.tiles
-        .filter(({ type }) => type === 0 || type === -1)
-        .map(({ layer }) => layer),
-    );
-    const session = createPlaySession(document, 20260722);
-    const initial = session.getSnapshot();
-    for (const layer of markerLayers) {
-      const layerTypes = new Set(
-        initial.tiles
-          .filter((record) => record.layer === layer && Number.isInteger(record.randomSourceType))
-          .map(({ type }) => type),
-      );
-      assert.equal(layerTypes.size, 1, `${fileName} layer ${layer}`);
-    }
-    assert.equal(
-      [...Map.groupBy(initial.tiles, ({ type }) => type).values()]
-        .every((records) => records.length % 2 === 0),
-      true,
-      fileName,
-    );
-
-    const solution = solveLevel({ tiles: initial.tiles }, { maxNodes: 500000 });
-    assert.equal(solution.solvable, true, fileName);
-    for (const [first, second] of solution.moves) {
-      session.interact(first);
-      session.interact(second);
-    }
-    assert.equal(session.getSnapshot().won, true, fileName);
-  }
+  assert.deepEqual(fileNames, []);
 });

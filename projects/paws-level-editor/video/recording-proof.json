@@ -1,25 +1,25 @@
 {
   "schemaVersion": 1,
-  "recordedAt": "2026-07-28T08:41:13.694Z",
+  "recordedAt": "2026-07-28T10:13:58.335Z",
   "recording": {
     "browser": "system Chrome",
-    "preRollMs": 973,
-    "completedAt": "2026-07-28T08:42:41.702Z",
-    "durationMs": 88008
+    "preRollMs": 1087,
+    "completedAt": "2026-07-28T10:15:26.338Z",
+    "durationMs": 88003
   },
   "timeline": {
     "tools": 0,
-    "edit2d": 12004,
-    "view3d": 32008,
-    "play": 50008,
+    "edit2d": 12000,
+    "view3d": 32014,
+    "play": 50007,
     "persistence": 70000
   },
   "actions": {
     "metadata": {
-      "cardText": "第二关模板12#0021level_0021_r2_第二关模板12.json198 tiles07/20",
-      "fileName": "level_0021_r2_第二关模板12.json",
-      "levelId": 21,
-      "modifiedAt": "2026-07-20T00:00:00.000Z"
+      "cardText": "视频本地参考#74000video_reference.json8 tiles07/28",
+      "fileName": "video_reference.json",
+      "levelId": 74000,
+      "modifiedAt": "2026-07-28T10:13:57.522Z"
     },
     "grass": {
       "twoD": {
@@ -48,7 +48,7 @@
       }
     },
     "aiGeneration": {
-      "fileName": "ai_level_228065896.json",
+      "fileName": "ai_level_4009771894.json",
       "reference": "all",
       "solvable": true,
       "tileCount": 200,
@@ -58,9 +58,9 @@
       "rating": "标准",
       "dimensions": {
         "structure": 84,
-        "information": 64,
+        "information": 66,
         "choice": 50,
-        "route": 53,
+        "route": 52,
         "endurance": 45
       },
       "board": {
@@ -75,7 +75,7 @@
       "coordinatesInBounds": true,
       "source": "ai",
       "aiReferenceEligible": false,
-      "referenceCount": 23,
+      "referenceCount": 1,
       "sameLayerOverlapPairs": 0,
       "totalEven": true,
       "globalTypesEven": true,
@@ -192,25 +192,25 @@
     "edit3d": {
       "cameraBefore": {
         "position": [
-          0.41757004175969126,
-          1.3518061764770724,
+          1.4175700417596921,
+          1.3490895936730398,
           -3.5
         ],
         "target": [
-          -3,
-          0.31286488378212585,
+          -2,
+          0.3101483009780933,
           -3.5
         ]
       },
       "cameraAfter": {
         "position": [
-          -6.419264974282386,
-          0.5371526195408317,
-          -4.508715047589586
+          -5.4192649359308644,
+          0.5344360367367992,
+          -4.508715177590631
         ],
         "target": [
-          -3,
-          0.31286488378212585,
+          -2,
+          0.3101483009780933,
           -3.5
         ]
       },
@@ -237,10 +237,10 @@
             1.1293539700886997e-15
           ]
         },
-        "relationEdges": 4,
+        "relationEdges": 7,
         "relationLines": 1,
         "explodedDelta": 2.3099999999999996,
-        "focusDistance": 0.0006079183074408356
+        "focusDistance": 0
       },
       "selectedBefore": "",
       "selectedAfter": "tile-1",
@@ -264,9 +264,9 @@
         }
       },
       "undo": {
-        "uid": "tile-180",
+        "uid": "tile-171",
         "trayBefore": [
-          "tile-180",
+          "tile-171",
           null
         ],
         "trayAfter": [
@@ -336,10 +336,10 @@
     },
     "play3d": {
       "selectedBefore": "",
-      "selectedAfter": "tile-165"
+      "selectedAfter": "tile-144"
     },
     "export": {
-      "fileName": "ai_level_228065896.json",
+      "fileName": "ai_level_4009771894.json",
       "gridUnit": "sheep_7x8_mini8",
       "tileCount": 202
     },
@@ -360,7 +360,7 @@
       "returnedToDefault": true,
       "deletedFromStorage": true,
       "absentFromCatalog": true,
-      "referenceCountAfterDelete": 23
+      "referenceCountAfterDelete": 1
     }
   },
   "errors": {
@@ -369,10 +369,10 @@
   },
   "media": {
     "file": "paws-level-editor-tutorial.mp4",
-    "sha256": "482b9e463ac6a49e37ede515111e124b7c7ccebca51a26b60d352e546b0aca86"
+    "sha256": "b0e7c4a3f2ddef2c021def03d283d2ab8eae03e9038a35c4a6757c2c2d8dae46"
   },
   "sources": {
-    "projects/paws-level-editor/index.html": "229dd17b8762cb3df9abbc26a0d2254e052dec4b06141aaff19c556d8fff6483",
+    "projects/paws-level-editor/index.html": "58652499d7c9bdec90e4e1567e07c3f348b616afd582d0726cde9f3abe4f9872",
     "projects/paws-level-editor/styles.css": "1286f9081a248308d5842bb786f081f99e8a388a81c1cf46836d80c3d4dc839b",
     "projects/paws-level-editor/app.mjs": "d54ca4e1fa3c1aa524e63f9b7a743d8b883710c1ff340a8e290190d293e485c7",
     "projects/paws-level-editor/static-api-client.mjs": "a37e3bcaa2bfed9ddf10aa800fb5fbaa025bc751398e4201eddf236e4e740c84",
@@ -404,12 +404,11 @@
     "projects/paws-level-editor/ui/level-summary.mjs": "f7876ba36caaef6ac9123f98680aad02a65e5134f6ec1486f306e17f359b4713",
     "projects/paws-level-editor/ui/legacy-ai-open-upgrade.mjs": "e413eab44f7b04289015f5eb98f37971ced2057085e902fb2b04e9ac9eb8f2bd",
     "projects/paws-level-editor/ui/play-tool-command.mjs": "877de31443a4a4d5d7dfd103c0ede802d65e03b0b8c125b59530ab96fbd12089",
-    "projects/paws-level-editor/ui/workbench-controller.mjs": "0d1f9ad089b8c7ea27ccc22b3f040a99bb6af4f2a88398dd6f2c0358b753fe91",
+    "projects/paws-level-editor/ui/workbench-controller.mjs": "31f3590c5a4f6973856be0b663c3f7df350c1e182bab64278d227fbf7a66066f",
     "projects/paws-level-editor/views/canvas-2d.mjs": "be326c42544db0eaa5ee8d6bc218a60c159f6c9fc1ebe90333bd0fe00ec1d094",
     "projects/paws-level-editor/views/three-3d.mjs": "833df4188b351e2869c7cd0f1c2ce57a885822a21f512a291b5f42f5fc867613",
-    "projects/paws-level-editor/levels/index.json": "0ebe5bb7629dce68b6c922d434c1c2a5e8942e65cf1d6771aefbe2b27d3c80a2",
-    "projects/paws-level-editor/levels/level_0021_r2_第二关模板12.json": "c7787830ed553ae16de6516408c8247f3ad9152c2ef78ed33e6c75d8f05aae68",
-    "scripts/record-paws-level-editor-demo.mjs": "bb27fe88e1acd21d1e6bfcaaddfcc4078483382e8db6fcba8928e22109498574",
+    "projects/paws-level-editor/levels/index.json": "7c05176510c105aae0b9951dc20db4ea7db09a03ead34b491d37caa3f842767c",
+    "scripts/record-paws-level-editor-demo.mjs": "486ea82a68430cf8ab940e4b3a70bf8a7de6e714e60e9a992eb075adc4740ac7",
     "scripts/paws-recording-support.mjs": "e5d2b2f02b67798c90d080a3202b97ecce50ffd738e31fc374d751ad18ae79c2"
   },
   "assets": {

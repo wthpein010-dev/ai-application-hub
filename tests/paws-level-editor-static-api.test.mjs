@@ -1,8 +1,5 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { readFile } from "node:fs/promises";
-import { dirname, join } from "node:path";
-import { fileURLToPath } from "node:url";
 
 import * as staticApi from "../projects/paws-level-editor/static-api-client.mjs";
 import {
@@ -12,9 +9,44 @@ import {
 
 const { createApiClient } = staticApi;
 
-const root = dirname(dirname(fileURLToPath(import.meta.url)));
-const levelsPath = join(root, "projects", "paws-level-editor", "levels");
 const defaultFileName = "level_0021_r2_第二关模板12.json";
+const bundledLevel = {
+  id: 21,
+  name: "第二关模板12",
+  difficulty: "Normal",
+  gridUnit: "sheep_7x8_mini8",
+  designerNote: JSON.stringify({
+    source: "static-api-unit-fixture",
+    widthNum: 7,
+    heightNum: 8,
+    levelData: {
+      1: [
+        { x: 0, y: 0, layer: 1, type: 1 },
+        { x: 8, y: 0, layer: 1, type: 1 },
+        { x: 16, y: 0, layer: 1, type: 2 },
+        { x: 24, y: 0, layer: 1, type: 2 },
+      ],
+    },
+  }),
+  tiles: [
+    { x: 0, y: 0, layer: 1, type: 1 },
+    { x: 8, y: 0, layer: 1, type: 1 },
+    { x: 16, y: 0, layer: 1, type: 2 },
+    { x: 24, y: 0, layer: 1, type: 2 },
+  ],
+};
+const bundledCatalog = {
+  defaultFileName,
+  levels: [{
+    id: bundledLevel.id,
+    fileName: defaultFileName,
+    name: bundledLevel.name,
+    difficulty: bundledLevel.difficulty,
+    tileCount: bundledLevel.tiles.length,
+    layerCount: 1,
+    modifiedAt: "2026-07-20T00:00:00.000Z",
+  }],
+};
 
 function createStorage() {
   const values = new Map();
@@ -52,10 +84,10 @@ function createBoundaryFailingStorage() {
 
 async function createFetch() {
   const files = new Map([
-    ["./levels/index.json", await readFile(join(levelsPath, "index.json"), "utf8")],
+    ["./levels/index.json", JSON.stringify(bundledCatalog)],
     [
       `./levels/${encodeURIComponent(defaultFileName)}`,
-      await readFile(join(levelsPath, defaultFileName), "utf8"),
+      JSON.stringify(bundledLevel),
     ],
   ]);
   return async (url) => {
@@ -80,7 +112,7 @@ test("lists the catalog and loads the requested bundled default", async () => {
 
   const catalog = await api.listLevelCatalog();
   assert.equal(catalog.defaultFileName, defaultFileName);
-  assert.equal(catalog.levels.length, 23);
+  assert.equal(catalog.levels.length, 1);
   assert.equal(catalog.levels.some(({ fileName }) => fileName === defaultFileName), true);
   assert.deepEqual(await api.listLevels(), catalog.levels);
   assert.equal((await api.loadLevel(defaultFileName)).value.name, "第二关模板12");
@@ -128,7 +160,10 @@ test("adapter save reload and serialize round-trip preserves string designerNote
   });
 
   assert.equal(typeof saved.value.designerNote, "string");
-  assert.equal(JSON.parse(saved.value.designerNote).source, loaded.value.designerNote.source);
+  assert.equal(
+    JSON.parse(saved.value.designerNote).source,
+    JSON.parse(loaded.value.designerNote).source,
+  );
   assert.equal(Array.isArray(JSON.parse(saved.value.designerNote).levelData), false);
 
   const reloaded = await api.loadLevel(loaded.fileName);

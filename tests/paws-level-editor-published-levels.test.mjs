@@ -17,70 +17,14 @@ import { syncPublishedLevels } from "../scripts/sync-paws-published-levels.mjs";
 const repoRoot = dirname(dirname(fileURLToPath(import.meta.url)));
 const editorRoot = join(repoRoot, "projects", "paws-level-editor");
 const levelsRoot = join(editorRoot, "levels");
-const requestedDefault = "level_0021_r2_第二关模板12.json";
-const expectedFileNames = [
-  "level_0001_r1_第一关.json",
-  "level_0001_r2_33第二关模板13.json",
-  "level_0002_r1_默认第一关.json",
-  "level_0002_r2_43第二关模板22.json",
-  "level_0013_r2_第二关模板2.json",
-  "level_0014_r1_新关卡第一关模板6.json",
-  "level_0020_r1_第一关模板6.json",
-  "level_0020_r2_第二关模板1.json",
-  "level_0021_r1_新关卡随机模板7.json",
-  "level_0021_r2_第二关模板12.json",
-  "level_0022_r2_第二关模板10.json",
-  "level_0023_r2_第二关模板11.json",
-  "level_0028_r2_28Video Layout Full Random Sample.json",
-  "level_0030_r2_第二关模板.json",
-  "level_0035_r2_35 第二关模板15.json",
-  "level_0037_r2_37 第二关 37第二关模板17.json",
-  "level_0039_r2_39第二关模板18.json",
-  "level_0041_r2_41第二关模板20.json",
-  "level_0042_r2_42第二关模板21.json",
-  "level_0043_r2_40第二关模板19.json",
-  "level_0044_r2_44第二关模板23.json",
-  "level_0050_r2_50 第二关第一版.json",
-  "level_0051_r2_51第二关.json",
-].sort((left, right) => left.localeCompare(right, "zh-CN"));
-
-test("published catalog contains the 23 current project levels and requested default", async () => {
+test("published catalog is empty and exposes no bundled level JSON", async () => {
   const catalog = JSON.parse(await readFile(join(levelsRoot, "index.json"), "utf8"));
 
-  assert.equal(catalog.levels.length, 23);
-  assert.equal(catalog.defaultFileName, requestedDefault);
-  assert.equal(new Set(catalog.levels.map(({ fileName }) => fileName)).size, 23);
-  assert.deepEqual(catalog.levels.map(({ fileName }) => fileName), expectedFileNames);
-  assert.equal(
-    catalog.levels.some(({ fileName }) => fileName === "level_showcase.json"),
-    false,
-  );
+  assert.deepEqual(catalog, { defaultFileName: "", levels: [] });
   const publishedFiles = (await readdir(levelsRoot))
-    .filter((fileName) => fileName.endsWith(".json") && fileName !== "index.json")
+    .filter((fileName) => fileName !== "index.json")
     .sort((left, right) => left.localeCompare(right, "zh-CN"));
-  assert.deepEqual(
-    publishedFiles,
-    catalog.levels.map(({ fileName }) => fileName),
-    "published directory must not retain a JSON level removed from the source catalog",
-  );
-
-  const selected = catalog.levels.find(
-    ({ fileName }) => fileName === catalog.defaultFileName,
-  );
-  assert.deepEqual(
-    {
-      id: selected?.id,
-      name: selected?.name,
-      tileCount: selected?.tileCount,
-      layerCount: selected?.layerCount,
-    },
-    {
-    id: 21,
-      name: "第二关模板12",
-      tileCount: 198,
-      layerCount: 17,
-    },
-  );
+  assert.deepEqual(publishedFiles, []);
 });
 
 test("all indexed project levels parse and contain no source path or credential keys", async () => {

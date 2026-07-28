@@ -128,7 +128,7 @@ test("public files contain no private level path or credential material", () => 
   const text = readPublicTextFiles(editorRoot);
   assert.doesNotMatch(text, /E:\\Mahjong|maque|WORKBENCH_PASSWORD\s*=|paws_lan_session=/i);
   assert.match(text, /type="password"/);
-  assert.match(text, /level_0021_r2_第二关模板12\.json/);
+  assert.doesNotMatch(text, /level_0021_r2_第二关模板12\.json/);
 });
 
 test("gameplay skin publishes the selected Unity artwork at original dimensions", () => {
@@ -195,26 +195,13 @@ test("editor stage and both renderers consume the gameplay skin without fake con
   assert.match(three3d, /0x3f7d0a/i);
 });
 
-test("published levels contain the index and 23 authorized project files", () => {
+test("published levels contain only the empty index", () => {
   const levels = readdirSync(join(editorRoot, "levels")).sort();
-  assert.equal(levels.length, 24);
-  assert.equal(levels.includes("index.json"), true);
-  assert.equal(levels.includes("level_showcase.json"), false);
+  assert.deepEqual(levels, ["index.json"]);
   const index = JSON.parse(
     readFileSync(join(editorRoot, "levels", "index.json"), "utf8"),
   );
-  assert.equal(index.levels.length, 23);
-  assert.equal(index.defaultFileName, "level_0021_r2_第二关模板12.json");
-  assert.deepEqual(
-    levels.filter((name) => name !== "index.json"),
-    index.levels.map(({ fileName }) => fileName).sort(),
-  );
-  for (const summary of index.levels) {
-    assert.equal(typeof summary.name, "string");
-    assert.equal(Number.isInteger(summary.tileCount) && summary.tileCount > 0, true);
-    assert.equal(Number.isInteger(summary.layerCount) && summary.layerCount > 0, true);
-    assert.equal(new Date(summary.modifiedAt).toISOString(), summary.modifiedAt);
-  }
+  assert.deepEqual(index, { defaultFileName: "", levels: [] });
 });
 
 test("entry uses relative GitHub Pages module and Three paths", () => {
@@ -232,17 +219,18 @@ test("demo boundary occupies its own visible layout row", () => {
   assert.match(css, /grid-template-rows:\s*64px auto 0 minmax\(0,\s*1fr\)/);
 });
 
-test("public copy describes the project library and browser-local AI boundary", () => {
+test("public copy describes the empty bundled library and browser-local AI boundary", () => {
   const html = readFileSync(join(editorRoot, "index.html"), "utf8");
   const controller = readFileSync(
     join(editorRoot, "ui", "workbench-controller.mjs"),
     "utf8",
   );
-  assert.match(html, /已同步 23 个当前工程关卡/);
+  assert.match(html, /内置关卡库已清空/);
   assert.match(html, /编辑和 AI 生成结果只保存到当前浏览器/);
   assert.doesNotMatch(html, /仅使用独立示例关卡/);
   assert.doesNotMatch(html, /正在读取示例关卡/);
   assert.match(controller, /关卡库在线 · 编辑只保存到当前浏览器/);
+  assert.match(controller, /内置关卡库已清空，可新建或导入 JSON/);
   assert.doesNotMatch(controller, /静态演示在线/);
 });
 
