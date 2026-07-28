@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import { mkdtemp, mkdir, rm, symlink, writeFile } from "node:fs/promises";
+import { get } from "node:http";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import test from "node:test";
@@ -29,6 +30,19 @@ async function assertForbidden(operation) {
     operation,
     (error) => error instanceof StaticPathError && error.status === 403,
   );
+}
+
+function httpGet(url) {
+  return new Promise((resolve, reject) => {
+    get(url, (response) => {
+      const chunks = [];
+      response.on("data", (chunk) => chunks.push(chunk));
+      response.on("end", () => resolve({
+        status: response.statusCode,
+        body: Buffer.concat(chunks).toString("utf8"),
+      }));
+    }).once("error", reject);
+  });
 }
 
 test("resolver rejects a symlink or junction that escapes the real static root", async (t) => {
@@ -66,9 +80,8 @@ test("server binds loopback and never serves content through an escaping link", 
 
   assert.equal(server.address.address, "127.0.0.1");
   for (const pathname of ["/escape/secret.txt", "/escape/"]) {
-    const response = await fetch(`${server.baseUrl}${pathname}`);
-    const body = await response.text();
+    const response = await httpGet(`${server.baseUrl}${pathname}`);
     assert.equal([403, 404].includes(response.status), true, `${pathname}: ${response.status}`);
-    assert.doesNotMatch(body, /outside-secret|outside-index/);
+    assert.doesNotMatch(response.body, /outside-secret|outside-index/);
   }
 });
