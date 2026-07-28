@@ -31,7 +31,9 @@ const sourceFiles = [
   "projects/paws-level-editor/static-api-client.mjs",
   "projects/paws-level-editor/core/ai-level-generator.mjs",
   "projects/paws-level-editor/core/editor-geometry.mjs",
+  "projects/paws-level-editor/core/field-grid-layout.mjs",
   "projects/paws-level-editor/core/fill-tool.mjs",
+  "projects/paws-level-editor/core/gameplay-assets.mjs",
   "projects/paws-level-editor/core/gameplay-metadata.mjs",
   "projects/paws-level-editor/core/grass-layout.mjs",
   "projects/paws-level-editor/core/level-adapter.mjs",
@@ -41,8 +43,10 @@ const sourceFiles = [
   "projects/paws-level-editor/core/level-statistics.mjs",
   "projects/paws-level-editor/core/level-validator.mjs",
   "projects/paws-level-editor/core/pass-rate-evaluator.mjs",
+  "projects/paws-level-editor/core/play-engine.mjs",
   "projects/paws-level-editor/core/tile-relations.mjs",
   "projects/paws-level-editor/core/view-model.mjs",
+  "projects/paws-level-editor/core/xorshift.mjs",
   "projects/paws-level-editor/ui/ai-level-dialog.mjs",
   "projects/paws-level-editor/ui/editor-shortcuts.mjs",
   "projects/paws-level-editor/ui/grass-field.mjs",
@@ -52,6 +56,7 @@ const sourceFiles = [
   "projects/paws-level-editor/ui/local-level-import.mjs",
   "projects/paws-level-editor/ui/level-summary.mjs",
   "projects/paws-level-editor/ui/legacy-ai-open-upgrade.mjs",
+  "projects/paws-level-editor/ui/play-tool-command.mjs",
   "projects/paws-level-editor/ui/workbench-controller.mjs",
   "projects/paws-level-editor/views/canvas-2d.mjs",
   "projects/paws-level-editor/views/three-3d.mjs",
@@ -59,6 +64,11 @@ const sourceFiles = [
   "projects/paws-level-editor/levels/level_0021_r2_第二关模板12.json",
   "scripts/record-paws-level-editor-demo.mjs",
   "scripts/paws-recording-support.mjs",
+];
+const assetFiles = [
+  "projects/paws-level-editor/assets/gameplay/btn_random.png",
+  "projects/paws-level-editor/assets/gameplay/btn_magnet.png",
+  "projects/paws-level-editor/assets/gameplay/btn_rollback.png",
 ];
 
 function delay(milliseconds) {
@@ -287,6 +297,51 @@ async function clickMatchingPairIn2d(page) {
     }
     await delay(850);
   }
+}
+
+async function stashAvailableTileIn2d(page) {
+  const target = await page.evaluate(() => {
+    const controller = window.pawsWorkbench;
+    const renderer = controller.renderer;
+    const candidates = controller.playSnapshot.tiles.filter(
+      (tile) =>
+        !tile.removed &&
+        !Number.isInteger(tile.stashedSlot) &&
+        !tile.covered &&
+        !tile.sideBlocked,
+    );
+    for (const tile of candidates) {
+      for (const yOffset of [0.5, 2, 4, 6, 7.5]) {
+        for (const xOffset of [0.5, 2, 4, 6, 7.5]) {
+          const point = {
+            x:
+              (tile.x + xOffset) * renderer.viewport.scale +
+              renderer.viewport.offsetX,
+            y:
+              (tile.y + yOffset) * renderer.viewport.scale +
+              renderer.viewport.offsetY,
+          };
+          if (renderer.hitBoardTile(point)?.uid === tile.uid) {
+            return { uid: tile.uid, ...point };
+          }
+        }
+      }
+    }
+    return null;
+  });
+  if (!target) {
+    throw new Error("No visible tile was available for the 2D stash recording");
+  }
+  const box = await page.locator(".level-canvas-2d").boundingBox();
+  assert.ok(box, "2D canvas should have a bounding box");
+  await page.mouse.click(box.x + target.x, box.y + target.y, {
+    button: "right",
+  });
+  await page.waitForFunction(
+    (uid) => window.pawsWorkbench.playSnapshot.tray.includes(uid),
+    target.uid,
+  );
+  return target.uid;
 }
 
 async function clickVisibleTileIn3d(page) {
@@ -592,6 +647,42 @@ async function recordEditor() {
       // 00:12 — real 2D selection, drag and visible property edit.
       await waitUntil(startedAt, 12);
       markChapter(proof.timeline, "edit2d", startedAt, 12);
+      proof.actions.fieldGrid = await page.evaluate(async () => {
+        const controller = window.pawsWorkbench;
+        const { buildFieldGridLayout } = await import(
+          new URL("./core/field-grid-layout.mjs", window.location.href).href
+        );
+        const board = {
+          width: controller.document.board.width,
+          height: controller.document.board.height,
+        };
+        const layout = buildFieldGridLayout(board);
+        return {
+          board,
+          bounds: layout.bounds,
+          majorLineCount: layout.majorLines.length,
+          centerLineCount: layout.centerLines.length,
+          xLabels: layout.labels
+            .filter(({ axis }) => axis === "x")
+            .map(({ value }) => value),
+          yLabels: layout.labels
+            .filter(({ axis }) => axis === "y")
+            .map(({ value }) => value),
+          edit2d:
+            controller.mode === "edit" &&
+            controller.view === "2d" &&
+            typeof controller.renderer?.drawFieldGrid === "function",
+        };
+      });
+      assert.deepEqual(proof.actions.fieldGrid, {
+        board: { width: 7, height: 8 },
+        bounds: { minX: 0, minY: 0, maxX: 56, maxY: 64 },
+        majorLineCount: 17,
+        centerLineCount: 15,
+        xLabels: [0, 8, 16, 24, 32, 40, 48, 56],
+        yLabels: [0, 8, 16, 24, 32, 40, 48, 56, 64],
+        edit2d: true,
+      });
       const editTile = await visibleEditTile(page);
       const { editTileIndex, originalPosition } = await page.evaluate((uid) => {
         const tiles = window.pawsWorkbench.document.tiles;
@@ -959,6 +1050,130 @@ async function recordEditor() {
       await page.locator("#view-2d").click();
       await page.locator("#mode-play").click();
       await page.locator(".level-canvas-2d").waitFor({ state: "visible" });
+      const initialTools = await page.evaluate(() =>
+        window.pawsWorkbench.playSnapshot.tools);
+      assert.deepEqual(initialTools, {
+        shuffle: { remaining: 1 },
+        match: { remaining: 1 },
+        undo: { remaining: 1 },
+      });
+      const playTools = { initial: initialTools };
+
+      const undoUid = await stashAvailableTileIn2d(page);
+      const trayBeforeUndo = await page.evaluate(() => [
+        ...window.pawsWorkbench.playSnapshot.tray,
+      ]);
+      await delay(650);
+      await page.locator("#play-tool-undo").click();
+      await page.waitForFunction(
+        (uid) =>
+          window.pawsWorkbench.playSnapshot.tools.undo.remaining === 0 &&
+          !window.pawsWorkbench.playSnapshot.tray.includes(uid),
+        undoUid,
+      );
+      const undoState = await page.evaluate(() => ({
+        tray: [...window.pawsWorkbench.playSnapshot.tray],
+        remaining: window.pawsWorkbench.playSnapshot.tools.undo.remaining,
+      }));
+      playTools.undo = {
+        uid: undoUid,
+        trayBefore: trayBeforeUndo,
+        trayAfter: undoState.tray,
+        remaining: undoState.remaining,
+      };
+      await delay(700);
+
+      const removedBeforeToolMatch = await page.evaluate(() =>
+        window.pawsWorkbench.playSnapshot.tiles.filter((tile) => tile.removed).length,
+      );
+      await page.locator("#play-tool-match").click();
+      await page.waitForFunction(
+        (before) =>
+          window.pawsWorkbench.playSnapshot.tools.match.remaining === 0 &&
+          window.pawsWorkbench.playSnapshot.tiles.filter((tile) => tile.removed).length
+            === before + 2,
+        removedBeforeToolMatch,
+      );
+      const matchState = await page.evaluate(() => ({
+        removedAfter:
+          window.pawsWorkbench.playSnapshot.tiles.filter((tile) => tile.removed).length,
+        remaining: window.pawsWorkbench.playSnapshot.tools.match.remaining,
+        tools: window.pawsWorkbench.playSnapshot.tools,
+      }));
+      playTools.match = {
+        removedBefore: removedBeforeToolMatch,
+        removedAfter: matchState.removedAfter,
+        remaining: matchState.remaining,
+      };
+      playTools.shared2d = matchState.tools;
+      await delay(900);
+
+      await page.locator("#view-3d").click();
+      await page.locator(".level-canvas-3d").waitFor({ state: "visible" });
+      await waitForWorkbench(page);
+      playTools.shared3d = await page.evaluate(() =>
+        window.pawsWorkbench.playSnapshot.tools);
+      assert.deepEqual(playTools.shared3d, playTools.shared2d);
+      const beforeToolShuffle = await page.evaluate(() => {
+        const boardTiles = window.pawsWorkbench.playSnapshot.tiles.filter(
+          ({ removed, stashedSlot }) => !removed && !Number.isInteger(stashedSlot),
+        );
+        return {
+          identity: boardTiles.map(({ uid, x, y, layer, faceDown }) => ({
+            uid,
+            x,
+            y,
+            layer,
+            faceDown,
+          })),
+          types: boardTiles
+            .map(({ type }) => type)
+            .sort((left, right) => left - right),
+        };
+      });
+      await delay(600);
+      await page.locator("#play-tool-shuffle").click();
+      await page.waitForFunction(() =>
+        window.pawsWorkbench.playSnapshot.tools.shuffle.remaining === 0);
+      const afterToolShuffle = await page.evaluate(() => {
+        const boardTiles = window.pawsWorkbench.playSnapshot.tiles.filter(
+          ({ removed, stashedSlot }) => !removed && !Number.isInteger(stashedSlot),
+        );
+        return {
+          identity: boardTiles.map(({ uid, x, y, layer, faceDown }) => ({
+            uid,
+            x,
+            y,
+            layer,
+            faceDown,
+          })),
+          types: boardTiles
+            .map(({ type }) => type)
+            .sort((left, right) => left - right),
+          tools: window.pawsWorkbench.playSnapshot.tools,
+        };
+      });
+      assert.deepEqual(afterToolShuffle.identity, beforeToolShuffle.identity);
+      assert.deepEqual(afterToolShuffle.types, beforeToolShuffle.types);
+      playTools.shuffle = {
+        identityPreserved: true,
+        typeMultisetPreserved: true,
+        remaining: afterToolShuffle.tools.shuffle.remaining,
+      };
+      playTools.allConsumed = afterToolShuffle.tools;
+      await delay(1_000);
+
+      await page.locator("#view-2d").click();
+      await page.locator(".level-canvas-2d").waitFor({ state: "visible" });
+      await page.locator("#restart-play").click();
+      await page.waitForFunction(() =>
+        Object.values(window.pawsWorkbench.playSnapshot.tools)
+          .every(({ remaining }) => remaining === 1));
+      playTools.afterRestart = await page.evaluate(() =>
+        window.pawsWorkbench.playSnapshot.tools);
+      proof.actions.playTools = playTools;
+      await delay(650);
+
       const removedBefore = await page.evaluate(() =>
         window.pawsWorkbench.playSnapshot.tiles.filter((tile) => tile.removed).length,
       );
@@ -974,7 +1189,7 @@ async function recordEditor() {
       );
       assert.ok(removedAfter > removedBefore);
       proof.actions.play2d = { removedBefore, removedAfter };
-      await delay(2800);
+      await delay(750);
       await page.locator("#view-3d").click();
       await page.locator(".level-canvas-3d").waitFor({ state: "visible" });
       await waitForWorkbench(page);
@@ -995,7 +1210,7 @@ async function recordEditor() {
         selectedBefore: selectedBeforePlay3d,
         selectedAfter: selectedAfterPlay3d,
       };
-      await delay(2700);
+      await delay(900);
 
       // 01:10 — save, reload, delete the local AI copy and verify it is forgotten.
       await waitUntil(startedAt, 70);
@@ -1193,6 +1408,14 @@ async function main() {
       sourceFiles.map(async (relativePath) => [
         relativePath,
         await sha256SourceFile(join(repoRoot, ...relativePath.split("/"))),
+      ]),
+    ),
+  );
+  recording.proof.assets = Object.fromEntries(
+    await Promise.all(
+      assetFiles.map(async (relativePath) => [
+        relativePath,
+        await sha256File(join(repoRoot, ...relativePath.split("/"))),
       ]),
     ),
   );

@@ -1,18 +1,18 @@
 {
   "schemaVersion": 1,
-  "recordedAt": "2026-07-28T06:28:58.003Z",
+  "recordedAt": "2026-07-28T08:41:13.694Z",
   "recording": {
     "browser": "system Chrome",
-    "preRollMs": 963,
-    "completedAt": "2026-07-28T06:30:26.011Z",
+    "preRollMs": 973,
+    "completedAt": "2026-07-28T08:42:41.702Z",
     "durationMs": 88008
   },
   "timeline": {
     "tools": 0,
-    "edit2d": 12008,
-    "view3d": 32007,
-    "play": 50002,
-    "persistence": 70003
+    "edit2d": 12004,
+    "view3d": 32008,
+    "play": 50008,
+    "persistence": 70000
   },
   "actions": {
     "metadata": {
@@ -48,19 +48,19 @@
       }
     },
     "aiGeneration": {
-      "fileName": "ai_level_2681036961.json",
+      "fileName": "ai_level_228065896.json",
       "reference": "all",
       "solvable": true,
       "tileCount": 200,
       "layerCount": 15,
       "targetScore": 60,
-      "actualScore": 61,
-      "rating": "困难入门",
+      "actualScore": 59,
+      "rating": "标准",
       "dimensions": {
         "structure": 84,
-        "information": 70,
-        "choice": 52,
-        "route": 55,
+        "information": 64,
+        "choice": 50,
+        "route": 53,
         "endurance": 45
       },
       "board": {
@@ -87,13 +87,49 @@
       "trialCount": 12,
       "stale": false
     },
+    "fieldGrid": {
+      "board": {
+        "width": 7,
+        "height": 8
+      },
+      "bounds": {
+        "minX": 0,
+        "minY": 0,
+        "maxX": 56,
+        "maxY": 64
+      },
+      "majorLineCount": 17,
+      "centerLineCount": 15,
+      "xLabels": [
+        0,
+        8,
+        16,
+        24,
+        32,
+        40,
+        48,
+        56
+      ],
+      "yLabels": [
+        0,
+        8,
+        16,
+        24,
+        32,
+        40,
+        48,
+        56,
+        64
+      ],
+      "edit2d": true
+    },
     "edit2d": {
       "drag": {
         "uid": "tile-195",
         "selectedBefore": "tile-195",
         "selectedAfter": "tile-195",
         "before": {
-          "x": 36,
+          "x": 20,
           "y": 4
         },
         "after": {
@@ -156,25 +192,25 @@
     "edit3d": {
       "cameraBefore": {
         "position": [
-          1.4175700417596921,
-          1.3494364811242725,
+          0.41757004175969126,
+          1.3518061764770724,
           -3.5
         ],
         "target": [
-          -2,
-          0.31049518842932594,
+          -3,
+          0.31286488378212585,
           -3.5
         ]
       },
       "cameraAfter": {
         "position": [
-          -5.4192649359308644,
-          0.5347829241880317,
-          -4.508715177590631
+          -6.419264974282386,
+          0.5371526195408317,
+          -4.508715047589586
         ],
         "target": [
-          -2,
-          0.31049518842932594,
+          -3,
+          0.31286488378212585,
           -3.5
         ]
       },
@@ -201,10 +237,10 @@
             1.1293539700886997e-15
           ]
         },
-        "relationEdges": 7,
+        "relationEdges": 4,
         "relationLines": 1,
         "explodedDelta": 2.3099999999999996,
-        "focusDistance": 0
+        "focusDistance": 0.0006079183074408356
       },
       "selectedBefore": "",
       "selectedAfter": "tile-1",
@@ -215,16 +251,95 @@
         "restored": true
       }
     },
+    "playTools": {
+      "initial": {
+        "shuffle": {
+          "remaining": 1
+        },
+        "match": {
+          "remaining": 1
+        },
+        "undo": {
+          "remaining": 1
+        }
+      },
+      "undo": {
+        "uid": "tile-180",
+        "trayBefore": [
+          "tile-180",
+          null
+        ],
+        "trayAfter": [
+          null,
+          null
+        ],
+        "remaining": 0
+      },
+      "match": {
+        "removedBefore": 0,
+        "removedAfter": 2,
+        "remaining": 0
+      },
+      "shared2d": {
+        "shuffle": {
+          "remaining": 1
+        },
+        "match": {
+          "remaining": 0
+        },
+        "undo": {
+          "remaining": 0
+        }
+      },
+      "shared3d": {
+        "shuffle": {
+          "remaining": 1
+        },
+        "match": {
+          "remaining": 0
+        },
+        "undo": {
+          "remaining": 0
+        }
+      },
+      "shuffle": {
+        "identityPreserved": true,
+        "typeMultisetPreserved": true,
+        "remaining": 0
+      },
+      "allConsumed": {
+        "shuffle": {
+          "remaining": 0
+        },
+        "match": {
+          "remaining": 0
+        },
+        "undo": {
+          "remaining": 0
+        }
+      },
+      "afterRestart": {
+        "shuffle": {
+          "remaining": 1
+        },
+        "match": {
+          "remaining": 1
+        },
+        "undo": {
+          "remaining": 1
+        }
+      }
+    },
     "play2d": {
       "removedBefore": 0,
       "removedAfter": 2
     },
     "play3d": {
       "selectedBefore": "",
-      "selectedAfter": "tile-136"
+      "selectedAfter": "tile-165"
     },
     "export": {
-      "fileName": "ai_level_2681036961.json",
+      "fileName": "ai_level_228065896.json",
       "gridUnit": "sheep_7x8_mini8",
       "tileCount": 202
     },
@@ -254,16 +369,18 @@
   },
   "media": {
     "file": "paws-level-editor-tutorial.mp4",
-    "sha256": "9832d761ea556ceed91dcf43cb6bbfd03bd2b15b8045c971702f71945bff780f"
+    "sha256": "482b9e463ac6a49e37ede515111e124b7c7ccebca51a26b60d352e546b0aca86"
   },
   "sources": {
-    "projects/paws-level-editor/index.html": "0a70cd3f2b93208c4a18d185b29e6df41692464325d5603125622be4f0e3900b",
-    "projects/paws-level-editor/styles.css": "4f6da28b4f72ba190b7d73b31f0ccda3fc6b9216ae7f3daffadfbe528f971c94",
+    "projects/paws-level-editor/index.html": "229dd17b8762cb3df9abbc26a0d2254e052dec4b06141aaff19c556d8fff6483",
+    "projects/paws-level-editor/styles.css": "1286f9081a248308d5842bb786f081f99e8a388a81c1cf46836d80c3d4dc839b",
     "projects/paws-level-editor/app.mjs": "d54ca4e1fa3c1aa524e63f9b7a743d8b883710c1ff340a8e290190d293e485c7",
     "projects/paws-level-editor/static-api-client.mjs": "a37e3bcaa2bfed9ddf10aa800fb5fbaa025bc751398e4201eddf236e4e740c84",
     "projects/paws-level-editor/core/ai-level-generator.mjs": "eb50862026dcc1a0c523fb1eaf1ee758472617848adca4a8938eeae5ae9c22c1",
     "projects/paws-level-editor/core/editor-geometry.mjs": "4e718a15f0fb67959ecd22d7a8a4ebcc14c4aa5f224f5f1887937626e29f1f91",
+    "projects/paws-level-editor/core/field-grid-layout.mjs": "65830f5bcb8752369616fec825ab82e68ef0c6e5607dfaefafdf02d02c2bf8ab",
     "projects/paws-level-editor/core/fill-tool.mjs": "af97bbfa44ccc63e34bfa9e74f1f40dd93eb27c31dbec6772225da2cc65c2fed",
+    "projects/paws-level-editor/core/gameplay-assets.mjs": "72c615e9e082e7914a2b7ac80f8cc56e464c004509adc1bd6c7f487e96399732",
     "projects/paws-level-editor/core/gameplay-metadata.mjs": "5d8fa3d35d252e7ef824ae5c2c40dc329c06d2e6f2ce856a1ed4bf6ec2f284ff",
     "projects/paws-level-editor/core/grass-layout.mjs": "62649a7d7f99b864490acf7ac8fd5dde04041e646c4f9538534f73568275c931",
     "projects/paws-level-editor/core/level-adapter.mjs": "4dc3645422db52049cecba3dfdc43c77daeea5dfec341a98e276efed74b6d42a",
@@ -273,8 +390,10 @@
     "projects/paws-level-editor/core/level-statistics.mjs": "e48189c09151890d234eee1e2733eb474d44f55ff1d9c31db616124896d8c653",
     "projects/paws-level-editor/core/level-validator.mjs": "985bb657d171cb2514c50ff30ead45583303961887c9d08f89f7c18fa8490c28",
     "projects/paws-level-editor/core/pass-rate-evaluator.mjs": "a5a439cca258961ef92bbd7300c74ac5b7b0ebb28a7aa0bb55fe22f3fcfd1aa2",
+    "projects/paws-level-editor/core/play-engine.mjs": "dd4fa4518448670d35f240d0ac65d45d0970593844c397f62dd63af384ae2e24",
     "projects/paws-level-editor/core/tile-relations.mjs": "75bf4ef64e5e7615b8936f3b7d727139cbbfcf016a8f902e6c5f58bfe5f59c57",
     "projects/paws-level-editor/core/view-model.mjs": "381d2e8626728ddf4de320cbe5340ac96bc5063c67a174dfaed72602e17ecd6c",
+    "projects/paws-level-editor/core/xorshift.mjs": "3472afc3a99c70fa0bd3ea7f207f55c113b6c722cffa6a9232d75c4866c0e7ff",
     "projects/paws-level-editor/ui/ai-level-dialog.mjs": "4b9edeb251049f53b7d39c36db582fa840236ebfc7446a2410a80693afc57274",
     "projects/paws-level-editor/ui/editor-shortcuts.mjs": "6dd75fb89a98e46450fee11bb35088a5ac941bf40665f000a5a95918df102bca",
     "projects/paws-level-editor/ui/grass-field.mjs": "d3888d3deb1c10654dec0730138b7d25d231a71fa7f1f3d9458f8ec7d5983e25",
@@ -284,12 +403,18 @@
     "projects/paws-level-editor/ui/local-level-import.mjs": "651987b8d3c1ca4293218bb1289f48c6c706ce2ba502e0960e5ae02a6883d8e9",
     "projects/paws-level-editor/ui/level-summary.mjs": "f7876ba36caaef6ac9123f98680aad02a65e5134f6ec1486f306e17f359b4713",
     "projects/paws-level-editor/ui/legacy-ai-open-upgrade.mjs": "e413eab44f7b04289015f5eb98f37971ced2057085e902fb2b04e9ac9eb8f2bd",
-    "projects/paws-level-editor/ui/workbench-controller.mjs": "1411271b5f99a515150a78a9feb26a3f491993f1f5d90bc9706b523cc32fc603",
-    "projects/paws-level-editor/views/canvas-2d.mjs": "217831d8ed35934970282c1bb5032aa68dbe29c780473af64a799099b47e8047",
+    "projects/paws-level-editor/ui/play-tool-command.mjs": "877de31443a4a4d5d7dfd103c0ede802d65e03b0b8c125b59530ab96fbd12089",
+    "projects/paws-level-editor/ui/workbench-controller.mjs": "0d1f9ad089b8c7ea27ccc22b3f040a99bb6af4f2a88398dd6f2c0358b753fe91",
+    "projects/paws-level-editor/views/canvas-2d.mjs": "be326c42544db0eaa5ee8d6bc218a60c159f6c9fc1ebe90333bd0fe00ec1d094",
     "projects/paws-level-editor/views/three-3d.mjs": "833df4188b351e2869c7cd0f1c2ce57a885822a21f512a291b5f42f5fc867613",
     "projects/paws-level-editor/levels/index.json": "0ebe5bb7629dce68b6c922d434c1c2a5e8942e65cf1d6771aefbe2b27d3c80a2",
     "projects/paws-level-editor/levels/level_0021_r2_第二关模板12.json": "c7787830ed553ae16de6516408c8247f3ad9152c2ef78ed33e6c75d8f05aae68",
-    "scripts/record-paws-level-editor-demo.mjs": "7dafb78ba7fa02bb5b3e568c88c319be24a939ab1af90e9e8a88f7d513e1b117",
+    "scripts/record-paws-level-editor-demo.mjs": "bb27fe88e1acd21d1e6bfcaaddfcc4078483382e8db6fcba8928e22109498574",
     "scripts/paws-recording-support.mjs": "e5d2b2f02b67798c90d080a3202b97ecce50ffd738e31fc374d751ad18ae79c2"
+  },
+  "assets": {
+    "projects/paws-level-editor/assets/gameplay/btn_random.png": "4a0b49174141dd11b4661169ada716a5948ba5da809b187a77c2930165f63c67",
+    "projects/paws-level-editor/assets/gameplay/btn_magnet.png": "bbad8ae6fbedf3f15dffb5323e234d77a8269b59e3d17a364123365266fb1cae",
+    "projects/paws-level-editor/assets/gameplay/btn_rollback.png": "df6505efd51e91ca05095695fb3f8cb4dfad1d3dccf33fb8e61e34d894079e5f"
   }
 }

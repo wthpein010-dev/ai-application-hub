@@ -54,6 +54,10 @@ test("tutorial assets keep the chapter timeline and player references aligned", 
   }
   assert.match(script, /00:00/);
   assert.match(script, /01:10/);
+  assert.match(script, /7×8 工程网格/);
+  assert.match(script, /随机、配对、撤回/);
+  assert.match(captions, /工程网格/);
+  assert.match(captions, /随机、配对、撤回/);
   assert.equal(existsSync(join(videoRoot, "poster.jpg")), true);
 });
 
@@ -85,7 +89,9 @@ test("recording proof matches current media, sources, timeline and real state ch
     "projects/paws-level-editor/static-api-client.mjs",
     "projects/paws-level-editor/core/ai-level-generator.mjs",
     "projects/paws-level-editor/core/editor-geometry.mjs",
+    "projects/paws-level-editor/core/field-grid-layout.mjs",
     "projects/paws-level-editor/core/fill-tool.mjs",
+    "projects/paws-level-editor/core/gameplay-assets.mjs",
     "projects/paws-level-editor/core/gameplay-metadata.mjs",
     "projects/paws-level-editor/core/grass-layout.mjs",
     "projects/paws-level-editor/core/level-adapter.mjs",
@@ -95,8 +101,10 @@ test("recording proof matches current media, sources, timeline and real state ch
     "projects/paws-level-editor/core/level-statistics.mjs",
     "projects/paws-level-editor/core/level-validator.mjs",
     "projects/paws-level-editor/core/pass-rate-evaluator.mjs",
+    "projects/paws-level-editor/core/play-engine.mjs",
     "projects/paws-level-editor/core/tile-relations.mjs",
     "projects/paws-level-editor/core/view-model.mjs",
+    "projects/paws-level-editor/core/xorshift.mjs",
     "projects/paws-level-editor/ui/ai-level-dialog.mjs",
     "projects/paws-level-editor/ui/editor-shortcuts.mjs",
     "projects/paws-level-editor/ui/grass-field.mjs",
@@ -106,6 +114,7 @@ test("recording proof matches current media, sources, timeline and real state ch
     "projects/paws-level-editor/ui/local-level-import.mjs",
     "projects/paws-level-editor/ui/level-summary.mjs",
     "projects/paws-level-editor/ui/legacy-ai-open-upgrade.mjs",
+    "projects/paws-level-editor/ui/play-tool-command.mjs",
     "projects/paws-level-editor/ui/workbench-controller.mjs",
     "projects/paws-level-editor/views/canvas-2d.mjs",
     "projects/paws-level-editor/views/three-3d.mjs",
@@ -119,6 +128,19 @@ test("recording proof matches current media, sources, timeline and real state ch
     assert.equal(
       proof.sources[relativePath],
       sha256Source(join(root, ...relativePath.split("/"))),
+      relativePath,
+    );
+  }
+  const assetFiles = [
+    "projects/paws-level-editor/assets/gameplay/btn_random.png",
+    "projects/paws-level-editor/assets/gameplay/btn_magnet.png",
+    "projects/paws-level-editor/assets/gameplay/btn_rollback.png",
+  ];
+  assert.deepEqual(Object.keys(proof.assets).sort(), assetFiles.sort());
+  for (const relativePath of assetFiles) {
+    assert.equal(
+      proof.assets[relativePath],
+      sha256(readFileSync(join(root, ...relativePath.split("/")))),
       relativePath,
     );
   }
@@ -178,6 +200,15 @@ test("recording proof matches current media, sources, timeline and real state ch
   assert.equal(actions.passRate.passCount <= actions.passRate.trialCount, true);
   assert.equal(actions.passRate.passPercent >= 0 && actions.passRate.passPercent <= 100, true);
   assert.equal(actions.passRate.stale, false);
+  assert.deepEqual(actions.fieldGrid, {
+    board: { width: 7, height: 8 },
+    bounds: { minX: 0, minY: 0, maxX: 56, maxY: 64 },
+    majorLineCount: 17,
+    centerLineCount: 15,
+    xLabels: [0, 8, 16, 24, 32, 40, 48, 56],
+    yLabels: [0, 8, 16, 24, 32, 40, 48, 56, 64],
+    edit2d: true,
+  });
   assert.equal(
     Math.abs(actions.aiGeneration.actualScore - actions.aiGeneration.targetScore) <= 5,
     true,
@@ -223,6 +254,38 @@ test("recording proof matches current media, sources, timeline and real state ch
   assert.equal(actions.edit3d.deleteUndo.restored, true);
   assert.ok(actions.play2d.removedAfter > actions.play2d.removedBefore);
   assert.notEqual(actions.play3d.selectedBefore, actions.play3d.selectedAfter);
+  assert.deepEqual(actions.playTools.initial, {
+    shuffle: { remaining: 1 },
+    match: { remaining: 1 },
+    undo: { remaining: 1 },
+  });
+  assert.equal(actions.playTools.undo.trayBefore.includes(actions.playTools.undo.uid), true);
+  assert.equal(actions.playTools.undo.trayAfter.includes(actions.playTools.undo.uid), false);
+  assert.equal(actions.playTools.undo.remaining, 0);
+  assert.equal(
+    actions.playTools.match.removedAfter,
+    actions.playTools.match.removedBefore + 2,
+  );
+  assert.equal(actions.playTools.match.remaining, 0);
+  assert.deepEqual(actions.playTools.shared2d, actions.playTools.shared3d);
+  assert.deepEqual(actions.playTools.shared3d, {
+    shuffle: { remaining: 1 },
+    match: { remaining: 0 },
+    undo: { remaining: 0 },
+  });
+  assert.equal(actions.playTools.shuffle.identityPreserved, true);
+  assert.equal(actions.playTools.shuffle.typeMultisetPreserved, true);
+  assert.equal(actions.playTools.shuffle.remaining, 0);
+  assert.deepEqual(actions.playTools.allConsumed, {
+    shuffle: { remaining: 0 },
+    match: { remaining: 0 },
+    undo: { remaining: 0 },
+  });
+  assert.deepEqual(actions.playTools.afterRestart, {
+    shuffle: { remaining: 1 },
+    match: { remaining: 1 },
+    undo: { remaining: 1 },
+  });
   assert.equal(actions.persistence.savedToLocalStorage, true);
   assert.equal(actions.persistence.lastOpenedRestored, true);
   assert.equal(
