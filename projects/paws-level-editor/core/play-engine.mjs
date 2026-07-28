@@ -4,8 +4,15 @@ import {
   isFirstRoundDocument,
 } from "./random-assigner.mjs";
 import { solveLevel } from "./level-solver.mjs";
+import { XorShift } from "./xorshift.mjs";
 
 const isSpecialType = (type) => type >= 1001 && type <= 1006;
+
+const freshTools = () => ({
+  shuffle: { remaining: 1 },
+  match: { remaining: 1 },
+  undo: { remaining: 1 },
+});
 
 function playEvent(type, values = {}) {
   return { type, ...values };
@@ -25,6 +32,7 @@ export function createPlaySession(document, seed = 1, options = {}) {
   let selectedTileWasFlip = false;
   let won = false;
   let deadlocked = false;
+  let tools = freshTools();
 
   function resetRuntime(nextSeed = currentSeed) {
     const tentativeSeed = Number(nextSeed) | 0;
@@ -36,6 +44,7 @@ export function createPlaySession(document, seed = 1, options = {}) {
       selectedTileWasFlip,
       won,
       deadlocked,
+      tools,
     };
     try {
       const assigned = assignRandomTypes(sourceDocument.tiles ?? [], {
@@ -60,6 +69,7 @@ export function createPlaySession(document, seed = 1, options = {}) {
       deadlocked = false;
       refreshCoverage();
       updateEndState([]);
+      tools = freshTools();
       currentSeed = tentativeSeed;
     } catch (error) {
       ({
@@ -70,6 +80,7 @@ export function createPlaySession(document, seed = 1, options = {}) {
         selectedTileWasFlip,
         won,
         deadlocked,
+        tools,
       } = previous);
       throw error;
     }
@@ -134,6 +145,18 @@ export function createPlaySession(document, seed = 1, options = {}) {
       }
     }
     return null;
+  }
+
+  function countMatchingPairs(candidates) {
+    const counts = new Map();
+    for (const tile of candidates) {
+      counts.set(tile.type, (counts.get(tile.type) ?? 0) + 1);
+    }
+    return [...counts.values()].reduce((sum, count) => sum + Math.floor(count / 2), 0);
+  }
+
+  function rejectTool(tool, reason) {
+    return [playEvent("tool-rejected", { tool, reason })];
   }
 
   function findSpecialBonusPair() {
@@ -301,6 +324,64 @@ export function createPlaySession(document, seed = 1, options = {}) {
     return events;
   }
 
+  function useShuffleTool() {
+    if (tools.shuffle.remaining <= 0) {
+      return rejectTool("shuffle", "spent");
+    }
+
+    const boardTiles = tiles.filter((tile) => !tile.removed && !isInTray(tile));
+    if (boardTiles.length < 2) {
+      return rejectTool("shuffle", "insufficient-tiles");
+    }
+
+    refreshCoverage();
+    const accessibleUids = new Set(
+      boardTiles.filter(isBoardAccessible).map(({ uid }) => uid),
+    );
+    const sourceTypes = boardTiles.map(({ type }) => type);
+    let fallback = null;
+    let accepted = null;
+
+    for (let attempt = 0; attempt < 64; attempt += 1) {
+      const candidateSeed =
+        currentSeed ^ Math.imul(attempt + 1, 0x9e3779b9);
+      const candidateTypes = XorShift.fromSeed(candidateSeed).shuffle(sourceTypes);
+      const accessibleTiles = boardTiles
+        .map((tile, index) => ({ ...tile, type: candidateTypes[index] }))
+        .filter(({ uid }) => accessibleUids.has(uid));
+      const accessiblePairCount = countMatchingPairs(accessibleTiles);
+      const candidate = { candidateTypes, accessiblePairCount };
+      if (accessiblePairCount >= 2) {
+        accepted = candidate;
+        break;
+      }
+      if (!fallback && accessiblePairCount >= 1) {
+        fallback = candidate;
+      }
+    }
+
+    accepted ??= fallback;
+    if (!accepted) {
+      return rejectTool("shuffle", "no-shuffle-pair");
+    }
+
+    boardTiles.forEach((tile, index) => {
+      tile.type = accepted.candidateTypes[index];
+    });
+    selectedTileUid = null;
+    selectedTileWasFlip = false;
+    tools.shuffle.remaining -= 1;
+    refreshCoverage();
+    const events = [
+      playEvent("tool-shuffled", {
+        tileUids: boardTiles.map(({ uid }) => uid),
+        accessiblePairCount: accepted.accessiblePairCount,
+      }),
+    ];
+    updateEndState(events);
+    return events;
+  }
+
   function getSnapshot() {
     return structuredClone({
       seed: currentSeed,
@@ -308,6 +389,7 @@ export function createPlaySession(document, seed = 1, options = {}) {
       tray,
       selectedTileUid,
       secondSlotUnlocked,
+      tools,
       won,
       deadlocked,
     });
@@ -329,6 +411,7 @@ export function createPlaySession(document, seed = 1, options = {}) {
   return {
     interact,
     stash,
+    useShuffleTool,
     restart,
     getSnapshot,
     setSecondSlotUnlocked,

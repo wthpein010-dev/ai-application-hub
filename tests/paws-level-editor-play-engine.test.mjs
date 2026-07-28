@@ -38,6 +38,97 @@ function eventTypes(events) {
   return events.map(({ type }) => type);
 }
 
+test("each play tool starts with one use", () => {
+  const session = createPlaySession(level([
+    tile("a", 0, 0, 1, 1),
+    tile("b", 16, 0, 1, 1),
+  ]));
+
+  assert.deepEqual(session.getSnapshot().tools, {
+    shuffle: { remaining: 1 },
+    match: { remaining: 1 },
+    undo: { remaining: 1 },
+  });
+});
+
+test("shuffle preserves board identities, geometry and type multiset while consuming one use", () => {
+  const session = createPlaySession(level([
+    tile("a1", 0, 0, 1, 1),
+    tile("b1", 16, 0, 1, 2),
+    tile("c1", 32, 0, 1, 3),
+    tile("a2", 0, 16, 1, 1),
+    tile("b2", 16, 16, 1, 2),
+    tile("c2", 32, 16, 1, 3),
+  ]), 27);
+  const before = session.getSnapshot();
+
+  const events = session.useShuffleTool();
+  const after = session.getSnapshot();
+
+  assert.deepEqual(eventTypes(events), ["tool-shuffled"]);
+  assert.equal(events[0].accessiblePairCount >= 2, true);
+  assert.deepEqual(
+    after.tiles.map(({ uid, x, y, layer, faceDown }) => ({ uid, x, y, layer, faceDown })),
+    before.tiles.map(({ uid, x, y, layer, faceDown }) => ({ uid, x, y, layer, faceDown })),
+  );
+  assert.deepEqual(
+    after.tiles.map(({ type }) => type).sort((left, right) => left - right),
+    before.tiles.map(({ type }) => type).sort((left, right) => left - right),
+  );
+  assert.equal(after.tools.shuffle.remaining, 0);
+});
+
+test("rejected shuffle is atomic and does not consume inventory", () => {
+  const session = createPlaySession(level([
+    tile("a", 0, 0, 1, 1),
+    tile("b", 16, 0, 1, 2),
+  ]), 31);
+  const before = session.getSnapshot();
+
+  const events = session.useShuffleTool();
+
+  assert.deepEqual(events, [{
+    type: "tool-rejected",
+    tool: "shuffle",
+    reason: "no-shuffle-pair",
+  }]);
+  assert.deepEqual(session.getSnapshot(), before);
+});
+
+test("shuffle rejects insufficient tiles and a spent use without changing state", () => {
+  const insufficient = createPlaySession(level([
+    tile("only", 0, 0, 1, 1),
+  ]), 9);
+  const beforeInsufficient = insufficient.getSnapshot();
+  assert.equal(insufficient.useShuffleTool()[0].reason, "insufficient-tiles");
+  assert.deepEqual(insufficient.getSnapshot(), beforeInsufficient);
+
+  const spent = createPlaySession(level([
+    tile("a1", 0, 0, 1, 1),
+    tile("a2", 16, 0, 1, 1),
+    tile("b1", 32, 0, 1, 2),
+    tile("b2", 48, 0, 1, 2),
+  ]), 12);
+  spent.useShuffleTool();
+  const beforeSpent = spent.getSnapshot();
+  assert.equal(spent.useShuffleTool()[0].reason, "spent");
+  assert.deepEqual(spent.getSnapshot(), beforeSpent);
+});
+
+test("restart restores shuffle inventory", () => {
+  const session = createPlaySession(level([
+    tile("a1", 0, 0, 1, 1),
+    tile("a2", 16, 0, 1, 1),
+    tile("b1", 32, 0, 1, 2),
+    tile("b2", 48, 0, 1, 2),
+  ]), 12);
+
+  session.useShuffleTool();
+  assert.equal(session.getSnapshot().tools.shuffle.remaining, 0);
+  session.restart();
+  assert.equal(session.getSnapshot().tools.shuffle.remaining, 1);
+});
+
 test("first round assigns one distinct concrete type to every random layer", () => {
   const tiles = [];
   for (let layer = 1; layer <= 3; layer += 1) {
