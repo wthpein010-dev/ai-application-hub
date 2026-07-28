@@ -22,6 +22,7 @@ import { GrassField } from "./grass-field.mjs";
 import { commandFromKeyboardEvent } from "./editor-shortcuts.mjs";
 import { createLevelDownload, triggerLevelDownload } from "./level-export.mjs";
 import { formatLevelId, formatLevelModifiedAt } from "./level-summary.mjs";
+import { createLastOpenedLevelStore } from "./last-opened-level.mjs";
 import { upgradeLocalAiLevelOnOpen } from "./legacy-ai-open-upgrade.mjs";
 import { Canvas2DView } from "../views/canvas-2d.mjs";
 import { Three3DView } from "../views/three-3d.mjs";
@@ -61,9 +62,18 @@ function nextSeed() {
 }
 
 export class WorkbenchController {
-  constructor(root = document.querySelector("#app"), { api = createApiClient() } = {}) {
+  constructor(
+    root = document.querySelector("#app"),
+    {
+      api = createApiClient(),
+      lastOpenedLevels = createLastOpenedLevelStore({
+        validateFileName: isValidLevelFileName,
+      }),
+    } = {},
+  ) {
     this.root = root;
     this.api = api;
+    this.lastOpenedLevels = lastOpenedLevels;
     this.runtimeMode = api.runtimeMode ?? "static";
     this.canDeleteBundled = api.canDeleteBundled === true;
     this.canResetBundled = api.canResetBundled !== false;
@@ -377,9 +387,18 @@ export class WorkbenchController {
         && !this.document
         && this.pendingIndependentOpenEpochs.size === 0
       ) {
-        const level = this.levels.find(
-          ({ fileName }) => fileName === this.defaultFileName,
-        ) ?? this.levels[0];
+        const rememberedFileName = this.lastOpenedLevels.read(this.runtimeMode);
+        const rememberedLevel = this.levels.find(
+          ({ fileName }) => fileName === rememberedFileName,
+        );
+        if (rememberedFileName && !rememberedLevel) {
+          this.lastOpenedLevels.clear(this.runtimeMode);
+        }
+        const level = rememberedLevel
+          ?? this.levels.find(
+            ({ fileName }) => fileName === this.defaultFileName,
+          )
+          ?? this.levels[0];
         await this.openLevel(level.fileName, {
           recoverable: level.recoverable,
           sourceRefreshEpoch: refreshEpoch,
@@ -616,6 +635,7 @@ export class WorkbenchController {
       this.elements.emptyStage.hidden = true;
       this.renderLevelList();
       this.updateUI();
+      this.lastOpenedLevels.write(this.runtimeMode, fileName);
       if (geometryUpgrade.status === "failed") {
         this.showToast(
           `旧 AI 关卡自动修复失败（${geometryUpgrade.reason}），已保留原始布局。`,

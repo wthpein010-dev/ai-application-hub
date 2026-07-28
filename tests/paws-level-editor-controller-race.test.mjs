@@ -69,8 +69,8 @@ function levelResponse(fileName, id) {
   };
 }
 
-function controllerHarness(api) {
-  const controller = new WorkbenchController({}, { api });
+function controllerHarness(api, options = {}) {
+  const controller = new WorkbenchController({}, { api, ...options });
   const events = [];
   controller.elements = {
     emptyStage: { hidden: false },
@@ -165,9 +165,16 @@ test("rerandomize preserves controller play state and reports a rejected seed", 
 test("the latest level-open request wins when an older request resolves last", async () => {
   const slow = deferred();
   const fast = deferred();
+  const remembered = [];
   const { controller, events } = controllerHarness({
     loadLevel(fileName) {
       return fileName === "slow.json" ? slow.promise : fast.promise;
+    },
+  }, {
+    lastOpenedLevels: {
+      read: () => "",
+      clear: () => {},
+      write: (mode, fileName) => remembered.push([mode, fileName]),
     },
   });
 
@@ -187,6 +194,68 @@ test("the latest level-open request wins when an older request resolves last", a
     events.some(([type, message]) => type === "toast" && /已打开 slow\.json/.test(message)),
     false,
   );
+  assert.deepEqual(remembered, [["static", "fast.json"]]);
+});
+
+test("initial refresh restores a present last-open level before the catalog default", async () => {
+  const loads = [];
+  const writes = [];
+  const { controller } = controllerHarness({
+    async listLevelCatalog() {
+      return {
+        defaultFileName: "default.json",
+        levels: [
+          { fileName: "default.json", name: "default" },
+          { fileName: "remembered.json", name: "remembered" },
+        ],
+      };
+    },
+    async loadLevel(fileName) {
+      loads.push(fileName);
+      return levelResponse(fileName, fileName === "remembered.json" ? 2 : 1);
+    },
+  }, {
+    lastOpenedLevels: {
+      read: () => "remembered.json",
+      clear: () => {},
+      write: (mode, fileName) => writes.push([mode, fileName]),
+    },
+  });
+
+  await controller.refreshLevels();
+
+  assert.deepEqual(loads, ["remembered.json"]);
+  assert.equal(controller.document?.fileName, "remembered.json");
+  assert.deepEqual(writes, [["static", "remembered.json"]]);
+});
+
+test("missing last-open level is cleared and safely falls back to the catalog default", async () => {
+  const loads = [];
+  const clears = [];
+  const { controller } = controllerHarness({
+    async listLevelCatalog() {
+      return {
+        defaultFileName: "default.json",
+        levels: [{ fileName: "default.json", name: "default" }],
+      };
+    },
+    async loadLevel(fileName) {
+      loads.push(fileName);
+      return levelResponse(fileName, 1);
+    },
+  }, {
+    lastOpenedLevels: {
+      read: () => "deleted.json",
+      clear: (mode) => clears.push(mode),
+      write: () => {},
+    },
+  });
+
+  await controller.refreshLevels();
+
+  assert.deepEqual(clears, ["static"]);
+  assert.deepEqual(loads, ["default.json"]);
+  assert.equal(controller.document?.fileName, "default.json");
 });
 
 test("cancelling a recoverable open does not invalidate an in-flight open", async () => {
