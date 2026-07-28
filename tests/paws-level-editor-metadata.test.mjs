@@ -6,6 +6,10 @@ import {
   serializeLevelDocument,
 } from "../projects/paws-level-editor/core/level-adapter.mjs";
 import { validateLevel } from "../projects/paws-level-editor/core/level-validator.mjs";
+import {
+  readPassRateResult,
+  writePassRateResult,
+} from "../projects/paws-level-editor/core/pass-rate-evaluator.mjs";
 
 function rawLevel(designerNote = {}) {
   return {
@@ -137,6 +141,24 @@ test("serialization syncs levelKey to ID and preserves unknown metadata", () => 
   assert.equal(note.showLayerNum, false);
   assert.equal(note.customNote, "keep");
   assert.deepEqual(serialized.customTop, { keep: true });
+});
+
+test("serialization preserves Unity pass-rate fields written into designerNote", () => {
+  const document = parseLevelDocument(rawLevel({ customNote: "keep" }));
+  const result = {
+    passPercent: 80,
+    passCount: 8,
+    trialCount: 10,
+    invalidDealCount: 2,
+    failSolveCount: 2,
+    reasons: ["难点说明"],
+  };
+  document.designerNote = writePassRateResult(document.designerNote, result);
+
+  const serialized = serializeLevelDocument(document);
+  const note = JSON.parse(serialized.designerNote);
+  assert.deepEqual(readPassRateResult(note), result);
+  assert.equal(note.customNote, "keep");
 });
 
 test("serialization rejects a non-integer ID before syncing Level Key", () => {

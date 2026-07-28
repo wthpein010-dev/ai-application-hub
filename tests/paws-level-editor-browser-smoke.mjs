@@ -380,6 +380,7 @@ try {
     legacyAiUpgrade: null,
     aiGeneration: null,
     aiPlaythrough: null,
+    passRate: null,
     mobileImportHidden: null,
     mobileDeleteHidden: null,
   };
@@ -419,6 +420,26 @@ try {
   await assertNoHorizontalOverflow(page, "desktop");
   await assertToolbarClearsInspector(page, "1280x720");
   summary.desktopOverflow = false;
+  await page.locator("#evaluate-pass-rate").click();
+  await page.waitForFunction(() => {
+    const state = window.pawsWorkbench.passRateState;
+    return state?.result && !state.pending;
+  });
+  summary.passRate = await page.evaluate(() => {
+    const state = window.pawsWorkbench.passRateState;
+    return {
+      passPercent: state.result.passPercent,
+      passCount: state.result.passCount,
+      trialCount: state.result.trialCount,
+      stale: state.stale,
+      buttonText: document.querySelector("#evaluate-pass-rate")?.textContent.trim(),
+    };
+  });
+  assert.equal(summary.passRate.passPercent >= 0 && summary.passRate.passPercent <= 100, true);
+  assert.equal(summary.passRate.passCount <= summary.passRate.trialCount, true);
+  assert.equal(summary.passRate.trialCount, 12);
+  assert.equal(summary.passRate.stale, false);
+  assert.equal(summary.passRate.buttonText, "重新评估");
 
   const importedLevel = {
     id: 72020,
@@ -875,6 +896,12 @@ try {
     },
     { uid: originalTile.uid, ...modifiedTile },
   );
+  assert.equal(
+    await page.evaluate(() => window.pawsWorkbench.passRateState.stale),
+    true,
+    "editing should mark the previously stored pass-rate result stale",
+  );
+  assert.match(await page.locator(".pass-rate-result").textContent(), /结果已过期/);
   await page.locator('[data-doc-field="id"]').fill("121");
   await page.locator('[data-doc-field="id"]').press("Tab");
   await page.locator('[data-gameplay-field="gameLevelOrder"]').fill("4");
@@ -912,15 +939,35 @@ try {
       gameLevelOrder: note.gameLevelOrder,
       cdNum: note.cdNum,
       showLayerNum: note.showLayerNum,
+      passRatePercent: note.passRatePercent,
+      passRatePassCount: note.passRatePassCount,
+      passRateTrialCount: note.passRateTrialCount,
+      passRateInvalidDeal: note.passRateInvalidDeal,
+      passRateFailSolve: note.passRateFailSolve,
+      passRateReasonsText: note.passRateReasonsText,
     };
   }, defaultFileName);
-  assert.deepEqual(storedGameplay, {
+  assert.deepEqual({
+    id: storedGameplay.id,
+    levelKey: storedGameplay.levelKey,
+    gameLevelOrder: storedGameplay.gameLevelOrder,
+    cdNum: storedGameplay.cdNum,
+    showLayerNum: storedGameplay.showLayerNum,
+  }, {
     id: 121,
     levelKey: 121,
     gameLevelOrder: 4,
     cdNum: 75,
     showLayerNum: false,
   });
+  assert.equal(storedGameplay.passRatePercent >= 0 && storedGameplay.passRatePercent <= 100, true);
+  assert.equal(storedGameplay.passRateTrialCount, 12);
+  assert.equal(
+    storedGameplay.passRatePassCount + storedGameplay.passRateFailSolve,
+    storedGameplay.passRateTrialCount,
+  );
+  assert.equal(storedGameplay.passRateInvalidDeal, 0);
+  assert.equal(typeof storedGameplay.passRateReasonsText, "string");
 
   await page.reload({ waitUntil: "networkidle" });
   await waitForWorkbench(page);
@@ -937,12 +984,28 @@ try {
     true,
     "refresh should auto-open and restore the saved tile edit",
   );
-  assert.deepEqual(
-    await page.evaluate(() => ({
-      id: window.pawsWorkbench.document.id,
-      ...window.pawsWorkbench.document.gameplay,
-    })),
-    storedGameplay,
+  const reloadedMetadata = await page.evaluate(() => ({
+    id: window.pawsWorkbench.document.id,
+    ...window.pawsWorkbench.document.gameplay,
+    passRate: window.pawsWorkbench.passRateState,
+  }));
+  assert.deepEqual({
+    id: reloadedMetadata.id,
+    levelKey: reloadedMetadata.levelKey,
+    gameLevelOrder: reloadedMetadata.gameLevelOrder,
+    cdNum: reloadedMetadata.cdNum,
+    showLayerNum: reloadedMetadata.showLayerNum,
+  }, {
+    id: storedGameplay.id,
+    levelKey: storedGameplay.levelKey,
+    gameLevelOrder: storedGameplay.gameLevelOrder,
+    cdNum: storedGameplay.cdNum,
+    showLayerNum: storedGameplay.showLayerNum,
+  });
+  assert.equal(reloadedMetadata.passRate.stale, false);
+  assert.equal(
+    reloadedMetadata.passRate.result.passPercent,
+    storedGameplay.passRatePercent,
   );
   summary.metadataRoundTrip = storedGameplay;
 

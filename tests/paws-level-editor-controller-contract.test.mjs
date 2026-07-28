@@ -388,6 +388,27 @@ test("full-random fill is a 2D gesture with a configurable start layer and one h
   assert.match(controller, /\["place",\s*"fill",\s*"box",\s*"pan"\]\.includes\(this\.tool\)/);
 });
 
+test("Unity pass rate is shown in the inspector, invalidated by edits and refreshed before save", () => {
+  assert.match(
+    controller,
+    /import\s*\{[^}]*evaluateLevelPassRate[^}]*readPassRateResult[^}]*writePassRateResult[^}]*\}\s*from "\.\.\/core\/pass-rate-evaluator\.mjs"/,
+  );
+  assert.match(controller, /passRateEvaluator\s*=\s*evaluateLevelPassRate/);
+  assert.match(controller, /this\.passRateState\s*=\s*\{[^}]*result:\s*null[^}]*stale:\s*false[^}]*pending:\s*false/);
+  assert.match(controller, /onEvaluatePassRate:\s*\(\)\s*=>\s*this\.runPassRateEvaluation\(\)/);
+  assert.match(inspector, /id="evaluate-pass-rate"/);
+  assert.match(inspector, /通关率评估/);
+  assert.match(inspector, /passRate\.progress/);
+  assert.match(controller, /markPassRateStale\(\)/);
+  assert.match(executeBody, /this\.markPassRateStale\(\)/);
+  assert.match(controller, /undo\(\)[\s\S]*markPassRateStale\(\)/);
+  assert.match(controller, /redo\(\)[\s\S]*markPassRateStale\(\)/);
+  assert.match(
+    performSaveBody,
+    /await\s+this\.runPassRateEvaluation\(\{\s*persistToDocument:\s*true[\s\S]*serializeLevelDocument\(this\.document\)/,
+  );
+});
+
 test("inspector uses safe board patches, read-only grid units and clickable issues", () => {
   assert.match(inspector, /data-grid-unit[^>]*readonly/);
   assert.match(inspector, /data-board-field="width"/);

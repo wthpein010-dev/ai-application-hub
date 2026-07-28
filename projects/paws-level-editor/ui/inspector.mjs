@@ -62,7 +62,13 @@ export class InspectorPanel {
       return;
     }
 
-    const { document, issues = [], readonly = false, placement = {} } = state;
+    const {
+      document,
+      issues = [],
+      readonly = false,
+      placement = {},
+      passRate = { result: null, stale: false, pending: false, progress: null },
+    } = state;
     const selected = document.tiles.filter((tile) => state.selection.has(tile.uid));
     const selectedType = selected.length ? fieldValue(selected, "type") : placement.type;
     const validShowLayerNum = typeof document.gameplay?.showLayerNum === "boolean";
@@ -168,12 +174,44 @@ export class InspectorPanel {
         }
       </section>
 
+      <section class="inspector-section pass-rate-section">
+        <h3>通关率评估 <span>Unity 同口径</span></h3>
+        ${
+          passRate.pending
+            ? `
+              <div class="pass-rate-progress">
+                <progress max="${passRate.progress?.total || 1}" value="${passRate.progress?.completed || 0}"></progress>
+                <span>${passRate.progress?.completed || 0} / ${passRate.progress?.total || "…"}</span>
+              </div>`
+            : passRate.result
+              ? `
+                <div class="pass-rate-result${passRate.stale ? " is-stale" : ""}">
+                  <strong>${passRate.result.passPercent}%</strong>
+                  <div>
+                    <span>${passRate.result.passCount} / ${passRate.result.trialCount} 次有效出盘通关</span>
+                    <small>无效出盘 ${passRate.result.invalidDealCount} · 求解失败 ${passRate.result.failSolveCount}</small>
+                  </div>
+                  ${passRate.stale ? "<em>结果已过期</em>" : "<em>结果有效</em>"}
+                </div>
+                ${
+                  passRate.result.reasons?.length
+                    ? `<ul class="pass-rate-reasons">${passRate.result.reasons.map((reason) => `<li>${escapeHtml(reason)}</li>`).join("")}</ul>`
+                    : ""
+                }`
+              : '<p class="pass-rate-empty">尚未评估；保存或另存为前会自动运行。</p>'
+        }
+        <button id="evaluate-pass-rate" type="button" class="secondary-button pass-rate-button" ${passRate.pending ? "disabled" : ""}>
+          ${passRate.pending ? "正在评估…" : passRate.result ? "重新评估" : "运行评估"}
+        </button>
+        <p class="pass-rate-note">条件：2 个暂存槽、洗牌 1 次、清槽复活 1 次。</p>
+      </section>
+
       <section class="inspector-section">
         <div class="inspector-actions">
           <button id="validate-level" type="button" class="secondary-button">重新校验</button>
           <button id="export-level" type="button" class="secondary-button">导出 JSON</button>
-          <button id="save-as-level" type="button" class="secondary-button" ${readonly ? "disabled" : ""}>另存为</button>
-          <button id="save-level" type="button" class="primary-button" ${readonly ? "disabled" : ""}>保存到浏览器</button>
+          <button id="save-as-level" type="button" class="secondary-button" ${readonly || passRate.pending ? "disabled" : ""}>另存为</button>
+          <button id="save-level" type="button" class="primary-button" ${readonly || passRate.pending ? "disabled" : ""}>保存到浏览器</button>
         </div>
       </section>`;
 
@@ -226,6 +264,9 @@ export class InspectorPanel {
       this.callbacks.onSelectionChange?.(new Set());
     });
     this.host.querySelector("#validate-level")?.addEventListener("click", () => this.callbacks.onValidate?.());
+    this.host.querySelector("#evaluate-pass-rate")?.addEventListener("click", () => {
+      this.callbacks.onEvaluatePassRate?.();
+    });
     this.host.querySelectorAll("[data-issue-index]").forEach((button) => {
       button.addEventListener("click", () => {
         this.callbacks.onIssueFocus?.(this.state?.issues?.[Number(button.dataset.issueIndex)]);

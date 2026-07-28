@@ -25,6 +25,12 @@ const { WorkbenchController } = await import(
 const { createPlaySession } = await import(
   "../projects/paws-level-editor/core/play-engine.mjs"
 );
+const { EditHistory } = await import(
+  "../projects/paws-level-editor/core/edit-history.mjs"
+);
+const { parseLevelDocument } = await import(
+  "../projects/paws-level-editor/core/level-adapter.mjs"
+);
 
 function deferred() {
   let resolve;
@@ -80,11 +86,25 @@ function controllerHarness(api, options = {}) {
   controller.isDirty = () => false;
   controller.validate = () => [];
   controller.mountRenderer = () => events.push(["render", controller.document?.fileName]);
+  controller.refreshRenderer = () => events.push(["refresh-renderer", controller.document?.fileName]);
   controller.renderLevelList = () => events.push(["list", controller.levels.map(({ fileName }) => fileName)]);
   controller.updateUI = () => events.push(["ui", controller.document?.fileName]);
   controller.showToast = (message, type = "normal") => events.push(["toast", message, type]);
   controller.setConnection = (state, message) => events.push(["connection", state, message]);
   return { controller, events };
+}
+
+function editableDocument(fileName = "level_0007.json") {
+  const document = parseLevelDocument(rawLevel("保存评估", 7), {
+    fileName,
+    version: "version-7",
+  });
+  document.fileName = fileName;
+  document.version = "version-7";
+  document.bundled = false;
+  document.local = true;
+  document.source = "manual";
+  return document;
 }
 
 function atomicRestartDocument() {
@@ -465,4 +485,125 @@ test("a stale refresh error cannot replace a newer online connection state", asy
   const connections = events.filter(([type]) => type === "connection");
   assert.equal(connections.at(-1)[1], "online");
   assert.equal(events.some(([, , message]) => message === "stale failure"), false);
+});
+
+test("save awaits a fresh pass-rate result before serializing and calling the API", async () => {
+  const order = [];
+  let savedValue;
+  const result = {
+    passPercent: 75,
+    passCount: 9,
+    trialCount: 12,
+    invalidDealCount: 0,
+    failSolveCount: 3,
+    reasons: ["模拟结果"],
+  };
+  const { controller } = controllerHarness({
+    runtimeMode: "static",
+    async saveLevel({ value }) {
+      order.push("save");
+      savedValue = value;
+      return {
+        version: "version-saved",
+        bundled: false,
+        local: true,
+        source: "manual",
+        value,
+      };
+    },
+    async listLevelCatalog() {
+      return { defaultFileName: "", levels: [] };
+    },
+  }, {
+    async passRateEvaluator(_document, { onProgress }) {
+      order.push("evaluate");
+      onProgress({ completed: 12, total: 12 });
+      return result;
+    },
+  });
+  controller.document = editableDocument();
+  controller.history = new EditHistory(controller.document);
+
+  assert.equal(await controller.performSave({
+    fileName: controller.document.fileName,
+    saveAs: false,
+    expectedVersion: controller.document.version,
+  }), true);
+
+  assert.deepEqual(order, ["evaluate", "save"]);
+  const note = JSON.parse(savedValue.designerNote);
+  assert.equal(note.passRatePercent, 75);
+  assert.equal(note.passRatePassCount, 9);
+  assert.equal(note.passRateReasonsText, "模拟结果");
+  assert.deepEqual(controller.passRateState.result, result);
+  assert.equal(controller.passRateState.stale, false);
+});
+
+test("a pass-rate failure stops save without replacing the previous stored result", async () => {
+  let saveCalled = false;
+  const { controller } = controllerHarness({
+    runtimeMode: "static",
+    async saveLevel() {
+      saveCalled = true;
+      throw new Error("save must not run");
+    },
+  }, {
+    async passRateEvaluator() {
+      throw new Error("评估器失败");
+    },
+  });
+  controller.document = editableDocument();
+  Object.assign(controller.document.designerNote, {
+    passRatePercent: 50,
+    passRatePassCount: 6,
+    passRateTrialCount: 12,
+    passRateInvalidDeal: 0,
+    passRateFailSolve: 6,
+    passRateReasonsText: "旧结果",
+  });
+  controller.history = new EditHistory(controller.document);
+
+  assert.equal(await controller.performSave({
+    fileName: controller.document.fileName,
+    saveAs: false,
+    expectedVersion: controller.document.version,
+  }), false);
+
+  assert.equal(saveCalled, false);
+  assert.equal(controller.document.designerNote.passRatePercent, 50);
+  assert.equal(controller.document.designerNote.passRateReasonsText, "旧结果");
+});
+
+test("an evaluation from a previously open level cannot stale the replacement document", async () => {
+  const pending = deferred();
+  const { controller, events } = controllerHarness({}, {
+    passRateEvaluator: () => pending.promise,
+  });
+  controller.document = editableDocument("old.json");
+  controller.resetPassRateState();
+  const evaluation = controller.runPassRateEvaluation();
+  controller.document = editableDocument("new.json");
+  controller.resetPassRateState();
+  pending.resolve({
+    passPercent: 100,
+    passCount: 12,
+    trialCount: 12,
+    invalidDealCount: 0,
+    failSolveCount: 0,
+    reasons: [],
+  });
+
+  assert.equal(await evaluation, null);
+  assert.equal(controller.document.fileName, "new.json");
+  assert.deepEqual(controller.passRateState, {
+    result: null,
+    stale: false,
+    pending: false,
+    progress: null,
+  });
+  assert.equal(
+    events.some(([type, message]) =>
+      type === "toast" && /评估期间已修改/.test(message)),
+    false,
+  );
 });

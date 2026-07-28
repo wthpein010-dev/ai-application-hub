@@ -1211,6 +1211,96 @@ select:disabled {
   font-size: 11px;
 }
 
+.pass-rate-progress {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 9px;
+  color: var(--muted);
+  font-family: var(--font-mono);
+  font-size: 10px;
+}
+
+.pass-rate-progress progress {
+  width: 100%;
+  height: 7px;
+  overflow: hidden;
+  border: 0;
+  border-radius: 999px;
+  accent-color: var(--cyan);
+}
+
+.pass-rate-result {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 3px 10px;
+  align-items: center;
+}
+
+.pass-rate-result > strong {
+  grid-row: span 2;
+  color: var(--accent);
+  font-family: var(--font-mono);
+  font-size: 27px;
+  line-height: 1;
+}
+
+.pass-rate-result > div {
+  display: grid;
+  gap: 3px;
+  min-width: 0;
+  color: var(--text);
+  font-size: 10px;
+}
+
+.pass-rate-result small,
+.pass-rate-note,
+.pass-rate-empty {
+  color: var(--muted);
+  font-size: 9px;
+  line-height: 1.45;
+}
+
+.pass-rate-result em {
+  grid-column: 2;
+  justify-self: start;
+  padding: 2px 5px;
+  border: 1px solid rgb(213 240 106 / 0.25);
+  border-radius: 999px;
+  color: var(--accent);
+  font-size: 8px;
+  font-style: normal;
+}
+
+.pass-rate-result.is-stale > strong,
+.pass-rate-result.is-stale em {
+  color: var(--danger);
+}
+
+.pass-rate-result.is-stale em {
+  border-color: rgb(255 121 107 / 0.28);
+}
+
+.pass-rate-reasons {
+  display: grid;
+  gap: 4px;
+  margin: 9px 0 0;
+  padding-left: 16px;
+  color: var(--muted);
+  font-size: 9px;
+  line-height: 1.45;
+}
+
+.pass-rate-button {
+  width: 100%;
+  margin-top: 10px;
+}
+
+.pass-rate-note,
+.pass-rate-empty {
+  margin: 8px 0 0;
+}
+
 .play-summary {
   display: grid;
   gap: 8px;

@@ -8,6 +8,11 @@ import { scoreLevelDifficulty } from "../core/level-difficulty.mjs";
 import { solveLevel } from "../core/level-solver.mjs";
 import { buildFillCells, planFillPlacement } from "../core/fill-tool.mjs";
 import {
+  evaluateLevelPassRate,
+  readPassRateResult,
+  writePassRateResult,
+} from "../core/pass-rate-evaluator.mjs";
+import {
   isGameplayMetadataIssue,
   normalizeGameplayPatch,
 } from "../core/gameplay-metadata.mjs";
@@ -70,11 +75,13 @@ export class WorkbenchController {
       lastOpenedLevels = createLastOpenedLevelStore({
         validateFileName: isValidLevelFileName,
       }),
+      passRateEvaluator = evaluateLevelPassRate,
     } = {},
   ) {
     this.root = root;
     this.api = api;
     this.lastOpenedLevels = lastOpenedLevels;
+    this.passRateEvaluator = passRateEvaluator;
     this.runtimeMode = api.runtimeMode ?? "static";
     this.canDeleteBundled = api.canDeleteBundled === true;
     this.canResetBundled = api.canResetBundled !== false;
@@ -103,6 +110,13 @@ export class WorkbenchController {
     this.aiGenerationPending = false;
     this.lastAiGeneration = null;
     this.currentDifficulty = null;
+    this.passRateState = {
+      result: null,
+      stale: false,
+      pending: false,
+      progress: null,
+    };
+    this.passRateEvaluationEpoch = 0;
     this.openLevelEpoch = 0;
     this.refreshLevelsEpoch = 0;
     this.pendingIndependentOpenEpochs = new Set();
@@ -133,6 +147,7 @@ export class WorkbenchController {
       onSnapStep: (step) => this.setSnapStep(step),
       onSelectionChange: (selection) => this.setSelection(selection),
       onValidate: () => this.validate(),
+      onEvaluatePassRate: () => this.runPassRateEvaluation(),
       onIssueFocus: (issue) => this.focusIssue(issue),
       onExport: () => this.exportLevel(),
       onSave: () => this.save(),
@@ -614,6 +629,10 @@ export class WorkbenchController {
       this.document.bundled = response.bundled === true;
       this.document.local = response.local === true;
       this.document.source = response.source;
+      this.resetPassRateState();
+      if (geometryUpgrade.status === "upgraded") {
+        this.markPassRateStale();
+      }
       this.currentDifficulty = scoreLevelDifficulty(this.document, {
         maxNodes: 5000,
       });
@@ -752,6 +771,7 @@ export class WorkbenchController {
     this.playSession = null;
     this.playSnapshot = null;
     this.lastAiGeneration = null;
+    this.resetPassRateState();
     this.mountRenderer();
     this.elements.emptyStage.hidden = false;
     this.updateUI();
@@ -1063,6 +1083,7 @@ export class WorkbenchController {
     this.document.bundled = false;
     this.document.local = false;
     this.document.source = "manual";
+    this.resetPassRateState();
     this.currentDifficulty = scoreLevelDifficulty(this.document, {
       maxNodes: 5000,
     });
@@ -1099,12 +1120,104 @@ export class WorkbenchController {
     return this.issues;
   }
 
+  resetPassRateState() {
+    this.passRateEvaluationEpoch += 1;
+    this.passRateState = {
+      result: readPassRateResult(this.document?.designerNote),
+      stale: false,
+      pending: false,
+      progress: null,
+    };
+  }
+
+  markPassRateStale() {
+    this.passRateEvaluationEpoch += 1;
+    this.passRateState = {
+      ...this.passRateState,
+      stale: true,
+      progress: null,
+    };
+  }
+
+  async runPassRateEvaluation({
+    persistToDocument = false,
+    announce = true,
+  } = {}) {
+    if (!this.document || this.passRateState.pending) {
+      return null;
+    }
+    const previousState = structuredClone(this.passRateState);
+    const evaluationEpoch = ++this.passRateEvaluationEpoch;
+    const evaluatedDocument = this.document;
+    const snapshot = structuredClone(this.document);
+    this.passRateState = {
+      ...this.passRateState,
+      pending: true,
+      progress: { completed: 0, total: 0 },
+    };
+    this.updateUI();
+    try {
+      const result = await this.passRateEvaluator(snapshot, {
+        onProgress: (progress) => {
+          if (evaluationEpoch !== this.passRateEvaluationEpoch) return;
+          this.passRateState = {
+            ...this.passRateState,
+            progress: structuredClone(progress),
+          };
+          this.updateUI();
+        },
+      });
+      if (this.document !== evaluatedDocument) {
+        return null;
+      }
+      if (evaluationEpoch !== this.passRateEvaluationEpoch) {
+        throw new Error("关卡在评估期间已修改，请重新评估。");
+      }
+      if (persistToDocument) {
+        this.document.designerNote = writePassRateResult(
+          this.document.designerNote,
+          result,
+        );
+      }
+      this.passRateState = {
+        result: structuredClone(result),
+        stale: false,
+        pending: false,
+        progress: null,
+      };
+      this.updateUI();
+      if (announce) {
+        this.showToast(`Unity 同口径通关率：${result.passPercent}%（${result.passCount}/${result.trialCount}）。`);
+      }
+      return result;
+    } catch (error) {
+      if (evaluationEpoch === this.passRateEvaluationEpoch) {
+        this.passRateState = {
+          ...previousState,
+          pending: false,
+          progress: null,
+        };
+      } else {
+        this.passRateState = {
+          ...this.passRateState,
+          stale: true,
+          pending: false,
+          progress: null,
+        };
+      }
+      this.updateUI();
+      this.showToast(`通关率评估失败：${error.message}`, "error");
+      return null;
+    }
+  }
+
   execute(command) {
     if (this.readonly || this.mode !== "edit" || !this.history) {
       return;
     }
     this.history.execute(command);
     this.currentDifficulty = null;
+    this.markPassRateStale();
     this.validate(false);
     this.refreshRenderer();
     this.updateUI();
@@ -1440,6 +1553,7 @@ export class WorkbenchController {
     this.selection = new Set(
       [...this.selection].filter((uid) => this.document.tiles.some((tile) => tile.uid === uid)),
     );
+    this.markPassRateStale();
     this.validate(false);
     this.refreshRenderer();
     this.updateUI();
@@ -1449,6 +1563,7 @@ export class WorkbenchController {
     if (this.mode !== "edit" || !this.history?.redo()) {
       return;
     }
+    this.markPassRateStale();
     this.validate(false);
     this.refreshRenderer();
     this.updateUI();
@@ -1719,6 +1834,13 @@ export class WorkbenchController {
       );
       return false;
     }
+    const passRate = await this.runPassRateEvaluation({
+      persistToDocument: true,
+      announce: false,
+    });
+    if (!passRate) {
+      return false;
+    }
     try {
       const value = serializeLevelDocument(this.document);
       const source = saveAs
@@ -1862,6 +1984,7 @@ export class WorkbenchController {
       snapshot: this.playSnapshot,
       placement: this.placement,
       snapStep: this.snapStep,
+      passRate: this.passRateState,
     });
   }
 
