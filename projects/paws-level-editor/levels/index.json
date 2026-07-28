@@ -3,38 +3,38 @@
   "levels": [
     {
       "id": 1,
-      "fileName": "level_0001_第一关.json",
+      "fileName": "level_0001_r1_第一关.json",
       "name": "第一关",
       "difficulty": "Normal",
-      "tileCount": 22,
-      "layerCount": 3,
-      "modifiedAt": "2026-07-20T00:00:00.000Z"
-    },
-    {
-      "id": 11,
-      "fileName": "level_0011_第一关模板3.json",
-      "name": "第一关模板3",
-      "difficulty": "Normal",
-      "tileCount": 24,
+      "tileCount": 16,
       "layerCount": 4,
       "modifiedAt": "2026-07-20T00:00:00.000Z"
     },
     {
-      "id": 12,
-      "fileName": "level_0012_第一关模板4.json",
-      "name": "第一关模板4",
+      "id": 1,
+      "fileName": "level_0001_r2_33第二关模板13.json",
+      "name": "33第二关模板13",
       "difficulty": "Normal",
-      "tileCount": 32,
-      "layerCount": 5,
+      "tileCount": 256,
+      "layerCount": 20,
       "modifiedAt": "2026-07-20T00:00:00.000Z"
     },
     {
-      "id": 13,
-      "fileName": "level_0013_第一关模板5.json",
-      "name": "第一关模板5",
+      "id": 2,
+      "fileName": "level_0002_r1_默认第一关.json",
+      "name": "默认第一关",
       "difficulty": "Normal",
-      "tileCount": 18,
-      "layerCount": 2,
+      "tileCount": 10,
+      "layerCount": 3,
+      "modifiedAt": "2026-07-20T00:00:00.000Z"
+    },
+    {
+      "id": 2,
+      "fileName": "level_0002_r2_43第二关模板22.json",
+      "name": "43第二关模板22",
+      "difficulty": "Normal",
+      "tileCount": 284,
+      "layerCount": 42,
       "modifiedAt": "2026-07-20T00:00:00.000Z"
     },
     {
@@ -42,7 +42,7 @@
       "fileName": "level_0013_r2_第二关模板2.json",
       "name": "第二关模板2",
       "difficulty": "Normal",
-      "tileCount": 300,
+      "tileCount": 316,
       "layerCount": 37,
       "modifiedAt": "2026-07-20T00:00:00.000Z"
     },
@@ -56,20 +56,11 @@
       "modifiedAt": "2026-07-20T00:00:00.000Z"
     },
     {
-      "id": 15,
-      "fileName": "level_0015_r1_第一关模板7.json",
-      "name": "第一关模板7",
-      "difficulty": "Normal",
-      "tileCount": 24,
-      "layerCount": 2,
-      "modifiedAt": "2026-07-20T00:00:00.000Z"
-    },
-    {
       "id": 20,
       "fileName": "level_0020_r1_第一关模板6.json",
       "name": "第一关模板6",
       "difficulty": "Normal",
-      "tileCount": 18,
+      "tileCount": 14,
       "layerCount": 4,
       "modifiedAt": "2026-07-20T00:00:00.000Z"
     },
@@ -78,7 +69,7 @@
       "fileName": "level_0020_r2_第二关模板1.json",
       "name": "第二关模板1",
       "difficulty": "Normal",
-      "tileCount": 316,
+      "tileCount": 304,
       "layerCount": 34,
       "modifiedAt": "2026-07-20T00:00:00.000Z"
     },
@@ -105,7 +96,7 @@
       "fileName": "level_0022_r2_第二关模板10.json",
       "name": "第二关模板10",
       "difficulty": "Normal",
-      "tileCount": 334,
+      "tileCount": 322,
       "layerCount": 27,
       "modifiedAt": "2026-07-20T00:00:00.000Z"
     },
@@ -116,15 +107,6 @@
       "difficulty": "Normal",
       "tileCount": 202,
       "layerCount": 29,
-      "modifiedAt": "2026-07-20T00:00:00.000Z"
-    },
-    {
-      "id": 26,
-      "fileName": "level_0026_r1_实验1.json",
-      "name": "实验1",
-      "difficulty": "Normal",
-      "tileCount": 96,
-      "layerCount": 10,
       "modifiedAt": "2026-07-20T00:00:00.000Z"
     },
     {
@@ -146,15 +128,6 @@
       "modifiedAt": "2026-07-20T00:00:00.000Z"
     },
     {
-      "id": 33,
-      "fileName": "level_0033_r2_33第二关模板13.json",
-      "name": "33第二关模板13",
-      "difficulty": "Normal",
-      "tileCount": 256,
-      "layerCount": 20,
-      "modifiedAt": "2026-07-20T00:00:00.000Z"
-    },
-    {
       "id": 35,
       "fileName": "level_0035_r2_35 第二关模板15.json",
       "name": "35 第二关模板15",
@@ -168,7 +141,7 @@
       "fileName": "level_0037_r2_37 第二关 37第二关模板17.json",
       "name": "37 第二关 37第二关模板17",
       "difficulty": "Normal",
-      "tileCount": 222,
+      "tileCount": 182,
       "layerCount": 17,
       "modifiedAt": "2026-07-20T00:00:00.000Z"
     },
@@ -182,12 +155,39 @@
       "modifiedAt": "2026-07-20T00:00:00.000Z"
     },
     {
-      "id": 40,
-      "fileName": "level_0040_r2_40第二关模板19.json",
+      "id": 41,
+      "fileName": "level_0041_r2_41第二关模板20.json",
+      "name": "41第二关模板20",
+      "difficulty": "Normal",
+      "tileCount": 292,
+      "layerCount": 35,
+      "modifiedAt": "2026-07-20T00:00:00.000Z"
+    },
+    {
+      "id": 42,
+      "fileName": "level_0042_r2_42第二关模板21.json",
+      "name": "42第二关模板21",
+      "difficulty": "Normal",
+      "tileCount": 212,
+      "layerCount": 28,
+      "modifiedAt": "2026-07-20T00:00:00.000Z"
+    },
+    {
+      "id": 43,
+      "fileName": "level_0043_r2_40第二关模板19.json",
       "name": "40第二关模板19",
       "difficulty": "Normal",
-      "tileCount": 316,
+      "tileCount": 340,
       "layerCount": 24,
+      "modifiedAt": "2026-07-20T00:00:00.000Z"
+    },
+    {
+      "id": 44,
+      "fileName": "level_0044_r2_44第二关模板23.json",
+      "name": "44第二关模板23",
+      "difficulty": "Normal",
+      "tileCount": 220,
+      "layerCount": 28,
       "modifiedAt": "2026-07-20T00:00:00.000Z"
     },
     {

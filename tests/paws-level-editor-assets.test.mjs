@@ -103,6 +103,23 @@ test("all published block images preserve the expected 120 by 135 dimensions", (
   }
 });
 
+test("LAN defaults follow the current Unity Res resource directory", () => {
+  const launcher = readFileSync(
+    join(repoRoot, "scripts", "start-paws-level-editor-lan.ps1"),
+    "utf8",
+  );
+  const server = readFileSync(
+    join(repoRoot, "tools", "paws-level-editor-lan", "server.mjs"),
+    "utf8",
+  );
+  const guide = readFileSync(join(repoRoot, "docs", "paws-level-editor-lan.md"), "utf8");
+  const currentPath = /Assets\\SheepLevelEditor\\Res\\SheepLevelEditor\\Blocks/;
+  assert.match(launcher, currentPath);
+  assert.match(server.replaceAll("\\\\", "\\"), currentPath);
+  assert.match(guide, currentPath);
+  assert.match(launcher, /LegacyBlockAssetDir/);
+});
+
 test("public files contain no private level path or credential material", () => {
   const text = readPublicTextFiles(editorRoot);
   assert.doesNotMatch(text, /E:\\Mahjong|maque|WORKBENCH_PASSWORD\s*=|paws_lan_session=/i);

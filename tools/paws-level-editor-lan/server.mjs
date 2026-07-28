@@ -18,7 +18,7 @@ import { createLanLevelStore } from "./level-store.mjs";
 const MODULE_DIR = path.dirname(fileURLToPath(import.meta.url));
 const REPOSITORY_ROOT = path.resolve(MODULE_DIR, "..", "..");
 const DEFAULT_LEVEL_DIR = "E:\\Mahjong\\PawsHomeClient\\Assets\\GameRes\\Resources\\Config\\Gameplay\\EditorLevels";
-const DEFAULT_BLOCK_DIR = "E:\\Mahjong\\PawsHomeClient\\Assets\\SheepLevelEditor\\Resources\\SheepLevelEditor\\Blocks";
+const DEFAULT_BLOCK_DIR = "E:\\Mahjong\\PawsHomeClient\\Assets\\SheepLevelEditor\\Res\\SheepLevelEditor\\Blocks";
 const DEFAULT_FILE_NAME = "level_0021_r2_第二关模板12.json";
 
 function requireAuthentication(request, auth) {

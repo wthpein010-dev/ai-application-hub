@@ -1,7 +1,7 @@
 [CmdletBinding()]
 param(
     [string]$LevelDir = 'E:\Mahjong\PawsHomeClient\Assets\GameRes\Resources\Config\Gameplay\EditorLevels',
-    [string]$BlockAssetDir = 'E:\Mahjong\PawsHomeClient\Assets\SheepLevelEditor\Resources\SheepLevelEditor\Blocks',
+    [string]$BlockAssetDir = 'E:\Mahjong\PawsHomeClient\Assets\SheepLevelEditor\Res\SheepLevelEditor\Blocks',
     [string]$DefaultLevel = 'level_0021_r2_第二关模板12.json',
     [Alias('Host')]
     [string]$HostAddress = '0.0.0.0',
@@ -12,6 +12,15 @@ param(
 $ErrorActionPreference = 'Stop'
 $repositoryRoot = Split-Path -Parent (Split-Path -Parent $MyInvocation.MyCommand.Path)
 $serverEntry = Join-Path $repositoryRoot 'tools\paws-level-editor-lan\server.mjs'
+$LegacyBlockAssetDir = 'E:\Mahjong\PawsHomeClient\Assets\SheepLevelEditor\Resources\SheepLevelEditor\Blocks'
+
+if (
+    -not $PSBoundParameters.ContainsKey('BlockAssetDir') -and
+    -not (Test-Path -LiteralPath $BlockAssetDir -PathType Container) -and
+    (Test-Path -LiteralPath $LegacyBlockAssetDir -PathType Container)
+) {
+    $BlockAssetDir = $LegacyBlockAssetDir
+}
 
 if (-not (Test-Path -LiteralPath $LevelDir -PathType Container)) {
     throw "Level directory does not exist: $LevelDir"

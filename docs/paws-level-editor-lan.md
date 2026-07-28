@@ -18,8 +18,10 @@
 默认目录：
 
 - 关卡：`E:\Mahjong\PawsHomeClient\Assets\GameRes\Resources\Config\Gameplay\EditorLevels`
-- 牌图：`E:\Mahjong\PawsHomeClient\Assets\SheepLevelEditor\Resources\SheepLevelEditor\Blocks`
+- 牌图：`E:\Mahjong\PawsHomeClient\Assets\SheepLevelEditor\Res\SheepLevelEditor\Blocks`
 - 默认关：`level_0021_r2_第二关模板12.json`
+
+启动器优先使用工程当前 `Res` 目录；只有未显式传入 `-BlockAssetDir`、且当前目录不存在而旧 `Resources` 目录仍存在时，才兼容回退旧目录。显式路径无效会直接报错。
 
 如需改端口、目录或默认关，可传入参数：
 
