@@ -152,33 +152,44 @@ test("Nang WebGL manifest cache-busts the exact published build sizes", () => {
   assert.match(preview, new RegExp(`WebGL\\.wasm\\.gz' \\+ buildVersion, size: ${wasmSize}`));
 });
 
-test("Nang WebGL retries a transient asset fetch before failing", async () => {
+test("Nang WebGL retries a transient ranged chunk body before failing", async () => {
   const projectRoot = join(root, "projects", "nang-keng-pai-pai-xiang");
   const preview = readFileSync(join(projectRoot, "index.html"), "utf8");
   const script = /<script>([\s\S]*?)<\/script>/.exec(preview)?.[1] ?? "";
-  const start = script.indexOf("async function fetchAssetWithRetry");
+  const start = script.indexOf("async function fetchAssetChunkWithRetry");
   const end = script.indexOf("async function decompressAsset", start);
-  assert.ok(start >= 0, "missing asset fetch retry helper");
-  assert.ok(end > start, "retry helper must be defined before decompression");
+  assert.ok(start >= 0, "missing ranged chunk retry helper");
+  assert.ok(end > start, "ranged chunk helper must be defined before decompression");
 
   let attempts = 0;
   const context = {
     fetch: async () => {
       attempts += 1;
-      if (attempts === 1) throw new TypeError("network error");
-      return { ok: true, status: 200 };
+      return {
+        ok: true,
+        status: 206,
+        arrayBuffer: async () => {
+          if (attempts === 1) throw new TypeError("network error");
+          return new Uint8Array([11, 22]).buffer;
+        },
+      };
     },
     setTimeout: (callback) => callback(),
     globalThis: {},
   };
   const source = [
     script.slice(start, end),
-    "globalThis.fetchAssetWithRetry = fetchAssetWithRetry;",
+    "globalThis.fetchAssetChunkWithRetry = fetchAssetChunkWithRetry;",
   ].join("\n");
   vm.runInNewContext(source, context);
 
-  const response = await context.globalThis.fetchAssetWithRetry("Build/WebGL.data.gz?v=test");
-  assert.equal(response.ok, true);
+  const result = await context.globalThis.fetchAssetChunkWithRetry(
+    { url: "Build/WebGL.data.gz?v=test", size: 2 },
+    0,
+    1,
+  );
+  assert.deepEqual(Array.from(result.bytes), [11, 22]);
+  assert.equal(result.complete, false);
   assert.equal(attempts, 2);
 });
 
