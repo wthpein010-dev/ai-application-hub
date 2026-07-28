@@ -36,6 +36,11 @@ test("tutorial player exposes lazy loading, captions and five chapters", () => {
   );
   assert.equal((html.match(/data-time="/g) || []).length, 5);
   assert.doesNotMatch(html, /<video[^>]+\ssrc=/);
+  assert.doesNotMatch(html, /&#24050;&#21516;&#27493;\s*23/);
+  assert.match(
+    html,
+    /&#20869;&#32622;&#20851;&#21345;&#24211;&#24050;&#28165;&#31354;/,
+  );
 });
 
 test("tutorial assets keep the chapter timeline and player references aligned", () => {
