@@ -135,6 +135,23 @@ test("Nang WebGL build self-decompresses Gzip without server compression headers
   assert.equal(existsSync(join(projectRoot, "Build", "WebGL.wasm.gz")), true);
 });
 
+test("Nang WebGL manifest cache-busts the exact published build sizes", () => {
+  const projectRoot = join(root, "projects", "nang-keng-pai-pai-xiang");
+  const preview = readFileSync(join(projectRoot, "index.html"), "utf8");
+  const dataSize = statSync(join(projectRoot, "Build", "WebGL.data.gz")).size;
+  const frameworkSize = statSync(join(projectRoot, "Build", "WebGL.framework.js.gz")).size;
+  const wasmSize = statSync(join(projectRoot, "Build", "WebGL.wasm.gz")).size;
+
+  assert.match(preview, /const buildVersion = '\?v=20260728-gameplay-v2';/);
+  assert.match(preview, /WebGL\.loader\.js' \+ buildVersion/);
+  assert.match(preview, /WebGL\.data\.gz' \+ buildVersion/);
+  assert.match(preview, /WebGL\.framework\.js\.gz' \+ buildVersion/);
+  assert.match(preview, /WebGL\.wasm\.gz' \+ buildVersion/);
+  assert.match(preview, new RegExp(`WebGL\\.data\\.gz' \\+ buildVersion, size: ${dataSize}`));
+  assert.match(preview, new RegExp(`WebGL\\.framework\\.js\\.gz' \\+ buildVersion, size: ${frameworkSize}`));
+  assert.match(preview, new RegExp(`WebGL\\.wasm\\.gz' \\+ buildVersion, size: ${wasmSize}`));
+});
+
 test("IceCream is named 吃了个冰 and ranks after every other mini-game", () => {
   const icecream = catalogBlock("icecream");
   const ranker = runtime.slice(runtime.indexOf("function gameDisplayRank"), runtime.indexOf("function handleAppCardClick"));
