@@ -1,25 +1,25 @@
 {
   "schemaVersion": 1,
-  "recordedAt": "2026-07-28T10:13:58.335Z",
+  "recordedAt": "2026-07-28T13:13:25.791Z",
   "recording": {
     "browser": "system Chrome",
-    "preRollMs": 1087,
-    "completedAt": "2026-07-28T10:15:26.338Z",
-    "durationMs": 88003
+    "preRollMs": 1063,
+    "completedAt": "2026-07-28T13:14:53.793Z",
+    "durationMs": 88002
   },
   "timeline": {
     "tools": 0,
-    "edit2d": 12000,
-    "view3d": 32014,
-    "play": 50007,
-    "persistence": 70000
+    "edit2d": 12006,
+    "view3d": 32004,
+    "play": 50011,
+    "persistence": 70011
   },
   "actions": {
     "metadata": {
       "cardText": "视频本地参考#74000video_reference.json8 tiles07/28",
       "fileName": "video_reference.json",
       "levelId": 74000,
-      "modifiedAt": "2026-07-28T10:13:57.522Z"
+      "modifiedAt": "2026-07-28T13:13:25.011Z"
     },
     "grass": {
       "twoD": {
@@ -48,20 +48,20 @@
       }
     },
     "aiGeneration": {
-      "fileName": "ai_level_4009771894.json",
+      "fileName": "ai_level_3298943134.json",
       "reference": "all",
       "solvable": true,
       "tileCount": 200,
       "layerCount": 15,
       "targetScore": 60,
-      "actualScore": 59,
-      "rating": "标准",
+      "actualScore": 62,
+      "rating": "困难入门",
       "dimensions": {
-        "structure": 84,
-        "information": 66,
-        "choice": 50,
-        "route": 52,
-        "endurance": 45
+        "structure": 83,
+        "information": 70,
+        "choice": 53,
+        "route": 56,
+        "endurance": 46
       },
       "board": {
         "width": 7,
@@ -79,11 +79,98 @@
       "sameLayerOverlapPairs": 0,
       "totalEven": true,
       "globalTypesEven": true,
-      "layerTypesEven": true
+      "layerTypesEven": true,
+      "algorithmVersion": "paws-local-stat-v8-stage-towers",
+      "towerPlan": {
+        "towerCount": 5,
+        "highTowerCount": 2,
+        "centers": [
+          {
+            "id": 0,
+            "x": 0.16853627421709622,
+            "y": 0.18829653153809503,
+            "kind": "high"
+          },
+          {
+            "id": 1,
+            "x": 0.8548387564914902,
+            "y": 0.20997310803360014,
+            "kind": "high"
+          },
+          {
+            "id": 2,
+            "x": 0.17229416734227773,
+            "y": 0.7962159128250996,
+            "kind": "low"
+          },
+          {
+            "id": 3,
+            "x": 0.8361614365911998,
+            "y": 0.7840246246768253,
+            "kind": "low"
+          },
+          {
+            "id": 4,
+            "x": 0.5038715565205485,
+            "y": 0.4974928018550172,
+            "kind": "low"
+          }
+        ]
+      },
+      "structure": {
+        "towerCount": 3,
+        "highTowerCount": 2,
+        "platformComponentCount": 95,
+        "largestFlatPlatformSize": 6,
+        "boundaryRatio": 0.72,
+        "releaseDependencyDrop": 0.3833333333333333,
+        "stagePressure": {
+          "surface": {
+            "layerStart": 13,
+            "layerEnd": 15,
+            "remainingTiles": 200,
+            "openRate": 0.11,
+            "accessiblePairs": 3,
+            "pressure": 0.89
+          },
+          "shelter": {
+            "layerStart": 11,
+            "layerEnd": 12,
+            "remainingTiles": 156,
+            "openRate": 0.1346153846153846,
+            "accessiblePairs": 5,
+            "pressure": 0.8653846153846154
+          },
+          "middle": {
+            "layerStart": 7,
+            "layerEnd": 10,
+            "remainingTiles": 126,
+            "openRate": 0.16666666666666666,
+            "accessiblePairs": 2,
+            "pressure": 0.8333333333333334
+          },
+          "crisis": {
+            "layerStart": 3,
+            "layerEnd": 6,
+            "remainingTiles": 60,
+            "openRate": 0.36666666666666664,
+            "accessiblePairs": 4,
+            "pressure": 0.6333333333333333
+          },
+          "release": {
+            "layerStart": 1,
+            "layerEnd": 2,
+            "remainingTiles": 20,
+            "openRate": 0.75,
+            "accessiblePairs": 5,
+            "pressure": 0.25
+          }
+        }
+      }
     },
     "passRate": {
-      "passPercent": 100,
-      "passCount": 12,
+      "passPercent": 83,
+      "passCount": 10,
       "trialCount": 12,
       "stale": false
     },
@@ -129,7 +216,7 @@
         "selectedBefore": "tile-195",
         "selectedAfter": "tile-195",
         "before": {
-          "x": 20,
+          "x": 12,
           "y": 4
         },
         "after": {
@@ -192,25 +279,25 @@
     "edit3d": {
       "cameraBefore": {
         "position": [
-          1.4175700417596921,
-          1.3490895936730398,
+          0.41757004175969126,
+          1.3567596255546275,
           -3.5
         ],
         "target": [
-          -2,
-          0.3101483009780933,
+          -3,
+          0.317818332859681,
           -3.5
         ]
       },
       "cameraAfter": {
         "position": [
-          -5.4192649359308644,
-          0.5344360367367992,
+          -6.4192649359308644,
+          0.5421060686183868,
           -4.508715177590631
         ],
         "target": [
-          -2,
-          0.3101483009780933,
+          -3,
+          0.317818332859681,
           -3.5
         ]
       },
@@ -240,7 +327,7 @@
         "relationEdges": 7,
         "relationLines": 1,
         "explodedDelta": 2.3099999999999996,
-        "focusDistance": 0
+        "focusDistance": 0.0008950550970873161
       },
       "selectedBefore": "",
       "selectedAfter": "tile-1",
@@ -249,6 +336,22 @@
         "deletedCount": 201,
         "restoredCount": 202,
         "restored": true
+      }
+    },
+    "blockedVisual": {
+      "twoD": {
+        "blockedCount": 181,
+        "factor": 0.58,
+        "overlayAlpha": 0.42,
+        "rendererMode": "play"
+      },
+      "threeD": {
+        "blockedCount": 178,
+        "topHex": 4934475,
+        "sideHex": 266240,
+        "expectedTopHex": 4934475,
+        "expectedSideHex": 266240,
+        "rendererMode": "play"
       }
     },
     "playTools": {
@@ -264,9 +367,9 @@
         }
       },
       "undo": {
-        "uid": "tile-171",
+        "uid": "tile-160",
         "trayBefore": [
-          "tile-171",
+          "tile-160",
           null
         ],
         "trayAfter": [
@@ -336,10 +439,10 @@
     },
     "play3d": {
       "selectedBefore": "",
-      "selectedAfter": "tile-144"
+      "selectedAfter": "tile-160"
     },
     "export": {
-      "fileName": "ai_level_4009771894.json",
+      "fileName": "ai_level_3298943134.json",
       "gridUnit": "sheep_7x8_mini8",
       "tileCount": 202
     },
@@ -369,14 +472,14 @@
   },
   "media": {
     "file": "paws-level-editor-tutorial.mp4",
-    "sha256": "b0e7c4a3f2ddef2c021def03d283d2ab8eae03e9038a35c4a6757c2c2d8dae46"
+    "sha256": "f74c91c75b4fc843a8ba30e885e8a1586aeabb300cd02b5ad18d3cf62ec7bb33"
   },
   "sources": {
-    "projects/paws-level-editor/index.html": "58652499d7c9bdec90e4e1567e07c3f348b616afd582d0726cde9f3abe4f9872",
+    "projects/paws-level-editor/index.html": "310cfffad59984fe5a187246634a4b3a41a4d761385fc180084b33ac1581b41a",
     "projects/paws-level-editor/styles.css": "1286f9081a248308d5842bb786f081f99e8a388a81c1cf46836d80c3d4dc839b",
     "projects/paws-level-editor/app.mjs": "d54ca4e1fa3c1aa524e63f9b7a743d8b883710c1ff340a8e290190d293e485c7",
     "projects/paws-level-editor/static-api-client.mjs": "a37e3bcaa2bfed9ddf10aa800fb5fbaa025bc751398e4201eddf236e4e740c84",
-    "projects/paws-level-editor/core/ai-level-generator.mjs": "eb50862026dcc1a0c523fb1eaf1ee758472617848adca4a8938eeae5ae9c22c1",
+    "projects/paws-level-editor/core/ai-level-generator.mjs": "2f88e5bc84910cf7d2500e6c45676d0feafe5f0d6bcd8992f6d3a18c2a34a71e",
     "projects/paws-level-editor/core/editor-geometry.mjs": "4e718a15f0fb67959ecd22d7a8a4ebcc14c4aa5f224f5f1887937626e29f1f91",
     "projects/paws-level-editor/core/field-grid-layout.mjs": "65830f5bcb8752369616fec825ab82e68ef0c6e5607dfaefafdf02d02c2bf8ab",
     "projects/paws-level-editor/core/fill-tool.mjs": "af97bbfa44ccc63e34bfa9e74f1f40dd93eb27c31dbec6772225da2cc65c2fed",
@@ -387,14 +490,15 @@
     "projects/paws-level-editor/core/level-difficulty.mjs": "854ee69d136586c19493d18f1bcc308c7cc3bbca0a1a77e8483cf082516b0444",
     "projects/paws-level-editor/core/legacy-ai-geometry-upgrade.mjs": "fb1be33b6f58eb2482549cc44178e24fdb9b3e00daf15b7bb6e01a955274c400",
     "projects/paws-level-editor/core/level-solver.mjs": "95a97b42973db91aaf118326b0bbf83bfda24168ff36fb5bc9b4b7703cd6c248",
-    "projects/paws-level-editor/core/level-statistics.mjs": "e48189c09151890d234eee1e2733eb474d44f55ff1d9c31db616124896d8c653",
+    "projects/paws-level-editor/core/level-statistics.mjs": "77e14e4cf4136346905ee128446bbc78de2f72469b5f4f34766de08deb34e7f9",
     "projects/paws-level-editor/core/level-validator.mjs": "985bb657d171cb2514c50ff30ead45583303961887c9d08f89f7c18fa8490c28",
     "projects/paws-level-editor/core/pass-rate-evaluator.mjs": "a5a439cca258961ef92bbd7300c74ac5b7b0ebb28a7aa0bb55fe22f3fcfd1aa2",
     "projects/paws-level-editor/core/play-engine.mjs": "dd4fa4518448670d35f240d0ac65d45d0970593844c397f62dd63af384ae2e24",
     "projects/paws-level-editor/core/tile-relations.mjs": "75bf4ef64e5e7615b8936f3b7d727139cbbfcf016a8f902e6c5f58bfe5f59c57",
+    "projects/paws-level-editor/core/tile-visual-tone.mjs": "4b410d462ee8b7dbe0ddb1fe9343d3c297eaf08ed84a63fe050680d61cb94c9c",
     "projects/paws-level-editor/core/view-model.mjs": "381d2e8626728ddf4de320cbe5340ac96bc5063c67a174dfaed72602e17ecd6c",
     "projects/paws-level-editor/core/xorshift.mjs": "3472afc3a99c70fa0bd3ea7f207f55c113b6c722cffa6a9232d75c4866c0e7ff",
-    "projects/paws-level-editor/ui/ai-level-dialog.mjs": "4b9edeb251049f53b7d39c36db582fa840236ebfc7446a2410a80693afc57274",
+    "projects/paws-level-editor/ui/ai-level-dialog.mjs": "4bf4b48887cfa801bb6117c4d07e9013c895e6f8ca1df96cf00cac9b9ce2e3de",
     "projects/paws-level-editor/ui/editor-shortcuts.mjs": "6dd75fb89a98e46450fee11bb35088a5ac941bf40665f000a5a95918df102bca",
     "projects/paws-level-editor/ui/grass-field.mjs": "d3888d3deb1c10654dec0730138b7d25d231a71fa7f1f3d9458f8ec7d5983e25",
     "projects/paws-level-editor/ui/inspector.mjs": "6d8d196170945b2d0bb4fd53fda7bce36a244e9b6417d85a48d015bcea131f3e",
@@ -405,10 +509,10 @@
     "projects/paws-level-editor/ui/legacy-ai-open-upgrade.mjs": "e413eab44f7b04289015f5eb98f37971ced2057085e902fb2b04e9ac9eb8f2bd",
     "projects/paws-level-editor/ui/play-tool-command.mjs": "877de31443a4a4d5d7dfd103c0ede802d65e03b0b8c125b59530ab96fbd12089",
     "projects/paws-level-editor/ui/workbench-controller.mjs": "31f3590c5a4f6973856be0b663c3f7df350c1e182bab64278d227fbf7a66066f",
-    "projects/paws-level-editor/views/canvas-2d.mjs": "be326c42544db0eaa5ee8d6bc218a60c159f6c9fc1ebe90333bd0fe00ec1d094",
-    "projects/paws-level-editor/views/three-3d.mjs": "833df4188b351e2869c7cd0f1c2ce57a885822a21f512a291b5f42f5fc867613",
+    "projects/paws-level-editor/views/canvas-2d.mjs": "b3f9895938e977ac474071e20689576c4ee126838ac0a88a0fd0f187f7ee7042",
+    "projects/paws-level-editor/views/three-3d.mjs": "bc8a141a0b5a694d180a7dcebf7db02eeb6260d45b65f0efbadbb405ef0acaed",
     "projects/paws-level-editor/levels/index.json": "7c05176510c105aae0b9951dc20db4ea7db09a03ead34b491d37caa3f842767c",
-    "scripts/record-paws-level-editor-demo.mjs": "486ea82a68430cf8ab940e4b3a70bf8a7de6e714e60e9a992eb075adc4740ac7",
+    "scripts/record-paws-level-editor-demo.mjs": "be0847554a9698741067dc810f9ebfb36fb2cf1d4a9c428930cc765edba73bbf",
     "scripts/paws-recording-support.mjs": "e5d2b2f02b67798c90d080a3202b97ecce50ffd738e31fc374d751ad18ae79c2"
   },
   "assets": {

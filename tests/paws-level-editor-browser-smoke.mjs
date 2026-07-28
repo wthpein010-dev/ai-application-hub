@@ -847,7 +847,8 @@ try {
     controller.renderer.setIssues(controller.issues);
     return color;
   }, relationSelection.uid);
-  assert.equal(issueColor, 0xff7474);
+  // Material colors are stored in linear space; renderer output restores #ff7474.
+  assert.equal(issueColor, 0xff2c2c);
   await page.locator("#mode-play").click();
   await page.waitForFunction(() =>
     window.pawsWorkbench.mode === "play"

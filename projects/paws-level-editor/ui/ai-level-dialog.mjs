@@ -1,3 +1,8 @@
+import {
+  DIFFICULTY_PROFILES,
+  normalizeGenerationTargets,
+} from "../core/ai-level-generator.mjs";
+
 const DIFFICULTIES = Object.freeze({
   easy: Object.freeze({
     defaults: Object.freeze({ tileCount: 180, layerCount: 12, targetScore: 40 }),
@@ -70,11 +75,8 @@ export function normalizeGenerationOptions(formData) {
     maximum: 400,
     label: "砖块数量",
   });
-  const tileCount = requestedTileCount % 2
-    ? requestedTileCount + 1
-    : requestedTileCount;
   const layerCount = integerField(formData, "ai-layer-count", {
-    minimum: 1,
+    minimum: 5,
     maximum: 40,
     label: "有效层数",
   });
@@ -83,17 +85,20 @@ export function normalizeGenerationOptions(formData) {
     maximum: 100,
     label: "目标难度",
   });
-  if (tileCount / 2 < layerCount) {
-    throw new Error("砖块数量不足以覆盖所选有效层数。");
-  }
+  const target = normalizeGenerationTargets({
+    profile: DIFFICULTY_PROFILES[difficulty],
+    tileCount: requestedTileCount,
+    layerCount,
+    targetScore,
+  });
   return {
     difficulty,
     layout,
     reference,
-    tileCount,
-    layerCount,
-    targetScore,
-    tileCountAdjusted: tileCount !== requestedTileCount,
+    tileCount: target.tileCount,
+    layerCount: target.layerCount,
+    targetScore: target.score,
+    tileCountAdjusted: target.tileCountAdjusted,
   };
 }
 

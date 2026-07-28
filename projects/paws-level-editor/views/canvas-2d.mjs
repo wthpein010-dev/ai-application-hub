@@ -11,6 +11,7 @@ import { GAMEPLAY_ASSETS } from "../core/gameplay-assets.mjs";
 import { deriveDisplayTiles } from "../core/view-model.mjs";
 import { buildFillCells } from "../core/fill-tool.mjs";
 import { buildFieldGridLayout } from "../core/field-grid-layout.mjs";
+import { resolveTileVisualTone } from "../core/tile-visual-tone.mjs";
 
 const TILE_SIZE = 8;
 const TILE_ART_ASPECT = 135 / 120;
@@ -487,6 +488,8 @@ export class Canvas2DView {
     const artHeight = size * TILE_ART_ASPECT;
     const selected =
       this.mode === "play" ? tile.uid === this.snapshot?.selectedTileUid : this.selection.has(tile.uid);
+    const tone = resolveTileVisualTone(tile, { mode: this.mode });
+    const patternHidden = Boolean(tile.faceDown || tile.hiddenPattern);
     context.save();
     context.translate(position.x, position.y);
     context.shadowColor = "rgba(0,0,0,.38)";
@@ -505,7 +508,7 @@ export class Canvas2DView {
     }
     context.shadowColor = "transparent";
 
-    if (!tile.faceDown) {
+    if (!patternHidden) {
       const image = this.getImage(tile.type);
       if (image) {
         context.drawImage(image, 0, 0, size, artHeight);
@@ -518,16 +521,31 @@ export class Canvas2DView {
       }
     }
 
-    if (tile.faceDown || tile.covered || tile.sideBlocked) {
+    if (patternHidden) {
       const lockMask = this.getGameplayImage(GAMEPLAY_ASSETS.lockMask);
       if (lockMask) {
-        context.globalAlpha = tile.sideBlocked && !tile.covered ? 0.48 : 0.64;
+        context.globalAlpha = tile.faceDown ? 0.72 : 0.58;
         context.drawImage(lockMask, 0, 0, size, artHeight);
         context.globalAlpha = 1;
       } else {
-        context.fillStyle = tile.sideBlocked ? "rgba(82,84,22,.4)" : "rgba(24,35,18,.56)";
+        context.fillStyle = "rgba(24,35,18,.56)";
         context.fillRect(0, 0, size, artHeight);
       }
+    }
+    if (tone.blocked) {
+      context.fillStyle = `rgba(0,0,0,${tone.overlayAlpha})`;
+      context.fillRect(0, 0, size, artHeight);
+      context.strokeStyle = `rgba(0,0,0,${tone.innerShadowAlpha})`;
+      context.lineWidth = Math.max(2, size * 0.065);
+      context.beginPath();
+      context.roundRect(
+        context.lineWidth / 2,
+        context.lineWidth / 2,
+        size - context.lineWidth,
+        artHeight - context.lineWidth,
+        Math.max(3, size * 0.08),
+      );
+      context.stroke();
     }
     context.strokeStyle = selected ? "#ffd42f" : tile.sideBlocked ? "#f2b45d" : "rgba(40,79,18,.28)";
     context.lineWidth = selected ? Math.max(2, size * 0.055) : 1;

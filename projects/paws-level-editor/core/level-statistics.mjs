@@ -170,6 +170,163 @@ function bottleneckConcentration(dependenciesByUid) {
     .reduce((sum, value) => sum + value, 0) / total;
 }
 
+function areFlatNeighbors(left, right) {
+  if (left.layer !== right.layer) return false;
+  const deltaX = Math.abs(left.x - right.x);
+  const deltaY = Math.abs(left.y - right.y);
+  return (
+    (deltaX === TILE_SIZE && deltaY === 0)
+    || (deltaY === TILE_SIZE && deltaX === 0)
+  );
+}
+
+function connectedComponents(values, connected) {
+  const remaining = new Set(values.map((_, index) => index));
+  const components = [];
+  while (remaining.size) {
+    const first = remaining.values().next().value;
+    remaining.delete(first);
+    const queue = [first];
+    const component = [];
+    while (queue.length) {
+      const index = queue.shift();
+      component.push(values[index]);
+      for (const candidate of [...remaining]) {
+        if (!connected(values[index], values[candidate])) continue;
+        remaining.delete(candidate);
+        queue.push(candidate);
+      }
+    }
+    components.push(component);
+  }
+  return components;
+}
+
+function analyzePlatforms(tiles) {
+  const byLayer = new Map();
+  for (const tile of tiles) {
+    const values = byLayer.get(tile.layer) ?? [];
+    values.push(tile);
+    byLayer.set(tile.layer, values);
+  }
+  const components = [...byLayer.values()]
+    .flatMap((values) => connectedComponents(values, areFlatNeighbors));
+  const largestLayerSize = Math.max(
+    0,
+    ...[...byLayer.values()].map((values) => values.length),
+  );
+  const largestFlatPlatformSize = Math.max(
+    0,
+    ...components.map((component) => component.length),
+  );
+  let exposedEdges = 0;
+  for (const values of byLayer.values()) {
+    const positions = new Set(values.map(({ x, y }) => `${x}|${y}`));
+    for (const tile of values) {
+      exposedEdges += Number(!positions.has(`${tile.x - TILE_SIZE}|${tile.y}`));
+      exposedEdges += Number(!positions.has(`${tile.x + TILE_SIZE}|${tile.y}`));
+      exposedEdges += Number(!positions.has(`${tile.x}|${tile.y - TILE_SIZE}`));
+      exposedEdges += Number(!positions.has(`${tile.x}|${tile.y + TILE_SIZE}`));
+    }
+  }
+  return {
+    platformComponentCount: components.length,
+    largestFlatPlatformSize,
+    largestFlatPlatformRatio: largestLayerSize
+      ? largestFlatPlatformSize / largestLayerSize
+      : 0,
+    boundaryRatio: tiles.length ? exposedEdges / (tiles.length * 4) : 0,
+  };
+}
+
+function stageLayerRanges(document, layerCount) {
+  const source = document?.designerNote?.aiGeneration?.stagePlan;
+  if (!Array.isArray(source) || !source.length) return [];
+  let nextUpperLayer = layerCount;
+  return source.map((stage) => {
+    const count = Math.max(0, Math.trunc(Number(stage.layerCount) || 0));
+    const layerEnd = Number.isFinite(Number(stage.layerEnd))
+      ? Number(stage.layerEnd)
+      : nextUpperLayer;
+    const layerStart = Number.isFinite(Number(stage.layerStart))
+      ? Number(stage.layerStart)
+      : count
+        ? layerEnd - count + 1
+        : layerEnd + 1;
+    nextUpperLayer = layerStart - 1;
+    return {
+      key: stage.key,
+      layerStart,
+      layerEnd,
+    };
+  });
+}
+
+function analyzeStagePressure(document, tiles, layerCount) {
+  const ranges = stageLayerRanges(document, layerCount);
+  const stagePressure = Object.fromEntries(ranges.map((stage) => {
+    const remaining = tiles.filter((tile) => tile.layer <= stage.layerEnd);
+    const coverage = computeCoverage(remaining);
+    const accessible = accessibleTiles(remaining, coverage);
+    return [stage.key, {
+      layerStart: stage.layerStart,
+      layerEnd: stage.layerEnd,
+      remainingTiles: remaining.length,
+      openRate: remaining.length ? accessible.length / remaining.length : 1,
+      accessiblePairs: countAccessiblePairs(remaining, coverage),
+      pressure: remaining.length ? 1 - accessible.length / remaining.length : 0,
+    }];
+  }));
+  const crisisPressure = stagePressure.crisis?.pressure;
+  const releasePressure = stagePressure.release?.pressure;
+  return {
+    stagePressure,
+    releaseDependencyDrop:
+      Number.isFinite(crisisPressure) && Number.isFinite(releasePressure)
+        ? crisisPressure - releasePressure
+        : 0,
+  };
+}
+
+function analyzeTowers(document, tiles, layerCount, board) {
+  const surfaceRange = stageLayerRanges(document, layerCount)
+    .find(({ key }) => key === "surface");
+  const minimumLayer = surfaceRange?.layerStart
+    ?? Math.max(1, Math.ceil(layerCount * 0.8));
+  const towerTiles = tiles.filter((tile) => tile.layer >= minimumLayer);
+  const components = connectedComponents(
+    towerTiles,
+    (left, right) =>
+      areFlatNeighbors(left, right)
+      || (
+        Math.abs(left.layer - right.layer) <= 2
+        && left.layer !== right.layer
+        && overlaps(left, right)
+      ),
+  );
+  const towerComponents = components.filter((component) => component.length >= 2);
+  const meaningfulComponents = towerComponents.length
+    ? towerComponents
+    : components;
+  const maxAnchorX = Math.max(1, board.width * TILE_SIZE - TILE_SIZE);
+  const maxAnchorY = Math.max(1, board.height * TILE_SIZE - TILE_SIZE);
+  const towerCenters = meaningfulComponents
+    .map((component) => ({
+      x: component.reduce((total, tile) => total + tile.x, 0)
+        / component.length / maxAnchorX,
+      y: component.reduce((total, tile) => total + tile.y, 0)
+        / component.length / maxAnchorY,
+      weight: component.length,
+    }))
+    .sort((left, right) =>
+      right.weight - left.weight || left.x - right.x || left.y - right.y)
+    .slice(0, 6);
+  return {
+    towerCount: meaningfulComponents.length,
+    towerCenters,
+  };
+}
+
 export function extractLevelStatistics(document) {
   const tiles = Array.isArray(document?.tiles)
     ? document.tiles.map((tile, index) => ({
@@ -203,6 +360,9 @@ export function extractLevelStatistics(document) {
   const nonEmptyLayers = new Set(tiles.map(({ layer }) => layer));
   const maxAnchorX = Math.max(1, board.width * TILE_SIZE - TILE_SIZE);
   const maxAnchorY = Math.max(1, board.height * TILE_SIZE - TILE_SIZE);
+  const platformStructure = analyzePlatforms(tiles);
+  const towerStructure = analyzeTowers(document, tiles, layerCount, board);
+  const pressureStructure = analyzeStagePressure(document, tiles, layerCount);
 
   return {
     board,
@@ -240,6 +400,9 @@ export function extractLevelStatistics(document) {
     nonEmptyLayerCount: nonEmptyLayers.size,
     symmetryScore: calculateSymmetryScore(tiles, board.width),
     maxDependencyDepth: calculateDependencyDepth(tiles),
+    ...platformStructure,
+    ...towerStructure,
+    ...pressureStructure,
   };
 }
 
@@ -265,6 +428,12 @@ export function mergeLevelStatistics(statistics) {
     meanLayerCount: average(samples.map(({ layerCount }) => layerCount), 0),
     symmetryScore: average(samples.map(({ symmetryScore }) => symmetryScore), 0),
     overlapRatio: average(samples.map(({ overlapRatio }) => overlapRatio), 0),
+    boundaryRatio: average(samples.map(({ boundaryRatio }) => boundaryRatio), 1),
+    initialPairDistance: average(samples.map(({ initialPairDistance }) => initialPairDistance), 0.4),
+    largestFlatPlatformSize: average(
+      samples.map(({ largestFlatPlatformSize }) => largestFlatPlatformSize),
+      0,
+    ),
     maxDependencyDepth: Math.max(
       0,
       ...samples.map(({ maxDependencyDepth }) => maxDependencyDepth),
@@ -276,5 +445,12 @@ export function mergeLevelStatistics(statistics) {
       .flatMap(({ commonOffsets }) => commonOffsets ?? [])
       .sort((left, right) => right.count - left.count)
       .slice(0, 24),
+    towerCenters: samples
+      .flatMap(({ towerCenters }) => towerCenters ?? [])
+      .sort((left, right) =>
+        (right.weight ?? 0) - (left.weight ?? 0)
+        || left.x - right.x
+        || left.y - right.y)
+      .slice(0, 12),
   };
 }

@@ -19,6 +19,11 @@ import {
   computeRenderBounds,
   deriveDisplayTiles,
 } from "../core/view-model.mjs";
+import {
+  multiplyHexColor,
+  resolveTileVisualTone,
+  toneFactorToHex,
+} from "../core/tile-visual-tone.mjs";
 
 function srgbColor(hex) {
   return new THREE.Color(hex).convertSRGBToLinear();
@@ -51,7 +56,7 @@ function drawTopCrop(context, image) {
   context.drawImage(image, 0, 0, sourceSize, sourceSize, 0, 0, 256, 256);
 }
 
-function makeBlockTexture(image, { blockBackground, lockMask, blocked = false, faceDown = false } = {}) {
+function makeBlockTexture(image, { blockBackground, lockMask, faceDown = false } = {}) {
   const canvas = document.createElement("canvas");
   canvas.width = 256;
   canvas.height = 256;
@@ -64,8 +69,8 @@ function makeBlockTexture(image, { blockBackground, lockMask, blocked = false, f
   if (!faceDown && image) {
     drawTopCrop(context, image);
   }
-  if ((faceDown || blocked) && lockMask) {
-    context.globalAlpha = faceDown ? 0.72 : 0.56;
+  if (faceDown && lockMask) {
+    context.globalAlpha = 0.72;
     drawTopCrop(context, lockMask);
     context.globalAlpha = 1;
   }
@@ -413,7 +418,7 @@ export class Three3DView {
 
   textureFor(record) {
     const faceDown = record.faceDown || record.hiddenPattern;
-    const textureKey = `${record.type}:${faceDown ? "down" : "up"}:${record.blocked ? "blocked" : "free"}`;
+    const textureKey = `${record.type}:${faceDown ? "down" : "up"}`;
     if (this.textures.has(textureKey)) {
       return this.textures.get(textureKey);
     }
@@ -422,7 +427,6 @@ export class Three3DView {
       const texture = makeBlockTexture(pattern, {
         blockBackground: this.blockBackgroundImage,
         lockMask: this.lockMaskImage,
-        blocked: record.blocked,
         faceDown,
       });
       texture.anisotropy = Math.min(8, this.renderer.capabilities.getMaxAnisotropy());
@@ -452,19 +456,21 @@ export class Three3DView {
       metalness: 0.02,
       emissive: 0x000000,
     });
+    const side = this.sideMaterial.clone();
     const materials = [
-      this.sideMaterial,
-      this.sideMaterial,
+      side,
+      side,
       top,
-      this.sideMaterial,
-      this.sideMaterial,
-      this.sideMaterial,
+      side,
+      side,
+      side,
     ];
     const mesh = new THREE.Mesh(this.geometry, materials);
     mesh.castShadow = true;
     mesh.receiveShadow = true;
     mesh.userData.uid = record.uid;
     mesh.userData.topMaterial = top;
+    mesh.userData.sideMaterial = side;
     this.tileGroup.add(mesh);
     this.meshes.set(record.uid, mesh);
     return mesh;
@@ -478,12 +484,14 @@ export class Three3DView {
     mesh.userData.record = record;
     mesh.userData.baseY = baseY;
     const top = mesh.userData.topMaterial;
+    const side = mesh.userData.sideMaterial;
     const texture = this.textureFor(record);
     if (top.map !== texture) {
       top.map = texture;
       top.needsUpdate = true;
     }
-    let color = record.blocked ? 0xc7c9ad : 0xffffff;
+    const tone = resolveTileVisualTone(record, { mode: this.mode });
+    let color = toneFactorToHex(tone.factor);
     let emissive = record.sideBlocked ? 0x3a2105 : 0x000000;
     let emissiveIntensity = record.sideBlocked ? 0.25 : 0;
     if (this.mode === "edit" && record.relationType) {
@@ -506,9 +514,12 @@ export class Three3DView {
       emissive = 0x6b5900;
       emissiveIntensity = 0.62;
     }
-    top.color.setHex(color);
+    top.color.setHex(color).convertSRGBToLinear();
     top.emissive.setHex(emissive);
     top.emissiveIntensity = emissiveIntensity;
+    side.color
+      .setHex(multiplyHexColor(0x3f7d0a, tone.factor))
+      .convertSRGBToLinear();
     mesh.renderOrder = record.selected ? 10 : 0;
   }
 
@@ -581,6 +592,7 @@ export class Three3DView {
     for (const [uid, mesh] of this.meshes) {
       if (!activeUids.has(uid)) {
         mesh.userData.topMaterial.dispose();
+        mesh.userData.sideMaterial.dispose();
         this.tileGroup.remove(mesh);
         this.meshes.delete(uid);
       }
@@ -775,6 +787,7 @@ export class Three3DView {
     this.controls?.dispose();
     for (const mesh of this.meshes.values()) {
       mesh.userData.topMaterial.dispose();
+      mesh.userData.sideMaterial.dispose();
     }
     this.clearRelationshipLines();
     this.meshes.clear();

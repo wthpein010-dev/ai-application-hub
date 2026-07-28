@@ -78,6 +78,7 @@ const sourceFiles = [
   "projects/paws-level-editor/core/pass-rate-evaluator.mjs",
   "projects/paws-level-editor/core/play-engine.mjs",
   "projects/paws-level-editor/core/tile-relations.mjs",
+  "projects/paws-level-editor/core/tile-visual-tone.mjs",
   "projects/paws-level-editor/core/view-model.mjs",
   "projects/paws-level-editor/core/xorshift.mjs",
   "projects/paws-level-editor/ui/ai-level-dialog.mjs",
@@ -630,6 +631,12 @@ async function recordEditor() {
           totalEven: controller.document.tiles.length % 2 === 0,
           globalTypesEven: [...globalTypes.values()].every((count) => count % 2 === 0),
           layerTypesEven: [...layerTypes.values()].every((count) => count % 2 === 0),
+          algorithmVersion:
+            controller.document.designerNote.aiGeneration.algorithmVersion,
+          towerPlan:
+            controller.document.designerNote.aiGeneration.towerPlan,
+          structure:
+            controller.document.designerNote.aiGeneration.structure,
         };
       });
       assert.match(aiGeneration.fileName, /^ai_level_\d+\.json$/);
@@ -649,6 +656,12 @@ async function recordEditor() {
       assert.equal(aiGeneration.totalEven, true);
       assert.equal(aiGeneration.globalTypesEven, true);
       assert.equal(aiGeneration.layerTypesEven, true);
+      assert.equal(aiGeneration.algorithmVersion, "paws-local-stat-v8-stage-towers");
+      assert.ok(aiGeneration.towerPlan.towerCount >= 4);
+      assert.ok(aiGeneration.structure.towerCount >= 3);
+      assert.ok(aiGeneration.structure.largestFlatPlatformSize <= 8);
+      assert.ok(aiGeneration.structure.boundaryRatio >= 0.58);
+      assert.ok(aiGeneration.structure.releaseDependencyDrop >= 0.08);
       assert.ok(Math.abs(aiGeneration.actualScore - aiGeneration.targetScore) <= 5);
       assert.equal(
         await page.locator('[role="option"]').count(),
@@ -1099,6 +1112,36 @@ async function recordEditor() {
         undo: { remaining: 1 },
       });
       const playTools = { initial: initialTools };
+      const blockedVisual2d = await page.evaluate(async () => {
+        const { resolveTileVisualTone } = await import(
+          new URL("./core/tile-visual-tone.mjs", window.location.href).href
+        );
+        const blockedTiles = window.pawsWorkbench.playSnapshot.tiles.filter(
+          ({ removed, stashedSlot, covered, sideBlocked }) =>
+            !removed
+            && !Number.isInteger(stashedSlot)
+            && (covered || sideBlocked),
+        );
+        const tone = resolveTileVisualTone(
+          { ...blockedTiles[0], location: "board" },
+          { mode: "play" },
+        );
+        return {
+          blockedCount: blockedTiles.length,
+          factor: tone.factor,
+          overlayAlpha: tone.overlayAlpha,
+          rendererMode: window.pawsWorkbench.renderer.mode,
+        };
+      });
+      assert.ok(blockedVisual2d.blockedCount > 0);
+      assert.deepEqual(
+        {
+          factor: blockedVisual2d.factor,
+          overlayAlpha: blockedVisual2d.overlayAlpha,
+          rendererMode: blockedVisual2d.rendererMode,
+        },
+        { factor: 0.58, overlayAlpha: 0.42, rendererMode: "play" },
+      );
 
       const undoUid = await stashAvailableTileIn2d(page);
       const trayBeforeUndo = await page.evaluate(() => [
@@ -1155,6 +1198,27 @@ async function recordEditor() {
       playTools.shared3d = await page.evaluate(() =>
         window.pawsWorkbench.playSnapshot.tools);
       assert.deepEqual(playTools.shared3d, playTools.shared2d);
+      const blockedVisual3d = await page.evaluate(() => {
+        const mesh = [...window.pawsWorkbench.renderer.meshes.values()]
+          .find((candidate) => candidate.userData.record?.blocked);
+        return {
+          blockedCount: [...window.pawsWorkbench.renderer.meshes.values()]
+            .filter((candidate) => candidate.userData.record?.blocked).length,
+          topHex: mesh?.userData.topMaterial.color.getHex() ?? null,
+          sideHex: mesh?.userData.sideMaterial.color.getHex() ?? null,
+          expectedTopHex: 0x4b4b4b,
+          expectedSideHex: 0x041000,
+          rendererMode: window.pawsWorkbench.renderer.mode,
+        };
+      });
+      assert.ok(blockedVisual3d.blockedCount > 0);
+      assert.equal(blockedVisual3d.topHex, blockedVisual3d.expectedTopHex);
+      assert.equal(blockedVisual3d.sideHex, blockedVisual3d.expectedSideHex);
+      assert.equal(blockedVisual3d.rendererMode, "play");
+      proof.actions.blockedVisual = {
+        twoD: blockedVisual2d,
+        threeD: blockedVisual3d,
+      };
       const beforeToolShuffle = await page.evaluate(() => {
         const boardTiles = window.pawsWorkbench.playSnapshot.tiles.filter(
           ({ removed, stashedSlot }) => !removed && !Number.isInteger(stashedSlot),

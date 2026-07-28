@@ -108,6 +108,7 @@ test("recording proof matches current media, sources, timeline and real state ch
     "projects/paws-level-editor/core/pass-rate-evaluator.mjs",
     "projects/paws-level-editor/core/play-engine.mjs",
     "projects/paws-level-editor/core/tile-relations.mjs",
+    "projects/paws-level-editor/core/tile-visual-tone.mjs",
     "projects/paws-level-editor/core/view-model.mjs",
     "projects/paws-level-editor/core/xorshift.mjs",
     "projects/paws-level-editor/ui/ai-level-dialog.mjs",
@@ -184,6 +185,15 @@ test("recording proof matches current media, sources, timeline and real state ch
   assert.equal(actions.aiGeneration.totalEven, true);
   assert.equal(actions.aiGeneration.globalTypesEven, true);
   assert.equal(actions.aiGeneration.layerTypesEven, true);
+  assert.equal(
+    actions.aiGeneration.algorithmVersion,
+    "paws-local-stat-v8-stage-towers",
+  );
+  assert.ok(actions.aiGeneration.towerPlan.towerCount >= 4);
+  assert.ok(actions.aiGeneration.structure.towerCount >= 3);
+  assert.ok(actions.aiGeneration.structure.largestFlatPlatformSize <= 8);
+  assert.ok(actions.aiGeneration.structure.boundaryRatio >= 0.58);
+  assert.ok(actions.aiGeneration.structure.releaseDependencyDrop >= 0.08);
   assert.deepEqual(actions.grass.twoD, {
     canvasCount: 1,
     imageReady: true,
@@ -256,6 +266,20 @@ test("recording proof matches current media, sources, timeline and real state ch
   assert.equal(actions.edit3d.deleteUndo.deletedCount, 201);
   assert.equal(actions.edit3d.deleteUndo.restoredCount, 202);
   assert.equal(actions.edit3d.deleteUndo.restored, true);
+  assert.ok(actions.blockedVisual.twoD.blockedCount > 0);
+  assert.equal(actions.blockedVisual.twoD.factor, 0.58);
+  assert.equal(actions.blockedVisual.twoD.overlayAlpha, 0.42);
+  assert.equal(actions.blockedVisual.twoD.rendererMode, "play");
+  assert.ok(actions.blockedVisual.threeD.blockedCount > 0);
+  assert.equal(
+    actions.blockedVisual.threeD.topHex,
+    actions.blockedVisual.threeD.expectedTopHex,
+  );
+  assert.equal(
+    actions.blockedVisual.threeD.sideHex,
+    actions.blockedVisual.threeD.expectedSideHex,
+  );
+  assert.equal(actions.blockedVisual.threeD.rendererMode, "play");
   assert.ok(actions.play2d.removedAfter > actions.play2d.removedBefore);
   assert.notEqual(actions.play3d.selectedBefore, actions.play3d.selectedAfter);
   assert.deepEqual(actions.playTools.initial, {

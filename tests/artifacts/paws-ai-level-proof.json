@@ -12,18 +12,18 @@
     "scale": 1
   },
   "generatedGridUnit": "sheep_7x8_mini8",
-  "generatedDifficultyScore": 60,
+  "generatedDifficultyScore": 62,
   "generatedDifficultyRating": "困难入门",
   "generatedDifficultyDimensions": {
-    "structure": 84,
-    "information": 68,
-    "choice": 51,
-    "route": 53,
-    "endurance": 45
+    "structure": 83,
+    "information": 71,
+    "choice": 53,
+    "route": 55,
+    "endurance": 46
   },
   "generatedInitialPairs": 3,
-  "generatedAverageBlockers": 3.8297872340425534,
-  "hardGenerationMs": 5490,
+  "generatedAverageBlockers": 4.909604519774011,
+  "hardGenerationMs": 1109,
   "solverSteps": 100,
   "solverNodes": 100,
   "completedInPlay": true,

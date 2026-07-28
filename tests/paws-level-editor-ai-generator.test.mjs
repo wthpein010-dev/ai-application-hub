@@ -5,6 +5,8 @@ import {
   DIFFICULTY_PROFILES,
   generateAiLevel,
   maxAverageBlockersForLayers,
+  maxTowerAverageBlockersForLayers,
+  normalizeGenerationTargets,
 } from "../projects/paws-level-editor/core/ai-level-generator.mjs";
 import { upgradeLegacyAiGeometry } from "../projects/paws-level-editor/core/legacy-ai-geometry-upgrade.mjs";
 import {
@@ -484,6 +486,76 @@ test("average blocker quality limits stay fixed at 4 through 15 layers and 6 bey
   assert.equal(maxAverageBlockersForLayers(16), 6);
   assert.equal(maxAverageBlockersForLayers(32), 6);
   assert.equal(maxAverageBlockersForLayers(40), 6);
+  assert.equal(maxTowerAverageBlockersForLayers(15), 6);
+  assert.equal(maxTowerAverageBlockersForLayers(16), 8);
+});
+
+test("five-stage generation rejects layer counts below the structural capacity", () => {
+  for (const layerCount of [1, 2, 3, 4]) {
+    assert.throws(
+      () => normalizeGenerationTargets({
+        profile: DIFFICULTY_PROFILES.normal,
+        tileCount: 200,
+        layerCount,
+        targetScore: 60,
+      }),
+      /有效层数必须在 5–40 之间/,
+    );
+  }
+
+  assert.throws(
+    () => generateAiLevel({
+      references: [reference],
+      difficulty: "normal",
+      layout: "balanced",
+      tileCount: 200,
+      layerCount: 5,
+      targetScore: 60,
+      seed: 73125,
+      maxAttempts: 1,
+    }),
+    /200 张砖块至少需要 14 个有效层/,
+  );
+  assert.equal(
+    normalizeGenerationTargets({
+      profile: DIFFICULTY_PROFILES.normal,
+      tileCount: 200,
+      layerCount: 14,
+      targetScore: 60,
+    }).layerCount,
+    14,
+  );
+  const boundary = generateAiLevel({
+    references: [reference],
+    difficulty: "normal",
+    layout: "balanced",
+    tileCount: 200,
+    layerCount: 14,
+    targetScore: 60,
+    seed: 73125,
+    maxAttempts: 12,
+  });
+  assert.equal(boundary.report.solvable, true);
+  assert.equal(extractLevelStatistics(boundary.document).layerCount, 14);
+});
+
+test("100 tiles can use a valid six-layer five-stage tower plan", () => {
+  for (const layout of ["balanced", "progressive", "open"]) {
+    const generated = generateAiLevel({
+      references: [reference],
+      difficulty: "normal",
+      layout,
+      tileCount: 100,
+      layerCount: 6,
+      targetScore: 60,
+      seed: 73125,
+      maxAttempts: 12,
+    });
+
+    assert.equal(generated.report.solvable, true);
+    assert.equal(generated.document.tiles.length, 100);
+    assert.equal(extractLevelStatistics(generated.document).layerCount, 6);
+  }
 });
 
 test("generator honors exact normalized size, layers and target difficulty", () => {
@@ -531,6 +603,54 @@ test("generator honors exact normalized size, layers and target difficulty", () 
   assert.equal(Math.abs(generated.report.difficulty.score - 60) <= 5, true);
 });
 
+test("generated geometry is a multi-tower field with gaps and a release phase", () => {
+  const generated = generateAiLevel({
+    references: [reference],
+    difficulty: "normal",
+    layout: "balanced",
+    tileCount: 200,
+    layerCount: 15,
+    targetScore: 60,
+    seed: 20260728,
+    maxAttempts: 12,
+  });
+  const stats = extractLevelStatistics(generated.document);
+  const structure = generated.document.designerNote.aiGeneration.structure;
+
+  assert.equal(stats.towerCount >= 3, true);
+  assert.equal(stats.platformComponentCount >= stats.layerCount * 1.25, true);
+  assert.equal(stats.largestFlatPlatformSize <= 8, true);
+  assert.equal(stats.largestFlatPlatformRatio <= 0.5, true);
+  assert.equal(stats.boundaryRatio >= 0.58, true);
+  assert.equal(stats.releaseDependencyDrop >= 0.08, true);
+  assert.deepEqual(structure, {
+    towerCount: stats.towerCount,
+    highTowerCount: 2,
+    platformComponentCount: stats.platformComponentCount,
+    largestFlatPlatformSize: stats.largestFlatPlatformSize,
+    boundaryRatio: stats.boundaryRatio,
+    releaseDependencyDrop: stats.releaseDependencyDrop,
+    stagePressure: stats.stagePressure,
+  });
+});
+
+test("reference learning retains reusable tower and platform statistics", () => {
+  const learned = mergeLevelStatistics([
+    extractLevelStatistics(reference),
+    extractLevelStatistics(makeDocument(reference.tiles, { width: 10, height: 12 })),
+  ]);
+
+  assert.equal(learned.towerCenters.length >= 2, true);
+  assert.equal(
+    learned.towerCenters.every(({ x, y }) =>
+      x >= 0 && x <= 1 && y >= 0 && y <= 1),
+    true,
+  );
+  assert.equal(Number.isFinite(learned.boundaryRatio), true);
+  assert.equal(Number.isFinite(learned.initialPairDistance), true);
+  assert.equal(Number.isFinite(learned.largestFlatPlatformSize), true);
+});
+
 test("200 tiles, 15 layers and score 60 stay solvable on the fixed board", () => {
   const generated = generateAiLevel({
     references: [reference],
@@ -548,8 +668,14 @@ test("200 tiles, 15 layers and score 60 stay solvable on the fixed board", () =>
   assert.equal(stats.layerCount, 15);
   assert.equal(generated.report.solvable, true);
   assert.equal(generated.report.steps, 100);
-  assert.equal(stats.maxExactStackDepth <= 2, true);
-  assert.equal(stats.averageBlockers <= 4, true);
+  assert.equal(
+    stats.maxExactStackDepth <= DIFFICULTY_PROFILES.normal.maxExactStackDepth,
+    true,
+  );
+  assert.equal(
+    stats.averageBlockers <= maxTowerAverageBlockersForLayers(stats.layerCount),
+    true,
+  );
   assert.equal(Math.abs(generated.report.difficulty.score - 60) <= 5, true);
 });
 
@@ -602,11 +728,12 @@ for (const difficulty of ["easy", "normal", "hard"]) {
       );
       assert.equal(stats.initialAccessiblePairs >= profile.minInitialPairs, true);
       assert.equal(stats.overlapRatio <= profile.maxOverlap, true);
-      assert.equal(stats.maxExactStackDepth <= 2, true);
       assert.equal(
-        stats.averageBlockers <= (stats.layerCount > 15
-          ? 6
-          : 4),
+        stats.maxExactStackDepth <= profile.maxExactStackDepth,
+        true,
+      );
+      assert.equal(
+        stats.averageBlockers <= maxTowerAverageBlockersForLayers(stats.layerCount),
         true,
       );
       assert.equal(

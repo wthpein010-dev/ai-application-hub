@@ -81,6 +81,47 @@ test("AI generation options reject values outside the compact choice set", () =>
   assert.throws(() => normalizeGenerationOptions(form), /选项无效/);
 });
 
+test("AI generation exposes and enforces the five-stage layer minimum", () => {
+  const form = new FormData();
+  form.set("ai-difficulty", "normal");
+  form.set("ai-layout", "balanced");
+  form.set("ai-reference", "all");
+  form.set("ai-tile-count", "200");
+  form.set("ai-layer-count", "4");
+  form.set("ai-target-score", "60");
+
+  assert.throws(
+    () => normalizeGenerationOptions(form),
+    /有效层数必须在 5–40 之间/,
+  );
+  assert.match(page, /name="ai-layer-count"[^>]*min="5"/);
+});
+
+test("AI generation rejects dense shallow plans before starting generation", () => {
+  const dense = new FormData();
+  dense.set("ai-difficulty", "normal");
+  dense.set("ai-layout", "balanced");
+  dense.set("ai-reference", "all");
+  dense.set("ai-tile-count", "200");
+  dense.set("ai-layer-count", "5");
+  dense.set("ai-target-score", "60");
+
+  assert.throws(
+    () => normalizeGenerationOptions(dense),
+    /200 张砖块至少需要 14 个有效层/,
+  );
+
+  const shallow = new FormData();
+  shallow.set("ai-difficulty", "normal");
+  shallow.set("ai-layout", "balanced");
+  shallow.set("ai-reference", "all");
+  shallow.set("ai-tile-count", "100");
+  shallow.set("ai-layer-count", "6");
+  shallow.set("ai-target-score", "60");
+
+  assert.equal(normalizeGenerationOptions(shallow).layerCount, 6);
+});
+
 test("AI dialog exposes exactly three difficulty, three layout and two reference choices", () => {
   assert.match(page, /id="generate-ai-level"[^>]*>[^<]*AI 生成/);
   assert.match(page, /id="ai-level-dialog"/);

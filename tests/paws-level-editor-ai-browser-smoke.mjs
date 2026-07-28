@@ -5,6 +5,9 @@ import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 
 import { startStaticServer } from "./support/paws-static-server.mjs";
+import {
+  maxTowerAverageBlockersForLayers,
+} from "../projects/paws-level-editor/core/ai-level-generator.mjs";
 
 const require = createRequire(import.meta.url);
 const { chromium } = require("playwright");
@@ -317,9 +320,26 @@ try {
     "standard AI levels must expose at least the profile minimum of three opening pairs",
   );
   assert.equal(
-    generated.generation.report.statistics.averageBlockers <= 4,
+    generated.generation.report.statistics.averageBlockers
+      <= maxTowerAverageBlockersForLayers(15),
     true,
-    "standard AI levels must reject excessive average blockers instead of saturating scoring",
+    "tower layouts must stay within the stage-aware blocker budget",
+  );
+  assert.equal(
+    generated.generation.report.statistics.towerCount >= 3,
+    true,
+  );
+  assert.equal(
+    generated.generation.report.statistics.largestFlatPlatformSize <= 8,
+    true,
+  );
+  assert.equal(
+    generated.generation.report.statistics.boundaryRatio >= 0.58,
+    true,
+  );
+  assert.equal(
+    generated.generation.report.statistics.releaseDependencyDrop >= 0.08,
+    true,
   );
   assert.equal(generated.generation.report.difficulty.valid, true);
   assert.equal(generated.generation.report.difficulty.releaseGate, "pass");
@@ -360,6 +380,38 @@ try {
 
   await page.locator("#mode-play").click();
   await page.waitForFunction(() => window.pawsWorkbench?.mode === "play");
+  const blockedVisual = await page.evaluate(() => {
+    const meshes = [...window.pawsWorkbench.renderer.meshes.values()];
+    const blockedMesh = meshes.find((mesh) => mesh.userData.record?.blocked);
+    return {
+      blockedCount: meshes.filter((mesh) => mesh.userData.record?.blocked).length,
+      topHex: blockedMesh?.userData.topMaterial.color.getHex() ?? null,
+      sideHex: blockedMesh?.userData.sideMaterial.color.getHex() ?? null,
+      // Three.js runs in legacy linear-working-space mode in this bundle.
+      // Hand-derived from sRGB #949494 and #254906 after sRGB -> linear.
+      expectedTopHex: 0x4b4b4b,
+      expectedSideHex: 0x041000,
+    };
+  });
+  assert.equal(blockedVisual.blockedCount > 0, true);
+  assert.equal(blockedVisual.topHex, blockedVisual.expectedTopHex);
+  assert.equal(blockedVisual.sideHex, blockedVisual.expectedSideHex);
+  if (!externalBaseUrl && updateArtifacts) {
+    await page.screenshot({
+      path: join(artifactsRoot, "paws-ai-play-3d-blocked.png"),
+      fullPage: true,
+    });
+    await page.locator("#view-2d").click();
+    await page.locator(".level-canvas-2d").waitFor({ state: "visible" });
+    await waitForNetworkAndTextures(page);
+    await page.screenshot({
+      path: join(artifactsRoot, "paws-ai-play-2d-blocked.png"),
+      fullPage: true,
+    });
+    await page.locator("#view-3d").click();
+    await page.locator(".level-canvas-3d").waitFor({ state: "visible" });
+    await waitForNetworkAndTextures(page);
+  }
   const firstMoveResult = await page.evaluate(() => {
     const controller = window.pawsWorkbench;
     const [first, second] = controller.lastAiGeneration.report.moves[0];
