@@ -33,6 +33,7 @@ export function createPlaySession(document, seed = 1, options = {}) {
   let won = false;
   let deadlocked = false;
   let tools = freshTools();
+  let stashHistory = [];
 
   function resetRuntime(nextSeed = currentSeed) {
     const tentativeSeed = Number(nextSeed) | 0;
@@ -45,6 +46,7 @@ export function createPlaySession(document, seed = 1, options = {}) {
       won,
       deadlocked,
       tools,
+      stashHistory,
     };
     try {
       const assigned = assignRandomTypes(sourceDocument.tiles ?? [], {
@@ -70,6 +72,7 @@ export function createPlaySession(document, seed = 1, options = {}) {
       refreshCoverage();
       updateEndState([]);
       tools = freshTools();
+      stashHistory = [];
       currentSeed = tentativeSeed;
     } catch (error) {
       ({
@@ -81,6 +84,7 @@ export function createPlaySession(document, seed = 1, options = {}) {
         won,
         deadlocked,
         tools,
+        stashHistory,
       } = previous);
       throw error;
     }
@@ -314,6 +318,7 @@ export function createPlaySession(document, seed = 1, options = {}) {
     }
     tile.stashedSlot = slotIndex;
     tray[slotIndex] = tile.uid;
+    stashHistory.push(tile.uid);
     if (tile.faceDown) {
       tile.faceDown = false;
       events.push(playEvent("tile-face-changed", { tileUid: uid, faceDown: false }));
@@ -382,6 +387,64 @@ export function createPlaySession(document, seed = 1, options = {}) {
     return events;
   }
 
+  function useMatchTool() {
+    if (tools.match.remaining <= 0) {
+      return rejectTool("match", "spent");
+    }
+
+    const interactivePair = findMatchingPair(tiles.filter(isInteractive));
+    const pair =
+      interactivePair ??
+      findMatchingPair(tiles.filter((tile) => !tile.removed));
+    if (!pair) {
+      return rejectTool("match", "no-pair");
+    }
+
+    if (pair.some(({ uid }) => uid === selectedTileUid)) {
+      selectedTileUid = null;
+      selectedTileWasFlip = false;
+    }
+    const events = [];
+    removePair(pair[0], pair[1], "tool-match-removed", events);
+    tools.match.remaining -= 1;
+    updateEndState(events);
+    return events;
+  }
+
+  function useUndoTool() {
+    if (tools.undo.remaining <= 0) {
+      return rejectTool("undo", "spent");
+    }
+
+    while (stashHistory.length > 0) {
+      const uid = stashHistory.pop();
+      const tile = findTile(uid);
+      if (!tile || tile.removed || !isInTray(tile)) {
+        continue;
+      }
+
+      const slotIndex = tile.stashedSlot;
+      clearTrayTile(tile);
+      if (selectedTileUid === uid) {
+        selectedTileUid = null;
+        selectedTileWasFlip = false;
+      }
+      tools.undo.remaining -= 1;
+      refreshCoverage();
+      const events = [
+        playEvent("tool-undone", {
+          tileUid: uid,
+          slotIndex,
+          tray: [...tray],
+        }),
+      ];
+      updateEndState(events);
+      return events;
+    }
+
+    return rejectTool("undo", "empty-history");
+  }
+
   function getSnapshot() {
     return structuredClone({
       seed: currentSeed,
@@ -412,6 +475,8 @@ export function createPlaySession(document, seed = 1, options = {}) {
     interact,
     stash,
     useShuffleTool,
+    useMatchTool,
+    useUndoTool,
     restart,
     getSnapshot,
     setSecondSlotUnlocked,

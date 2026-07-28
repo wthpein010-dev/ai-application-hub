@@ -129,6 +129,166 @@ test("restart restores shuffle inventory", () => {
   assert.equal(session.getSnapshot().tools.shuffle.remaining, 1);
 });
 
+test("match tool removes an interactive pair before a hidden pair", () => {
+  const session = createPlaySession(level([
+    tile("top-a", 0, 0, 2, 1),
+    tile("top-b", 16, 0, 2, 1),
+    tile("hidden-a", 0, 16, 1, 2),
+    tile("blocker-a", 0, 16, 2, 3),
+    tile("hidden-b", 16, 16, 1, 2),
+    tile("blocker-b", 16, 16, 2, 4),
+  ]));
+
+  const events = session.useMatchTool();
+  const snapshot = session.getSnapshot();
+
+  assert.equal(events[0].type, "tool-match-removed");
+  assert.deepEqual(events[0].tileUids, ["top-a", "top-b"]);
+  assert.deepEqual(
+    snapshot.tiles.filter(({ removed }) => removed).map(({ uid }) => uid),
+    ["top-a", "top-b"],
+  );
+  assert.equal(snapshot.tools.match.remaining, 0);
+});
+
+test("match tool pulls one hidden special pair without triggering bonus chains", () => {
+  const session = createPlaySession(level([
+    tile("hidden-a", 0, 0, 1, 1001),
+    tile("blocker-a", 0, 0, 2, 1),
+    tile("hidden-b", 16, 0, 1, 1001),
+    tile("blocker-b", 16, 0, 2, 2),
+  ]));
+
+  const events = session.useMatchTool();
+
+  assert.equal(events.filter(({ type }) => type === "tool-match-removed").length, 1);
+  assert.equal(events.some(({ type }) => type === "special-auto-removed"), false);
+  assert.equal(session.getSnapshot().tiles.filter(({ removed }) => removed).length, 2);
+});
+
+test("match rejection and a spent match use leave the session unchanged", () => {
+  const rejected = createPlaySession(level([
+    tile("a", 0, 0, 1, 1),
+    tile("b", 16, 0, 1, 2),
+  ]));
+  const beforeRejected = rejected.getSnapshot();
+  assert.deepEqual(rejected.useMatchTool(), [{
+    type: "tool-rejected",
+    tool: "match",
+    reason: "no-pair",
+  }]);
+  assert.deepEqual(rejected.getSnapshot(), beforeRejected);
+
+  const spent = createPlaySession(level([
+    tile("a", 0, 0, 1, 1),
+    tile("b", 16, 0, 1, 1),
+    tile("c", 32, 0, 1, 2),
+    tile("d", 48, 0, 1, 2),
+  ]));
+  spent.useMatchTool();
+  const beforeSpent = spent.getSnapshot();
+  assert.equal(spent.useMatchTool()[0].reason, "spent");
+  assert.deepEqual(spent.getSnapshot(), beforeSpent);
+});
+
+test("restart restores match inventory", () => {
+  const session = createPlaySession(level([
+    tile("a", 0, 0, 1, 1),
+    tile("b", 16, 0, 1, 1),
+  ]));
+
+  session.useMatchTool();
+  assert.equal(session.getSnapshot().tools.match.remaining, 0);
+  session.restart();
+  assert.equal(session.getSnapshot().tools.match.remaining, 1);
+});
+
+test("undo restores the newest tile still in the tray", () => {
+  const session = createPlaySession(level([
+    tile("first", 0, 0, 1, 1),
+    tile("second", 16, 0, 1, 2),
+    tile("pair-a", 32, 0, 1, 1),
+    tile("pair-b", 48, 0, 1, 2),
+  ]));
+  session.stash("first", 0);
+  session.stash("second", 1);
+
+  const events = session.useUndoTool();
+  const snapshot = session.getSnapshot();
+
+  assert.deepEqual(events, [{
+    type: "tool-undone",
+    tileUid: "second",
+    slotIndex: 1,
+    tray: ["first", null],
+  }]);
+  assert.deepEqual(snapshot.tray, ["first", null]);
+  assert.equal(
+    Object.hasOwn(snapshot.tiles.find(({ uid }) => uid === "second"), "stashedSlot"),
+    false,
+  );
+  assert.equal(snapshot.tools.undo.remaining, 0);
+});
+
+test("undo skips a stale stash history entry that matching already removed", () => {
+  const session = createPlaySession(level([
+    tile("stale", 0, 0, 1, 1),
+    tile("stale-pair", 16, 0, 1, 1),
+    tile("restorable", 32, 0, 1, 2),
+    tile("other", 48, 0, 1, 3),
+  ]));
+  session.stash("stale", 0);
+  session.interact("stale");
+  session.interact("stale-pair");
+  session.stash("restorable", 0);
+
+  const events = session.useUndoTool();
+
+  assert.equal(events[0].type, "tool-undone");
+  assert.equal(events[0].tileUid, "restorable");
+  assert.deepEqual(session.getSnapshot().tray, [null, null]);
+});
+
+test("undo rejection and a spent undo use leave the session unchanged", () => {
+  const rejected = createPlaySession(level([
+    tile("a", 0, 0, 1, 1),
+    tile("b", 16, 0, 1, 1),
+  ]));
+  const beforeRejected = rejected.getSnapshot();
+  assert.deepEqual(rejected.useUndoTool(), [{
+    type: "tool-rejected",
+    tool: "undo",
+    reason: "empty-history",
+  }]);
+  assert.deepEqual(rejected.getSnapshot(), beforeRejected);
+
+  const spent = createPlaySession(level([
+    tile("a", 0, 0, 1, 1),
+    tile("b", 16, 0, 1, 1),
+  ]));
+  spent.stash("a", 0);
+  spent.useUndoTool();
+  const beforeSpent = spent.getSnapshot();
+  assert.equal(spent.useUndoTool()[0].reason, "spent");
+  assert.deepEqual(spent.getSnapshot(), beforeSpent);
+});
+
+test("restart restores undo inventory and clears stash history", () => {
+  const session = createPlaySession(level([
+    tile("a", 0, 0, 1, 1),
+    tile("b", 16, 0, 1, 1),
+  ]));
+  session.stash("a", 0);
+  session.useUndoTool();
+  assert.equal(session.getSnapshot().tools.undo.remaining, 0);
+
+  session.restart();
+
+  assert.equal(session.getSnapshot().tools.undo.remaining, 1);
+  assert.equal(session.useUndoTool()[0].reason, "empty-history");
+  assert.equal(session.getSnapshot().tools.undo.remaining, 1);
+});
+
 test("first round assigns one distinct concrete type to every random layer", () => {
   const tiles = [];
   for (let layer = 1; layer <= 3; layer += 1) {
