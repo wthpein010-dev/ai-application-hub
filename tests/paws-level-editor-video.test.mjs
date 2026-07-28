@@ -85,18 +85,23 @@ test("recording proof matches current media, sources, timeline and real state ch
     "projects/paws-level-editor/static-api-client.mjs",
     "projects/paws-level-editor/core/ai-level-generator.mjs",
     "projects/paws-level-editor/core/editor-geometry.mjs",
+    "projects/paws-level-editor/core/fill-tool.mjs",
     "projects/paws-level-editor/core/gameplay-metadata.mjs",
+    "projects/paws-level-editor/core/grass-layout.mjs",
     "projects/paws-level-editor/core/level-adapter.mjs",
     "projects/paws-level-editor/core/level-difficulty.mjs",
     "projects/paws-level-editor/core/legacy-ai-geometry-upgrade.mjs",
     "projects/paws-level-editor/core/level-solver.mjs",
     "projects/paws-level-editor/core/level-statistics.mjs",
     "projects/paws-level-editor/core/level-validator.mjs",
+    "projects/paws-level-editor/core/pass-rate-evaluator.mjs",
     "projects/paws-level-editor/core/tile-relations.mjs",
     "projects/paws-level-editor/core/view-model.mjs",
     "projects/paws-level-editor/ui/ai-level-dialog.mjs",
     "projects/paws-level-editor/ui/editor-shortcuts.mjs",
+    "projects/paws-level-editor/ui/grass-field.mjs",
     "projects/paws-level-editor/ui/inspector.mjs",
+    "projects/paws-level-editor/ui/last-opened-level.mjs",
     "projects/paws-level-editor/ui/level-export.mjs",
     "projects/paws-level-editor/ui/local-level-import.mjs",
     "projects/paws-level-editor/ui/level-summary.mjs",
@@ -153,6 +158,23 @@ test("recording proof matches current media, sources, timeline and real state ch
   assert.equal(actions.aiGeneration.totalEven, true);
   assert.equal(actions.aiGeneration.globalTypesEven, true);
   assert.equal(actions.aiGeneration.layerTypesEven, true);
+  assert.deepEqual(actions.grass.twoD, {
+    canvasCount: 1,
+    imageReady: true,
+    visualScale: 0.5,
+    rotationRadians: Math.PI,
+    animated: true,
+  });
+  assert.equal(actions.grass.threeD.patchCount, 12);
+  assert.equal(actions.grass.threeD.animated, true);
+  assert.deepEqual(
+    actions.grass.threeD.geometrySizes,
+    [[0.6625, 0.3625], [0.375, 0.4375]],
+  );
+  assert.equal(actions.passRate.trialCount, 12);
+  assert.equal(actions.passRate.passCount <= actions.passRate.trialCount, true);
+  assert.equal(actions.passRate.passPercent >= 0 && actions.passRate.passPercent <= 100, true);
+  assert.equal(actions.passRate.stale, false);
   assert.equal(
     Math.abs(actions.aiGeneration.actualScore - actions.aiGeneration.targetScore) <= 5,
     true,
@@ -169,6 +191,14 @@ test("recording proof matches current media, sources, timeline and real state ch
     tileCountBefore: 200,
     tileCountAfter: 202,
     sameLayerOverlapPairs: 0,
+  });
+  assert.deepEqual(actions.fillTool, {
+    count: 4,
+    types: [-1, -1, -1, -1],
+    layers: [20, 21, 22, 23],
+    positions: [[0, 0], [1, 0], [2, 0], [3, 0]],
+    historyDelta: 1,
+    undone: true,
   });
   assert.equal(actions.layerInspection.through2d, actions.layerInspection.through3d);
   assert.ok(actions.layerInspection.through2d > 0);
@@ -191,6 +221,7 @@ test("recording proof matches current media, sources, timeline and real state ch
   assert.ok(actions.play2d.removedAfter > actions.play2d.removedBefore);
   assert.notEqual(actions.play3d.selectedBefore, actions.play3d.selectedAfter);
   assert.equal(actions.persistence.savedToLocalStorage, true);
+  assert.equal(actions.persistence.lastOpenedRestored, true);
   assert.equal(
     actions.persistence.reloadedProperty,
     actions.persistence.savedProperty,

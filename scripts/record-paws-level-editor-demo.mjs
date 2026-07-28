@@ -31,18 +31,23 @@ const sourceFiles = [
   "projects/paws-level-editor/static-api-client.mjs",
   "projects/paws-level-editor/core/ai-level-generator.mjs",
   "projects/paws-level-editor/core/editor-geometry.mjs",
+  "projects/paws-level-editor/core/fill-tool.mjs",
   "projects/paws-level-editor/core/gameplay-metadata.mjs",
+  "projects/paws-level-editor/core/grass-layout.mjs",
   "projects/paws-level-editor/core/level-adapter.mjs",
   "projects/paws-level-editor/core/level-difficulty.mjs",
   "projects/paws-level-editor/core/legacy-ai-geometry-upgrade.mjs",
   "projects/paws-level-editor/core/level-solver.mjs",
   "projects/paws-level-editor/core/level-statistics.mjs",
   "projects/paws-level-editor/core/level-validator.mjs",
+  "projects/paws-level-editor/core/pass-rate-evaluator.mjs",
   "projects/paws-level-editor/core/tile-relations.mjs",
   "projects/paws-level-editor/core/view-model.mjs",
   "projects/paws-level-editor/ui/ai-level-dialog.mjs",
   "projects/paws-level-editor/ui/editor-shortcuts.mjs",
+  "projects/paws-level-editor/ui/grass-field.mjs",
   "projects/paws-level-editor/ui/inspector.mjs",
+  "projects/paws-level-editor/ui/last-opened-level.mjs",
   "projects/paws-level-editor/ui/level-export.mjs",
   "projects/paws-level-editor/ui/local-level-import.mjs",
   "projects/paws-level-editor/ui/level-summary.mjs",
@@ -413,7 +418,41 @@ async function recordEditor() {
       // 00:00 — show the current project library, requested default and local AI generation.
       markChapter(proof.timeline, "tools", startedAt, 0);
       await page.locator("#fit-view").click();
-      await delay(1_200);
+      await page.waitForFunction(() => window.pawsWorkbench?.grassField?.imageReady);
+      const grass2d = await page.evaluate(async () => {
+        const { GRASS_ROTATION_RADIANS, GRASS_VISUAL_SCALE } = await import(
+          new URL("./core/grass-layout.mjs", window.location.href).href
+        );
+        const samples = [];
+        const startedAt = performance.now();
+        await new Promise((resolveSample) => {
+          const sample = (timestamp) => {
+            const pulse = window.pawsWorkbench?.grassField?.lastPulseScale;
+            if (Number.isFinite(pulse)) samples.push(pulse);
+            if (timestamp - startedAt >= 1_200) {
+              resolveSample();
+              return;
+            }
+            requestAnimationFrame(sample);
+          };
+          requestAnimationFrame(sample);
+        });
+        return {
+          canvasCount: document.querySelectorAll(".level-grass-field").length,
+          imageReady: window.pawsWorkbench.grassField.imageReady,
+          visualScale: GRASS_VISUAL_SCALE,
+          rotationRadians: GRASS_ROTATION_RADIANS,
+          animated: Math.max(...samples) - Math.min(...samples) > 0.1,
+        };
+      });
+      assert.deepEqual(grass2d, {
+        canvasCount: 1,
+        imageReady: true,
+        visualScale: 0.5,
+        rotationRadians: Math.PI,
+        animated: true,
+      });
+      proof.actions.grass = { twoD: grass2d };
       await page.locator("#generate-ai-level").click();
       await page.locator("#ai-level-dialog").waitFor({ state: "visible" });
       assert.equal(
@@ -514,6 +553,31 @@ async function recordEditor() {
         bundledLevelCount + 1,
       );
       proof.actions.aiGeneration = aiGeneration;
+      await page.locator("#evaluate-pass-rate").click();
+      await page.waitForFunction(() => {
+        const state = window.pawsWorkbench?.passRateState;
+        return state?.result && !state.pending;
+      });
+      proof.actions.passRate = await page.evaluate(() => {
+        const state = window.pawsWorkbench.passRateState;
+        return {
+          passPercent: state.result.passPercent,
+          passCount: state.result.passCount,
+          trialCount: state.result.trialCount,
+          stale: state.stale,
+        };
+      });
+      assert.equal(proof.actions.passRate.trialCount, 12);
+      assert.equal(
+        proof.actions.passRate.passCount <= proof.actions.passRate.trialCount,
+        true,
+      );
+      assert.equal(
+        proof.actions.passRate.passPercent >= 0
+          && proof.actions.passRate.passPercent <= 100,
+        true,
+      );
+      assert.equal(proof.actions.passRate.stale, false);
       const generatedFileName = aiGeneration.fileName;
       const generatedStorageKey = `paws-level-editor-demo-v1:${generatedFileName}`;
       await page.locator("#fit-view").click();
@@ -603,6 +667,54 @@ async function recordEditor() {
           after: propertyAfter,
         },
       };
+      await page.evaluate(() => window.pawsWorkbench.setSelection(new Set()));
+      await page.locator('[data-tool="fill"]').click();
+      await page.locator('[data-placement-field="fillStartLayer"]').fill("20");
+      await page.locator('[data-placement-field="fillStartLayer"]').press("Enter");
+      const fillGesture = await page.evaluate(() => {
+        const controller = window.pawsWorkbench;
+        const renderer = controller.renderer;
+        const rectangle = renderer.canvas.getBoundingClientRect();
+        const screenPoint = ({ x, y }) => ({
+          x: rectangle.left + renderer.viewport.offsetX + (x + 4) * renderer.viewport.scale,
+          y: rectangle.top + renderer.viewport.offsetY + (y + 4) * renderer.viewport.scale,
+        });
+        return {
+          start: screenPoint({ x: 0, y: 0 }),
+          end: screenPoint({ x: 3, y: 0 }),
+          historyBefore: controller.history.undoStack.length,
+        };
+      });
+      await page.mouse.move(fillGesture.start.x, fillGesture.start.y);
+      await page.mouse.down();
+      await page.mouse.move(fillGesture.end.x, fillGesture.end.y, { steps: 8 });
+      await page.mouse.up();
+      const fillTool = await page.evaluate((historyBefore) => {
+        const controller = window.pawsWorkbench;
+        const additions = controller.document.tiles
+          .filter(({ layer }) => layer >= 20)
+          .sort((left, right) => left.layer - right.layer);
+        return {
+          count: additions.length,
+          types: additions.map(({ type }) => type),
+          layers: additions.map(({ layer }) => layer),
+          positions: additions.map(({ x, y }) => [x, y]),
+          historyDelta: controller.history.undoStack.length - historyBefore,
+        };
+      }, fillGesture.historyBefore);
+      assert.deepEqual(fillTool, {
+        count: 4,
+        types: [-1, -1, -1, -1],
+        layers: [20, 21, 22, 23],
+        positions: [[0, 0], [1, 0], [2, 0], [3, 0]],
+        historyDelta: 1,
+      });
+      await delay(500);
+      await page.keyboard.press("Control+Z");
+      await page.waitForFunction(() => window.pawsWorkbench.document.tiles.length === 200);
+      proof.actions.fillTool = { ...fillTool, undone: true };
+      await page.locator('[data-tool="select"]').click();
+      await page.evaluate((uid) => window.pawsWorkbench.setSelection(new Set([uid])), editTile.uid);
       const tileCountBeforeShortcuts = await page.evaluate(
         () => window.pawsWorkbench.document.tiles.length,
       );
@@ -661,6 +773,37 @@ async function recordEditor() {
       await page.locator("#view-3d").click();
       await page.locator(".level-canvas-3d").waitFor({ state: "visible" });
       await waitForWorkbench(page);
+      await page.waitForFunction(() =>
+        window.pawsWorkbench.renderer?.grassGroup?.children.length === 12);
+      proof.actions.grass.threeD = await page.evaluate(async () => {
+        const renderer = window.pawsWorkbench.renderer;
+        const samples = [];
+        const startedAt = performance.now();
+        await new Promise((resolveSample) => {
+          const sample = (timestamp) => {
+            samples.push(renderer.grassGroup.children[0].scale.y);
+            if (timestamp - startedAt >= 1_200) {
+              resolveSample();
+              return;
+            }
+            requestAnimationFrame(sample);
+          };
+          requestAnimationFrame(sample);
+        });
+        return {
+          patchCount: renderer.grassGroup.children.length,
+          animated: Math.max(...samples) - Math.min(...samples) > 0.1,
+          geometrySizes: [...renderer.grassGeometries.values()].map((geometry) => [
+            Number(geometry.parameters.width.toFixed(4)),
+            Number(geometry.parameters.height.toFixed(4)),
+          ]),
+        };
+      });
+      assert.deepEqual(proof.actions.grass.threeD, {
+        patchCount: 12,
+        animated: true,
+        geometrySizes: [[0.6625, 0.3625], [0.375, 0.4375]],
+      });
       proof.actions.layerInspection.through3d = await page.evaluate(() =>
         window.pawsWorkbench.renderer.meshes.size);
       assert.equal(
@@ -886,13 +1029,16 @@ async function recordEditor() {
       assert.equal(savedToLocalStorage, true);
       await delay(2400);
       await page.reload({ waitUntil: "domcontentloaded" });
-      await waitForWorkbench(page);
-      await page.locator('[role="option"]', { hasText: generatedFileName }).click();
       await page.waitForFunction(
         (fileName) => window.pawsWorkbench?.document?.fileName === fileName,
         generatedFileName,
       );
       await waitForWorkbench(page);
+      const lastOpenedRestored = await page.evaluate(
+        (fileName) => window.pawsWorkbench.document.fileName === fileName,
+        generatedFileName,
+      );
+      assert.equal(lastOpenedRestored, true);
       const reloadedPosition = await page.evaluate((tileIndex) => {
         const tile = window.pawsWorkbench.document.tiles[tileIndex];
         return { x: tile.x, y: tile.y };
@@ -943,6 +1089,7 @@ async function recordEditor() {
         savedProperty: savedPosition.x,
         savedPosition,
         savedToLocalStorage,
+        lastOpenedRestored,
         reloadedProperty: reloadedPosition.x,
         reloadedPosition,
         localCopyPreserved,

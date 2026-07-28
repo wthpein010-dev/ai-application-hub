@@ -25,7 +25,7 @@ const { WorkbenchController } = await import(
 const { createPlaySession } = await import(
   "../projects/paws-level-editor/core/play-engine.mjs"
 );
-const { EditHistory } = await import(
+const { EditHistory, createPatchTilesCommand } = await import(
   "../projects/paws-level-editor/core/edit-history.mjs"
 );
 const { parseLevelDocument } = await import(
@@ -537,6 +537,75 @@ test("save awaits a fresh pass-rate result before serializing and calling the AP
   assert.equal(note.passRateReasonsText, "模拟结果");
   assert.deepEqual(controller.passRateState.result, result);
   assert.equal(controller.passRateState.stale, false);
+});
+
+test("a delayed save cannot overwrite or mark clean a replacement level edited after navigation", async () => {
+  const pendingSave = deferred();
+  const saveStarted = deferred();
+  let submittedValue;
+  const { controller } = controllerHarness({
+    runtimeMode: "static",
+    async saveLevel({ value }) {
+      submittedValue = value;
+      saveStarted.resolve();
+      return pendingSave.promise;
+    },
+    async loadLevel(fileName) {
+      return levelResponse(fileName, 8);
+    },
+    async listLevelCatalog() {
+      return {
+        defaultFileName: "level-b.json",
+        levels: [{ fileName: "level-b.json", name: "level B" }],
+      };
+    },
+  }, {
+    async passRateEvaluator() {
+      return {
+        passPercent: 100,
+        passCount: 12,
+        trialCount: 12,
+        invalidDealCount: 0,
+        failSolveCount: 0,
+        reasons: [],
+      };
+    },
+  });
+  controller.document = editableDocument("level-a.json");
+  controller.history = new EditHistory(controller.document);
+
+  const save = controller.performSave({
+    fileName: controller.document.fileName,
+    saveAs: false,
+    expectedVersion: controller.document.version,
+  });
+  await saveStarted.promise;
+
+  await controller.openLevel("level-b.json", { discardDirty: true });
+  const replacementDocument = controller.document;
+  const replacementHistory = controller.history;
+  const replacementUid = replacementDocument.tiles[0].uid;
+  replacementHistory.execute(createPatchTilesCommand(
+    [replacementUid],
+    { presetColorType: 5 },
+  ));
+  const replacementSnapshot = structuredClone(replacementDocument);
+
+  pendingSave.resolve({
+    version: "version-a-saved",
+    bundled: false,
+    local: true,
+    source: "manual",
+    value: submittedValue,
+  });
+
+  assert.equal(await save, true);
+  assert.equal(controller.document, replacementDocument);
+  assert.equal(controller.history, replacementHistory);
+  assert.deepEqual(controller.document, replacementSnapshot);
+  assert.equal(controller.document.fileName, "level-b.json");
+  assert.equal(controller.document.version, "version-8");
+  assert.equal(controller.history.dirty, true);
 });
 
 test("a pass-rate failure stops save without replacing the previous stored result", async () => {

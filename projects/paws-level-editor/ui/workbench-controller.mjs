@@ -1842,6 +1842,9 @@ export class WorkbenchController {
       return false;
     }
     try {
+      const savedDocument = this.document;
+      const savedHistory = this.history;
+      const savedStateId = savedHistory?.stateId;
       const value = serializeLevelDocument(this.document);
       const source = saveAs
         ? "manual"
@@ -1850,28 +1853,36 @@ export class WorkbenchController {
           : "manual";
       const saved = await this.withWriteAuthentication(() =>
         this.api.saveLevel({ fileName, value, expectedVersion, saveAs, source }));
-      this.document.fileName = fileName;
-      this.document.version = saved.version;
-      this.document.bundled = saved.bundled === true;
-      this.document.local = saved.local === true;
-      this.document.source = saved.source;
-      this.document.original = structuredClone(saved.value);
-      const canonical = parseLevelDocument(saved.value);
-      this.document.designerNote = structuredClone(canonical.designerNote);
-      this.document.gameplay = structuredClone(canonical.gameplay);
-      this.setIssues(validateLevel(this.document));
-      this.history.markSaved();
-      this.currentDifficulty = scoreLevelDifficulty(this.document, {
-        maxNodes: 5000,
-      });
+      const savedDocumentIsCurrent =
+        this.document === savedDocument
+        && this.history === savedHistory
+        && savedHistory?.stateId === savedStateId;
+      if (savedDocumentIsCurrent) {
+        this.document.fileName = fileName;
+        this.document.version = saved.version;
+        this.document.bundled = saved.bundled === true;
+        this.document.local = saved.local === true;
+        this.document.source = saved.source;
+        this.document.original = structuredClone(saved.value);
+        const canonical = parseLevelDocument(saved.value);
+        this.document.designerNote = structuredClone(canonical.designerNote);
+        this.document.gameplay = structuredClone(canonical.gameplay);
+        this.setIssues(validateLevel(this.document));
+        this.history.markSaved();
+        this.currentDifficulty = scoreLevelDifficulty(this.document, {
+          maxNodes: 5000,
+        });
+      }
       await this.refreshLevels();
       this.updateUI();
       this.showToast(
-        saveAs
-          ? `已另存为 ${fileName}`
-          : this.runtimeMode === "lan"
-            ? `已保存到 Unity 工程：${fileName}`
-            : `已保存到当前浏览器：${fileName}`,
+        savedDocumentIsCurrent
+          ? saveAs
+            ? `已另存为 ${fileName}`
+            : this.runtimeMode === "lan"
+              ? `已保存到 Unity 工程：${fileName}`
+              : `已保存到当前浏览器：${fileName}`
+          : `已保存提交时的 ${fileName}；当前关卡及后续编辑未受影响。`,
       );
       return true;
     } catch (error) {

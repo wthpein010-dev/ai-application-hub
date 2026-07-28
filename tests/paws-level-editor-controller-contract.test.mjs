@@ -330,7 +330,7 @@ test("AI save-as and export rerun the release validator before producing output"
   assert.match(performSaveBody, /return false/);
   assert.match(
     performSaveBody,
-    /try\s*\{\s*const value\s*=\s*serializeLevelDocument\(this\.document\)/,
+    /try\s*\{[\s\S]*?const value\s*=\s*serializeLevelDocument\(this\.document\)/,
     "serialization errors must stay inside the save error boundary",
   );
 });
