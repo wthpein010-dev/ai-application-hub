@@ -1020,6 +1020,7 @@ export class WorkbenchController {
         openLevel: () => this.openLevel(fileName, { discardDirty: true }),
         getDocument: () => this.document,
       });
+      this.seed = unsignedSeed;
       const reopenedReport = solveLevel(this.document);
       if (!reopenedReport.solvable) {
         throw new Error("生成关卡重新打开后未通过可解性校验。");
@@ -1519,7 +1520,7 @@ export class WorkbenchController {
     if (blocked) {
       this.showToast(
         aiGenerated
-          ? "AI 关卡未通过逐层配对和完整可解性校验，已阻止导出。"
+          ? "AI 关卡未通过全局随机池配对和完整可解性校验，已阻止导出。"
           : "Unity 游戏运行参数不合法，已阻止导出。",
         "error",
       );
@@ -1885,7 +1886,7 @@ export class WorkbenchController {
     if (blocked) {
       this.showToast(
         aiGenerated
-          ? "AI 关卡未通过逐层配对和完整可解性校验，已阻止保存。"
+          ? "AI 关卡未通过全局随机池配对和完整可解性校验，已阻止保存。"
           : "Unity 游戏运行参数不合法，已阻止保存。",
         "error",
       );

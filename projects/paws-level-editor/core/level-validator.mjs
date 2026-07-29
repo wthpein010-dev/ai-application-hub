@@ -18,7 +18,6 @@ function issue(severity, code, message, tileUids = []) {
 
 export function validateLevel(document, {
   rejectSameLayerOverlap = Boolean(document?.designerNote?.aiGeneration),
-  rejectOddLayerTypeCounts = Boolean(document?.designerNote?.aiGeneration),
 } = {}) {
   const tiles = Array.isArray(document?.tiles) ? document.tiles : [];
   if (tiles.length === 0) {
@@ -170,31 +169,6 @@ export function validateLevel(document, {
       `${scope}同层存在 ${overlappingPairCount} 组面积重叠的砖块。`,
       [...overlappingUids],
     ));
-  }
-
-  if (rejectOddLayerTypeCounts) {
-    const oddLayerTypeUids = new Set();
-    const oddLayerTypeGroups = [];
-    for (const [layer, layerTiles] of layerGroups) {
-      const layerTypeGroups = new Map();
-      for (const tile of layerTiles) {
-        const type = Number(tile.type);
-        (layerTypeGroups.get(type) ?? layerTypeGroups.set(type, []).get(type)).push(tile.uid);
-      }
-      for (const [type, tileUids] of layerTypeGroups) {
-        if (tileUids.length % 2 === 0) continue;
-        oddLayerTypeGroups.push(`第 ${layer} 层 / 图案 ${type}`);
-        tileUids.forEach((uid) => oddLayerTypeUids.add(uid));
-      }
-    }
-    if (oddLayerTypeGroups.length) {
-      issues.push(issue(
-        "error",
-        "odd-layer-type",
-        `AI 关卡存在 ${oddLayerTypeGroups.length} 组逐层图案数量不是偶数：${oddLayerTypeGroups.join("、")}。`,
-        [...oddLayerTypeUids],
-      ));
-    }
   }
 
   for (const [type, tileUids] of typeGroups) {

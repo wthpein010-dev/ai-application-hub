@@ -327,6 +327,111 @@ function analyzeTowers(document, tiles, layerCount, board) {
   };
 }
 
+function analyzeLayerTemplates(tiles, board, layerCount) {
+  const byLayer = new Map();
+  for (const tile of tiles) {
+    const layerTiles = byLayer.get(tile.layer) ?? [];
+    layerTiles.push(tile);
+    byLayer.set(tile.layer, layerTiles);
+  }
+  const maxAnchorX = Math.max(1, board.width * TILE_SIZE - TILE_SIZE);
+  const maxAnchorY = Math.max(1, board.height * TILE_SIZE - TILE_SIZE);
+  const layerTemplates = [...byLayer]
+    .sort(([left], [right]) => Number(left) - Number(right))
+    .map(([layer, layerTiles]) => {
+      const ordered = [...layerTiles].sort((left, right) =>
+        left.y - right.y || left.x - right.x || String(left.uid).localeCompare(String(right.uid)));
+      const components = connectedComponents(ordered, areFlatNeighbors)
+        .map((component) => component.map(({ uid }) => uid));
+      return {
+        layer: Number(layer),
+        normalizedDepth: layerCount > 1
+          ? (Number(layer) - 1) / (layerCount - 1)
+          : 0,
+        tileCount: ordered.length,
+        components,
+        anchors: ordered.map((tile) => ({
+          x: tile.x,
+          y: tile.y,
+          normalizedX: Math.min(1, Math.max(0, tile.x / maxAnchorX)),
+          normalizedY: Math.min(1, Math.max(0, tile.y / maxAnchorY)),
+          type: Number(tile.type),
+          moldType: Number(tile.moldType ?? 1),
+          presetColorType: Number(tile.presetColorType ?? 1),
+        })),
+      };
+    });
+
+  const semanticTiles = tiles
+    .filter((tile) =>
+      Number(tile.presetColorType) === 3
+      || Number(tile.moldType) === 2)
+    .sort((left, right) =>
+      left.layer - right.layer || left.y - right.y || left.x - right.x);
+  const tracks = [];
+  for (const tile of semanticTiles) {
+    const candidates = tracks
+      .filter((track) => {
+        const previous = track.tiles.at(-1);
+        return (
+          previous.layer === tile.layer - 1
+          && Math.abs(previous.x - tile.x) <= 4
+          && Math.abs(previous.y - tile.y) <= 4
+        );
+      })
+      .sort((left, right) => {
+        const leftPrevious = left.tiles.at(-1);
+        const rightPrevious = right.tiles.at(-1);
+        return (
+          Math.hypot(leftPrevious.x - tile.x, leftPrevious.y - tile.y)
+          - Math.hypot(rightPrevious.x - tile.x, rightPrevious.y - tile.y)
+        );
+      });
+    const track = candidates[0] ?? { tiles: [] };
+    if (!candidates[0]) tracks.push(track);
+    track.tiles.push(tile);
+  }
+  const blindStacks = tracks
+    .filter(({ tiles: stackTiles }) =>
+      stackTiles.length >= 2
+      && stackTiles.some(({ presetColorType }) => Number(presetColorType) === 3)
+      && Number(stackTiles.at(-1).moldType) === 2)
+    .map(({ tiles: stackTiles }) => ({
+      depth: stackTiles.length,
+      layerStart: stackTiles[0].layer,
+      layerEnd: stackTiles.at(-1).layer,
+      start: {
+        x: stackTiles[0].x / maxAnchorX,
+        y: stackTiles[0].y / maxAnchorY,
+      },
+      delta: stackTiles.length > 1
+        ? {
+          x: (stackTiles.at(-1).x - stackTiles[0].x)
+            / (stackTiles.length - 1) / maxAnchorX,
+          y: (stackTiles.at(-1).y - stackTiles[0].y)
+            / (stackTiles.length - 1) / maxAnchorY,
+        }
+        : { x: 0, y: 0 },
+    }));
+
+  const fullRandomCount = tiles
+    .filter(({ type }) => Number(type) === -1).length;
+  const normalRandomCount = tiles
+    .filter(({ type }) => Number(type) === 0).length;
+  return {
+    layerTileCounts: layerTemplates.map(({ tileCount }) => tileCount),
+    layerTemplates,
+    blindStacks,
+    typeRatios: {
+      fullRandom: tiles.length ? fullRandomCount / tiles.length : 0,
+      normalRandom: tiles.length ? normalRandomCount / tiles.length : 0,
+      fixed: tiles.length
+        ? (tiles.length - fullRandomCount - normalRandomCount) / tiles.length
+        : 0,
+    },
+  };
+}
+
 export function extractLevelStatistics(document) {
   const tiles = Array.isArray(document?.tiles)
     ? document.tiles.map((tile, index) => ({
@@ -363,6 +468,11 @@ export function extractLevelStatistics(document) {
   const platformStructure = analyzePlatforms(tiles);
   const towerStructure = analyzeTowers(document, tiles, layerCount, board);
   const pressureStructure = analyzeStagePressure(document, tiles, layerCount);
+  const learnedTemplates = analyzeLayerTemplates(
+    tiles,
+    board,
+    layerCount,
+  );
 
   return {
     board,
@@ -403,6 +513,7 @@ export function extractLevelStatistics(document) {
     ...platformStructure,
     ...towerStructure,
     ...pressureStructure,
+    ...learnedTemplates,
   };
 }
 
@@ -417,6 +528,19 @@ export function mergeLevelStatistics(statistics) {
   if (!samples.length) {
     throw new Error("没有可用于学习的参考关卡。");
   }
+  const totalTiles = samples.reduce(
+    (total, { tileCount }) => total + Math.max(0, Number(tileCount) || 0),
+    0,
+  );
+  const weightedRatio = (key) => totalTiles
+    ? samples.reduce(
+      (total, sample) =>
+        total
+        + (Number(sample.typeRatios?.[key]) || 0)
+          * Math.max(0, Number(sample.tileCount) || 0),
+      0,
+    ) / totalTiles
+    : 0;
   return {
     sampleCount: samples.length,
     board: {
@@ -452,5 +576,30 @@ export function mergeLevelStatistics(statistics) {
         || left.x - right.x
         || left.y - right.y)
       .slice(0, 12),
+    layerTemplates: samples.flatMap((sample, sampleIndex) =>
+      (sample.layerTemplates ?? []).map((template) => ({
+        ...template,
+        sampleIndex,
+      }))),
+    referenceProfiles: samples.map((sample, sampleIndex) => ({
+      sampleIndex,
+      board: sample.board,
+      tileCount: sample.tileCount,
+      layerCount: sample.layerCount,
+      layerTileCounts: [...(sample.layerTileCounts ?? [])],
+      layerTemplates: (sample.layerTemplates ?? []).map((template) => ({
+        ...template,
+        sampleIndex,
+      })),
+      blindStacks: structuredClone(sample.blindStacks ?? []),
+      typeRatios: { ...(sample.typeRatios ?? {}) },
+    })),
+    blindStacks: samples.flatMap(({ blindStacks }) =>
+      structuredClone(blindStacks ?? [])),
+    typeRatios: {
+      fullRandom: weightedRatio("fullRandom"),
+      normalRandom: weightedRatio("normalRandom"),
+      fixed: weightedRatio("fixed"),
+    },
   };
 }

@@ -157,6 +157,8 @@ export function buildRenderTiles(
       depth: WORLD_TILE_SIZE,
       textureUrl: blockImageUrl(tile.type),
       faceDown: Boolean(tile.faceDown ?? tile.presetColorType === 2),
+      moldType: Number(tile.moldType ?? 1),
+      presetColorType: Number(tile.presetColorType ?? 1),
       covered: Boolean(tile.covered),
       sideBlocked: Boolean(tile.sideBlocked),
       blocked: Boolean(tile.covered || tile.sideBlocked),

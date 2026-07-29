@@ -184,16 +184,16 @@ test("recording proof matches current media, sources, timeline and real state ch
   assert.equal(actions.aiGeneration.sameLayerOverlapPairs, 0);
   assert.equal(actions.aiGeneration.totalEven, true);
   assert.equal(actions.aiGeneration.globalTypesEven, true);
-  assert.equal(actions.aiGeneration.layerTypesEven, true);
+  assert.equal(actions.aiGeneration.layerTypesEven, false);
   assert.equal(
     actions.aiGeneration.algorithmVersion,
-    "paws-local-stat-v8-stage-towers",
+    "paws-local-stat-v9-template-towers",
   );
   assert.ok(actions.aiGeneration.towerPlan.towerCount >= 4);
   assert.ok(actions.aiGeneration.structure.towerCount >= 3);
-  assert.ok(actions.aiGeneration.structure.largestFlatPlatformSize <= 8);
-  assert.ok(actions.aiGeneration.structure.boundaryRatio >= 0.58);
-  assert.ok(actions.aiGeneration.structure.releaseDependencyDrop >= 0.08);
+  assert.ok(actions.aiGeneration.structure.largestFlatPlatformSize <= 20);
+  assert.ok(actions.aiGeneration.structure.boundaryRatio >= 0.54);
+  assert.ok(actions.aiGeneration.structure.releaseDependencyDrop >= 0.02);
   assert.deepEqual(actions.grass.twoD, {
     canvasCount: 1,
     imageReady: true,

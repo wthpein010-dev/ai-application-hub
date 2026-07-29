@@ -27,6 +27,60 @@ function assignGroup(result, sourceType, min, maxInclusive, rng) {
   });
 }
 
+function assignGroupFromMoves(
+  result,
+  sourceType,
+  min,
+  maxInclusive,
+  rng,
+  moves,
+) {
+  const indicesByUid = new Map(
+    result.map((tile, index) => [tile.uid, index]),
+  );
+  const sourceIndices = result
+    .map((tile, index) => ({ tile, index }))
+    .filter(({ tile }) => tile.type === sourceType)
+    .map(({ index }) => index);
+  if (!sourceIndices.length) return true;
+  if (sourceIndices.length % 2 !== 0) {
+    throw new RangeError(`random type ${sourceType} count must be even`);
+  }
+  const sourceIndexSet = new Set(sourceIndices);
+  const usedIndices = new Set();
+  const pairs = [];
+  for (const move of moves) {
+    if (!Array.isArray(move) || move.length !== 2) continue;
+    const firstIndex = indicesByUid.get(move[0]);
+    const secondIndex = indicesByUid.get(move[1]);
+    if (
+      !sourceIndexSet.has(firstIndex)
+      || !sourceIndexSet.has(secondIndex)
+      || usedIndices.has(firstIndex)
+      || usedIndices.has(secondIndex)
+    ) {
+      continue;
+    }
+    pairs.push([firstIndex, secondIndex]);
+    usedIndices.add(firstIndex);
+    usedIndices.add(secondIndex);
+  }
+  if (usedIndices.size !== sourceIndices.length) return false;
+  const pairTypes = rng.shuffle(pairs.map(() =>
+    rng.nextInt(min, maxInclusive + 1)));
+  pairs.forEach(([firstIndex, secondIndex], pairIndex) => {
+    const type = pairTypes[pairIndex];
+    for (const tileIndex of [firstIndex, secondIndex]) {
+      result[tileIndex] = {
+        ...result[tileIndex],
+        type,
+        randomSourceType: sourceType,
+      };
+    }
+  });
+  return true;
+}
+
 function assignFirstRound(result, blockTypeCount, rng) {
   const byLayer = new Map();
   result.forEach((tile, index) => {
@@ -94,6 +148,8 @@ export function assignRandomTypes(
     firstRound = false,
     isSolvable,
     maxFirstRoundAttempts = 64,
+    maxRandomAttempts = 64,
+    solvableMoves,
   } = {},
 ) {
   const result = structuredClone(tiles ?? []);
@@ -121,7 +177,61 @@ export function assignRandomTypes(
       `unable to find a solvable first round assignment after ${attemptLimit} attempts`,
     );
   }
-  assignGroup(result, 0, 1, normalMax, rng);
-  assignGroup(result, -1, Math.trunc(fullTypeMin), Math.trunc(fullTypeMax), rng);
-  return result;
+  const normalizedFullTypeMin = Math.trunc(fullTypeMin);
+  const normalizedFullTypeMax = Math.trunc(fullTypeMax);
+  if (
+    !Number.isInteger(normalizedFullTypeMin)
+    || !Number.isInteger(normalizedFullTypeMax)
+    || normalizedFullTypeMin < 1
+    || normalizedFullTypeMax > 32
+    || normalizedFullTypeMax < normalizedFullTypeMin
+  ) {
+    throw new RangeError("random type -1 range is invalid");
+  }
+  const candidateGate = typeof isSolvable === "function" ? isSolvable : null;
+  const attemptLimit = candidateGate
+    ? Math.trunc(Number(maxRandomAttempts))
+    : 1;
+  if (!Number.isInteger(attemptLimit) || attemptLimit < 1) {
+    throw new RangeError("random assignment attempt limit must be a positive integer");
+  }
+  if (candidateGate && Array.isArray(solvableMoves)) {
+    const candidate = structuredClone(result);
+    const assignedNormal = assignGroupFromMoves(
+      candidate,
+      0,
+      1,
+      normalMax,
+      rng,
+      solvableMoves,
+    );
+    const assignedFull = assignGroupFromMoves(
+      candidate,
+      -1,
+      normalizedFullTypeMin,
+      normalizedFullTypeMax,
+      rng,
+      solvableMoves,
+    );
+    if (assignedNormal && assignedFull && candidateGate(candidate)) {
+      return candidate;
+    }
+  }
+  for (let attempt = 0; attempt < attemptLimit; attempt += 1) {
+    const candidate = structuredClone(result);
+    assignGroup(candidate, 0, 1, normalMax, rng);
+    assignGroup(
+      candidate,
+      -1,
+      normalizedFullTypeMin,
+      normalizedFullTypeMax,
+      rng,
+    );
+    if (!candidateGate || candidateGate(candidate)) {
+      return candidate;
+    }
+  }
+  throw new RangeError(
+    `unable to find a solvable random assignment after ${attemptLimit} attempts`,
+  );
 }

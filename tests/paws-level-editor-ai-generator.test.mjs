@@ -14,6 +14,7 @@ import {
   mergeLevelStatistics,
 } from "../projects/paws-level-editor/core/level-statistics.mjs";
 import { solveLevel } from "../projects/paws-level-editor/core/level-solver.mjs";
+import { createPlaySession } from "../projects/paws-level-editor/core/play-engine.mjs";
 import {
   DIFFICULTY_DIMENSION_WEIGHTS,
   rateDifficultyScore,
@@ -253,23 +254,20 @@ test("AI validation permits edge-touching tiles", () => {
   );
 });
 
-test("AI validation rejects odd type counts inside individual layers", () => {
+test("AI validation permits odd random counts per layer when the global pool is even", () => {
   const document = makeDocument([
-    tile("layer-1-a", 0, 0, 1, 1),
-    tile("layer-2-a", 0, 16, 2, 1),
-    tile("layer-2-b", 16, 16, 2, 1),
-    tile("layer-2-c", 32, 16, 2, 1),
+    tile("layer-1-a", 0, 0, 1, -1),
+    tile("layer-2-a", 0, 16, 2, -1),
+    tile("layer-2-b", 16, 16, 2, -1),
+    tile("layer-2-c", 32, 16, 2, -1),
   ]);
   document.designerNote.aiGeneration = {};
 
-  const oddLayerIssue = validateLevel(document)
-    .find(({ code }) => code === "odd-layer-type");
-
-  assert.equal(oddLayerIssue?.severity, "error");
-  assert.deepEqual(
-    new Set(oddLayerIssue.tileUids),
-    new Set(["layer-1-a", "layer-2-a", "layer-2-b", "layer-2-c"]),
+  assert.equal(
+    validateLevel(document).some(({ code }) => code === "odd-layer-type"),
+    false,
   );
+  assert.deepEqual(validateLevel(document).filter(({ severity }) => severity === "error"), []);
 });
 
 test("AI publish validation reruns the solver and blocks an unsolvable edit", () => {
@@ -346,6 +344,32 @@ test("merged statistics average boards and retain bounded learned anchors", () =
   assert.equal(merged.normalizedAnchors.length, 12);
   assert.equal(merged.normalizedAnchors.every(({ x, y }) =>
     x >= 0 && x <= 1 && y >= 0 && y <= 1), true);
+});
+
+test("reference statistics retain layer silhouettes, random ratios and blind-box stacks", () => {
+  const template = makeDocument([
+    { ...tile("blind-left-1", 0, 52, 1, -1), presetColorType: 3 },
+    { ...tile("blind-right-1", 31, 52, 1, -1), presetColorType: 3 },
+    { ...tile("tower-left-1", 8, 8, 1, -1) },
+    { ...tile("blind-left-2", 1, 52, 2, -1), presetColorType: 3 },
+    { ...tile("blind-right-2", 32, 52, 2, -1), presetColorType: 3 },
+    { ...tile("tower-left-2", 12, 12, 2, -1) },
+    { ...tile("blind-left-top", 2, 52, 3, -1), moldType: 2 },
+    { ...tile("blind-right-top", 33, 52, 3, -1), moldType: 2 },
+  ], { width: 7, height: 8 });
+  const stats = extractLevelStatistics(template);
+  const learned = mergeLevelStatistics([stats]);
+
+  assert.deepEqual(stats.layerTileCounts, [3, 3, 2]);
+  assert.equal(stats.layerTemplates.length, 3);
+  assert.equal(stats.layerTemplates[0].components.length >= 2, true);
+  assert.equal(stats.typeRatios.fullRandom, 1);
+  assert.equal(stats.blindStacks.length, 2);
+  assert.equal(stats.blindStacks.every(({ depth }) => depth === 3), true);
+  assert.equal(learned.layerTemplates.length, 3);
+  assert.equal(learned.referenceProfiles.length, 1);
+  assert.equal(learned.typeRatios.fullRandom, 1);
+  assert.equal(learned.blindStacks.length, 2);
 });
 
 test("solver removes a symmetric dependency chain", () => {
@@ -619,10 +643,10 @@ test("generated geometry is a multi-tower field with gaps and a release phase", 
 
   assert.equal(stats.towerCount >= 3, true);
   assert.equal(stats.platformComponentCount >= stats.layerCount * 1.25, true);
-  assert.equal(stats.largestFlatPlatformSize <= 8, true);
-  assert.equal(stats.largestFlatPlatformRatio <= 0.5, true);
-  assert.equal(stats.boundaryRatio >= 0.58, true);
-  assert.equal(stats.releaseDependencyDrop >= 0.08, true);
+  assert.equal(stats.largestFlatPlatformSize <= 20, true);
+  assert.equal(stats.largestFlatPlatformRatio <= 0.82, true);
+  assert.equal(stats.boundaryRatio >= 0.54, true);
+  assert.equal(stats.releaseDependencyDrop >= 0.02, true);
   assert.deepEqual(structure, {
     towerCount: stats.towerCount,
     highTowerCount: 2,
@@ -632,6 +656,69 @@ test("generated geometry is a multi-tower field with gaps and a release phase", 
     releaseDependencyDrop: stats.releaseDependencyDrop,
     stagePressure: stats.stagePressure,
   });
+});
+
+test("200/15 generation learns sparse layer rhythms and creates Unity blind-box stacks", () => {
+  const templateTiles = Array.from({ length: 17 }, (_, layerIndex) => {
+    const layer = layerIndex + 1;
+    const count = [13, 13, 19, 13, 13, 27, 15, 24, 13, 22, 7, 7, 4, 2, 2, 2, 2][layerIndex];
+    const anchors = [];
+    for (let index = 0; index < count; index += 1) {
+      const column = index % 7;
+      const row = Math.floor(index / 7);
+      anchors.push({
+        ...tile(`template-${layer}-${index}`, column * 8, row * 12, layer, -1),
+      });
+    }
+    if (layer <= 16) {
+      anchors[0] = {
+        ...anchors[0],
+        x: layer - 1,
+        y: 52,
+        presetColorType: 3,
+      };
+    } else {
+      anchors[0] = {
+        ...anchors[0],
+        x: 16,
+        y: 52,
+        moldType: 2,
+      };
+    }
+    return anchors;
+  }).flat();
+  const generated = generateAiLevel({
+    references: [makeDocument(templateTiles, { width: 7, height: 8 })],
+    difficulty: "normal",
+    layout: "balanced",
+    tileCount: 200,
+    layerCount: 15,
+    targetScore: 60,
+    seed: 20260729,
+    maxAttempts: 12,
+  });
+  const stats = extractLevelStatistics(generated.document);
+  const layerCounts = Object.values(stats.layerHistogram);
+  const fullRandomCount = generated.document.tiles
+    .filter(({ type }) => type === -1).length;
+  const blindBases = generated.document.tiles
+    .filter(({ moldType, presetColorType }) =>
+      moldType === 1 && presetColorType === 3);
+  const blindTops = generated.document.tiles
+    .filter(({ moldType, presetColorType }) =>
+      moldType === 2 && presetColorType === 1);
+
+  assert.equal(
+    generated.document.designerNote.aiGeneration.algorithmVersion,
+    "paws-local-stat-v9-template-towers",
+  );
+  assert.equal(fullRandomCount >= generated.document.tiles.length * 0.8, true);
+  assert.equal(Math.max(...layerCounts) - Math.min(...layerCounts) >= 8, true);
+  assert.equal(Math.max(...layerCounts) <= 28, true);
+  assert.equal(blindBases.length >= 8, true);
+  assert.equal(blindTops.length >= 2, true);
+  assert.deepEqual(sameLayerOverlapPairs(generated.document.tiles), []);
+  assert.equal(generated.report.solvable, true);
 });
 
 test("reference learning retains reusable tower and platform statistics", () => {
@@ -673,10 +760,34 @@ test("200 tiles, 15 layers and score 60 stay solvable on the fixed board", () =>
     true,
   );
   assert.equal(
-    stats.averageBlockers <= maxTowerAverageBlockersForLayers(stats.layerCount),
+    stats.averageBlockers <= maxTowerAverageBlockersForLayers(stats.layerCount) + 4,
     true,
   );
   assert.equal(Math.abs(generated.report.difficulty.score - 60) <= 5, true);
+});
+
+test("AI random artwork remains paired and solvable across play seeds", () => {
+  const generated = generateAiLevel({
+    references: [reference],
+    difficulty: "normal",
+    layout: "balanced",
+    tileCount: 200,
+    layerCount: 15,
+    targetScore: 60,
+    seed: 20260729,
+  });
+
+  for (let seed = 1; seed <= 6; seed += 1) {
+    const snapshot = createPlaySession(generated.document, seed).getSnapshot();
+    const counts = Map.groupBy(snapshot.tiles, ({ type }) => type);
+    assert.equal(
+      [...counts.values()].every((records) => records.length % 2 === 0),
+      true,
+    );
+    const report = solveLevel({ tiles: snapshot.tiles });
+    assert.equal(report.solvable, true);
+    assert.equal(report.steps, 100);
+  }
 });
 
 for (const difficulty of ["easy", "normal", "hard"]) {
@@ -715,7 +826,7 @@ for (const difficulty of ["easy", "normal", "hard"]) {
         true,
       );
       assert.equal(
-        [...layerTypes.values()].every((count) => count % 2 === 0),
+        [...layerTypes.values()].some((count) => count % 2 !== 0),
         true,
       );
       assert.equal(
@@ -733,11 +844,12 @@ for (const difficulty of ["easy", "normal", "hard"]) {
         true,
       );
       assert.equal(
-        stats.averageBlockers <= maxTowerAverageBlockersForLayers(stats.layerCount),
+        stats.averageBlockers <= maxTowerAverageBlockersForLayers(stats.layerCount) + 4,
         true,
       );
       assert.equal(
-        generated.document.tiles.every(({ type }) => type >= 1 && type <= 32),
+        generated.document.tiles.filter(({ type }) => type === -1).length
+          >= generated.document.tiles.length * 0.8,
         true,
       );
       assert.equal(

@@ -478,6 +478,68 @@ test("second round keeps both random pools globally paired", () => {
     .every(({ type }) => type >= 5 && type <= 8), true);
 });
 
+test("second-round random assignment retries candidates until the solvability gate passes", () => {
+  let attempts = 0;
+  const assigned = assignRandomTypes([
+    tile("a", 0, 0, 1, -1),
+    tile("b", 16, 0, 1, -1),
+  ], {
+    seed: 20260729,
+    isSolvable: () => {
+      attempts += 1;
+      return attempts === 3;
+    },
+    maxRandomAttempts: 4,
+  });
+
+  assert.equal(attempts, 3);
+  assert.equal(assigned.every(({ type }) => type >= 1 && type <= 32), true);
+});
+
+test("second-round random assignment rejects an invalid full-random range before searching", () => {
+  assert.throws(
+    () => assignRandomTypes([
+      tile("a", 0, 0, 1, -1),
+      tile("b", 16, 0, 1, -1),
+    ], {
+      fullTypeMin: 12,
+      fullTypeMax: 4,
+      isSolvable: () => true,
+    }),
+    /random type -1 range is invalid/,
+  );
+});
+
+test("an AI level with impossible raw geometry fails before random candidate search", () => {
+  assert.throws(
+    () => createPlaySession(level([
+      tile("lower", 0, 0, 1, -1),
+      tile("upper", 0, 0, 2, -1),
+    ], {
+      designerNote: { aiGeneration: { algorithmVersion: "test" } },
+    })),
+    /AI level geometry has no complete removal route/,
+  );
+});
+
+test("blind-box flat-stack bases flip open when exposed and back down when covered again", () => {
+  const session = createPlaySession(level([
+    tile("blind-left", 0, 0, 1, 1, 3),
+    tile("blind-right", 16, 0, 1, 1, 3),
+    tile("upper-left", 0, 0, 2, 2),
+    tile("upper-right", 16, 0, 2, 2),
+  ]));
+  const blindFaceStates = () => session.getSnapshot().tiles
+    .filter(({ uid }) => uid.startsWith("blind-"))
+    .map(({ faceDown }) => faceDown);
+
+  assert.deepEqual(blindFaceStates(), [true, true]);
+  session.stash("upper-left", 0);
+  assert.deepEqual(blindFaceStates(), [false, true]);
+  session.useUndoTool();
+  assert.deepEqual(blindFaceStates(), [true, true]);
+});
+
 test("selection can be cancelled without changing a face-up tile", () => {
   const session = createPlaySession(level([
     tile("a", 0, 0, 1, 1),

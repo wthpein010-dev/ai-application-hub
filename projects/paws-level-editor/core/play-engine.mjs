@@ -49,17 +49,37 @@ export function createPlaySession(document, seed = 1, options = {}) {
       stashHistory,
     };
     try {
+      const firstRound =
+        options.firstRound ?? isFirstRoundDocument(sourceDocument);
+      const requireSolvableAssignment =
+        firstRound
+        || Boolean(sourceDocument?.designerNote?.aiGeneration)
+        || options.requireSolvableRandom === true;
+      const rawSolution =
+        !firstRound && requireSolvableAssignment
+          ? solveLevel({ tiles: sourceDocument.tiles ?? [] })
+          : null;
+      if (
+        sourceDocument?.designerNote?.aiGeneration
+        && rawSolution
+        && !rawSolution.solvable
+      ) {
+        throw new RangeError("AI level geometry has no complete removal route");
+      }
       const assigned = assignRandomTypes(sourceDocument.tiles ?? [], {
         seed: tentativeSeed,
         ...(sourceDocument.random ?? {}),
         ...(options.random ?? {}),
-        firstRound: options.firstRound ?? isFirstRoundDocument(sourceDocument),
-        isSolvable: (candidate) => solveLevel({ tiles: candidate }).solvable,
+        firstRound,
+        isSolvable: requireSolvableAssignment
+          ? (candidate) => solveLevel({ tiles: candidate }).solvable
+          : undefined,
+        solvableMoves: rawSolution?.solvable ? rawSolution.moves : undefined,
       });
       tiles = assigned.map((tile) => ({
         ...tile,
         removed: false,
-        faceDown: tile.presetColorType === 2,
+        faceDown: tile.presetColorType === 2 || tile.presetColorType === 3,
         covered: false,
         sideBlocked: false,
         hiddenPattern: false,
@@ -113,6 +133,13 @@ export function createPlaySession(document, seed = 1, options = {}) {
       tile.covered = state?.covered ?? false;
       tile.sideBlocked = state?.sideBlocked ?? false;
       tile.hiddenPattern = state?.hiddenPattern ?? false;
+      if (
+        Number(tile.presetColorType) === 3
+        && !tile.removed
+        && !isInTray(tile)
+      ) {
+        tile.faceDown = tile.covered;
+      }
     }
   }
 

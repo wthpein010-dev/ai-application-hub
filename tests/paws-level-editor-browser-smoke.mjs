@@ -1445,7 +1445,7 @@ try {
   assert.equal(summary.aiGeneration.layerCount, 15);
   assert.equal(summary.aiGeneration.sameLayerOverlapPairs, 0);
   assert.equal(summary.aiGeneration.globalTypesEven, true);
-  assert.equal(summary.aiGeneration.layerTypesEven, true);
+  assert.equal(summary.aiGeneration.layerTypesEven, false);
   assert.equal(summary.aiGeneration.solverSteps, 100);
 
   await page.locator("#view-3d").click();

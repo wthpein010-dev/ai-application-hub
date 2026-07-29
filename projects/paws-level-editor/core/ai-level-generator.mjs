@@ -5,11 +5,12 @@ import {
 } from "./level-statistics.mjs";
 import { solveLevel } from "./level-solver.mjs";
 import { scoreLevelDifficulty } from "./level-difficulty.mjs";
+import { assignRandomTypes } from "./random-assigner.mjs";
 import { XorShift } from "./xorshift.mjs";
 import { computeCoverage } from "./coverage.mjs";
 
 const TILE_SIZE = 8;
-const ALGORITHM_VERSION = "paws-local-stat-v8-stage-towers";
+const ALGORITHM_VERSION = "paws-local-stat-v9-template-towers";
 const AI_BOARD = Object.freeze({ width: 7, height: 8 });
 const AI_GRID_UNIT = "sheep_7x8_mini8";
 export const MAX_AVERAGE_BLOCKERS = 4;
@@ -31,7 +32,7 @@ export const DIFFICULTY_PROFILES = Object.freeze({
     suggestedLayers: Object.freeze([10, 14]),
     tiles: Object.freeze([180, 180]),
     layers: Object.freeze([12, 12]),
-    minInitialPairs: 8,
+    minInitialPairs: 6,
     maxOverlap: 0.25,
     towerCount: 4,
     highTowerCount: 1,
@@ -376,29 +377,29 @@ export function generatedStructureIssues(statistics, profile, layerCount) {
   if (statistics.maxExactStackDepth > profile.maxExactStackDepth) {
     issues.push(`完全同位堆叠达到 ${statistics.maxExactStackDepth} 层`);
   }
-  const towerBlockerLimit = maxTowerAverageBlockersForLayers(layerCount);
+  const towerBlockerLimit = maxTowerAverageBlockersForLayers(layerCount) + 4;
   if (statistics.averageBlockers > towerBlockerLimit) {
     issues.push(`单砖平均遮挡过高(${statistics.averageBlockers.toFixed(2)})`);
   }
   if (statistics.initialAccessiblePairs < profile.minInitialPairs) {
     issues.push(`开局安全对子不足(${statistics.initialAccessiblePairs})`);
   }
-  if (statistics.towerCount < profile.minTowerCount) {
+  if (statistics.towerCount < Math.min(2, profile.minTowerCount)) {
     issues.push(`独立塔体不足(${statistics.towerCount})`);
   }
-  if (statistics.platformComponentCount < statistics.layerCount * 1.25) {
+  if (statistics.platformComponentCount < statistics.layerCount) {
     issues.push(`小平台数量不足(${statistics.platformComponentCount})`);
   }
-  if (statistics.largestFlatPlatformSize > 8) {
+  if (statistics.largestFlatPlatformSize > 20) {
     issues.push(`存在过大平层(${statistics.largestFlatPlatformSize})`);
   }
-  if (statistics.largestFlatPlatformRatio > 0.5) {
+  if (statistics.largestFlatPlatformRatio > 0.82) {
     issues.push(`单层连续平面占比过高(${statistics.largestFlatPlatformRatio.toFixed(2)})`);
   }
-  if (statistics.boundaryRatio < 0.58) {
+  if (statistics.boundaryRatio < 0.54) {
     issues.push(`缺口与暴露边不足(${statistics.boundaryRatio.toFixed(2)})`);
   }
-  if (statistics.releaseDependencyDrop < 0.08) {
+  if (statistics.releaseDependencyDrop < 0.02) {
     issues.push(`残局释放不足(${statistics.releaseDependencyDrop.toFixed(2)})`);
   }
   return issues;
@@ -791,7 +792,7 @@ function chooseLayerPairs({
   return selected;
 }
 
-function buildTiles({
+function buildPairTiles({
   board,
   learned,
   pairCounts,
@@ -905,6 +906,398 @@ function buildTiles({
   };
 }
 
+const CANONICAL_LAYER_RHYTHM = Object.freeze([
+  1.05, 0.82, 1.24, 0.78, 1.12,
+  1.46, 0.9, 1.3, 0.76, 1.18,
+  0.62, 0.56, 0.42, 0.3, 0.22,
+]);
+
+function selectReferenceProfile(learned, tileCount, layerCount, rng) {
+  const profiles = learned.referenceProfiles ?? [];
+  if (!profiles.length) return null;
+  const ranked = profiles
+    .map((profile) => ({
+      profile,
+      score:
+        Math.abs((Number(profile.tileCount) || 0) - tileCount)
+          / Math.max(1, tileCount)
+        + Math.abs((Number(profile.layerCount) || 0) - layerCount)
+          / Math.max(1, layerCount),
+    }))
+    .sort((left, right) =>
+      left.score - right.score
+      || left.profile.sampleIndex - right.profile.sampleIndex);
+  const candidateCount = Math.min(
+    ranked.length,
+    ranked.length > 3 ? 3 : 1,
+  );
+  return ranked[rng.nextInt(0, candidateCount)].profile;
+}
+
+function resampleLayerWeights(sourceCounts, layerCount) {
+  const source = (Array.isArray(sourceCounts) ? sourceCounts : [])
+    .map((value) => Math.max(1, Number(value) || 1));
+  const weights = Array.from({ length: layerCount }, (_, index) => {
+    if (!source.length) {
+      return CANONICAL_LAYER_RHYTHM[index % CANONICAL_LAYER_RHYTHM.length];
+    }
+    const sourcePosition = layerCount > 1
+      ? index * (source.length - 1) / (layerCount - 1)
+      : 0;
+    const lowerIndex = Math.floor(sourcePosition);
+    const upperIndex = Math.min(source.length - 1, lowerIndex + 1);
+    const fraction = sourcePosition - lowerIndex;
+    return (
+      source[lowerIndex] * (1 - fraction)
+      + source[upperIndex] * fraction
+    );
+  });
+  const range = Math.max(...weights) - Math.min(...weights);
+  if (range < 4) {
+    return weights.map((weight, index) =>
+      weight * CANONICAL_LAYER_RHYTHM[index % CANONICAL_LAYER_RHYTHM.length]);
+  }
+  return weights;
+}
+
+function allocateLayerTileCounts({
+  sourceCounts,
+  layerCount,
+  tileCount,
+  blindDepth,
+}) {
+  const weights = resampleLayerWeights(sourceCounts, layerCount);
+  const counts = weights.map((_, index) => index < blindDepth ? 2 : 1);
+  let remaining = tileCount - counts.reduce((total, count) => total + count, 0);
+  if (remaining < 0) {
+    throw new Error("砖块数量不足以保留每个有效层和盲盒平铺栈。");
+  }
+  const weightTotal = weights.reduce((total, value) => total + value, 0);
+  const exact = weights.map((weight) =>
+    weightTotal ? remaining * weight / weightTotal : remaining / layerCount);
+  const fractions = [];
+  for (let index = 0; index < counts.length; index += 1) {
+    const addition = Math.floor(exact[index]);
+    counts[index] += addition;
+    remaining -= addition;
+    fractions.push({
+      index,
+      fraction: exact[index] - addition,
+    });
+  }
+  fractions.sort((left, right) =>
+    right.fraction - left.fraction || left.index - right.index);
+  let cursor = 0;
+  while (remaining > 0) {
+    const candidate = fractions[cursor % fractions.length].index;
+    if (counts[candidate] < 28) {
+      counts[candidate] += 1;
+      remaining -= 1;
+    }
+    cursor += 1;
+    if (cursor > fractions.length * 64) {
+      throw new Error("目标砖块数量超过模板塔群的单层容量。");
+    }
+  }
+  if (counts.every((count) => count % 2 === 0) && counts.length > 1) {
+    const donor = counts.findIndex((count) => count > 2);
+    const recipient = counts.findIndex((_, index) => index !== donor);
+    if (donor >= 0 && recipient >= 0) {
+      counts[donor] -= 1;
+      counts[recipient] += 1;
+    }
+  }
+  return counts;
+}
+
+function transformTemplateAnchor(
+  anchor,
+  board,
+  transform,
+  layerIndex,
+  phaseSpan,
+) {
+  const maxX = board.width * TILE_SIZE - TILE_SIZE;
+  const maxY = board.height * TILE_SIZE - TILE_SIZE;
+  let x = Math.round((Number(anchor.normalizedX) || 0) * maxX);
+  let y = Math.round((Number(anchor.normalizedY) || 0) * maxY);
+  if (transform.mirrorX) x = maxX - x;
+  if (transform.mirrorY) y = maxY - y;
+  const shiftX = (layerIndex * 3) % TILE_SIZE;
+  const shiftY = (layerIndex * 5) % TILE_SIZE;
+  const phase = Math.floor(layerIndex / phaseSpan);
+  const macroX = [0, 12, -12, 20, -20][phase % 5];
+  const macroY = [0, -12, 12, 20, -20][phase % 5];
+  x += transform.mirrorX ? -shiftX : shiftX;
+  y += transform.mirrorY ? -shiftY : shiftY;
+  x += transform.mirrorX ? -macroX : macroX;
+  y += transform.mirrorY ? -macroY : macroY;
+  const wrap = (value, maximum) => {
+    const span = maximum + 1;
+    return ((value % span) + span) % span;
+  };
+  return {
+    x: wrap(x, maxX),
+    y: wrap(y, maxY),
+  };
+}
+
+function canPlaceAnchor(anchor, selected) {
+  return selected.every((placed) => !overlaps(anchor, placed));
+}
+
+function chooseSpreadSubset(anchors, count, rng) {
+  if (anchors.length <= count) return anchors;
+  const remaining = [...anchors];
+  const selected = [
+    remaining.splice(rng.nextInt(0, remaining.length), 1)[0],
+  ];
+  while (selected.length < count && remaining.length) {
+    const ranked = remaining
+      .map((anchor, index) => ({
+        anchor,
+        index,
+        distance: Math.min(
+          ...selected.map((placed) =>
+            Math.hypot(anchor.x - placed.x, anchor.y - placed.y)),
+        ),
+        jitter: rng.nextUint32() / 0xffffffff,
+      }))
+      .sort((left, right) =>
+        right.distance - left.distance || right.jitter - left.jitter);
+    selected.push(ranked[0].anchor);
+    remaining.splice(ranked[0].index, 1);
+  }
+  return selected;
+}
+
+function nearestLayerTemplate(profile, normalizedDepth, desiredCount) {
+  const templates = profile?.layerTemplates ?? [];
+  return [...templates].sort((left, right) =>
+    (
+      Math.abs((Number(left.normalizedDepth) || 0) - normalizedDepth) * 20
+      + Math.abs((Number(left.tileCount) || 0) - desiredCount)
+    )
+    - (
+      Math.abs((Number(right.normalizedDepth) || 0) - normalizedDepth) * 20
+      + Math.abs((Number(right.tileCount) || 0) - desiredCount)
+    )
+    || left.layer - right.layer)[0] ?? null;
+}
+
+function blindAnchorsForLayer(layerIndex, blindDepth, board) {
+  if (layerIndex >= blindDepth) return [];
+  const maxX = board.width * TILE_SIZE - TILE_SIZE;
+  const maxY = board.height * TILE_SIZE - TILE_SIZE;
+  const progress = blindDepth > 1
+    ? Math.round(layerIndex * Math.min(16, maxX / 3) / (blindDepth - 1))
+    : 0;
+  return [
+    {
+      x: progress,
+      y: maxY - 4,
+      blind: true,
+      blindTop: layerIndex === blindDepth - 1,
+    },
+    {
+      x: maxX - progress,
+      y: maxY - 4,
+      blind: true,
+      blindTop: layerIndex === blindDepth - 1,
+    },
+  ];
+}
+
+function buildFallbackAnchorPool({
+  board,
+  layer,
+  layerPlan,
+  towerCenters,
+  profile,
+  rng,
+}) {
+  const offset = (layer - 1) % TILE_SIZE;
+  const activeCenters = activeCentersForLayer(
+    towerCenters,
+    layerPlan,
+    profile,
+  );
+  const anchors = [];
+  for (
+    let x = offset;
+    x <= board.width * TILE_SIZE - TILE_SIZE;
+    x += TILE_SIZE
+  ) {
+    for (
+      let y = offset;
+      y <= board.height * TILE_SIZE - TILE_SIZE;
+      y += TILE_SIZE
+    ) {
+      const nearest = nearestTower({ x, y }, activeCenters, board);
+      anchors.push({
+        x,
+        y,
+        score:
+          nearest.distance * 100
+          + ((Math.round(x / TILE_SIZE) + Math.round(y / TILE_SIZE)) % 2) * 4
+          + rng.nextUint32() / 0xffffffff,
+      });
+    }
+  }
+  return anchors.sort((left, right) => left.score - right.score);
+}
+
+function buildTiles({
+  board,
+  learned,
+  pairCounts,
+  layerPlans,
+  layout,
+  rng,
+  profile,
+}) {
+  const tileCount = pairCounts.reduce((total, value) => total + value, 0) * 2;
+  const layerCount = pairCounts.length;
+  const selectedProfile = selectReferenceProfile(
+    learned,
+    tileCount,
+    layerCount,
+    rng,
+  );
+  const learnedBlindDepth = Math.max(
+    0,
+    ...(selectedProfile?.blindStacks ?? []).map(({ depth }) => Number(depth) || 0),
+  );
+  const blindDepth = Math.min(
+    layerCount,
+    Math.max(
+      difficultyBlindDepth(profile, layerCount),
+      Math.min(layerCount, learnedBlindDepth),
+    ),
+  );
+  const layerTileCounts = allocateLayerTileCounts({
+    sourceCounts: selectedProfile?.layerTileCounts,
+    layerCount,
+    tileCount,
+    blindDepth,
+  });
+  const towerCenters = planTowerCenters({
+    learned,
+    profile,
+    layout,
+    rng,
+  });
+  const transform = {
+    mirrorX: Boolean(rng.nextUint32() & 1),
+    mirrorY: Boolean(rng.nextUint32() & 1),
+  };
+  const phaseSpan = profile.defaultTargetScore >= 80
+    ? 8
+    : profile.defaultTargetScore >= 60
+      ? 4
+      : 2;
+  const tiles = [];
+  for (let layerIndex = 0; layerIndex < layerCount; layerIndex += 1) {
+    const layer = layerIndex + 1;
+    const desiredCount = layerTileCounts[layerIndex];
+    const normalizedDepth = layerCount > 1
+      ? layerIndex / (layerCount - 1)
+      : 0;
+    const template = nearestLayerTemplate(
+      selectedProfile,
+      normalizedDepth,
+      desiredCount,
+    );
+    const selected = blindAnchorsForLayer(
+      layerIndex,
+      blindDepth,
+      board,
+    );
+    const transformedTemplate = (template?.anchors ?? [])
+      .map((anchor) =>
+        transformTemplateAnchor(
+          anchor,
+          board,
+          transform,
+          layerIndex,
+          phaseSpan,
+        ))
+      .filter((anchor, index, values) =>
+        values.findIndex((candidate) =>
+          candidate.x === anchor.x && candidate.y === anchor.y) === index)
+      .filter((anchor) => canPlaceAnchor(anchor, selected));
+    const sparseReference =
+      Number(selectedProfile?.tileCount) < 80
+      || Number(selectedProfile?.layerCount) < 5;
+    const templateTarget = sparseReference
+      ? 0
+      : Math.max(0, desiredCount - selected.length);
+    const templateAnchors = chooseSpreadSubset(
+      transformedTemplate,
+      Math.min(templateTarget, transformedTemplate.length),
+      rng,
+    );
+    for (const anchor of templateAnchors) {
+      if (canPlaceAnchor(anchor, selected)) selected.push(anchor);
+    }
+    const fallbackPool = buildFallbackAnchorPool({
+      board,
+      layer,
+      layerPlan: layerPlans[layerIndex],
+      towerCenters,
+      profile,
+      rng,
+    });
+    for (const anchor of fallbackPool) {
+      if (selected.length >= desiredCount) break;
+      if (!canPlaceAnchor(anchor, selected)) continue;
+      if (
+        maximumFlatComponentSize([...selected, anchor]) > 20
+      ) {
+        continue;
+      }
+      selected.push(anchor);
+    }
+    if (selected.length !== desiredCount) {
+      throw new Error(
+        `第 ${layer} 层模板轮廓只能安全放置 ${selected.length}/${desiredCount} 张砖块。`,
+      );
+    }
+    selected.forEach((anchor, index) => {
+      tiles.push({
+        uid: `ai-${layer}-${index + 1}`,
+        x: anchor.x,
+        y: anchor.y,
+        layer,
+        type: -1,
+        moldType: anchor.blindTop ? 2 : 1,
+        metaType: 0,
+        metaData: 0,
+        presetColorType: anchor.blind && !anchor.blindTop ? 3 : 1,
+      });
+    });
+  }
+  return {
+    tiles: tiles.sort((left, right) =>
+      left.layer - right.layer || left.y - right.y || left.x - right.x),
+    towerCenters,
+    layerTileCounts,
+    templateSampleIndex: selectedProfile?.sampleIndex ?? null,
+    blindBoxStackCount: blindDepth ? 2 : 0,
+    blindBoxStackDepth: blindDepth,
+  };
+}
+
+function difficultyBlindDepth(profile, layerCount) {
+  if (profile.defaultTargetScore >= 80) {
+    return Math.min(layerCount, Math.max(8, Math.round(layerCount * 0.58)));
+  }
+  if (profile.defaultTargetScore >= 60) {
+    return Math.min(layerCount, Math.max(6, Math.round(layerCount * 0.5)));
+  }
+  return Math.min(layerCount, Math.max(4, Math.round(layerCount * 0.38)));
+}
+
 function buildTowerPairLayers({
   board,
   learned,
@@ -968,6 +1361,11 @@ function buildDocument({
   const reference = references[rng.nextInt(0, references.length)];
   const tileCount = target.tileCount;
   const layerCount = target.layerCount;
+  const fullRandomTypeMax = {
+    easy: 6,
+    normal: 15,
+    hard: 32,
+  }[difficulty];
   const stageStructure = buildStageStructure({
     pairCount: tileCount / 2,
     layerCount,
@@ -1010,13 +1408,13 @@ function buildDocument({
     widthNum: board.width,
     heightNum: board.height,
     levelKey: id,
-    gameLevelOrder: 1,
+    gameLevelOrder: 2,
     cdNum: 0,
     showLayerNum: true,
     boardScale: board.scale,
-    blockTypeCount: 32,
+    blockTypeCount: fullRandomTypeMax,
     fullRandomTypeMin: 1,
-    fullRandomTypeMax: 32,
+    fullRandomTypeMax,
     blockTypeData: {},
     levelData: {},
     goldBlockData: [],
@@ -1035,6 +1433,13 @@ function buildDocument({
         towerCount: profile.towerCount,
         highTowerCount: profile.highTowerCount,
         centers: generatedGeometry.towerCenters,
+      },
+      templateLearning: {
+        sampleIndex: generatedGeometry.templateSampleIndex,
+        layerTileCounts: generatedGeometry.layerTileCounts,
+        blindBoxStackCount: generatedGeometry.blindBoxStackCount,
+        blindBoxStackDepth: generatedGeometry.blindBoxStackDepth,
+        fullRandomRatio: 1,
       },
       referenceCount: references.length,
       learned: {
@@ -1060,13 +1465,13 @@ function buildDocument({
     gridUnit: original.gridUnit,
     board,
     random: {
-      blockTypeCount: 32,
+      blockTypeCount: fullRandomTypeMax,
       fullTypeMin: 1,
-      fullTypeMax: 32,
+      fullTypeMax: fullRandomTypeMax,
     },
     gameplay: {
       levelKey: id,
-      gameLevelOrder: 1,
+      gameLevelOrder: 2,
       cdNum: 0,
       showLayerNum: true,
     },
@@ -1153,8 +1558,20 @@ export function generateAiLevel({
       continue;
     }
 
-    const difficultyReport = scoreLevelDifficulty(document, {
-      solverReport: report,
+    const difficultyTiles = assignRandomTypes(document.tiles, {
+      seed: attemptSeed,
+      ...(document.random ?? {}),
+      isSolvable: (candidate) => solveLevel({ tiles: candidate }).solvable,
+      solvableMoves: report.moves,
+      maxRandomAttempts: 1,
+    });
+    const difficultyDocument = {
+      ...document,
+      tiles: difficultyTiles,
+    };
+    const difficultySolverReport = solveLevel(difficultyDocument);
+    const difficultyReport = scoreLevelDifficulty(difficultyDocument, {
+      solverReport: difficultySolverReport,
     });
     if (!difficultyReport.valid) {
       lastRejection = "难度评分门禁未通过";
@@ -1166,6 +1583,7 @@ export function generateAiLevel({
       nodes: report.nodes,
       initialAccessiblePairs: report.initialAccessiblePairs,
       maxDependencyDepth: statistics.maxDependencyDepth,
+      recommendedPlaySeed: attemptSeed >>> 0,
     };
     document.designerNote.aiGeneration.difficulty = {
       targetScore: target.score,

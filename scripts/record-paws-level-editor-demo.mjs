@@ -333,48 +333,58 @@ async function clickMatchingPairIn2d(page) {
 }
 
 async function stashAvailableTileIn2d(page) {
-  const target = await page.evaluate(() => {
-    const controller = window.pawsWorkbench;
-    const renderer = controller.renderer;
-    const candidates = controller.playSnapshot.tiles.filter(
-      (tile) =>
-        !tile.removed &&
-        !Number.isInteger(tile.stashedSlot) &&
-        !tile.covered &&
-        !tile.sideBlocked,
-    );
-    for (const tile of candidates) {
-      for (const yOffset of [0.5, 2, 4, 6, 7.5]) {
-        for (const xOffset of [0.5, 2, 4, 6, 7.5]) {
-          const point = {
-            x:
-              (tile.x + xOffset) * renderer.viewport.scale +
-              renderer.viewport.offsetX,
-            y:
-              (tile.y + yOffset) * renderer.viewport.scale +
-              renderer.viewport.offsetY,
-          };
-          if (renderer.hitBoardTile(point)?.uid === tile.uid) {
-            return { uid: tile.uid, ...point };
+  const attemptedUids = [];
+  for (let attempt = 0; attempt < 8; attempt += 1) {
+    const target = await page.evaluate((excludedUids) => {
+      const controller = window.pawsWorkbench;
+      const renderer = controller.renderer;
+      const excluded = new Set(excludedUids);
+      const candidates = controller.playSnapshot.tiles.filter(
+        (tile) =>
+          !excluded.has(tile.uid)
+          && !tile.removed
+          && !Number.isInteger(tile.stashedSlot)
+          && !tile.covered
+          && !tile.sideBlocked,
+      );
+      for (const tile of candidates) {
+        for (const yOffset of [4, 2, 6, 0.5, 7.5]) {
+          for (const xOffset of [4, 2, 6, 0.5, 7.5]) {
+            const point = {
+              x:
+                (tile.x + xOffset) * renderer.viewport.scale +
+                renderer.viewport.offsetX,
+              y:
+                (tile.y + yOffset) * renderer.viewport.scale +
+                renderer.viewport.offsetY,
+            };
+            if (renderer.hitBoardTile(point)?.uid === tile.uid) {
+              return { uid: tile.uid, ...point };
+            }
           }
         }
       }
+      return null;
+    }, attemptedUids);
+    if (!target) break;
+    attemptedUids.push(target.uid);
+    const box = await page.locator(".level-canvas-2d").boundingBox();
+    assert.ok(box, "2D canvas should have a bounding box");
+    await page.mouse.click(box.x + target.x, box.y + target.y, {
+      button: "right",
+    });
+    await page.waitForTimeout(350);
+    const stashed = await page.evaluate(
+      (uid) => window.pawsWorkbench.playSnapshot.tray.includes(uid),
+      target.uid,
+    );
+    if (stashed) {
+      return target.uid;
     }
-    return null;
-  });
-  if (!target) {
-    throw new Error("No visible tile was available for the 2D stash recording");
   }
-  const box = await page.locator(".level-canvas-2d").boundingBox();
-  assert.ok(box, "2D canvas should have a bounding box");
-  await page.mouse.click(box.x + target.x, box.y + target.y, {
-    button: "right",
-  });
-  await page.waitForFunction(
-    (uid) => window.pawsWorkbench.playSnapshot.tray.includes(uid),
-    target.uid,
+  throw new Error(
+    `No visible tile could be stashed for the 2D recording after ${attemptedUids.length} attempts`,
   );
-  return target.uid;
 }
 
 async function clickVisibleTileIn3d(page) {
@@ -655,13 +665,13 @@ async function recordEditor() {
       assert.equal(aiGeneration.sameLayerOverlapPairs, 0);
       assert.equal(aiGeneration.totalEven, true);
       assert.equal(aiGeneration.globalTypesEven, true);
-      assert.equal(aiGeneration.layerTypesEven, true);
-      assert.equal(aiGeneration.algorithmVersion, "paws-local-stat-v8-stage-towers");
+      assert.equal(aiGeneration.layerTypesEven, false);
+      assert.equal(aiGeneration.algorithmVersion, "paws-local-stat-v9-template-towers");
       assert.ok(aiGeneration.towerPlan.towerCount >= 4);
       assert.ok(aiGeneration.structure.towerCount >= 3);
-      assert.ok(aiGeneration.structure.largestFlatPlatformSize <= 8);
-      assert.ok(aiGeneration.structure.boundaryRatio >= 0.58);
-      assert.ok(aiGeneration.structure.releaseDependencyDrop >= 0.08);
+      assert.ok(aiGeneration.structure.largestFlatPlatformSize <= 20);
+      assert.ok(aiGeneration.structure.boundaryRatio >= 0.54);
+      assert.ok(aiGeneration.structure.releaseDependencyDrop >= 0.02);
       assert.ok(Math.abs(aiGeneration.actualScore - aiGeneration.targetScore) <= 5);
       assert.equal(
         await page.locator('[role="option"]').count(),

@@ -20,6 +20,18 @@ export function resolveTileVisualTone(tile, { mode = "edit" } = {}) {
       innerShadowAlpha: 0,
     };
   }
+  const blindBoxBack =
+    Boolean(tile?.covered)
+    && Number(tile?.presetColorType) === 3
+    && Boolean(tile?.faceDown);
+  if (blindBoxBack) {
+    return {
+      blocked: true,
+      factor: 1,
+      overlayAlpha: 0,
+      innerShadowAlpha: 0.2,
+    };
+  }
   const factor = mode === "play"
     ? GAME_COVER_DIM_FACTOR
     : EDIT_COVER_DIM_FACTOR;
