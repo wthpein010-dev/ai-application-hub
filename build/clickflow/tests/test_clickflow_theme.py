@@ -1,6 +1,6 @@
 import tempfile
 import unittest
-from pathlib import Path
+from pathlib import Path, PureWindowsPath
 from types import SimpleNamespace
 from unittest.mock import patch
 
@@ -61,8 +61,8 @@ class ThemeSettingsTests(unittest.TestCase):
         )
 
         self.assertEqual(
-            path,
-            Path(r"C:\Users\Test\AppData\Roaming\ClickFlow\settings.json"),
+            PureWindowsPath(path),
+            PureWindowsPath(r"C:\Users\Test\AppData\Roaming\ClickFlow\settings.json"),
         )
 
     def test_macos_settings_path_uses_application_support(self):
