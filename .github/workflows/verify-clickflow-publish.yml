@@ -1,0 +1,67 @@
+name: Verify ClickFlow publication
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+      - agent/clickflow-publish
+    paths:
+      - ".github/workflows/build-clickflow-macos.yml"
+      - ".github/workflows/verify-clickflow-publish.yml"
+      - "app-20260706-restore-games.js"
+      - "index.html"
+      - "assets/**"
+      - "build/clickflow/**"
+      - "projects/clickflow/**"
+      - "scripts/render-clickflow-video.mjs"
+      - "tests/clickflow-*"
+      - "tests/card-action-layout.test.mjs"
+      - "tests/project-video-coverage.test.mjs"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: verify-clickflow-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  verify:
+    name: Full Hub and browser acceptance
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Check out the complete Hub
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install locked dependencies
+        run: npm ci
+
+      - name: Install Playwright Chromium
+        run: npx playwright install --with-deps chromium
+
+      - name: Register the locked ffmpeg binary
+        shell: bash
+        run: echo "FFMPEG_PATH=$(node -p "require('ffmpeg-static')")" >> "$GITHUB_ENV"
+
+      - name: Run the full Hub test suite
+        run: node --test
+
+      - name: Run ClickFlow browser acceptance
+        run: node tests/clickflow-browser-smoke.mjs
+
+      - name: Upload ClickFlow browser evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: clickflow-browser-acceptance-${{ github.sha }}
+          path: tests/artifacts/clickflow/browser
+          if-no-files-found: warn
+          retention-days: 14

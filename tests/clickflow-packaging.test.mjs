@@ -8,6 +8,12 @@ import { fileURLToPath } from "node:url";
 const root = dirname(dirname(fileURLToPath(import.meta.url)));
 const buildRoot = join(root, "build", "clickflow");
 const workflowPath = join(root, ".github", "workflows", "build-clickflow-macos.yml");
+const verificationWorkflowPath = join(
+  root,
+  ".github",
+  "workflows",
+  "verify-clickflow-publish.yml",
+);
 
 test("the published ClickFlow build snapshot passes its real Python suite", () => {
   const required = [
@@ -65,4 +71,15 @@ test("the macOS workflow builds, signs, starts, and combines both native archite
     workflow,
     /gh release upload clickflow-v2\.0\.0 release\/ClickFlow-macOS\.zip --clobber/,
   );
+});
+
+test("the publication workflow runs the full Hub suite and ClickFlow browser acceptance", () => {
+  assert.equal(existsSync(verificationWorkflowPath), true);
+  const workflow = readFileSync(verificationWorkflowPath, "utf8");
+
+  assert.match(workflow, /npm ci/);
+  assert.match(workflow, /playwright install --with-deps chromium/);
+  assert.match(workflow, /node --test/);
+  assert.match(workflow, /node tests\/clickflow-browser-smoke\.mjs/);
+  assert.match(workflow, /tests\/artifacts\/clickflow\/browser/);
 });
