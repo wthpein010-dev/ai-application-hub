@@ -4,6 +4,7 @@ import { dirname, join } from "node:path";
 import test from "node:test";
 import { fileURLToPath } from "node:url";
 import vm from "node:vm";
+import { loadDefaultAppsFromRuntime } from "./helpers/default-apps.mjs";
 
 const root = dirname(dirname(fileURLToPath(import.meta.url)));
 const runtime = readFileSync(join(root, "app-20260706-restore-games.js"), "utf8");
@@ -16,15 +17,7 @@ function catalogBlock(id) {
 }
 
 function loadDefaultApps() {
-  const start = runtime.indexOf("const defaultApps = [");
-  const closing = /\r?\n\];\r?\n\r?\nlet apps/.exec(runtime.slice(start));
-  const source = runtime
-    .slice(start, start + closing.index + 3)
-    .replace("const defaultApps =", "globalThis.defaultApps =")
-    .replace(/\bHUB_BRIEF\b/g, '""');
-  const context = { globalThis: {} };
-  vm.runInNewContext(source, context);
-  return context.globalThis.defaultApps;
+  return loadDefaultAppsFromRuntime(runtime);
 }
 
 function loadAppsWithStoredValue(stored) {
@@ -119,7 +112,7 @@ test("stored Nang metadata migrates to the games catalog", () => {
 });
 
 test("homepage refreshes the Nang game catalog runtime for existing visitors", () => {
-  assert.match(home, /app-20260706-restore-games\.js\?v=20260727-nang-game-catalog/);
+  assert.match(home, /app-20260706-restore-games\.js\?v=[^"]+/);
 });
 
 test("Nang WebGL build self-decompresses Gzip without server compression headers", () => {

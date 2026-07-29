@@ -47,12 +47,21 @@ jobs:
       - name: Install Playwright Chromium
         run: npx playwright install --with-deps chromium
 
+      - name: Install cross-platform test dependencies
+        shell: bash
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libarchive-tools python3-tk xvfb
+          mkdir -p "$RUNNER_TEMP/bsdtar-bin"
+          ln -s /usr/bin/bsdtar "$RUNNER_TEMP/bsdtar-bin/tar"
+          echo "$RUNNER_TEMP/bsdtar-bin" >> "$GITHUB_PATH"
+
       - name: Register the locked ffmpeg binary
         shell: bash
         run: echo "FFMPEG_PATH=$(node -p "require('ffmpeg-static')")" >> "$GITHUB_ENV"
 
       - name: Run the full Hub test suite
-        run: node --test
+        run: xvfb-run -a node --test
 
       - name: Run ClickFlow browser acceptance
         run: node tests/clickflow-browser-smoke.mjs

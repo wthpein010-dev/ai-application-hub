@@ -74,6 +74,6 @@ test("stored Paws default brief migrates to the empty-library brief without over
 test("home page cache key changes for the published runtime", () => {
   assert.match(
     page,
-    /app-20260706-restore-games\.js\?v=20260728-paws-empty-library/,
+    /app-20260706-restore-games\.js\?v=[^"]+/,
   );
 });

@@ -3,24 +3,14 @@ import { createReadStream, existsSync, readFileSync, statSync } from "node:fs";
 import { createServer } from "node:http";
 import { dirname, extname, join, normalize, resolve, sep } from "node:path";
 import { fileURLToPath } from "node:url";
-import vm from "node:vm";
 import { chromium } from "playwright";
+import { loadDefaultAppsFromRuntime } from "./helpers/default-apps.mjs";
 
 const root = dirname(dirname(fileURLToPath(import.meta.url)));
 const runtime = readFileSync(join(root, "app-20260706-restore-games.js"), "utf8");
 
 function loadDefaultApps() {
-  const start = runtime.indexOf("const defaultApps = [");
-  const closing = /\r?\n\];\r?\n\r?\nlet apps/.exec(runtime.slice(start));
-  const end = start + closing.index + 3;
-  const source = runtime
-    .slice(start, end + 3)
-    .replace("const defaultApps =", "globalThis.defaultApps =")
-    .replace(/\bHUB_BRIEF\b/g, '""');
-  const context = { globalThis: {} };
-
-  vm.runInNewContext(source, context);
-  return context.globalThis.defaultApps;
+  return loadDefaultAppsFromRuntime(runtime);
 }
 
 function contentType(path) {

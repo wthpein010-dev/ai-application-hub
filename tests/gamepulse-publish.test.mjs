@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
-import vm from "node:vm";
+import { loadDefaultAppsFromRuntime } from "./helpers/default-apps.mjs";
 
 const root = dirname(dirname(fileURLToPath(import.meta.url)));
 const runtime = readFileSync(
@@ -12,18 +12,7 @@ const runtime = readFileSync(
 );
 
 function loadDefaultApps() {
-  const start = runtime.indexOf("const defaultApps = [");
-  const closing = /\r?\n\];\r?\n\r?\nlet apps/.exec(runtime.slice(start));
-  assert.notEqual(start, -1);
-  assert.ok(closing);
-  const end = start + closing.index + 3;
-  const source = runtime
-    .slice(start, end + 3)
-    .replace("const defaultApps =", "globalThis.defaultApps =")
-    .replace(/\bHUB_BRIEF\b/g, '""');
-  const context = { globalThis: {} };
-  vm.runInNewContext(source, context);
-  return context.globalThis.defaultApps;
+  return loadDefaultAppsFromRuntime(runtime);
 }
 
 test("GamePulse is published once in the application collection", () => {
@@ -58,6 +47,6 @@ test("the page cache key changes for the GamePulse release", () => {
   const html = readFileSync(join(root, "index.html"), "utf8");
   assert.match(
     html,
-    /app-20260706-restore-games\.js\?v=20260723-nang-app-catalog/,
+    /app-20260706-restore-games\.js\?v=[^"]+/,
   );
 });

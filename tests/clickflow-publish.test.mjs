@@ -3,26 +3,14 @@ import assert from "node:assert/strict";
 import { existsSync, readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
-import vm from "node:vm";
+import { loadDefaultAppsFromRuntime } from "./helpers/default-apps.mjs";
 
 const root = dirname(dirname(fileURLToPath(import.meta.url)));
 const runtimePath = join(root, "app-20260706-restore-games.js");
 const project = (...parts) => join(root, "projects", "clickflow", ...parts);
 
 function loadDefaultApps() {
-  const runtime = readFileSync(runtimePath, "utf8");
-  const start = runtime.indexOf("const defaultApps = [");
-  const closing = /\r?\n\];\r?\n\r?\nlet apps/.exec(runtime.slice(start));
-  assert.notEqual(start, -1, "defaultApps declaration should exist");
-  assert.ok(closing, "defaultApps declaration should end before runtime state");
-  const end = start + closing.index + 3;
-  const source = runtime
-    .slice(start, end + 3)
-    .replace("const defaultApps =", "globalThis.defaultApps =")
-    .replace(/\bHUB_BRIEF\b/g, '""');
-  const context = { globalThis: {} };
-  vm.runInNewContext(source, context);
-  return context.globalThis.defaultApps;
+  return loadDefaultAppsFromRuntime(readFileSync(runtimePath, "utf8"));
 }
 
 function isApplication(app) {

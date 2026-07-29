@@ -4,20 +4,13 @@ import { readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import vm from "node:vm";
+import { loadDefaultAppsFromRuntime } from "./helpers/default-apps.mjs";
 
 const root = dirname(dirname(fileURLToPath(import.meta.url)));
 const runtime = readFileSync(join(root, "app-20260706-restore-games.js"), "utf8");
 
 function loadDefaultApps() {
-  const start = runtime.indexOf("const defaultApps = [");
-  const closing = /\r?\n\];\r?\n\r?\nlet apps/.exec(runtime.slice(start));
-  const source = runtime
-    .slice(start, start + closing.index + 3)
-    .replace("const defaultApps =", "globalThis.defaultApps =")
-    .replace(/\bHUB_BRIEF\b/g, '""');
-  const context = { globalThis: {} };
-  vm.runInNewContext(source, context);
-  return context.globalThis.defaultApps;
+  return loadDefaultAppsFromRuntime(runtime);
 }
 
 function loadAppsWithStoredValue(stored) {

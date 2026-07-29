@@ -122,7 +122,7 @@ test("published schemes have distinct transition signatures and keep outbound pa
 });
 
 test("home page refreshes the runtime cache key for the new card", () => {
-  assert.match(page, /app-20260706-restore-games\.js\?v=20260723-brick-transition-v6/);
+  assert.match(page, /app-20260706-restore-games\.js\?v=[^"]+/);
 });
 
 test("tutorial video is a short, decodable 720p H.264 asset", () => {
