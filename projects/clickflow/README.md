@@ -51,3 +51,12 @@ macOS 如果把功能键用于亮度或媒体控制，可能需要同时按 `Fn`
 - 动作序列保存在你主动选择的本地 JSON 文件中。
 - 工具不会上传录制的坐标或动作序列。
 - 请只在你有权操作的本地应用和合规场景中使用。
+
+## 发布包校验
+
+| 平台 | 文件 | 字节数 | SHA-256 |
+| --- | --- | ---: | --- |
+| Windows x64 | `ClickFlow-Windows-x64.zip` | 11,553,084 | `c732d791651209e8eb67b929d9a5468f2a76083911a8a472a7498d353f8cb443` |
+| macOS arm64 / x64 | `ClickFlow-macOS.zip` | 24,377,657 | `5378c5d4e957ba22b2db7f119803901bf6b85e4a94184892678ec42ca5778793` |
+
+完整机器可读清单见 [`release-manifest.json`](./release-manifest.json)，版本说明见 [`release-notes.md`](./release-notes.md)。

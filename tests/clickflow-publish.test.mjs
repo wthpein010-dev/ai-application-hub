@@ -93,3 +93,28 @@ test("ClickFlow public files contain no local or source-only download targets", 
   assert.doesNotMatch(published, /C:\\Users|localhost|127\.0\.0\.1/);
   assert.doesNotMatch(published, /ClickFlow-macOS-build\.zip/);
 });
+
+test("ClickFlow release manifest records the verified native packages", () => {
+  const manifest = JSON.parse(readFileSync(project("release-manifest.json"), "utf8"));
+  assert.deepEqual(manifest, {
+    tag: "clickflow-v2.0.0",
+    releaseUrl: "https://github.com/wthpein010-dev/ai-application-hub/releases/tag/clickflow-v2.0.0",
+    assets: {
+      windows: {
+        name: "ClickFlow-Windows-x64.zip",
+        bytes: 11553084,
+        sha256: "c732d791651209e8eb67b929d9a5468f2a76083911a8a472a7498d353f8cb443",
+        entry: "ClickFlow-Windows-x64/ClickFlow.exe",
+      },
+      mac: {
+        name: "ClickFlow-macOS.zip",
+        bytes: 24377657,
+        sha256: "5378c5d4e957ba22b2db7f119803901bf6b85e4a94184892678ec42ca5778793",
+        entries: [
+          "arm64/ClickFlow.app/Contents/MacOS/ClickFlow",
+          "x64/ClickFlow.app/Contents/MacOS/ClickFlow",
+        ],
+      },
+    },
+  });
+});
