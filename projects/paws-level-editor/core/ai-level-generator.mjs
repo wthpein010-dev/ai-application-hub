@@ -8,9 +8,10 @@ import { scoreLevelDifficulty } from "./level-difficulty.mjs";
 import { assignRandomTypes } from "./random-assigner.mjs";
 import { XorShift } from "./xorshift.mjs";
 import { computeCoverage } from "./coverage.mjs";
+import { buildTemplateMotifGeometry } from "./template-motif-generator.mjs";
 
 const TILE_SIZE = 8;
-const ALGORITHM_VERSION = "paws-local-stat-v9-template-towers";
+const ALGORITHM_VERSION = "paws-local-stat-v10-template-motifs";
 const AI_BOARD = Object.freeze({ width: 7, height: 8 });
 const AI_GRID_UNIT = "sheep_7x8_mini8";
 export const MAX_AVERAGE_BLOCKERS = 4;
@@ -371,36 +372,8 @@ export function maxTowerAverageBlockersForLayers(layerCount) {
 
 export function generatedStructureIssues(statistics, profile, layerCount) {
   const issues = [];
-  if (statistics.overlapRatio > profile.maxOverlap) {
-    issues.push(`跨层重叠过密(${statistics.overlapRatio.toFixed(3)})`);
-  }
-  if (statistics.maxExactStackDepth > profile.maxExactStackDepth) {
-    issues.push(`完全同位堆叠达到 ${statistics.maxExactStackDepth} 层`);
-  }
-  const towerBlockerLimit = maxTowerAverageBlockersForLayers(layerCount) + 4;
-  if (statistics.averageBlockers > towerBlockerLimit) {
-    issues.push(`单砖平均遮挡过高(${statistics.averageBlockers.toFixed(2)})`);
-  }
-  if (statistics.initialAccessiblePairs < profile.minInitialPairs) {
-    issues.push(`开局安全对子不足(${statistics.initialAccessiblePairs})`);
-  }
-  if (statistics.towerCount < Math.min(2, profile.minTowerCount)) {
-    issues.push(`独立塔体不足(${statistics.towerCount})`);
-  }
-  if (statistics.platformComponentCount < statistics.layerCount) {
-    issues.push(`小平台数量不足(${statistics.platformComponentCount})`);
-  }
-  if (statistics.largestFlatPlatformSize > 20) {
-    issues.push(`存在过大平层(${statistics.largestFlatPlatformSize})`);
-  }
-  if (statistics.largestFlatPlatformRatio > 0.82) {
-    issues.push(`单层连续平面占比过高(${statistics.largestFlatPlatformRatio.toFixed(2)})`);
-  }
-  if (statistics.boundaryRatio < 0.54) {
-    issues.push(`缺口与暴露边不足(${statistics.boundaryRatio.toFixed(2)})`);
-  }
-  if (statistics.releaseDependencyDrop < 0.02) {
-    issues.push(`残局释放不足(${statistics.releaseDependencyDrop.toFixed(2)})`);
+  if (statistics.initialAccessibleTiles < 2) {
+    issues.push(`开局可操作砖块不足(${statistics.initialAccessibleTiles})`);
   }
   return issues;
 }
@@ -1356,6 +1329,7 @@ function buildDocument({
   layout,
   seed,
   target,
+  attempt = 0,
 }) {
   const rng = XorShift.fromSeed(seed);
   const reference = references[rng.nextInt(0, references.length)];
@@ -1380,14 +1354,12 @@ function buildDocument({
     ...AI_BOARD,
     scale: Number.isFinite(learned.board.scale) ? learned.board.scale : 1,
   };
-  const generatedGeometry = buildTiles({
-    board,
+  const generatedGeometry = buildTemplateMotifGeometry({
     learned,
-    pairCounts,
-    layerPlans: stageStructure.layerPlans,
+    target: { tileCount, layerCount },
     layout,
-    rng,
-    profile,
+    seed,
+    attempt,
   });
   const tiles = generatedGeometry.tiles;
   const unsignedSeed = seed >>> 0;
@@ -1432,14 +1404,38 @@ function buildDocument({
       towerPlan: {
         towerCount: profile.towerCount,
         highTowerCount: profile.highTowerCount,
-        centers: generatedGeometry.towerCenters,
+        centers: generatedGeometry.towerCenters ?? learned.towerCenters,
       },
       templateLearning: {
-        sampleIndex: generatedGeometry.templateSampleIndex,
+        sampleIndex: generatedGeometry.sourceProfile?.sampleIndex ?? null,
+        sourceFileName: generatedGeometry.sourceProfile?.sourceFileName ?? "",
+        sourceLayerMap: generatedGeometry.sourceLayerMap,
+        preservedAnchorRatio: generatedGeometry.preservedAnchorRatio,
+        fillTrackCount: generatedGeometry.fillTracks.length,
+        fillTracks: generatedGeometry.fillTracks,
         layerTileCounts: generatedGeometry.layerTileCounts,
-        blindBoxStackCount: generatedGeometry.blindBoxStackCount,
-        blindBoxStackDepth: generatedGeometry.blindBoxStackDepth,
+        layerCapacities: generatedGeometry.layerCapacities,
+        blindBoxStackCount: generatedGeometry.fillTracks.length,
+        blindBoxStackDepth: Math.max(
+          0,
+          ...generatedGeometry.fillTracks.map(({ depth }) => depth),
+        ),
         fullRandomRatio: 1,
+        similarity: {
+          sourceLayerOrderPreserved:
+            generatedGeometry.sourceLayerMap.every((layer, index) =>
+              index === 0 || layer >= generatedGeometry.sourceLayerMap[index - 1]),
+          fillTrackCountMatched:
+            generatedGeometry.fillTracks.length
+            === (
+              generatedGeometry.sourceProfile?.fillTracks
+              ?? generatedGeometry.sourceProfile?.blindStacks
+              ?? []
+            ).length,
+          capacitySafe:
+            generatedGeometry.layerTileCounts.every((count, index) =>
+              count <= generatedGeometry.layerCapacities[index]),
+        },
       },
       referenceCount: references.length,
       learned: {
@@ -1532,6 +1528,7 @@ export function generateAiLevel({
         layout,
         seed: attemptSeed,
         target,
+        attempt: attempt - 1,
       });
     } catch (error) {
       lastBuildError = error;

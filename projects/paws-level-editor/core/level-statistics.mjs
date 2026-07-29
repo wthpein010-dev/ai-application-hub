@@ -584,6 +584,7 @@ export function extractLevelStatistics(document) {
   );
 
   return {
+    sourceFileName: String(document?.fileName ?? ""),
     board,
     tileCount: tiles.length,
     layerCount,
@@ -697,6 +698,7 @@ export function mergeLevelStatistics(statistics) {
       }))),
     referenceProfiles: samples.map((sample, sampleIndex) => ({
       sampleIndex,
+      sourceFileName: String(sample.sourceFileName ?? ""),
       board: sample.board,
       tileCount: sample.tileCount,
       layerCount: sample.layerCount,
@@ -713,6 +715,19 @@ export function mergeLevelStatistics(statistics) {
         })),
       fillTracks: structuredClone(sample.fillTracks ?? sample.blindStacks ?? []),
       blindStacks: structuredClone(sample.fillTracks ?? sample.blindStacks ?? []),
+      layoutMetrics: {
+        boundaryRatio: Number(sample.boundaryRatio) || 0,
+        largestFlatPlatformSize: Number(sample.largestFlatPlatformSize) || 0,
+        initialAccessiblePairs: Number(sample.initialAccessiblePairs) || 0,
+        symmetryScore: Number(sample.symmetryScore) || 0,
+        thinLayerTailLength: [...(sample.layerTileCounts ?? [])]
+          .reverse()
+          .findIndex((count) => Number(count) > 2) === -1
+          ? (sample.layerTileCounts ?? []).length
+          : [...(sample.layerTileCounts ?? [])]
+            .reverse()
+            .findIndex((count) => Number(count) > 2),
+      },
       typeRatios: { ...(sample.typeRatios ?? {}) },
     })),
     fillTracks: samples.flatMap((sample) =>

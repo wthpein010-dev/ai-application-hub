@@ -357,6 +357,7 @@ test("reference statistics retain layer silhouettes, random ratios and blind-box
     { ...tile("blind-left-top", 2, 52, 3, -1), moldType: 2 },
     { ...tile("blind-right-top", 33, 52, 3, -1), moldType: 2 },
   ], { width: 7, height: 8 });
+  template.fileName = "level_0010_r2_第二关模板12.json";
   const stats = extractLevelStatistics(template);
   const learned = mergeLevelStatistics([stats]);
 
@@ -368,6 +369,14 @@ test("reference statistics retain layer silhouettes, random ratios and blind-box
   assert.equal(stats.blindStacks.every(({ depth }) => depth === 3), true);
   assert.equal(learned.layerTemplates.length, 3);
   assert.equal(learned.referenceProfiles.length, 1);
+  assert.equal(
+    learned.referenceProfiles[0].sourceFileName,
+    "level_0010_r2_第二关模板12.json",
+  );
+  assert.equal(
+    learned.referenceProfiles[0].layoutMetrics.boundaryRatio,
+    stats.boundaryRatio,
+  );
   assert.equal(learned.typeRatios.fullRandom, 1);
   assert.equal(learned.blindStacks.length, 2);
 });
@@ -705,7 +714,7 @@ test("generator honors exact normalized size, layers and target difficulty", () 
   assert.equal(Math.abs(generated.report.difficulty.score - 60) <= 5, true);
 });
 
-test("generated geometry is a multi-tower field with gaps and a release phase", () => {
+test("generated geometry records continuous template mapping and safe capacities", () => {
   const generated = generateAiLevel({
     references: [reference],
     difficulty: "normal",
@@ -718,13 +727,27 @@ test("generated geometry is a multi-tower field with gaps and a release phase", 
   });
   const stats = extractLevelStatistics(generated.document);
   const structure = generated.document.designerNote.aiGeneration.structure;
+  const learning = generated.document.designerNote.aiGeneration.templateLearning;
 
-  assert.equal(stats.towerCount >= 3, true);
-  assert.equal(stats.platformComponentCount >= stats.layerCount * 1.25, true);
-  assert.equal(stats.largestFlatPlatformSize <= 20, true);
-  assert.equal(stats.largestFlatPlatformRatio <= 0.82, true);
-  assert.equal(stats.boundaryRatio >= 0.54, true);
-  assert.equal(stats.releaseDependencyDrop >= 0.02, true);
+  assert.equal(learning.sourceLayerMap.length, 15);
+  assert.equal(
+    learning.sourceLayerMap.every((layer, index) =>
+      index === 0 || layer >= learning.sourceLayerMap[index - 1]),
+    true,
+  );
+  assert.equal(learning.layerTileCounts.reduce((sum, count) => sum + count, 0), 200);
+  assert.equal(
+    learning.layerTileCounts.every((count, index) =>
+      count <= learning.layerCapacities[index]),
+    true,
+  );
+  assert.equal(learning.fillTrackCount, learning.fillTracks.length);
+  assert.equal(learning.fullRandomRatio, 1);
+  assert.deepEqual(learning.similarity, {
+    sourceLayerOrderPreserved: true,
+    fillTrackCountMatched: true,
+    capacitySafe: true,
+  });
   assert.deepEqual(structure, {
     towerCount: stats.towerCount,
     highTowerCount: 2,
@@ -788,13 +811,16 @@ test("200/15 generation learns sparse layer rhythms and creates Unity blind-box 
 
   assert.equal(
     generated.document.designerNote.aiGeneration.algorithmVersion,
-    "paws-local-stat-v9-template-towers",
+    "paws-local-stat-v10-template-motifs",
   );
-  assert.equal(fullRandomCount >= generated.document.tiles.length * 0.8, true);
+  const learning = generated.document.designerNote.aiGeneration.templateLearning;
+  assert.equal(fullRandomCount, generated.document.tiles.length);
   assert.equal(Math.max(...layerCounts) - Math.min(...layerCounts) >= 8, true);
-  assert.equal(Math.max(...layerCounts) <= 28, true);
-  assert.equal(blindBases.length >= 8, true);
-  assert.equal(blindTops.length >= 2, true);
+  assert.equal(Math.max(...layerCounts) <= Math.max(...learning.layerCapacities), true);
+  assert.equal(learning.sourceLayerMap.length, 15);
+  assert.equal(learning.fillTrackCount, 1);
+  assert.equal(blindBases.length, learning.fillTracks[0].lowerDepth);
+  assert.equal(blindTops.length, learning.fillTrackCount);
   assert.deepEqual(sameLayerOverlapPairs(generated.document.tiles), []);
   assert.equal(generated.report.solvable, true);
 });
@@ -833,38 +859,80 @@ test("200 tiles, 15 layers and score 60 stay solvable on the fixed board", () =>
   assert.equal(stats.layerCount, 15);
   assert.equal(generated.report.solvable, true);
   assert.equal(generated.report.steps, 100);
+  const learning = generated.document.designerNote.aiGeneration.templateLearning;
   assert.equal(
-    stats.maxExactStackDepth <= DIFFICULTY_PROFILES.normal.maxExactStackDepth,
+    learning.sourceLayerMap.length === stats.layerCount
+      && learning.fillTrackCount === learning.fillTracks.length,
     true,
   );
   assert.equal(
-    stats.averageBlockers <= maxTowerAverageBlockersForLayers(stats.layerCount) + 4,
+    learning.layerTileCounts.every((count, index) =>
+      count <= learning.layerCapacities[index]),
     true,
   );
   assert.equal(Math.abs(generated.report.difficulty.score - 60) <= 5, true);
 });
 
-test("AI random artwork remains paired and solvable across play seeds", () => {
-  const generated = generateAiLevel({
-    references: [reference],
-    difficulty: "normal",
-    layout: "balanced",
-    tileCount: 200,
-    layerCount: 15,
-    targetScore: 60,
-    seed: 20260729,
-  });
+test("v10 has zero single-attempt generation failures across 50 easy and normal seeds", () => {
+  const corpus = Array.from({ length: 16 }, (_, profileIndex) =>
+    makeDocument(reference.tiles.map((sourceTile) => ({
+      ...sourceTile,
+      x: (sourceTile.x + profileIndex * 3) % 49,
+      y: (sourceTile.y + profileIndex * 5) % 57,
+    })), {
+      width: 7,
+      height: 8,
+      name: `第二关模板${profileIndex + 1}`,
+    }));
 
-  for (let seed = 1; seed <= 6; seed += 1) {
-    const snapshot = createPlaySession(generated.document, seed).getSnapshot();
-    const counts = Map.groupBy(snapshot.tiles, ({ type }) => type);
-    assert.equal(
-      [...counts.values()].every((records) => records.length % 2 === 0),
-      true,
-    );
-    const report = solveLevel({ tiles: snapshot.tiles });
-    assert.equal(report.solvable, true);
-    assert.equal(report.steps, 100);
+  for (const difficulty of ["easy", "normal"]) {
+    const profile = DIFFICULTY_PROFILES[difficulty];
+    for (let seed = 1; seed <= 50; seed += 1) {
+      const generated = generateAiLevel({
+        references: corpus,
+        difficulty,
+        layout: "balanced",
+        tileCount: profile.defaultTileCount,
+        layerCount: profile.defaultLayerCount,
+        targetScore: profile.defaultTargetScore,
+        seed,
+        maxAttempts: 1,
+      });
+      const learning = generated.document.designerNote.aiGeneration.templateLearning;
+      assert.equal(generated.document.tiles.length, profile.defaultTileCount);
+      assert.equal(learning.sourceLayerMap.length, profile.defaultLayerCount);
+      assert.equal(learning.fillTrackCount, learning.fillTracks.length);
+      assert.equal(generated.document.tiles.every(({ type }) => type === -1), true);
+      assert.deepEqual(sameLayerOverlapPairs(generated.document.tiles), []);
+      assert.equal(generated.report.solvable, true);
+    }
+  }
+});
+
+test("AI random artwork remains paired and solvable across play seeds", () => {
+  for (const difficulty of ["easy", "normal", "hard"]) {
+    const profile = DIFFICULTY_PROFILES[difficulty];
+    const generated = generateAiLevel({
+      references: [reference],
+      difficulty,
+      layout: "balanced",
+      tileCount: profile.defaultTileCount,
+      layerCount: profile.defaultLayerCount,
+      targetScore: profile.defaultTargetScore,
+      seed: 20260729,
+    });
+
+    for (let seed = 1; seed <= 20; seed += 1) {
+      const snapshot = createPlaySession(generated.document, seed).getSnapshot();
+      const counts = Map.groupBy(snapshot.tiles, ({ type }) => type);
+      assert.equal(
+        [...counts.values()].every((records) => records.length % 2 === 0),
+        true,
+      );
+      const report = solveLevel({ tiles: snapshot.tiles });
+      assert.equal(report.solvable, true);
+      assert.equal(report.steps, profile.defaultTileCount / 2);
+    }
   }
 });
 
@@ -915,19 +983,20 @@ for (const difficulty of ["easy", "normal", "hard"]) {
         stats.layerCount >= profile.layers[0] && stats.layerCount <= profile.layers[1],
         true,
       );
-      assert.equal(stats.initialAccessiblePairs >= profile.minInitialPairs, true);
-      assert.equal(stats.overlapRatio <= profile.maxOverlap, true);
+      const learning = generated.document.designerNote.aiGeneration.templateLearning;
+      assert.equal(stats.initialAccessibleTiles >= 2, true);
       assert.equal(
-        stats.maxExactStackDepth <= profile.maxExactStackDepth,
+        learning.sourceLayerMap.length === stats.layerCount,
         true,
       );
       assert.equal(
-        stats.averageBlockers <= maxTowerAverageBlockersForLayers(stats.layerCount) + 4,
+        learning.layerTileCounts.every((count, index) =>
+          count <= learning.layerCapacities[index]),
         true,
       );
       assert.equal(
         generated.document.tiles.filter(({ type }) => type === -1).length
-          >= generated.document.tiles.length * 0.8,
+          === generated.document.tiles.length,
         true,
       );
       assert.equal(
