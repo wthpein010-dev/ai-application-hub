@@ -10,7 +10,7 @@ on:
       - "build/clickflow/**"
 
 permissions:
-  contents: read
+  contents: write
 
 concurrency:
   group: clickflow-macos-${{ github.ref }}
@@ -157,3 +157,28 @@ jobs:
             release/ClickFlow-macOS.zip.sha256
           if-no-files-found: error
           retention-days: 14
+
+      - name: Publish the verified macOS package
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          tag="clickflow-v2.0.0"
+          if ! gh release view "$tag" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            gh release create "$tag" \
+              --repo "$GITHUB_REPOSITORY" \
+              --target "$GITHUB_SHA" \
+              --title "ClickFlow 2.0.0" \
+              --notes "ClickFlow 2.0.0：定点点击、点击录制、动作编辑、循环回放与 Windows/macOS 原生包。"
+          fi
+          bytes="$(stat -c '%s' release/ClickFlow-macOS.zip)"
+          sha256="$(sha256sum release/ClickFlow-macOS.zip | cut -d ' ' -f 1)"
+          {
+            echo "### ClickFlow macOS release asset"
+            echo
+            echo "- Bytes: $bytes"
+            echo "- SHA-256: \`$sha256\`"
+          } >> "$GITHUB_STEP_SUMMARY"
+          gh release upload clickflow-v2.0.0 release/ClickFlow-macOS.zip --clobber \
+            --repo "$GITHUB_REPOSITORY"

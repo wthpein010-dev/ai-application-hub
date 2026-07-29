@@ -61,4 +61,8 @@ test("the macOS workflow builds, signs, starts, and combines both native archite
   assert.match(workflow, /open -n/);
   assert.match(workflow, /ClickFlow-macOS\.zip/);
   assert.match(workflow, /actions\/upload-artifact@v4/);
+  assert.match(
+    workflow,
+    /gh release upload clickflow-v2\.0\.0 release\/ClickFlow-macOS\.zip --clobber/,
+  );
 });
