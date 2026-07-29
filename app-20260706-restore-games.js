@@ -592,6 +592,36 @@ const defaultApps = [
     risk: 7,
     polish: 8
   },
+  {
+    id: "clickflow",
+    name: "ClickFlow 鼠标自动化工作台",
+    category: "桌面自动化工具",
+    status: "desktop",
+    badge: "Windows · macOS",
+    brief: "把定点连点、点击录制、动作编辑与循环回放放进同一工作台，用快捷键避开录制控制按钮，并在每次点击后尽快恢复光标位置。",
+    problem: "重复点击和固定操作流程既浪费时间，又会持续占用鼠标；用户需要可保存、可复用、可随时停止的本地自动化方案。",
+    aiUse: "AI 参与跨平台输入适配、线程安全任务编排、桌面交互设计、自动测试、原生打包和公开教程制作。",
+    folder: "./projects/clickflow/",
+    entry: "./projects/clickflow/index.html",
+    video: "./projects/clickflow/video/index.html",
+    package: "https://github.com/wthpein010-dev/ai-application-hub/releases/tag/clickflow-v2.0.0",
+    platforms: {
+      web: "./projects/clickflow/index.html",
+      windows: {
+        href: "https://github.com/wthpein010-dev/ai-application-hub/releases/download/clickflow-v2.0.0/ClickFlow-Windows-x64.zip",
+        label: "Wins下载"
+      },
+      mac: {
+        href: "https://github.com/wthpein010-dev/ai-application-hub/releases/download/clickflow-v2.0.0/ClickFlow-macOS.zip",
+        label: "Mac下载"
+      }
+    },
+    tags: ["自动点击", "录制回放", "快捷键", "跨平台"],
+    speed: 9,
+    impact: 9,
+    risk: 8,
+    polish: 9
+  },
 ];
 
 let apps = loadApps();

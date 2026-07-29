@@ -1,0 +1,95 @@
+import test from "node:test";
+import assert from "node:assert/strict";
+import { existsSync, readFileSync } from "node:fs";
+import { dirname, join } from "node:path";
+import { fileURLToPath } from "node:url";
+import vm from "node:vm";
+
+const root = dirname(dirname(fileURLToPath(import.meta.url)));
+const runtimePath = join(root, "app-20260706-restore-games.js");
+const project = (...parts) => join(root, "projects", "clickflow", ...parts);
+
+function loadDefaultApps() {
+  const runtime = readFileSync(runtimePath, "utf8");
+  const start = runtime.indexOf("const defaultApps = [");
+  const closing = /\r?\n\];\r?\n\r?\nlet apps/.exec(runtime.slice(start));
+  assert.notEqual(start, -1, "defaultApps declaration should exist");
+  assert.ok(closing, "defaultApps declaration should end before runtime state");
+  const end = start + closing.index + 3;
+  const source = runtime
+    .slice(start, end + 3)
+    .replace("const defaultApps =", "globalThis.defaultApps =")
+    .replace(/\bHUB_BRIEF\b/g, '""');
+  const context = { globalThis: {} };
+  vm.runInNewContext(source, context);
+  return context.globalThis.defaultApps;
+}
+
+function isApplication(app) {
+  return !["game", "engineering", "ai"].includes(app.status);
+}
+
+test("ClickFlow is the final application and exposes the four publication actions", () => {
+  const apps = loadDefaultApps();
+  const clickFlow = apps.find((app) => app.id === "clickflow");
+
+  assert.ok(clickFlow, "ClickFlow should be registered");
+  assert.equal(apps.filter(isApplication).at(-1)?.id, "clickflow");
+  assert.equal(clickFlow.status, "desktop");
+  assert.equal(clickFlow.video, "./projects/clickflow/video/index.html");
+  assert.equal(clickFlow.platforms.web, "./projects/clickflow/index.html");
+  assert.deepEqual(
+    JSON.parse(JSON.stringify(clickFlow.platforms.windows)),
+    {
+      href: "https://github.com/wthpein010-dev/ai-application-hub/releases/download/clickflow-v2.0.0/ClickFlow-Windows-x64.zip",
+      label: "Wins下载",
+    },
+  );
+  assert.deepEqual(
+    JSON.parse(JSON.stringify(clickFlow.platforms.mac)),
+    {
+      href: "https://github.com/wthpein010-dev/ai-application-hub/releases/download/clickflow-v2.0.0/ClickFlow-macOS.zip",
+      label: "Mac下载",
+    },
+  );
+});
+
+test("ClickFlow guide documents both modes, shortcuts, permissions, and cursor limits", () => {
+  assert.equal(existsSync(project("index.html")), true);
+  assert.equal(existsSync(project("styles.css")), true);
+  assert.equal(existsSync(project("app.js")), true);
+  assert.equal(existsSync(project("README.md")), true);
+
+  const html = readFileSync(project("index.html"), "utf8");
+  const guide = readFileSync(project("README.md"), "utf8");
+  const script = readFileSync(project("app.js"), "utf8");
+
+  assert.match(html, /返回主页/);
+  assert.match(html, /定点点击/);
+  assert.match(html, /录制回放/);
+  assert.match(html, /data-mode="point"/);
+  assert.match(html, /data-mode="sequence"/);
+  assert.match(html, /data-action="record"/);
+  assert.match(html, /data-action="add-step"/);
+  assert.match(script, /downloadSequence/);
+  assert.match(guide, /F6/);
+  assert.match(guide, /F7/);
+  assert.match(guide, /F8/);
+  assert.match(guide, /F9/);
+  assert.match(guide, /辅助功能/);
+  assert.match(guide, /输入监控/);
+  assert.match(guide, /点击瞬间/);
+  assert.match(guide, /ClickFlow 自身窗口/);
+  assert.doesNotMatch(html + script, /pynput|RobotJS|pyautogui/);
+});
+
+test("ClickFlow public files contain no local or source-only download targets", () => {
+  const published = [
+    readFileSync(runtimePath, "utf8"),
+    readFileSync(project("index.html"), "utf8"),
+    readFileSync(project("README.md"), "utf8"),
+  ].join("\n");
+
+  assert.doesNotMatch(published, /C:\\Users|localhost|127\.0\.0\.1/);
+  assert.doesNotMatch(published, /ClickFlow-macOS-build\.zip/);
+});
