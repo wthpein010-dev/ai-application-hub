@@ -43,6 +43,7 @@ import {
   getDifficultyDefaults,
   normalizeGenerationOptions,
 } from "./ai-level-dialog.mjs";
+import { selectSecondRoundReferences } from "./ai-reference-selection.mjs";
 
 function setPressed(button, active) {
   button.classList.toggle("is-active", active);
@@ -967,9 +968,10 @@ export class WorkbenchController {
         version: response.version,
       });
     }));
-    const references = settled
+    const loadedReferences = settled
       .filter(({ status }) => status === "fulfilled")
       .map(({ value }) => value);
+    const references = selectSecondRoundReferences(loadedReferences);
     if (!references.length) {
       throw new Error("没有可用于学习的参考关卡。");
     }

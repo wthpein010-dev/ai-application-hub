@@ -9,6 +9,9 @@ import {
   getDifficultyDefaults,
   normalizeGenerationOptions,
 } from "../projects/paws-level-editor/ui/ai-level-dialog.mjs";
+import {
+  selectSecondRoundReferences,
+} from "../projects/paws-level-editor/ui/ai-reference-selection.mjs";
 
 const repoRoot = dirname(dirname(fileURLToPath(import.meta.url)));
 const editorRoot = join(repoRoot, "projects", "paws-level-editor");
@@ -145,6 +148,7 @@ test("controller loads references, generates, saves a collision-safe copy and op
   assert.match(controller, /async loadAiReferenceDocuments\(/);
   assert.match(controller, /await this\.api\.listLevelCatalog\(\)/);
   assert.match(controller, /this\.levels\.filter\(\(\{\s*aiReferenceEligible\s*\}\)\s*=>\s*aiReferenceEligible\)/);
+  assert.match(controller, /selectSecondRoundReferences\(loadedReferences\)/);
   assert.match(controller, /generateAiLevel\(\{[\s\S]*references,[\s\S]*difficulty:[\s\S]*layout:[\s\S]*tileCount:[\s\S]*layerCount:[\s\S]*targetScore:/);
   assert.match(
     controller,
@@ -157,6 +161,41 @@ test("controller loads references, generates, saves a collision-safe copy and op
   assert.match(controller, /openLevel:\s*\(\)\s*=>\s*this\.openLevel\(fileName,\s*\{\s*discardDirty:\s*true\s*\}\)/);
   assert.match(controller, /难度\s*\$\{difficulty\.score\}/);
   assert.match(controller, /statusDifficulty\.textContent/);
+});
+
+test("all-reference learning prefers second-round documents", () => {
+  const roundOne = {
+    fileName: "level_0001_r1_第一关模板.json",
+    gameplay: { gameLevelOrder: 1 },
+  };
+  const roundTwoByOrder = {
+    fileName: "legacy-second-round.json",
+    gameplay: { gameLevelOrder: 2 },
+  };
+  const roundTwoByName = {
+    fileName: "level_0012_r2_第二关模板12.json",
+    gameplay: {},
+  };
+
+  assert.deepEqual(
+    selectSecondRoundReferences([
+      roundOne,
+      roundTwoByOrder,
+      roundTwoByName,
+    ]),
+    [roundTwoByOrder, roundTwoByName],
+  );
+});
+
+test("all-reference learning falls back when the library has no second round", () => {
+  const onlyRoundOne = [
+    {
+      fileName: "level_0001_r1_第一关模板.json",
+      gameplay: { gameLevelOrder: 1 },
+    },
+  ];
+
+  assert.deepEqual(selectSecondRoundReferences(onlyRoundOne), onlyRoundOne);
 });
 
 test("controller gates duplicate generation and disables current reference without a document", () => {
