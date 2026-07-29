@@ -4,7 +4,8 @@
   "type": "module",
   "scripts": {
     "playwright:install": "playwright install chromium",
-    "test:paws-browser": "node --test tests/paws-level-editor-static-server.test.mjs && node tests/paws-level-editor-browser-smoke.mjs"
+    "test:paws-browser": "node --test tests/paws-level-editor-static-server.test.mjs && node tests/paws-level-editor-browser-smoke.mjs",
+    "verify:paws-ai-corpus": "node scripts/verify-paws-ai-corpus.mjs"
   },
   "devDependencies": {
     "ffmpeg-static": "5.2.0",

@@ -1,0 +1,38 @@
+{
+  "schemaVersion": 1,
+  "algorithmVersion": "paws-local-stat-v10-template-motifs",
+  "generatedAt": "2026-07-29T03:38:51.888Z",
+  "corpusCount": 16,
+  "sourceFiles": [
+    "level_0006_r2_33第二关模板13.json",
+    "level_0007_r2_43第二关模板22.json",
+    "level_0008_r2_第二关模板2.json",
+    "level_0009_r2_第二关模板1.json",
+    "level_0010_r2_第二关模板12.json",
+    "level_0011_r2_第二关模板.json",
+    "level_0012_r2_35 第二关模板15.json",
+    "level_0013_r2_37第二关模板17.json",
+    "level_0014_r2_39第二关模板18.json",
+    "level_0015_r2_41第二关模板20.json",
+    "level_0016_r2_42第二关模板21.json",
+    "level_0017_r2_40第二关模板19.json",
+    "level_0018_r2_44第二关模板23.json",
+    "level_0019_r2_45第二关模板24.json",
+    "level_0020_r2_第二关模板25.json",
+    "level_0050_r2_50 第二关第一版.json"
+  ],
+  "generationCases": 496,
+  "playSeedCases": 600,
+  "counters": {
+    "generationFailures": 0,
+    "countFailures": 0,
+    "layerFailures": 0,
+    "overlapFailures": 0,
+    "typeFailures": 0,
+    "fillTrackMismatches": 0,
+    "solverFailures": 0,
+    "playSeedFailures": 0
+  },
+  "failures": [],
+  "ok": true
+}
