@@ -1,0 +1,193 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="color-scheme" content="dark" />
+    <meta name="description" content="ClickFlow 鼠标自动化工作台在线交互演示与安装教程。" />
+    <link rel="icon" href="data:," />
+    <title>ClickFlow 鼠标自动化工作台</title>
+    <link rel="stylesheet" href="../../assets/subpage-shell.css" />
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body class="hub-subpage clickflow-page">
+    <a class="hub-home-link" href="../../index.html#apps">
+      <span class="hub-home-link__icon" aria-hidden="true">←</span>
+      <span>返回主页</span>
+    </a>
+
+    <main class="page-shell">
+      <header class="hero">
+        <div class="hero-copy">
+          <p class="eyebrow">CLICKFLOW 2.0 · WINDOWS / MACOS</p>
+          <h1>把重复点击，收进一个可随时停止的工作流</h1>
+          <p class="hero-lead">
+            定点点击和录制回放等权切换；支持动作编辑、JSON 保存、循环频率与应用内快捷键。
+            下方演示只更新网页界面，不会控制你的系统鼠标。
+          </p>
+          <div class="hero-actions">
+            <a class="button button-primary" href="./video/index.html">观看教学视频</a>
+            <a class="button" href="https://github.com/wthpein010-dev/ai-application-hub/releases/download/clickflow-v2.0.0/ClickFlow-Windows-x64.zip">Wins下载</a>
+            <a class="button" href="https://github.com/wthpein010-dev/ai-application-hub/releases/download/clickflow-v2.0.0/ClickFlow-macOS.zip">Mac下载</a>
+          </div>
+        </div>
+        <aside class="hero-note">
+          <span class="status-dot" aria-hidden="true"></span>
+          <div>
+            <strong>安全网页演示</strong>
+            <p>这里的目标点和动作均为本页模拟，不会发送真实点击。</p>
+          </div>
+        </aside>
+      </header>
+
+      <section class="workbench" aria-labelledby="demoTitle">
+        <div class="workbench-topbar">
+          <div>
+            <p class="section-kicker">INTERACTIVE GUIDE</p>
+            <h2 id="demoTitle">体验 ClickFlow 的两种工作方式</h2>
+          </div>
+          <button class="stop-all" type="button" data-action="stop-all">停止全部 · F9</button>
+        </div>
+
+        <nav class="mode-tabs" aria-label="自动化模式">
+          <button class="mode-tab is-active" type="button" data-mode="point" aria-selected="true">
+            <span>01</span>定点点击
+          </button>
+          <button class="mode-tab" type="button" data-mode="sequence" aria-selected="false">
+            <span>02</span>录制回放
+          </button>
+        </nav>
+
+        <section class="mode-panel point-panel" data-mode-panel="point">
+          <div class="settings-card">
+            <div class="card-heading">
+              <div><span>目标位置</span><strong>输入坐标和执行规则</strong></div>
+              <span class="shortcut">F8</span>
+            </div>
+            <div class="field-grid">
+              <label>X 坐标<input type="number" value="842" min="0" data-field="x" /></label>
+              <label>Y 坐标<input type="number" value="516" min="0" data-field="y" /></label>
+              <label>点击间隔（秒）<input type="number" value="2.0" min="0.05" step="0.05" data-field="interval" /></label>
+              <label>执行次数（0 为持续）<input type="number" value="0" min="0" data-field="count" /></label>
+              <label>鼠标按键
+                <select data-field="button">
+                  <option>左键</option><option>右键</option><option>中键</option>
+                </select>
+              </label>
+              <label>按下时长（毫秒）<input type="number" value="20" min="1" data-field="hold" /></label>
+            </div>
+            <label class="check-row">
+              <input type="checkbox" checked data-field="restore" />
+              <span><strong>点击后恢复鼠标位置</strong><small>减少对手动操作的影响</small></span>
+            </label>
+            <button class="button button-primary full" type="button" data-action="point-start">开始点击 · F8</button>
+          </div>
+
+          <div class="preview-card">
+            <div class="card-heading">
+              <div><span>位置预览</span><strong>按屏幕比例显示目标点</strong></div>
+              <span class="live-label">SIMULATION</span>
+            </div>
+            <div class="screen-preview" data-screen>
+              <div class="screen-toolbar"><i></i><i></i><i></i><span>DISPLAY 1920 × 1080</span></div>
+              <div class="target-marker" data-target><span></span></div>
+              <div class="click-wave" data-wave></div>
+              <p>目标 <strong data-coordinate>842, 516</strong></p>
+            </div>
+            <div class="stat-row">
+              <div><span>频率</span><strong data-frequency>0.5 次/秒</strong></div>
+              <div><span>次数</span><strong data-count-summary>持续</strong></div>
+              <div><span>光标保护</span><strong data-restore-summary>已开启</strong></div>
+            </div>
+          </div>
+        </section>
+
+        <section class="mode-panel sequence-panel" data-mode-panel="sequence" hidden>
+          <div class="timeline-card">
+            <div class="card-heading timeline-heading">
+              <div><span>动作时间线</span><strong data-sequence-summary>0 个动作 · 总时长 0 秒</strong></div>
+              <div class="compact-actions">
+                <button type="button" data-action="record">开始录制 · F6</button>
+                <button type="button" data-action="add-step">添加动作</button>
+              </div>
+            </div>
+            <div class="table-wrap">
+              <table>
+                <thead><tr><th>#</th><th>动作</th><th>坐标</th><th>等待</th><th>按下</th><th>光标保护</th></tr></thead>
+                <tbody data-step-list>
+                  <tr class="empty-row"><td colspan="6">点击“添加动作”，体验动作时间线</td></tr>
+                </tbody>
+              </table>
+            </div>
+            <div class="timeline-actions">
+              <button type="button" data-action="delete-step">删除所选</button>
+              <button type="button" data-action="clear-steps">清空</button>
+              <button type="button" data-action="save-sequence">保存 JSON</button>
+            </div>
+          </div>
+
+          <div class="playback-card">
+            <div class="card-heading">
+              <div><span>回放设置</span><strong>控制循环、速度和动作间隔</strong></div>
+              <span class="shortcut">F7</span>
+            </div>
+            <div class="field-grid">
+              <label>循环次数（0 为持续）<input type="number" value="5" min="0" data-field="loops" /></label>
+              <label>循环间隔（秒）<input type="number" value="1.0" min="0" step="0.1" /></label>
+              <label>播放速度<input type="number" value="1.0" min="0.1" step="0.1" /></label>
+              <label>固定间隔（秒）<input type="number" value="1.0" min="0" step="0.1" /></label>
+            </div>
+            <label class="check-row"><input type="checkbox" checked /><span><strong>使用录制时的真实间隔</strong></span></label>
+            <label class="check-row"><input type="checkbox" checked /><span><strong>每步完成后恢复鼠标位置</strong></span></label>
+            <button class="button button-primary full" type="button" data-action="replay">开始回放 · F7</button>
+          </div>
+        </section>
+
+        <footer class="workbench-status" data-status="ready">
+          <div><span class="status-light" aria-hidden="true"></span><strong data-status-title>系统就绪</strong></div>
+          <p data-status-detail>等待开始任务</p>
+          <span>F6 录制 · F7 回放 · F8 定点点击 · F9 停止全部</span>
+        </footer>
+      </section>
+
+      <section class="guide-section">
+        <div class="section-heading">
+          <p class="section-kicker">QUICK START</p>
+          <h2>三步开始，随时用 F9 收手</h2>
+        </div>
+        <div class="guide-grid">
+          <article><span>01</span><h3>选模式</h3><p>单点重复任务用“定点点击”；多位置流程用“录制回放”。</p></article>
+          <article><span>02</span><h3>设规则</h3><p>填写间隔和次数。次数为 0 时持续运行，直到主动停止。</p></article>
+          <article><span>03</span><h3>快捷键控制</h3><p>F6 录制、F7 回放、F8 定点点击、F9 停止全部；窗口需获得焦点。</p></article>
+        </div>
+      </section>
+
+      <section class="platform-section">
+        <div>
+          <p class="section-kicker">INSTALLATION</p>
+          <h2>选择与你电脑一致的版本</h2>
+        </div>
+        <div class="platform-grid">
+          <article>
+            <span class="platform-tag">WINDOWS x64</span>
+            <h3>解压后运行 ClickFlow.exe</h3>
+            <p>首次出现 Windows 安全提示时，请先核对下载来源，再确认运行。</p>
+            <a class="button button-primary" href="https://github.com/wthpein010-dev/ai-application-hub/releases/download/clickflow-v2.0.0/ClickFlow-Windows-x64.zip">下载 Windows 版</a>
+          </article>
+          <article>
+            <span class="platform-tag">MACOS ARM64 / X64</span>
+            <h3>按芯片目录打开 ClickFlow.app</h3>
+            <p>录制与点击需要在“隐私与安全性”中允许辅助功能；录制仍不可用时再检查输入监控。</p>
+            <a class="button button-primary" href="https://github.com/wthpein010-dev/ai-application-hub/releases/download/clickflow-v2.0.0/ClickFlow-macOS.zip">下载 Mac 版</a>
+          </article>
+        </div>
+        <p class="safety-note">
+          开启光标恢复后，ClickFlow 会在动作结束时尽快回到原位置，但真实点击瞬间仍可能影响手动鼠标操作。
+          请只在你有权操作的本地应用和合规场景中使用。
+        </p>
+      </section>
+    </main>
+
+    <script type="module" src="./app.js"></script>
+  </body>
+</html>
