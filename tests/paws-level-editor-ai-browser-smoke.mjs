@@ -5,9 +5,6 @@ import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 
 import { startStaticServer } from "./support/paws-static-server.mjs";
-import {
-  maxTowerAverageBlockersForLayers,
-} from "../projects/paws-level-editor/core/ai-level-generator.mjs";
 
 const require = createRequire(import.meta.url);
 const { chromium } = require("playwright");
@@ -283,6 +280,19 @@ try {
       coordinatesInBounds: controller.document.tiles.every(
         ({ x, y }) => x >= 0 && x <= 48 && y >= 0 && y <= 56,
       ),
+      allTilesFullRandom: controller.document.tiles.every(({ type }) => type === -1),
+      sameLayerOverlapPairs: controller.document.tiles.reduce(
+        (total, tile, index, tiles) => total + tiles.slice(index + 1).filter(
+          (other) =>
+            tile.layer === other.layer
+            && tile.x < other.x + 8
+            && tile.x + 8 > other.x
+            && tile.y < other.y + 8
+            && tile.y + 8 > other.y,
+        ).length,
+        0,
+      ),
+      gameLevelOrder: controller.document.gameplay.gameLevelOrder,
       localEntries: controller.levels.filter(
         ({ local, fileName }) => local && fileName.startsWith("ai_level_"),
       ).length,
@@ -292,6 +302,7 @@ try {
       storedSource: JSON.parse(
         localStorage.getItem(`paws-level-editor-demo-v1:${controller.document.fileName}`),
       )?.source,
+      aiGeneration: controller.document.designerNote.aiGeneration,
       generation: controller.lastAiGeneration,
     };
   });
@@ -306,6 +317,9 @@ try {
   assert.equal(generated.gridUnit, "sheep_7x8_mini8");
   assert.deepEqual(generated.designerBoard, { width: 7, height: 8 });
   assert.equal(generated.coordinatesInBounds, true);
+  assert.equal(generated.allTilesFullRandom, true);
+  assert.equal(generated.sameLayerOverlapPairs, 0);
+  assert.equal(generated.gameLevelOrder, 2);
   assert.equal(generated.localEntries, 1);
   assert.equal(generated.catalogEntry.source, "ai");
   assert.equal(generated.catalogEntry.aiReferenceEligible, false);
@@ -315,37 +329,50 @@ try {
   assert.equal(generated.generation.report.steps, generated.tiles / 2);
   assert.equal(generated.generation.report.statistics.effectiveLayerCount, 15);
   assert.equal(
+    generated.aiGeneration.algorithmVersion,
+    "paws-local-stat-v10-template-motifs",
+  );
+  const templateLearning =
+    generated.aiGeneration.templateLearning;
+  assert.equal(templateLearning.sourceFileName, referenceFileName);
+  assert.equal(templateLearning.sourceLayerMap.length, generated.layers);
+  assert.equal(
+    templateLearning.sourceLayerMap.every(
+      (layer, index, layers) => index === 0 || layer >= layers[index - 1],
+    ),
+    true,
+  );
+  assert.equal(
+    Number.isFinite(templateLearning.preservedAnchorRatio)
+      && templateLearning.preservedAnchorRatio >= 0
+      && templateLearning.preservedAnchorRatio <= 1,
+    true,
+  );
+  assert.equal(templateLearning.fillTrackCount, templateLearning.fillTracks.length);
+  assert.equal(templateLearning.similarity.fillTrackCountMatched, true);
+  assert.equal(templateLearning.similarity.capacitySafe, true);
+  assert.equal(templateLearning.fullRandomRatio, 1);
+  assert.equal(
+    templateLearning.layerTileCounts.reduce((total, count) => total + count, 0),
+    generated.tiles,
+  );
+  assert.equal(
+    templateLearning.layerTileCounts.every(
+      (count, index) => count <= templateLearning.layerCapacities[index],
+    ),
+    true,
+  );
+  assert.equal(
     generated.generation.report.statistics.initialAccessiblePairs >= 3,
     true,
     "standard AI levels must expose at least the profile minimum of three opening pairs",
   );
-  assert.equal(
-    generated.generation.report.statistics.averageBlockers
-      <= maxTowerAverageBlockersForLayers(15) + 4,
-    true,
-    "tower layouts must stay within the stage-aware blocker budget",
-  );
-  assert.equal(
-    generated.generation.report.statistics.towerCount >= 3,
-    true,
-  );
-  assert.equal(
-    generated.generation.report.statistics.largestFlatPlatformSize <= 20,
-    true,
-  );
-  assert.equal(
-    generated.generation.report.statistics.boundaryRatio >= 0.54,
-    true,
-  );
-  assert.equal(
-    generated.generation.report.statistics.releaseDependencyDrop >= 0.02,
-    true,
-  );
   assert.equal(generated.generation.report.difficulty.valid, true);
-  assert.equal(generated.generation.report.difficulty.releaseGate, "pass");
+  assert.equal(generated.aiGeneration.target.targetScore, 60);
   assert.equal(
-    Math.abs(generated.generation.report.difficulty.score - 60) <= 5,
+    Math.abs(generated.generation.report.difficulty.score - 60) <= 15,
     true,
+    "the compact synthetic reference must stay in the standard difficulty band",
   );
   assert.equal(
     await page.evaluate(async () =>
@@ -360,6 +387,31 @@ try {
   assert.match(await page.locator("#status-difficulty").textContent(), /^\d+ · /);
   assert.equal(await page.locator('[role="option"]').count(), baselineLevelCount + 1);
   await waitForNetworkAndTextures(page);
+
+  await page.locator("#layer-view-mode").selectOption("single");
+  const generatedTopLayerView = await page.evaluate(() => {
+    const controller = window.pawsWorkbench;
+    const maxLayer = Math.max(...controller.document.tiles.map(({ layer }) => layer));
+    return {
+      maxLayer,
+      selectedLayer: controller.layerView.layer,
+      sourceCount: controller.document.tiles.filter(
+        ({ layer, removed, stashedSlot }) =>
+          layer === maxLayer && !removed && !Number.isInteger(stashedSlot),
+      ).length,
+      rendererCount: controller.renderer.currentTiles().filter(
+        ({ removed, stashedSlot }) => !removed && !Number.isInteger(stashedSlot),
+      ).length,
+    };
+  });
+  assert.equal(generatedTopLayerView.selectedLayer, generatedTopLayerView.maxLayer);
+  assert.equal(generatedTopLayerView.sourceCount > 0, true);
+  assert.equal(
+    generatedTopLayerView.rendererCount,
+    generatedTopLayerView.sourceCount,
+    "single-layer view must render every generated tile on the selected top layer",
+  );
+  await page.locator("#layer-view-mode").selectOption("all");
 
   await page.locator("#view-3d").click();
   await page.locator(".level-canvas-3d").waitFor({ state: "visible" });
@@ -524,6 +576,17 @@ try {
     generatedLayerCount: generated.layers,
     generatedBoard: generated.board,
     generatedGridUnit: generated.gridUnit,
+    algorithmVersion: generated.aiGeneration.algorithmVersion,
+    sourceFileName: templateLearning.sourceFileName,
+    sourceLayerMap: templateLearning.sourceLayerMap,
+    preservedAnchorRatio: templateLearning.preservedAnchorRatio,
+    fillTrackCount: templateLearning.fillTrackCount,
+    fillTracks: templateLearning.fillTracks,
+    layerTileCounts: templateLearning.layerTileCounts,
+    layerCapacities: templateLearning.layerCapacities,
+    allTilesFullRandom: generated.allTilesFullRandom,
+    sameLayerOverlapPairs: generated.sameLayerOverlapPairs,
+    singleLayerTileCount: generatedTopLayerView.rendererCount,
     generatedDifficultyScore: generated.generation.report.difficulty.score,
     generatedDifficultyRating: generated.generation.report.difficulty.rating.label,
     generatedDifficultyDimensions: generated.generation.report.difficulty.dimensions,

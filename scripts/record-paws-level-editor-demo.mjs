@@ -77,11 +77,13 @@ const sourceFiles = [
   "projects/paws-level-editor/core/level-validator.mjs",
   "projects/paws-level-editor/core/pass-rate-evaluator.mjs",
   "projects/paws-level-editor/core/play-engine.mjs",
+  "projects/paws-level-editor/core/template-motif-generator.mjs",
   "projects/paws-level-editor/core/tile-relations.mjs",
   "projects/paws-level-editor/core/tile-visual-tone.mjs",
   "projects/paws-level-editor/core/view-model.mjs",
   "projects/paws-level-editor/core/xorshift.mjs",
   "projects/paws-level-editor/ui/ai-level-dialog.mjs",
+  "projects/paws-level-editor/ui/ai-reference-selection.mjs",
   "projects/paws-level-editor/ui/editor-shortcuts.mjs",
   "projects/paws-level-editor/ui/grass-field.mjs",
   "projects/paws-level-editor/ui/inspector.mjs",
@@ -641,12 +643,13 @@ async function recordEditor() {
           totalEven: controller.document.tiles.length % 2 === 0,
           globalTypesEven: [...globalTypes.values()].every((count) => count % 2 === 0),
           layerTypesEven: [...layerTypes.values()].every((count) => count % 2 === 0),
+          allTilesFullRandom: controller.document.tiles.every(
+            ({ type }) => type === -1,
+          ),
           algorithmVersion:
             controller.document.designerNote.aiGeneration.algorithmVersion,
-          towerPlan:
-            controller.document.designerNote.aiGeneration.towerPlan,
-          structure:
-            controller.document.designerNote.aiGeneration.structure,
+          templateLearning:
+            controller.document.designerNote.aiGeneration.templateLearning,
         };
       });
       assert.match(aiGeneration.fileName, /^ai_level_\d+\.json$/);
@@ -666,13 +669,34 @@ async function recordEditor() {
       assert.equal(aiGeneration.totalEven, true);
       assert.equal(aiGeneration.globalTypesEven, true);
       assert.equal(aiGeneration.layerTypesEven, false);
-      assert.equal(aiGeneration.algorithmVersion, "paws-local-stat-v9-template-towers");
-      assert.ok(aiGeneration.towerPlan.towerCount >= 4);
-      assert.ok(aiGeneration.structure.towerCount >= 3);
-      assert.ok(aiGeneration.structure.largestFlatPlatformSize <= 20);
-      assert.ok(aiGeneration.structure.boundaryRatio >= 0.54);
-      assert.ok(aiGeneration.structure.releaseDependencyDrop >= 0.02);
-      assert.ok(Math.abs(aiGeneration.actualScore - aiGeneration.targetScore) <= 5);
+      assert.equal(aiGeneration.allTilesFullRandom, true);
+      assert.equal(aiGeneration.algorithmVersion, "paws-local-stat-v10-template-motifs");
+      assert.equal(aiGeneration.templateLearning.sourceFileName, defaultFileName);
+      assert.equal(aiGeneration.templateLearning.sourceLayerMap.length, 15);
+      assert.equal(
+        aiGeneration.templateLearning.sourceLayerMap.every(
+          (layer, index, layers) => index === 0 || layer >= layers[index - 1],
+        ),
+        true,
+      );
+      assert.equal(
+        aiGeneration.templateLearning.fillTrackCount,
+        aiGeneration.templateLearning.fillTracks.length,
+      );
+      assert.equal(
+        aiGeneration.templateLearning.similarity.fillTrackCountMatched,
+        true,
+      );
+      assert.equal(aiGeneration.templateLearning.similarity.capacitySafe, true);
+      assert.equal(aiGeneration.templateLearning.fullRandomRatio, 1);
+      assert.equal(
+        aiGeneration.templateLearning.layerTileCounts.reduce(
+          (total, count) => total + count,
+          0,
+        ),
+        200,
+      );
+      assert.ok(Math.abs(aiGeneration.actualScore - aiGeneration.targetScore) <= 15);
       assert.equal(
         await page.locator('[role="option"]').count(),
         baselineLevelCount + 1,

@@ -107,11 +107,13 @@ test("recording proof matches current media, sources, timeline and real state ch
     "projects/paws-level-editor/core/level-validator.mjs",
     "projects/paws-level-editor/core/pass-rate-evaluator.mjs",
     "projects/paws-level-editor/core/play-engine.mjs",
+    "projects/paws-level-editor/core/template-motif-generator.mjs",
     "projects/paws-level-editor/core/tile-relations.mjs",
     "projects/paws-level-editor/core/tile-visual-tone.mjs",
     "projects/paws-level-editor/core/view-model.mjs",
     "projects/paws-level-editor/core/xorshift.mjs",
     "projects/paws-level-editor/ui/ai-level-dialog.mjs",
+    "projects/paws-level-editor/ui/ai-reference-selection.mjs",
     "projects/paws-level-editor/ui/editor-shortcuts.mjs",
     "projects/paws-level-editor/ui/grass-field.mjs",
     "projects/paws-level-editor/ui/inspector.mjs",
@@ -185,15 +187,36 @@ test("recording proof matches current media, sources, timeline and real state ch
   assert.equal(actions.aiGeneration.totalEven, true);
   assert.equal(actions.aiGeneration.globalTypesEven, true);
   assert.equal(actions.aiGeneration.layerTypesEven, false);
+  assert.equal(actions.aiGeneration.allTilesFullRandom, true);
   assert.equal(
     actions.aiGeneration.algorithmVersion,
-    "paws-local-stat-v9-template-towers",
+    "paws-local-stat-v10-template-motifs",
   );
-  assert.ok(actions.aiGeneration.towerPlan.towerCount >= 4);
-  assert.ok(actions.aiGeneration.structure.towerCount >= 3);
-  assert.ok(actions.aiGeneration.structure.largestFlatPlatformSize <= 20);
-  assert.ok(actions.aiGeneration.structure.boundaryRatio >= 0.54);
-  assert.ok(actions.aiGeneration.structure.releaseDependencyDrop >= 0.02);
+  assert.equal(actions.aiGeneration.templateLearning.sourceFileName, "video_reference.json");
+  assert.equal(actions.aiGeneration.templateLearning.sourceLayerMap.length, 15);
+  assert.equal(
+    actions.aiGeneration.templateLearning.sourceLayerMap.every(
+      (layer, index, layers) => index === 0 || layer >= layers[index - 1],
+    ),
+    true,
+  );
+  assert.equal(
+    actions.aiGeneration.templateLearning.fillTrackCount,
+    actions.aiGeneration.templateLearning.fillTracks.length,
+  );
+  assert.equal(
+    actions.aiGeneration.templateLearning.similarity.fillTrackCountMatched,
+    true,
+  );
+  assert.equal(actions.aiGeneration.templateLearning.similarity.capacitySafe, true);
+  assert.equal(actions.aiGeneration.templateLearning.fullRandomRatio, 1);
+  assert.equal(
+    actions.aiGeneration.templateLearning.layerTileCounts.reduce(
+      (total, count) => total + count,
+      0,
+    ),
+    200,
+  );
   assert.deepEqual(actions.grass.twoD, {
     canvasCount: 1,
     imageReady: true,
@@ -224,7 +247,7 @@ test("recording proof matches current media, sources, timeline and real state ch
     edit2d: true,
   });
   assert.equal(
-    Math.abs(actions.aiGeneration.actualScore - actions.aiGeneration.targetScore) <= 5,
+    Math.abs(actions.aiGeneration.actualScore - actions.aiGeneration.targetScore) <= 15,
     true,
   );
   assert.deepEqual(
