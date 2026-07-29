@@ -372,6 +372,84 @@ test("reference statistics retain layer silhouettes, random ratios and blind-box
   assert.equal(learned.blindStacks.length, 2);
 });
 
+test("reference statistics distinguish zero and four fill tracks", () => {
+  const noFill = makeDocument([
+    tile("ordinary-a", 0, 0, 1, -1),
+    tile("ordinary-b", 16, 0, 1, -1),
+  ]);
+  const fourFill = makeDocument([
+    ...[0, 12, 36, 48].flatMap((x, track) => [
+      {
+        ...tile(`fill-${track}-1`, x, 0, 1, -1),
+        presetColorType: 3,
+      },
+      {
+        ...tile(`fill-${track}-2`, x + (track < 2 ? 1 : -1), 0, 2, -1),
+        presetColorType: 3,
+      },
+      {
+        ...tile(`fill-${track}-top`, x + (track < 2 ? 2 : -2), 0, 3, -1),
+        moldType: 2,
+      },
+    ]),
+  ], { width: 7, height: 8 });
+
+  const emptyStats = extractLevelStatistics(noFill);
+  const fourStats = extractLevelStatistics(fourFill);
+  const learned = mergeLevelStatistics([fourStats]);
+
+  assert.deepEqual(emptyStats.fillTracks, []);
+  assert.equal(fourStats.fillTracks.length, 4);
+  assert.equal(
+    fourStats.fillTracks.every((track) =>
+      track.lowerDepth === 2
+      && track.depth === 3
+      && track.explicitTop === true),
+    true,
+  );
+  assert.deepEqual(
+    fourStats.layerSequence.map(({ layer, tileCount }) => ({ layer, tileCount })),
+    [
+      { layer: 1, tileCount: 4 },
+      { layer: 2, tileCount: 4 },
+      { layer: 3, tileCount: 4 },
+    ],
+  );
+  assert.deepEqual(fourStats.blindStacks, fourStats.fillTracks);
+  assert.equal(learned.referenceProfiles[0].fillTracks.length, 4);
+  assert.deepEqual(
+    learned.referenceProfiles[0].layerSequence.map(({ tileCount }) => tileCount),
+    [4, 4, 4],
+  );
+  assert.deepEqual(learned.blindStacks, learned.fillTracks);
+});
+
+test("legacy fill tracks infer a top layer without mutating the reference", () => {
+  const legacyFill = makeDocument([
+    {
+      ...tile("legacy-1", 0, 52, 1, -1),
+      presetColorType: 3,
+    },
+    {
+      ...tile("legacy-2", 1, 52, 2, -1),
+      presetColorType: 3,
+    },
+  ], { width: 7, height: 8 });
+
+  const stats = extractLevelStatistics(legacyFill);
+
+  assert.equal(stats.fillTracks.length, 1);
+  assert.equal(stats.fillTracks[0].lowerDepth, 2);
+  assert.equal(stats.fillTracks[0].depth, 3);
+  assert.equal(stats.fillTracks[0].explicitTop, false);
+  assert.equal(stats.fillTracks[0].layerStart, 1);
+  assert.equal(stats.fillTracks[0].layerEnd, 3);
+  assert.deepEqual(
+    legacyFill.tiles.map(({ moldType }) => moldType),
+    [1, 1],
+  );
+});
+
 test("solver removes a symmetric dependency chain", () => {
   const document = makeDocument([
     tile("lower-left", 0, 0, 1, 1),

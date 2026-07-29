@@ -327,7 +327,7 @@ function analyzeTowers(document, tiles, layerCount, board) {
   };
 }
 
-function analyzeLayerTemplates(tiles, board, layerCount) {
+function analyzeLayerSequence(tiles, board, layerCount) {
   const byLayer = new Map();
   for (const tile of tiles) {
     const layerTiles = byLayer.get(tile.layer) ?? [];
@@ -336,19 +336,21 @@ function analyzeLayerTemplates(tiles, board, layerCount) {
   }
   const maxAnchorX = Math.max(1, board.width * TILE_SIZE - TILE_SIZE);
   const maxAnchorY = Math.max(1, board.height * TILE_SIZE - TILE_SIZE);
-  const layerTemplates = [...byLayer]
+  const layerSequence = [...byLayer]
     .sort(([left], [right]) => Number(left) - Number(right))
-    .map(([layer, layerTiles]) => {
+    .map(([layer, layerTiles], index, orderedLayers) => {
       const ordered = [...layerTiles].sort((left, right) =>
         left.y - right.y || left.x - right.x || String(left.uid).localeCompare(String(right.uid)));
       const components = connectedComponents(ordered, areFlatNeighbors)
         .map((component) => component.map(({ uid }) => uid));
+      const previousCount = index > 0 ? orderedLayers[index - 1][1].length : ordered.length;
       return {
         layer: Number(layer),
         normalizedDepth: layerCount > 1
           ? (Number(layer) - 1) / (layerCount - 1)
           : 0,
         tileCount: ordered.length,
+        deltaFromPrevious: index > 0 ? ordered.length - previousCount : 0,
         components,
         anchors: ordered.map((tile) => ({
           x: tile.x,
@@ -361,67 +363,174 @@ function analyzeLayerTemplates(tiles, board, layerCount) {
         })),
       };
     });
+  return {
+    layerTileCounts: layerSequence.map(({ tileCount }) => tileCount),
+    layerCountRhythm: layerSequence.map(({
+      layer,
+      tileCount,
+      deltaFromPrevious,
+    }) => ({
+      layer,
+      tileCount,
+      deltaFromPrevious,
+    })),
+    layerSequence,
+    layerTemplates: layerSequence,
+  };
+}
 
-  const semanticTiles = tiles
-    .filter((tile) =>
-      Number(tile.presetColorType) === 3
-      || Number(tile.moldType) === 2)
-    .sort((left, right) =>
-      left.layer - right.layer || left.y - right.y || left.x - right.x);
-  const tracks = [];
-  for (const tile of semanticTiles) {
-    const candidates = tracks
-      .filter((track) => {
-        const previous = track.tiles.at(-1);
-        return (
-          previous.layer === tile.layer - 1
-          && Math.abs(previous.x - tile.x) <= 4
-          && Math.abs(previous.y - tile.y) <= 4
-        );
-      })
-      .sort((left, right) => {
-        const leftPrevious = left.tiles.at(-1);
-        const rightPrevious = right.tiles.at(-1);
-        return (
-          Math.hypot(leftPrevious.x - tile.x, leftPrevious.y - tile.y)
-          - Math.hypot(rightPrevious.x - tile.x, rightPrevious.y - tile.y)
-        );
-      });
-    const track = candidates[0] ?? { tiles: [] };
-    if (!candidates[0]) tracks.push(track);
-    track.tiles.push(tile);
+function analyzeFillTracks(tiles, board) {
+  const maxAnchorX = Math.max(1, board.width * TILE_SIZE - TILE_SIZE);
+  const maxAnchorY = Math.max(1, board.height * TILE_SIZE - TILE_SIZE);
+  const lowerByLayer = new Map();
+  for (const tile of tiles) {
+    if (
+      Number(tile.presetColorType) !== 3
+      || Number(tile.moldType ?? 1) === 2
+    ) {
+      continue;
+    }
+    const layerTiles = lowerByLayer.get(Number(tile.layer)) ?? [];
+    layerTiles.push(tile);
+    lowerByLayer.set(Number(tile.layer), layerTiles);
   }
-  const blindStacks = tracks
-    .filter(({ tiles: stackTiles }) =>
-      stackTiles.length >= 2
-      && stackTiles.some(({ presetColorType }) => Number(presetColorType) === 3)
-      && Number(stackTiles.at(-1).moldType) === 2)
-    .map(({ tiles: stackTiles }) => ({
-      depth: stackTiles.length,
-      layerStart: stackTiles[0].layer,
-      layerEnd: stackTiles.at(-1).layer,
-      start: {
-        x: stackTiles[0].x / maxAnchorX,
-        y: stackTiles[0].y / maxAnchorY,
-      },
-      delta: stackTiles.length > 1
-        ? {
-          x: (stackTiles.at(-1).x - stackTiles[0].x)
-            / (stackTiles.length - 1) / maxAnchorX,
-          y: (stackTiles.at(-1).y - stackTiles[0].y)
-            / (stackTiles.length - 1) / maxAnchorY,
-        }
-        : { x: 0, y: 0 },
-    }));
+  const tracks = [];
+  for (const [layer, layerTiles] of [...lowerByLayer]
+    .sort(([left], [right]) => left - right)) {
+    const orderedTiles = [...layerTiles].sort((left, right) =>
+      left.y - right.y || left.x - right.x || String(left.uid).localeCompare(String(right.uid)));
+    const candidatePairs = tracks.flatMap((track, trackIndex) => {
+      const previous = track.lowerTiles.at(-1);
+      if (!previous || Number(previous.layer) !== layer - 1) return [];
+      return orderedTiles.flatMap((tile, tileIndex) => {
+        const dx = Math.abs(Number(previous.x) - Number(tile.x));
+        const dy = Math.abs(Number(previous.y) - Number(tile.y));
+        if (dx > 4 || dy > 4) return [];
+        return [{
+          trackIndex,
+          tileIndex,
+          distance: Math.hypot(dx, dy),
+        }];
+      });
+    }).sort((left, right) =>
+      left.distance - right.distance
+      || left.trackIndex - right.trackIndex
+      || left.tileIndex - right.tileIndex);
+    const matchedTracks = new Set();
+    const matchedTiles = new Set();
+    for (const { trackIndex, tileIndex } of candidatePairs) {
+      if (matchedTracks.has(trackIndex) || matchedTiles.has(tileIndex)) continue;
+      tracks[trackIndex].lowerTiles.push(orderedTiles[tileIndex]);
+      matchedTracks.add(trackIndex);
+      matchedTiles.add(tileIndex);
+    }
+    orderedTiles.forEach((tile, tileIndex) => {
+      if (!matchedTiles.has(tileIndex)) tracks.push({ lowerTiles: [tile] });
+    });
+  }
+
+  const availableTops = tiles
+    .filter(({ moldType }) => Number(moldType) === 2)
+    .sort((left, right) =>
+      Number(left.layer) - Number(right.layer)
+      || Number(left.y) - Number(right.y)
+      || Number(left.x) - Number(right.x));
+  const usedTopIndices = new Set();
+  const fillTracks = tracks
+    .map(({ lowerTiles }) => {
+      const lastLower = lowerTiles.at(-1);
+      const explicitTop = availableTops
+        .map((tile, index) => ({
+          tile,
+          index,
+          dx: Math.abs(Number(lastLower.x) - Number(tile.x)),
+          dy: Math.abs(Number(lastLower.y) - Number(tile.y)),
+        }))
+        .filter(({ tile, index, dx, dy }) =>
+          !usedTopIndices.has(index)
+          && Number(tile.layer) === Number(lastLower.layer) + 1
+          && dx <= 4
+          && dy <= 4)
+        .sort((left, right) =>
+          Math.hypot(left.dx, left.dy) - Math.hypot(right.dx, right.dy)
+          || left.index - right.index)[0];
+      if (explicitTop) usedTopIndices.add(explicitTop.index);
+      if (lowerTiles.length < 2 && !explicitTop) return null;
+
+      const previousLower = lowerTiles.at(-2) ?? lastLower;
+      const inferredTop = {
+        x: Math.min(
+          maxAnchorX,
+          Math.max(0, Number(lastLower.x) + Number(lastLower.x) - Number(previousLower.x)),
+        ),
+        y: Math.min(
+          maxAnchorY,
+          Math.max(0, Number(lastLower.y) + Number(lastLower.y) - Number(previousLower.y)),
+        ),
+        layer: Number(lastLower.layer) + 1,
+      };
+      const top = explicitTop?.tile ?? inferredTop;
+      const anchors = [...lowerTiles, top];
+      return {
+        lowerDepth: lowerTiles.length,
+        depth: lowerTiles.length + 1,
+        explicitTop: Boolean(explicitTop),
+        layerStart: Number(lowerTiles[0].layer),
+        layerEnd: Number(top.layer),
+        lowerAnchors: lowerTiles.map((tile) => ({
+          layer: Number(tile.layer),
+          x: Number(tile.x),
+          y: Number(tile.y),
+          normalizedX: Math.min(1, Math.max(0, Number(tile.x) / maxAnchorX)),
+          normalizedY: Math.min(1, Math.max(0, Number(tile.y) / maxAnchorY)),
+        })),
+        topAnchor: {
+          layer: Number(top.layer),
+          x: Number(top.x),
+          y: Number(top.y),
+          normalizedX: Math.min(1, Math.max(0, Number(top.x) / maxAnchorX)),
+          normalizedY: Math.min(1, Math.max(0, Number(top.y) / maxAnchorY)),
+        },
+        anchors: anchors.map((tile) => ({
+          layer: Number(tile.layer),
+          x: Number(tile.x),
+          y: Number(tile.y),
+        })),
+        start: {
+          x: Number(lowerTiles[0].x) / maxAnchorX,
+          y: Number(lowerTiles[0].y) / maxAnchorY,
+        },
+        delta: {
+          x: (Number(top.x) - Number(lowerTiles[0].x))
+            / (anchors.length - 1) / maxAnchorX,
+          y: (Number(top.y) - Number(lowerTiles[0].y))
+            / (anchors.length - 1) / maxAnchorY,
+        },
+      };
+    })
+    .filter(Boolean)
+    .sort((left, right) =>
+      left.layerStart - right.layerStart
+      || left.start.y - right.start.y
+      || left.start.x - right.start.x);
+  return {
+    fillTrackCount: fillTracks.length,
+    fillTracks,
+    blindStacks: fillTracks,
+  };
+}
+
+function analyzeLearnedTemplates(tiles, board, layerCount) {
+  const layerAnalysis = analyzeLayerSequence(tiles, board, layerCount);
+  const fillAnalysis = analyzeFillTracks(tiles, board);
 
   const fullRandomCount = tiles
     .filter(({ type }) => Number(type) === -1).length;
   const normalRandomCount = tiles
     .filter(({ type }) => Number(type) === 0).length;
   return {
-    layerTileCounts: layerTemplates.map(({ tileCount }) => tileCount),
-    layerTemplates,
-    blindStacks,
+    ...layerAnalysis,
+    ...fillAnalysis,
     typeRatios: {
       fullRandom: tiles.length ? fullRandomCount / tiles.length : 0,
       normalRandom: tiles.length ? normalRandomCount / tiles.length : 0,
@@ -468,7 +577,7 @@ export function extractLevelStatistics(document) {
   const platformStructure = analyzePlatforms(tiles);
   const towerStructure = analyzeTowers(document, tiles, layerCount, board);
   const pressureStructure = analyzeStagePressure(document, tiles, layerCount);
-  const learnedTemplates = analyzeLayerTemplates(
+  const learnedTemplates = analyzeLearnedTemplates(
     tiles,
     board,
     layerCount,
@@ -581,21 +690,35 @@ export function mergeLevelStatistics(statistics) {
         ...template,
         sampleIndex,
       }))),
+    layerSequence: samples.flatMap((sample, sampleIndex) =>
+      (sample.layerSequence ?? sample.layerTemplates ?? []).map((template) => ({
+        ...template,
+        sampleIndex,
+      }))),
     referenceProfiles: samples.map((sample, sampleIndex) => ({
       sampleIndex,
       board: sample.board,
       tileCount: sample.tileCount,
       layerCount: sample.layerCount,
       layerTileCounts: [...(sample.layerTileCounts ?? [])],
+      layerCountRhythm: structuredClone(sample.layerCountRhythm ?? []),
       layerTemplates: (sample.layerTemplates ?? []).map((template) => ({
         ...template,
         sampleIndex,
       })),
-      blindStacks: structuredClone(sample.blindStacks ?? []),
+      layerSequence: (sample.layerSequence ?? sample.layerTemplates ?? [])
+        .map((template) => ({
+          ...template,
+          sampleIndex,
+        })),
+      fillTracks: structuredClone(sample.fillTracks ?? sample.blindStacks ?? []),
+      blindStacks: structuredClone(sample.fillTracks ?? sample.blindStacks ?? []),
       typeRatios: { ...(sample.typeRatios ?? {}) },
     })),
-    blindStacks: samples.flatMap(({ blindStacks }) =>
-      structuredClone(blindStacks ?? [])),
+    fillTracks: samples.flatMap((sample) =>
+      structuredClone(sample.fillTracks ?? sample.blindStacks ?? [])),
+    blindStacks: samples.flatMap((sample) =>
+      structuredClone(sample.fillTracks ?? sample.blindStacks ?? [])),
     typeRatios: {
       fullRandom: weightedRatio("fullRandom"),
       normalRandom: weightedRatio("normalRandom"),
