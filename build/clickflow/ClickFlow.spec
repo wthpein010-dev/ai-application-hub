@@ -1,0 +1,50 @@
+# -*- mode: python ; coding: utf-8 -*-
+
+import sys
+
+from PyInstaller.utils.hooks import collect_submodules
+
+
+hidden_imports = collect_submodules("pynput")
+
+a = Analysis(
+    ["auto_clicker.py"],
+    pathex=[],
+    binaries=[],
+    datas=[],
+    hiddenimports=hidden_imports,
+    hookspath=[],
+    hooksconfig={},
+    runtime_hooks=[],
+    excludes=[],
+    noarchive=False,
+    optimize=0,
+)
+pyz = PYZ(a.pure)
+
+exe = EXE(
+    pyz,
+    a.scripts,
+    a.binaries,
+    a.datas,
+    [],
+    name="ClickFlow",
+    debug=False,
+    bootloader_ignore_signals=False,
+    strip=False,
+    upx=True,
+    console=False,
+    disable_windowed_traceback=False,
+    argv_emulation=False,
+    target_arch=None,
+    codesign_identity=None,
+    entitlements_file=None,
+)
+
+if sys.platform == "darwin":
+    app = BUNDLE(
+        exe,
+        name="ClickFlow.app",
+        icon=None,
+        bundle_identifier="com.clickflow.desktop",
+    )
