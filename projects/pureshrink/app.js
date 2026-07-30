@@ -14,6 +14,9 @@ const nodes = {
   downloadAll: document.querySelector("[data-pureshrink-download-all]"),
   status: document.querySelector("[data-pureshrink-status]"),
   engine: document.querySelector("[data-pureshrink-engine]"),
+  outputSettings: document.querySelector("[data-pureshrink-output-settings]"),
+  outputDirectory: document.querySelector("[data-pureshrink-output-directory]"),
+  chooseOutput: document.querySelector("[data-pureshrink-choose-output]"),
   count: document.querySelector("[data-pureshrink-count]"),
   input: document.querySelector("[data-pureshrink-input]"),
   output: document.querySelector("[data-pureshrink-output]"),
@@ -35,6 +38,21 @@ const STATUS_COPY = {
   failed: "失败",
   cancelled: "已取消",
 };
+
+async function initializeDesktop() {
+  if (!desktopBridge) return;
+  const environment = await desktopBridge.getEnvironment();
+  nodes.outputDirectory.textContent = environment.outputDirectory;
+  nodes.outputDirectory.title = environment.outputDirectory;
+  nodes.outputSettings.hidden = false;
+  nodes.chooseOutput.addEventListener("click", async () => {
+    const selected = await desktopBridge.chooseOutputDirectory();
+    if (!selected) return;
+    nodes.outputDirectory.textContent = selected;
+    nodes.outputDirectory.title = selected;
+    nodes.status.textContent = "桌面输出目录已更新";
+  });
+}
 
 function modeForNewFiles() {
   return document.querySelector('input[name="mode"]:checked')?.value || mode;
@@ -101,9 +119,12 @@ function createTaskNode(task) {
   item.querySelector("[data-file-mark]").textContent = fileMark(task);
   item.querySelector("[data-file-name]").textContent = task.file.name;
   item.querySelector("[data-file-status]").textContent = STATUS_COPY[task.status] || task.status;
-  item.querySelector("[data-file-strategy]").textContent = task.plan.recommendedDesktop
+  const strategy = task.plan.recommendedDesktop
     ? `${task.plan.strategy} · 建议桌面版处理`
     : task.plan.strategy;
+  item.querySelector("[data-file-strategy]").textContent = task.result?.verification
+    ? `${strategy} · ${task.result.verification}`
+    : strategy;
   item.querySelector("[data-file-progress]").style.width = `${task.progress}%`;
   item.querySelector("[data-file-size]").textContent = formatBytes(task.file.size);
   item.querySelector("[data-file-result]").textContent = resultCopy(task);
@@ -156,8 +177,11 @@ function render(tasks) {
 }
 
 nodes.dropzone.addEventListener("click", pickFiles);
-nodes.picker.addEventListener("change", () => {
-  addFiles(nodes.picker.files);
+nodes.picker.addEventListener("change", async () => {
+  const files = desktopBridge?.describeDroppedFiles
+    ? await desktopBridge.describeDroppedFiles(nodes.picker.files)
+    : nodes.picker.files;
+  addFiles(files);
   nodes.picker.value = "";
 });
 
@@ -175,7 +199,14 @@ for (const eventName of ["dragleave", "drop"]) {
   });
 }
 
-nodes.dropzone.addEventListener("drop", (event) => addFiles(event.dataTransfer?.files));
+nodes.dropzone.addEventListener("drop", async (event) => {
+  const files = event.dataTransfer?.files;
+  if (desktopBridge?.describeDroppedFiles) {
+    addFiles(await desktopBridge.describeDroppedFiles(files));
+    return;
+  }
+  addFiles(files);
+});
 document.querySelectorAll('input[name="mode"]').forEach((input) => {
   input.addEventListener("change", () => {
     mode = modeForNewFiles();
@@ -207,4 +238,7 @@ window.addEventListener("beforeunload", (event) => {
 
 queue.subscribe(render);
 nodes.engine.textContent = desktopBridge ? "桌面原生 FFmpeg 引擎" : "浏览器本地 WebAssembly 引擎";
+initializeDesktop().catch(() => {
+  nodes.status.textContent = "无法读取桌面环境信息，请重新启动应用";
+});
 

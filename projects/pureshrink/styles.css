@@ -694,6 +694,44 @@ button {
   font-weight: 800;
 }
 
+.compressor-tools {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  align-items: flex-end;
+}
+
+.desktop-output {
+  display: grid;
+  grid-template-columns: auto minmax(120px, 250px) auto;
+  gap: 8px;
+  align-items: center;
+  color: var(--muted);
+  font-size: 0.75rem;
+}
+
+.desktop-output[hidden] {
+  display: none;
+}
+
+.desktop-output strong {
+  overflow: hidden;
+  color: var(--warm);
+  font-family: "SFMono-Regular", Consolas, monospace;
+  font-weight: 600;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.desktop-output button {
+  padding: 7px 10px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  color: var(--lime);
+  cursor: pointer;
+  background: rgba(255, 255, 255, 0.035);
+}
+
 .proof-section {
   padding: 120px 0 72px;
 }
@@ -912,6 +950,15 @@ button:hover:not(:disabled),
   .engine-chip,
   .queue-count {
     align-self: flex-start;
+  }
+
+  .compressor-tools {
+    align-items: flex-start;
+  }
+
+  .desktop-output {
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    width: 100%;
   }
 
   .dropzone {

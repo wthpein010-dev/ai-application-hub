@@ -26,7 +26,13 @@ function makeTask(file, mode = "lossless") {
 test("browser engine returns a downloadable pixel-lossless PNG candidate", async () => {
   const engine = createBrowserEngine({
     loadFFmpeg: async () => ({
-      transform: async ({ outputName, onProgress }) => {
+      transform: async ({ outputName, onProgress, args }) => {
+        assert.deepEqual(args, [
+          "-i", "input-1.png",
+          "-map_metadata", "-1",
+          "-compression_level", "9",
+          "hero-pureshrink.png",
+        ]);
         onProgress(61);
         return {
           name: outputName,
@@ -73,6 +79,7 @@ test("browser engine uses a byte-lossless ZIP fallback for generic files", async
         name: `${name}.zip`,
         bytes: Uint8Array.from([80, 75, bytes[0]]),
       }),
+      unzip: async () => Uint8Array.from([42, 42, 42, 42, 42]),
     }),
   });
   const file = makeFile("brief.txt", "text/plain", [42, 42, 42, 42, 42]);
@@ -82,6 +89,52 @@ test("browser engine uses a byte-lossless ZIP fallback for generic files", async
   assert.equal(result.name, "brief-pureshrink.zip");
   assert.equal(result.outputBytes, 3);
   assert.equal(result.verification, "ZIP 解压后字节与原件一致");
+});
+
+test("browser engine rejects a ZIP candidate that cannot restore the source bytes", async () => {
+  const engine = createBrowserEngine({
+    loadArchive: async () => ({
+      zip: async (name) => ({
+        name: `${name}.zip`,
+        bytes: Uint8Array.from([80, 75, 3]),
+      }),
+      unzip: async () => Uint8Array.from([7, 8, 9]),
+    }),
+  });
+  const file = makeFile("brief.txt", "text/plain", [42, 42, 42]);
+
+  await assert.rejects(
+    engine.compress(makeTask(file), () => {}),
+    /ZIP/,
+  );
+});
+
+test("browser engine keeps duplicate batch names collision-safe", async () => {
+  let bundledEntries;
+  const engine = createBrowserEngine({
+    loadArchive: async () => ({
+      bundle: async (entries) => {
+        bundledEntries = entries;
+        return Uint8Array.from([80, 75]);
+      },
+    }),
+  });
+
+  const resultBlob = (name, value) => ({
+    name,
+    blob: new Blob([Uint8Array.from([value])]),
+  });
+  await engine.bundle([
+    resultBlob("photo.png", 1),
+    resultBlob("photo.png", 2),
+    resultBlob("photo-2.png", 3),
+    resultBlob("photo.png", 4),
+  ]);
+
+  assert.deepEqual(
+    bundledEntries.map((entry) => entry.name),
+    ["photo.png", "photo-2.png", "photo-2-2.png", "photo-3.png"],
+  );
 });
 
 test("browser engine refuses files at or above its two-gigabyte safety boundary", async () => {
@@ -121,4 +174,36 @@ test("desktop engine validates its bridge and forwards result behavior", async (
 
   assert.equal(result.outputBytes, 8);
   assert.match(result.path, /PureShrink Output/);
+});
+
+test("desktop engine forwards cancellation while native compression is still running", async () => {
+  let finishCompression;
+  const calls = [];
+  const bridge = {
+    compress: () => new Promise((resolve) => {
+      finishCompression = resolve;
+    }),
+    cancel: async (taskId) => {
+      calls.push(taskId);
+      finishCompression?.({
+        name: "ignored.mp4",
+        outputBytes: 1,
+      });
+      return true;
+    },
+  };
+  const engine = createDesktopEngine(bridge);
+  const controller = new AbortController();
+  const file = {
+    name: "clip.mp4",
+    type: "video/mp4",
+    size: 10,
+    nativePath: "D:/Media/clip.mp4",
+  };
+
+  const pending = engine.compress(makeTask(file), () => {}, controller.signal);
+  controller.abort();
+
+  await assert.rejects(pending, { name: "AbortError" });
+  assert.deepEqual(calls, [1]);
 });

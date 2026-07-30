@@ -20,3 +20,7 @@ npm run dist:win
 ```
 
 On macOS, use `npm run dist:mac:x64` or `npm run dist:mac:arm64` on the matching runner.
+
+## macOS first launch
+
+The public build is ad-hoc signed and is not Apple-notarized because this project does not store a Developer ID credential. After extracting the download, Control-click `PureShrink.app`, choose **Open**, then confirm **Open**. If macOS still blocks it, use **System Settings → Privacy & Security → Open Anyway**. Never disable Gatekeeper globally.

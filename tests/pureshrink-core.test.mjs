@@ -122,10 +122,16 @@ test("queue executes tasks sequentially and reports progress", async () => {
 });
 
 test("strict queue retains the original when the candidate is not smaller", async () => {
+  let discarded = 0;
   const queue = createQueue(async (task) => ({
     name: `${task.file.name}.out`,
     outputBytes: task.file.size,
     verification: "verified",
+    blob: new Blob(["candidate"]),
+    path: "D:/candidate.png",
+    discard: () => {
+      discarded += 1;
+    },
   }));
 
   queue.add([{ name: "tiny.png", type: "image/png", size: 10 }], "lossless");
@@ -133,6 +139,10 @@ test("strict queue retains the original when the candidate is not smaller", asyn
 
   assert.equal(queue.tasks[0].status, "kept-original");
   assert.equal(queue.tasks[0].result.outputBytes, 10);
+  assert.equal(discarded, 1);
+  assert.equal("blob" in queue.tasks[0].result, false);
+  assert.equal("path" in queue.tasks[0].result, false);
+  assert.equal("discard" in queue.tasks[0].result, false);
 });
 
 test("queue records a failure and continues with the next task", async () => {
@@ -149,4 +159,30 @@ test("queue records a failure and continues with the next task", async () => {
 
   assert.deepEqual(queue.tasks.map((task) => task.status), ["failed", "completed"]);
   assert.equal(queue.tasks[0].error, "decoder unavailable");
+});
+
+test("cancelling the current task pauses the queue and leaves later work queued", async () => {
+  const started = [];
+  const queue = createQueue(async (task, _report, signal) => {
+    started.push(task.id);
+    await new Promise((resolve, reject) => {
+      signal.addEventListener("abort", () => {
+        const error = new Error("cancelled");
+        error.name = "AbortError";
+        reject(error);
+      }, { once: true });
+    });
+  });
+  queue.add([
+    { name: "first.png", type: "image/png", size: 10 },
+    { name: "second.png", type: "image/png", size: 10 },
+  ]);
+
+  const pending = queue.start();
+  queue.cancelCurrent();
+  await pending;
+
+  assert.deepEqual(started, [1]);
+  assert.deepEqual(queue.tasks.map((task) => task.status), ["cancelled", "queued"]);
+  assert.equal(queue.running, false);
 });

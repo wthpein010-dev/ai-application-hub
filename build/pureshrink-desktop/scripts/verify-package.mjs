@@ -24,24 +24,45 @@ if (platform === "windows") {
 }
 
 assert.equal(
-  names.some((name) => /resources\/app\/index\.html$/i.test(name)),
+  names.some((name) => /resources\/app\/projects\/pureshrink\/index\.html$/i.test(name)),
   true,
   "Shared PureShrink web app is missing",
 );
 assert.equal(
-  names.some((name) => /resources\/app\/video\/pureshrink-demo\.mp4$/i.test(name)),
+  names.some((name) => /resources\/app\/projects\/pureshrink\/video\/pureshrink-demo\.mp4$/i.test(name)),
   true,
   "Local tutorial video is missing",
 );
 assert.equal(
-  names.some((name) => /resources\/app\/video\/pureshrink-demo\.vtt$/i.test(name)),
+  names.some((name) => /resources\/app\/projects\/pureshrink\/video\/pureshrink-demo\.vtt$/i.test(name)),
   true,
   "Local tutorial captions are missing",
 );
+for (const asset of [
+  "subpage-shell.css",
+  "hub-video-player.css",
+  "hub-video-player.js",
+]) {
+  assert.equal(
+    names.some((name) => name.endsWith(`/resources/app/assets/${asset}`)),
+    true,
+    `Shared desktop asset is missing: ${asset}`,
+  );
+}
 assert.equal(
   names.some((name) => /ffmpeg(?:\.exe)?$/i.test(name)),
   true,
   "Bundled FFmpeg binary is missing",
+);
+assert.equal(
+  names.some((name) => /app\.asar\.unpacked\/native\/archive-worker\.cjs$/i.test(name)),
+  true,
+  "Cancellable archive worker is missing",
+);
+assert.equal(
+  names.some((name) => /app\.asar\.unpacked\/node_modules\/fflate\/lib\/index\.cjs$/i.test(name)),
+  true,
+  "Archive worker dependency is missing",
 );
 
 const nonEmpty = files.filter((file) => statSync(file).size > 0);

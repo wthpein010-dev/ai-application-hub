@@ -37,7 +37,7 @@ function buildArguments(request, outputPath) {
         "-y",
         "-i", input,
         "-map_metadata", "-1",
-        "-compression_level", "100",
+        "-compression_level", "9",
         outputPath,
       ];
     }

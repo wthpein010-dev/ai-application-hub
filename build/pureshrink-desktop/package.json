@@ -29,7 +29,9 @@
     "productName": "PureShrink",
     "asar": true,
     "asarUnpack": [
-      "node_modules/ffmpeg-static/ffmpeg*"
+      "node_modules/ffmpeg-static/ffmpeg*",
+      "node_modules/fflate/**/*",
+      "native/archive-worker.cjs"
     ],
     "files": [
       "main.cjs",
@@ -39,13 +41,16 @@
     ],
     "extraResources": [
       {
-        "from": "../../projects/pureshrink",
+        "from": "../..",
         "to": "app",
         "filter": [
-          "**/*",
-          "!assets/brand-master.png",
-          "!assets/pureshrink-icon.ico",
-          "!assets/pureshrink-icon.icns"
+          "projects/pureshrink/**/*",
+          "!projects/pureshrink/assets/brand-master.png",
+          "!projects/pureshrink/assets/pureshrink-icon.ico",
+          "!projects/pureshrink/assets/pureshrink-icon.icns",
+          "assets/subpage-shell.css",
+          "assets/hub-video-player.css",
+          "assets/hub-video-player.js"
         ]
       }
     ],

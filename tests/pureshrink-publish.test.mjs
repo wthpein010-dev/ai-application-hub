@@ -62,7 +62,7 @@ test("PureShrink manifest identifies independently built platform assets", () =>
   assert.equal(manifest.assets.windows.builtOn, "windows-latest");
   assert.equal(manifest.assets.mac.name, "PureShrink-macOS.zip");
   assert.deepEqual(manifest.assets.mac.architectures, ["arm64", "x64"]);
-  assert.deepEqual(manifest.assets.mac.builtOn, ["macos-14", "macos-13"]);
+  assert.deepEqual(manifest.assets.mac.builtOn, ["macos-14", "macos-15-intel"]);
 });
 
 test("homepage cache key is refreshed for the PureShrink card", () => {

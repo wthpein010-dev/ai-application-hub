@@ -1,8 +1,8 @@
 import { outputNameFor } from "../core/policy.mjs";
 
-const FFMPEG_SCRIPT_URL = "https://cdn.jsdelivr.net/npm/@ffmpeg/ffmpeg@0.11.6/dist/ffmpeg.min.js";
-const FFMPEG_CORE_URL = "https://cdn.jsdelivr.net/npm/@ffmpeg/core@0.11.0/dist/ffmpeg-core.js";
-const FFLATE_SCRIPT_URL = "https://cdn.jsdelivr.net/npm/fflate@0.8.2/umd/index.js";
+const FFMPEG_SCRIPT_URL = "./vendor/ffmpeg.min.js";
+const FFMPEG_CORE_URL = "./vendor/ffmpeg-core.js";
+const FFLATE_SCRIPT_URL = "./vendor/fflate.min.js";
 const MAX_BROWSER_BYTES = 2_000_000_000;
 
 let ffmpegAdapterPromise;
@@ -11,6 +11,51 @@ let archiveAdapterPromise;
 function abortIfNeeded(signal) {
   if (!signal?.aborted) return;
   throw new DOMException("任务已取消", "AbortError");
+}
+
+function bytesEqual(left, right) {
+  if (left.byteLength !== right.byteLength) return false;
+  for (let index = 0; index < left.byteLength; index += 1) {
+    if (left[index] !== right[index]) return false;
+  }
+  return true;
+}
+
+function abortError() {
+  return new DOMException("任务已取消", "AbortError");
+}
+
+function comparableHashOutput(output) {
+  return output
+    .split(/\r?\n/)
+    .map((line) => line.trim())
+    .filter((line) => line && !line.startsWith("#"))
+    .join("\n");
+}
+
+function collisionSafeEntries(entries) {
+  const used = new Set();
+  return entries.map((entry) => {
+    const original = String(entry.name || "resource");
+    let name = original;
+    if (used.has(name)) {
+      const dot = original.lastIndexOf(".");
+      const stem = dot > 0 ? original.slice(0, dot) : original;
+      const extension = dot > 0 ? original.slice(dot) : "";
+      let sequence = 2;
+      do {
+        name = `${stem}-${sequence}${extension}`;
+        sequence += 1;
+      } while (used.has(name));
+    }
+    used.add(name);
+    return { ...entry, name };
+  });
+}
+
+function browserAssetUrl(url) {
+  if (typeof document === "undefined") return url;
+  return new URL(url, document.baseURI).href;
 }
 
 function loadExternalScript(url, globalName) {
@@ -22,8 +67,15 @@ function loadExternalScript(url, globalName) {
   return new Promise((resolve, reject) => {
     const existing = document.querySelector(`script[data-pureshrink-src="${url}"]`);
     if (existing) {
-      existing.addEventListener("load", () => resolve(globalThis[globalName]), { once: true });
-      existing.addEventListener("error", () => reject(new Error(`无法加载 ${globalName}`)), { once: true });
+      existing.addEventListener("load", () => {
+        const loaded = globalThis[globalName];
+        if (loaded) resolve(loaded);
+        else reject(new Error(`${globalName} 已加载但未注册运行时`));
+      }, { once: true });
+      existing.addEventListener("error", () => {
+        existing.remove();
+        reject(new Error(`无法加载 ${globalName}`));
+      }, { once: true });
       return;
     }
 
@@ -32,8 +84,15 @@ function loadExternalScript(url, globalName) {
     script.async = true;
     script.crossOrigin = "anonymous";
     script.dataset.pureshrinkSrc = url;
-    script.addEventListener("load", () => resolve(globalThis[globalName]), { once: true });
-    script.addEventListener("error", () => reject(new Error(`无法加载 ${globalName}`)), { once: true });
+    script.addEventListener("load", () => {
+      const loaded = globalThis[globalName];
+      if (loaded) resolve(loaded);
+      else reject(new Error(`${globalName} 已加载但未注册运行时`));
+    }, { once: true });
+    script.addEventListener("error", () => {
+      script.remove();
+      reject(new Error(`无法加载 ${globalName}`));
+    }, { once: true });
     document.head.append(script);
   });
 }
@@ -41,35 +100,132 @@ function loadExternalScript(url, globalName) {
 async function defaultLoadFFmpeg() {
   if (!ffmpegAdapterPromise) {
     ffmpegAdapterPromise = (async () => {
-      const legacy = await loadExternalScript(FFMPEG_SCRIPT_URL, "FFmpeg");
-      const instance = legacy.createFFmpeg({
-        corePath: FFMPEG_CORE_URL,
-        log: false,
-      });
-      await instance.load();
+      const legacy = await loadExternalScript(browserAssetUrl(FFMPEG_SCRIPT_URL), "FFmpeg");
+      const recentLogs = [];
 
       return {
-        async transform({ inputName, outputName, inputBytes, args, onProgress }) {
-          instance.setProgress(({ ratio }) => {
-            if (Number.isFinite(ratio)) onProgress(Math.min(96, Math.max(1, ratio * 96)));
-          });
-          instance.FS("writeFile", inputName, inputBytes);
+        async transform({
+          inputName,
+          outputName,
+          inputBytes,
+          args,
+          onProgress,
+          signal,
+          verifyLossless,
+        }) {
+          abortIfNeeded(signal);
+          recentLogs.length = 0;
+          let aborted = false;
+          let activeInstance;
+          let transformInstance;
+          let verificationInstance;
+          const createInstance = async () => {
+            const created = legacy.createFFmpeg({
+              corePath: browserAssetUrl(FFMPEG_CORE_URL),
+              mainName: "main",
+              log: false,
+            });
+            activeInstance = created;
+            created.setLogger(({ message }) => {
+              if (!message) return;
+              recentLogs.push(String(message));
+              if (recentLogs.length > 40) recentLogs.shift();
+            });
+            await created.load();
+            return created;
+          };
+          const removeFiles = (instance, names) => {
+            if (!instance) return;
+            for (const name of names) {
+              try {
+                instance.FS("unlink", name);
+              } catch {
+                // A terminated or failed core may not retain its virtual files.
+              }
+            }
+          };
+          const abort = () => {
+            aborted = true;
+            try {
+              activeInstance?.exit();
+            } catch {
+              // The core may already have terminated after a worker failure.
+            } finally {
+              ffmpegAdapterPromise = null;
+            }
+          };
+          signal?.addEventListener("abort", abort, { once: true });
           try {
-            await instance.run(...args);
+            transformInstance = await createInstance();
+            abortIfNeeded(signal);
+            transformInstance.setProgress(({ ratio }) => {
+              if (Number.isFinite(ratio)) onProgress(Math.min(96, Math.max(1, ratio * 96)));
+            });
+            transformInstance.FS("writeFile", inputName, inputBytes);
+            await transformInstance.run(...args);
+            abortIfNeeded(signal);
+            const bytes = new Uint8Array(
+              transformInstance.FS("readFile", outputName),
+            );
+            let losslessMatch;
+            if (verifyLossless) {
+              const sourceHashName = `${inputName}.streamhash`;
+              const outputHashName = `${outputName}.streamhash`;
+              try {
+                verificationInstance = await createInstance();
+                abortIfNeeded(signal);
+                verificationInstance.FS("writeFile", inputName, inputBytes);
+                verificationInstance.FS("writeFile", outputName, bytes);
+                await verificationInstance.run(
+                  "-v", "error",
+                  "-i", inputName,
+                  "-i", outputName,
+                  "-map", "0",
+                  "-c", "copy",
+                  "-f", "streamhash",
+                  "-hash", "sha256",
+                  sourceHashName,
+                  "-map", "1",
+                  "-c", "copy",
+                  "-f", "streamhash",
+                  "-hash", "sha256",
+                  outputHashName,
+                );
+                const decoder = new TextDecoder();
+                const sourceHash = comparableHashOutput(
+                  decoder.decode(verificationInstance.FS("readFile", sourceHashName)),
+                );
+                const outputHash = comparableHashOutput(
+                  decoder.decode(verificationInstance.FS("readFile", outputHashName)),
+                );
+                losslessMatch = Boolean(sourceHash) && sourceHash === outputHash;
+              } finally {
+                removeFiles(verificationInstance, [
+                  inputName,
+                  outputName,
+                  sourceHashName,
+                  outputHashName,
+                ]);
+              }
+            }
             return {
               name: outputName,
-              bytes: instance.FS("readFile", outputName),
+              bytes,
+              losslessMatch,
             };
+          } catch (error) {
+            if (aborted || signal?.aborted) throw abortError();
+            if (error instanceof Error) throw error;
+            const detail = recentLogs.slice(-8).join(" | ");
+            throw new Error(
+              error?.message
+              || detail
+              || String(error || "FFmpeg WebAssembly 处理失败"),
+            );
           } finally {
-            try {
-              instance.FS("unlink", inputName);
-            } catch {
-              // The temporary input may already be absent after a failed load.
-            }
-            try {
-              instance.FS("unlink", outputName);
-            } catch {
-              // A failed conversion may not create an output.
+            signal?.removeEventListener("abort", abort);
+            if (!aborted) {
+              removeFiles(transformInstance, [inputName, outputName]);
             }
           }
         },
@@ -85,13 +241,16 @@ async function defaultLoadFFmpeg() {
 async function defaultLoadArchive() {
   if (!archiveAdapterPromise) {
     archiveAdapterPromise = (async () => {
-      const fflate = await loadExternalScript(FFLATE_SCRIPT_URL, "fflate");
+      const fflate = await loadExternalScript(browserAssetUrl(FFLATE_SCRIPT_URL), "fflate");
       return {
         async zip(name, bytes) {
           return {
             name: `${name}.zip`,
             bytes: fflate.zipSync({ [name]: bytes }, { level: 9 }),
           };
+        },
+        async unzip(name, bytes) {
+          return fflate.unzipSync(bytes)[name];
         },
         async bundle(entries) {
           const files = Object.fromEntries(entries.map((entry) => [entry.name, entry.bytes]));
@@ -113,7 +272,7 @@ function ffmpegArguments(task, inputName, outputName) {
       return [
         "-i", inputName,
         "-map_metadata", "-1",
-        "-compression_level", "100",
+        "-compression_level", "9",
         outputName,
       ];
     }
@@ -250,6 +409,12 @@ export function createBrowserEngine(options = {}) {
         const candidate = await archive.zip(task.file.name, inputBytes);
         abortIfNeeded(signal);
         const bytes = new Uint8Array(candidate.bytes);
+        const restored = typeof archive.unzip === "function"
+          ? await archive.unzip(task.file.name, bytes)
+          : null;
+        if (!restored || !bytesEqual(inputBytes, new Uint8Array(restored))) {
+          throw new Error("ZIP 回读验证未通过，已拒绝输出");
+        }
         onProgress(100);
         return {
           name: `${stem}.zip`,
@@ -269,6 +434,10 @@ export function createBrowserEngine(options = {}) {
         args: ffmpegArguments(task, inputName, outputName),
         onProgress,
         signal,
+        verifyLossless: task.plan.isLossless && !(
+          task.plan.kind === "image"
+          && task.plan.outputExtension === "png"
+        ),
       });
       abortIfNeeded(signal);
 
@@ -276,7 +445,7 @@ export function createBrowserEngine(options = {}) {
       if (!bytes.byteLength) throw new Error("压缩引擎没有生成有效输出");
 
       let verification = task.plan.isLossless
-        ? "音视频码流复制完成"
+        ? "无损码流复制完成；当前引擎未提供哈希复核"
         : "高保真参数重新编码完成";
       if (
         task.plan.isLossless
@@ -286,6 +455,10 @@ export function createBrowserEngine(options = {}) {
         const pixelsMatch = await verifyPng(inputBytes, bytes);
         if (!pixelsMatch) throw new Error("PNG 像素验证未通过，已拒绝输出");
         verification = "逐像素 RGBA 一致";
+      } else if (task.plan.isLossless && candidate.losslessMatch === false) {
+        throw new Error("媒体码流 SHA-256 验证未通过，已拒绝输出");
+      } else if (task.plan.isLossless && candidate.losslessMatch === true) {
+        verification = "音视频码流 SHA-256 一致";
       }
       onProgress(100);
       return {
@@ -298,10 +471,10 @@ export function createBrowserEngine(options = {}) {
 
     async bundle(results) {
       const archive = await loadArchive();
-      const entries = await Promise.all(results.map(async (result) => ({
+      const entries = collisionSafeEntries(await Promise.all(results.map(async (result) => ({
         name: result.name,
         bytes: new Uint8Array(await result.blob.arrayBuffer()),
-      })));
+      }))));
       const bytes = await archive.bundle(entries);
       return new Blob([bytes], { type: "application/zip" });
     },
@@ -310,7 +483,7 @@ export function createBrowserEngine(options = {}) {
 
 export const browserEngineVersions = Object.freeze({
   ffmpeg: "0.11.6",
-  ffmpegCore: "0.11.0",
+  ffmpegCoreSt: "0.11.1",
   fflate: "0.8.2",
 });
 

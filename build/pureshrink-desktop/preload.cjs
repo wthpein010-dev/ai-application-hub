@@ -1,9 +1,10 @@
 "use strict";
 
-const { contextBridge, ipcRenderer } = require("electron");
+const { contextBridge, ipcRenderer, webUtils } = require("electron");
 
 const channels = Object.freeze({
   pickFiles: "pureshrink:pick-files",
+  describeDroppedFiles: "pureshrink:describe-dropped-files",
   chooseOutput: "pureshrink:choose-output",
   compress: "pureshrink:compress",
   cancel: "pureshrink:cancel",
@@ -14,6 +15,11 @@ const channels = Object.freeze({
 
 contextBridge.exposeInMainWorld("pureShrinkDesktop", {
   pickFiles: () => ipcRenderer.invoke(channels.pickFiles),
+  describeDroppedFiles: async (files) => {
+    const paths = Array.from(files || [], (file) => webUtils.getPathForFile(file))
+      .filter(Boolean);
+    return ipcRenderer.invoke(channels.describeDroppedFiles, paths);
+  },
   chooseOutputDirectory: () => ipcRenderer.invoke(channels.chooseOutput),
   async compress(request, onProgress) {
     const listener = (_event, payload) => {

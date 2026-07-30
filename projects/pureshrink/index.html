@@ -9,6 +9,10 @@
       content="PureShrink 在设备本地批量压缩图片、视频、GIF、音频和一般文件；严格无损默认开启，原件永不覆盖。"
     />
     <meta name="theme-color" content="#0b1612" />
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="default-src 'self'; script-src 'self' blob: 'wasm-unsafe-eval'; worker-src 'self' blob:; connect-src 'self' blob:; img-src 'self' data: blob:; media-src 'self' blob:; style-src 'self'; font-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'"
+    />
     <meta property="og:type" content="website" />
     <meta property="og:locale" content="zh_CN" />
     <meta property="og:title" content="PureShrink 无损压缩工坊" />
@@ -78,7 +82,14 @@
             <p class="section-kicker">BATCH WORKSPACE</p>
             <h2 id="workspaceTitle">把资源放进压缩轨道</h2>
           </div>
-          <div class="engine-chip" data-pureshrink-engine>浏览器本地引擎</div>
+          <div class="compressor-tools">
+            <div class="engine-chip" data-pureshrink-engine>浏览器本地引擎</div>
+            <div class="desktop-output" data-pureshrink-output-settings hidden>
+              <span>输出目录</span>
+              <strong data-pureshrink-output-directory></strong>
+              <button type="button" data-pureshrink-choose-output>更改目录</button>
+            </div>
+          </div>
         </div>
 
         <div class="intake-grid">
@@ -224,7 +235,7 @@
       <footer class="page-footer">
         <span>PureShrink 1.0</span>
         <p>不上传、不覆盖、不夸大压缩结果。</p>
-        <a href="./video/index.html">观看 60 秒使用指南 →</a>
+        <a href="./video/index.html">观看 42 秒使用指南 →</a>
       </footer>
     </main>
 

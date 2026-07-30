@@ -1,16 +1,14 @@
 "use strict";
 
 const { spawn } = require("node:child_process");
+const { Worker } = require("node:worker_threads");
 const {
   existsSync,
   mkdirSync,
-  readFileSync,
   statSync,
   unlinkSync,
-  writeFileSync,
 } = require("node:fs");
 const path = require("node:path");
-const { zipSync, unzipSync } = require("fflate");
 const { buildArguments, resolveOutputPath } = require("./policy.cjs");
 
 function resolveBundledBinaryPath(binaryPath, pathExists = existsSync) {
@@ -83,15 +81,64 @@ async function mediaFingerprint(ffmpegPath, filePath, kind) {
   return comparableHashOutput(result.stdout);
 }
 
-function zipLosslessly(sourcePath, outputPath) {
-  const source = readFileSync(sourcePath);
-  const zipped = zipSync({ [path.basename(sourcePath)]: new Uint8Array(source) }, { level: 9 });
-  writeFileSync(outputPath, zipped);
-  const restored = unzipSync(zipped)[path.basename(sourcePath)];
-  if (!restored || !Buffer.from(restored).equals(source)) {
-    unlinkSync(outputPath);
-    throw new Error("PureShrink ZIP byte verification failed");
+function abortError() {
+  const error = new Error("PureShrink task cancelled");
+  error.name = "AbortError";
+  return error;
+}
+
+function removeIfPresent(candidatePath) {
+  try {
+    if (existsSync(candidatePath)) unlinkSync(candidatePath);
+  } catch {
+    // Cleanup must never hide the processing error that caused it.
   }
+}
+
+function zipLosslessly(sourcePath, outputPath, options = {}) {
+  if (options.signal?.aborted) {
+    removeIfPresent(outputPath);
+    return Promise.reject(abortError());
+  }
+
+  return new Promise((resolve, reject) => {
+    const worker = new Worker(resolveBundledBinaryPath(
+      path.join(__dirname, "archive-worker.cjs"),
+    ), {
+      workerData: { sourcePath, outputPath },
+    });
+    let settled = false;
+    let aborting = false;
+    const finish = (error) => {
+      if (settled) return;
+      settled = true;
+      options.signal?.removeEventListener("abort", abort);
+      if (error) {
+        removeIfPresent(outputPath);
+        reject(error);
+      } else {
+        resolve();
+      }
+    };
+    const abort = () => {
+      aborting = true;
+      worker.terminate().finally(() => finish(abortError()));
+    };
+    options.signal?.addEventListener("abort", abort, { once: true });
+    worker.once("message", (message) => {
+      if (message?.ok) {
+        finish();
+      } else {
+        finish(new Error(message?.error || "PureShrink ZIP worker failed"));
+      }
+    });
+    worker.once("error", finish);
+    worker.once("exit", (code) => {
+      if (!settled && !aborting) {
+        finish(new Error(`PureShrink ZIP worker exited without a result (code ${code})`));
+      }
+    });
+  });
 }
 
 class NativeRunner {
@@ -112,11 +159,14 @@ class NativeRunner {
     );
     const controller = new AbortController();
     this.active.set(request.id, controller);
+    let completed = false;
 
     try {
       onProgress(4);
       if (request.plan?.kind === "archive") {
-        zipLosslessly(request.sourcePath, outputPath);
+        await zipLosslessly(request.sourcePath, outputPath, {
+          signal: controller.signal,
+        });
         onProgress(96);
       } else {
         const args = buildArguments(request, outputPath);
@@ -162,6 +212,7 @@ class NativeRunner {
       }
 
       onProgress(100);
+      completed = true;
       return {
         name: path.basename(outputPath),
         outputBytes,
@@ -169,6 +220,7 @@ class NativeRunner {
         verification,
       };
     } finally {
+      if (!completed) removeIfPresent(outputPath);
       this.active.delete(request.id);
     }
   }

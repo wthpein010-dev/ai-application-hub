@@ -12,10 +12,14 @@ test("PureShrink release workflow builds on native Windows and macOS runners", (
   const yaml = readFileSync(workflow, "utf8");
 
   assert.match(yaml, /windows-latest/);
-  assert.match(yaml, /macos-13/);
+  assert.match(yaml, /macos-15-intel/);
   assert.match(yaml, /macos-14/);
   assert.match(yaml, /arch:\s*x64/);
   assert.match(yaml, /arch:\s*arm64/);
+  assert.match(yaml, /test "\$\(uname -m\)" = "x86_64"/);
+  assert.match(yaml, /test "\$\(uname -m\)" = "arm64"/);
+  assert.match(yaml, /file "\$APP_BIN"/);
+  assert.match(yaml, /file "\$FFMPEG_PATH"/);
   assert.match(yaml, /npm ci/);
   assert.match(yaml, /npm run test/);
   assert.match(yaml, /verify-package\.mjs/);
@@ -24,11 +28,12 @@ test("PureShrink release workflow builds on native Windows and macOS runners", (
 test("PureShrink release workflow creates the two public download assets", () => {
   const yaml = readFileSync(workflow, "utf8");
 
-  assert.match(yaml, /pureshrink-v1\.0\.0/);
+  assert.match(yaml, /pureshrink-v\*/);
   assert.match(yaml, /PureShrink-Windows-x64\.zip/);
   assert.match(yaml, /PureShrink-macOS\.zip/);
   assert.match(yaml, /contents:\s*write/);
-  assert.match(yaml, /gh release (create|upload)/);
+  assert.match(yaml, /gh release create/);
+  assert.doesNotMatch(yaml, /workflow_dispatch|--clobber|gh release upload/);
   assert.match(yaml, /sha256sum/);
 });
 
@@ -42,7 +47,7 @@ test("PureShrink release waits for every native build before publishing", () => 
   assert.match(releaseBlock, /x64/);
 });
 
-test("PureShrink release waits for Windows smoke exit and exercises packaged FFmpeg", () => {
+test("PureShrink release waits for Windows smoke exit and exercises the native runner", () => {
   const yaml = readFileSync(workflow, "utf8");
   const windowsBlock = yaml.slice(
     yaml.indexOf("\n  windows:"),
@@ -50,5 +55,5 @@ test("PureShrink release waits for Windows smoke exit and exercises packaged FFm
   );
 
   assert.match(windowsBlock, /Start-Process[\s\S]*-PassThru\s+-Wait/);
-  assert.match(windowsBlock, /app\.asar\.unpacked[^\r\n]*ffmpeg-static[^\r\n]*ffmpeg\.exe/);
+  assert.match(windowsBlock, /native-processing-proof\.mjs/);
 });

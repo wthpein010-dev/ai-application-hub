@@ -54,6 +54,7 @@ export function createQueue(executor) {
     notify();
 
     try {
+      let pauseAfterCancellation = false;
       for (const task of tasks) {
         if (task.status !== "queued") continue;
 
@@ -82,8 +83,14 @@ export function createQueue(executor) {
             && candidateBytes >= Number(task.file.size || 0)
           ) {
             if (typeof result?.discard === "function") result.discard();
+            const {
+              blob: _blob,
+              path: _path,
+              discard: _discard,
+              ...safeResult
+            } = result || {};
             task.result = {
-              ...result,
+              ...safeResult,
               outputBytes: Number(task.file.size || 0),
               keptOriginal: true,
             };
@@ -96,10 +103,12 @@ export function createQueue(executor) {
             || error?.name === "AbortError";
           task.status = wasCancelled ? "cancelled" : "failed";
           task.error = wasCancelled ? "已取消当前任务" : safeErrorMessage(error);
+          pauseAfterCancellation = wasCancelled;
         } finally {
           currentController = null;
           notify();
         }
+        if (pauseAfterCancellation) break;
       }
     } finally {
       running = false;

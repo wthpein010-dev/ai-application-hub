@@ -1,7 +1,6 @@
 name: Build PureShrink desktop release
 
 on:
-  workflow_dispatch:
   push:
     tags:
       - "pureshrink-v*"
@@ -11,7 +10,6 @@ permissions:
 
 env:
   NODE_VERSION: "24"
-  RELEASE_TAG: "pureshrink-v1.0.0"
 
 jobs:
   windows:
@@ -42,14 +40,8 @@ jobs:
           if ($process.ExitCode -ne 0) {
             throw "PureShrink Windows smoke mode failed with exit code $($process.ExitCode)"
           }
-      - name: Run native FFmpeg processing proof
-        shell: pwsh
-        run: |
-          $ffmpeg = ".\dist\win-unpacked\resources\app.asar.unpacked\node_modules\ffmpeg-static\ffmpeg.exe"
-          & $ffmpeg -hide_banner -f lavfi -i "color=c=0xD5FF87:s=64x64:d=0.2" -frames:v 1 -y "$env:RUNNER_TEMP\pureshrink-proof.png"
-          if ($LASTEXITCODE -ne 0 -or -not (Test-Path "$env:RUNNER_TEMP\pureshrink-proof.png")) {
-            throw "Bundled FFmpeg did not produce the Windows proof image"
-          }
+      - name: Run NativeRunner processing and fingerprint proof
+        run: node scripts/native-processing-proof.mjs "$env:RUNNER_TEMP"
       - name: Package Windows download
         shell: pwsh
         run: |
@@ -69,7 +61,7 @@ jobs:
 
   mac_x64:
     name: macOS Intel native build
-    runs-on: macos-13
+    runs-on: macos-15-intel
     env:
       arch: x64
     defaults:
@@ -77,6 +69,8 @@ jobs:
         working-directory: build/pureshrink-desktop
     steps:
       - uses: actions/checkout@v4
+      - name: Verify Intel runner architecture
+        run: test "$(uname -m)" = "x86_64"
       - uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}
@@ -88,6 +82,17 @@ jobs:
         run: npm run test
       - name: Build Intel application
         run: npm run dist:mac:x64
+      - name: Verify Intel binaries and apply ad-hoc signature
+        run: |
+          APP_BIN="$(find dist -path '*/PureShrink.app/Contents/MacOS/PureShrink' -type f | head -n 1)"
+          FFMPEG_PATH="$(find dist -path '*/PureShrink.app/Contents/Resources/app.asar.unpacked/node_modules/ffmpeg-static/ffmpeg' -type f | head -n 1)"
+          test -n "$APP_BIN"
+          test -n "$FFMPEG_PATH"
+          file "$APP_BIN" | grep -q "x86_64"
+          file "$FFMPEG_PATH" | grep -q "x86_64"
+          APP_DIR="$(dirname "$(dirname "$(dirname "$APP_BIN")")")"
+          codesign --force --deep --sign - "$APP_DIR"
+          codesign --verify --deep --strict --verbose=2 "$APP_DIR"
       - name: Verify Intel package
         run: node scripts/verify-package.mjs dist macos
       - name: Launch Intel smoke mode
@@ -95,12 +100,8 @@ jobs:
           APP_BIN="$(find dist -path '*/PureShrink.app/Contents/MacOS/PureShrink' -type f | head -n 1)"
           test -n "$APP_BIN"
           "$APP_BIN" --smoke-test
-      - name: Run native FFmpeg processing proof
-        run: |
-          FFMPEG_PATH="$(find dist -path '*/PureShrink.app/Contents/Resources/app.asar.unpacked/node_modules/ffmpeg-static/ffmpeg' -type f | head -n 1)"
-          test -n "$FFMPEG_PATH"
-          "$FFMPEG_PATH" -hide_banner -f lavfi -i "color=c=0xD5FF87:s=64x64:d=0.2" -frames:v 1 -y "$RUNNER_TEMP/pureshrink-proof.png"
-          test -s "$RUNNER_TEMP/pureshrink-proof.png"
+      - name: Run NativeRunner processing and fingerprint proof
+        run: node scripts/native-processing-proof.mjs "$RUNNER_TEMP"
       - name: Archive Intel app without losing executable bits
         run: |
           APP_DIR="$(dirname "$(dirname "$(dirname "$(find dist -path '*/PureShrink.app/Contents/MacOS/PureShrink' -type f | head -n 1)")")")"
@@ -122,6 +123,8 @@ jobs:
         working-directory: build/pureshrink-desktop
     steps:
       - uses: actions/checkout@v4
+      - name: Verify Apple Silicon runner architecture
+        run: test "$(uname -m)" = "arm64"
       - uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}
@@ -133,6 +136,17 @@ jobs:
         run: npm run test
       - name: Build Apple Silicon application
         run: npm run dist:mac:arm64
+      - name: Verify Apple Silicon binaries and apply ad-hoc signature
+        run: |
+          APP_BIN="$(find dist -path '*/PureShrink.app/Contents/MacOS/PureShrink' -type f | head -n 1)"
+          FFMPEG_PATH="$(find dist -path '*/PureShrink.app/Contents/Resources/app.asar.unpacked/node_modules/ffmpeg-static/ffmpeg' -type f | head -n 1)"
+          test -n "$APP_BIN"
+          test -n "$FFMPEG_PATH"
+          file "$APP_BIN" | grep -q "arm64"
+          file "$FFMPEG_PATH" | grep -q "arm64"
+          APP_DIR="$(dirname "$(dirname "$(dirname "$APP_BIN")")")"
+          codesign --force --deep --sign - "$APP_DIR"
+          codesign --verify --deep --strict --verbose=2 "$APP_DIR"
       - name: Verify Apple Silicon package
         run: node scripts/verify-package.mjs dist macos
       - name: Launch Apple Silicon smoke mode
@@ -140,12 +154,8 @@ jobs:
           APP_BIN="$(find dist -path '*/PureShrink.app/Contents/MacOS/PureShrink' -type f | head -n 1)"
           test -n "$APP_BIN"
           "$APP_BIN" --smoke-test
-      - name: Run native FFmpeg processing proof
-        run: |
-          FFMPEG_PATH="$(find dist -path '*/PureShrink.app/Contents/Resources/app.asar.unpacked/node_modules/ffmpeg-static/ffmpeg' -type f | head -n 1)"
-          test -n "$FFMPEG_PATH"
-          "$FFMPEG_PATH" -hide_banner -f lavfi -i "color=c=0xD5FF87:s=64x64:d=0.2" -frames:v 1 -y "$RUNNER_TEMP/pureshrink-proof.png"
-          test -s "$RUNNER_TEMP/pureshrink-proof.png"
+      - name: Run NativeRunner processing and fingerprint proof
+        run: node scripts/native-processing-proof.mjs "$RUNNER_TEMP"
       - name: Archive Apple Silicon app without losing executable bits
         run: |
           APP_DIR="$(dirname "$(dirname "$(dirname "$(find dist -path '*/PureShrink.app/Contents/MacOS/PureShrink' -type f | head -n 1)")")")"
@@ -181,21 +191,17 @@ jobs:
           sha256sum release/PureShrink-Windows-x64.zip release/PureShrink-macOS.zip | tee release/SHA256SUMS.txt
           test -s release/PureShrink-Windows-x64.zip
           test -s release/PureShrink-macOS.zip
-      - name: Create or update GitHub Release
+      - name: Create immutable GitHub Release
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
-          if [[ "${GITHUB_REF_TYPE:-}" == "tag" ]]; then
-            TAG="${GITHUB_REF_NAME}"
-          else
-            TAG="${RELEASE_TAG}"
-          fi
+          TAG="${GITHUB_REF_NAME}"
           if gh release view "$TAG" >/dev/null 2>&1; then
-            gh release upload "$TAG" release/PureShrink-Windows-x64.zip release/PureShrink-macOS.zip release/SHA256SUMS.txt --clobber
-          else
-            gh release create "$TAG" release/PureShrink-Windows-x64.zip release/PureShrink-macOS.zip release/SHA256SUMS.txt \
-              --target "$GITHUB_SHA" \
-              --title "PureShrink 1.0.0" \
-              --notes-file projects/pureshrink/release-notes.md
+            echo "Release $TAG already exists; refusing to replace immutable assets." >&2
+            exit 1
           fi
+          gh release create "$TAG" release/PureShrink-Windows-x64.zip release/PureShrink-macOS.zip release/SHA256SUMS.txt \
+            --target "$GITHUB_SHA" \
+            --title "PureShrink 1.0.0" \
+            --notes-file projects/pureshrink/release-notes.md
