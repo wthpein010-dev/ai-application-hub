@@ -624,10 +624,10 @@ const defaultApps = [
   },
   {
     id: "pureshrink",
-    name: "PureShrink 无损压缩工坊",
+    name: "无损压缩工坊",
     category: "媒体压缩工具",
-    status: "desktop",
-    badge: "网页 · Windows · macOS",
+    status: "assistant",
+    badge: "辅助工具",
     brief: "在设备本地批量压缩图片、视频、GIF、音频和一般文件，严格无损默认开启，原件永不覆盖。",
     problem: "媒体资源散落在不同工具中处理，上传等待、隐私风险和误覆盖原件让批量压缩变得低效。",
     aiUse: "AI 参与压缩策略编排、无损边界说明、跨平台执行引擎、自动测试和公开教程制作。",
@@ -1339,6 +1339,17 @@ function normalizeApp(app) {
       normalized.status = base.status;
     }
     if (normalized.badge === "Windows · macOS") {
+      normalized.badge = base.badge;
+    }
+  }
+  if (normalized.id === "pureshrink") {
+    if (normalized.name === "PureShrink 无损压缩工坊") {
+      normalized.name = base.name;
+    }
+    if (normalized.status === "desktop") {
+      normalized.status = base.status;
+    }
+    if (normalized.badge === "网页 · Windows · macOS") {
       normalized.badge = base.badge;
     }
   }

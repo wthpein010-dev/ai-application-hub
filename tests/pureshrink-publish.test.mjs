@@ -3,14 +3,42 @@ import assert from "node:assert/strict";
 import { existsSync, readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
+import vm from "node:vm";
 import { loadDefaultAppsFromRuntime } from "./helpers/default-apps.mjs";
 
 const root = dirname(dirname(fileURLToPath(import.meta.url)));
 const runtimePath = join(root, "app-20260706-restore-games.js");
+const runtime = readFileSync(runtimePath, "utf8");
 const project = (...parts) => join(root, "projects", "pureshrink", ...parts);
 
 function loadDefaultApps() {
-  return loadDefaultAppsFromRuntime(readFileSync(runtimePath, "utf8"));
+  return loadDefaultAppsFromRuntime(runtime);
+}
+
+function loadAppsWithStoredValue(stored) {
+  const start = runtime.indexOf("function loadApps");
+  const end = runtime.indexOf("function projectHref", start);
+  const storage = new Map([
+    ["ai-competition-hub-v2-apps", JSON.stringify(stored)],
+  ]);
+  const context = {
+    globalThis: { defaultApps: loadDefaultApps() },
+    localStorage: {
+      getItem: (key) => storage.get(key) ?? null,
+      removeItem: (key) => storage.delete(key),
+    },
+  };
+  const source = [
+    'const STORAGE_KEY = "ai-competition-hub-v2-apps";',
+    "const statusLabel = { desktop: true, assistant: true };",
+    'const OLD_HUB_BRIEF = "";',
+    'const HUB_BRIEF = "";',
+    "const defaultApps = globalThis.defaultApps;",
+    runtime.slice(start, end),
+    "globalThis.loadApps = loadApps;",
+  ].join("\n");
+  vm.runInNewContext(source, context);
+  return context.globalThis.loadApps();
 }
 
 function isApplication(app) {
@@ -23,7 +51,10 @@ test("PureShrink is the final application and exposes four publication actions",
 
   assert.ok(item, "PureShrink should be registered");
   assert.equal(apps.filter(isApplication).at(-1)?.id, "pureshrink");
-  assert.equal(item.status, "desktop");
+  assert.equal(item.name, "无损压缩工坊");
+  assert.equal(item.category, "媒体压缩工具");
+  assert.equal(item.status, "assistant");
+  assert.equal(item.badge, "辅助工具");
   assert.equal(item.video, "./projects/pureshrink/video/index.html");
   assert.equal(item.platforms.web, "./projects/pureshrink/index.html");
   assert.deepEqual(JSON.parse(JSON.stringify(item.platforms.windows)), {
@@ -34,6 +65,43 @@ test("PureShrink is the final application and exposes four publication actions",
     href: "https://github.com/wthpein010-dev/ai-application-hub/releases/download/pureshrink-v1.0.3/PureShrink-macOS.zip",
     label: "Mac下载",
   });
+});
+
+test("legacy PureShrink defaults migrate to the auxiliary-tool card", () => {
+  const current = loadDefaultApps().find((app) => app.id === "pureshrink");
+  const legacy = {
+    ...current,
+    name: "PureShrink 无损压缩工坊",
+    status: "desktop",
+    badge: "网页 · Windows · macOS",
+  };
+
+  const migrated = loadAppsWithStoredValue([legacy]).find(
+    (app) => app.id === "pureshrink",
+  );
+
+  assert.equal(migrated.name, "无损压缩工坊");
+  assert.equal(migrated.status, "assistant");
+  assert.equal(migrated.badge, "辅助工具");
+  assert.equal(migrated.category, "媒体压缩工具");
+});
+
+test("PureShrink migration preserves a customized name", () => {
+  const current = loadDefaultApps().find((app) => app.id === "pureshrink");
+  const customized = {
+    ...current,
+    name: "我的压缩工具",
+    status: "desktop",
+    badge: "网页 · Windows · macOS",
+  };
+
+  const migrated = loadAppsWithStoredValue([customized]).find(
+    (app) => app.id === "pureshrink",
+  );
+
+  assert.equal(migrated.name, "我的压缩工具");
+  assert.equal(migrated.status, "assistant");
+  assert.equal(migrated.badge, "辅助工具");
 });
 
 test("PureShrink page and release metadata use only public production URLs", () => {
@@ -256,5 +324,5 @@ test("PureShrink manifest records the deployed Pages and public acceptance evide
 
 test("homepage cache key is refreshed for the PureShrink card", () => {
   const html = readFileSync(join(root, "index.html"), "utf8");
-  assert.match(html, /app-20260706-restore-games\.js\?v=20260730-pureshrink-103/);
+  assert.match(html, /app-20260706-restore-games\.js\?v=20260730-pureshrink-auxiliary/);
 });
