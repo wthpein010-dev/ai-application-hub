@@ -140,7 +140,7 @@ assert.equal(
   "辅助工具",
 );
 assert.equal(
-  await clickFlowCard.locator(".summary-type").textContent(),
+  await clickFlowCard.locator(".card-meta > span").nth(1).textContent(),
   "桌面自动化工具",
 );
 ```
@@ -317,7 +317,10 @@ const { chromium } = require("playwright");
       await card.waitFor({ state: "visible" });
       assert.equal(await card.locator("h3").textContent(), "ClickFlow 鼠标自动化");
       assert.equal(await card.locator(".status-badge").textContent(), "辅助工具");
-      assert.equal(await card.locator(".summary-type").textContent(), "桌面自动化工具");
+      assert.equal(
+        await card.locator(".card-meta > span").nth(1).textContent(),
+        "桌面自动化工具",
+      );
       assert.deepEqual(
         await card.locator(".card-actions a").allTextContents(),
         ["演示", "视频", "Wins下载", "Mac下载"],
