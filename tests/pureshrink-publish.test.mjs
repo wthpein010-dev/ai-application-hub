@@ -188,28 +188,30 @@ test("PureShrink manifest records the deployed Pages and public acceptance evide
       conclusion: manifest.pagesWorkflow.conclusion,
     },
     {
-      runId: 30516853754,
-      commit: "9856222eb8aa5739ebe4122d2e5dfe97e5bbc078",
+      runId: 30523519262,
+      commit: "d37bf1e52747fb7180569f2e40165474774247dc",
       conclusion: "success",
     },
   );
   assert.deepEqual(manifest.evidenceDeployment, {
-    commit: "7168e9a36829965adc4bdbf15e189a5eafaf9c9b",
-    runId: 30519070236,
-    url: "https://github.com/wthpein010-dev/ai-application-hub/actions/runs/30519070236",
+    commit: "d37bf1e52747fb7180569f2e40165474774247dc",
+    runId: 30523519262,
+    url: "https://github.com/wthpein010-dev/ai-application-hub/actions/runs/30523519262",
     conclusion: "success",
-    deployedAt: "2026-07-30T06:18:05Z",
+    deployedAt: "2026-07-30T07:38:08Z",
   });
   assert.deepEqual(manifest.publicVerification.onlineLossless, {
-    passed: 3,
-    total: 3,
-    genericFile: "README -> ZIP -> extracted bytes identical",
-    png: "decoded RGBA identical; original retained when smaller",
-    mp4: "audio and video stream SHA-256 fingerprints identical",
+    passed: 4,
+    total: 4,
+    genericFile: "README.txt -> inner ZIP -> extracted 1048576 bytes identical",
+    batchZip: "batch ZIP -> inner ZIP -> original bytes identical",
+    png: "decoded RGBA identical; unchanged path covered by regression suite",
+    mp4: "audio and video stream SHA-256 identical; unchanged path covered by regression suite",
   });
   assert.deepEqual(manifest.publicVerification.responsive, {
     compressorWidths: [1440, 390],
     hubWidth: 390,
+    videoWidth: 390,
     horizontalOverflow: false,
   });
   assert.deepEqual(manifest.publicVerification.video, {
@@ -218,7 +220,7 @@ test("PureShrink manifest records the deployed Pages and public acceptance evide
     height: 720,
     durationSeconds: 42.433333,
     readyState: 4,
-    playedToSeconds: 3.45,
+    playedToSeconds: 1.784415,
     captionsMode: "showing",
     rangeStatus: 206,
   });
@@ -233,6 +235,21 @@ test("PureShrink manifest records the deployed Pages and public acceptance evide
       status: 200,
       bytes: 24383038,
     },
+  });
+  assert.deepEqual(manifest.publicVerification.batchDownload, {
+    sourceBytes: 1048576,
+    innerZipBytes: 1151,
+    batchZipBytes: 234,
+    restoredBytes: 1048576,
+    errorRecovered: true,
+    cancellationAborted: true,
+    archiveSignalForwarded: true,
+    workerStatus: 200,
+    fflateStatus: 200,
+  });
+  assert.deepEqual(manifest.publicVerification.deployedHashes.worker, {
+    sha256: "1f892a72b964365dc04115f745d38f9e30b0116aefe88dbc5a4d28dfd638ca03",
+    matchedCommit: true,
   });
   assert.equal(manifest.publicVerification.browserErrors, 0);
 });
