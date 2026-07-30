@@ -1,0 +1,26 @@
+{
+  "tag": "pureshrink-v1.0.0",
+  "releaseUrl": "https://github.com/wthpein010-dev/ai-application-hub/releases/tag/pureshrink-v1.0.0",
+  "assets": {
+    "windows": {
+      "name": "PureShrink-Windows-x64.zip",
+      "builtOn": "windows-latest",
+      "entry": "PureShrink-Windows-x64/PureShrink.exe"
+    },
+    "mac": {
+      "name": "PureShrink-macOS.zip",
+      "architectures": [
+        "arm64",
+        "x64"
+      ],
+      "builtOn": [
+        "macos-14",
+        "macos-13"
+      ],
+      "entries": [
+        "arm64/PureShrink.app/Contents/MacOS/PureShrink",
+        "x64/PureShrink.app/Contents/MacOS/PureShrink"
+      ]
+    }
+  }
+}

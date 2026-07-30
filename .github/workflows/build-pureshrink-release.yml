@@ -1,0 +1,201 @@
+name: Build PureShrink desktop release
+
+on:
+  workflow_dispatch:
+  push:
+    tags:
+      - "pureshrink-v*"
+
+permissions:
+  contents: write
+
+env:
+  NODE_VERSION: "24"
+  RELEASE_TAG: "pureshrink-v1.0.0"
+
+jobs:
+  windows:
+    name: Windows x64 native build
+    runs-on: windows-latest
+    defaults:
+      run:
+        working-directory: build/pureshrink-desktop
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+          cache-dependency-path: build/pureshrink-desktop/package-lock.json
+      - name: Install locked dependencies
+        run: npm ci
+      - name: Run PureShrink tests
+        run: npm run test
+      - name: Build Windows portable application
+        run: npm run dist:win
+      - name: Verify unpacked files and bundled FFmpeg
+        run: node scripts/verify-package.mjs dist windows
+      - name: Launch packaged smoke mode
+        shell: pwsh
+        run: |
+          $process = Start-Process -FilePath ".\dist\PureShrink-Windows-x64.exe" -ArgumentList "--smoke-test" -PassThru -Wait
+          if ($process.ExitCode -ne 0) {
+            throw "PureShrink Windows smoke mode failed with exit code $($process.ExitCode)"
+          }
+      - name: Run native FFmpeg processing proof
+        shell: pwsh
+        run: |
+          $ffmpeg = ".\dist\win-unpacked\resources\app.asar.unpacked\node_modules\ffmpeg-static\ffmpeg.exe"
+          & $ffmpeg -hide_banner -f lavfi -i "color=c=0xD5FF87:s=64x64:d=0.2" -frames:v 1 -y "$env:RUNNER_TEMP\pureshrink-proof.png"
+          if ($LASTEXITCODE -ne 0 -or -not (Test-Path "$env:RUNNER_TEMP\pureshrink-proof.png")) {
+            throw "Bundled FFmpeg did not produce the Windows proof image"
+          }
+      - name: Package Windows download
+        shell: pwsh
+        run: |
+          $stage = Join-Path $env:RUNNER_TEMP "PureShrink-Windows-x64"
+          New-Item -ItemType Directory -Path $stage -Force | Out-Null
+          Copy-Item ".\dist\PureShrink-Windows-x64.exe" (Join-Path $stage "PureShrink.exe")
+          Copy-Item ".\README.md" (Join-Path $stage "README.md")
+          $archive = Join-Path $env:RUNNER_TEMP "PureShrink-Windows-x64.zip"
+          Compress-Archive -Path $stage -DestinationPath $archive -CompressionLevel Optimal -Force
+          Get-FileHash -Algorithm SHA256 $archive
+      - uses: actions/upload-artifact@v4
+        with:
+          name: pureshrink-windows
+          path: ${{ runner.temp }}/PureShrink-Windows-x64.zip
+          if-no-files-found: error
+          retention-days: 14
+
+  mac_x64:
+    name: macOS Intel native build
+    runs-on: macos-13
+    env:
+      arch: x64
+    defaults:
+      run:
+        working-directory: build/pureshrink-desktop
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+          cache-dependency-path: build/pureshrink-desktop/package-lock.json
+      - name: Install locked dependencies
+        run: npm ci
+      - name: Run PureShrink tests
+        run: npm run test
+      - name: Build Intel application
+        run: npm run dist:mac:x64
+      - name: Verify Intel package
+        run: node scripts/verify-package.mjs dist macos
+      - name: Launch Intel smoke mode
+        run: |
+          APP_BIN="$(find dist -path '*/PureShrink.app/Contents/MacOS/PureShrink' -type f | head -n 1)"
+          test -n "$APP_BIN"
+          "$APP_BIN" --smoke-test
+      - name: Run native FFmpeg processing proof
+        run: |
+          FFMPEG_PATH="$(find dist -path '*/PureShrink.app/Contents/Resources/app.asar.unpacked/node_modules/ffmpeg-static/ffmpeg' -type f | head -n 1)"
+          test -n "$FFMPEG_PATH"
+          "$FFMPEG_PATH" -hide_banner -f lavfi -i "color=c=0xD5FF87:s=64x64:d=0.2" -frames:v 1 -y "$RUNNER_TEMP/pureshrink-proof.png"
+          test -s "$RUNNER_TEMP/pureshrink-proof.png"
+      - name: Archive Intel app without losing executable bits
+        run: |
+          APP_DIR="$(dirname "$(dirname "$(dirname "$(find dist -path '*/PureShrink.app/Contents/MacOS/PureShrink' -type f | head -n 1)")")")"
+          tar -czf "$RUNNER_TEMP/PureShrink-macOS-x64-app.tar.gz" -C "$(dirname "$APP_DIR")" "$(basename "$APP_DIR")"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: pureshrink-mac-x64
+          path: ${{ runner.temp }}/PureShrink-macOS-x64-app.tar.gz
+          if-no-files-found: error
+          retention-days: 14
+
+  mac_arm64:
+    name: macOS Apple Silicon native build
+    runs-on: macos-14
+    env:
+      arch: arm64
+    defaults:
+      run:
+        working-directory: build/pureshrink-desktop
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+          cache-dependency-path: build/pureshrink-desktop/package-lock.json
+      - name: Install locked dependencies
+        run: npm ci
+      - name: Run PureShrink tests
+        run: npm run test
+      - name: Build Apple Silicon application
+        run: npm run dist:mac:arm64
+      - name: Verify Apple Silicon package
+        run: node scripts/verify-package.mjs dist macos
+      - name: Launch Apple Silicon smoke mode
+        run: |
+          APP_BIN="$(find dist -path '*/PureShrink.app/Contents/MacOS/PureShrink' -type f | head -n 1)"
+          test -n "$APP_BIN"
+          "$APP_BIN" --smoke-test
+      - name: Run native FFmpeg processing proof
+        run: |
+          FFMPEG_PATH="$(find dist -path '*/PureShrink.app/Contents/Resources/app.asar.unpacked/node_modules/ffmpeg-static/ffmpeg' -type f | head -n 1)"
+          test -n "$FFMPEG_PATH"
+          "$FFMPEG_PATH" -hide_banner -f lavfi -i "color=c=0xD5FF87:s=64x64:d=0.2" -frames:v 1 -y "$RUNNER_TEMP/pureshrink-proof.png"
+          test -s "$RUNNER_TEMP/pureshrink-proof.png"
+      - name: Archive Apple Silicon app without losing executable bits
+        run: |
+          APP_DIR="$(dirname "$(dirname "$(dirname "$(find dist -path '*/PureShrink.app/Contents/MacOS/PureShrink' -type f | head -n 1)")")")"
+          tar -czf "$RUNNER_TEMP/PureShrink-macOS-arm64-app.tar.gz" -C "$(dirname "$APP_DIR")" "$(basename "$APP_DIR")"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: pureshrink-mac-arm64
+          path: ${{ runner.temp }}/PureShrink-macOS-arm64-app.tar.gz
+          if-no-files-found: error
+          retention-days: 14
+
+  release:
+    name: Publish verified desktop assets
+    runs-on: ubuntu-latest
+    needs: [windows, mac_x64, mac_arm64]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+      - name: Assemble final downloads
+        run: |
+          set -euo pipefail
+          mkdir -p release mac-combined/x64 mac-combined/arm64
+          cp artifacts/pureshrink-windows/PureShrink-Windows-x64.zip release/
+          tar -xzf artifacts/pureshrink-mac-x64/PureShrink-macOS-x64-app.tar.gz -C mac-combined/x64
+          tar -xzf artifacts/pureshrink-mac-arm64/PureShrink-macOS-arm64-app.tar.gz -C mac-combined/arm64
+          cp build/pureshrink-desktop/README.md mac-combined/README.md
+          (
+            cd mac-combined
+            zip -qry ../release/PureShrink-macOS.zip arm64 x64 README.md
+          )
+          sha256sum release/PureShrink-Windows-x64.zip release/PureShrink-macOS.zip | tee release/SHA256SUMS.txt
+          test -s release/PureShrink-Windows-x64.zip
+          test -s release/PureShrink-macOS.zip
+      - name: Create or update GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          if [[ "${GITHUB_REF_TYPE:-}" == "tag" ]]; then
+            TAG="${GITHUB_REF_NAME}"
+          else
+            TAG="${RELEASE_TAG}"
+          fi
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            gh release upload "$TAG" release/PureShrink-Windows-x64.zip release/PureShrink-macOS.zip release/SHA256SUMS.txt --clobber
+          else
+            gh release create "$TAG" release/PureShrink-Windows-x64.zip release/PureShrink-macOS.zip release/SHA256SUMS.txt \
+              --target "$GITHUB_SHA" \
+              --title "PureShrink 1.0.0" \
+              --notes-file projects/pureshrink/release-notes.md
+          fi
