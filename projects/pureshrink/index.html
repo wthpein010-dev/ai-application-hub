@@ -1,0 +1,234 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="color-scheme" content="dark" />
+    <meta
+      name="description"
+      content="PureShrink 在设备本地批量压缩图片、视频、GIF、音频和一般文件；严格无损默认开启，原件永不覆盖。"
+    />
+    <meta name="theme-color" content="#0b1612" />
+    <link rel="icon" href="data:," />
+    <title>PureShrink 无损压缩工坊</title>
+    <link rel="stylesheet" href="../../assets/subpage-shell.css" />
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body class="hub-subpage pureshrink-page">
+    <a class="hub-home-link" href="../../index.html#apps">
+      <span class="hub-home-link__icon" aria-hidden="true">←</span>
+      <span>返回主页</span>
+    </a>
+
+    <main class="page-shell">
+      <header class="hero">
+        <div class="hero-copy">
+          <p class="eyebrow">PURESHRINK 1.0 · LOCAL-FIRST MEDIA LAB</p>
+          <h1>把文件变轻，<span>不让原件冒险。</span></h1>
+          <p class="hero-lead">
+            图片、视频、GIF、音频和一般文件一次加入、顺序处理。
+            严格无损默认开启，只有结果更小时才生成新文件。
+          </p>
+          <div class="trust-line" id="privacyNote">
+            <span class="trust-pulse" aria-hidden="true"></span>
+            <strong>文件不离开设备，原件永不覆盖</strong>
+          </div>
+        </div>
+
+        <aside class="signal-board" aria-label="PureShrink 处理原则">
+          <div class="signal-board__top">
+            <span>PROCESS SIGNAL</span>
+            <span class="live-chip">LOCAL</span>
+          </div>
+          <div class="signal-orbit" aria-hidden="true">
+            <span class="signal-orbit__source">100</span>
+            <i></i>
+            <span class="signal-orbit__output">64</span>
+          </div>
+          <dl>
+            <div><dt>上传请求</dt><dd>0</dd></div>
+            <div><dt>覆盖原件</dt><dd>永不</dd></div>
+            <div><dt>处理位置</dt><dd>本设备</dd></div>
+          </dl>
+        </aside>
+      </header>
+
+      <section class="compressor" aria-labelledby="workspaceTitle">
+        <div class="compressor-heading">
+          <div>
+            <p class="section-kicker">BATCH WORKSPACE</p>
+            <h2 id="workspaceTitle">把资源放进压缩轨道</h2>
+          </div>
+          <div class="engine-chip" data-pureshrink-engine>浏览器本地引擎</div>
+        </div>
+
+        <div class="intake-grid">
+          <div class="drop-panel">
+            <input
+              id="filePicker"
+              type="file"
+              multiple
+              accept="image/*,video/*,audio/*,.gif,.pdf,.zip,.doc,.docx,.ppt,.pptx,.xls,.xlsx"
+              hidden
+            />
+            <button
+              class="dropzone"
+              type="button"
+              data-pureshrink-dropzone
+              aria-describedby="dropHelp privacyNote"
+            >
+              <span class="dropzone-icon" aria-hidden="true">
+                <i></i><i></i><i></i>
+              </span>
+              <strong>拖入图片、视频、GIF 或其他文件</strong>
+              <span id="dropHelp">也可以点击选择 · 支持批量队列</span>
+              <small>浏览器推荐视频 ≤ 500 MB，大文件请使用桌面版</small>
+            </button>
+          </div>
+
+          <fieldset class="mode-picker">
+            <legend>选择压缩策略</legend>
+            <label class="mode-card">
+              <input type="radio" name="mode" value="lossless" checked />
+              <span class="mode-card__body">
+                <span class="mode-card__head">
+                  <strong>严格无损</strong>
+                  <em>默认</em>
+                </span>
+                <span>画面与声音内容不重新量化；结果不更小时保留原件。</span>
+                <small>PNG 像素一致 · 媒体码流复制 · ZIP 字节无损</small>
+              </span>
+            </label>
+            <label class="mode-card">
+              <input type="radio" name="mode" value="fidelity" />
+              <span class="mode-card__body">
+                <span class="mode-card__head">
+                  <strong>高保真</strong>
+                  <em class="warning">非无损</em>
+                </span>
+                <span>用轻微质量交换更高压缩率，适合发布与分享副本。</span>
+                <small>WebP 95 · H.264 CRF 18 · AAC 192 kbps</small>
+              </span>
+            </label>
+          </fieldset>
+        </div>
+
+        <section class="queue-shell" aria-labelledby="queueTitle">
+          <div class="queue-toolbar">
+            <div>
+              <p class="section-kicker">COMPRESSION QUEUE</p>
+              <h3 id="queueTitle">处理队列</h3>
+            </div>
+            <div class="queue-count" data-pureshrink-count>0 个文件</div>
+          </div>
+
+          <div class="metric-strip" aria-label="队列统计">
+            <div><span>原始总量</span><strong data-pureshrink-input>0 B</strong></div>
+            <div><span>当前总量</span><strong data-pureshrink-output>0 B</strong></div>
+            <div><span>已节省</span><strong data-pureshrink-savings>0%</strong></div>
+            <div><span>已完成</span><strong data-pureshrink-completed>0 / 0</strong></div>
+          </div>
+
+          <ol class="queue-list" data-pureshrink-queue aria-live="polite">
+            <li class="queue-empty">
+              <span aria-hidden="true">00</span>
+              <div><strong>队列还是空的</strong><p>从上方加入资源，策略会按格式自动匹配。</p></div>
+            </li>
+          </ol>
+
+          <div class="action-dock">
+            <div class="action-dock__status" role="status" aria-live="polite">
+              <span class="status-light" aria-hidden="true"></span>
+              <div><strong data-pureshrink-status>等待加入文件</strong><small>所有处理都在本设备完成，不上传。</small></div>
+            </div>
+            <div class="action-dock__buttons">
+              <button type="button" data-pureshrink-clear disabled>清空已结束</button>
+              <button type="button" data-pureshrink-cancel disabled>取消当前</button>
+              <button type="button" data-pureshrink-download-all disabled>下载全部</button>
+              <button class="primary-action" type="button" data-pureshrink-start disabled>开始压缩</button>
+            </div>
+          </div>
+        </section>
+      </section>
+
+      <section class="proof-section" aria-labelledby="proofTitle">
+        <div class="section-heading">
+          <p class="section-kicker">HONEST COMPRESSION</p>
+          <h2 id="proofTitle">“无损”写清楚，也验证清楚</h2>
+          <p>不同格式没有一条万能压缩命令。PureShrink 按内容选择真实可解释的策略。</p>
+        </div>
+        <div class="proof-grid">
+          <article>
+            <span class="proof-index">01</span>
+            <h3>图片</h3>
+            <p>PNG 重编码后比较解码像素；JPEG、WebP 等优先保留压缩码流并精简元数据。</p>
+            <small>像素一致 / 码流复制</small>
+          </article>
+          <article>
+            <span class="proof-index">02</span>
+            <h3>视频与音频</h3>
+            <p>严格模式复制音视频码流，只整理容器；需要更小文件时再主动选择高保真。</p>
+            <small>不重新编码 / 不改声音</small>
+          </article>
+          <article>
+            <span class="proof-index">03</span>
+            <h3>GIF 与一般文件</h3>
+            <p>GIF 严格模式保留图像码流；其他文件进入可完整解压还原的 ZIP 归档。</p>
+            <small>可逆处理 / 原件兜底</small>
+          </article>
+        </div>
+      </section>
+
+      <section class="desktop-section" aria-labelledby="desktopTitle">
+        <div>
+          <p class="section-kicker">DESKTOP POWER</p>
+          <h2 id="desktopTitle">大视频和整批素材，交给桌面版</h2>
+          <p>
+            Windows 与 macOS 版使用随包附带的原生 FFmpeg，不受浏览器内存限制。
+            输出自动增加 <code>-pureshrink</code>，绝不覆盖源文件。
+          </p>
+        </div>
+        <div class="desktop-actions">
+          <a class="download-card" href="https://github.com/wthpein010-dev/ai-application-hub/releases/download/pureshrink-v1.0.0/PureShrink-Windows-x64.zip">
+            <span>WINDOWS x64</span>
+            <strong>下载 Windows 版</strong>
+            <small>便携版 · 解压即用</small>
+          </a>
+          <a class="download-card" href="https://github.com/wthpein010-dev/ai-application-hub/releases/download/pureshrink-v1.0.0/PureShrink-macOS.zip">
+            <span>MACOS ARM64 / X64</span>
+            <strong>下载 Mac 版</strong>
+            <small>Apple Silicon 与 Intel</small>
+          </a>
+        </div>
+      </section>
+
+      <footer class="page-footer">
+        <span>PureShrink 1.0</span>
+        <p>不上传、不覆盖、不夸大压缩结果。</p>
+        <a href="./video/index.html">观看 60 秒使用指南 →</a>
+      </footer>
+    </main>
+
+    <template id="queueItemTemplate">
+      <li class="queue-item">
+        <span class="file-mark" data-file-mark>FILE</span>
+        <div class="file-main">
+          <div class="file-heading">
+            <strong data-file-name></strong>
+            <span data-file-status></span>
+          </div>
+          <p data-file-strategy></p>
+          <div class="progress-track"><span data-file-progress></span></div>
+        </div>
+        <div class="file-metrics">
+          <span data-file-size></span>
+          <strong data-file-result>等待</strong>
+        </div>
+        <button class="file-action" type="button" data-file-action hidden>下载</button>
+      </li>
+    </template>
+
+    <script type="module" src="./app.js"></script>
+  </body>
+</html>
+
