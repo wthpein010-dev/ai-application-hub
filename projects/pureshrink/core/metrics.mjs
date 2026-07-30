@@ -46,4 +46,3 @@ export function summarizeTasks(tasks = []) {
     savings: savingRatio(summary.inputBytes, summary.outputBytes),
   };
 }
-

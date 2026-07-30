@@ -95,4 +95,3 @@ export function outputNameFor(fileName, outputExtension) {
   const stem = lastDot > 0 ? name.slice(0, lastDot) : name;
   return `${stem}-pureshrink.${outputExtension}`;
 }
-

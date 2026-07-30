@@ -241,4 +241,3 @@ nodes.engine.textContent = desktopBridge ? "桌面原生 FFmpeg 引擎" : "浏�
 initializeDesktop().catch(() => {
   nodes.status.textContent = "无法读取桌面环境信息，请重新启动应用";
 });
-

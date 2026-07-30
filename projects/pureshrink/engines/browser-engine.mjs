@@ -2,8 +2,10 @@ import { outputNameFor } from "../core/policy.mjs";
 
 const FFMPEG_SCRIPT_URL = "./vendor/ffmpeg.min.js";
 const FFMPEG_CORE_URL = "./vendor/ffmpeg-core.js";
-const FFLATE_SCRIPT_URL = "./vendor/fflate.min.js";
+const ARCHIVE_WORKER_URL = "./workers/archive-worker.js";
 const MAX_BROWSER_BYTES = 2_000_000_000;
+export const MAX_BROWSER_ARCHIVE_BYTES = 64 * 1024 * 1024;
+export const MAX_BROWSER_BUNDLE_BYTES = 128 * 1024 * 1024;
 
 let ffmpegAdapterPromise;
 let archiveAdapterPromise;
@@ -56,6 +58,80 @@ function collisionSafeEntries(entries) {
 function browserAssetUrl(url) {
   if (typeof document === "undefined") return url;
   return new URL(url, document.baseURI).href;
+}
+
+export function createArchiveWorkerAdapter(options = {}) {
+  const workerFactory = options.workerFactory || (() => new Worker(
+    browserAssetUrl(ARCHIVE_WORKER_URL),
+    { name: "pureshrink-archive" },
+  ));
+
+  const execute = (payload, transfers, signal) => new Promise((resolve, reject) => {
+    abortIfNeeded(signal);
+    const worker = workerFactory();
+    let settled = false;
+    const cleanup = () => {
+      signal?.removeEventListener("abort", abort);
+      worker.removeEventListener("message", onMessage);
+      worker.removeEventListener("error", onError);
+      worker.terminate();
+    };
+    const finish = (error, value) => {
+      if (settled) return;
+      settled = true;
+      cleanup();
+      if (error) reject(error);
+      else resolve(value);
+    };
+    const abort = () => finish(abortError());
+    const onMessage = (event) => {
+      const message = event.data;
+      if (message?.ok) {
+        finish(null, message);
+      } else {
+        finish(new Error(message?.error || "PureShrink ZIP worker failed"));
+      }
+    };
+    const onError = (event) => {
+      finish(event.error || new Error(event.message || "PureShrink ZIP worker failed"));
+    };
+
+    signal?.addEventListener("abort", abort, { once: true });
+    worker.addEventListener("message", onMessage);
+    worker.addEventListener("error", onError);
+    try {
+      worker.postMessage(payload, transfers);
+    } catch (error) {
+      finish(error);
+    }
+  });
+
+  return {
+    async zip(name, bytes, { signal } = {}) {
+      const result = await execute(
+        { operation: "zip", name, bytes },
+        [bytes.buffer],
+        signal,
+      );
+      return {
+        name: `${name}.zip`,
+        bytes: new Uint8Array(result.bytes),
+        verified: result.verified === true,
+      };
+    },
+    async bundle(entries, { signal } = {}) {
+      const transferableEntries = entries.map((entry) => ({
+        name: entry.name,
+        bytes: entry.bytes,
+      }));
+      const result = await execute(
+        { operation: "bundle", entries: transferableEntries },
+        transferableEntries.map((entry) => entry.bytes.buffer),
+        signal,
+      );
+      return new Uint8Array(result.bytes);
+    },
+  };
 }
 
 function loadExternalScript(url, globalName) {
@@ -240,24 +316,7 @@ async function defaultLoadFFmpeg() {
 
 async function defaultLoadArchive() {
   if (!archiveAdapterPromise) {
-    archiveAdapterPromise = (async () => {
-      const fflate = await loadExternalScript(browserAssetUrl(FFLATE_SCRIPT_URL), "fflate");
-      return {
-        async zip(name, bytes) {
-          return {
-            name: `${name}.zip`,
-            bytes: fflate.zipSync({ [name]: bytes }, { level: 9 }),
-          };
-        },
-        async unzip(name, bytes) {
-          return fflate.unzipSync(bytes)[name];
-        },
-        async bundle(entries) {
-          const files = Object.fromEntries(entries.map((entry) => [entry.name, entry.bytes]));
-          return fflate.zipSync(files, { level: 6 });
-        },
-      };
-    })().catch((error) => {
+    archiveAdapterPromise = Promise.resolve(createArchiveWorkerAdapter()).catch((error) => {
       archiveAdapterPromise = null;
       throw error;
     });
@@ -390,10 +449,18 @@ export function createBrowserEngine(options = {}) {
   const loadArchive = options.loadArchive || defaultLoadArchive;
   const verifyPng = options.verifyPng || defaultVerifyPng;
   const maxBytes = options.maxBytes || MAX_BROWSER_BYTES;
+  const maxArchiveBytes = options.maxArchiveBytes || MAX_BROWSER_ARCHIVE_BYTES;
+  const maxBundleBytes = options.maxBundleBytes || MAX_BROWSER_BUNDLE_BYTES;
 
   return {
     async compress(task, onProgress = () => {}, signal) {
       abortIfNeeded(signal);
+      if (
+        task.plan.kind === "archive"
+        && Number(task.file.size || 0) >= maxArchiveBytes
+      ) {
+        throw new Error("网页端通用文件 ZIP 安全上限为 64 MB，请改用桌面版；桌面版上限为 256 MB");
+      }
       if (Number(task.file.size || 0) >= maxBytes) {
         throw new Error("浏览器内存不足以安全处理该文件，请使用桌面版");
       }
@@ -406,13 +473,16 @@ export function createBrowserEngine(options = {}) {
         onProgress(18);
         const archive = await loadArchive();
         const stem = outputName.slice(0, -4);
-        const candidate = await archive.zip(task.file.name, inputBytes);
+        const candidate = await archive.zip(task.file.name, inputBytes, { signal });
         abortIfNeeded(signal);
         const bytes = new Uint8Array(candidate.bytes);
-        const restored = typeof archive.unzip === "function"
-          ? await archive.unzip(task.file.name, bytes)
-          : null;
-        if (!restored || !bytesEqual(inputBytes, new Uint8Array(restored))) {
+        let verified = candidate.verified === true;
+        if (!verified && typeof archive.unzip === "function") {
+          const restored = await archive.unzip(task.file.name, bytes);
+          verified = Boolean(restored)
+            && bytesEqual(inputBytes, new Uint8Array(restored));
+        }
+        if (!verified) {
           throw new Error("ZIP 回读验证未通过，已拒绝输出");
         }
         onProgress(100);
@@ -470,6 +540,13 @@ export function createBrowserEngine(options = {}) {
     },
 
     async bundle(results) {
+      const totalBytes = results.reduce(
+        (sum, result) => sum + Number(result.blob?.size || 0),
+        0,
+      );
+      if (totalBytes >= maxBundleBytes) {
+        throw new Error("批量下载 ZIP 安全上限为 128 MB，请逐个下载结果");
+      }
       const archive = await loadArchive();
       const entries = collisionSafeEntries(await Promise.all(results.map(async (result) => ({
         name: result.name,
@@ -486,4 +563,3 @@ export const browserEngineVersions = Object.freeze({
   ffmpegCoreSt: "0.11.1",
   fflate: "0.8.2",
 });
-

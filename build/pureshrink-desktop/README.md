@@ -10,6 +10,7 @@ PureShrink Desktop wraps the public local-first workbench in an isolated Electro
 - IPC channels are fixed and only expose file selection, compression, cancellation, output reveal, and environment metadata.
 - FFmpeg receives an argument array through `spawn` with `shell: false`.
 - Outputs use `-pureshrink` plus collision-safe numbering and never overwrite a source.
+- Generic-file ZIP fallback is capped at 256 MB to bound worker memory; image, audio, GIF, and video processing uses the native FFmpeg path instead.
 
 ## Build
 

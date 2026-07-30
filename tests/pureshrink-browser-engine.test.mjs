@@ -2,7 +2,11 @@ import test from "node:test";
 import assert from "node:assert/strict";
 
 import { createPlan } from "../projects/pureshrink/core/policy.mjs";
-import { createBrowserEngine } from "../projects/pureshrink/engines/browser-engine.mjs";
+import {
+  createArchiveWorkerAdapter,
+  createBrowserEngine,
+  MAX_BROWSER_ARCHIVE_BYTES,
+} from "../projects/pureshrink/engines/browser-engine.mjs";
 import { createDesktopEngine } from "../projects/pureshrink/engines/desktop-engine.mjs";
 
 function makeFile(name, type, bytes) {
@@ -107,6 +111,68 @@ test("browser engine rejects a ZIP candidate that cannot restore the source byte
     engine.compress(makeTask(file), () => {}),
     /ZIP/,
   );
+});
+
+test("browser archive work is cancellable while the worker is active", async () => {
+  let worker;
+  class FakeWorker {
+    constructor() {
+      this.listeners = new Map();
+      this.terminated = false;
+    }
+
+    addEventListener(type, listener) {
+      this.listeners.set(type, listener);
+    }
+
+    removeEventListener(type) {
+      this.listeners.delete(type);
+    }
+
+    postMessage() {}
+
+    terminate() {
+      this.terminated = true;
+    }
+  }
+
+  const adapter = createArchiveWorkerAdapter({
+    workerFactory: () => {
+      worker = new FakeWorker();
+      return worker;
+    },
+  });
+  const controller = new AbortController();
+  const pending = adapter.zip(
+    "brief.txt",
+    Uint8Array.from([1, 2, 3]),
+    { signal: controller.signal },
+  );
+
+  controller.abort();
+
+  await assert.rejects(pending, { name: "AbortError" });
+  assert.equal(worker.terminated, true);
+});
+
+test("browser engine rejects oversized generic files before reading them", async () => {
+  let wasRead = false;
+  const file = {
+    name: "archive.tar",
+    type: "application/x-tar",
+    size: MAX_BROWSER_ARCHIVE_BYTES,
+    arrayBuffer: async () => {
+      wasRead = true;
+      return new ArrayBuffer(0);
+    },
+  };
+  const engine = createBrowserEngine();
+
+  await assert.rejects(
+    engine.compress(makeTask(file), () => {}),
+    /64 MB/,
+  );
+  assert.equal(wasRead, false);
 });
 
 test("browser engine keeps duplicate batch names collision-safe", async () => {

@@ -38,6 +38,11 @@ assert.equal(
   true,
   "Local tutorial captions are missing",
 );
+assert.equal(
+  names.some((name) => /resources\/app\/projects\/pureshrink\/workers\/archive-worker\.js$/i.test(name)),
+  true,
+  "Browser archive worker is missing",
+);
 for (const asset of [
   "subpage-shell.css",
   "hub-video-player.css",

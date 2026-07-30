@@ -11,6 +11,8 @@ const {
 const path = require("node:path");
 const { buildArguments, resolveOutputPath } = require("./policy.cjs");
 
+const MAX_DESKTOP_ARCHIVE_BYTES = 256 * 1024 * 1024;
+
 function resolveBundledBinaryPath(binaryPath, pathExists = existsSync) {
   const asarSegment = `app.asar${path.sep}`;
   if (!binaryPath?.includes(asarSegment)) return binaryPath;
@@ -99,6 +101,13 @@ function zipLosslessly(sourcePath, outputPath, options = {}) {
   if (options.signal?.aborted) {
     removeIfPresent(outputPath);
     return Promise.reject(abortError());
+  }
+  const maxBytes = options.maxBytes ?? MAX_DESKTOP_ARCHIVE_BYTES;
+  if (statSync(sourcePath).size >= maxBytes) {
+    removeIfPresent(outputPath);
+    return Promise.reject(new RangeError(
+      "桌面版通用文件 ZIP 安全上限为 256 MB，请先拆分文件；图片、音视频不受此限制",
+    ));
   }
 
   return new Promise((resolve, reject) => {
@@ -238,6 +247,7 @@ class NativeRunner {
 }
 
 module.exports = {
+  MAX_DESKTOP_ARCHIVE_BYTES,
   NativeRunner,
   mediaFingerprint,
   resolveBundledBinaryPath,

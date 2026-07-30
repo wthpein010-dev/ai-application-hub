@@ -27,6 +27,8 @@ test("PureShrink page exposes the complete local-first workbench", () => {
   assert.match(html, /Content-Security-Policy/);
   assert.match(html, /script-src 'self' blob: 'wasm-unsafe-eval'/);
   assert.match(html, /worker-src 'self' blob:/);
+  assert.match(html, /64 MB/);
+  assert.match(html, /256 MB/);
   assert.match(html, /返回主页/);
 });
 
@@ -45,10 +47,13 @@ test("PureShrink public implementation has no upload endpoint or local-machine p
 test("PureShrink self-hosts every pinned browser runtime", () => {
   const engine = readFileSync(project("engines", "browser-engine.mjs"), "utf8");
   const vendor = (...parts) => project("vendor", ...parts);
+  const archiveWorker = project("workers", "archive-worker.js");
 
   assert.doesNotMatch(engine, /cdn\.jsdelivr|unpkg|cdnjs/);
   assert.match(engine, /mainName:\s*"main"/);
   assert.match(engine, /browserAssetUrl\(FFMPEG_CORE_URL\)/);
+  assert.equal(existsSync(archiveWorker), true);
+  assert.ok(statSync(archiveWorker).size >= 500);
   for (const [name, minimumBytes] of [
     ["ffmpeg.min.js", 20_000],
     ["046d0074eee1d99a674a.js", 100_000],
@@ -70,4 +75,3 @@ test("PureShrink styles define responsive focus-visible and reduced-motion behav
   assert.match(css, /@media\s*\(prefers-reduced-motion:\s*reduce\)/);
   assert.doesNotMatch(css, /min-width:\s*[89]\d{2}px/);
 });
-

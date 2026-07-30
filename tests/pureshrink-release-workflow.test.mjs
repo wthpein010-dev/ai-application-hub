@@ -59,3 +59,20 @@ test("PureShrink release waits for Windows smoke exit and exercises the native r
   assert.match(windowsBlock, /Start-Process[\s\S]*-PassThru\s+-Wait/);
   assert.match(windowsBlock, /native-processing-proof\.mjs/);
 });
+
+test("PureShrink build jobs use read-only credentials and only release can write", () => {
+  const yaml = readFileSync(workflow, "utf8");
+  const globalBlock = yaml.slice(0, yaml.indexOf("\njobs:"));
+  const releaseBlock = yaml.slice(yaml.indexOf("\n  release:"));
+  const buildBlock = yaml.slice(
+    yaml.indexOf("\n  windows:"),
+    yaml.indexOf("\n  release:"),
+  );
+
+  assert.match(globalBlock, /permissions:\s*\n\s+contents:\s+read/);
+  assert.match(releaseBlock, /permissions:\s*\n\s+contents:\s+write/);
+  assert.equal(
+    (buildBlock.match(/persist-credentials:\s*false/g) || []).length,
+    3,
+  );
+});

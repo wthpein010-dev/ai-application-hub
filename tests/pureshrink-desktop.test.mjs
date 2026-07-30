@@ -23,6 +23,7 @@ const {
   resolveOutputPath,
 } = require(desktop("native", "policy.cjs"));
 const {
+  MAX_DESKTOP_ARCHIVE_BYTES,
   mediaFingerprint,
   resolveBundledBinaryPath,
   runProcess,
@@ -140,6 +141,21 @@ test("desktop ZIP work runs in a cancellable worker and removes partial output",
   assert.equal(existsSync(outputPath), false);
 });
 
+test("desktop ZIP work rejects oversized generic files before starting a worker", async (t) => {
+  const proofDirectory = mkdtempSync(join(tmpdir(), "pureshrink-archive-limit-"));
+  t.after(() => rmSync(proofDirectory, { recursive: true, force: true }));
+  const sourcePath = join(proofDirectory, "source.bin");
+  const outputPath = join(proofDirectory, "result.zip");
+  writeFileSync(sourcePath, Buffer.alloc(1024, 7));
+
+  await assert.rejects(
+    zipLosslessly(sourcePath, outputPath, { maxBytes: 1024 }),
+    /256 MB/,
+  );
+  assert.equal(existsSync(outputPath), false);
+  assert.equal(MAX_DESKTOP_ARCHIVE_BYTES, 256 * 1024 * 1024);
+});
+
 test("packaged FFmpeg resolves from app.asar.unpacked", () => {
   const virtualPath = join(
     "tmp",
@@ -229,7 +245,7 @@ test("desktop package keeps the local tutorial video functional", () => {
   const packageJson = JSON.parse(readFileSync(desktop("package.json"), "utf8"));
   const [projectResources, sharedResources] = packageJson.build.extraResources;
 
-  assert.equal(packageJson.version, "1.0.2");
+  assert.equal(packageJson.version, "1.0.3");
   assert.equal(packageJson.build.extraResources.length, 2);
   assert.equal(projectResources.from, "../../projects/pureshrink");
   assert.equal(projectResources.to, "app/projects/pureshrink");
@@ -267,6 +283,32 @@ test("desktop package verifier accepts macOS Contents/Resources casing", (t) => 
     mkdirSync(dirname(file), { recursive: true });
     writeFileSync(file, "pureshrink");
   }
+
+  const missingWorkerResult = spawnSync(
+    process.execPath,
+    [desktop("scripts", "verify-package.mjs"), dist, "macos"],
+    { encoding: "utf8" },
+  );
+  assert.notEqual(missingWorkerResult.status, 0);
+  assert.match(
+    `${missingWorkerResult.stdout}\n${missingWorkerResult.stderr}`,
+    /Browser archive worker is missing/,
+  );
+
+  const browserWorker = join(
+    dist,
+    "mac",
+    "PureShrink.app",
+    "Contents",
+    "Resources",
+    "app",
+    "projects",
+    "pureshrink",
+    "workers",
+    "archive-worker.js",
+  );
+  mkdirSync(dirname(browserWorker), { recursive: true });
+  writeFileSync(browserWorker, "pureshrink");
 
   const result = spawnSync(
     process.execPath,

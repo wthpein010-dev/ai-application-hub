@@ -27,11 +27,11 @@ test("PureShrink is the final application and exposes four publication actions",
   assert.equal(item.video, "./projects/pureshrink/video/index.html");
   assert.equal(item.platforms.web, "./projects/pureshrink/index.html");
   assert.deepEqual(JSON.parse(JSON.stringify(item.platforms.windows)), {
-    href: "https://github.com/wthpein010-dev/ai-application-hub/releases/download/pureshrink-v1.0.2/PureShrink-Windows-x64.zip",
+    href: "https://github.com/wthpein010-dev/ai-application-hub/releases/download/pureshrink-v1.0.3/PureShrink-Windows-x64.zip",
     label: "Wins下载",
   });
   assert.deepEqual(JSON.parse(JSON.stringify(item.platforms.mac)), {
-    href: "https://github.com/wthpein010-dev/ai-application-hub/releases/download/pureshrink-v1.0.2/PureShrink-macOS.zip",
+    href: "https://github.com/wthpein010-dev/ai-application-hub/releases/download/pureshrink-v1.0.3/PureShrink-macOS.zip",
     label: "Mac下载",
   });
 });
@@ -151,6 +151,13 @@ test("PureShrink manifest records the deployed Pages and public acceptance evide
       conclusion: "success",
     },
   );
+  assert.deepEqual(manifest.evidenceDeployment, {
+    commit: "7168e9a36829965adc4bdbf15e189a5eafaf9c9b",
+    runId: 30519070236,
+    url: "https://github.com/wthpein010-dev/ai-application-hub/actions/runs/30519070236",
+    conclusion: "success",
+    deployedAt: "2026-07-30T06:18:05Z",
+  });
   assert.deepEqual(manifest.publicVerification.onlineLossless, {
     passed: 3,
     total: 3,
@@ -190,5 +197,5 @@ test("PureShrink manifest records the deployed Pages and public acceptance evide
 
 test("homepage cache key is refreshed for the PureShrink card", () => {
   const html = readFileSync(join(root, "index.html"), "utf8");
-  assert.match(html, /app-20260706-restore-games\.js\?v=20260730-pureshrink-102/);
+  assert.match(html, /app-20260706-restore-games\.js\?v=20260730-pureshrink-103/);
 });
