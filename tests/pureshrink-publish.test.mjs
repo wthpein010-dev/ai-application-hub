@@ -48,7 +48,7 @@ test("PureShrink page and release metadata use only public production URLs", () 
   ].join("\n");
 
   assert.doesNotMatch(publicFiles, /C:\\Users|localhost|127\.0\.0\.1|file:\/\//);
-  assert.match(publicFiles, /pureshrink-v1\.0\.2/);
+  assert.match(publicFiles, /pureshrink-v1\.0\.3/);
   assert.match(publicFiles, /PureShrink-Windows-x64\.zip/);
   assert.match(publicFiles, /PureShrink-macOS\.zip/);
 });
@@ -56,8 +56,8 @@ test("PureShrink page and release metadata use only public production URLs", () 
 test("PureShrink manifest identifies independently built platform assets", () => {
   const manifest = JSON.parse(readFileSync(project("release-manifest.json"), "utf8"));
 
-  assert.equal(manifest.tag, "pureshrink-v1.0.2");
-  assert.equal(manifest.releaseUrl, "https://github.com/wthpein010-dev/ai-application-hub/releases/tag/pureshrink-v1.0.2");
+  assert.equal(manifest.tag, "pureshrink-v1.0.3");
+  assert.equal(manifest.releaseUrl, "https://github.com/wthpein010-dev/ai-application-hub/releases/tag/pureshrink-v1.0.3");
   assert.equal(manifest.assets.windows.name, "PureShrink-Windows-x64.zip");
   assert.equal(manifest.assets.windows.builtOn, "windows-latest");
   assert.equal(manifest.assets.mac.name, "PureShrink-macOS.zip");
@@ -68,8 +68,8 @@ test("PureShrink manifest identifies independently built platform assets", () =>
 test("PureShrink manifest records immutable release assets and native verification", () => {
   const manifest = JSON.parse(readFileSync(project("release-manifest.json"), "utf8"));
 
-  assert.equal(manifest.commit, "9856222eb8aa5739ebe4122d2e5dfe97e5bbc078");
-  assert.equal(manifest.publishedAt, "2026-07-30T05:36:55Z");
+  assert.equal(manifest.commit, "997f226e304c51a98eb2fc68cd15037aeb9f93e7");
+  assert.equal(manifest.publishedAt, "2026-07-30T07:11:32Z");
   assert.deepEqual(
     {
       runId: manifest.releaseWorkflow.runId,
@@ -80,12 +80,12 @@ test("PureShrink manifest records immutable release assets and native verificati
       publishJobId: manifest.releaseWorkflow.jobs.publish.jobId,
     },
     {
-      runId: 30516864689,
+      runId: 30521751161,
       conclusion: "success",
-      windowsJobId: 90788579680,
-      arm64JobId: 90788579629,
-      x64JobId: 90788579677,
-      publishJobId: 90789119679,
+      windowsJobId: 90803504070,
+      arm64JobId: 90803504082,
+      x64JobId: 90803504054,
+      publishJobId: 90804296989,
     },
   );
 
@@ -98,11 +98,29 @@ test("PureShrink manifest records immutable release assets and native verificati
       proof: manifest.assets.windows.verification.nativeRunner.proof,
     },
     {
-      bytes: 117975871,
-      sha256: "bda264203028946b58543710b2595f82f21c887f1016ebcbca2dbbdc128d1e18",
+      bytes: 117970855,
+      sha256: "a1f5533b77d40600bad8cd7ff042486768242bf5b236d35448c92d8537d46489",
       smokeExitCode: 0,
-      archiveTest: "Everything is Ok",
+      archiveTest: "Public ZIP central directory verified",
       proof: "PURESHRINK_NATIVE_PROCESSING_OK",
+    },
+  );
+
+  assert.deepEqual(
+    {
+      packagedFiles: manifest.assets.windows.verification.ciPackagedFiles,
+      publicArchiveEntries: manifest.assets.windows.verification.publicArchiveEntries,
+      requiredEntries: manifest.assets.windows.verification.requiredEntries,
+      executableBytes: manifest.assets.windows.verification.downloadedExecutable.bytes,
+    },
+    {
+      packagedFiles: 128,
+      publicArchiveEntries: 2,
+      requiredEntries: [
+        "PureShrink-Windows-x64/PureShrink.exe",
+        "PureShrink-Windows-x64/README.md",
+      ],
+      executableBytes: 117952680,
     },
   );
 
@@ -110,6 +128,7 @@ test("PureShrink manifest records immutable release assets and native verificati
     manifest.assets.mac.verification.architectures.map((item) => ({
       name: item.name,
       appMachO: item.appMachO,
+      appSha256: item.appSha256,
       ffmpegMachO: item.ffmpegMachO,
       adHocSignatureVerified: item.adHocSignatureVerified,
       launchSmokeExitCode: item.launchSmokeExitCode,
@@ -119,6 +138,7 @@ test("PureShrink manifest records immutable release assets and native verificati
       {
         name: "arm64",
         appMachO: "arm64",
+        appSha256: "8a00548d5415ff0719a5f3251bd16f8a23f8f2d23d5fb1a65a26aaf7024ba611",
         ffmpegMachO: "arm64",
         adHocSignatureVerified: true,
         launchSmokeExitCode: 0,
@@ -127,12 +147,34 @@ test("PureShrink manifest records immutable release assets and native verificati
       {
         name: "x64",
         appMachO: "x86_64",
+        appSha256: "a5c232cbaa4d695403b549a71424cd636d45b5d7f57a14303f51f0ac6727d1fa",
         ffmpegMachO: "x86_64",
         adHocSignatureVerified: true,
         launchSmokeExitCode: 0,
         nativeProof: "PURESHRINK_NATIVE_PROCESSING_OK",
       },
     ],
+  );
+
+  assert.deepEqual(
+    {
+      bytes: manifest.assets.mac.bytes,
+      sha256: manifest.assets.mac.sha256,
+      archiveTest: manifest.assets.mac.verification.archiveTest,
+      packagedFilesPerArchitecture: manifest.assets.mac.verification.ciPackagedFilesPerArchitecture,
+      publicArchiveEntries: manifest.assets.mac.verification.publicArchiveEntries,
+      checksumBytes: manifest.assets.checksums.bytes,
+      checksumSha256: manifest.assets.checksums.sha256,
+    },
+    {
+      bytes: 313421626,
+      sha256: "d3ad9964171ba5943b2fb520846918e5ba5b142a0eb398d5fd2a17d328280ed1",
+      archiveTest: "Public ZIP central directory verified",
+      packagedFilesPerArchitecture: 335,
+      publicArchiveEntries: 1341,
+      checksumBytes: 196,
+      checksumSha256: "15507b0831eb7bd5443d4dbf180984a6ac29d8402ab84985e6c2f9e2b0dba8b4",
+    },
   );
 });
 
