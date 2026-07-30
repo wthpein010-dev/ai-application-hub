@@ -1,4 +1,8 @@
-# PureShrink 1.0.1
+# PureShrink 1.0.2
+
+## 1.0.2 修复
+
+- 修复 macOS `Contents/Resources` 路径大小写导致的成品校验误判，并加入真实 macOS 目录结构回归测试。
 
 ## 1.0.1 修复
 

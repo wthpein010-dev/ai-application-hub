@@ -2,6 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import {
   existsSync,
+  mkdirSync,
   mkdtempSync,
   readFileSync,
   rmSync,
@@ -228,7 +229,7 @@ test("desktop package keeps the local tutorial video functional", () => {
   const packageJson = JSON.parse(readFileSync(desktop("package.json"), "utf8"));
   const [projectResources, sharedResources] = packageJson.build.extraResources;
 
-  assert.equal(packageJson.version, "1.0.1");
+  assert.equal(packageJson.version, "1.0.2");
   assert.equal(packageJson.build.extraResources.length, 2);
   assert.equal(projectResources.from, "../../projects/pureshrink");
   assert.equal(projectResources.to, "app/projects/pureshrink");
@@ -242,4 +243,36 @@ test("desktop package keeps the local tutorial video functional", () => {
   ]);
   assert.equal(packageJson.build.asarUnpack.includes("native/archive-worker.cjs"), true);
   assert.equal(packageJson.build.asarUnpack.includes("node_modules/fflate/**/*"), true);
+});
+
+test("desktop package verifier accepts macOS Contents/Resources casing", (t) => {
+  const dist = mkdtempSync(join(tmpdir(), "pureshrink-macos-package-"));
+  t.after(() => rmSync(dist, { recursive: true, force: true }));
+  const files = [
+    "PureShrink-macOS-arm64.zip",
+    "mac/PureShrink.app/Contents/MacOS/PureShrink",
+    "mac/PureShrink.app/Contents/Resources/app/projects/pureshrink/index.html",
+    "mac/PureShrink.app/Contents/Resources/app/projects/pureshrink/video/pureshrink-demo.mp4",
+    "mac/PureShrink.app/Contents/Resources/app/projects/pureshrink/video/pureshrink-demo.vtt",
+    "mac/PureShrink.app/Contents/Resources/app/assets/subpage-shell.css",
+    "mac/PureShrink.app/Contents/Resources/app/assets/hub-video-player.css",
+    "mac/PureShrink.app/Contents/Resources/app/assets/hub-video-player.js",
+    "mac/PureShrink.app/Contents/Resources/app.asar.unpacked/node_modules/ffmpeg-static/ffmpeg",
+    "mac/PureShrink.app/Contents/Resources/app.asar.unpacked/native/archive-worker.cjs",
+    "mac/PureShrink.app/Contents/Resources/app.asar.unpacked/node_modules/fflate/lib/index.cjs",
+  ];
+
+  for (const relativePath of files) {
+    const file = join(dist, ...relativePath.split("/"));
+    mkdirSync(dirname(file), { recursive: true });
+    writeFileSync(file, "pureshrink");
+  }
+
+  const result = spawnSync(
+    process.execPath,
+    [desktop("scripts", "verify-package.mjs"), dist, "macos"],
+    { encoding: "utf8" },
+  );
+
+  assert.equal(result.status, 0, result.stderr);
 });

@@ -44,7 +44,7 @@ for (const asset of [
   "hub-video-player.js",
 ]) {
   assert.equal(
-    names.some((name) => name.endsWith(`/resources/app/assets/${asset}`)),
+    names.some((name) => name.toLowerCase().endsWith(`/resources/app/assets/${asset}`)),
     true,
     `Shared desktop asset is missing: ${asset}`,
   );
