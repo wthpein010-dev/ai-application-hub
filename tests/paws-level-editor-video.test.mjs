@@ -60,8 +60,12 @@ test("tutorial assets keep the chapter timeline and player references aligned", 
   assert.match(script, /00:00/);
   assert.match(script, /01:10/);
   assert.match(script, /7×8 工程网格/);
+  assert.match(script, /五阶段/);
+  assert.match(script, /接触阴影/);
   assert.match(script, /随机、配对、撤回/);
   assert.match(captions, /工程网格/);
+  assert.match(captions, /五阶段/);
+  assert.match(captions, /接触阴影/);
   assert.match(captions, /随机、配对、撤回/);
   assert.equal(existsSync(join(videoRoot, "poster.jpg")), true);
 });
@@ -93,6 +97,7 @@ test("recording proof matches current media, sources, timeline and real state ch
     "projects/paws-level-editor/app.mjs",
     "projects/paws-level-editor/static-api-client.mjs",
     "projects/paws-level-editor/core/ai-level-generator.mjs",
+    "projects/paws-level-editor/core/coverage.mjs",
     "projects/paws-level-editor/core/editor-geometry.mjs",
     "projects/paws-level-editor/core/field-grid-layout.mjs",
     "projects/paws-level-editor/core/fill-tool.mjs",
@@ -107,6 +112,10 @@ test("recording proof matches current media, sources, timeline and real state ch
     "projects/paws-level-editor/core/level-validator.mjs",
     "projects/paws-level-editor/core/pass-rate-evaluator.mjs",
     "projects/paws-level-editor/core/play-engine.mjs",
+    "projects/paws-level-editor/core/random-assigner.mjs",
+    "projects/paws-level-editor/core/stage-blueprint.mjs",
+    "projects/paws-level-editor/core/stage-grammar-generator.mjs",
+    "projects/paws-level-editor/core/structure-corpus.mjs",
     "projects/paws-level-editor/core/template-motif-generator.mjs",
     "projects/paws-level-editor/core/tile-relations.mjs",
     "projects/paws-level-editor/core/tile-visual-tone.mjs",
@@ -190,25 +199,36 @@ test("recording proof matches current media, sources, timeline and real state ch
   assert.equal(actions.aiGeneration.allTilesFullRandom, true);
   assert.equal(
     actions.aiGeneration.algorithmVersion,
-    "paws-local-stat-v10-template-motifs",
+    "paws-local-stat-v11-stage-grammar",
   );
   assert.equal(actions.aiGeneration.templateLearning.sourceFileName, "video_reference.json");
-  assert.equal(actions.aiGeneration.templateLearning.sourceLayerMap.length, 15);
-  assert.equal(
-    actions.aiGeneration.templateLearning.sourceLayerMap.every(
-      (layer, index, layers) => index === 0 || layer >= layers[index - 1],
+  assert.deepEqual(
+    actions.aiGeneration.blueprint.stagePlan.map(
+      ({ key, layerCount, tileCount }) => [key, layerCount, tileCount],
     ),
-    true,
+    [
+      ["surface", 3, 44],
+      ["shelter", 2, 30],
+      ["middle", 5, 68],
+      ["crisis", 3, 40],
+      ["release", 2, 18],
+    ],
   );
+  assert.equal(actions.aiGeneration.blueprint.towerEntrances.length >= 4, true);
+  assert.equal(actions.aiGeneration.structure.multiComponentLayerRatio >= 0.65, true);
+  assert.equal(actions.aiGeneration.structure.maximumPlatformSize <= 10, true);
+  assert.equal(actions.aiGeneration.structure.threeLayerGiantRun, false);
+  assert.equal(actions.aiGeneration.structure.releaseDependencyDrop > 0, true);
+  assert.match(
+    actions.aiGeneration.templateLearning.topologyHash,
+    /^topology-[0-9a-f]{8}$/,
+  );
+  assert.equal(actions.aiGeneration.templateLearning.motifUses.length > 0, true);
   assert.equal(
     actions.aiGeneration.templateLearning.fillTrackCount,
     actions.aiGeneration.templateLearning.fillTracks.length,
   );
-  assert.equal(
-    actions.aiGeneration.templateLearning.similarity.fillTrackCountMatched,
-    true,
-  );
-  assert.equal(actions.aiGeneration.templateLearning.similarity.capacitySafe, true);
+  assert.equal(actions.aiGeneration.templateLearning.fillTrackCount, 2);
   assert.equal(actions.aiGeneration.templateLearning.fullRandomRatio, 1);
   assert.equal(
     actions.aiGeneration.templateLearning.layerTileCounts.reduce(
@@ -216,6 +236,10 @@ test("recording proof matches current media, sources, timeline and real state ch
       0,
     ),
     200,
+  );
+  assert.equal(
+    Math.max(...actions.aiGeneration.templateLearning.layerTileCounts) <= 22,
+    true,
   );
   assert.deepEqual(actions.grass.twoD, {
     canvasCount: 1,
@@ -290,8 +314,11 @@ test("recording proof matches current media, sources, timeline and real state ch
   assert.equal(actions.edit3d.deleteUndo.restoredCount, 202);
   assert.equal(actions.edit3d.deleteUndo.restored, true);
   assert.ok(actions.blockedVisual.twoD.blockedCount > 0);
-  assert.equal(actions.blockedVisual.twoD.factor, 0.58);
-  assert.equal(actions.blockedVisual.twoD.overlayAlpha, 0.42);
+  assert.equal(actions.blockedVisual.twoD.ordinaryFactor, 0.58);
+  assert.equal(actions.blockedVisual.twoD.ordinaryOverlayAlpha, 0.42);
+  assert.equal(actions.blockedVisual.twoD.ordinaryPatchCount > 0, true);
+  assert.equal(actions.blockedVisual.twoD.blindFactor, 1);
+  assert.equal(actions.blockedVisual.twoD.blindOverlayAlpha, 0);
   assert.equal(actions.blockedVisual.twoD.rendererMode, "play");
   assert.ok(actions.blockedVisual.threeD.blockedCount > 0);
   assert.equal(
@@ -302,7 +329,13 @@ test("recording proof matches current media, sources, timeline and real state ch
     actions.blockedVisual.threeD.sideHex,
     actions.blockedVisual.threeD.expectedSideHex,
   );
+  assert.equal(actions.blockedVisual.threeD.blindTopHex, 0xffffff);
   assert.equal(actions.blockedVisual.threeD.rendererMode, "play");
+  assert.equal(actions.blockedVisual.recovery.beforePatchCount > 0, true);
+  assert.equal(actions.blockedVisual.recovery.covered, false);
+  assert.equal(actions.blockedVisual.recovery.sideBlocked, false);
+  assert.equal(actions.blockedVisual.recovery.afterPatchCount, 0);
+  assert.equal(actions.blockedVisual.recovery.afterFactor, 1);
   assert.ok(actions.play2d.removedAfter > actions.play2d.removedBefore);
   assert.notEqual(actions.play3d.selectedBefore, actions.play3d.selectedAfter);
   assert.deepEqual(actions.playTools.initial, {

@@ -33,6 +33,14 @@ const referenceTiles = [
   { x: 20, y: 4, layer: 2, type: 3 },
   { x: 36, y: 4, layer: 2, type: 4 },
   { x: 44, y: 4, layer: 2, type: 4 },
+  { x: 8, y: 24, layer: 1, type: -1, moldType: 1, presetColorType: 3 },
+  { x: 9, y: 24, layer: 2, type: -1, moldType: 1, presetColorType: 3 },
+  { x: 10, y: 24, layer: 3, type: -1, moldType: 1, presetColorType: 3 },
+  { x: 11, y: 24, layer: 4, type: -1, moldType: 2, presetColorType: 1 },
+  { x: 40, y: 40, layer: 1, type: -1, moldType: 1, presetColorType: 3 },
+  { x: 39, y: 40, layer: 2, type: -1, moldType: 1, presetColorType: 3 },
+  { x: 38, y: 40, layer: 3, type: -1, moldType: 1, presetColorType: 3 },
+  { x: 37, y: 40, layer: 4, type: -1, moldType: 2, presetColorType: 1 },
 ];
 const referenceLevel = {
   id: 74000,
@@ -63,6 +71,7 @@ const sourceFiles = [
   "projects/paws-level-editor/app.mjs",
   "projects/paws-level-editor/static-api-client.mjs",
   "projects/paws-level-editor/core/ai-level-generator.mjs",
+  "projects/paws-level-editor/core/coverage.mjs",
   "projects/paws-level-editor/core/editor-geometry.mjs",
   "projects/paws-level-editor/core/field-grid-layout.mjs",
   "projects/paws-level-editor/core/fill-tool.mjs",
@@ -77,6 +86,10 @@ const sourceFiles = [
   "projects/paws-level-editor/core/level-validator.mjs",
   "projects/paws-level-editor/core/pass-rate-evaluator.mjs",
   "projects/paws-level-editor/core/play-engine.mjs",
+  "projects/paws-level-editor/core/random-assigner.mjs",
+  "projects/paws-level-editor/core/stage-blueprint.mjs",
+  "projects/paws-level-editor/core/stage-grammar-generator.mjs",
+  "projects/paws-level-editor/core/structure-corpus.mjs",
   "projects/paws-level-editor/core/template-motif-generator.mjs",
   "projects/paws-level-editor/core/tile-relations.mjs",
   "projects/paws-level-editor/core/tile-visual-tone.mjs",
@@ -648,6 +661,10 @@ async function recordEditor() {
           ),
           algorithmVersion:
             controller.document.designerNote.aiGeneration.algorithmVersion,
+          blueprint:
+            controller.document.designerNote.aiGeneration.blueprint,
+          structure:
+            controller.document.designerNote.aiGeneration.structure,
           templateLearning:
             controller.document.designerNote.aiGeneration.templateLearning,
         };
@@ -670,24 +687,35 @@ async function recordEditor() {
       assert.equal(aiGeneration.globalTypesEven, true);
       assert.equal(aiGeneration.layerTypesEven, false);
       assert.equal(aiGeneration.allTilesFullRandom, true);
-      assert.equal(aiGeneration.algorithmVersion, "paws-local-stat-v10-template-motifs");
+      assert.equal(aiGeneration.algorithmVersion, "paws-local-stat-v11-stage-grammar");
       assert.equal(aiGeneration.templateLearning.sourceFileName, defaultFileName);
-      assert.equal(aiGeneration.templateLearning.sourceLayerMap.length, 15);
-      assert.equal(
-        aiGeneration.templateLearning.sourceLayerMap.every(
-          (layer, index, layers) => index === 0 || layer >= layers[index - 1],
+      assert.deepEqual(
+        aiGeneration.blueprint.stagePlan.map(
+          ({ key, layerCount, tileCount }) => [key, layerCount, tileCount],
         ),
-        true,
+        [
+          ["surface", 3, 44],
+          ["shelter", 2, 30],
+          ["middle", 5, 68],
+          ["crisis", 3, 40],
+          ["release", 2, 18],
+        ],
       );
+      assert.equal(aiGeneration.blueprint.towerEntrances.length >= 4, true);
+      assert.equal(aiGeneration.structure.multiComponentLayerRatio >= 0.65, true);
+      assert.equal(aiGeneration.structure.maximumPlatformSize <= 10, true);
+      assert.equal(aiGeneration.structure.threeLayerGiantRun, false);
+      assert.equal(aiGeneration.structure.releaseDependencyDrop > 0, true);
       assert.equal(
         aiGeneration.templateLearning.fillTrackCount,
         aiGeneration.templateLearning.fillTracks.length,
       );
-      assert.equal(
-        aiGeneration.templateLearning.similarity.fillTrackCountMatched,
-        true,
+      assert.equal(aiGeneration.templateLearning.fillTrackCount, 2);
+      assert.match(
+        aiGeneration.templateLearning.topologyHash,
+        /^topology-[0-9a-f]{8}$/,
       );
-      assert.equal(aiGeneration.templateLearning.similarity.capacitySafe, true);
+      assert.equal(aiGeneration.templateLearning.motifUses.length > 0, true);
       assert.equal(aiGeneration.templateLearning.fullRandomRatio, 1);
       assert.equal(
         aiGeneration.templateLearning.layerTileCounts.reduce(
@@ -696,12 +724,36 @@ async function recordEditor() {
         ),
         200,
       );
+      assert.equal(
+        Math.max(...aiGeneration.templateLearning.layerTileCounts) <= 22,
+        true,
+      );
       assert.ok(Math.abs(aiGeneration.actualScore - aiGeneration.targetScore) <= 15);
       assert.equal(
         await page.locator('[role="option"]').count(),
         baselineLevelCount + 1,
       );
       proof.actions.aiGeneration = aiGeneration;
+      proof.actions.stagePreview = [];
+      for (const stage of aiGeneration.blueprint.stagePlan) {
+        const checkpoint = await page.evaluate(({ key, layer }) => {
+          const controller = window.pawsWorkbench;
+          controller.setLayerView({ mode: "single", layer });
+          return {
+            key,
+            layer,
+            sourceCount: controller.document.tiles.filter(
+              (tile) => tile.layer === layer,
+            ).length,
+            rendererCount: controller.renderer.currentTiles().length,
+          };
+        }, { key: stage.key, layer: stage.layerEnd });
+        assert.equal(checkpoint.rendererCount, checkpoint.sourceCount);
+        proof.actions.stagePreview.push(checkpoint);
+        await delay(260);
+      }
+      await page.evaluate(() =>
+        window.pawsWorkbench.setLayerView({ mode: "all", layer: 15 }));
       await page.locator("#evaluate-pass-rate").click();
       await page.waitForFunction(() => {
         const state = window.pawsWorkbench?.passRateState;
@@ -1156,26 +1208,112 @@ async function recordEditor() {
             && !Number.isInteger(stashedSlot)
             && (covered || sideBlocked),
         );
-        const tone = resolveTileVisualTone(
-          { ...blockedTiles[0], location: "board" },
+        const ordinary = blockedTiles.find((tile) =>
+          tile.presetColorType !== 3
+          && tile.occlusionPatches.length > 0);
+        const blind = blockedTiles.find((tile) =>
+          tile.presetColorType === 3
+          && tile.covered
+          && !tile.sideBlocked);
+        const ordinaryTone = resolveTileVisualTone(
+          { ...ordinary, location: "board" },
+          { mode: "play" },
+        );
+        const blindTone = resolveTileVisualTone(
+          { ...blind, location: "board" },
           { mode: "play" },
         );
         return {
           blockedCount: blockedTiles.length,
-          factor: tone.factor,
-          overlayAlpha: tone.overlayAlpha,
+          ordinaryUid: ordinary?.uid ?? null,
+          ordinaryPatchCount: ordinary?.occlusionPatches.length ?? 0,
+          ordinaryFactor: ordinaryTone.factor,
+          ordinaryOverlayAlpha: ordinaryTone.overlayAlpha,
+          blindUid: blind?.uid ?? null,
+          blindPatchCount: blind?.occlusionPatches.length ?? 0,
+          blindFactor: blindTone.factor,
+          blindOverlayAlpha: blindTone.overlayAlpha,
           rendererMode: window.pawsWorkbench.renderer.mode,
         };
       });
       assert.ok(blockedVisual2d.blockedCount > 0);
-      assert.deepEqual(
-        {
-          factor: blockedVisual2d.factor,
-          overlayAlpha: blockedVisual2d.overlayAlpha,
-          rendererMode: blockedVisual2d.rendererMode,
-        },
-        { factor: 0.58, overlayAlpha: 0.42, rendererMode: "play" },
-      );
+      assert.equal(blockedVisual2d.ordinaryPatchCount > 0, true);
+      assert.equal(blockedVisual2d.ordinaryFactor, 0.58);
+      assert.equal(blockedVisual2d.ordinaryOverlayAlpha, 0.42);
+      assert.equal(blockedVisual2d.blindPatchCount > 0, true);
+      assert.equal(blockedVisual2d.blindFactor, 1);
+      assert.equal(blockedVisual2d.blindOverlayAlpha, 0);
+      assert.equal(blockedVisual2d.rendererMode, "play");
+
+      const recovery = await page.evaluate(async () => {
+        const { resolveTileVisualTone } = await import(
+          new URL("./core/tile-visual-tone.mjs", window.location.href).href
+        );
+        const controller = window.pawsWorkbench;
+        const active = controller.playSnapshot.tiles.filter(
+          (tile) => !tile.removed && !Number.isInteger(tile.stashedSlot),
+        );
+        let checkpoint = null;
+        for (const tile of active) {
+          if (
+            !tile.covered
+            || tile.sideBlocked
+            || tile.presetColorType === 3
+            || !tile.occlusionPatches.length
+          ) {
+            continue;
+          }
+          const blockers = active.filter((candidate) =>
+            candidate.layer > tile.layer
+            && tile.x < candidate.x + 8
+            && tile.x + 8 > candidate.x
+            && tile.y < candidate.y + 8
+            && tile.y + 8 > candidate.y);
+          if (
+            blockers.length !== 1
+            || blockers[0].covered
+            || blockers[0].sideBlocked
+          ) {
+            continue;
+          }
+          const match = active.find((candidate) =>
+            candidate.uid !== blockers[0].uid
+            && candidate.type === blockers[0].type
+            && !candidate.covered
+            && !candidate.sideBlocked);
+          if (match) {
+            checkpoint = { target: tile, blocker: blockers[0], match };
+            break;
+          }
+        }
+        if (!checkpoint) throw new Error("No recording recovery checkpoint");
+        const { target, blocker, match } = checkpoint;
+        const beforePatchCount = target.occlusionPatches.length;
+        controller.interactPlay(blocker.uid);
+        controller.interactPlay(match.uid);
+        const after = controller.playSnapshot.tiles.find(
+          ({ uid }) => uid === target.uid,
+        );
+        const afterTone = resolveTileVisualTone(after, { mode: "play" });
+        return {
+          uid: target.uid,
+          blockerUid: blocker.uid,
+          matchUid: match.uid,
+          beforePatchCount,
+          covered: after.covered,
+          sideBlocked: after.sideBlocked,
+          afterPatchCount: after.occlusionPatches.length,
+          afterFactor: afterTone.factor,
+        };
+      });
+      assert.equal(recovery.beforePatchCount > 0, true);
+      assert.equal(recovery.covered, false);
+      assert.equal(recovery.sideBlocked, false);
+      assert.equal(recovery.afterPatchCount, 0);
+      assert.equal(recovery.afterFactor, 1);
+      await delay(500);
+      await page.locator("#restart-play").click();
+      await delay(350);
 
       const undoUid = await stashAvailableTileIn2d(page);
       const trayBeforeUndo = await page.evaluate(() => [
@@ -1233,13 +1371,22 @@ async function recordEditor() {
         window.pawsWorkbench.playSnapshot.tools);
       assert.deepEqual(playTools.shared3d, playTools.shared2d);
       const blockedVisual3d = await page.evaluate(() => {
-        const mesh = [...window.pawsWorkbench.renderer.meshes.values()]
-          .find((candidate) => candidate.userData.record?.blocked);
+        const meshes = [...window.pawsWorkbench.renderer.meshes.values()];
+        const mesh = meshes.find((candidate) =>
+          candidate.userData.record?.covered
+          && candidate.userData.record?.presetColorType !== 3
+          && candidate.userData.record?.occlusionPatches.length > 0);
+        const blindMesh = meshes.find((candidate) =>
+          candidate.userData.record?.covered
+          && candidate.userData.record?.presetColorType === 3
+          && !candidate.userData.record?.sideBlocked);
         return {
-          blockedCount: [...window.pawsWorkbench.renderer.meshes.values()]
+          blockedCount: meshes
             .filter((candidate) => candidate.userData.record?.blocked).length,
           topHex: mesh?.userData.topMaterial.color.getHex() ?? null,
           sideHex: mesh?.userData.sideMaterial.color.getHex() ?? null,
+          blindTopHex:
+            blindMesh?.userData.topMaterial.color.getHex() ?? null,
           expectedTopHex: 0x4b4b4b,
           expectedSideHex: 0x041000,
           rendererMode: window.pawsWorkbench.renderer.mode,
@@ -1248,10 +1395,12 @@ async function recordEditor() {
       assert.ok(blockedVisual3d.blockedCount > 0);
       assert.equal(blockedVisual3d.topHex, blockedVisual3d.expectedTopHex);
       assert.equal(blockedVisual3d.sideHex, blockedVisual3d.expectedSideHex);
+      assert.equal(blockedVisual3d.blindTopHex, 0xffffff);
       assert.equal(blockedVisual3d.rendererMode, "play");
       proof.actions.blockedVisual = {
         twoD: blockedVisual2d,
         threeD: blockedVisual3d,
+        recovery,
       };
       const beforeToolShuffle = await page.evaluate(() => {
         const boardTiles = window.pawsWorkbench.playSnapshot.tiles.filter(

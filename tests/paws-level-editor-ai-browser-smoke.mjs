@@ -21,6 +21,14 @@ const referenceTiles = [
   { x: 20, y: 4, layer: 2, type: 3 },
   { x: 36, y: 4, layer: 2, type: 4 },
   { x: 44, y: 4, layer: 2, type: 4 },
+  { x: 8, y: 24, layer: 1, type: -1, moldType: 1, presetColorType: 3 },
+  { x: 9, y: 24, layer: 2, type: -1, moldType: 1, presetColorType: 3 },
+  { x: 10, y: 24, layer: 3, type: -1, moldType: 1, presetColorType: 3 },
+  { x: 11, y: 24, layer: 4, type: -1, moldType: 2, presetColorType: 1 },
+  { x: 40, y: 40, layer: 1, type: -1, moldType: 1, presetColorType: 3 },
+  { x: 39, y: 40, layer: 2, type: -1, moldType: 1, presetColorType: 3 },
+  { x: 38, y: 40, layer: 3, type: -1, moldType: 1, presetColorType: 3 },
+  { x: 37, y: 40, layer: 4, type: -1, moldType: 2, presetColorType: 1 },
 ];
 const referenceLevel = {
   id: 73000,
@@ -59,10 +67,14 @@ function editorUrl(baseUrl) {
 }
 
 function captureErrors(page) {
-  const errors = { console: [], http: [], page: [], request: [] };
+  const errors = { console: [], http: [], page: [], request: [], webgl: [] };
   page.on("pageerror", (error) => errors.page.push(error.message));
   page.on("console", (message) => {
-    if (message.type() === "error") errors.console.push(message.text());
+    const value = message.text();
+    if (message.type() === "error") errors.console.push(value);
+    if (/webgl/i.test(value) && /warn|error|context lost/i.test(value)) {
+      errors.webgl.push(value);
+    }
   });
   page.on("requestfailed", (request) => {
     errors.request.push(
@@ -330,38 +342,57 @@ try {
   assert.equal(generated.generation.report.statistics.effectiveLayerCount, 15);
   assert.equal(
     generated.aiGeneration.algorithmVersion,
-    "paws-local-stat-v10-template-motifs",
+    "paws-local-stat-v11-stage-grammar",
   );
-  const templateLearning =
-    generated.aiGeneration.templateLearning;
+  const templateLearning = generated.aiGeneration.templateLearning;
+  const blueprint = generated.aiGeneration.blueprint;
+  const structure = generated.aiGeneration.structure;
   assert.equal(templateLearning.sourceFileName, referenceFileName);
-  assert.equal(templateLearning.sourceLayerMap.length, generated.layers);
-  assert.equal(
-    templateLearning.sourceLayerMap.every(
-      (layer, index, layers) => index === 0 || layer >= layers[index - 1],
-    ),
-    true,
+  assert.deepEqual(
+    blueprint.stagePlan.map(({ key, layerCount, tileCount }) => [
+      key,
+      layerCount,
+      tileCount,
+    ]),
+    [
+      ["surface", 3, 44],
+      ["shelter", 2, 30],
+      ["middle", 5, 68],
+      ["crisis", 3, 40],
+      ["release", 2, 18],
+    ],
   );
+  assert.equal(blueprint.layerPlans.length, generated.layers);
+  assert.equal(blueprint.towerEntrances.length >= 4, true);
+  assert.equal(blueprint.towerEntrances.some(({ role }) => role === "high"), true);
+  assert.equal(blueprint.towerEntrances.some(({ role }) => role === "medium"), true);
   assert.equal(
-    Number.isFinite(templateLearning.preservedAnchorRatio)
-      && templateLearning.preservedAnchorRatio >= 0
-      && templateLearning.preservedAnchorRatio <= 1,
+    blueprint.towerEntrances.filter(({ role }) => role === "small").length >= 2,
     true,
   );
   assert.equal(templateLearning.fillTrackCount, templateLearning.fillTracks.length);
-  assert.equal(templateLearning.similarity.fillTrackCountMatched, true);
-  assert.equal(templateLearning.similarity.capacitySafe, true);
+  assert.equal(templateLearning.fillTrackCount, 2);
+  assert.match(templateLearning.topologyHash, /^topology-[0-9a-f]{8}$/);
+  assert.equal(templateLearning.motifUses.length > 0, true);
+  assert.equal(
+    templateLearning.repairLog.every(({ action }) => !/lattice|整盘|扫格/i.test(action)),
+    true,
+  );
   assert.equal(templateLearning.fullRandomRatio, 1);
   assert.equal(
     templateLearning.layerTileCounts.reduce((total, count) => total + count, 0),
     generated.tiles,
   );
   assert.equal(
-    templateLearning.layerTileCounts.every(
-      (count, index) => count <= templateLearning.layerCapacities[index],
-    ),
+    Math.max(...templateLearning.layerTileCounts) <= 22,
     true,
   );
+  assert.equal(structure.multiComponentLayerRatio >= 0.65, true);
+  assert.equal(structure.maximumPlatformSize <= 10, true);
+  assert.equal(structure.threeLayerGiantRun, false);
+  assert.equal(structure.towerEntranceCount >= 4, true);
+  assert.equal(structure.releaseDependencyDrop > 0, true);
+  assert.equal(structure.fillTrackCount, 2);
   assert.equal(
     generated.generation.report.statistics.initialAccessiblePairs >= 3,
     true,
@@ -389,28 +420,47 @@ try {
   await waitForNetworkAndTextures(page);
 
   await page.locator("#layer-view-mode").selectOption("single");
-  const generatedTopLayerView = await page.evaluate(() => {
+  const stageViews = await page.evaluate((stagePlan) => {
     const controller = window.pawsWorkbench;
-    const maxLayer = Math.max(...controller.document.tiles.map(({ layer }) => layer));
-    return {
-      maxLayer,
-      selectedLayer: controller.layerView.layer,
-      sourceCount: controller.document.tiles.filter(
-        ({ layer, removed, stashedSlot }) =>
-          layer === maxLayer && !removed && !Number.isInteger(stashedSlot),
-      ).length,
-      rendererCount: controller.renderer.currentTiles().filter(
-        ({ removed, stashedSlot }) => !removed && !Number.isInteger(stashedSlot),
-      ).length,
-    };
-  });
-  assert.equal(generatedTopLayerView.selectedLayer, generatedTopLayerView.maxLayer);
-  assert.equal(generatedTopLayerView.sourceCount > 0, true);
+    return stagePlan.map(({ key, layerStart, layerEnd }) => ({
+      key,
+      layerStart,
+      layerEnd,
+      layers: Array.from(
+        { length: layerEnd - layerStart + 1 },
+        (_, index) => layerStart + index,
+      ).map((layer) => {
+        controller.setLayerView({ mode: "single", layer });
+        return {
+          layer,
+          selectedLayer: controller.layerView.layer,
+          sourceCount: controller.document.tiles.filter(
+            (tile) => tile.layer === layer,
+          ).length,
+          rendererCount: controller.renderer.currentTiles().filter(
+            ({ removed, stashedSlot }) =>
+              !removed && !Number.isInteger(stashedSlot),
+          ).length,
+        };
+      }),
+    }));
+  }, blueprint.stagePlan);
+  assert.deepEqual(stageViews.map(({ key }) => key), [
+    "surface",
+    "shelter",
+    "middle",
+    "crisis",
+    "release",
+  ]);
   assert.equal(
-    generatedTopLayerView.rendererCount,
-    generatedTopLayerView.sourceCount,
-    "single-layer view must render every generated tile on the selected top layer",
+    stageViews.every(({ layers }) => layers.every((layerView) =>
+      layerView.selectedLayer === layerView.layer
+      && layerView.sourceCount > 0
+      && layerView.rendererCount === layerView.sourceCount)),
+    true,
+    "single-layer view must render every layer across all five stages",
   );
+  const generatedTopLayerView = stageViews[0].layers.at(-1);
   await page.locator("#layer-view-mode").selectOption("all");
 
   await page.locator("#view-3d").click();
@@ -423,6 +473,14 @@ try {
     Boolean(canvas.getContext("webgl2") || canvas.getContext("webgl")));
   assert.equal(webgl, true);
   await waitForNetworkAndTextures(page);
+  const desktopLayout = await page.evaluate(() => ({
+    viewportWidth: window.innerWidth,
+    scrollWidth: document.documentElement.scrollWidth,
+    clientWidth: document.documentElement.clientWidth,
+    overflow: document.documentElement.scrollWidth
+      > document.documentElement.clientWidth,
+  }));
+  assert.equal(desktopLayout.overflow, false);
   if (!externalBaseUrl && updateArtifacts) {
     await page.screenshot({
       path: join(artifactsRoot, "paws-ai-level-desktop.png"),
@@ -432,13 +490,56 @@ try {
 
   await page.locator("#mode-play").click();
   await page.waitForFunction(() => window.pawsWorkbench?.mode === "play");
-  const blockedVisual = await page.evaluate(() => {
+  const blockedVisual = await page.evaluate(async () => {
+    const { resolveTileVisualTone } = await import(
+      "./core/tile-visual-tone.mjs"
+    );
     const meshes = [...window.pawsWorkbench.renderer.meshes.values()];
-    const blockedMesh = meshes.find((mesh) => mesh.userData.record?.blocked);
+    const blockedMesh = meshes.find((mesh) => {
+      const record = mesh.userData.record;
+      return (
+        record?.covered
+        && record.presetColorType !== 3
+        && record.occlusionPatches.length > 0
+      );
+    });
+    const blindMesh = meshes.find((mesh) => {
+      const record = mesh.userData.record;
+      return (
+        record?.covered
+        && record.presetColorType === 3
+        && !record.sideBlocked
+      );
+    });
+    const blockedTone = resolveTileVisualTone(blockedMesh?.userData.record, {
+      mode: "play",
+    });
+    const blindTone = resolveTileVisualTone(blindMesh?.userData.record, {
+      mode: "play",
+    });
+    const renderer = window.pawsWorkbench.renderer;
     return {
       blockedCount: meshes.filter((mesh) => mesh.userData.record?.blocked).length,
+      ordinaryUid: blockedMesh?.userData.uid ?? null,
+      ordinaryPatchCount:
+        blockedMesh?.userData.record?.occlusionPatches.length ?? 0,
+      ordinaryFactor: blockedTone.factor,
+      ordinaryOverlayAlpha: blockedTone.overlayAlpha,
       topHex: blockedMesh?.userData.topMaterial.color.getHex() ?? null,
       sideHex: blockedMesh?.userData.sideMaterial.color.getHex() ?? null,
+      blindCount: meshes.filter((mesh) =>
+        mesh.userData.record?.covered
+        && mesh.userData.record?.presetColorType === 3
+        && !mesh.userData.record?.sideBlocked).length,
+      blindUid: blindMesh?.userData.uid ?? null,
+      blindFactor: blindTone.factor,
+      blindOverlayAlpha: blindTone.overlayAlpha,
+      blindTopHex: blindMesh?.userData.topMaterial.color.getHex() ?? null,
+      meshCount: meshes.length,
+      tileGroupChildren: renderer.tileGroup.children.length,
+      shadowMapEnabled: renderer.renderer.shadowMap.enabled,
+      shadowBias: renderer.keyLight.shadow.bias,
+      shadowNormalBias: renderer.keyLight.shadow.normalBias,
       // Three.js runs in legacy linear-working-space mode in this bundle.
       // Hand-derived from sRGB #949494 and #254906 after sRGB -> linear.
       expectedTopHex: 0x4b4b4b,
@@ -446,24 +547,202 @@ try {
     };
   });
   assert.equal(blockedVisual.blockedCount > 0, true);
+  assert.equal(blockedVisual.ordinaryUid !== null, true);
+  assert.equal(blockedVisual.ordinaryPatchCount > 0, true);
+  assert.equal(blockedVisual.ordinaryFactor, 0.58);
+  assert.equal(blockedVisual.ordinaryOverlayAlpha, 0.42);
   assert.equal(blockedVisual.topHex, blockedVisual.expectedTopHex);
   assert.equal(blockedVisual.sideHex, blockedVisual.expectedSideHex);
+  assert.equal(blockedVisual.blindCount > 0, true);
+  assert.equal(blockedVisual.blindUid !== null, true);
+  assert.equal(blockedVisual.blindFactor, 1);
+  assert.equal(blockedVisual.blindOverlayAlpha, 0);
+  assert.equal(blockedVisual.blindTopHex, 0xffffff);
+  assert.equal(blockedVisual.tileGroupChildren, blockedVisual.meshCount);
+  assert.equal(blockedVisual.shadowMapEnabled, true);
+  assert.equal(blockedVisual.shadowBias, -0.0002);
+  assert.equal(blockedVisual.shadowNormalBias, 0.02);
   if (!externalBaseUrl && updateArtifacts) {
     await page.screenshot({
       path: join(artifactsRoot, "paws-ai-play-3d-blocked.png"),
       fullPage: true,
     });
-    await page.locator("#view-2d").click();
-    await page.locator(".level-canvas-2d").waitFor({ state: "visible" });
-    await waitForNetworkAndTextures(page);
+  }
+  await page.locator("#view-2d").click();
+  await page.locator(".level-canvas-2d").waitFor({ state: "visible" });
+  await waitForNetworkAndTextures(page);
+  const blockedVisual2d = await page.evaluate(async () => {
+    const { resolveTileVisualTone } = await import(
+      "./core/tile-visual-tone.mjs"
+    );
+    const tiles = window.pawsWorkbench.playSnapshot.tiles;
+    const ordinary = tiles.find((tile) =>
+      tile.covered
+      && tile.presetColorType !== 3
+      && tile.occlusionPatches.length > 0);
+    const blind = tiles.find((tile) =>
+      tile.covered
+      && tile.presetColorType === 3
+      && !tile.sideBlocked);
+    return {
+      ordinaryUid: ordinary?.uid ?? null,
+      ordinaryPatchCount: ordinary?.occlusionPatches.length ?? 0,
+      ordinaryTone: resolveTileVisualTone(ordinary, { mode: "play" }),
+      blindUid: blind?.uid ?? null,
+      blindPatchCount: blind?.occlusionPatches.length ?? 0,
+      blindTone: resolveTileVisualTone(blind, { mode: "play" }),
+      rendererMode: window.pawsWorkbench.renderer.mode,
+    };
+  });
+  assert.equal(blockedVisual2d.ordinaryUid !== null, true);
+  assert.equal(blockedVisual2d.ordinaryPatchCount > 0, true);
+  assert.equal(blockedVisual2d.ordinaryTone.factor, 0.58);
+  assert.equal(blockedVisual2d.ordinaryTone.overlayAlpha, 0.42);
+  assert.equal(blockedVisual2d.ordinaryTone.contactShadowAlpha > 0, true);
+  assert.equal(blockedVisual2d.blindUid !== null, true);
+  assert.equal(blockedVisual2d.blindPatchCount > 0, true);
+  assert.equal(blockedVisual2d.blindTone.factor, 1);
+  assert.equal(blockedVisual2d.blindTone.overlayAlpha, 0);
+  assert.equal(blockedVisual2d.rendererMode, "play");
+  if (!externalBaseUrl && updateArtifacts) {
     await page.screenshot({
       path: join(artifactsRoot, "paws-ai-play-2d-blocked.png"),
       fullPage: true,
     });
-    await page.locator("#view-3d").click();
-    await page.locator(".level-canvas-3d").waitFor({ state: "visible" });
-    await waitForNetworkAndTextures(page);
   }
+  await page.locator("#view-3d").click();
+  await page.locator(".level-canvas-3d").waitFor({ state: "visible" });
+  await waitForNetworkAndTextures(page);
+
+  const ordinaryRecovery = await page.evaluate(() => {
+    const controller = window.pawsWorkbench;
+    const active = controller.playSnapshot.tiles.filter(
+      (tile) => !tile.removed && !Number.isInteger(tile.stashedSlot),
+    );
+    const moves = controller.lastAiGeneration.report.moves;
+    const target = active.find((tile) => {
+      if (
+        !tile.covered
+        || tile.sideBlocked
+        || tile.presetColorType === 3
+        || !tile.occlusionPatches.length
+      ) {
+        return false;
+      }
+      const blockers = active.filter((candidate) =>
+        candidate.layer > tile.layer
+        && tile.x < candidate.x + 8
+        && tile.x + 8 > candidate.x
+        && tile.y < candidate.y + 8
+        && tile.y + 8 > candidate.y);
+      return (
+        blockers.length === 1
+        && moves.some((move) => move.includes(blockers[0].uid))
+      );
+    });
+    if (!target) throw new Error("No ordinary one-blocker recovery checkpoint");
+    const blocker = active.find((candidate) =>
+      candidate.layer > target.layer
+      && target.x < candidate.x + 8
+      && target.x + 8 > candidate.x
+      && target.y < candidate.y + 8
+      && target.y + 8 > candidate.y);
+    const moveIndex = moves.findIndex((move) => move.includes(blocker.uid));
+    const beforePatchCount = target.occlusionPatches.length;
+    for (let index = 0; index <= moveIndex; index += 1) {
+      controller.interactPlay(moves[index][0]);
+      controller.interactPlay(moves[index][1]);
+    }
+    const after = controller.playSnapshot.tiles.find(
+      ({ uid }) => uid === target.uid,
+    );
+    const mesh = controller.renderer.meshes.get(target.uid);
+    return {
+      uid: target.uid,
+      blockerUid: blocker.uid,
+      moveIndex,
+      beforePatchCount,
+      removed: after.removed,
+      covered: after.covered,
+      sideBlocked: after.sideBlocked,
+      afterPatchCount: after.occlusionPatches.length,
+      topHex: mesh?.userData.topMaterial.color.getHex() ?? null,
+    };
+  });
+  assert.equal(ordinaryRecovery.beforePatchCount > 0, true);
+  assert.equal(ordinaryRecovery.removed, false);
+  assert.equal(ordinaryRecovery.covered, false);
+  assert.equal(ordinaryRecovery.sideBlocked, false);
+  assert.equal(ordinaryRecovery.afterPatchCount, 0);
+  assert.equal(ordinaryRecovery.topHex, 0xffffff);
+  await page.locator("#restart-play").click();
+
+  const blindRecovery = await page.evaluate(() => {
+    const controller = window.pawsWorkbench;
+    const active = controller.playSnapshot.tiles.filter(
+      (tile) => !tile.removed && !Number.isInteger(tile.stashedSlot),
+    );
+    const moves = controller.lastAiGeneration.report.moves;
+    const target = active.find((tile) => {
+      if (
+        !tile.covered
+        || tile.sideBlocked
+        || tile.presetColorType !== 3
+        || !tile.occlusionPatches.length
+      ) {
+        return false;
+      }
+      const blockers = active.filter((candidate) =>
+        candidate.layer > tile.layer
+        && tile.x < candidate.x + 8
+        && tile.x + 8 > candidate.x
+        && tile.y < candidate.y + 8
+        && tile.y + 8 > candidate.y);
+      return (
+        blockers.length === 1
+        && moves.some((move) => move.includes(blockers[0].uid))
+      );
+    });
+    if (!target) throw new Error("No blind one-blocker recovery checkpoint");
+    const blocker = active.find((candidate) =>
+      candidate.layer > target.layer
+      && target.x < candidate.x + 8
+      && target.x + 8 > candidate.x
+      && target.y < candidate.y + 8
+      && target.y + 8 > candidate.y);
+    const moveIndex = moves.findIndex((move) => move.includes(blocker.uid));
+    const beforeMesh = controller.renderer.meshes.get(target.uid);
+    const beforeTopHex =
+      beforeMesh?.userData.topMaterial.color.getHex() ?? null;
+    for (let index = 0; index <= moveIndex; index += 1) {
+      controller.interactPlay(moves[index][0]);
+      controller.interactPlay(moves[index][1]);
+    }
+    const after = controller.playSnapshot.tiles.find(
+      ({ uid }) => uid === target.uid,
+    );
+    const afterMesh = controller.renderer.meshes.get(target.uid);
+    return {
+      uid: target.uid,
+      blockerUid: blocker.uid,
+      moveIndex,
+      beforeTopHex,
+      removed: after.removed,
+      covered: after.covered,
+      sideBlocked: after.sideBlocked,
+      afterPatchCount: after.occlusionPatches.length,
+      afterTopHex:
+        afterMesh?.userData.topMaterial.color.getHex() ?? null,
+    };
+  });
+  assert.equal(blindRecovery.beforeTopHex, 0xffffff);
+  assert.equal(blindRecovery.removed, false);
+  assert.equal(blindRecovery.covered, false);
+  assert.equal(blindRecovery.sideBlocked, false);
+  assert.equal(blindRecovery.afterPatchCount, 0);
+  assert.equal(blindRecovery.afterTopHex, 0xffffff);
+  await page.locator("#restart-play").click();
+
   const firstMoveResult = await page.evaluate(() => {
     const controller = window.pawsWorkbench;
     const [first, second] = controller.lastAiGeneration.report.moves[0];
@@ -563,6 +842,20 @@ try {
     expectedCount: baselineLevelCount,
   });
 
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.evaluate(() => new Promise((resolveFrame) => {
+    requestAnimationFrame(() => requestAnimationFrame(resolveFrame));
+  }));
+  const mobileLayout = await page.evaluate(() => ({
+    viewportWidth: window.innerWidth,
+    scrollWidth: document.documentElement.scrollWidth,
+    clientWidth: document.documentElement.clientWidth,
+    overflow: document.documentElement.scrollWidth
+      > document.documentElement.clientWidth,
+  }));
+  assert.equal(mobileLayout.viewportWidth, 390);
+  assert.equal(mobileLayout.overflow, false);
+
   for (const [kind, entries] of Object.entries(errors)) {
     assert.deepEqual(entries, [], `${kind} errors:\n${entries.join("\n")}`);
   }
@@ -578,14 +871,18 @@ try {
     generatedGridUnit: generated.gridUnit,
     algorithmVersion: generated.aiGeneration.algorithmVersion,
     sourceFileName: templateLearning.sourceFileName,
-    sourceLayerMap: templateLearning.sourceLayerMap,
-    preservedAnchorRatio: templateLearning.preservedAnchorRatio,
+    stagePlan: blueprint.stagePlan,
+    towerEntrances: blueprint.towerEntrances,
+    structure,
+    topologyHash: templateLearning.topologyHash,
+    motifUseCount: templateLearning.motifUses.length,
+    repairLog: templateLearning.repairLog,
     fillTrackCount: templateLearning.fillTrackCount,
     fillTracks: templateLearning.fillTracks,
     layerTileCounts: templateLearning.layerTileCounts,
-    layerCapacities: templateLearning.layerCapacities,
     allTilesFullRandom: generated.allTilesFullRandom,
     sameLayerOverlapPairs: generated.sameLayerOverlapPairs,
+    stageViews,
     singleLayerTileCount: generatedTopLayerView.rendererCount,
     generatedDifficultyScore: generated.generation.report.difficulty.score,
     generatedDifficultyRating: generated.generation.report.difficulty.rating.label,
@@ -596,6 +893,12 @@ try {
     solverSteps: generated.generation.report.steps,
     solverNodes: generated.generation.report.nodes,
     completedInPlay: completed.won,
+    blockedVisual2d,
+    blockedVisual3d: blockedVisual,
+    ordinaryRecovery,
+    blindRecovery,
+    desktopLayout,
+    mobileLayout,
     webgl,
     persistedAfterReload: true,
     deletedAfterVerification: true,
@@ -603,6 +906,7 @@ try {
     httpErrors: errors.http.length,
     pageErrors: errors.page.length,
     requestFailures: errors.request.length,
+    webglErrors: errors.webgl.length,
   };
   if (!externalBaseUrl && updateArtifacts) {
     await writeFile(

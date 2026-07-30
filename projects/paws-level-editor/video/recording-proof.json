@@ -1,25 +1,25 @@
 {
   "schemaVersion": 1,
-  "recordedAt": "2026-07-29T04:08:54.445Z",
+  "recordedAt": "2026-07-30T03:23:15.821Z",
   "recording": {
     "browser": "system Chrome",
-    "preRollMs": 1197,
-    "completedAt": "2026-07-29T04:10:22.449Z",
-    "durationMs": 88004
+    "preRollMs": 1200,
+    "completedAt": "2026-07-30T03:24:43.831Z",
+    "durationMs": 88010
   },
   "timeline": {
-    "tools": 1,
-    "edit2d": 12002,
-    "view3d": 32008,
-    "play": 50001,
-    "persistence": 70005
+    "tools": 0,
+    "edit2d": 12001,
+    "view3d": 32002,
+    "play": 50002,
+    "persistence": 70002
   },
   "actions": {
     "metadata": {
-      "cardText": "视频本地参考#74000video_reference.json8 tiles07/29",
+      "cardText": "视频本地参考#74000video_reference.json16 tiles07/30",
       "fileName": "video_reference.json",
       "levelId": 74000,
-      "modifiedAt": "2026-07-29T04:08:53.668Z"
+      "modifiedAt": "2026-07-30T03:23:14.966Z"
     },
     "grass": {
       "twoD": {
@@ -48,20 +48,20 @@
       }
     },
     "aiGeneration": {
-      "fileName": "ai_level_2790321770.json",
+      "fileName": "ai_level_363265768.json",
       "reference": "all",
       "solvable": true,
       "tileCount": 200,
       "layerCount": 15,
       "targetScore": 60,
-      "actualScore": 71,
-      "rating": "困难",
+      "actualScore": 56,
+      "rating": "标准",
       "dimensions": {
-        "structure": 84,
-        "information": 45,
-        "choice": 72,
-        "route": 82,
-        "endurance": 42
+        "structure": 81,
+        "information": 50,
+        "choice": 47,
+        "route": 51,
+        "endurance": 46
       },
       "board": {
         "width": 7,
@@ -81,77 +81,974 @@
       "globalTypesEven": true,
       "layerTypesEven": false,
       "allTilesFullRandom": true,
-      "algorithmVersion": "paws-local-stat-v10-template-motifs",
-      "templateLearning": {
-        "sampleIndex": 0,
-        "sourceFileName": "video_reference.json",
-        "sourceLayerMap": [
-          1,
-          1,
-          1,
-          1,
-          1,
-          1,
-          1,
-          2,
-          2,
-          2,
-          2,
-          2,
-          2,
-          2,
-          2
+      "algorithmVersion": "paws-local-stat-v11-stage-grammar",
+      "blueprint": {
+        "stagePlan": [
+          {
+            "key": "surface",
+            "label": "表层塔群",
+            "layerCount": 3,
+            "tileCount": 44,
+            "layerStart": 13,
+            "layerEnd": 15,
+            "pressureTarget": 30
+          },
+          {
+            "key": "shelter",
+            "label": "薄掩体",
+            "layerCount": 2,
+            "tileCount": 30,
+            "layerStart": 11,
+            "layerEnd": 12,
+            "pressureTarget": 42
+          },
+          {
+            "key": "middle",
+            "label": "中层塔群",
+            "layerCount": 5,
+            "tileCount": 68,
+            "layerStart": 6,
+            "layerEnd": 10,
+            "pressureTarget": 51
+          },
+          {
+            "key": "crisis",
+            "label": "深层卡点",
+            "layerCount": 3,
+            "tileCount": 40,
+            "layerStart": 3,
+            "layerEnd": 5,
+            "pressureTarget": 65
+          },
+          {
+            "key": "release",
+            "label": "释放残局",
+            "layerCount": 2,
+            "tileCount": 18,
+            "layerStart": 1,
+            "layerEnd": 2,
+            "pressureTarget": 35
+          }
         ],
-        "preservedAnchorRatio": 0,
-        "fillTrackCount": 0,
-        "fillTracks": [],
+        "layerPlans": [
+          {
+            "layer": 1,
+            "stageKey": "release",
+            "stageLabel": "释放残局",
+            "stageLayerIndex": 0,
+            "stageLayerCount": 2,
+            "tileCount": 9,
+            "pressureTarget": 35
+          },
+          {
+            "layer": 2,
+            "stageKey": "release",
+            "stageLabel": "释放残局",
+            "stageLayerIndex": 1,
+            "stageLayerCount": 2,
+            "tileCount": 9,
+            "pressureTarget": 35
+          },
+          {
+            "layer": 3,
+            "stageKey": "crisis",
+            "stageLabel": "深层卡点",
+            "stageLayerIndex": 0,
+            "stageLayerCount": 3,
+            "tileCount": 13,
+            "pressureTarget": 65
+          },
+          {
+            "layer": 4,
+            "stageKey": "crisis",
+            "stageLabel": "深层卡点",
+            "stageLayerIndex": 1,
+            "stageLayerCount": 3,
+            "tileCount": 14,
+            "pressureTarget": 65
+          },
+          {
+            "layer": 5,
+            "stageKey": "crisis",
+            "stageLabel": "深层卡点",
+            "stageLayerIndex": 2,
+            "stageLayerCount": 3,
+            "tileCount": 13,
+            "pressureTarget": 65
+          },
+          {
+            "layer": 6,
+            "stageKey": "middle",
+            "stageLabel": "中层塔群",
+            "stageLayerIndex": 0,
+            "stageLayerCount": 5,
+            "tileCount": 14,
+            "pressureTarget": 51
+          },
+          {
+            "layer": 7,
+            "stageKey": "middle",
+            "stageLabel": "中层塔群",
+            "stageLayerIndex": 1,
+            "stageLayerCount": 5,
+            "tileCount": 13,
+            "pressureTarget": 51
+          },
+          {
+            "layer": 8,
+            "stageKey": "middle",
+            "stageLabel": "中层塔群",
+            "stageLayerIndex": 2,
+            "stageLayerCount": 5,
+            "tileCount": 14,
+            "pressureTarget": 51
+          },
+          {
+            "layer": 9,
+            "stageKey": "middle",
+            "stageLabel": "中层塔群",
+            "stageLayerIndex": 3,
+            "stageLayerCount": 5,
+            "tileCount": 13,
+            "pressureTarget": 51
+          },
+          {
+            "layer": 10,
+            "stageKey": "middle",
+            "stageLabel": "中层塔群",
+            "stageLayerIndex": 4,
+            "stageLayerCount": 5,
+            "tileCount": 14,
+            "pressureTarget": 51
+          },
+          {
+            "layer": 11,
+            "stageKey": "shelter",
+            "stageLabel": "薄掩体",
+            "stageLayerIndex": 0,
+            "stageLayerCount": 2,
+            "tileCount": 15,
+            "pressureTarget": 42
+          },
+          {
+            "layer": 12,
+            "stageKey": "shelter",
+            "stageLabel": "薄掩体",
+            "stageLayerIndex": 1,
+            "stageLayerCount": 2,
+            "tileCount": 15,
+            "pressureTarget": 42
+          },
+          {
+            "layer": 13,
+            "stageKey": "surface",
+            "stageLabel": "表层塔群",
+            "stageLayerIndex": 0,
+            "stageLayerCount": 3,
+            "tileCount": 14,
+            "pressureTarget": 30
+          },
+          {
+            "layer": 14,
+            "stageKey": "surface",
+            "stageLabel": "表层塔群",
+            "stageLayerIndex": 1,
+            "stageLayerCount": 3,
+            "tileCount": 15,
+            "pressureTarget": 30
+          },
+          {
+            "layer": 15,
+            "stageKey": "surface",
+            "stageLabel": "表层塔群",
+            "stageLayerIndex": 2,
+            "stageLayerCount": 3,
+            "tileCount": 15,
+            "pressureTarget": 30
+          }
+        ],
         "layerTileCounts": [
+          9,
+          9,
+          13,
           14,
-          14,
-          14,
-          14,
+          13,
           14,
           13,
+          14,
           13,
-          13,
-          13,
-          13,
-          13,
-          13,
-          13,
-          13,
-          13
+          14,
+          15,
+          15,
+          14,
+          15,
+          15
         ],
-        "layerCapacities": [
-          42,
-          42,
-          42,
-          42,
-          42,
-          42,
-          42,
-          42,
-          42,
-          42,
-          49,
-          42,
-          42,
-          42,
-          42
+        "towerEntrances": [
+          {
+            "id": "tower-1",
+            "role": "high",
+            "x": 12,
+            "y": 34,
+            "layerStart": 1,
+            "layerEnd": 12,
+            "depth": 12,
+            "sourceDepth": 4
+          },
+          {
+            "id": "tower-2",
+            "role": "medium",
+            "x": 39,
+            "y": 14,
+            "layerStart": 1,
+            "layerEnd": 9,
+            "depth": 9,
+            "sourceDepth": 4
+          },
+          {
+            "id": "tower-3",
+            "role": "small",
+            "x": 3,
+            "y": 53,
+            "layerStart": 1,
+            "layerEnd": 5,
+            "depth": 5,
+            "sourceDepth": 2
+          },
+          {
+            "id": "tower-4",
+            "role": "small",
+            "x": 19,
+            "y": 55,
+            "layerStart": 1,
+            "layerEnd": 5,
+            "depth": 5,
+            "sourceDepth": 2
+          },
+          {
+            "id": "tower-5",
+            "role": "small",
+            "x": 36,
+            "y": 52,
+            "layerStart": 1,
+            "layerEnd": 5,
+            "depth": 5,
+            "sourceDepth": 2
+          }
         ],
-        "blindBoxStackCount": 0,
-        "blindBoxStackDepth": 0,
-        "fullRandomRatio": 1,
-        "similarity": {
-          "sourceLayerOrderPreserved": true,
-          "fillTrackCountMatched": true,
-          "capacitySafe": true
+        "fillTrackPlan": {
+          "trackCount": 2,
+          "tracks": [
+            {
+              "lowerDepth": 3,
+              "depth": 4,
+              "explicitTop": true,
+              "layerStart": 1,
+              "layerEnd": 4,
+              "lowerAnchors": [
+                {
+                  "layer": 1,
+                  "x": 8,
+                  "y": 24
+                },
+                {
+                  "layer": 2,
+                  "x": 9,
+                  "y": 24
+                },
+                {
+                  "layer": 3,
+                  "x": 10,
+                  "y": 24
+                }
+              ],
+              "topAnchor": {
+                "layer": 4,
+                "x": 11,
+                "y": 24
+              }
+            },
+            {
+              "lowerDepth": 3,
+              "depth": 4,
+              "explicitTop": true,
+              "layerStart": 1,
+              "layerEnd": 4,
+              "lowerAnchors": [
+                {
+                  "layer": 1,
+                  "x": 40,
+                  "y": 40
+                },
+                {
+                  "layer": 2,
+                  "x": 39,
+                  "y": 40
+                },
+                {
+                  "layer": 3,
+                  "x": 38,
+                  "y": 40
+                }
+              ],
+              "topAnchor": {
+                "layer": 4,
+                "x": 37,
+                "y": 40
+              }
+            }
+          ]
+        },
+        "maxLayerTiles": 22,
+        "familyIds": [
+          "video_reference.json"
+        ],
+        "topologyFamily": "topology-45845579"
+      },
+      "structure": {
+        "layerTileCounts": [
+          9,
+          9,
+          13,
+          14,
+          13,
+          14,
+          13,
+          14,
+          13,
+          14,
+          15,
+          15,
+          14,
+          15,
+          15
+        ],
+        "multiComponentLayerRatio": 1,
+        "maximumPlatformSize": 5,
+        "maximumComponentShareByLayer": {
+          "1": 0.5555555555555556,
+          "2": 0.5555555555555556,
+          "3": 0.38461538461538464,
+          "4": 0.35714285714285715,
+          "5": 0.38461538461538464,
+          "6": 0.35714285714285715,
+          "7": 0.38461538461538464,
+          "8": 0.35714285714285715,
+          "9": 0.38461538461538464,
+          "10": 0.35714285714285715,
+          "11": 0.3333333333333333,
+          "12": 0.3333333333333333,
+          "13": 0.35714285714285715,
+          "14": 0.3333333333333333,
+          "15": 0.3333333333333333
+        },
+        "threeLayerGiantRun": false,
+        "towerEntranceCount": 5,
+        "towerRoleCounts": {
+          "high": 1,
+          "medium": 1,
+          "small": 3
+        },
+        "maximumTowerDepth": 15,
+        "releaseDependencyDrop": 0.27586206896551724,
+        "boundaryRatio": 0.415,
+        "fillTrackCount": 2,
+        "stagePressure": {
+          "surface": {
+            "layerStart": 13,
+            "layerEnd": 15,
+            "remainingTiles": 200,
+            "openRate": 0.07,
+            "accessiblePairs": 7,
+            "pressure": 0.9299999999999999
+          },
+          "shelter": {
+            "layerStart": 11,
+            "layerEnd": 12,
+            "remainingTiles": 156,
+            "openRate": 0.08974358974358974,
+            "accessiblePairs": 7,
+            "pressure": 0.9102564102564102
+          },
+          "middle": {
+            "layerStart": 6,
+            "layerEnd": 10,
+            "remainingTiles": 126,
+            "openRate": 0.10317460317460317,
+            "accessiblePairs": 6,
+            "pressure": 0.8968253968253969
+          },
+          "crisis": {
+            "layerStart": 3,
+            "layerEnd": 5,
+            "remainingTiles": 58,
+            "openRate": 0.22413793103448276,
+            "accessiblePairs": 6,
+            "pressure": 0.7758620689655172
+          },
+          "release": {
+            "layerStart": 1,
+            "layerEnd": 2,
+            "remainingTiles": 18,
+            "openRate": 0.5,
+            "accessiblePairs": 4,
+            "pressure": 0.5
+          }
         }
+      },
+      "templateLearning": {
+        "sourceFileNames": [
+          "video_reference.json"
+        ],
+        "sourceFileName": "video_reference.json",
+        "fillTrackCount": 2,
+        "fillTracks": [
+          {
+            "lowerDepth": 11,
+            "depth": 12,
+            "explicitTop": true,
+            "layerStart": 1,
+            "layerEnd": 12,
+            "lowerAnchors": [
+              {
+                "x": 8,
+                "y": 8,
+                "layer": 1
+              },
+              {
+                "x": 7,
+                "y": 8,
+                "layer": 2
+              },
+              {
+                "x": 6,
+                "y": 8,
+                "layer": 3
+              },
+              {
+                "x": 7,
+                "y": 8,
+                "layer": 4
+              },
+              {
+                "x": 8,
+                "y": 8,
+                "layer": 5
+              },
+              {
+                "x": 9,
+                "y": 8,
+                "layer": 6
+              },
+              {
+                "x": 10,
+                "y": 8,
+                "layer": 7
+              },
+              {
+                "x": 9,
+                "y": 8,
+                "layer": 8
+              },
+              {
+                "x": 8,
+                "y": 8,
+                "layer": 9
+              },
+              {
+                "x": 7,
+                "y": 8,
+                "layer": 10
+              },
+              {
+                "x": 6,
+                "y": 8,
+                "layer": 11
+              }
+            ],
+            "topAnchor": {
+              "x": 7,
+              "y": 8,
+              "layer": 12
+            },
+            "sourceLowerDepth": 3
+          },
+          {
+            "lowerDepth": 11,
+            "depth": 12,
+            "explicitTop": true,
+            "layerStart": 1,
+            "layerEnd": 12,
+            "lowerAnchors": [
+              {
+                "x": 40,
+                "y": 8,
+                "layer": 1
+              },
+              {
+                "x": 41,
+                "y": 8,
+                "layer": 2
+              },
+              {
+                "x": 42,
+                "y": 8,
+                "layer": 3
+              },
+              {
+                "x": 41,
+                "y": 8,
+                "layer": 4
+              },
+              {
+                "x": 40,
+                "y": 8,
+                "layer": 5
+              },
+              {
+                "x": 39,
+                "y": 8,
+                "layer": 6
+              },
+              {
+                "x": 38,
+                "y": 8,
+                "layer": 7
+              },
+              {
+                "x": 39,
+                "y": 8,
+                "layer": 8
+              },
+              {
+                "x": 40,
+                "y": 8,
+                "layer": 9
+              },
+              {
+                "x": 41,
+                "y": 8,
+                "layer": 10
+              },
+              {
+                "x": 42,
+                "y": 8,
+                "layer": 11
+              }
+            ],
+            "topAnchor": {
+              "x": 41,
+              "y": 8,
+              "layer": 12
+            },
+            "sourceLowerDepth": 3
+          }
+        ],
+        "layerTileCounts": [
+          9,
+          9,
+          13,
+          14,
+          13,
+          14,
+          13,
+          14,
+          13,
+          14,
+          15,
+          15,
+          14,
+          15,
+          15
+        ],
+        "motifUses": [
+          {
+            "layer": 1,
+            "stageKey": "release",
+            "motif": "local-island",
+            "regionIndex": 1,
+            "tileCount": 5,
+            "reservedTrackTiles": 1
+          },
+          {
+            "layer": 1,
+            "stageKey": "release",
+            "motif": "local-island",
+            "regionIndex": 0,
+            "tileCount": 4,
+            "reservedTrackTiles": 1
+          },
+          {
+            "layer": 2,
+            "stageKey": "release",
+            "motif": "local-island",
+            "regionIndex": 1,
+            "tileCount": 5,
+            "reservedTrackTiles": 1
+          },
+          {
+            "layer": 2,
+            "stageKey": "release",
+            "motif": "local-island",
+            "regionIndex": 0,
+            "tileCount": 4,
+            "reservedTrackTiles": 1
+          },
+          {
+            "layer": 3,
+            "stageKey": "crisis",
+            "motif": "local-island",
+            "regionIndex": 2,
+            "tileCount": 5,
+            "reservedTrackTiles": 0
+          },
+          {
+            "layer": 3,
+            "stageKey": "crisis",
+            "motif": "local-island",
+            "regionIndex": 1,
+            "tileCount": 4,
+            "reservedTrackTiles": 1
+          },
+          {
+            "layer": 3,
+            "stageKey": "crisis",
+            "motif": "local-island",
+            "regionIndex": 0,
+            "tileCount": 4,
+            "reservedTrackTiles": 1
+          },
+          {
+            "layer": 4,
+            "stageKey": "crisis",
+            "motif": "local-island",
+            "regionIndex": 2,
+            "tileCount": 5,
+            "reservedTrackTiles": 0
+          },
+          {
+            "layer": 4,
+            "stageKey": "crisis",
+            "motif": "local-island",
+            "regionIndex": 1,
+            "tileCount": 5,
+            "reservedTrackTiles": 1
+          },
+          {
+            "layer": 4,
+            "stageKey": "crisis",
+            "motif": "local-island",
+            "regionIndex": 0,
+            "tileCount": 4,
+            "reservedTrackTiles": 1
+          },
+          {
+            "layer": 5,
+            "stageKey": "crisis",
+            "motif": "local-island",
+            "regionIndex": 2,
+            "tileCount": 5,
+            "reservedTrackTiles": 0
+          },
+          {
+            "layer": 5,
+            "stageKey": "crisis",
+            "motif": "local-island",
+            "regionIndex": 1,
+            "tileCount": 4,
+            "reservedTrackTiles": 1
+          },
+          {
+            "layer": 5,
+            "stageKey": "crisis",
+            "motif": "local-island",
+            "regionIndex": 0,
+            "tileCount": 4,
+            "reservedTrackTiles": 1
+          },
+          {
+            "layer": 6,
+            "stageKey": "middle",
+            "motif": "local-island",
+            "regionIndex": 2,
+            "tileCount": 5,
+            "reservedTrackTiles": 0
+          },
+          {
+            "layer": 6,
+            "stageKey": "middle",
+            "motif": "local-island",
+            "regionIndex": 1,
+            "tileCount": 5,
+            "reservedTrackTiles": 1
+          },
+          {
+            "layer": 6,
+            "stageKey": "middle",
+            "motif": "local-island",
+            "regionIndex": 0,
+            "tileCount": 4,
+            "reservedTrackTiles": 1
+          },
+          {
+            "layer": 7,
+            "stageKey": "middle",
+            "motif": "local-island",
+            "regionIndex": 2,
+            "tileCount": 5,
+            "reservedTrackTiles": 0
+          },
+          {
+            "layer": 7,
+            "stageKey": "middle",
+            "motif": "local-island",
+            "regionIndex": 1,
+            "tileCount": 4,
+            "reservedTrackTiles": 1
+          },
+          {
+            "layer": 7,
+            "stageKey": "middle",
+            "motif": "local-island",
+            "regionIndex": 0,
+            "tileCount": 4,
+            "reservedTrackTiles": 1
+          },
+          {
+            "layer": 8,
+            "stageKey": "middle",
+            "motif": "local-island",
+            "regionIndex": 2,
+            "tileCount": 5,
+            "reservedTrackTiles": 0
+          },
+          {
+            "layer": 8,
+            "stageKey": "middle",
+            "motif": "local-island",
+            "regionIndex": 1,
+            "tileCount": 5,
+            "reservedTrackTiles": 1
+          },
+          {
+            "layer": 8,
+            "stageKey": "middle",
+            "motif": "local-island",
+            "regionIndex": 0,
+            "tileCount": 4,
+            "reservedTrackTiles": 1
+          },
+          {
+            "layer": 9,
+            "stageKey": "middle",
+            "motif": "local-island",
+            "regionIndex": 2,
+            "tileCount": 5,
+            "reservedTrackTiles": 0
+          },
+          {
+            "layer": 9,
+            "stageKey": "middle",
+            "motif": "local-island",
+            "regionIndex": 1,
+            "tileCount": 4,
+            "reservedTrackTiles": 1
+          },
+          {
+            "layer": 9,
+            "stageKey": "middle",
+            "motif": "local-island",
+            "regionIndex": 0,
+            "tileCount": 4,
+            "reservedTrackTiles": 1
+          },
+          {
+            "layer": 10,
+            "stageKey": "middle",
+            "motif": "local-island",
+            "regionIndex": 2,
+            "tileCount": 5,
+            "reservedTrackTiles": 0
+          },
+          {
+            "layer": 10,
+            "stageKey": "middle",
+            "motif": "local-island",
+            "regionIndex": 1,
+            "tileCount": 5,
+            "reservedTrackTiles": 1
+          },
+          {
+            "layer": 10,
+            "stageKey": "middle",
+            "motif": "local-island",
+            "regionIndex": 0,
+            "tileCount": 4,
+            "reservedTrackTiles": 1
+          },
+          {
+            "layer": 11,
+            "stageKey": "shelter",
+            "motif": "local-island",
+            "regionIndex": 2,
+            "tileCount": 5,
+            "reservedTrackTiles": 0
+          },
+          {
+            "layer": 11,
+            "stageKey": "shelter",
+            "motif": "local-island",
+            "regionIndex": 1,
+            "tileCount": 5,
+            "reservedTrackTiles": 1
+          },
+          {
+            "layer": 11,
+            "stageKey": "shelter",
+            "motif": "local-island",
+            "regionIndex": 0,
+            "tileCount": 5,
+            "reservedTrackTiles": 1
+          },
+          {
+            "layer": 12,
+            "stageKey": "shelter",
+            "motif": "local-island",
+            "regionIndex": 2,
+            "tileCount": 5,
+            "reservedTrackTiles": 0
+          },
+          {
+            "layer": 12,
+            "stageKey": "shelter",
+            "motif": "local-island",
+            "regionIndex": 1,
+            "tileCount": 5,
+            "reservedTrackTiles": 1
+          },
+          {
+            "layer": 12,
+            "stageKey": "shelter",
+            "motif": "local-island",
+            "regionIndex": 0,
+            "tileCount": 5,
+            "reservedTrackTiles": 1
+          },
+          {
+            "layer": 13,
+            "stageKey": "surface",
+            "motif": "local-island",
+            "regionIndex": 2,
+            "tileCount": 5,
+            "reservedTrackTiles": 0
+          },
+          {
+            "layer": 13,
+            "stageKey": "surface",
+            "motif": "local-island",
+            "regionIndex": 1,
+            "tileCount": 5,
+            "reservedTrackTiles": 0
+          },
+          {
+            "layer": 13,
+            "stageKey": "surface",
+            "motif": "local-island",
+            "regionIndex": 0,
+            "tileCount": 4,
+            "reservedTrackTiles": 0
+          },
+          {
+            "layer": 14,
+            "stageKey": "surface",
+            "motif": "local-island",
+            "regionIndex": 2,
+            "tileCount": 5,
+            "reservedTrackTiles": 0
+          },
+          {
+            "layer": 14,
+            "stageKey": "surface",
+            "motif": "local-island",
+            "regionIndex": 1,
+            "tileCount": 5,
+            "reservedTrackTiles": 0
+          },
+          {
+            "layer": 14,
+            "stageKey": "surface",
+            "motif": "local-island",
+            "regionIndex": 0,
+            "tileCount": 5,
+            "reservedTrackTiles": 0
+          },
+          {
+            "layer": 15,
+            "stageKey": "surface",
+            "motif": "local-island",
+            "regionIndex": 2,
+            "tileCount": 5,
+            "reservedTrackTiles": 0
+          },
+          {
+            "layer": 15,
+            "stageKey": "surface",
+            "motif": "local-island",
+            "regionIndex": 1,
+            "tileCount": 5,
+            "reservedTrackTiles": 0
+          },
+          {
+            "layer": 15,
+            "stageKey": "surface",
+            "motif": "local-island",
+            "regionIndex": 0,
+            "tileCount": 5,
+            "reservedTrackTiles": 0
+          }
+        ],
+        "repairLog": [],
+        "topologyHash": "topology-7abbc66f",
+        "blindBoxStackCount": 2,
+        "blindBoxStackDepth": 12,
+        "fullRandomRatio": 1
       }
     },
+    "stagePreview": [
+      {
+        "key": "surface",
+        "layer": 15,
+        "sourceCount": 15,
+        "rendererCount": 15
+      },
+      {
+        "key": "shelter",
+        "layer": 12,
+        "sourceCount": 15,
+        "rendererCount": 15
+      },
+      {
+        "key": "middle",
+        "layer": 10,
+        "sourceCount": 14,
+        "rendererCount": 14
+      },
+      {
+        "key": "crisis",
+        "layer": 5,
+        "sourceCount": 13,
+        "rendererCount": 13
+      },
+      {
+        "key": "release",
+        "layer": 2,
+        "sourceCount": 9,
+        "rendererCount": 9
+      }
+    ],
     "passRate": {
-      "passPercent": 17,
-      "passCount": 2,
+      "passPercent": 83,
+      "passCount": 10,
       "trialCount": 12,
       "stale": false
     },
@@ -193,16 +1090,16 @@
     },
     "edit2d": {
       "drag": {
-        "uid": "tile-188",
-        "selectedBefore": "tile-188",
-        "selectedAfter": "tile-188",
+        "uid": "tile-186",
+        "selectedBefore": "tile-186",
+        "selectedAfter": "tile-186",
         "before": {
-          "x": 7,
-          "y": 7
+          "x": 8,
+          "y": 48
         },
         "after": {
-          "x": 15,
-          "y": 23
+          "x": 0,
+          "y": 0
         }
       },
       "property": {
@@ -253,67 +1150,67 @@
     },
     "layerInspection": {
       "layer": 14,
-      "through2d": 187,
-      "through3d": 187,
-      "single3d": 13
+      "through2d": 185,
+      "through3d": 185,
+      "single3d": 15
     },
     "edit3d": {
       "cameraBefore": {
         "position": [
-          2.167570041759693,
-          1.3490203805621817,
-          -0.8124999999999998
+          1.4175700417596921,
+          1.3491260957958828,
+          -2.5
         ],
         "target": [
-          -1.25,
-          0.31007908786723487,
-          -0.8125
+          -2,
+          0.31018480310093627,
+          -2.5
         ]
       },
       "cameraAfter": {
         "position": [
-          -4.669264935930871,
-          0.5343668236259412,
-          -1.821215177590638
+          -5.419264935930867,
+          0.5344725388596423,
+          -3.508715177590629
         ],
         "target": [
-          -1.25,
-          0.31007908786723487,
-          -0.8125
+          -2,
+          0.31018480310093627,
+          -2.5
         ]
       },
       "inspection": {
         "cameraPresets": {
           "iso": [
-            9.3996,
-            10.785599999999999,
-            13.054999999999998
+            10.623600000000001,
+            12.009599999999997,
+            14.755000000000003
           ],
           "top": [
             0,
-            19.01025,
-            0.0009999999827716237
+            21.30525,
+            0.0009999999975258543
           ],
           "front": [
             0,
-            6.3469000000000015,
-            16.31875
+            6.992900000000001,
+            18.443749999999998
           ],
           "side": [
-            16.31875,
-            6.3469000000000015,
-            9.992352476792936e-16
+            18.443749999999998,
+            6.992900000000001,
+            1.1293539700886997e-15
           ]
         },
-        "relationEdges": 38,
+        "relationEdges": 16,
         "relationLines": 2,
         "explodedDelta": 2.3099999999999996,
         "focusDistance": 0
       },
       "selectedBefore": "",
-      "selectedAfter": "tile-4",
+      "selectedAfter": "tile-8",
       "deleteUndo": {
-        "uid": "tile-4",
+        "uid": "tile-8",
         "deletedCount": 201,
         "restoredCount": 202,
         "restored": true
@@ -321,18 +1218,35 @@
     },
     "blockedVisual": {
       "twoD": {
-        "blockedCount": 195,
-        "factor": 0.58,
-        "overlayAlpha": 0.42,
+        "blockedCount": 188,
+        "ordinaryUid": "tile-3",
+        "ordinaryPatchCount": 14,
+        "ordinaryFactor": 0.58,
+        "ordinaryOverlayAlpha": 0.42,
+        "blindUid": "tile-10",
+        "blindPatchCount": 21,
+        "blindFactor": 1,
+        "blindOverlayAlpha": 0,
         "rendererMode": "play"
       },
       "threeD": {
-        "blockedCount": 192,
+        "blockedCount": 186,
         "topHex": 4934475,
         "sideHex": 266240,
+        "blindTopHex": 16777215,
         "expectedTopHex": 4934475,
         "expectedSideHex": 266240,
         "rendererMode": "play"
+      },
+      "recovery": {
+        "uid": "tile-173",
+        "blockerUid": "tile-188",
+        "matchUid": "tile-189",
+        "beforePatchCount": 1,
+        "covered": false,
+        "sideBlocked": false,
+        "afterPatchCount": 0,
+        "afterFactor": 1
       }
     },
     "playTools": {
@@ -348,9 +1262,9 @@
         }
       },
       "undo": {
-        "uid": "tile-175",
+        "uid": "tile-152",
         "trayBefore": [
-          "tile-175",
+          "tile-152",
           null
         ],
         "trayAfter": [
@@ -420,25 +1334,25 @@
     },
     "play3d": {
       "selectedBefore": "",
-      "selectedAfter": "tile-175"
+      "selectedAfter": "tile-185"
     },
     "export": {
-      "fileName": "ai_level_2790321770.json",
+      "fileName": "ai_level_363265768.json",
       "gridUnit": "sheep_7x8_mini8",
       "tileCount": 202
     },
     "persistence": {
-      "savedProperty": 15,
+      "savedProperty": 0,
       "savedPosition": {
-        "x": 15,
-        "y": 23
+        "x": 0,
+        "y": 0
       },
       "savedToLocalStorage": true,
       "lastOpenedRestored": true,
-      "reloadedProperty": 15,
+      "reloadedProperty": 0,
       "reloadedPosition": {
-        "x": 15,
-        "y": 23
+        "x": 0,
+        "y": 0
       },
       "localCopyPreserved": true,
       "returnedToDefault": true,
@@ -453,14 +1367,15 @@
   },
   "media": {
     "file": "paws-level-editor-tutorial.mp4",
-    "sha256": "ee40f86cf8a2e9df3170a0defa4891d3dbb58b91e63b5cc0abe21c7b4206a0cf"
+    "sha256": "58fe1d8b1338e7ef396d1524b6a4e80df73474e5e0ac523a5d851d2651b9d577"
   },
   "sources": {
     "projects/paws-level-editor/index.html": "310cfffad59984fe5a187246634a4b3a41a4d761385fc180084b33ac1581b41a",
     "projects/paws-level-editor/styles.css": "1286f9081a248308d5842bb786f081f99e8a388a81c1cf46836d80c3d4dc839b",
     "projects/paws-level-editor/app.mjs": "d54ca4e1fa3c1aa524e63f9b7a743d8b883710c1ff340a8e290190d293e485c7",
     "projects/paws-level-editor/static-api-client.mjs": "a37e3bcaa2bfed9ddf10aa800fb5fbaa025bc751398e4201eddf236e4e740c84",
-    "projects/paws-level-editor/core/ai-level-generator.mjs": "0298a8be2ea4a3f35e5e383a1b412b06e8ad7fa642294e0ecc4babeb2fbe1e6b",
+    "projects/paws-level-editor/core/ai-level-generator.mjs": "af3c16a190b5f419e47ce1c5860ecacb53898acceaaa210118ecd079fab9228a",
+    "projects/paws-level-editor/core/coverage.mjs": "95e11f222d8740a79aaf132fe1cf7f745f73b928811e1a116890977ff350646f",
     "projects/paws-level-editor/core/editor-geometry.mjs": "4e718a15f0fb67959ecd22d7a8a4ebcc14c4aa5f224f5f1887937626e29f1f91",
     "projects/paws-level-editor/core/field-grid-layout.mjs": "65830f5bcb8752369616fec825ab82e68ef0c6e5607dfaefafdf02d02c2bf8ab",
     "projects/paws-level-editor/core/fill-tool.mjs": "af97bbfa44ccc63e34bfa9e74f1f40dd93eb27c31dbec6772225da2cc65c2fed",
@@ -471,16 +1386,20 @@
     "projects/paws-level-editor/core/level-difficulty.mjs": "854ee69d136586c19493d18f1bcc308c7cc3bbca0a1a77e8483cf082516b0444",
     "projects/paws-level-editor/core/legacy-ai-geometry-upgrade.mjs": "fb1be33b6f58eb2482549cc44178e24fdb9b3e00daf15b7bb6e01a955274c400",
     "projects/paws-level-editor/core/level-solver.mjs": "95a97b42973db91aaf118326b0bbf83bfda24168ff36fb5bc9b4b7703cd6c248",
-    "projects/paws-level-editor/core/level-statistics.mjs": "2654159a2e4d6c73efae814dd762063c345bfc4ceb14a2ae1ea29cc80403bd45",
+    "projects/paws-level-editor/core/level-statistics.mjs": "d87f76b241445bb030ee9b3df601ceb03fb6c80fbab37b605d8e28b51dcad00f",
     "projects/paws-level-editor/core/level-validator.mjs": "4545657c912fb11298a588caebcdf6dd4877ace4e9722997ca419f4f8b7d1193",
     "projects/paws-level-editor/core/pass-rate-evaluator.mjs": "a5a439cca258961ef92bbd7300c74ac5b7b0ebb28a7aa0bb55fe22f3fcfd1aa2",
-    "projects/paws-level-editor/core/play-engine.mjs": "c3068bcd1855aa116ff5ac8f0b810486f144106c49cc50f1b9581fba5ea1dbce",
+    "projects/paws-level-editor/core/play-engine.mjs": "ab050ba1b9645c75f3e238332afdfc8528aef7f46722df408dba067a218e081f",
+    "projects/paws-level-editor/core/random-assigner.mjs": "2156e755e501094c9cfacd82a4f06e0e5579d43c2228f2c369a112296791bb3f",
+    "projects/paws-level-editor/core/stage-blueprint.mjs": "1eba679701a897da026bf1e38acbe565334a9f43ea2038c5bcd6691231ddc833",
+    "projects/paws-level-editor/core/stage-grammar-generator.mjs": "a2283995f026621ccc366f54d88da754235550896e09971924aba0699158e3fb",
+    "projects/paws-level-editor/core/structure-corpus.mjs": "ea762695720083ace03d0f0ed97da5de46ce7db8beb7ae5320f68512830218b8",
     "projects/paws-level-editor/core/template-motif-generator.mjs": "a85f74f90af8a71ff60914db0342ed10de028f0d218c6129481870ff3f30ee73",
     "projects/paws-level-editor/core/tile-relations.mjs": "75bf4ef64e5e7615b8936f3b7d727139cbbfcf016a8f902e6c5f58bfe5f59c57",
-    "projects/paws-level-editor/core/tile-visual-tone.mjs": "2d276e8a33d77d51ed9d4c353be0e8bf5345b37d72a9470bc3d3c33f9f09ec33",
-    "projects/paws-level-editor/core/view-model.mjs": "fdb7cff3f3ba4623bf381b578835c012f1f86c32144f8f4e08613d2fd61e766c",
+    "projects/paws-level-editor/core/tile-visual-tone.mjs": "331a03ab214816dd7733be8d4209cee78cb70a6a91229091be3018594f40ac85",
+    "projects/paws-level-editor/core/view-model.mjs": "38a3e1ab3cb67e7b71beb2c73b90e11315d259f607a96a718ccc7e4e8cfd4189",
     "projects/paws-level-editor/core/xorshift.mjs": "3472afc3a99c70fa0bd3ea7f207f55c113b6c722cffa6a9232d75c4866c0e7ff",
-    "projects/paws-level-editor/ui/ai-level-dialog.mjs": "4bf4b48887cfa801bb6117c4d07e9013c895e6f8ca1df96cf00cac9b9ce2e3de",
+    "projects/paws-level-editor/ui/ai-level-dialog.mjs": "bfbc4ba21f72be8bcf485f01d82979b804fcb079938009219cdc81085f604255",
     "projects/paws-level-editor/ui/ai-reference-selection.mjs": "c5e76563af150ddf32433df467dbdcdc1577f118fe0c9905451e2f52402c9a1f",
     "projects/paws-level-editor/ui/editor-shortcuts.mjs": "6dd75fb89a98e46450fee11bb35088a5ac941bf40665f000a5a95918df102bca",
     "projects/paws-level-editor/ui/grass-field.mjs": "d3888d3deb1c10654dec0730138b7d25d231a71fa7f1f3d9458f8ec7d5983e25",
@@ -491,11 +1410,11 @@
     "projects/paws-level-editor/ui/level-summary.mjs": "f7876ba36caaef6ac9123f98680aad02a65e5134f6ec1486f306e17f359b4713",
     "projects/paws-level-editor/ui/legacy-ai-open-upgrade.mjs": "e413eab44f7b04289015f5eb98f37971ced2057085e902fb2b04e9ac9eb8f2bd",
     "projects/paws-level-editor/ui/play-tool-command.mjs": "877de31443a4a4d5d7dfd103c0ede802d65e03b0b8c125b59530ab96fbd12089",
-    "projects/paws-level-editor/ui/workbench-controller.mjs": "6bc79b0bd5cfc516a760da97c47f48070b8bfc4117a90d06fb6fe3dbb4167756",
-    "projects/paws-level-editor/views/canvas-2d.mjs": "b3f9895938e977ac474071e20689576c4ee126838ac0a88a0fd0f187f7ee7042",
-    "projects/paws-level-editor/views/three-3d.mjs": "bc8a141a0b5a694d180a7dcebf7db02eeb6260d45b65f0efbadbb405ef0acaed",
+    "projects/paws-level-editor/ui/workbench-controller.mjs": "1d3b5db0e84eb46418b53345696b43aeeb23ed847dcc15df1cc106060f52b2d2",
+    "projects/paws-level-editor/views/canvas-2d.mjs": "5a43dc0c2bbc7a204281868b6ee4b5b87071ede88ab9957f80b198ad912da46e",
+    "projects/paws-level-editor/views/three-3d.mjs": "93b9739ff19dc3cabfee63f3dfc849ded459bd93ce3071f22b7684b1add9bfdb",
     "projects/paws-level-editor/levels/index.json": "7c05176510c105aae0b9951dc20db4ea7db09a03ead34b491d37caa3f842767c",
-    "scripts/record-paws-level-editor-demo.mjs": "740f4bffe3504728f95c67a945f36fda79b4359a5843f125d7cceb6ed8503b0a",
+    "scripts/record-paws-level-editor-demo.mjs": "2f3e8088e5141b5d2e81834f2680fd267283d6503576a811449174a3c27161aa",
     "scripts/paws-recording-support.mjs": "e5d2b2f02b67798c90d080a3202b97ecce50ffd738e31fc374d751ad18ae79c2"
   },
   "assets": {

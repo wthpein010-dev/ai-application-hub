@@ -49,6 +49,16 @@ test("v11 corpus proof records structure, semantics, and performance distributio
   assert.equal(proof.geometry.towerRoleTotals.medium > 0, true);
   assert.equal(proof.geometry.towerRoleTotals.small > 0, true);
   assert.equal(proof.geometry.releaseDependencyDrop.minimum > 0, true);
+  assert.equal(
+    proof.geometry.defaultDifficultyScores.normal.average
+      > proof.geometry.defaultDifficultyScores.easy.average,
+    true,
+  );
+  assert.equal(
+    proof.geometry.defaultDifficultyScores.hard.average
+      > proof.geometry.defaultDifficultyScores.normal.average,
+    true,
+  );
   assert.deepEqual(
     Object.keys(proof.geometry.fillTrackHistogram)
       .map(Number)

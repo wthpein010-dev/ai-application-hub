@@ -3,7 +3,7 @@
   "catalogCount": 0,
   "referenceLevelCount": 1,
   "defaultFileName": "",
-  "generatedFileName": "ai_level_3668413136.json",
+  "generatedFileName": "ai_level_2654508894.json",
   "generatedTileCount": 200,
   "generatedLayerCount": 15,
   "generatedBoard": {
@@ -12,85 +12,588 @@
     "scale": 1
   },
   "generatedGridUnit": "sheep_7x8_mini8",
-  "algorithmVersion": "paws-local-stat-v10-template-motifs",
+  "algorithmVersion": "paws-local-stat-v11-stage-grammar",
   "sourceFileName": "ai_reference.json",
-  "sourceLayerMap": [
-    1,
-    1,
-    1,
-    1,
-    1,
-    1,
-    1,
-    2,
-    2,
-    2,
-    2,
-    2,
-    2,
-    2,
-    2
+  "stagePlan": [
+    {
+      "key": "surface",
+      "label": "表层塔群",
+      "layerCount": 3,
+      "tileCount": 44,
+      "layerStart": 13,
+      "layerEnd": 15,
+      "pressureTarget": 30
+    },
+    {
+      "key": "shelter",
+      "label": "薄掩体",
+      "layerCount": 2,
+      "tileCount": 30,
+      "layerStart": 11,
+      "layerEnd": 12,
+      "pressureTarget": 42
+    },
+    {
+      "key": "middle",
+      "label": "中层塔群",
+      "layerCount": 5,
+      "tileCount": 68,
+      "layerStart": 6,
+      "layerEnd": 10,
+      "pressureTarget": 51
+    },
+    {
+      "key": "crisis",
+      "label": "深层卡点",
+      "layerCount": 3,
+      "tileCount": 40,
+      "layerStart": 3,
+      "layerEnd": 5,
+      "pressureTarget": 65
+    },
+    {
+      "key": "release",
+      "label": "释放残局",
+      "layerCount": 2,
+      "tileCount": 18,
+      "layerStart": 1,
+      "layerEnd": 2,
+      "pressureTarget": 35
+    }
   ],
-  "preservedAnchorRatio": 0,
-  "fillTrackCount": 0,
-  "fillTracks": [],
+  "towerEntrances": [
+    {
+      "id": "tower-1",
+      "role": "high",
+      "x": 10,
+      "y": 32,
+      "layerStart": 1,
+      "layerEnd": 12,
+      "depth": 12,
+      "sourceDepth": 4
+    },
+    {
+      "id": "tower-2",
+      "role": "medium",
+      "x": 41,
+      "y": 16,
+      "layerStart": 1,
+      "layerEnd": 9,
+      "depth": 9,
+      "sourceDepth": 4
+    },
+    {
+      "id": "tower-3",
+      "role": "small",
+      "x": 3,
+      "y": 52,
+      "layerStart": 1,
+      "layerEnd": 5,
+      "depth": 5,
+      "sourceDepth": 2
+    },
+    {
+      "id": "tower-4",
+      "role": "small",
+      "x": 18,
+      "y": 52,
+      "layerStart": 1,
+      "layerEnd": 5,
+      "depth": 5,
+      "sourceDepth": 2
+    },
+    {
+      "id": "tower-5",
+      "role": "small",
+      "x": 32,
+      "y": 56,
+      "layerStart": 1,
+      "layerEnd": 5,
+      "depth": 5,
+      "sourceDepth": 2
+    }
+  ],
+  "structure": {
+    "layerTileCounts": [
+      9,
+      9,
+      13,
+      14,
+      13,
+      14,
+      14,
+      13,
+      14,
+      13,
+      15,
+      15,
+      14,
+      15,
+      15
+    ],
+    "multiComponentLayerRatio": 1,
+    "maximumPlatformSize": 5,
+    "maximumComponentShareByLayer": {
+      "1": 0.5555555555555556,
+      "2": 0.5555555555555556,
+      "3": 0.38461538461538464,
+      "4": 0.35714285714285715,
+      "5": 0.38461538461538464,
+      "6": 0.35714285714285715,
+      "7": 0.35714285714285715,
+      "8": 0.38461538461538464,
+      "9": 0.35714285714285715,
+      "10": 0.38461538461538464,
+      "11": 0.3333333333333333,
+      "12": 0.3333333333333333,
+      "13": 0.35714285714285715,
+      "14": 0.3333333333333333,
+      "15": 0.3333333333333333
+    },
+    "threeLayerGiantRun": false,
+    "towerEntranceCount": 5,
+    "towerRoleCounts": {
+      "high": 1,
+      "medium": 1,
+      "small": 3
+    },
+    "maximumTowerDepth": 15,
+    "releaseDependencyDrop": 0.27586206896551724,
+    "boundaryRatio": 0.365,
+    "fillTrackCount": 2,
+    "stagePressure": {
+      "surface": {
+        "layerStart": 13,
+        "layerEnd": 15,
+        "remainingTiles": 200,
+        "openRate": 0.09,
+        "accessiblePairs": 9,
+        "pressure": 0.91
+      },
+      "shelter": {
+        "layerStart": 11,
+        "layerEnd": 12,
+        "remainingTiles": 156,
+        "openRate": 0.08974358974358974,
+        "accessiblePairs": 7,
+        "pressure": 0.9102564102564102
+      },
+      "middle": {
+        "layerStart": 6,
+        "layerEnd": 10,
+        "remainingTiles": 126,
+        "openRate": 0.10317460317460317,
+        "accessiblePairs": 6,
+        "pressure": 0.8968253968253969
+      },
+      "crisis": {
+        "layerStart": 3,
+        "layerEnd": 5,
+        "remainingTiles": 58,
+        "openRate": 0.22413793103448276,
+        "accessiblePairs": 6,
+        "pressure": 0.7758620689655172
+      },
+      "release": {
+        "layerStart": 1,
+        "layerEnd": 2,
+        "remainingTiles": 18,
+        "openRate": 0.5,
+        "accessiblePairs": 4,
+        "pressure": 0.5
+      }
+    }
+  },
+  "topologyHash": "topology-d6c5de2e",
+  "motifUseCount": 43,
+  "repairLog": [],
+  "fillTrackCount": 2,
+  "fillTracks": [
+    {
+      "lowerDepth": 11,
+      "depth": 12,
+      "explicitTop": true,
+      "layerStart": 1,
+      "layerEnd": 12,
+      "lowerAnchors": [
+        {
+          "x": 8,
+          "y": 8,
+          "layer": 1
+        },
+        {
+          "x": 7,
+          "y": 8,
+          "layer": 2
+        },
+        {
+          "x": 6,
+          "y": 8,
+          "layer": 3
+        },
+        {
+          "x": 7,
+          "y": 8,
+          "layer": 4
+        },
+        {
+          "x": 8,
+          "y": 8,
+          "layer": 5
+        },
+        {
+          "x": 9,
+          "y": 8,
+          "layer": 6
+        },
+        {
+          "x": 10,
+          "y": 8,
+          "layer": 7
+        },
+        {
+          "x": 9,
+          "y": 8,
+          "layer": 8
+        },
+        {
+          "x": 8,
+          "y": 8,
+          "layer": 9
+        },
+        {
+          "x": 7,
+          "y": 8,
+          "layer": 10
+        },
+        {
+          "x": 6,
+          "y": 8,
+          "layer": 11
+        }
+      ],
+      "topAnchor": {
+        "x": 7,
+        "y": 8,
+        "layer": 12
+      },
+      "sourceLowerDepth": 3
+    },
+    {
+      "lowerDepth": 11,
+      "depth": 12,
+      "explicitTop": true,
+      "layerStart": 1,
+      "layerEnd": 12,
+      "lowerAnchors": [
+        {
+          "x": 40,
+          "y": 8,
+          "layer": 1
+        },
+        {
+          "x": 41,
+          "y": 8,
+          "layer": 2
+        },
+        {
+          "x": 42,
+          "y": 8,
+          "layer": 3
+        },
+        {
+          "x": 41,
+          "y": 8,
+          "layer": 4
+        },
+        {
+          "x": 40,
+          "y": 8,
+          "layer": 5
+        },
+        {
+          "x": 39,
+          "y": 8,
+          "layer": 6
+        },
+        {
+          "x": 38,
+          "y": 8,
+          "layer": 7
+        },
+        {
+          "x": 39,
+          "y": 8,
+          "layer": 8
+        },
+        {
+          "x": 40,
+          "y": 8,
+          "layer": 9
+        },
+        {
+          "x": 41,
+          "y": 8,
+          "layer": 10
+        },
+        {
+          "x": 42,
+          "y": 8,
+          "layer": 11
+        }
+      ],
+      "topAnchor": {
+        "x": 41,
+        "y": 8,
+        "layer": 12
+      },
+      "sourceLowerDepth": 3
+    }
+  ],
   "layerTileCounts": [
+    9,
+    9,
+    13,
+    14,
+    13,
     14,
     14,
+    13,
     14,
+    13,
+    15,
+    15,
     14,
-    14,
-    13,
-    13,
-    13,
-    13,
-    13,
-    13,
-    13,
-    13,
-    13,
-    13
-  ],
-  "layerCapacities": [
-    42,
-    42,
-    48,
-    42,
-    42,
-    42,
-    42,
-    42,
-    42,
-    42,
-    42,
-    48,
-    42,
-    42,
-    42
+    15,
+    15
   ],
   "allTilesFullRandom": true,
   "sameLayerOverlapPairs": 0,
-  "singleLayerTileCount": 13,
-  "generatedDifficultyScore": 70,
-  "generatedDifficultyRating": "困难",
+  "stageViews": [
+    {
+      "key": "surface",
+      "layerStart": 13,
+      "layerEnd": 15,
+      "layers": [
+        {
+          "layer": 13,
+          "selectedLayer": 13,
+          "sourceCount": 14,
+          "rendererCount": 14
+        },
+        {
+          "layer": 14,
+          "selectedLayer": 14,
+          "sourceCount": 15,
+          "rendererCount": 15
+        },
+        {
+          "layer": 15,
+          "selectedLayer": 15,
+          "sourceCount": 15,
+          "rendererCount": 15
+        }
+      ]
+    },
+    {
+      "key": "shelter",
+      "layerStart": 11,
+      "layerEnd": 12,
+      "layers": [
+        {
+          "layer": 11,
+          "selectedLayer": 11,
+          "sourceCount": 15,
+          "rendererCount": 15
+        },
+        {
+          "layer": 12,
+          "selectedLayer": 12,
+          "sourceCount": 15,
+          "rendererCount": 15
+        }
+      ]
+    },
+    {
+      "key": "middle",
+      "layerStart": 6,
+      "layerEnd": 10,
+      "layers": [
+        {
+          "layer": 6,
+          "selectedLayer": 6,
+          "sourceCount": 14,
+          "rendererCount": 14
+        },
+        {
+          "layer": 7,
+          "selectedLayer": 7,
+          "sourceCount": 14,
+          "rendererCount": 14
+        },
+        {
+          "layer": 8,
+          "selectedLayer": 8,
+          "sourceCount": 13,
+          "rendererCount": 13
+        },
+        {
+          "layer": 9,
+          "selectedLayer": 9,
+          "sourceCount": 14,
+          "rendererCount": 14
+        },
+        {
+          "layer": 10,
+          "selectedLayer": 10,
+          "sourceCount": 13,
+          "rendererCount": 13
+        }
+      ]
+    },
+    {
+      "key": "crisis",
+      "layerStart": 3,
+      "layerEnd": 5,
+      "layers": [
+        {
+          "layer": 3,
+          "selectedLayer": 3,
+          "sourceCount": 13,
+          "rendererCount": 13
+        },
+        {
+          "layer": 4,
+          "selectedLayer": 4,
+          "sourceCount": 14,
+          "rendererCount": 14
+        },
+        {
+          "layer": 5,
+          "selectedLayer": 5,
+          "sourceCount": 13,
+          "rendererCount": 13
+        }
+      ]
+    },
+    {
+      "key": "release",
+      "layerStart": 1,
+      "layerEnd": 2,
+      "layers": [
+        {
+          "layer": 1,
+          "selectedLayer": 1,
+          "sourceCount": 9,
+          "rendererCount": 9
+        },
+        {
+          "layer": 2,
+          "selectedLayer": 2,
+          "sourceCount": 9,
+          "rendererCount": 9
+        }
+      ]
+    }
+  ],
+  "singleLayerTileCount": 15,
+  "generatedDifficultyScore": 56,
+  "generatedDifficultyRating": "标准",
   "generatedDifficultyDimensions": {
-    "structure": 83,
-    "information": 42,
-    "choice": 72,
-    "route": 81,
-    "endurance": 45
+    "structure": 82,
+    "information": 55,
+    "choice": 45,
+    "route": 49,
+    "endurance": 47
   },
-  "generatedInitialPairs": 3,
-  "generatedAverageBlockers": 18.107526881720432,
-  "hardGenerationMs": 682,
+  "generatedInitialPairs": 9,
+  "generatedAverageBlockers": 6.631284916201118,
+  "hardGenerationMs": 3418,
   "solverSteps": 100,
-  "solverNodes": 100,
+  "solverNodes": 102,
   "completedInPlay": true,
+  "blockedVisual2d": {
+    "ordinaryUid": "tile-3",
+    "ordinaryPatchCount": 14,
+    "ordinaryTone": {
+      "blocked": true,
+      "factor": 0.58,
+      "overlayAlpha": 0.42,
+      "innerShadowAlpha": 0.34,
+      "contactShadowAlpha": 0.3
+    },
+    "blindUid": "tile-10",
+    "blindPatchCount": 15,
+    "blindTone": {
+      "blocked": true,
+      "factor": 1,
+      "overlayAlpha": 0,
+      "innerShadowAlpha": 0.2,
+      "contactShadowAlpha": 0
+    },
+    "rendererMode": "play"
+  },
+  "blockedVisual3d": {
+    "blockedCount": 182,
+    "ordinaryUid": "tile-3",
+    "ordinaryPatchCount": 14,
+    "ordinaryFactor": 0.58,
+    "ordinaryOverlayAlpha": 0.42,
+    "topHex": 4934475,
+    "sideHex": 266240,
+    "blindCount": 16,
+    "blindUid": "tile-10",
+    "blindFactor": 1,
+    "blindOverlayAlpha": 0,
+    "blindTopHex": 16777215,
+    "meshCount": 200,
+    "tileGroupChildren": 200,
+    "shadowMapEnabled": true,
+    "shadowBias": -0.0002,
+    "shadowNormalBias": 0.02,
+    "expectedTopHex": 4934475,
+    "expectedSideHex": 266240
+  },
+  "ordinaryRecovery": {
+    "uid": "tile-132",
+    "blockerUid": "tile-147",
+    "moveIndex": 26,
+    "beforePatchCount": 1,
+    "removed": false,
+    "covered": false,
+    "sideBlocked": false,
+    "afterPatchCount": 0,
+    "topHex": 16777215
+  },
+  "blindRecovery": {
+    "uid": "tile-127",
+    "blockerUid": "tile-142",
+    "moveIndex": 21,
+    "beforeTopHex": 16777215,
+    "removed": false,
+    "covered": false,
+    "sideBlocked": false,
+    "afterPatchCount": 0,
+    "afterTopHex": 16777215
+  },
+  "desktopLayout": {
+    "viewportWidth": 1440,
+    "scrollWidth": 1440,
+    "clientWidth": 1440,
+    "overflow": false
+  },
+  "mobileLayout": {
+    "viewportWidth": 390,
+    "scrollWidth": 390,
+    "clientWidth": 390,
+    "overflow": false
+  },
   "webgl": true,
   "persistedAfterReload": true,
   "deletedAfterVerification": true,
   "consoleErrors": 0,
   "httpErrors": 0,
   "pageErrors": 0,
-  "requestFailures": 0
+  "requestFailures": 0,
+  "webglErrors": 0
 }

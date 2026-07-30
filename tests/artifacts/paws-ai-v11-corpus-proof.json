@@ -1,7 +1,7 @@
 {
   "schemaVersion": 2,
   "algorithmVersion": "paws-local-stat-v11-stage-grammar",
-  "generatedAt": "2026-07-30T03:06:20.617Z",
+  "generatedAt": "2026-07-30T03:48:03.685Z",
   "corpus": {
     "activeSecondRoundFiles": 16,
     "trashFilesRead": 0,
@@ -104,6 +104,23 @@
         "maximum": 74,
         "average": 33.747
       }
+    },
+    "defaultDifficultyScores": {
+      "easy": {
+        "minimum": 46,
+        "maximum": 49,
+        "average": 47
+      },
+      "normal": {
+        "minimum": 51,
+        "maximum": 59,
+        "average": 54.571
+      },
+      "hard": {
+        "minimum": 64,
+        "maximum": 74,
+        "average": 68.667
+      }
     }
   },
   "play": {
@@ -174,9 +191,9 @@
     }
   },
   "performance": {
-    "geometryP95Ms": 300.717,
-    "playP95Ms": 78.009,
-    "totalDurationMs": 137261.467
+    "geometryP95Ms": 264.276,
+    "playP95Ms": 61.027,
+    "totalDurationMs": 130692.791
   },
   "failures": [],
   "ok": true

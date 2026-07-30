@@ -165,6 +165,7 @@ const maximumTowerDepthHistogram = {};
 const fillTrackHistogram = { 0: 0, 2: 0, 4: 0 };
 const towerRoleTotals = { high: 0, medium: 0, small: 0 };
 const difficultyScores = { easy: [], normal: [], hard: [] };
+const defaultDifficultyScores = { easy: [], normal: [], hard: [] };
 const defaultLayerPeaks = [];
 const defaultLayerPeakHistogram = {};
 const playDocuments = { easy: [], normal: [], hard: [] };
@@ -195,6 +196,12 @@ function recordGeometryMetrics(generated, difficulty, target) {
   towerRoleTotals.medium += metrics.towerRoleCounts.medium;
   towerRoleTotals.small += metrics.towerRoleCounts.small;
   difficultyScores[difficulty].push(ai.difficulty.actualScore);
+  if (
+    target.tileCount === TARGETS[difficulty].tileCount
+    && target.layerCount === TARGETS[difficulty].layerCount
+  ) {
+    defaultDifficultyScores[difficulty].push(ai.difficulty.actualScore);
+  }
 
   for (const [, layerTiles] of layerGroups) {
     const components = spatialComponents(layerTiles);
@@ -461,6 +468,10 @@ const proof = {
     fillTrackHistogram,
     difficultyScores: Object.fromEntries(
       Object.entries(difficultyScores)
+        .map(([difficulty, values]) => [difficulty, summarize(values)]),
+    ),
+    defaultDifficultyScores: Object.fromEntries(
+      Object.entries(defaultDifficultyScores)
         .map(([difficulty, values]) => [difficulty, summarize(values)]),
     ),
   },
