@@ -178,7 +178,7 @@ test("packaged FFmpeg resolves from app.asar.unpacked", () => {
 });
 
 test("image fingerprint normalizes decoded pixel formats", async (t) => {
-  const ffmpegPath = require(desktop(
+  const ffmpegPath = process.env.FFMPEG_PATH || require(desktop(
     "node_modules",
     "ffmpeg-static",
     "index.js",
