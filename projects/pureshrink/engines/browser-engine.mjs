@@ -539,7 +539,8 @@ export function createBrowserEngine(options = {}) {
       };
     },
 
-    async bundle(results) {
+    async bundle(results, signal) {
+      abortIfNeeded(signal);
       const totalBytes = results.reduce(
         (sum, result) => sum + Number(result.blob?.size || 0),
         0,
@@ -548,11 +549,14 @@ export function createBrowserEngine(options = {}) {
         throw new Error("批量下载 ZIP 安全上限为 128 MB，请逐个下载结果");
       }
       const archive = await loadArchive();
+      abortIfNeeded(signal);
       const entries = collisionSafeEntries(await Promise.all(results.map(async (result) => ({
         name: result.name,
         bytes: new Uint8Array(await result.blob.arrayBuffer()),
       }))));
-      const bytes = await archive.bundle(entries);
+      abortIfNeeded(signal);
+      const bytes = await archive.bundle(entries, { signal });
+      abortIfNeeded(signal);
       return new Blob([bytes], { type: "application/zip" });
     },
   };

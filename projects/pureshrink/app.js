@@ -1,5 +1,5 @@
 import { formatBytes, savingRatio, summarizeTasks } from "./core/metrics.mjs";
-import { createQueue } from "./core/queue.mjs";
+import { createBatchDownload, createQueue } from "./core/queue.mjs";
 import { createBrowserEngine } from "./engines/browser-engine.mjs";
 import { createDesktopEngine } from "./engines/desktop-engine.mjs";
 
@@ -28,6 +28,14 @@ const desktopBridge = globalThis.pureShrinkDesktop;
 const browserEngine = createBrowserEngine();
 const engine = desktopBridge ? createDesktopEngine(desktopBridge) : browserEngine;
 const queue = createQueue((task, report, signal) => engine.compress(task, report, signal));
+const batchDownload = createBatchDownload({
+  bundle: (results, signal) => browserEngine.bundle(results, signal),
+  download: (blob) => downloadBlob(blob, "PureShrink-results.zip"),
+  onRunningChange: () => render(queue.tasks),
+  onStatus: (status) => {
+    nodes.status.textContent = status;
+  },
+});
 let mode = "lossless";
 
 const STATUS_COPY = {
@@ -162,18 +170,21 @@ function render(tasks) {
   const hasRunning = tasks.some((task) => task.status === "running");
   const hasTerminal = tasks.some((task) => ["completed", "kept-original", "failed", "cancelled"].includes(task.status));
   const downloadable = tasks.filter((task) => task.status === "completed" && task.result?.blob);
+  const isBusy = hasRunning || batchDownload.running;
 
-  nodes.start.disabled = !hasQueued || hasRunning;
-  nodes.cancel.disabled = !hasRunning;
-  nodes.clear.disabled = !hasTerminal || hasRunning;
-  nodes.downloadAll.disabled = !downloadable.length || hasRunning;
-  nodes.status.textContent = hasRunning
-    ? "正在本设备处理当前文件"
-    : hasQueued
-      ? `${tasks.filter((task) => task.status === "queued").length} 个文件等待压缩`
-      : summary.count
-        ? "本轮处理已结束"
-        : "等待加入文件";
+  nodes.start.disabled = !hasQueued || isBusy;
+  nodes.cancel.disabled = !isBusy;
+  nodes.clear.disabled = !hasTerminal || isBusy;
+  nodes.downloadAll.disabled = !downloadable.length || isBusy;
+  if (!batchDownload.running) {
+    nodes.status.textContent = hasRunning
+      ? "正在本设备处理当前文件"
+      : hasQueued
+        ? `${tasks.filter((task) => task.status === "queued").length} 个文件等待压缩`
+        : summary.count
+          ? "本轮处理已结束"
+          : "等待加入文件";
+  }
 }
 
 nodes.dropzone.addEventListener("click", pickFiles);
@@ -217,17 +228,16 @@ document.querySelectorAll('input[name="mode"]').forEach((input) => {
 });
 
 nodes.start.addEventListener("click", () => queue.start());
-nodes.cancel.addEventListener("click", () => queue.cancelCurrent());
+nodes.cancel.addEventListener("click", () => {
+  if (!batchDownload.cancel()) queue.cancelCurrent();
+});
 nodes.clear.addEventListener("click", () => queue.clearCompleted());
-nodes.downloadAll.addEventListener("click", async () => {
+nodes.downloadAll.addEventListener("click", () => {
   const results = queue.tasks
     .filter((task) => task.status === "completed" && task.result?.blob)
     .map((task) => task.result);
   if (!results.length) return;
-  nodes.status.textContent = "正在整理批量下载包";
-  const blob = await browserEngine.bundle(results);
-  downloadBlob(blob, "PureShrink-results.zip");
-  nodes.status.textContent = "批量下载包已生成";
+  batchDownload.start(results);
 });
 
 window.addEventListener("beforeunload", (event) => {

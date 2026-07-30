@@ -10,7 +10,9 @@ import {
   savingRatio,
   summarizeTasks,
 } from "../projects/pureshrink/core/metrics.mjs";
-import { createQueue } from "../projects/pureshrink/core/queue.mjs";
+import * as queueModule from "../projects/pureshrink/core/queue.mjs";
+
+const { createQueue } = queueModule;
 
 test("compression policy classifies supported media and generic files", () => {
   const cases = [
@@ -185,4 +187,71 @@ test("cancelling the current task pauses the queue and leaves later work queued"
   assert.deepEqual(started, [1]);
   assert.deepEqual(queue.tasks.map((task) => task.status), ["cancelled", "queued"]);
   assert.equal(queue.running, false);
+});
+
+test("batch download recovers after the ZIP size boundary rejects the request", async () => {
+  assert.equal(typeof queueModule.createBatchDownload, "function");
+  const runningStates = [];
+  const statuses = [];
+  let downloads = 0;
+  const batch = queueModule.createBatchDownload({
+    bundle: async () => {
+      throw new Error("批量下载 ZIP 安全上限为 128 MB，请逐个下载结果");
+    },
+    download: () => {
+      downloads += 1;
+    },
+    onRunningChange: (running) => runningStates.push(running),
+    onStatus: (status) => statuses.push(status),
+  });
+
+  const completed = await batch.start([{ name: "large.mov" }]);
+
+  assert.equal(completed, false);
+  assert.equal(batch.running, false);
+  assert.equal(downloads, 0);
+  assert.deepEqual(runningStates, [true, false]);
+  assert.deepEqual(statuses, [
+    "正在整理批量下载包",
+    "批量下载失败：批量下载 ZIP 安全上限为 128 MB，请逐个下载结果",
+  ]);
+});
+
+test("batch download cancellation aborts active archive work and restores idle state", async () => {
+  let observedSignal;
+  let markStarted;
+  const started = new Promise((resolve) => {
+    markStarted = resolve;
+  });
+  const runningStates = [];
+  const statuses = [];
+  const batch = queueModule.createBatchDownload({
+    bundle: async (_results, signal) => new Promise((_resolve, reject) => {
+      observedSignal = signal;
+      signal.addEventListener("abort", () => {
+        reject(new DOMException("任务已取消", "AbortError"));
+      }, { once: true });
+      markStarted();
+    }),
+    download: () => {
+      assert.fail("cancelled batch must not download an archive");
+    },
+    onRunningChange: (running) => runningStates.push(running),
+    onStatus: (status) => statuses.push(status),
+  });
+
+  const pending = batch.start([{ name: "clip.mov" }]);
+  await started;
+  assert.equal(batch.running, true);
+  assert.equal(batch.cancel(), true);
+  const completed = await pending;
+
+  assert.equal(completed, false);
+  assert.equal(observedSignal.aborted, true);
+  assert.equal(batch.running, false);
+  assert.deepEqual(runningStates, [true, false]);
+  assert.deepEqual(statuses, [
+    "正在整理批量下载包",
+    "批量下载已取消",
+  ]);
 });

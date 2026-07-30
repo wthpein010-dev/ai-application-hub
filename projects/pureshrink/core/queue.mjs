@@ -18,6 +18,67 @@ function safeErrorMessage(error) {
   return String(error || "处理失败");
 }
 
+function abortError() {
+  return new DOMException("任务已取消", "AbortError");
+}
+
+export function createBatchDownload(options = {}) {
+  const {
+    bundle,
+    download,
+    onRunningChange = () => {},
+    onStatus = () => {},
+  } = options;
+  if (typeof bundle !== "function" || typeof download !== "function") {
+    throw new TypeError("PureShrink batch download requires bundle and download functions");
+  }
+
+  let currentController = null;
+
+  async function start(results) {
+    const downloadable = Array.from(results || []);
+    if (!downloadable.length || currentController) return false;
+
+    const controller = new AbortController();
+    currentController = controller;
+    onRunningChange(true);
+    onStatus("正在整理批量下载包");
+    let finalStatus = "";
+
+    try {
+      const blob = await bundle(downloadable, controller.signal);
+      if (controller.signal.aborted) throw abortError();
+      await download(blob);
+      finalStatus = "批量下载包已生成";
+      return true;
+    } catch (error) {
+      const wasCancelled = controller.signal.aborted || error?.name === "AbortError";
+      finalStatus = wasCancelled
+        ? "批量下载已取消"
+        : `批量下载失败：${safeErrorMessage(error)}`;
+      return false;
+    } finally {
+      currentController = null;
+      onRunningChange(false);
+      onStatus(finalStatus);
+    }
+  }
+
+  function cancel() {
+    if (!currentController) return false;
+    currentController.abort();
+    return true;
+  }
+
+  return {
+    start,
+    cancel,
+    get running() {
+      return currentController !== null;
+    },
+  };
+}
+
 export function createQueue(executor) {
   if (typeof executor !== "function") {
     throw new TypeError("PureShrink queue requires an executor");

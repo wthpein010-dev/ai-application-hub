@@ -203,6 +203,42 @@ test("browser engine keeps duplicate batch names collision-safe", async () => {
   );
 });
 
+test("browser engine forwards cancellation to active batch archive work", async () => {
+  let receivedSignal;
+  let archiveStarted;
+  const started = new Promise((resolve) => {
+    archiveStarted = resolve;
+  });
+  const engine = createBrowserEngine({
+    loadArchive: async () => ({
+      bundle: async (_entries, { signal } = {}) => new Promise((_resolve, reject) => {
+        receivedSignal = signal;
+        archiveStarted();
+        if (!signal) {
+          reject(new Error("batch archive signal was not forwarded"));
+          return;
+        }
+        signal.addEventListener("abort", () => {
+          reject(new DOMException("任务已取消", "AbortError"));
+        }, { once: true });
+      }),
+    }),
+  });
+  const controller = new AbortController();
+  const pending = engine.bundle([
+    {
+      name: "photo.png",
+      blob: new Blob([Uint8Array.from([1])]),
+    },
+  ], controller.signal);
+
+  await started;
+  controller.abort();
+
+  await assert.rejects(pending, { name: "AbortError" });
+  assert.equal(receivedSignal, controller.signal);
+});
+
 test("browser engine refuses files at or above its two-gigabyte safety boundary", async () => {
   const file = {
     name: "feature.mp4",

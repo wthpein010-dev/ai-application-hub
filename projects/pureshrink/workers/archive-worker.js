@@ -44,14 +44,33 @@ self.addEventListener("message", (event) => {
     }
 
     if (message.operation === "bundle") {
+      const entries = message.entries.map((entry) => ({
+        name: entry.name,
+        bytes: new Uint8Array(entry.bytes),
+      }));
       const files = Object.fromEntries(
-        message.entries.map((entry) => [
-          entry.name,
-          new Uint8Array(entry.bytes),
-        ]),
+        entries.map((entry) => [entry.name, entry.bytes]),
       );
-      const result = transferableBytes(fflate.zipSync(files, { level: 6 }));
-      self.postMessage({ ok: true, bytes: result.buffer }, [result.buffer]);
+      const zipped = fflate.zipSync(files, { level: 6 });
+      const restored = fflate.unzipSync(zipped);
+      const restoredNames = Object.keys(restored);
+      const verified = restoredNames.length === entries.length
+        && entries.every((entry) => (
+          Object.prototype.hasOwnProperty.call(restored, entry.name)
+          && bytesEqual(entry.bytes, restored[entry.name])
+        ));
+      if (!verified) {
+        throw new Error("PureShrink ZIP bundle verification failed");
+      }
+      const result = transferableBytes(zipped);
+      self.postMessage(
+        {
+          ok: true,
+          bytes: result.buffer,
+          verified: true,
+        },
+        [result.buffer],
+      );
       return;
     }
 
