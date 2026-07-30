@@ -39,11 +39,7 @@ function sameLayerOverlapPairs(tiles) {
   return overlaps;
 }
 
-test("every active Unity second-round template generates one valid v10 level", {
-  skip: levelsRoot
-    ? false
-    : "PAWS_EDITOR_LEVELS is not set; Unity corpus gate was not requested.",
-}, async () => {
+async function readActiveCorpus() {
   const entries = await readdir(levelsRoot, { withFileTypes: true });
   const fileNames = entries
     .filter((entry) =>
@@ -51,13 +47,25 @@ test("every active Unity second-round template generates one valid v10 level", {
       && /_r2_.*\.json$/i.test(entry.name))
     .map(({ name }) => name)
     .sort((left, right) => left.localeCompare(right, "zh-CN"));
-  assert.equal(fileNames.length >= 16, true);
-
-  for (const [index, fileName] of fileNames.entries()) {
-    const source = parseLevelDocument(
+  const references = await Promise.all(fileNames.map(async (fileName) =>
+    parseLevelDocument(
       JSON.parse(await readFile(join(levelsRoot, fileName), "utf8")),
       { fileName },
-    );
+    )));
+  return { fileNames, references };
+}
+
+test("every active Unity second-round template generates one valid v11 stage-grammar level", {
+  skip: levelsRoot
+    ? false
+    : "PAWS_EDITOR_LEVELS is not set; Unity corpus gate was not requested.",
+}, async () => {
+  const { fileNames, references } = await readActiveCorpus();
+  assert.equal(fileNames.length, 16);
+  assert.equal(fileNames.some((fileName) => /_Trash/i.test(fileName)), false);
+
+  for (const [index, source] of references.entries()) {
+    const fileName = fileNames[index];
     const sourceStatistics = extractLevelStatistics(source);
     const generated = generateAiLevel({
       references: [source],
@@ -69,20 +77,74 @@ test("every active Unity second-round template generates one valid v10 level", {
       seed: 20260729 + index,
       maxAttempts: 1,
     });
-    const learning = generated.document.designerNote.aiGeneration.templateLearning;
+    const ai = generated.document.designerNote.aiGeneration;
+    const learning = ai.templateLearning;
 
     assert.equal(
-      generated.document.designerNote.aiGeneration.algorithmVersion,
-      "paws-local-stat-v10-template-motifs",
+      ai.algorithmVersion,
+      "paws-local-stat-v11-stage-grammar",
       fileName,
     );
     assert.equal(generated.document.tiles.length, 200, fileName);
     assert.equal(new Set(generated.document.tiles.map(({ layer }) => layer)).size, 15, fileName);
     assert.equal(generated.document.tiles.every(({ type }) => type === -1), true, fileName);
     assert.deepEqual(sameLayerOverlapPairs(generated.document.tiles), [], fileName);
-    assert.equal(learning.sourceLayerMap.length, 15, fileName);
+    assert.equal(ai.blueprint.stagePlan.length, 5, fileName);
+    assert.equal(ai.blueprint.layerPlans.length, 15, fileName);
+    assert.equal(Math.max(...learning.layerTileCounts) <= 22, true, fileName);
+    assert.equal(ai.structure.towerEntranceCount >= 4, true, fileName);
+    assert.equal(ai.structure.threeLayerGiantRun, false, fileName);
+    assert.equal(ai.structure.releaseDependencyDrop > 0, true, fileName);
     assert.equal(learning.fillTrackCount, sourceStatistics.fillTracks.length, fileName);
     assert.equal(learning.fillTrackCount, learning.fillTracks.length, fileName);
+    assert.equal([0, 2, 4].includes(learning.fillTrackCount), true, fileName);
     assert.equal(solveLevel(generated.document).solvable, true, fileName);
+  }
+});
+
+test("easy 400/40 keeps six opening pairs with one deterministic attempt", {
+  skip: levelsRoot
+    ? false
+    : "PAWS_EDITOR_LEVELS is not set; Unity corpus gate was not requested.",
+}, async () => {
+  const { references } = await readActiveCorpus();
+  const generated = generateAiLevel({
+    references,
+    difficulty: "easy",
+    layout: "balanced",
+    tileCount: 400,
+    layerCount: 40,
+    targetScore: 40,
+    seed: 100003,
+    maxAttempts: 1,
+  });
+
+  assert.equal(generated.document.tiles.length, 400);
+  assert.equal(generated.report.initialAccessiblePairs >= 6, true);
+  assert.equal(generated.report.solvable, true);
+});
+
+test("each difficulty generates at a declared compact boundary", {
+  skip: levelsRoot
+    ? false
+    : "PAWS_EDITOR_LEVELS is not set; Unity corpus gate was not requested.",
+}, async () => {
+  const { references } = await readActiveCorpus();
+  const cases = [
+    { difficulty: "easy", tileCount: 100, layerCount: 10, targetScore: 40 },
+    { difficulty: "normal", tileCount: 104, layerCount: 5, targetScore: 60 },
+    { difficulty: "hard", tileCount: 106, layerCount: 5, targetScore: 80 },
+  ];
+
+  for (const [index, options] of cases.entries()) {
+    const generated = generateAiLevel({
+      references,
+      ...options,
+      layout: "balanced",
+      seed: 300001 + index,
+      maxAttempts: 1,
+    });
+    assert.equal(generated.document.tiles.length, options.tileCount);
+    assert.equal(generated.report.solvable, true);
   }
 });

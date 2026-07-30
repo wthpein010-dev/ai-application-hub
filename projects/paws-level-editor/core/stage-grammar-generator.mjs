@@ -27,6 +27,12 @@ const LOCAL_MOTIF_OFFSETS = Object.freeze([
   Object.freeze([-8, 8]),
   Object.freeze([8, 8]),
 ]);
+const LOCAL_MOTIF_SUPPLEMENTS = Object.freeze([
+  Object.freeze({ x: 16, y: 24 }),
+  Object.freeze({ x: 32, y: 24 }),
+  Object.freeze({ x: 0, y: 32 }),
+  Object.freeze({ x: 48, y: 32 }),
+]);
 
 function integer(value, fallback = 0) {
   const number = Number(value);
@@ -275,6 +281,10 @@ function placeLayer({
         layer: layerPlan.layer,
       }))
       .filter(({ x, y }) => x >= 0 && x <= 48 && y >= 0 && y <= 56);
+    candidates.push({
+      ...LOCAL_MOTIF_SUPPLEMENTS[group.regionIndex],
+      layer: layerPlan.layer,
+    });
     let ordinal = 0;
     while (
       placed.filter((tile) =>

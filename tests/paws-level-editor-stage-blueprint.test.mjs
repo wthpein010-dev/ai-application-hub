@@ -152,6 +152,16 @@ test("capacity errors are deterministic and include exact guidance", () => {
   assert.equal(first.maxTiles < 400, true);
 });
 
+test("capacity gate rejects easy 30/5 before an impossible opening", () => {
+  const gate = validateBlueprintCapacity({
+    difficulty: "easy",
+    tileCount: 30,
+    layerCount: 5,
+  });
+
+  assert.equal(gate.supported, false);
+});
+
 test("dynamic layer limit preserves the standard 200/15 peak", () => {
   assert.equal(layerTileLimit({
     difficulty: "normal",
@@ -163,6 +173,19 @@ test("dynamic layer limit preserves the standard 200/15 peak", () => {
     tileCount: 240,
     layerCount: 32,
   }), 14);
+});
+
+test("easy 400/40 reserves fifteen tiles on the highest surface layer", () => {
+  const blueprint = buildStageBlueprint(normalOptions({
+    difficulty: "easy",
+    difficultyProfile: DIFFICULTY_PROFILES.easy,
+    tileCount: 400,
+    layerCount: 40,
+    targetScore: 40,
+    seed: 100003,
+  }));
+
+  assert.equal(blueprint.layerPlans.at(-1).tileCount >= 15, true);
 });
 
 test("tower entrances always include mixed high, medium, and small roles", () => {
@@ -191,4 +214,16 @@ test("family and fill-track planning are deterministic and keep 0/2/4 semantics"
     first.fillTrackPlan.tracks.length,
     first.fillTrackPlan.trackCount,
   );
+});
+
+test("sequential seeds distribute compatible structure families", () => {
+  const counts = new Map();
+  for (let seed = 2026073001; seed <= 2026073030; seed += 1) {
+    const blueprint = buildStageBlueprint(normalOptions({ seed }));
+    const source = blueprint.familyIds[0];
+    counts.set(source, (counts.get(source) ?? 0) + 1);
+  }
+
+  assert.equal(counts.size >= 3, true);
+  assert.equal(Math.max(...counts.values()) <= 12, true);
 });

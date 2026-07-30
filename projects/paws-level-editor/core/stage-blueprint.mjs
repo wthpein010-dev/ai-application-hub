@@ -38,6 +38,11 @@ const DIFFICULTY_FACTORS = Object.freeze({
   normal: 1.65,
   hard: 1.85,
 });
+const MINIMUM_SURFACE_TOP_TILES = Object.freeze({
+  easy: 15,
+  normal: 9,
+  hard: 5,
+});
 
 const DEFAULT_TOWER_ENTRANCES = Object.freeze([
   Object.freeze({ x: 8, y: 8 }),
@@ -151,9 +156,14 @@ function capacityState({ difficulty, tileCount, layerCount }) {
       stageTiles: [],
     };
   }
-  const supported = stageTiles.every((count, index) =>
-    count >= stageLayers[index]
-    && count <= stageLayers[index] * maxLayerTiles);
+  const minimumSurfaceTiles =
+    MINIMUM_SURFACE_TOP_TILES[difficulty] + stageLayers[0] - 1;
+  const supported =
+    MINIMUM_SURFACE_TOP_TILES[difficulty] <= maxLayerTiles
+    && stageTiles[0] >= minimumSurfaceTiles
+    && stageTiles.every((count, index) =>
+      count >= stageLayers[index]
+      && count <= stageLayers[index] * maxLayerTiles);
   return {
     supported,
     maxLayerTiles,
@@ -264,7 +274,12 @@ function distributeLayerTiles(total, count, limit, rng) {
   return result;
 }
 
-function buildLayerPlans(stagePlan, maxLayerTiles, rng) {
+function buildLayerPlans(
+  stagePlan,
+  maxLayerTiles,
+  rng,
+  minimumSurfaceTopTiles,
+) {
   const byStage = new Map(stagePlan.map((stage) => [
     stage.key,
     distributeLayerTiles(
@@ -274,6 +289,21 @@ function buildLayerPlans(stagePlan, maxLayerTiles, rng) {
       rng,
     ),
   ]));
+  const surfaceCounts = byStage.get("surface");
+  let needed = Math.max(
+    0,
+    integer(minimumSurfaceTopTiles) - surfaceCounts.at(-1),
+  );
+  for (
+    let index = 0;
+    index < surfaceCounts.length - 1 && needed > 0;
+    index += 1
+  ) {
+    const moved = Math.min(needed, Math.max(0, surfaceCounts[index] - 1));
+    surfaceCounts[index] -= moved;
+    surfaceCounts[surfaceCounts.length - 1] += moved;
+    needed -= moved;
+  }
   const physical = [];
   for (const stage of [...stagePlan].reverse()) {
     const counts = byStage.get(stage.key);
@@ -414,13 +444,19 @@ export function buildStageBlueprint(options) {
   if (!rankedFamilies.length) {
     throw new Error("没有可用于编译阶段蓝图的结构家族。");
   }
+  rng.nextUint32();
   const selected = rankedFamilies[rng.nextInt(0, rankedFamilies.length)];
   const stagePlan = buildStagePlan({
     tileCount: integer(options.tileCount),
     layerCount: integer(options.layerCount),
     targetScore: clamp(integer(options.targetScore, 60), 0, 100),
   });
-  const layerPlans = buildLayerPlans(stagePlan, gate.maxLayerTiles, rng);
+  const layerPlans = buildLayerPlans(
+    stagePlan,
+    gate.maxLayerTiles,
+    rng,
+    integer(options.difficultyProfile?.minInitialPairs, 1) * 2 + 3,
+  );
   const towerEntrances = planMixedTowerEntrances(selected, options, rng);
   const fillTrackPlan = planFillTracks(selected);
   return {

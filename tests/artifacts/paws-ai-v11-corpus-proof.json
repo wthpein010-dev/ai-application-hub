@@ -1,0 +1,183 @@
+{
+  "schemaVersion": 2,
+  "algorithmVersion": "paws-local-stat-v11-stage-grammar",
+  "generatedAt": "2026-07-30T03:06:20.617Z",
+  "corpus": {
+    "activeSecondRoundFiles": 16,
+    "trashFilesRead": 0,
+    "sourceFiles": [
+      "level_0006_r2_33第二关模板13.json",
+      "level_0007_r2_43第二关模板22.json",
+      "level_0008_r2_第二关模板2.json",
+      "level_0009_r2_第二关模板1.json",
+      "level_0010_r2_第二关模板12.json",
+      "level_0011_r2_第二关模板.json",
+      "level_0012_r2_35 第二关模板15.json",
+      "level_0013_r2_37第二关模板17.json",
+      "level_0014_r2_39第二关模板18.json",
+      "level_0015_r2_41第二关模板20.json",
+      "level_0016_r2_42第二关模板21.json",
+      "level_0017_r2_40第二关模板19.json",
+      "level_0018_r2_44第二关模板23.json",
+      "level_0019_r2_45第二关模板24.json",
+      "level_0020_r2_第二关模板25.json",
+      "level_0021_r2_第二关模板.json"
+    ]
+  },
+  "geometry": {
+    "cases": 532,
+    "failures": {
+      "build": 0,
+      "count": 0,
+      "layers": 0,
+      "bounds": 0,
+      "overlap": 0,
+      "density": 0,
+      "structure": 0,
+      "solve": 0
+    },
+    "layerPeakHistogram": {
+      "9": 3,
+      "12": 6,
+      "15": 208,
+      "20": 3,
+      "35": 156,
+      "36": 156
+    },
+    "componentCountHistogram": {
+      "2": 477,
+      "3": 3115,
+      "4": 755
+    },
+    "maximumComponentHistogram": {
+      "2": 60,
+      "3": 1078,
+      "4": 605,
+      "5": 1341,
+      "6": 399,
+      "7": 240,
+      "8": 312,
+      "9": 312
+    },
+    "towerEntranceHistogram": {
+      "4": 162,
+      "5": 208,
+      "6": 162
+    },
+    "maximumTowerDepthHistogram": {
+      "5": 312,
+      "10": 156,
+      "12": 3,
+      "13": 1,
+      "15": 48,
+      "32": 3,
+      "40": 9
+    },
+    "towerRoleTotals": {
+      "high": 532,
+      "medium": 532,
+      "small": 1596
+    },
+    "releaseDependencyDrop": {
+      "minimum": 0.087,
+      "maximum": 0.655,
+      "average": 0.325
+    },
+    "fillTrackHistogram": {
+      "0": 144,
+      "2": 258,
+      "4": 130
+    },
+    "difficultyScores": {
+      "easy": {
+        "minimum": 45,
+        "maximum": 59,
+        "average": 48.765
+      },
+      "normal": {
+        "minimum": 31,
+        "maximum": 71,
+        "average": 37.534
+      },
+      "hard": {
+        "minimum": 31,
+        "maximum": 74,
+        "average": 33.747
+      }
+    }
+  },
+  "play": {
+    "cases": 600,
+    "failures": {
+      "oddTypes": 0,
+      "assignment": 0,
+      "solve": 0
+    }
+  },
+  "diversity": {
+    "fixedSeedCount": 30,
+    "generatedSeedCount": 30,
+    "uniqueTopologyHashes": 30,
+    "topologyHashes": [
+      "topology-dd291a4f",
+      "topology-6f3ac232",
+      "topology-c921e63d",
+      "topology-5781d88b",
+      "topology-f4b7915c",
+      "topology-404c08fe",
+      "topology-220293c7",
+      "topology-d6ae7cf8",
+      "topology-bb294b69",
+      "topology-a1e7ad3c",
+      "topology-39839b75",
+      "topology-e6fc77b8",
+      "topology-24f121a5",
+      "topology-487d2c3b",
+      "topology-cdf8cb90",
+      "topology-07ab1e2a",
+      "topology-ae89af66",
+      "topology-c20f4bcd",
+      "topology-b1b88a7e",
+      "topology-4d6ff410",
+      "topology-3b143685",
+      "topology-ea94ac90",
+      "topology-04aacd88",
+      "topology-07285d3b",
+      "topology-957ab306",
+      "topology-f5e4af38",
+      "topology-108f8486",
+      "topology-67ff553d",
+      "topology-4c799890",
+      "topology-f462f836"
+    ],
+    "sourceFamilyCount": 4,
+    "sourceUseCounts": {
+      "level_0012_r2_35 第二关模板15.json": 8,
+      "level_0010_r2_第二关模板12.json": 8,
+      "level_0013_r2_37第二关模板17.json": 7,
+      "level_0006_r2_33第二关模板13.json": 7
+    },
+    "topologyFamilyUseCounts": {
+      "topology-91b2683c": 8,
+      "topology-0e54c530": 8,
+      "topology-2f96e913": 7,
+      "topology-ae1720c9": 7
+    },
+    "familyRatioBasis": "sourceFileName",
+    "maximumFamilyUseRatio": 0.267
+  },
+  "default200x15": {
+    "cases": 49,
+    "maximumLayerPeak": 15,
+    "layerPeakHistogram": {
+      "15": 49
+    }
+  },
+  "performance": {
+    "geometryP95Ms": 300.717,
+    "playP95Ms": 78.009,
+    "totalDurationMs": 137261.467
+  },
+  "failures": [],
+  "ok": true
+}

@@ -84,6 +84,8 @@ function referenceFamily(fillTrackCount = 2) {
 function geometryOptions({
   fillTrackCount = 2,
   seed = 20260730,
+  tileCount = 200,
+  layerCount = 15,
 } = {}) {
   const family = referenceFamily(fillTrackCount);
   const structureCorpus = {
@@ -99,13 +101,29 @@ function geometryOptions({
     difficulty: "normal",
     difficultyProfile: DIFFICULTY_PROFILES.normal,
     layout: "balanced",
-    tileCount: 200,
-    layerCount: 15,
+    tileCount,
+    layerCount,
     targetScore: 60,
     seed,
   });
   return { blueprint, structureCorpus, seed };
 }
+
+test("compact 104/5 geometry fits shifted blind tracks without seed failures", () => {
+  for (let seed = 1; seed <= 8; seed += 1) {
+    const result = buildStageGrammarGeometry(geometryOptions({
+      fillTrackCount: 2,
+      tileCount: 104,
+      layerCount: 5,
+      seed,
+    }));
+
+    assert.equal(result.tiles.length, 104);
+    assert.equal(new Set(result.tiles.map(({ layer }) => layer)).size, 5);
+    assert.deepEqual(sameLayerOverlapPairs(result.tiles), []);
+    assert.equal(result.metrics.maximumPlatformSize <= 10, true);
+  }
+});
 
 test("default geometry is tower-shaped instead of a dense lattice", () => {
   const result = buildStageGrammarGeometry(geometryOptions());
