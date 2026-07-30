@@ -80,7 +80,7 @@ try {
   );
   assert.equal(
     await hub.locator("#appGrid .app-card").last().getAttribute("data-app-id"),
-    "clickflow",
+    "pureshrink",
   );
   assert.deepEqual(
     await clickFlowCard.locator(".card-actions a").allTextContents(),
