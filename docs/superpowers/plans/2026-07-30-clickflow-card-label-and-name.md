@@ -36,7 +36,7 @@
 - Consumes: `loadDefaultAppsFromRuntime(runtime: string): object[]` from `tests/helpers/default-apps.mjs`.
 - Produces: regression coverage for default metadata, cached-default migration, customized-name preservation, and rendered card copy.
 
-- [ ] **Step 1: Add the default metadata assertions**
+- [x] **Step 1: Add the default metadata assertions**
 
 In the existing test `ClickFlow is the final application and exposes the four publication actions`, add:
 
@@ -49,7 +49,7 @@ assert.equal(clickFlow.badge, "辅助工具");
 
 Replace the existing `desktop` status assertion with the `assistant` assertion.
 
-- [ ] **Step 2: Add a real cached-catalog harness and migration tests**
+- [x] **Step 2: Add a real cached-catalog harness and migration tests**
 
 Read the runtime once and evaluate its real `loadApps`, `normalizeApp`, and `cloneApp` functions:
 
@@ -126,7 +126,7 @@ test("ClickFlow migration preserves a customized name", () => {
 });
 ```
 
-- [ ] **Step 3: Add rendered-card assertions**
+- [x] **Step 3: Add rendered-card assertions**
 
 After locating `clickFlowCard` in `tests/clickflow-browser-smoke.mjs`, add:
 
@@ -145,7 +145,7 @@ assert.equal(
 );
 ```
 
-- [ ] **Step 4: Run the tests and verify the expected failures**
+- [x] **Step 4: Run the tests and verify the expected failures**
 
 Run:
 
@@ -166,7 +166,7 @@ Expected: the catalog test fails because the default status is still `desktop`; 
 - Consumes: the ClickFlow catalog contract established in Task 1.
 - Produces: a default ClickFlow record with `name`, `status`, and `badge` set to the approved values; `normalizeApp(app)` migrates only legacy defaults.
 
-- [ ] **Step 1: Update the ClickFlow default record**
+- [x] **Step 1: Update the ClickFlow default record**
 
 Change only these fields:
 
@@ -177,7 +177,7 @@ status: "assistant",
 badge: "辅助工具",
 ```
 
-- [ ] **Step 2: Add exact-default migration in `normalizeApp`**
+- [x] **Step 2: Add exact-default migration in `normalizeApp`**
 
 Before the `icecream` migration block, add:
 
@@ -195,7 +195,7 @@ if (normalized.id === "clickflow") {
 }
 ```
 
-- [ ] **Step 3: Cache-bust the homepage runtime**
+- [x] **Step 3: Cache-bust the homepage runtime**
 
 Change the script query in `index.html` from:
 
@@ -209,7 +209,7 @@ to:
 <script src="./app-20260706-restore-games.js?v=20260730-clickflow-card"></script>
 ```
 
-- [ ] **Step 4: Run focused green verification**
+- [x] **Step 4: Run focused green verification**
 
 Run:
 
@@ -222,7 +222,7 @@ git diff --check
 
 Expected: all Node tests and browser smoke pass; `git diff --check` exits 0.
 
-- [ ] **Step 5: Commit implementation**
+- [x] **Step 5: Commit implementation**
 
 ```powershell
 git add -- app-20260706-restore-games.js index.html tests/clickflow-publish.test.mjs tests/clickflow-browser-smoke.mjs tests/artifacts/clickflow/browser

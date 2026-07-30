@@ -594,10 +594,10 @@ const defaultApps = [
   },
   {
     id: "clickflow",
-    name: "ClickFlow 鼠标自动化工作台",
+    name: "ClickFlow 鼠标自动化",
     category: "桌面自动化工具",
-    status: "desktop",
-    badge: "Windows · macOS",
+    status: "assistant",
+    badge: "辅助工具",
     brief: "把定点连点、点击录制、动作编辑与循环回放放进同一工作台，用快捷键避开录制控制按钮，并在每次点击后尽快恢复光标位置。",
     problem: "重复点击和固定操作流程既浪费时间，又会持续占用鼠标；用户需要可保存、可复用、可随时停止的本地自动化方案。",
     aiUse: "AI 参与跨平台输入适配、线程安全任务编排、桌面交互设计、自动测试、原生打包和公开教程制作。",
@@ -1299,6 +1299,17 @@ function normalizeApp(app) {
       normalized.tags.every((tag, index) => tag === legacyTags[index])
     ) {
       normalized.tags = [...base.tags];
+    }
+  }
+  if (normalized.id === "clickflow") {
+    if (normalized.name === "ClickFlow 鼠标自动化工作台") {
+      normalized.name = base.name;
+    }
+    if (normalized.status === "desktop") {
+      normalized.status = base.status;
+    }
+    if (normalized.badge === "Windows · macOS") {
+      normalized.badge = base.badge;
     }
   }
   if (normalized.id === "icecream") {

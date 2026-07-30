@@ -67,6 +67,18 @@ try {
   await clickFlowCard.scrollIntoViewIfNeeded();
   assert.equal(await clickFlowCard.count(), 1);
   assert.equal(
+    await clickFlowCard.locator("h3").textContent(),
+    "ClickFlow 鼠标自动化",
+  );
+  assert.equal(
+    await clickFlowCard.locator(".status-badge").textContent(),
+    "辅助工具",
+  );
+  assert.equal(
+    await clickFlowCard.locator(".card-meta > span").nth(1).textContent(),
+    "桌面自动化工具",
+  );
+  assert.equal(
     await hub.locator("#appGrid .app-card").last().getAttribute("data-app-id"),
     "clickflow",
   );

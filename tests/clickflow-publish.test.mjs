@@ -3,14 +3,42 @@ import assert from "node:assert/strict";
 import { existsSync, readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
+import vm from "node:vm";
 import { loadDefaultAppsFromRuntime } from "./helpers/default-apps.mjs";
 
 const root = dirname(dirname(fileURLToPath(import.meta.url)));
 const runtimePath = join(root, "app-20260706-restore-games.js");
+const runtime = readFileSync(runtimePath, "utf8");
 const project = (...parts) => join(root, "projects", "clickflow", ...parts);
 
 function loadDefaultApps() {
-  return loadDefaultAppsFromRuntime(readFileSync(runtimePath, "utf8"));
+  return loadDefaultAppsFromRuntime(runtime);
+}
+
+function loadAppsWithStoredValue(stored) {
+  const start = runtime.indexOf("function loadApps");
+  const end = runtime.indexOf("function projectHref", start);
+  const storage = new Map([
+    ["ai-competition-hub-v2-apps", JSON.stringify(stored)],
+  ]);
+  const context = {
+    globalThis: { defaultApps: loadDefaultApps() },
+    localStorage: {
+      getItem: (key) => storage.get(key) ?? null,
+      removeItem: (key) => storage.delete(key),
+    },
+  };
+  const source = [
+    'const STORAGE_KEY = "ai-competition-hub-v2-apps";',
+    "const statusLabel = { desktop: true, assistant: true };",
+    'const OLD_HUB_BRIEF = "";',
+    'const HUB_BRIEF = "";',
+    "const defaultApps = globalThis.defaultApps;",
+    runtime.slice(start, end),
+    "globalThis.loadApps = loadApps;",
+  ].join("\n");
+  vm.runInNewContext(source, context);
+  return context.globalThis.loadApps();
 }
 
 function isApplication(app) {
@@ -23,7 +51,10 @@ test("ClickFlow is the final application and exposes the four publication action
 
   assert.ok(clickFlow, "ClickFlow should be registered");
   assert.equal(apps.filter(isApplication).at(-1)?.id, "clickflow");
-  assert.equal(clickFlow.status, "desktop");
+  assert.equal(clickFlow.name, "ClickFlow 鼠标自动化");
+  assert.equal(clickFlow.category, "桌面自动化工具");
+  assert.equal(clickFlow.status, "assistant");
+  assert.equal(clickFlow.badge, "辅助工具");
   assert.equal(clickFlow.video, "./projects/clickflow/video/index.html");
   assert.equal(clickFlow.platforms.web, "./projects/clickflow/index.html");
   assert.deepEqual(
@@ -40,6 +71,43 @@ test("ClickFlow is the final application and exposes the four publication action
       label: "Mac下载",
     },
   );
+});
+
+test("legacy ClickFlow defaults migrate to the shorter auxiliary-tool card", () => {
+  const current = loadDefaultApps().find((app) => app.id === "clickflow");
+  const legacy = {
+    ...current,
+    name: "ClickFlow 鼠标自动化工作台",
+    status: "desktop",
+    badge: "Windows · macOS",
+  };
+
+  const migrated = loadAppsWithStoredValue([legacy]).find(
+    (app) => app.id === "clickflow",
+  );
+
+  assert.equal(migrated.name, "ClickFlow 鼠标自动化");
+  assert.equal(migrated.status, "assistant");
+  assert.equal(migrated.badge, "辅助工具");
+  assert.equal(migrated.category, "桌面自动化工具");
+});
+
+test("ClickFlow migration preserves a customized name", () => {
+  const current = loadDefaultApps().find((app) => app.id === "clickflow");
+  const customized = {
+    ...current,
+    name: "我的鼠标工具",
+    status: "desktop",
+    badge: "Windows · macOS",
+  };
+
+  const migrated = loadAppsWithStoredValue([customized]).find(
+    (app) => app.id === "clickflow",
+  );
+
+  assert.equal(migrated.name, "我的鼠标工具");
+  assert.equal(migrated.status, "assistant");
+  assert.equal(migrated.badge, "辅助工具");
 });
 
 test("ClickFlow guide documents both modes, shortcuts, permissions, and cursor limits", () => {
