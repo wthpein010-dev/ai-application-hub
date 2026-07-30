@@ -1,4 +1,8 @@
-# PureShrink 1.0.0
+# PureShrink 1.0.1
+
+## 1.0.1 修复
+
+- 将 PureShrink 项目资源与 Hub 共享样式、播放器脚本拆分为独立桌面打包来源，修复 macOS Intel 与 Apple Silicon 成品缺少共享资源的问题。
 
 PureShrink 是本地优先的批量媒体压缩工坊，可处理图片、视频、GIF、音频和一般文件。
 

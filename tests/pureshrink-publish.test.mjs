@@ -27,11 +27,11 @@ test("PureShrink is the final application and exposes four publication actions",
   assert.equal(item.video, "./projects/pureshrink/video/index.html");
   assert.equal(item.platforms.web, "./projects/pureshrink/index.html");
   assert.deepEqual(JSON.parse(JSON.stringify(item.platforms.windows)), {
-    href: "https://github.com/wthpein010-dev/ai-application-hub/releases/download/pureshrink-v1.0.0/PureShrink-Windows-x64.zip",
+    href: "https://github.com/wthpein010-dev/ai-application-hub/releases/download/pureshrink-v1.0.1/PureShrink-Windows-x64.zip",
     label: "Wins下载",
   });
   assert.deepEqual(JSON.parse(JSON.stringify(item.platforms.mac)), {
-    href: "https://github.com/wthpein010-dev/ai-application-hub/releases/download/pureshrink-v1.0.0/PureShrink-macOS.zip",
+    href: "https://github.com/wthpein010-dev/ai-application-hub/releases/download/pureshrink-v1.0.1/PureShrink-macOS.zip",
     label: "Mac下载",
   });
 });
@@ -48,7 +48,7 @@ test("PureShrink page and release metadata use only public production URLs", () 
   ].join("\n");
 
   assert.doesNotMatch(publicFiles, /C:\\Users|localhost|127\.0\.0\.1|file:\/\//);
-  assert.match(publicFiles, /pureshrink-v1\.0\.0/);
+  assert.match(publicFiles, /pureshrink-v1\.0\.1/);
   assert.match(publicFiles, /PureShrink-Windows-x64\.zip/);
   assert.match(publicFiles, /PureShrink-macOS\.zip/);
 });
@@ -56,8 +56,8 @@ test("PureShrink page and release metadata use only public production URLs", () 
 test("PureShrink manifest identifies independently built platform assets", () => {
   const manifest = JSON.parse(readFileSync(project("release-manifest.json"), "utf8"));
 
-  assert.equal(manifest.tag, "pureshrink-v1.0.0");
-  assert.equal(manifest.releaseUrl, "https://github.com/wthpein010-dev/ai-application-hub/releases/tag/pureshrink-v1.0.0");
+  assert.equal(manifest.tag, "pureshrink-v1.0.1");
+  assert.equal(manifest.releaseUrl, "https://github.com/wthpein010-dev/ai-application-hub/releases/tag/pureshrink-v1.0.1");
   assert.equal(manifest.assets.windows.name, "PureShrink-Windows-x64.zip");
   assert.equal(manifest.assets.windows.builtOn, "windows-latest");
   assert.equal(manifest.assets.mac.name, "PureShrink-macOS.zip");
@@ -67,5 +67,5 @@ test("PureShrink manifest identifies independently built platform assets", () =>
 
 test("homepage cache key is refreshed for the PureShrink card", () => {
   const html = readFileSync(join(root, "index.html"), "utf8");
-  assert.match(html, /app-20260706-restore-games\.js\?v=20260730-pureshrink/);
+  assert.match(html, /app-20260706-restore-games\.js\?v=20260730-pureshrink-101/);
 });

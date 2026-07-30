@@ -1,6 +1,6 @@
 {
   "name": "pureshrink-desktop",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "private": true,
   "description": "PureShrink local-first lossless media compressor for Windows and macOS",
   "author": "wthpein010-dev",
@@ -41,16 +41,22 @@
     ],
     "extraResources": [
       {
-        "from": "../..",
-        "to": "app",
+        "from": "../../projects/pureshrink",
+        "to": "app/projects/pureshrink",
         "filter": [
-          "projects/pureshrink/**/*",
-          "!projects/pureshrink/assets/brand-master.png",
-          "!projects/pureshrink/assets/pureshrink-icon.ico",
-          "!projects/pureshrink/assets/pureshrink-icon.icns",
-          "assets/subpage-shell.css",
-          "assets/hub-video-player.css",
-          "assets/hub-video-player.js"
+          "**/*",
+          "!assets/brand-master.png",
+          "!assets/pureshrink-icon.ico",
+          "!assets/pureshrink-icon.icns"
+        ]
+      },
+      {
+        "from": "../../assets",
+        "to": "app/assets",
+        "filter": [
+          "subpage-shell.css",
+          "hub-video-player.css",
+          "hub-video-player.js"
         ]
       }
     ],

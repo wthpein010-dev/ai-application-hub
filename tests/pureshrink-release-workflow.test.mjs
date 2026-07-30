@@ -35,6 +35,8 @@ test("PureShrink release workflow creates the two public download assets", () =>
   assert.match(yaml, /gh release create/);
   assert.doesNotMatch(yaml, /workflow_dispatch|--clobber|gh release upload/);
   assert.match(yaml, /sha256sum/);
+  assert.match(yaml, /VERSION="\$\{TAG#pureshrink-v\}"/);
+  assert.match(yaml, /--title "PureShrink \$VERSION"/);
 });
 
 test("PureShrink release waits for every native build before publishing", () => {

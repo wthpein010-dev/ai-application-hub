@@ -226,13 +226,20 @@ test("desktop install explicitly fetches the Electron runtime", () => {
 
 test("desktop package keeps the local tutorial video functional", () => {
   const packageJson = JSON.parse(readFileSync(desktop("package.json"), "utf8"));
-  const filter = packageJson.build.extraResources[0].filter;
+  const [projectResources, sharedResources] = packageJson.build.extraResources;
 
-  assert.equal(packageJson.build.extraResources[0].to, "app");
-  assert.equal(filter.includes("projects/pureshrink/**/*"), true);
-  assert.equal(filter.includes("assets/subpage-shell.css"), true);
-  assert.equal(filter.includes("assets/hub-video-player.css"), true);
-  assert.equal(filter.includes("assets/hub-video-player.js"), true);
+  assert.equal(packageJson.version, "1.0.1");
+  assert.equal(packageJson.build.extraResources.length, 2);
+  assert.equal(projectResources.from, "../../projects/pureshrink");
+  assert.equal(projectResources.to, "app/projects/pureshrink");
+  assert.equal(projectResources.filter.includes("**/*"), true);
+  assert.equal(sharedResources.from, "../../assets");
+  assert.equal(sharedResources.to, "app/assets");
+  assert.deepEqual(sharedResources.filter, [
+    "subpage-shell.css",
+    "hub-video-player.css",
+    "hub-video-player.js",
+  ]);
   assert.equal(packageJson.build.asarUnpack.includes("native/archive-worker.cjs"), true);
   assert.equal(packageJson.build.asarUnpack.includes("node_modules/fflate/**/*"), true);
 });

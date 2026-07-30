@@ -634,15 +634,15 @@ const defaultApps = [
     folder: "./projects/pureshrink/",
     entry: "./projects/pureshrink/index.html",
     video: "./projects/pureshrink/video/index.html",
-    package: "https://github.com/wthpein010-dev/ai-application-hub/releases/tag/pureshrink-v1.0.0",
+    package: "https://github.com/wthpein010-dev/ai-application-hub/releases/tag/pureshrink-v1.0.1",
     platforms: {
       web: "./projects/pureshrink/index.html",
       windows: {
-        href: "https://github.com/wthpein010-dev/ai-application-hub/releases/download/pureshrink-v1.0.0/PureShrink-Windows-x64.zip",
+        href: "https://github.com/wthpein010-dev/ai-application-hub/releases/download/pureshrink-v1.0.1/PureShrink-Windows-x64.zip",
         label: "Wins下载"
       },
       mac: {
-        href: "https://github.com/wthpein010-dev/ai-application-hub/releases/download/pureshrink-v1.0.0/PureShrink-macOS.zip",
+        href: "https://github.com/wthpein010-dev/ai-application-hub/releases/download/pureshrink-v1.0.1/PureShrink-macOS.zip",
         label: "Mac下载"
       }
     },
