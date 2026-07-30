@@ -3,6 +3,7 @@ import {
   extractStructureGrammar,
   mergeStructureGrammars,
 } from "./structure-corpus.mjs";
+import { measureStageGeometry } from "./stage-grammar-generator.mjs";
 
 const TILE_SIZE = 8;
 
@@ -591,6 +592,20 @@ export function extractLevelStatistics(document) {
     board,
     tiles,
   });
+  const aiGeneration = document?.designerNote?.aiGeneration ?? {};
+  const blueprint = aiGeneration.blueprint ?? {};
+  const stageGeometry = measureStageGeometry({
+    tiles,
+    stagePlan: blueprint.stagePlan ?? aiGeneration.stagePlan ?? [],
+    fillTracks:
+      blueprint.fillTrackPlan?.tracks
+      ?? aiGeneration.templateLearning?.fillTracks
+      ?? [],
+    towerEntrances:
+      blueprint.towerEntrances
+      ?? aiGeneration.towerPlan?.centers
+      ?? [],
+  });
 
   return {
     sourceFileName: String(document?.fileName ?? ""),
@@ -634,6 +649,7 @@ export function extractLevelStatistics(document) {
     ...pressureStructure,
     ...learnedTemplates,
     structureGrammar,
+    stageGeometry,
   };
 }
 
