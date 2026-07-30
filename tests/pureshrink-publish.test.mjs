@@ -65,6 +65,129 @@ test("PureShrink manifest identifies independently built platform assets", () =>
   assert.deepEqual(manifest.assets.mac.builtOn, ["macos-14", "macos-15-intel"]);
 });
 
+test("PureShrink manifest records immutable release assets and native verification", () => {
+  const manifest = JSON.parse(readFileSync(project("release-manifest.json"), "utf8"));
+
+  assert.equal(manifest.commit, "9856222eb8aa5739ebe4122d2e5dfe97e5bbc078");
+  assert.equal(manifest.publishedAt, "2026-07-30T05:36:55Z");
+  assert.deepEqual(
+    {
+      runId: manifest.releaseWorkflow.runId,
+      conclusion: manifest.releaseWorkflow.conclusion,
+      windowsJobId: manifest.releaseWorkflow.jobs.windows.jobId,
+      arm64JobId: manifest.releaseWorkflow.jobs.macArm64.jobId,
+      x64JobId: manifest.releaseWorkflow.jobs.macX64.jobId,
+      publishJobId: manifest.releaseWorkflow.jobs.publish.jobId,
+    },
+    {
+      runId: 30516864689,
+      conclusion: "success",
+      windowsJobId: 90788579680,
+      arm64JobId: 90788579629,
+      x64JobId: 90788579677,
+      publishJobId: 90789119679,
+    },
+  );
+
+  assert.deepEqual(
+    {
+      bytes: manifest.assets.windows.bytes,
+      sha256: manifest.assets.windows.sha256,
+      smokeExitCode: manifest.assets.windows.verification.smokeExitCode,
+      archiveTest: manifest.assets.windows.verification.archiveTest,
+      proof: manifest.assets.windows.verification.nativeRunner.proof,
+    },
+    {
+      bytes: 117975871,
+      sha256: "bda264203028946b58543710b2595f82f21c887f1016ebcbca2dbbdc128d1e18",
+      smokeExitCode: 0,
+      archiveTest: "Everything is Ok",
+      proof: "PURESHRINK_NATIVE_PROCESSING_OK",
+    },
+  );
+
+  assert.deepEqual(
+    manifest.assets.mac.verification.architectures.map((item) => ({
+      name: item.name,
+      appMachO: item.appMachO,
+      ffmpegMachO: item.ffmpegMachO,
+      adHocSignatureVerified: item.adHocSignatureVerified,
+      launchSmokeExitCode: item.launchSmokeExitCode,
+      nativeProof: item.nativeRunner.proof,
+    })),
+    [
+      {
+        name: "arm64",
+        appMachO: "arm64",
+        ffmpegMachO: "arm64",
+        adHocSignatureVerified: true,
+        launchSmokeExitCode: 0,
+        nativeProof: "PURESHRINK_NATIVE_PROCESSING_OK",
+      },
+      {
+        name: "x64",
+        appMachO: "x86_64",
+        ffmpegMachO: "x86_64",
+        adHocSignatureVerified: true,
+        launchSmokeExitCode: 0,
+        nativeProof: "PURESHRINK_NATIVE_PROCESSING_OK",
+      },
+    ],
+  );
+});
+
+test("PureShrink manifest records the deployed Pages and public acceptance evidence", () => {
+  const manifest = JSON.parse(readFileSync(project("release-manifest.json"), "utf8"));
+
+  assert.deepEqual(
+    {
+      runId: manifest.pagesWorkflow.runId,
+      commit: manifest.pagesWorkflow.commit,
+      conclusion: manifest.pagesWorkflow.conclusion,
+    },
+    {
+      runId: 30516853754,
+      commit: "9856222eb8aa5739ebe4122d2e5dfe97e5bbc078",
+      conclusion: "success",
+    },
+  );
+  assert.deepEqual(manifest.publicVerification.onlineLossless, {
+    passed: 3,
+    total: 3,
+    genericFile: "README -> ZIP -> extracted bytes identical",
+    png: "decoded RGBA identical; original retained when smaller",
+    mp4: "audio and video stream SHA-256 fingerprints identical",
+  });
+  assert.deepEqual(manifest.publicVerification.responsive, {
+    compressorWidths: [1440, 390],
+    hubWidth: 390,
+    horizontalOverflow: false,
+  });
+  assert.deepEqual(manifest.publicVerification.video, {
+    codec: "H.264",
+    width: 1280,
+    height: 720,
+    durationSeconds: 42.433333,
+    readyState: 4,
+    playedToSeconds: 3.45,
+    captionsMode: "showing",
+    rangeStatus: 206,
+  });
+  assert.deepEqual(manifest.publicVerification.vendor, {
+    ffmpegCoreJs: {
+      url: "https://wthpein010-dev.github.io/ai-application-hub/projects/pureshrink/vendor/ffmpeg-core.js",
+      status: 200,
+      bytes: 86309,
+    },
+    ffmpegCoreWasm: {
+      url: "https://wthpein010-dev.github.io/ai-application-hub/projects/pureshrink/vendor/ffmpeg-core.wasm",
+      status: 200,
+      bytes: 24383038,
+    },
+  });
+  assert.equal(manifest.publicVerification.browserErrors, 0);
+});
+
 test("homepage cache key is refreshed for the PureShrink card", () => {
   const html = readFileSync(join(root, "index.html"), "utf8");
   assert.match(html, /app-20260706-restore-games\.js\?v=20260730-pureshrink-102/);
