@@ -9,6 +9,7 @@ import { assignRandomTypes } from "./random-assigner.mjs";
 import { XorShift } from "./xorshift.mjs";
 import { computeCoverage } from "./coverage.mjs";
 import { buildTemplateMotifGeometry } from "./template-motif-generator.mjs";
+import { validateBlueprintCapacity } from "./stage-blueprint.mjs";
 
 const TILE_SIZE = 8;
 const ALGORITHM_VERSION = "paws-local-stat-v10-template-motifs";
@@ -16,7 +17,6 @@ const AI_BOARD = Object.freeze({ width: 7, height: 8 });
 const AI_GRID_UNIT = "sheep_7x8_mini8";
 export const MAX_AVERAGE_BLOCKERS = 4;
 export const MAX_DEEP_LEVEL_AVERAGE_BLOCKERS = 6;
-const MAX_GENERATED_PAIRS_PER_LAYER = 18;
 
 export function maxAverageBlockersForLayers(layerCount) {
   return Number(layerCount) > 15
@@ -128,6 +128,7 @@ function boundedInteger(value, { minimum, maximum, label }) {
 
 export function normalizeGenerationTargets({
   profile,
+  difficulty,
   tileCount,
   layerCount,
   targetScore,
@@ -151,19 +152,17 @@ export function normalizeGenerationTargets({
   if (evenTileCount / 2 < minimumPairs) {
     throw new Error(`砖块数量不足以构成 ${normalizedLayerCount} 个有效层。`);
   }
-  const minimumStructuralLayers = minimumStructuralLayerCount({
-    profile,
+  const normalizedDifficulty = difficulty
+    ?? Object.entries(DIFFICULTY_PROFILES)
+      .find(([, candidate]) => candidate === profile)?.[0]
+    ?? "normal";
+  const capacity = validateBlueprintCapacity({
+    difficulty: normalizedDifficulty,
     tileCount: evenTileCount,
-    targetScore: normalizedTargetScore,
+    layerCount: normalizedLayerCount,
   });
-  if (
-    minimumStructuralLayers
-    && normalizedLayerCount < minimumStructuralLayers
-  ) {
-    throw new Error(
-      `${evenTileCount} 张砖块至少需要 ${minimumStructuralLayers} 个有效层，`
-      + "以保持五阶段塔群、层内缺口和同层零重叠。",
-    );
+  if (!capacity.supported) {
+    throw new RangeError(capacity.message);
   }
   return {
     tileCount: evenTileCount,
@@ -345,25 +344,6 @@ function buildStageStructure({ pairCount, layerCount, minimumTopPairs, targetSco
       })),
     ],
   };
-}
-
-function minimumStructuralLayerCount({ profile, tileCount, targetScore }) {
-  for (let layerCount = 5; layerCount <= 40; layerCount += 1) {
-    if (tileCount / 2 < layerCount + profile.minInitialPairs - 1) continue;
-    const structure = buildStageStructure({
-      pairCount: tileCount / 2,
-      layerCount,
-      minimumTopPairs: profile.minInitialPairs,
-      targetScore,
-    });
-    if (
-      Math.max(...structure.pairCounts)
-      <= MAX_GENERATED_PAIRS_PER_LAYER
-    ) {
-      return layerCount;
-    }
-  }
-  return null;
 }
 
 export function maxTowerAverageBlockersForLayers(layerCount) {
@@ -1499,6 +1479,7 @@ export function generateAiLevel({
   }
   const target = normalizeGenerationTargets({
     profile,
+    difficulty,
     tileCount,
     layerCount,
     targetScore,

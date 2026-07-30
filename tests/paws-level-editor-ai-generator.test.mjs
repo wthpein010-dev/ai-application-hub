@@ -625,7 +625,7 @@ test("five-stage generation rejects layer counts below the structural capacity",
       seed: 73125,
       maxAttempts: 1,
     }),
-    /200 张砖块至少需要 14 个有效层/,
+    /200 张砖块至少需要 6 个有效层；当前 5 层最多支持 116 张/,
   );
   assert.equal(
     normalizeGenerationTargets({
