@@ -1,4 +1,8 @@
 import { computeCoverage } from "./coverage.mjs";
+import {
+  extractStructureGrammar,
+  mergeStructureGrammars,
+} from "./structure-corpus.mjs";
 
 const TILE_SIZE = 8;
 
@@ -582,6 +586,11 @@ export function extractLevelStatistics(document) {
     board,
     layerCount,
   );
+  const structureGrammar = extractStructureGrammar({
+    ...document,
+    board,
+    tiles,
+  });
 
   return {
     sourceFileName: String(document?.fileName ?? ""),
@@ -624,6 +633,7 @@ export function extractLevelStatistics(document) {
     ...towerStructure,
     ...pressureStructure,
     ...learnedTemplates,
+    structureGrammar,
   };
 }
 
@@ -651,6 +661,9 @@ export function mergeLevelStatistics(statistics) {
       0,
     ) / totalTiles
     : 0;
+  const structureCorpus = mergeStructureGrammars(
+    samples.map(({ structureGrammar }) => structureGrammar),
+  );
   return {
     sampleCount: samples.length,
     board: {
@@ -739,5 +752,6 @@ export function mergeLevelStatistics(statistics) {
       normalRandom: weightedRatio("normalRandom"),
       fixed: weightedRatio("fixed"),
     },
+    structureCorpus,
   };
 }
