@@ -18,6 +18,7 @@ export function resolveTileVisualTone(tile, { mode = "edit" } = {}) {
       factor: 1,
       overlayAlpha: 0,
       innerShadowAlpha: 0,
+      contactShadowAlpha: 0,
     };
   }
   const blindBoxBack =
@@ -30,6 +31,7 @@ export function resolveTileVisualTone(tile, { mode = "edit" } = {}) {
       factor: 1,
       overlayAlpha: 0,
       innerShadowAlpha: 0.2,
+      contactShadowAlpha: 0,
     };
   }
   const factor = mode === "play"
@@ -40,6 +42,7 @@ export function resolveTileVisualTone(tile, { mode = "edit" } = {}) {
     factor,
     overlayAlpha: rounded(1 - factor),
     innerShadowAlpha: mode === "play" ? 0.34 : 0.18,
+    contactShadowAlpha: mode === "play" ? 0.3 : 0.16,
   };
 }
 

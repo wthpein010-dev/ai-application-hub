@@ -257,8 +257,30 @@ test("display tiles derive coverage before applying through and single-layer vie
   const all = deriveDisplayTiles(source, { mode: "all", layer: 1 });
   const center = all.find(({ uid }) => uid === "center");
   assert.deepEqual(
-    (({ covered, sideBlocked, hiddenPattern }) => ({ covered, sideBlocked, hiddenPattern }))(center),
-    { covered: true, sideBlocked: true, hiddenPattern: true },
+    (({
+      covered,
+      sideBlocked,
+      hiddenPattern,
+      occlusionPatches,
+    }) => ({
+      covered,
+      sideBlocked,
+      hiddenPattern,
+      occlusionPatches,
+    }))(center),
+    {
+      covered: true,
+      sideBlocked: true,
+      hiddenPattern: true,
+      occlusionPatches: [{
+        x: 0,
+        y: 0,
+        width: 8,
+        height: 8,
+        dx: 0,
+        dy: 0,
+      }],
+    },
   );
   assert.equal(source.some((record) => "covered" in record), false);
 

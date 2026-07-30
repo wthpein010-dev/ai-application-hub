@@ -546,6 +546,48 @@ export class Canvas2DView {
         Math.max(3, size * 0.08),
       );
       context.stroke();
+      if (
+        tone.contactShadowAlpha > 0
+        && Array.isArray(tile.occlusionPatches)
+      ) {
+        context.save();
+        context.beginPath();
+        context.roundRect(
+          0,
+          0,
+          size,
+          artHeight,
+          Math.max(3, size * 0.08),
+        );
+        context.clip();
+        for (const patch of tile.occlusionPatches) {
+          const patchX = patch.x / TILE_SIZE * size;
+          const patchY = patch.y / TILE_SIZE * size;
+          const patchWidth = patch.width / TILE_SIZE * size;
+          const patchHeight = patch.height / TILE_SIZE * size;
+          const magnitude = Math.hypot(patch.dx, patch.dy) || 1;
+          const exactStack = patch.dx === 0 && patch.dy === 0;
+          const directionX = exactStack ? 0 : patch.dx / magnitude;
+          const directionY = exactStack ? -1 : patch.dy / magnitude;
+          const centerX = patchX + patchWidth / 2;
+          const centerY = patchY + patchHeight / 2;
+          const reach = Math.max(patchWidth, patchHeight, size * 0.18) / 2;
+          const gradient = context.createLinearGradient(
+            centerX - directionX * reach,
+            centerY - directionY * reach,
+            centerX + directionX * reach,
+            centerY + directionY * reach,
+          );
+          gradient.addColorStop(
+            0,
+            `rgba(0,0,0,${tone.contactShadowAlpha})`,
+          );
+          gradient.addColorStop(1, "rgba(0,0,0,0)");
+          context.fillStyle = gradient;
+          context.fillRect(patchX, patchY, patchWidth, patchHeight);
+        }
+        context.restore();
+      }
     }
     context.strokeStyle = selected ? "#ffd42f" : tile.sideBlocked ? "#f2b45d" : "rgba(40,79,18,.28)";
     context.lineWidth = selected ? Math.max(2, size * 0.055) : 1;

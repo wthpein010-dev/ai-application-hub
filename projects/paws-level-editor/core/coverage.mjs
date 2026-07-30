@@ -13,6 +13,22 @@ function overlaps(left, right) {
   );
 }
 
+function overlapPatch(lower, upper) {
+  const left = Math.max(lower.x, upper.x);
+  const top = Math.max(lower.y, upper.y);
+  const right = Math.min(lower.x + TILE_SIZE, upper.x + TILE_SIZE);
+  const bottom = Math.min(lower.y + TILE_SIZE, upper.y + TILE_SIZE);
+  if (right <= left || bottom <= top) return null;
+  return {
+    x: left - lower.x,
+    y: top - lower.y,
+    width: right - left,
+    height: bottom - top,
+    dx: upper.x - lower.x,
+    dy: upper.y - lower.y,
+  };
+}
+
 function microcellCoverage(tile, higherTiles) {
   let count = 0;
   for (let row = 0; row < TILE_SIZE; row += 1) {
@@ -43,12 +59,21 @@ export function computeCoverage(tiles) {
 
   for (const tile of list) {
     if (!isActive(tile)) {
-      result.set(tile.uid, { covered: false, sideBlocked: false, hiddenPattern: false });
+      result.set(tile.uid, {
+        covered: false,
+        sideBlocked: false,
+        hiddenPattern: false,
+        occlusionPatches: [],
+      });
       continue;
     }
     const higherTiles = active.filter(
       (candidate) => candidate.layer > tile.layer && overlaps(tile, candidate),
-    );
+    ).sort((left, right) =>
+      Number(left.layer) - Number(right.layer)
+      || Number(left.y) - Number(right.y)
+      || Number(left.x) - Number(right.x)
+      || String(left.uid).localeCompare(String(right.uid)));
     const sideBlocked =
       positions.has(`${tile.layer}|${tile.x - TILE_SIZE}|${tile.y}`) &&
       positions.has(`${tile.layer}|${tile.x + TILE_SIZE}|${tile.y}`);
@@ -56,6 +81,9 @@ export function computeCoverage(tiles) {
       covered: higherTiles.length > 0,
       sideBlocked,
       hiddenPattern: microcellCoverage(tile, higherTiles) >= 55,
+      occlusionPatches: higherTiles
+        .map((higher) => overlapPatch(tile, higher))
+        .filter(Boolean),
     });
   }
 

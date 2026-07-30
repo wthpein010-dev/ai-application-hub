@@ -192,6 +192,8 @@ export class Three3DView {
     this.keyLight.position.set(-7, 13, 7);
     this.keyLight.castShadow = true;
     this.keyLight.shadow.mapSize.set(1024, 1024);
+    this.keyLight.shadow.bias = -0.0002;
+    this.keyLight.shadow.normalBias = 0.02;
     this.scene.add(this.keyLight);
     const rim = new THREE.DirectionalLight(0xbfffa7, 0.42);
     rim.position.set(10, 7, -9);

@@ -133,6 +133,7 @@ export function createPlaySession(document, seed = 1, options = {}) {
       tile.covered = state?.covered ?? false;
       tile.sideBlocked = state?.sideBlocked ?? false;
       tile.hiddenPattern = state?.hiddenPattern ?? false;
+      tile.occlusionPatches = structuredClone(state?.occlusionPatches ?? []);
       if (
         Number(tile.presetColorType) === 3
         && !tile.removed

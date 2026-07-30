@@ -64,12 +64,14 @@ export function deriveDisplayTiles(sourceTiles, layerView = { mode: "all", layer
       covered: false,
       sideBlocked: false,
       hiddenPattern: false,
+      occlusionPatches: [],
     };
     return {
       ...tile,
       covered: state.covered,
       sideBlocked: state.sideBlocked,
       hiddenPattern: state.hiddenPattern,
+      occlusionPatches: structuredClone(state.occlusionPatches ?? []),
     };
   });
   return filterTilesByLayerView(derived, layerView);
@@ -163,6 +165,7 @@ export function buildRenderTiles(
       sideBlocked: Boolean(tile.sideBlocked),
       blocked: Boolean(tile.covered || tile.sideBlocked),
       hiddenPattern: Boolean(tile.hiddenPattern),
+      occlusionPatches: structuredClone(tile.occlusionPatches ?? []),
       selected: Boolean(tile.selected),
       location: inTray ? "tray" : "board",
       traySlot,
