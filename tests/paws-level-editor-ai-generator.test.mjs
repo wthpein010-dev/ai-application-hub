@@ -16,6 +16,9 @@ import {
 import { solveLevel } from "../projects/paws-level-editor/core/level-solver.mjs";
 import { createPlaySession } from "../projects/paws-level-editor/core/play-engine.mjs";
 import {
+  assignSolvableRandomTypes,
+} from "../projects/paws-level-editor/core/random-assigner.mjs";
+import {
   DIFFICULTY_DIMENSION_WEIGHTS,
   rateDifficultyScore,
   scoreLevelDifficulty,
@@ -126,6 +129,83 @@ function typeCounts(tiles) {
     return counts;
   }, new Map()));
 }
+
+test("AI facade returns v11 stage geometry with Unity full-random semantics", () => {
+  const generated = generateAiLevel({
+    references: [reference],
+    difficulty: "normal",
+    layout: "balanced",
+    tileCount: 200,
+    layerCount: 15,
+    targetScore: 60,
+    seed: 20260730,
+    maxAttempts: 1,
+  });
+  const ai = generated.document.designerNote.aiGeneration;
+
+  assert.equal(ai.algorithmVersion, "paws-local-stat-v11-stage-grammar");
+  assert.equal(generated.document.tiles.every(({ type }) => type === -1), true);
+  assert.equal(ai.blueprint.stagePlan.length, 5);
+  assert.deepEqual(
+    ai.blueprint.stagePlan.map(({ key, layerCount, tileCount }) => [
+      key,
+      layerCount,
+      tileCount,
+    ]),
+    [
+      ["surface", 3, 44],
+      ["shelter", 2, 30],
+      ["middle", 5, 68],
+      ["crisis", 3, 40],
+      ["release", 2, 18],
+    ],
+  );
+  assert.equal(ai.structure.towerEntranceCount >= 4, true);
+  assert.equal(ai.structure.maximumPlatformSize <= 10, true);
+  assert.equal(ai.structure.multiComponentLayerRatio >= 0.65, true);
+  assert.equal(ai.structure.threeLayerGiantRun, false);
+  assert.equal(ai.structure.releaseDependencyDrop > 0, true);
+  assert.equal(solveLevel(generated.document).solvable, true);
+});
+
+test("move-order fallback is bounded, paired, and solvable", () => {
+  const randomTiles = [
+    tile("a", 0, 0, 1, -1),
+    tile("b", 8, 0, 1, -1),
+    tile("c", 24, 0, 1, -1),
+    tile("d", 32, 0, 1, -1),
+  ];
+  const assigned = assignSolvableRandomTypes(randomTiles, {
+    seed: 7,
+    fullTypeMin: 1,
+    fullTypeMax: 15,
+    solvableMoves: [["a", "b"], ["c", "d"]],
+    isSolvable: (candidate) => solveLevel({ tiles: candidate }).solvable,
+  });
+
+  assert.equal(
+    Object.values(typeCounts(assigned)).every((count) => count % 2 === 0),
+    true,
+  );
+  assert.equal(solveLevel({ tiles: assigned }).solvable, true);
+
+  let gateCalls = 0;
+  const fifthStrategy = assignSolvableRandomTypes(randomTiles, {
+    seed: 7,
+    fullTypeMin: 1,
+    fullTypeMax: 15,
+    solvableMoves: [["a", "b"], ["c", "d"]],
+    isSolvable: () => {
+      gateCalls += 1;
+      return gateCalls === 5;
+    },
+  });
+  assert.equal(gateCalls, 5);
+  assert.equal(
+    Object.values(typeCounts(fifthStrategy)).every((count) => count % 2 === 0),
+    true,
+  );
+});
 
 test("legacy AI geometry repair is deterministic and treats edge touching as safe", () => {
   const document = makeLegacyAiDocument([
@@ -625,7 +705,7 @@ test("five-stage generation rejects layer counts below the structural capacity",
       seed: 73125,
       maxAttempts: 1,
     }),
-    /200 张砖块至少需要 6 个有效层；当前 5 层最多支持 116 张/,
+    /200 张砖块至少需要 9 个有效层；当前 5 层最多支持 104 张/,
   );
   assert.equal(
     normalizeGenerationTargets({
@@ -726,40 +806,34 @@ test("generated geometry records continuous template mapping and safe capacities
     maxAttempts: 12,
   });
   const stats = extractLevelStatistics(generated.document);
-  const structure = generated.document.designerNote.aiGeneration.structure;
-  const learning = generated.document.designerNote.aiGeneration.templateLearning;
+  const ai = generated.document.designerNote.aiGeneration;
+  const structure = ai.structure;
+  const learning = ai.templateLearning;
 
-  assert.equal(learning.sourceLayerMap.length, 15);
+  assert.equal(ai.blueprint.layerPlans.length, 15);
   assert.equal(
-    learning.sourceLayerMap.every((layer, index) =>
-      index === 0 || layer >= learning.sourceLayerMap[index - 1]),
+    ai.blueprint.layerPlans.every(({ layer }, index) =>
+      index === 0 || layer > ai.blueprint.layerPlans[index - 1].layer),
     true,
   );
   assert.equal(learning.layerTileCounts.reduce((sum, count) => sum + count, 0), 200);
   assert.equal(
-    learning.layerTileCounts.every((count, index) =>
-      count <= learning.layerCapacities[index]),
+    learning.layerTileCounts.every((count) =>
+      count <= ai.blueprint.maxLayerTiles),
     true,
   );
   assert.equal(learning.fillTrackCount, learning.fillTracks.length);
   assert.equal(learning.fullRandomRatio, 1);
-  assert.deepEqual(learning.similarity, {
-    sourceLayerOrderPreserved: true,
-    fillTrackCountMatched: true,
-    capacitySafe: true,
-  });
-  assert.deepEqual(structure, {
-    towerCount: stats.towerCount,
-    highTowerCount: 2,
-    platformComponentCount: stats.platformComponentCount,
-    largestFlatPlatformSize: stats.largestFlatPlatformSize,
-    boundaryRatio: stats.boundaryRatio,
-    releaseDependencyDrop: stats.releaseDependencyDrop,
-    stagePressure: stats.stagePressure,
-  });
+  assert.equal(learning.sourceFileNames.length, 1);
+  assert.match(learning.topologyHash, /^topology-[0-9a-f]{8}$/);
+  assert.equal(structure.maximumPlatformSize <= 10, true);
+  assert.equal(structure.multiComponentLayerRatio >= 0.65, true);
+  assert.equal(structure.towerEntranceCount >= 4, true);
+  assert.equal(structure.releaseDependencyDrop > 0, true);
+  assert.deepEqual(structure.stagePressure, stats.stagePressure);
 });
 
-test("200/15 generation learns sparse layer rhythms and creates Unity blind-box stacks", () => {
+test("200/15 generation rejects a noncanonical single blind track", () => {
   const templateTiles = Array.from({ length: 17 }, (_, layerIndex) => {
     const layer = layerIndex + 1;
     const count = [13, 13, 19, 13, 13, 27, 15, 24, 13, 22, 7, 7, 4, 2, 2, 2, 2][layerIndex];
@@ -811,16 +885,18 @@ test("200/15 generation learns sparse layer rhythms and creates Unity blind-box 
 
   assert.equal(
     generated.document.designerNote.aiGeneration.algorithmVersion,
-    "paws-local-stat-v10-template-motifs",
+    "paws-local-stat-v11-stage-grammar",
   );
+  const ai = generated.document.designerNote.aiGeneration;
   const learning = generated.document.designerNote.aiGeneration.templateLearning;
   assert.equal(fullRandomCount, generated.document.tiles.length);
-  assert.equal(Math.max(...layerCounts) - Math.min(...layerCounts) >= 8, true);
-  assert.equal(Math.max(...layerCounts) <= Math.max(...learning.layerCapacities), true);
-  assert.equal(learning.sourceLayerMap.length, 15);
-  assert.equal(learning.fillTrackCount, 1);
-  assert.equal(blindBases.length, learning.fillTracks[0].lowerDepth);
+  assert.equal(Math.max(...layerCounts) <= ai.blueprint.maxLayerTiles, true);
+  assert.equal(ai.blueprint.layerPlans.length, 15);
+  assert.equal(learning.fillTrackCount, 0);
+  assert.equal(blindBases.length, 0);
   assert.equal(blindTops.length, learning.fillTrackCount);
+  assert.equal(ai.structure.maximumPlatformSize <= 10, true);
+  assert.equal(ai.structure.multiComponentLayerRatio >= 0.65, true);
   assert.deepEqual(sameLayerOverlapPairs(generated.document.tiles), []);
   assert.equal(generated.report.solvable, true);
 });
@@ -859,21 +935,22 @@ test("200 tiles, 15 layers and score 60 stay solvable on the fixed board", () =>
   assert.equal(stats.layerCount, 15);
   assert.equal(generated.report.solvable, true);
   assert.equal(generated.report.steps, 100);
-  const learning = generated.document.designerNote.aiGeneration.templateLearning;
+  const ai = generated.document.designerNote.aiGeneration;
+  const learning = ai.templateLearning;
   assert.equal(
-    learning.sourceLayerMap.length === stats.layerCount
+    ai.blueprint.layerPlans.length === stats.layerCount
       && learning.fillTrackCount === learning.fillTracks.length,
     true,
   );
   assert.equal(
-    learning.layerTileCounts.every((count, index) =>
-      count <= learning.layerCapacities[index]),
+    learning.layerTileCounts.every((count) =>
+      count <= ai.blueprint.maxLayerTiles),
     true,
   );
   assert.equal(Math.abs(generated.report.difficulty.score - 60) <= 5, true);
 });
 
-test("v10 has zero single-attempt generation failures across 50 easy and normal seeds", () => {
+test("v11 has zero single-attempt generation failures across 50 easy and normal seeds", () => {
   const corpus = Array.from({ length: 16 }, (_, profileIndex) =>
     makeDocument(reference.tiles.map((sourceTile) => ({
       ...sourceTile,
@@ -898,9 +975,10 @@ test("v10 has zero single-attempt generation failures across 50 easy and normal 
         seed,
         maxAttempts: 1,
       });
+      const ai = generated.document.designerNote.aiGeneration;
       const learning = generated.document.designerNote.aiGeneration.templateLearning;
       assert.equal(generated.document.tiles.length, profile.defaultTileCount);
-      assert.equal(learning.sourceLayerMap.length, profile.defaultLayerCount);
+      assert.equal(ai.blueprint.layerPlans.length, profile.defaultLayerCount);
       assert.equal(learning.fillTrackCount, learning.fillTracks.length);
       assert.equal(generated.document.tiles.every(({ type }) => type === -1), true);
       assert.deepEqual(sameLayerOverlapPairs(generated.document.tiles), []);
@@ -984,14 +1062,15 @@ for (const difficulty of ["easy", "normal", "hard"]) {
         true,
       );
       const learning = generated.document.designerNote.aiGeneration.templateLearning;
+      const blueprint = generated.document.designerNote.aiGeneration.blueprint;
       assert.equal(stats.initialAccessibleTiles >= 2, true);
       assert.equal(
-        learning.sourceLayerMap.length === stats.layerCount,
+        blueprint.layerPlans.length === stats.layerCount,
         true,
       );
       assert.equal(
-        learning.layerTileCounts.every((count, index) =>
-          count <= learning.layerCapacities[index]),
+        learning.layerTileCounts.every((count) =>
+          count <= blueprint.maxLayerTiles),
         true,
       );
       assert.equal(

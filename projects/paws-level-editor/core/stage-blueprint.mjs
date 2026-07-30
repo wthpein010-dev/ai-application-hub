@@ -133,11 +133,11 @@ function capacityState({ difficulty, tileCount, layerCount }) {
       stageTiles: [],
     };
   }
-  const maxLayerTiles = layerTileLimit({
+  const maxLayerTiles = Math.min(36, layerTileLimit({
     difficulty,
     tileCount: normalizedTileCount,
     layerCount: normalizedLayerCount,
-  });
+  }));
   let stageLayers;
   let stageTiles;
   try {

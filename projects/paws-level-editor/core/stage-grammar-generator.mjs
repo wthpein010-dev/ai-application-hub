@@ -8,6 +8,7 @@ import { XorShift } from "./xorshift.mjs";
 
 const TILE_SIZE = 8;
 const MAX_PLATFORM_SIZE = 10;
+const LOCAL_MOTIF_CAPACITY = 9;
 const MAX_COMPONENTS = 4;
 const REGION_CENTERS = Object.freeze([
   Object.freeze({ x: 8, y: 8 }),
@@ -25,10 +26,6 @@ const LOCAL_MOTIF_OFFSETS = Object.freeze([
   Object.freeze([8, -8]),
   Object.freeze([-8, 8]),
   Object.freeze([8, 8]),
-  Object.freeze([0, -16]),
-  Object.freeze([0, 16]),
-  Object.freeze([-16, 0]),
-  Object.freeze([16, 0]),
 ]);
 
 function integer(value, fallback = 0) {
@@ -186,7 +183,9 @@ function transformedOffsets(offsets, transformIndex) {
 }
 
 function desiredComponentCount(layerPlan, reservedCount) {
-  const minimumForCapacity = Math.ceil(layerPlan.tileCount / MAX_PLATFORM_SIZE);
+  const minimumForCapacity = Math.ceil(
+    layerPlan.tileCount / LOCAL_MOTIF_CAPACITY,
+  );
   const stageMinimum = layerPlan.stageKey === "release" ? 2 : 3;
   return clamp(
     Math.max(stageMinimum, minimumForCapacity, reservedCount),
@@ -197,7 +196,7 @@ function desiredComponentCount(layerPlan, reservedCount) {
 
 function allocateComponentSizes(total, initialSizes, priority) {
   const sizes = [...initialSizes];
-  if (total > sizes.length * MAX_PLATFORM_SIZE) {
+  if (total > sizes.length * LOCAL_MOTIF_CAPACITY) {
     throw new RangeError(
       `${total} 张砖块超过 ${sizes.length} 个局部平台的容量。`,
     );
@@ -208,7 +207,7 @@ function allocateComponentSizes(total, initialSizes, priority) {
   }
   while (remaining > 0) {
     const candidates = priority
-      .filter((index) => sizes[index] < MAX_PLATFORM_SIZE)
+      .filter((index) => sizes[index] < LOCAL_MOTIF_CAPACITY)
       .sort((left, right) =>
         sizes[left] - sizes[right]
         || priority.indexOf(left) - priority.indexOf(right));
@@ -265,7 +264,7 @@ function placeLayer({
   const placed = [...reservedTiles];
 
   groups.forEach((group, groupIndex) => {
-    const base = group.reserved[0] ?? {
+    const base = {
       ...REGION_CENTERS[group.regionIndex],
       layer: layerPlan.layer,
     };
@@ -321,7 +320,11 @@ function placeLayer({
     || components.length > MAX_COMPONENTS
     || components.some(({ length }) => length > MAX_PLATFORM_SIZE)
   ) {
-    throw new Error(`第 ${layerPlan.layer} 层局部平台结构不满足门禁。`);
+    throw new Error(
+      `第 ${layerPlan.layer} 层局部平台结构不满足门禁：`
+      + `组件 ${components.length} 个，尺寸 `
+      + `${components.map(({ length }) => length).join("/") || "0"}。`,
+    );
   }
   return placed;
 }

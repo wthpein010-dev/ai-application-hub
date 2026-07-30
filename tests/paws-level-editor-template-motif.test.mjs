@@ -204,7 +204,7 @@ test("same seed is deterministic and different seeds vary the global transform",
   assert.notDeepEqual(different.tiles, first.tiles);
 });
 
-test("AI generation consumes motif geometry instead of adding fixed blind tracks", () => {
+test("AI facade uses v11 stage grammar while legacy v10 motif builder stays isolated", () => {
   const source = makeDocument(Array.from({ length: 17 }, (_, index) =>
     tile(
       `motif-${index + 1}`,
@@ -226,11 +226,19 @@ test("AI generation consumes motif geometry instead of adding fixed blind tracks
 
   assert.equal(
     generated.document.designerNote.aiGeneration.algorithmVersion,
-    "paws-local-stat-v10-template-motifs",
+    "paws-local-stat-v11-stage-grammar",
   );
   assert.equal(learning.fillTrackCount, 0);
   assert.deepEqual(learning.fillTracks, []);
-  assert.equal(learning.sourceLayerMap.length, 15);
+  assert.equal(
+    generated.document.designerNote.aiGeneration.blueprint.layerPlans.length,
+    15,
+  );
+  assert.equal(learning.motifUses.length > 0, true);
+  assert.equal(
+    learning.repairLog.every(({ action }) => !/lattice/i.test(action)),
+    true,
+  );
   assert.equal(learning.fullRandomRatio, 1);
   assert.equal(
     generated.document.tiles.every(({ type }) => type === -1),

@@ -164,6 +164,50 @@ test("geometry is deterministic and its topology varies by seed", () => {
   assert.notEqual(first.topologyHash, changed.topologyHash);
 });
 
+test("deep two-track references keep easy crisis layers split into local islands", () => {
+  const family = referenceFamily(2);
+  family.layerCount = 20;
+  family.fillTracks = family.fillTracks.map((track) => ({
+    ...track,
+    lowerDepth: 19,
+    depth: 20,
+    layerEnd: 20,
+    lowerAnchors: Array.from({ length: 19 }, (_, index) => ({
+      ...track.lowerAnchors[0],
+      layer: index + 1,
+    })),
+    topAnchor: {
+      ...track.topAnchor,
+      layer: 20,
+    },
+  }));
+  const structureCorpus = {
+    sampleCount: 1,
+    families: [family],
+    distributions: {},
+  };
+  const blueprint = buildStageBlueprint({
+    structureCorpus,
+    difficulty: "easy",
+    difficultyProfile: DIFFICULTY_PROFILES.easy,
+    layout: "balanced",
+    tileCount: 180,
+    layerCount: 12,
+    targetScore: 40,
+    seed: 73125,
+  });
+
+  const result = buildStageGrammarGeometry({
+    blueprint,
+    structureCorpus,
+    seed: 73125,
+  });
+
+  assert.equal(result.tiles.length, 180);
+  assert.equal(result.metrics.maximumPlatformSize <= 10, true);
+  assert.equal(result.metrics.multiComponentLayerRatio >= 0.65, true);
+});
+
 test("shared stage metrics are exposed through level statistics", () => {
   const result = buildStageGrammarGeometry(geometryOptions());
   const measured = measureStageGeometry({

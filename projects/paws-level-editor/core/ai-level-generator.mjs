@@ -5,14 +5,17 @@ import {
 } from "./level-statistics.mjs";
 import { solveLevel } from "./level-solver.mjs";
 import { scoreLevelDifficulty } from "./level-difficulty.mjs";
-import { assignRandomTypes } from "./random-assigner.mjs";
+import { assignSolvableRandomTypes } from "./random-assigner.mjs";
 import { XorShift } from "./xorshift.mjs";
 import { computeCoverage } from "./coverage.mjs";
-import { buildTemplateMotifGeometry } from "./template-motif-generator.mjs";
-import { validateBlueprintCapacity } from "./stage-blueprint.mjs";
+import {
+  buildStageBlueprint,
+  validateBlueprintCapacity,
+} from "./stage-blueprint.mjs";
+import { buildStageGrammarGeometry } from "./stage-grammar-generator.mjs";
 
 const TILE_SIZE = 8;
-const ALGORITHM_VERSION = "paws-local-stat-v10-template-motifs";
+const ALGORITHM_VERSION = "paws-local-stat-v11-stage-grammar";
 const AI_BOARD = Object.freeze({ width: 7, height: 8 });
 const AI_GRID_UNIT = "sheep_7x8_mini8";
 export const MAX_AVERAGE_BLOCKERS = 4;
@@ -350,10 +353,83 @@ export function maxTowerAverageBlockersForLayers(layerCount) {
   return maxAverageBlockersForLayers(layerCount) + 2;
 }
 
-export function generatedStructureIssues(statistics, profile, layerCount) {
+export function generatedStructureIssues(
+  statistics,
+  profile,
+  layerCount,
+  document,
+) {
   const issues = [];
   if (statistics.initialAccessibleTiles < 2) {
     issues.push(`开局可操作砖块不足(${statistics.initialAccessibleTiles})`);
+  }
+  if (statistics.initialAccessiblePairs < profile.minInitialPairs) {
+    issues.push(
+      `开局可消除对子不足(${statistics.initialAccessiblePairs}/`
+      + `${profile.minInitialPairs})`,
+    );
+  }
+  const geometry = statistics.stageGeometry ?? {};
+  const maximumLayerTiles = Math.max(
+    0,
+    ...(geometry.layerTileCounts ?? []),
+  );
+  const plannedMaximum = Number(
+    document?.designerNote?.aiGeneration?.blueprint?.maxLayerTiles,
+  );
+  if (
+    Number.isFinite(plannedMaximum)
+    && maximumLayerTiles > plannedMaximum
+  ) {
+    issues.push(`单层砖块超过蓝图上限(${maximumLayerTiles}/${plannedMaximum})`);
+  }
+  if (Number(geometry.multiComponentLayerRatio) < 0.65) {
+    issues.push(
+      `多岛层比例不足(${Number(geometry.multiComponentLayerRatio).toFixed(3)})`,
+    );
+  }
+  if (Number(geometry.maximumPlatformSize) > 10) {
+    issues.push(`局部平台超过 10 张(${geometry.maximumPlatformSize})`);
+  }
+  if (geometry.threeLayerGiantRun) {
+    issues.push("出现连续三层巨型连通平台");
+  }
+  if (Number(geometry.towerEntranceCount) < 4) {
+    issues.push(`塔入口不足(${geometry.towerEntranceCount})`);
+  }
+  if (
+    Number(geometry.towerRoleCounts?.high) < 1
+    || Number(geometry.towerRoleCounts?.medium) < 1
+    || Number(geometry.towerRoleCounts?.small) < 2
+  ) {
+    issues.push("塔入口未同时覆盖高塔、中塔与至少两座小塔");
+  }
+  if (Number(geometry.releaseDependencyDrop) <= 0) {
+    issues.push(
+      `释放段依赖未下降(${Number(geometry.releaseDependencyDrop).toFixed(3)})`,
+    );
+  }
+  const expectedTracks =
+    document?.designerNote?.aiGeneration?.templateLearning?.fillTracks
+    ?? [];
+  if (![0, 2, 4].includes(expectedTracks.length)) {
+    issues.push(`盲盒轨道数量非法(${expectedTracks.length})`);
+  }
+  const blindLowerCount = document?.tiles?.filter((tile) =>
+    Number(tile.presetColorType) === 3
+    && Number(tile.moldType ?? 1) === 1).length ?? 0;
+  const blindTopCount = document?.tiles?.filter((tile) =>
+    Number(tile.moldType ?? 1) === 2
+    && Number(tile.presetColorType ?? 1) === 1).length ?? 0;
+  const expectedLowerCount = expectedTracks.reduce(
+    (sum, { lowerDepth }) => sum + Math.max(0, Number(lowerDepth) || 0),
+    0,
+  );
+  if (blindLowerCount !== expectedLowerCount) {
+    issues.push(`盲盒下层数量不匹配(${blindLowerCount}/${expectedLowerCount})`);
+  }
+  if (blindTopCount !== expectedTracks.length) {
+    issues.push(`盲盒顶砖数量不匹配(${blindTopCount}/${expectedTracks.length})`);
   }
   return issues;
 }
@@ -1312,7 +1388,6 @@ function buildDocument({
   attempt = 0,
 }) {
   const rng = XorShift.fromSeed(seed);
-  const reference = references[rng.nextInt(0, references.length)];
   const tileCount = target.tileCount;
   const layerCount = target.layerCount;
   const fullRandomTypeMax = {
@@ -1320,27 +1395,29 @@ function buildDocument({
     normal: 15,
     hard: 32,
   }[difficulty];
-  const stageStructure = buildStageStructure({
-    pairCount: tileCount / 2,
+  const blueprint = buildStageBlueprint({
+    structureCorpus: learned.structureCorpus,
+    difficulty,
+    difficultyProfile: profile,
+    layout,
+    tileCount,
     layerCount,
-    minimumTopPairs: profile.minInitialPairs,
     targetScore: target.score,
+    seed,
   });
-  const pairCounts = stageStructure.pairCounts;
-  if (pairCounts.length !== layerCount) {
-    throw new Error("五阶段结构未覆盖全部有效层。");
-  }
+  const generatedGeometry = buildStageGrammarGeometry({
+    blueprint,
+    structureCorpus: learned.structureCorpus,
+    seed,
+  });
+  const sourceFileName = blueprint.familyIds[0];
+  const reference = references.find((candidate) =>
+    String(candidate.fileName ?? "") === sourceFileName)
+    ?? references[rng.nextInt(0, references.length)];
   const board = {
     ...AI_BOARD,
     scale: Number.isFinite(learned.board.scale) ? learned.board.scale : 1,
   };
-  const generatedGeometry = buildTemplateMotifGeometry({
-    learned,
-    target: { tileCount, layerCount },
-    layout,
-    seed,
-    attempt,
-  });
   const tiles = generatedGeometry.tiles;
   const unsignedSeed = seed >>> 0;
   const id = -((unsignedSeed % 900000) + 100000);
@@ -1380,43 +1457,32 @@ function buildDocument({
         layerCount,
         targetScore: target.score,
       },
-      stagePlan: stageStructure.stagePlan,
+      blueprint: clone(blueprint),
+      stagePlan: clone(blueprint.stagePlan),
       towerPlan: {
-        towerCount: profile.towerCount,
-        highTowerCount: profile.highTowerCount,
-        centers: generatedGeometry.towerCenters ?? learned.towerCenters,
+        towerCount: blueprint.towerEntrances.length,
+        highTowerCount: blueprint.towerEntrances
+          .filter(({ role }) => role === "high").length,
+        centers: clone(blueprint.towerEntrances),
       },
       templateLearning: {
-        sampleIndex: generatedGeometry.sourceProfile?.sampleIndex ?? null,
-        sourceFileName: generatedGeometry.sourceProfile?.sourceFileName ?? "",
-        sourceLayerMap: generatedGeometry.sourceLayerMap,
-        preservedAnchorRatio: generatedGeometry.preservedAnchorRatio,
+        sourceFileNames: [...blueprint.familyIds],
+        sourceFileName: blueprint.familyIds[0] ?? "",
         fillTrackCount: generatedGeometry.fillTracks.length,
-        fillTracks: generatedGeometry.fillTracks,
-        layerTileCounts: generatedGeometry.layerTileCounts,
-        layerCapacities: generatedGeometry.layerCapacities,
+        fillTracks: clone(generatedGeometry.fillTracks),
+        layerTileCounts: [...generatedGeometry.layerTileCounts],
+        motifUses: clone(generatedGeometry.motifUses),
+        repairLog: clone(generatedGeometry.repairLog),
+        topologyHash: generatedGeometry.topologyHash,
         blindBoxStackCount: generatedGeometry.fillTracks.length,
         blindBoxStackDepth: Math.max(
           0,
           ...generatedGeometry.fillTracks.map(({ depth }) => depth),
         ),
         fullRandomRatio: 1,
-        similarity: {
-          sourceLayerOrderPreserved:
-            generatedGeometry.sourceLayerMap.every((layer, index) =>
-              index === 0 || layer >= generatedGeometry.sourceLayerMap[index - 1]),
-          fillTrackCountMatched:
-            generatedGeometry.fillTracks.length
-            === (
-              generatedGeometry.sourceProfile?.fillTracks
-              ?? generatedGeometry.sourceProfile?.blindStacks
-              ?? []
-            ).length,
-          capacitySafe:
-            generatedGeometry.layerTileCounts.every((count, index) =>
-              count <= generatedGeometry.layerCapacities[index]),
-        },
       },
+      structure: clone(generatedGeometry.metrics),
+      rejections: [],
       referenceCount: references.length,
       learned: {
         sampleCount: learned.sampleCount,
@@ -1495,6 +1561,7 @@ export function generateAiLevel({
   let best = null;
   let lastBuildError = null;
   let lastRejection = "";
+  const rejections = [];
 
   for (let attempt = 1; attempt <= attemptsLimit; attempt += 1) {
     const attemptSeed =
@@ -1513,6 +1580,7 @@ export function generateAiLevel({
       });
     } catch (error) {
       lastBuildError = error;
+      rejections.push(`构造失败：${error.message}`);
       continue;
     }
     const statistics = extractLevelStatistics(document);
@@ -1522,26 +1590,28 @@ export function generateAiLevel({
       statistics,
       profile,
       target.layerCount,
+      document,
     );
     if (errors.length || structureIssues.length) {
       lastRejection = [
         ...errors.map(({ message }) => message),
         ...structureIssues,
       ].join("、");
+      rejections.push(lastRejection);
       continue;
     }
     const report = solveLevel(document);
     if (!report.solvable) {
       lastRejection = "求解器未找到完整消除路径";
+      rejections.push(lastRejection);
       continue;
     }
 
-    const difficultyTiles = assignRandomTypes(document.tiles, {
+    const difficultyTiles = assignSolvableRandomTypes(document.tiles, {
       seed: attemptSeed,
       ...(document.random ?? {}),
       isSolvable: (candidate) => solveLevel({ tiles: candidate }).solvable,
       solvableMoves: report.moves,
-      maxRandomAttempts: 1,
     });
     const difficultyDocument = {
       ...document,
@@ -1553,8 +1623,10 @@ export function generateAiLevel({
     });
     if (!difficultyReport.valid) {
       lastRejection = "难度评分门禁未通过";
+      rejections.push(lastRejection);
       continue;
     }
+    document.designerNote.aiGeneration.rejections = [...rejections];
     document.designerNote.aiGeneration.solver = {
       solvable: true,
       steps: report.steps,
@@ -1572,13 +1644,8 @@ export function generateAiLevel({
       reasons: difficultyReport.reasons,
     };
     document.designerNote.aiGeneration.structure = {
-      towerCount: statistics.towerCount,
-      highTowerCount: profile.highTowerCount,
-      platformComponentCount: statistics.platformComponentCount,
-      largestFlatPlatformSize: statistics.largestFlatPlatformSize,
-      boundaryRatio: statistics.boundaryRatio,
-      releaseDependencyDrop: statistics.releaseDependencyDrop,
-      stagePressure: statistics.stagePressure,
+      ...clone(statistics.stageGeometry),
+      stagePressure: clone(statistics.stagePressure),
     };
     const candidate = {
       document,
