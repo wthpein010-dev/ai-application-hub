@@ -42,6 +42,13 @@ test("AI generation options normalize the three intentional choices", () => {
     layerCount: 32,
     targetScore: 80,
     tileCountAdjusted: true,
+    capacity: {
+      supported: true,
+      maxTiles: 400,
+      minimumLayers: 9,
+      maxLayerTiles: 14,
+      message: "当前组合可生成；单层上限 14 张。",
+    },
   });
   assert.equal(
     describeGenerationOptions({
@@ -53,7 +60,7 @@ test("AI generation options normalize the three intentional choices", () => {
       targetScore: 80,
       tileCountAdjusted: true,
     }),
-    "精确 242 张、32 个有效层，目标 80 分（极难挑战）；输入砖块数已自动补为偶数。从当前关卡学习，层层推进。建议 220–280 张、28–36 层。",
+    "精确 242 张、32 个有效层，目标 80 分（极难挑战）；输入砖块数已自动补为偶数。从当前关卡学习，层层推进。建议 220–280 张、28–36 层。当前组合可生成；困难档单层上限 14 张。",
   );
 });
 
@@ -111,7 +118,7 @@ test("AI generation rejects dense shallow plans before starting generation", () 
 
   assert.throws(
     () => normalizeGenerationOptions(dense),
-    /200 张砖块至少需要 14 个有效层/,
+    /200 张砖块至少需要 9 个有效层；当前 5 层最多支持 104 张/,
   );
 
   const shallow = new FormData();
@@ -123,6 +130,21 @@ test("AI generation rejects dense shallow plans before starting generation", () 
   shallow.set("ai-target-score", "60");
 
   assert.equal(normalizeGenerationOptions(shallow).layerCount, 6);
+});
+
+test("dialog rejects capacity-invalid options before generation", () => {
+  const form = new FormData();
+  form.set("ai-difficulty", "normal");
+  form.set("ai-layout", "balanced");
+  form.set("ai-reference", "all");
+  form.set("ai-tile-count", "400");
+  form.set("ai-layer-count", "5");
+  form.set("ai-target-score", "60");
+
+  assert.throws(
+    () => normalizeGenerationOptions(form),
+    /400 张砖块至少需要 14 个有效层；当前 5 层最多支持 104 张/,
+  );
 });
 
 test("AI dialog exposes exactly three difficulty, three layout and two reference choices", () => {

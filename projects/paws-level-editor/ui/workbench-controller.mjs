@@ -4,6 +4,7 @@ import { parseLevelDocument, serializeLevelDocument } from "../core/level-adapte
 import { validateLevel, validateLevelForPublish } from "../core/level-validator.mjs";
 import { createPlaySession } from "../core/play-engine.mjs";
 import { generateAiLevel } from "../core/ai-level-generator.mjs";
+import { validateBlueprintCapacity } from "../core/stage-blueprint.mjs";
 import { scoreLevelDifficulty } from "../core/level-difficulty.mjs";
 import { solveLevel } from "../core/level-solver.mjs";
 import { buildFillCells, planFillPlacement } from "../core/fill-tool.mjs";
@@ -982,6 +983,18 @@ export class WorkbenchController {
     if (this.readonly || this.aiGenerationPending) {
       return false;
     }
+    try {
+      const capacity = validateBlueprintCapacity({
+        difficulty: options.difficulty,
+        tileCount: options.tileCount,
+        layerCount: options.layerCount,
+      });
+      if (!capacity.supported) throw new RangeError(capacity.message);
+    } catch (error) {
+      this.elements.aiLevelError.textContent = error.message;
+      this.showToast(error.message, "error");
+      return false;
+    }
     this.aiGenerationPending = true;
     this.elements.aiLevelError.textContent = "";
     this.updateUI();
@@ -1047,8 +1060,13 @@ export class WorkbenchController {
       );
       return true;
     } catch (error) {
-      this.elements.aiLevelError.textContent = error.message;
-      this.showToast(error.message, "error");
+      const message = error instanceof RangeError
+        ? error.message
+        : /结构.*门禁|局部平台|盲盒轨道|verified moves/i.test(error.message)
+          ? `结构门禁异常：${error.message}`
+          : error.message;
+      this.elements.aiLevelError.textContent = message;
+      this.showToast(message, "error");
       return false;
     } finally {
       this.aiGenerationPending = false;

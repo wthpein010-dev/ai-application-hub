@@ -1397,6 +1397,20 @@ try {
   await page.locator("#generate-ai-level").click();
   await page.locator("#ai-level-dialog").waitFor({ state: "visible" });
   await page.locator("#ai-reference-current").check();
+  const catalogCountBeforeCapacityRejection = await page.evaluate(() =>
+    window.pawsWorkbench.levels.length);
+  await page.locator("#ai-tile-count").fill("400");
+  await page.locator("#ai-layer-count").fill("5");
+  await page.locator("#ai-target-score").fill("60");
+  await page.locator("#confirm-ai-level").click();
+  await page.locator("#ai-level-error").waitFor({ state: "visible" });
+  await page.waitForFunction(() =>
+    /400 张砖块至少需要 14 个有效层；当前 5 层最多支持 104 张/
+      .test(document.querySelector("#ai-level-error")?.textContent ?? ""));
+  assert.equal(
+    await page.evaluate(() => window.pawsWorkbench.levels.length),
+    catalogCountBeforeCapacityRejection,
+  );
   await page.locator("#ai-tile-count").fill("200");
   await page.locator("#ai-layer-count").fill("15");
   await page.locator("#ai-target-score").fill("60");
@@ -1406,6 +1420,8 @@ try {
     return !controller?.aiGenerationPending
       && controller?.document?.designerNote?.aiGeneration
       && controller.document.tiles.length === 200
+      && controller.document.designerNote.aiGeneration.algorithmVersion
+        === "paws-local-stat-v11-stage-grammar"
       && controller.lastAiGeneration?.report?.solvable;
   });
   await waitForNetworkAndTextures(page);
@@ -1439,6 +1455,14 @@ try {
       layerTypesEven: [...layerTypes.values()].every((count) => count % 2 === 0),
       solverSteps: controller.lastAiGeneration.report.steps,
       difficultyScore: controller.lastAiGeneration.report.difficulty.score,
+      algorithmVersion:
+        controller.document.designerNote.aiGeneration.algorithmVersion,
+      maximumLayerPeak: Math.max(
+        ...Object.values(controller.lastAiGeneration.report.statistics.layerHistogram),
+      ),
+      towerEntranceCount:
+        controller.document.designerNote.aiGeneration.structure.towerEntranceCount,
+      aiErrorText: document.querySelector("#ai-level-error")?.textContent ?? "",
     };
   });
   assert.equal(summary.aiGeneration.tileCount, 200);
@@ -1447,6 +1471,13 @@ try {
   assert.equal(summary.aiGeneration.globalTypesEven, true);
   assert.equal(summary.aiGeneration.layerTypesEven, false);
   assert.equal(summary.aiGeneration.solverSteps, 100);
+  assert.equal(
+    summary.aiGeneration.algorithmVersion,
+    "paws-local-stat-v11-stage-grammar",
+  );
+  assert.equal(summary.aiGeneration.maximumLayerPeak <= 22, true);
+  assert.equal(summary.aiGeneration.towerEntranceCount >= 4, true);
+  assert.equal(summary.aiGeneration.aiErrorText, "");
 
   await page.locator("#view-3d").click();
   await page.locator(".level-canvas-3d").waitFor({ state: "visible" });

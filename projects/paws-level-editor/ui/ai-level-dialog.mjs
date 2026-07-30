@@ -2,6 +2,7 @@ import {
   DIFFICULTY_PROFILES,
   normalizeGenerationTargets,
 } from "../core/ai-level-generator.mjs";
+import { validateBlueprintCapacity } from "../core/stage-blueprint.mjs";
 
 const DIFFICULTIES = Object.freeze({
   easy: Object.freeze({
@@ -30,6 +31,12 @@ const LAYOUT_LABELS = Object.freeze({
 const REFERENCE_LABELS = Object.freeze({
   current: "从当前关卡学习",
   all: "从全部关卡学习",
+});
+
+const DIFFICULTY_LABELS = Object.freeze({
+  easy: "简单档",
+  normal: "标准档",
+  hard: "困难档",
 });
 
 function ratingLabel(score) {
@@ -87,9 +94,15 @@ export function normalizeGenerationOptions(formData) {
   });
   const target = normalizeGenerationTargets({
     profile: DIFFICULTY_PROFILES[difficulty],
+    difficulty,
     tileCount: requestedTileCount,
     layerCount,
     targetScore,
+  });
+  const capacity = validateBlueprintCapacity({
+    difficulty,
+    tileCount: target.tileCount,
+    layerCount: target.layerCount,
   });
   return {
     difficulty,
@@ -99,6 +112,7 @@ export function normalizeGenerationOptions(formData) {
     layerCount: target.layerCount,
     targetScore: target.score,
     tileCountAdjusted: target.tileCountAdjusted,
+    capacity,
   };
 }
 
@@ -111,6 +125,7 @@ export function describeGenerationOptions(options) {
     layerCount,
     targetScore,
     tileCountAdjusted = false,
+    capacity: providedCapacity,
   } = options ?? {};
   const profile = DIFFICULTIES[difficulty];
   if (
@@ -126,11 +141,21 @@ export function describeGenerationOptions(options) {
   const adjustment = tileCountAdjusted
     ? "输入砖块数已自动补为偶数。"
     : "";
+  const capacity = providedCapacity ?? validateBlueprintCapacity({
+    difficulty,
+    tileCount,
+    layerCount,
+  });
+  if (!capacity.supported) {
+    throw new RangeError(capacity.message);
+  }
   return (
     `精确 ${tileCount} 张、${layerCount} 个有效层，`
     + `目标 ${targetScore} 分（${ratingLabel(targetScore)}）；`
     + adjustment
     + `${REFERENCE_LABELS[reference]}，${LAYOUT_LABELS[layout]}。`
     + `建议 ${profile.suggestedTiles} 张、${profile.suggestedLayers} 层。`
+    + `当前组合可生成；${DIFFICULTY_LABELS[difficulty]}`
+    + `单层上限 ${capacity.maxLayerTiles} 张。`
   );
 }

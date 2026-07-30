@@ -182,6 +182,40 @@ test("rerandomize preserves controller play state and reports a rejected seed", 
   );
 });
 
+test("capacity rejection does not load references or save an AI level", async () => {
+  let listCalls = 0;
+  let saveCalls = 0;
+  const { controller } = controllerHarness({
+    async listLevelCatalog() {
+      listCalls += 1;
+      return { defaultFileName: "", levels: [] };
+    },
+    async saveLevel() {
+      saveCalls += 1;
+      throw new Error("save must not be called");
+    },
+  });
+  controller.elements.aiLevelError = { textContent: "" };
+
+  const generated = await controller.generateAiLevelFromDialog({
+    difficulty: "normal",
+    layout: "balanced",
+    reference: "all",
+    tileCount: 400,
+    layerCount: 5,
+    targetScore: 60,
+    tileCountAdjusted: false,
+  });
+
+  assert.equal(generated, false);
+  assert.equal(listCalls, 0);
+  assert.equal(saveCalls, 0);
+  assert.match(
+    controller.elements.aiLevelError.textContent,
+    /400 张砖块至少需要 14 个有效层；当前 5 层最多支持 104 张/,
+  );
+});
+
 test("deleting the final browser-local level returns to the empty library without an error", async () => {
   const deleted = [];
   const { controller, events } = controllerHarness({
