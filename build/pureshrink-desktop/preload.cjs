@@ -32,4 +32,3 @@ contextBridge.exposeInMainWorld("pureShrinkDesktop", {
   showItem: (resultPath) => ipcRenderer.invoke(channels.showItem, resultPath),
   getEnvironment: () => ipcRenderer.invoke(channels.environment),
 });
-

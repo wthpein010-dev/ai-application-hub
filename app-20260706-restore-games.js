@@ -622,6 +622,36 @@ const defaultApps = [
     risk: 8,
     polish: 9
   },
+  {
+    id: "pureshrink",
+    name: "PureShrink 无损压缩工坊",
+    category: "媒体压缩工具",
+    status: "desktop",
+    badge: "网页 · Windows · macOS",
+    brief: "在设备本地批量压缩图片、视频、GIF、音频和一般文件，严格无损默认开启，原件永不覆盖。",
+    problem: "媒体资源散落在不同工具中处理，上传等待、隐私风险和误覆盖原件让批量压缩变得低效。",
+    aiUse: "AI 参与压缩策略编排、无损边界说明、跨平台执行引擎、自动测试和公开教程制作。",
+    folder: "./projects/pureshrink/",
+    entry: "./projects/pureshrink/index.html",
+    video: "./projects/pureshrink/video/index.html",
+    package: "https://github.com/wthpein010-dev/ai-application-hub/releases/tag/pureshrink-v1.0.0",
+    platforms: {
+      web: "./projects/pureshrink/index.html",
+      windows: {
+        href: "https://github.com/wthpein010-dev/ai-application-hub/releases/download/pureshrink-v1.0.0/PureShrink-Windows-x64.zip",
+        label: "Wins下载"
+      },
+      mac: {
+        href: "https://github.com/wthpein010-dev/ai-application-hub/releases/download/pureshrink-v1.0.0/PureShrink-macOS.zip",
+        label: "Mac下载"
+      }
+    },
+    tags: ["无损压缩", "图片视频", "GIF", "本地处理"],
+    speed: 9,
+    impact: 9,
+    risk: 9,
+    polish: 9
+  },
 ];
 
 let apps = loadApps();

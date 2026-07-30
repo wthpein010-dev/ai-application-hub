@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="color-scheme" content="dark" />
+    <link rel="icon" href="data:," />
+    <title>PureShrink 60 秒使用指南</title>
+    <link rel="stylesheet" href="../../../assets/hub-video-player.css" />
+  </head>
+  <body data-hub-video-page>
+    <a class="hub-video-home" href="../../../index.html#apps">返回主页</a>
+    <main class="hub-video-page">
+      <p class="hub-video-kicker">PURESHRINK 1.0 · 使用指南</p>
+      <h1>从混合资源到可验证的小文件</h1>
+      <p class="hub-video-description">
+        42 秒了解本地处理、严格无损、高保真、混合队列、原件兜底，以及 Windows / macOS 大文件处理。
+      </p>
+      <section class="hub-video-player" aria-label="PureShrink 60 秒使用指南视频">
+        <div class="hub-video-stage">
+          <div class="hub-video-load-card" id="loadCard" role="status">
+            <strong>准备播放 PureShrink 使用指南</strong>
+            <p data-hub-video-message>点击后再加载视频，避免打开页面时等待。</p>
+            <button id="loadVideo" type="button">加载并播放视频</button>
+          </div>
+          <video
+            id="introVideo"
+            controls
+            playsinline
+            preload="none"
+            data-src="./pureshrink-demo.mp4"
+            poster="./poster.jpg"
+            hidden
+          ><track kind="captions" src="./pureshrink-demo.vtt" srclang="zh-CN" label="简体中文" default /></video>
+        </div>
+      </section>
+      <nav class="hub-video-actions" aria-label="视频相关入口">
+        <a href="./pureshrink-demo.mp4">打开 MP4</a>
+        <a href="../index.html">打开在线压缩器</a>
+      </nav>
+      <section class="hub-video-chapters" aria-label="视频章节">
+        <button class="hub-video-chapter" type="button" data-time="0"><time>00:00</time><span>文件留在本地</span></button>
+        <button class="hub-video-chapter" type="button" data-time="7"><time>00:07</time><span>选择真实无损</span></button>
+        <button class="hub-video-chapter" type="button" data-time="14"><time>00:14</time><span>加入混合资源</span></button>
+        <button class="hub-video-chapter" type="button" data-time="21"><time>00:21</time><span>查看策略和进度</span></button>
+        <button class="hub-video-chapter" type="button" data-time="28"><time>00:28</time><span>保留更优原件</span></button>
+        <button class="hub-video-chapter" type="button" data-time="35"><time>00:35</time><span>桌面版处理大文件</span></button>
+      </section>
+    </main>
+    <script type="module" src="../../../assets/hub-video-player.js"></script>
+  </body>
+</html>
