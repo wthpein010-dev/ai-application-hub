@@ -45,12 +45,14 @@ function isApplication(app) {
   return !["game", "engineering", "ai"].includes(app.status);
 }
 
-test("ClickFlow is the final application and exposes the four publication actions", () => {
+test("ClickFlow stays immediately before PureShrink and exposes four publication actions", () => {
   const apps = loadDefaultApps();
   const clickFlow = apps.find((app) => app.id === "clickflow");
+  const applicationIds = apps.filter(isApplication).map((app) => app.id);
 
   assert.ok(clickFlow, "ClickFlow should be registered");
-  assert.equal(apps.filter(isApplication).at(-1)?.id, "clickflow");
+  assert.equal(applicationIds.at(-2), "clickflow");
+  assert.equal(applicationIds.at(-1), "pureshrink");
   assert.equal(clickFlow.name, "ClickFlow 鼠标自动化");
   assert.equal(clickFlow.category, "桌面自动化工具");
   assert.equal(clickFlow.status, "assistant");
