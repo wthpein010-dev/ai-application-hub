@@ -110,8 +110,9 @@ const browserPath = [
 assert.ok(browserPath, "A system or Playwright Chromium executable is required for browser verification.");
 assert.equal(apps.length, 21, "all local catalog entries are covered");
 
-const server = createStaticServer();
-const baseUrl = await startServer(server);
+const requestedBaseUrl = process.env.HUB_BASE_URL?.replace(/\/+$/, "");
+const server = requestedBaseUrl ? null : createStaticServer();
+const baseUrl = requestedBaseUrl || await startServer(server);
 const browser = await chromium.launch({ executablePath: browserPath, headless: true });
 const failures = [];
 
@@ -127,6 +128,14 @@ try {
     const selectedCard = `#gameGrid article[data-app-id="${selectedId}"]`;
     await hubPage.goto(`${baseUrl}/index.html#games`, { waitUntil: "domcontentloaded", timeout: 60_000 });
     await hubPage.waitForSelector(selectedCard);
+    const catalogPlacement = await hubPage.evaluate((id) => ({
+      apps: document.querySelectorAll(`#appGrid article[data-app-id="${id}"]`).length,
+      games: document.querySelectorAll(`#gameGrid article[data-app-id="${id}"]`).length,
+      engineering: document.querySelectorAll(`#engineeringGrid article[data-app-id="${id}"]`).length,
+    }), selectedId);
+    if (catalogPlacement.apps !== 0 || catalogPlacement.games !== 1 || catalogPlacement.engineering !== 0) {
+      failures.push(`${viewport.name}/hub catalog placement: ${JSON.stringify(catalogPlacement)}`);
+    }
     await hubPage.evaluate((selector) => {
       window.__hubCardBeforeSelection = document.querySelector(selector);
     }, selectedCard);
@@ -223,5 +232,5 @@ try {
   console.log(`Verified home card selection and ${apps.length} entry pages at desktop and mobile sizes.`);
 } finally {
   await browser.close();
-  await stopServer(server);
+  if (server) await stopServer(server);
 }

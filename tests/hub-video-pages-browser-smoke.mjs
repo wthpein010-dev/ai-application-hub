@@ -102,8 +102,9 @@ const browserPath = [
 
 assert.ok(browserPath, "A system or Playwright Chromium executable is required for browser verification.");
 
-const server = createStaticServer();
-const baseUrl = await startServer(server);
+const requestedBaseUrl = process.env.HUB_BASE_URL?.replace(/\/+$/, "");
+const server = requestedBaseUrl ? null : createStaticServer();
+const baseUrl = requestedBaseUrl || await startServer(server);
 const browser = await chromium.launch({ executablePath: browserPath, headless: true });
 const apps = loadDefaultApps();
 
@@ -183,5 +184,5 @@ try {
   console.log("Verified " + apps.length + " pages at desktop and mobile sizes.");
 } finally {
   await browser.close();
-  await stopServer(server);
+  if (server) await stopServer(server);
 }
