@@ -75,6 +75,71 @@ public sealed class MainViewModelTests : IDisposable
     }
 
     [Fact]
+    public async Task SwapOpenThreadsAsync_ValidIds_ExchangesOnlyThoseCardsAndPreservesIdentity()
+    {
+        var client = CreateClient(threadCount: 4);
+        var path = Path.Combine(_directory, "workspace.json");
+        await using var viewModel = new MainViewModel(client, new WorkspaceStore(path));
+        await viewModel.InitializeAsync();
+        var first = viewModel.OpenThreads[0];
+        var fourth = viewModel.OpenThreads[3];
+        first.Draft = "保留输入";
+
+        var changed = await viewModel.SwapOpenThreadsAsync(first.ThreadId, fourth.ThreadId);
+
+        Assert.True(changed);
+        Assert.Same(fourth, viewModel.OpenThreads[0]);
+        Assert.Same(first, viewModel.OpenThreads[3]);
+        Assert.Equal("保留输入", viewModel.OpenThreads[3].Draft);
+        Assert.Equal(["thread-4", "thread-2", "thread-3", "thread-1"],
+            viewModel.OpenThreads.Select(card => card.ThreadId));
+    }
+
+    [Theory]
+    [InlineData("thread-1", "thread-1")]
+    [InlineData("thread-1", "missing-thread")]
+    [InlineData("missing-thread", "thread-1")]
+    public async Task SwapOpenThreadsAsync_SameOrMissingIds_ReturnsFalseAndPreservesOrder(
+        string sourceThreadId,
+        string targetThreadId)
+    {
+        var client = CreateClient(threadCount: 4);
+        var path = Path.Combine(_directory, "workspace.json");
+        await using var viewModel = new MainViewModel(client, new WorkspaceStore(path));
+        await viewModel.InitializeAsync();
+
+        var changed = await viewModel.SwapOpenThreadsAsync(sourceThreadId, targetThreadId);
+
+        Assert.False(changed);
+        Assert.Equal(["thread-1", "thread-2", "thread-3", "thread-4"],
+            viewModel.OpenThreads.Select(card => card.ThreadId));
+    }
+
+    [Fact]
+    public async Task SwapOpenThreadsAsync_ValidIds_PersistsOrderForFreshViewModel()
+    {
+        var path = Path.Combine(_directory, "workspace.json");
+        var client = CreateClient(threadCount: 4);
+        await using (var viewModel = new MainViewModel(client, new WorkspaceStore(path)))
+        {
+            await viewModel.InitializeAsync();
+
+            var changed = await viewModel.SwapOpenThreadsAsync("thread-1", "thread-4");
+
+            Assert.True(changed);
+        }
+
+        var restoredClient = CreateClient(threadCount: 4);
+        await using var restoredViewModel = new MainViewModel(
+            restoredClient,
+            new WorkspaceStore(path));
+        await restoredViewModel.InitializeAsync();
+
+        Assert.Equal(["thread-4", "thread-2", "thread-3", "thread-1"],
+            restoredViewModel.OpenThreads.Select(card => card.ThreadId));
+    }
+
+    [Fact]
     public async Task DisposeAsync_WhenCalledConcurrently_WaitsForOneSharedShutdown()
     {
         var client = CreateClient(threadCount: 0);

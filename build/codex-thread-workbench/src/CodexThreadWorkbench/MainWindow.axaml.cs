@@ -4,6 +4,7 @@ using Avalonia.Controls;
 using Avalonia.Markup.Xaml;
 using Avalonia.Threading;
 using CodexThreadWorkbench.Presentation;
+using CodexThreadWorkbench.Views;
 
 namespace CodexThreadWorkbench;
 
@@ -155,6 +156,16 @@ public partial class MainWindow : Window
             Position.Y,
             ClientSize.Width,
             ClientSize.Height);
+    }
+
+    private async void ThreadCard_OnReorderRequested(
+        object? sender,
+        ThreadReorderRequestedEventArgs e)
+    {
+        if (_viewModel is not null)
+        {
+            await _viewModel.SwapOpenThreadsAsync(e.SourceThreadId, e.TargetThreadId);
+        }
     }
 
     private async Task ShutdownAndCloseAsync()

@@ -1,7 +1,10 @@
 using Avalonia.Controls.Presenters;
+using Avalonia.Input;
 using Avalonia.VisualTree;
+using CodexThreadWorkbench.Codex;
 using CodexThreadWorkbench.Converters;
 using CodexThreadWorkbench.Models;
+using CodexThreadWorkbench.Presentation;
 using CodexThreadWorkbench.Views;
 
 namespace CodexThreadWorkbench.Desktop.Tests;
@@ -28,6 +31,129 @@ public sealed class WorkspaceViewTests
         Assert.IsNotType<ListBox>(card.FindControl<ItemsControl>("MessagesList"));
         Assert.NotNull(card.FindControl<Button>("SendButton"));
         Assert.NotNull(card.FindControl<TextBlock>("StatusLabel"));
+    }
+
+    [AvaloniaFact]
+    public void ThreadCard_ExposesTitleBarDragSurfaceWithoutRemovingConversationControls()
+    {
+        var card = new ThreadCardView();
+
+        Assert.True(card.AllowDrop);
+        Assert.NotNull(card.FindControl<Border>("CardShell"));
+        Assert.NotNull(card.FindControl<Border>("DragSurface"));
+        Assert.NotNull(card.FindControl<TextBlock>("DragGrip"));
+        Assert.NotNull(card.FindControl<TextBox>("MessageInput"));
+        Assert.NotNull(card.FindControl<Button>("SendButton"));
+    }
+
+    [AvaloniaFact]
+    public async Task ThreadCard_SendAndStopButtons_ExecuteBoundCommandsWithoutArmingTitleDrag()
+    {
+        var client = new ObservableThreadClient();
+        var summary = new ThreadSummary(
+            "thread-ui",
+            "UI integration",
+            "Preview",
+            "C:\\work",
+            DateTimeOffset.UtcNow,
+            ThreadStatusKind.Idle);
+        var viewModel = new ThreadCardViewModel(
+            client,
+            new ThreadCardState(summary, [], ThreadStatusKind.Idle))
+        {
+            Draft = "start from the real button"
+        };
+        var card = new ThreadCardView { DataContext = viewModel };
+        var window = new Window { Width = 900, Height = 700, Content = card };
+        window.Show();
+        try
+        {
+            Layout(card);
+            var dragSurface = card.FindControl<Border>("DragSurface")!;
+            var sendButton = card.FindControl<Button>("SendButton")!;
+            var stopButton = card.GetVisualDescendants()
+                .OfType<Button>()
+                .Single(button => ReferenceEquals(button.Command, viewModel.StopCommand));
+
+            Assert.DoesNotContain(sendButton, dragSurface.GetVisualDescendants());
+            Assert.Contains(stopButton, dragSurface.GetVisualDescendants());
+
+            Click(window, sendButton, card);
+            await client.TurnStarted.Task.WaitAsync(TimeSpan.FromSeconds(2));
+
+            Assert.Equal(
+                ["resume:thread-ui", "start:thread-ui:start from the real button"],
+                client.Calls);
+            Assert.Equal(ThreadStatusKind.Running, viewModel.Status);
+            Assert.Equal("turn-ui", viewModel.ActiveTurnId);
+            Assert.True(viewModel.IsRunning);
+            Assert.Null(GetPrivateField<Point?>(card, "_dragStartPoint"));
+
+            Layout(card);
+            var stopPoint = CenterInWindow(stopButton, window);
+            window.MouseDown(stopPoint, MouseButton.Left, RawInputModifiers.None);
+            Assert.Null(GetPrivateField<Point?>(card, "_dragStartPoint"));
+            window.MouseUp(stopPoint, MouseButton.Left, RawInputModifiers.None);
+            await client.Interrupted.Task.WaitAsync(TimeSpan.FromSeconds(2));
+
+            Assert.Equal(
+                [
+                    "resume:thread-ui",
+                    "start:thread-ui:start from the real button",
+                    "interrupt:thread-ui:turn-ui"
+                ],
+                client.Calls);
+            Assert.Equal(ThreadStatusKind.Interrupted, viewModel.Status);
+            Assert.Null(viewModel.ActiveTurnId);
+            Assert.False(viewModel.IsRunning);
+            Assert.Null(GetPrivateField<Point?>(card, "_dragStartPoint"));
+        }
+        finally
+        {
+            window.Close();
+        }
+    }
+
+    [Fact]
+    public void ThreadReorderRequestedEventArgs_ExposeLiteralThreadIds()
+    {
+        var args = new ThreadReorderRequestedEventArgs("thread-1", "thread-4");
+
+        Assert.Equal("thread-1", args.SourceThreadId);
+        Assert.Equal("thread-4", args.TargetThreadId);
+    }
+
+    [AvaloniaFact]
+    public void ThreadCard_DragLeave_ClearsOnlyItsDropTargetVisual()
+    {
+        var card = new ThreadCardView();
+        var cardShell = card.FindControl<Border>("CardShell")!;
+        cardShell.Classes.Add("dragging");
+        cardShell.Classes.Add("drop-target");
+
+        card.RaiseEvent(new DragEventArgs(
+            DragDrop.DragLeaveEvent,
+            new DataTransfer(),
+            card,
+            new Point(),
+            KeyModifiers.None));
+
+        Assert.Contains("dragging", cardShell.Classes);
+        Assert.DoesNotContain("drop-target", cardShell.Classes);
+    }
+
+    [AvaloniaFact]
+    public void ThreadCard_PointerCaptureLost_CancelsArmedDrag()
+    {
+        var card = new ThreadCardView();
+        var dragSurface = card.FindControl<Border>("DragSurface")!;
+        SetPrivateField(card, "_dragStartPoint", new Point(4, 4));
+
+        dragSurface.RaiseEvent(new PointerCaptureLostEventArgs(
+            dragSurface,
+            new Pointer(1, PointerType.Mouse, isPrimary: true)));
+
+        Assert.Null(GetPrivateField<Point?>(card, "_dragStartPoint"));
     }
 
     [AvaloniaFact]
@@ -111,4 +237,115 @@ public sealed class WorkspaceViewTests
     private static T FindNamed<T>(Control root, string name)
         where T : Control =>
         root.GetVisualDescendants().OfType<T>().Single(control => control.Name == name);
+
+    private static void Click(Window window, Control control, ThreadCardView card)
+    {
+        var point = CenterInWindow(control, window);
+        window.MouseDown(point, MouseButton.Left, RawInputModifiers.None);
+        Assert.Null(GetPrivateField<Point?>(card, "_dragStartPoint"));
+        window.MouseUp(point, MouseButton.Left, RawInputModifiers.None);
+    }
+
+    private static Point CenterInWindow(Control control, Window window) =>
+        control.TranslatePoint(
+            new Point(control.Bounds.Width / 2, control.Bounds.Height / 2),
+            window)!.Value;
+
+    private static void Layout(Control control)
+    {
+        control.Measure(new Size(900, 700));
+        control.Arrange(new Rect(0, 0, 900, 700));
+    }
+
+    private static T? GetPrivateField<T>(object target, string fieldName) =>
+        (T?)target.GetType()
+            .GetField(fieldName, System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic)!
+            .GetValue(target);
+
+    private static void SetPrivateField<T>(object target, string fieldName, T value) =>
+        target.GetType()
+            .GetField(fieldName, System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic)!
+            .SetValue(target, value);
+
+    private sealed class ObservableThreadClient : ICodexThreadClient
+    {
+        public event Action<CodexNotification>? NotificationReceived
+        {
+            add { }
+            remove { }
+        }
+
+        public event Action<CodexApprovalRequest>? ApprovalRequested
+        {
+            add { }
+            remove { }
+        }
+
+        public bool IsConnected => true;
+
+        public List<string> Calls { get; } = [];
+
+        public TaskCompletionSource TurnStarted { get; } =
+            new(TaskCreationOptions.RunContinuationsAsynchronously);
+
+        public TaskCompletionSource Interrupted { get; } =
+            new(TaskCreationOptions.RunContinuationsAsynchronously);
+
+        public Task InitializeAsync(CancellationToken cancellationToken = default) =>
+            Task.CompletedTask;
+
+        public Task<IReadOnlyList<ThreadSummary>> ListThreadsAsync(
+            int limit = 100,
+            string? searchTerm = null,
+            CancellationToken cancellationToken = default) =>
+            Task.FromResult<IReadOnlyList<ThreadSummary>>([]);
+
+        public Task<ThreadCardState> ReadThreadAsync(
+            string threadId,
+            CancellationToken cancellationToken = default) =>
+            throw new NotSupportedException();
+
+        public Task ResumeThreadAsync(
+            string threadId,
+            CancellationToken cancellationToken = default)
+        {
+            Calls.Add($"resume:{threadId}");
+            return Task.CompletedTask;
+        }
+
+        public Task<string> StartTurnAsync(
+            string threadId,
+            string text,
+            CancellationToken cancellationToken = default)
+        {
+            Calls.Add($"start:{threadId}:{text}");
+            TurnStarted.TrySetResult();
+            return Task.FromResult("turn-ui");
+        }
+
+        public Task SteerTurnAsync(
+            string threadId,
+            string expectedTurnId,
+            string text,
+            CancellationToken cancellationToken = default) =>
+            throw new NotSupportedException();
+
+        public Task InterruptTurnAsync(
+            string threadId,
+            string turnId,
+            CancellationToken cancellationToken = default)
+        {
+            Calls.Add($"interrupt:{threadId}:{turnId}");
+            Interrupted.TrySetResult();
+            return Task.CompletedTask;
+        }
+
+        public Task RespondToApprovalAsync(
+            CodexApprovalRequest request,
+            bool accept,
+            CancellationToken cancellationToken = default) =>
+            throw new NotSupportedException();
+
+        public ValueTask DisposeAsync() => ValueTask.CompletedTask;
+    }
 }

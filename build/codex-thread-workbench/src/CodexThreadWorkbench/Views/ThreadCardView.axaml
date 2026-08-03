@@ -1,7 +1,24 @@
 <UserControl x:Class="CodexThreadWorkbench.Views.ThreadCardView"
              xmlns="https://github.com/avaloniaui"
-             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
-  <Border Margin="7"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             AllowDrop="True"
+             DragDrop.DragEnter="ThreadCard_OnDragEnter"
+             DragDrop.DragLeave="ThreadCard_OnDragLeave"
+             DragDrop.DragOver="ThreadCard_OnDragOver"
+             DragDrop.Drop="ThreadCard_OnDrop">
+  <UserControl.Styles>
+    <Style Selector="Border#CardShell.dragging">
+      <Setter Property="Opacity" Value="0.68" />
+      <Setter Property="BorderBrush" Value="{StaticResource BorderBrush}" />
+    </Style>
+    <Style Selector="Border#CardShell.drop-target">
+      <Setter Property="BorderBrush" Value="{StaticResource PrimaryBrush}" />
+      <Setter Property="BorderThickness" Value="2" />
+      <Setter Property="BoxShadow" Value="0 0 0 2 #334CAF71" />
+    </Style>
+  </UserControl.Styles>
+  <Border x:Name="CardShell"
+          Margin="7"
           Background="{StaticResource CardBackgroundBrush}"
           BorderBrush="{StaticResource BorderBrush}"
           BorderThickness="1"
@@ -9,19 +26,33 @@
           BoxShadow="0 3 13 0 #14344047">
     <Grid RowDefinitions="45,*">
       <Border Grid.Row="0"
+              x:Name="DragSurface"
               Padding="11,0"
               Background="#F3F6F6"
               BorderBrush="{StaticResource BorderBrush}"
               BorderThickness="0,0,0,1"
-              CornerRadius="12,12,0,0">
-        <Grid ColumnDefinitions="Auto,*,Auto">
-          <Ellipse Grid.Column="0"
+              CornerRadius="12,12,0,0"
+              Cursor="SizeAll"
+              ToolTip.Tip="拖动卡片到另一个会话以交换位置"
+              PointerPressed="DragSurface_OnPointerPressed"
+              PointerMoved="DragSurface_OnPointerMoved"
+              PointerReleased="DragSurface_OnPointerReleased"
+              PointerCaptureLost="DragSurface_OnPointerCaptureLost">
+        <Grid ColumnDefinitions="Auto,Auto,*,Auto">
+          <TextBlock x:Name="DragGrip"
+                     Grid.Column="0"
+                     Margin="0,0,7,0"
+                     VerticalAlignment="Center"
+                     Foreground="{StaticResource SecondaryTextBrush}"
+                     FontSize="14"
+                     Text="⠿" />
+          <Ellipse Grid.Column="1"
                    Width="7"
                    Height="7"
                    Margin="0,0,8,0"
                    VerticalAlignment="Center"
                    Fill="{Binding StatusColor, Converter={StaticResource StatusColorToBrushConverter}}" />
-          <StackPanel Grid.Column="1"
+          <StackPanel Grid.Column="2"
                       VerticalAlignment="Center"
                       ToolTip.Tip="{Binding WorkingDirectory}">
             <TextBlock FontSize="13"
@@ -33,7 +64,7 @@
                        Text="{Binding WorkingDirectory}"
                        TextTrimming="CharacterEllipsis" />
           </StackPanel>
-          <StackPanel Grid.Column="2"
+          <StackPanel Grid.Column="3"
                       VerticalAlignment="Center"
                       Orientation="Horizontal">
             <Border Margin="6,0,5,0"

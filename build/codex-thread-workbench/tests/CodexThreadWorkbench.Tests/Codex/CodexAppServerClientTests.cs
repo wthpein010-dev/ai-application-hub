@@ -91,6 +91,25 @@ public sealed class CodexAppServerClientTests
     }
 
     [Fact]
+    public async Task ResumeThreadAsync_SendsSupportedThreadIdWithoutExperimentalExcludeTurns()
+    {
+        await using var transport = new FakeJsonLineTransport();
+        await using var connection = new JsonRpcConnection(transport);
+        await using var client = new CodexAppServerClient(connection);
+
+        var pending = client.ResumeThreadAsync("thread-1");
+        using var request = JsonDocument.Parse(await transport.ReadWrittenAsync());
+        Assert.Equal("thread/resume", request.RootElement.GetProperty("method").GetString());
+        var parameters = request.RootElement.GetProperty("params");
+        Assert.Equal("thread-1", parameters.GetProperty("threadId").GetString());
+        Assert.False(parameters.TryGetProperty("excludeTurns", out _));
+        var id = request.RootElement.GetProperty("id").GetInt64();
+        transport.EnqueueIncoming($"{{\"id\":{id},\"result\":{{}}}}");
+
+        await pending;
+    }
+
+    [Fact]
     public async Task ReadThreadAsync_WhenStatusIsOmitted_UsesLatestTurnStatus()
     {
         await using var transport = new FakeJsonLineTransport();

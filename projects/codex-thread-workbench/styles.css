@@ -271,6 +271,7 @@ button {
 }
 
 .thread-card {
+  position: relative;
   display: flex;
   min-width: 0;
   min-height: clamp(350px, 40vh, 465px);
@@ -280,12 +281,31 @@ button {
   border-radius: 12px;
   background: var(--card);
   box-shadow: 0 7px 24px rgba(45, 60, 69, 0.055);
-  transition: opacity 0.18s ease, transform 0.18s ease, min-height 0.2s ease;
+  transition: opacity 0.18s ease, transform 0.18s ease, min-height 0.2s ease,
+    border-color 0.18s ease, box-shadow 0.18s ease;
 }
 
 .thread-card:hover {
   border-color: var(--line-strong);
   box-shadow: var(--shadow);
+}
+
+.thread-card.is-dragging {
+  z-index: 3;
+  opacity: 0.72;
+  border-color: var(--primary);
+  box-shadow: 0 22px 48px rgba(32, 134, 94, 0.28);
+  transform: translateY(-4px) scale(1.005);
+  transition: none;
+}
+
+.thread-card.is-drop-target {
+  outline: 2px solid var(--primary);
+  outline-offset: -2px;
+}
+
+.thread-card.is-drop-target > .thread-header {
+  background: #e8f7ef;
 }
 
 .thread-card.is-closing {
@@ -310,9 +330,28 @@ button {
   padding: 12px 12px 11px 16px;
   border-bottom: 1px solid #e1e5e7;
   background: var(--card-soft);
+  cursor: move;
+  touch-action: none;
+}
+
+.drag-grip {
+  display: grid;
+  flex: 0 0 auto;
+  grid-template-columns: repeat(2, 3px);
+  grid-template-rows: repeat(3, 3px);
+  gap: 2px;
+  padding: 3px 1px;
+}
+
+.drag-grip i {
+  width: 3px;
+  height: 3px;
+  border-radius: 50%;
+  background: #94a0a7;
 }
 
 .thread-identity {
+  flex: 1;
   min-width: 0;
 }
 
@@ -373,6 +412,7 @@ button {
 .thread-controls {
   flex: 0 0 auto;
   gap: 2px;
+  cursor: default;
 }
 
 .thread-controls button,
@@ -419,11 +459,18 @@ button {
   -webkit-user-select: none;
 }
 
+body.is-dragging-thread-card {
+  cursor: move;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
 .message {
   display: grid;
   grid-template-columns: 42px minmax(0, 1fr);
   column-gap: 9px;
   align-items: start;
+  pointer-events: none;
 }
 
 .message > span {

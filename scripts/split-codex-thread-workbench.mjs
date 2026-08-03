@@ -8,11 +8,11 @@ import {
 import { basename, join, resolve } from "node:path";
 
 const FILE_NAME = "CodexThreadWorkbench-Windows-x64.zip";
-const RELEASE_DIRECTORY = "v1.2.0";
-const TOTAL_SIZE = 40_171_855;
+const RELEASE_DIRECTORY = "v1.3.0";
+const TOTAL_SIZE = 40_179_580;
 const CHUNK_SIZE = 8_388_608;
 const ARCHIVE_SHA256 =
-  "64ECD8D394FBF472950D80F9595EF6D91D8BD3F04FC81F025A2B9C82020A54E9";
+  "D774AC535CD4C62598622112B33D539F62608435868CEA96EAC65D666583D9A1";
 
 const sha256 = bytes =>
   createHash("sha256").update(bytes).digest("hex").toUpperCase();
