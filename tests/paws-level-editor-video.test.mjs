@@ -29,7 +29,9 @@ test("tutorial player exposes lazy loading, captions and five chapters", () => {
   const html = readFileSync(join(videoRoot, "index.html"), "utf8");
   assert.match(html, /id="loadVideo"/);
   assert.match(html, /<video[^>]+controls[^>]+playsinline[^>]+preload="none"/);
-  assert.match(html, /data-src="\.\/paws-level-editor-tutorial\.mp4"/);
+  assert.match(html, /data-src="\.\/paws-level-editor-tutorial\.mp4\?v=20260803-current-shell-rerecord"/);
+  assert.match(html, /poster="\.\/poster\.jpg\?v=20260803-current-shell-rerecord"/);
+  assert.match(html, /href="\.\/paws-level-editor-tutorial\.mp4\?v=20260803-current-shell-rerecord"/);
   assert.match(
     html,
     /<track[^>]+kind="captions"[^>]+src="\.\/paws-level-editor-tutorial\.vtt"[^>]+srclang="zh"[^>]+default/,

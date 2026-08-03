@@ -39,10 +39,10 @@ test("every published video entry provides its own lazy-loaded tutorial video", 
 
     const html = readFileSync(videoPage, "utf8");
     assert.match(html, /id=["']loadVideo["']/, `${app.id} player should require an explicit load action`);
-    const sourceMatch = html.match(/data-src=["']([^"']+\.mp4)["']/);
+    const sourceMatch = html.match(/data-src=["']([^"']+\.mp4(?:\?[^"']*)?)["']/);
     assert.ok(sourceMatch, `${app.id} player should lazy-load an MP4`);
 
-    const mediaPath = resolve(dirname(videoPage), sourceMatch[1]);
+    const mediaPath = resolve(dirname(videoPage), sourceMatch[1].split(/[?#]/, 1)[0]);
     assert.equal(existsSync(mediaPath), true, `${app.id} tutorial MP4 should exist`);
     assert.equal(readFileSync(mediaPath).includes(Buffer.from("avc1")), true, `${app.id} tutorial should use broadly supported H.264 video`);
   }

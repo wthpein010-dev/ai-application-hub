@@ -54,11 +54,10 @@ test("web demo uses the shared subpage shell and one root home link", () => {
   assert.match(html, /<body class="hub-subpage">/);
   assert.match(html, /href="\.\.\/\.\.\/assets\/subpage-shell\.css"/);
   assert.equal((html.match(/class="hub-home-link"/g) || []).length, 1);
-  assert.match(html, /<a class="hub-home-link" href="\.\.\/\.\.\/index\.html" aria-label="返回主页">/);
+  assert.match(html, /<a class="hub-home-link" href="\.\.\/\.\.\/index\.html#apps" aria-label="返回主页">/);
   assert.match(html, /<span class="hub-home-link__icon" aria-hidden="true">←<\/span>/);
   assert.doesNotMatch(html, /<a class="home-link"/);
   assert.doesNotMatch(html, /class="brand" href="\.\.\/\.\.\/index\.html"/);
-  assert.match(shellCss, /url\("\.\/hero-ai-companion\.png"\)/);
   assert.match(shellCss, /min-height:\s*42px/);
   assert.match(shellCss, /env\(safe-area-inset-top/);
 });

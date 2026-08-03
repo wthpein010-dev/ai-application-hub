@@ -11,13 +11,17 @@ on:
       - ".github/workflows/verify-clickflow-publish.yml"
       - "app-20260706-restore-games.js"
       - "index.html"
+      - "styles.css"
+      - "package.json"
+      - "package-lock.json"
       - "assets/**"
       - "build/clickflow/**"
-      - "projects/clickflow/**"
-      - "scripts/render-clickflow-video.mjs"
-      - "tests/clickflow-*"
-      - "tests/card-action-layout.test.mjs"
-      - "tests/project-video-coverage.test.mjs"
+      - "downloads/**"
+      - "projects/**"
+      - "scripts/**"
+      - "tests/**"
+      - "videos/**"
+      - "docs/audits/**"
 
 permissions:
   contents: read
@@ -62,6 +66,14 @@ jobs:
 
       - name: Run the full Hub test suite
         run: xvfb-run -a node --test
+
+      - name: Run the publication audit
+        run: npm run audit:hub -- --check-external
+
+      - name: Run all Hub page browser acceptance
+        run: |
+          node tests/hub-video-pages-browser-smoke.mjs
+          node tests/hub-entry-pages-browser-smoke.mjs
 
       - name: Run ClickFlow browser acceptance
         run: node tests/clickflow-browser-smoke.mjs

@@ -15,13 +15,15 @@ test("minigame project simulator card has required metadata", () => {
   assert.match(source, /status:\s*"assistant"/);
   assert.match(source, /entry:\s*"\.\/projects\/minigame-project-tool\/index\.html"/);
   assert.match(source, /video:\s*"\.\/projects\/minigame-project-tool\/video\/index\.html"/);
-  assert.match(source, /package:\s*"\.\/downloads\/minigame-project-simulator-windows\.zip"/);
+  assert.match(source, /package:\s*""/);
+  assert.doesNotMatch(source, /minigame-project-simulator-windows\.zip/);
   assert.match(source, /tags:\s*\["微信小游戏",\s*"Unity",\s*"需求文档",\s*"Codex"\]/);
   assert.doesNotMatch(gameDisplayRankBody, /minigame-project-simulator/);
 });
 
 test("minigame project simulator site artifacts exist", () => {
-  assert.equal(existsSync(join(root, "downloads", "minigame-project-simulator-windows.zip")), true);
+  assert.equal(existsSync(join(root, "projects", "minigame-project-tool", "index.html")), true);
+  assert.equal(existsSync(join(root, "projects", "minigame-project-tool", "video", "index.html")), true);
   assert.equal(existsSync(join(root, "assets", "minigame-project-simulator-preview.png")), true);
 });
 

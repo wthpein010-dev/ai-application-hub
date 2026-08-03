@@ -1,25 +1,25 @@
 {
   "schemaVersion": 1,
-  "recordedAt": "2026-07-30T03:23:15.821Z",
+  "recordedAt": "2026-08-03T02:40:27.624Z",
   "recording": {
     "browser": "system Chrome",
-    "preRollMs": 1200,
-    "completedAt": "2026-07-30T03:24:43.831Z",
-    "durationMs": 88010
+    "preRollMs": 1799,
+    "completedAt": "2026-08-03T02:41:55.631Z",
+    "durationMs": 88007
   },
   "timeline": {
-    "tools": 0,
-    "edit2d": 12001,
-    "view3d": 32002,
-    "play": 50002,
-    "persistence": 70002
+    "tools": 1,
+    "edit2d": 12000,
+    "view3d": 32001,
+    "play": 50000,
+    "persistence": 70004
   },
   "actions": {
     "metadata": {
-      "cardText": "视频本地参考#74000video_reference.json16 tiles07/30",
+      "cardText": "视频本地参考#74000video_reference.json16 tiles08/03",
       "fileName": "video_reference.json",
       "levelId": 74000,
-      "modifiedAt": "2026-07-30T03:23:14.966Z"
+      "modifiedAt": "2026-08-03T02:40:26.603Z"
     },
     "grass": {
       "twoD": {
@@ -48,20 +48,20 @@
       }
     },
     "aiGeneration": {
-      "fileName": "ai_level_363265768.json",
+      "fileName": "ai_level_3058702925.json",
       "reference": "all",
       "solvable": true,
       "tileCount": 200,
       "layerCount": 15,
       "targetScore": 60,
-      "actualScore": 56,
+      "actualScore": 55,
       "rating": "标准",
       "dimensions": {
         "structure": 81,
         "information": 50,
-        "choice": 47,
-        "route": 51,
-        "endurance": 46
+        "choice": 46,
+        "route": 49,
+        "endurance": 48
       },
       "board": {
         "width": 7,
@@ -164,7 +164,7 @@
             "stageLabel": "深层卡点",
             "stageLayerIndex": 1,
             "stageLayerCount": 3,
-            "tileCount": 14,
+            "tileCount": 13,
             "pressureTarget": 65
           },
           {
@@ -173,7 +173,7 @@
             "stageLabel": "深层卡点",
             "stageLayerIndex": 2,
             "stageLayerCount": 3,
-            "tileCount": 13,
+            "tileCount": 14,
             "pressureTarget": 65
           },
           {
@@ -182,7 +182,7 @@
             "stageLabel": "中层塔群",
             "stageLayerIndex": 0,
             "stageLayerCount": 5,
-            "tileCount": 14,
+            "tileCount": 13,
             "pressureTarget": 51
           },
           {
@@ -191,7 +191,7 @@
             "stageLabel": "中层塔群",
             "stageLayerIndex": 1,
             "stageLayerCount": 5,
-            "tileCount": 13,
+            "tileCount": 14,
             "pressureTarget": 51
           },
           {
@@ -271,10 +271,10 @@
           9,
           9,
           13,
-          14,
           13,
           14,
           13,
+          14,
           14,
           13,
           14,
@@ -288,8 +288,8 @@
           {
             "id": "tower-1",
             "role": "high",
-            "x": 12,
-            "y": 34,
+            "x": 40,
+            "y": 26,
             "layerStart": 1,
             "layerEnd": 12,
             "depth": 12,
@@ -298,8 +298,8 @@
           {
             "id": "tower-2",
             "role": "medium",
-            "x": 39,
-            "y": 14,
+            "x": 12,
+            "y": 38,
             "layerStart": 1,
             "layerEnd": 9,
             "depth": 9,
@@ -308,8 +308,8 @@
           {
             "id": "tower-3",
             "role": "small",
-            "x": 3,
-            "y": 53,
+            "x": 47,
+            "y": 1,
             "layerStart": 1,
             "layerEnd": 5,
             "depth": 5,
@@ -318,8 +318,8 @@
           {
             "id": "tower-4",
             "role": "small",
-            "x": 19,
-            "y": 55,
+            "x": 29,
+            "y": 3,
             "layerStart": 1,
             "layerEnd": 5,
             "depth": 5,
@@ -328,8 +328,8 @@
           {
             "id": "tower-5",
             "role": "small",
-            "x": 36,
-            "y": 52,
+            "x": 12,
+            "y": 1,
             "layerStart": 1,
             "layerEnd": 5,
             "depth": 5,
@@ -410,10 +410,10 @@
           9,
           9,
           13,
-          14,
           13,
           14,
           13,
+          14,
           14,
           13,
           14,
@@ -429,10 +429,10 @@
           "1": 0.5555555555555556,
           "2": 0.5555555555555556,
           "3": 0.38461538461538464,
-          "4": 0.35714285714285715,
-          "5": 0.38461538461538464,
-          "6": 0.35714285714285715,
-          "7": 0.38461538461538464,
+          "4": 0.38461538461538464,
+          "5": 0.35714285714285715,
+          "6": 0.38461538461538464,
+          "7": 0.35714285714285715,
           "8": 0.35714285714285715,
           "9": 0.38461538461538464,
           "10": 0.35714285714285715,
@@ -451,7 +451,7 @@
         },
         "maximumTowerDepth": 15,
         "releaseDependencyDrop": 0.27586206896551724,
-        "boundaryRatio": 0.415,
+        "boundaryRatio": 0.405,
         "fillTrackCount": 2,
         "stagePressure": {
           "surface": {
@@ -648,10 +648,10 @@
           9,
           9,
           13,
-          14,
           13,
           14,
           13,
+          14,
           14,
           13,
           14,
@@ -698,17 +698,17 @@
             "layer": 3,
             "stageKey": "crisis",
             "motif": "local-island",
-            "regionIndex": 2,
+            "regionIndex": 1,
             "tileCount": 5,
-            "reservedTrackTiles": 0
+            "reservedTrackTiles": 1
           },
           {
             "layer": 3,
             "stageKey": "crisis",
             "motif": "local-island",
-            "regionIndex": 1,
+            "regionIndex": 3,
             "tileCount": 4,
-            "reservedTrackTiles": 1
+            "reservedTrackTiles": 0
           },
           {
             "layer": 3,
@@ -722,17 +722,17 @@
             "layer": 4,
             "stageKey": "crisis",
             "motif": "local-island",
-            "regionIndex": 2,
+            "regionIndex": 1,
             "tileCount": 5,
-            "reservedTrackTiles": 0
+            "reservedTrackTiles": 1
           },
           {
             "layer": 4,
             "stageKey": "crisis",
             "motif": "local-island",
-            "regionIndex": 1,
-            "tileCount": 5,
-            "reservedTrackTiles": 1
+            "regionIndex": 3,
+            "tileCount": 4,
+            "reservedTrackTiles": 0
           },
           {
             "layer": 4,
@@ -746,17 +746,17 @@
             "layer": 5,
             "stageKey": "crisis",
             "motif": "local-island",
-            "regionIndex": 2,
+            "regionIndex": 1,
             "tileCount": 5,
-            "reservedTrackTiles": 0
+            "reservedTrackTiles": 1
           },
           {
             "layer": 5,
             "stageKey": "crisis",
             "motif": "local-island",
-            "regionIndex": 1,
-            "tileCount": 4,
-            "reservedTrackTiles": 1
+            "regionIndex": 3,
+            "tileCount": 5,
+            "reservedTrackTiles": 0
           },
           {
             "layer": 5,
@@ -770,17 +770,17 @@
             "layer": 6,
             "stageKey": "middle",
             "motif": "local-island",
-            "regionIndex": 2,
+            "regionIndex": 1,
             "tileCount": 5,
-            "reservedTrackTiles": 0
+            "reservedTrackTiles": 1
           },
           {
             "layer": 6,
             "stageKey": "middle",
             "motif": "local-island",
-            "regionIndex": 1,
-            "tileCount": 5,
-            "reservedTrackTiles": 1
+            "regionIndex": 3,
+            "tileCount": 4,
+            "reservedTrackTiles": 0
           },
           {
             "layer": 6,
@@ -794,17 +794,17 @@
             "layer": 7,
             "stageKey": "middle",
             "motif": "local-island",
-            "regionIndex": 2,
+            "regionIndex": 1,
             "tileCount": 5,
-            "reservedTrackTiles": 0
+            "reservedTrackTiles": 1
           },
           {
             "layer": 7,
             "stageKey": "middle",
             "motif": "local-island",
-            "regionIndex": 1,
-            "tileCount": 4,
-            "reservedTrackTiles": 1
+            "regionIndex": 3,
+            "tileCount": 5,
+            "reservedTrackTiles": 0
           },
           {
             "layer": 7,
@@ -818,17 +818,17 @@
             "layer": 8,
             "stageKey": "middle",
             "motif": "local-island",
-            "regionIndex": 2,
+            "regionIndex": 1,
             "tileCount": 5,
-            "reservedTrackTiles": 0
+            "reservedTrackTiles": 1
           },
           {
             "layer": 8,
             "stageKey": "middle",
             "motif": "local-island",
-            "regionIndex": 1,
+            "regionIndex": 3,
             "tileCount": 5,
-            "reservedTrackTiles": 1
+            "reservedTrackTiles": 0
           },
           {
             "layer": 8,
@@ -842,17 +842,17 @@
             "layer": 9,
             "stageKey": "middle",
             "motif": "local-island",
-            "regionIndex": 2,
+            "regionIndex": 1,
             "tileCount": 5,
-            "reservedTrackTiles": 0
+            "reservedTrackTiles": 1
           },
           {
             "layer": 9,
             "stageKey": "middle",
             "motif": "local-island",
-            "regionIndex": 1,
+            "regionIndex": 3,
             "tileCount": 4,
-            "reservedTrackTiles": 1
+            "reservedTrackTiles": 0
           },
           {
             "layer": 9,
@@ -866,17 +866,17 @@
             "layer": 10,
             "stageKey": "middle",
             "motif": "local-island",
-            "regionIndex": 2,
+            "regionIndex": 1,
             "tileCount": 5,
-            "reservedTrackTiles": 0
+            "reservedTrackTiles": 1
           },
           {
             "layer": 10,
             "stageKey": "middle",
             "motif": "local-island",
-            "regionIndex": 1,
+            "regionIndex": 3,
             "tileCount": 5,
-            "reservedTrackTiles": 1
+            "reservedTrackTiles": 0
           },
           {
             "layer": 10,
@@ -890,17 +890,17 @@
             "layer": 11,
             "stageKey": "shelter",
             "motif": "local-island",
-            "regionIndex": 2,
+            "regionIndex": 1,
             "tileCount": 5,
-            "reservedTrackTiles": 0
+            "reservedTrackTiles": 1
           },
           {
             "layer": 11,
             "stageKey": "shelter",
             "motif": "local-island",
-            "regionIndex": 1,
+            "regionIndex": 3,
             "tileCount": 5,
-            "reservedTrackTiles": 1
+            "reservedTrackTiles": 0
           },
           {
             "layer": 11,
@@ -914,17 +914,17 @@
             "layer": 12,
             "stageKey": "shelter",
             "motif": "local-island",
-            "regionIndex": 2,
+            "regionIndex": 1,
             "tileCount": 5,
-            "reservedTrackTiles": 0
+            "reservedTrackTiles": 1
           },
           {
             "layer": 12,
             "stageKey": "shelter",
             "motif": "local-island",
-            "regionIndex": 1,
+            "regionIndex": 3,
             "tileCount": 5,
-            "reservedTrackTiles": 1
+            "reservedTrackTiles": 0
           },
           {
             "layer": 12,
@@ -938,7 +938,7 @@
             "layer": 13,
             "stageKey": "surface",
             "motif": "local-island",
-            "regionIndex": 2,
+            "regionIndex": 1,
             "tileCount": 5,
             "reservedTrackTiles": 0
           },
@@ -946,7 +946,7 @@
             "layer": 13,
             "stageKey": "surface",
             "motif": "local-island",
-            "regionIndex": 1,
+            "regionIndex": 3,
             "tileCount": 5,
             "reservedTrackTiles": 0
           },
@@ -962,7 +962,7 @@
             "layer": 14,
             "stageKey": "surface",
             "motif": "local-island",
-            "regionIndex": 2,
+            "regionIndex": 1,
             "tileCount": 5,
             "reservedTrackTiles": 0
           },
@@ -970,7 +970,7 @@
             "layer": 14,
             "stageKey": "surface",
             "motif": "local-island",
-            "regionIndex": 1,
+            "regionIndex": 3,
             "tileCount": 5,
             "reservedTrackTiles": 0
           },
@@ -986,7 +986,7 @@
             "layer": 15,
             "stageKey": "surface",
             "motif": "local-island",
-            "regionIndex": 2,
+            "regionIndex": 1,
             "tileCount": 5,
             "reservedTrackTiles": 0
           },
@@ -994,7 +994,7 @@
             "layer": 15,
             "stageKey": "surface",
             "motif": "local-island",
-            "regionIndex": 1,
+            "regionIndex": 3,
             "tileCount": 5,
             "reservedTrackTiles": 0
           },
@@ -1008,7 +1008,7 @@
           }
         ],
         "repairLog": [],
-        "topologyHash": "topology-7abbc66f",
+        "topologyHash": "topology-c07de860",
         "blindBoxStackCount": 2,
         "blindBoxStackDepth": 12,
         "fullRandomRatio": 1
@@ -1036,8 +1036,8 @@
       {
         "key": "crisis",
         "layer": 5,
-        "sourceCount": 13,
-        "rendererCount": 13
+        "sourceCount": 14,
+        "rendererCount": 14
       },
       {
         "key": "release",
@@ -1094,8 +1094,8 @@
         "selectedBefore": "tile-186",
         "selectedAfter": "tile-186",
         "before": {
-          "x": 8,
-          "y": 48
+          "x": 40,
+          "y": 8
         },
         "after": {
           "x": 0,
@@ -1158,24 +1158,24 @@
       "cameraBefore": {
         "position": [
           1.4175700417596921,
-          1.3491260957958828,
+          1.3775653901671228,
           -2.5
         ],
         "target": [
           -2,
-          0.31018480310093627,
+          0.33862409747217626,
           -2.5
         ]
       },
       "cameraAfter": {
         "position": [
-          -5.419264935930867,
-          0.5344725388596423,
-          -3.508715177590629
+          -5.419264974282385,
+          0.562911833230882,
+          -3.5087150475895887
         ],
         "target": [
           -2,
-          0.31018480310093627,
+          0.33862409747217626,
           -2.5
         ]
       },
@@ -1208,9 +1208,9 @@
         "focusDistance": 0
       },
       "selectedBefore": "",
-      "selectedAfter": "tile-8",
+      "selectedAfter": "tile-7",
       "deleteUndo": {
-        "uid": "tile-8",
+        "uid": "tile-7",
         "deletedCount": 201,
         "restoredCount": 202,
         "restored": true
@@ -1230,7 +1230,7 @@
         "rendererMode": "play"
       },
       "threeD": {
-        "blockedCount": 186,
+        "blockedCount": 185,
         "topHex": 4934475,
         "sideHex": 266240,
         "blindTopHex": 16777215,
@@ -1239,9 +1239,9 @@
         "rendererMode": "play"
       },
       "recovery": {
-        "uid": "tile-173",
-        "blockerUid": "tile-188",
-        "matchUid": "tile-189",
+        "uid": "tile-132",
+        "blockerUid": "tile-147",
+        "matchUid": "tile-186",
         "beforePatchCount": 1,
         "covered": false,
         "sideBlocked": false,
@@ -1262,9 +1262,9 @@
         }
       },
       "undo": {
-        "uid": "tile-152",
+        "uid": "tile-147",
         "trayBefore": [
-          "tile-152",
+          "tile-147",
           null
         ],
         "trayAfter": [
@@ -1334,10 +1334,10 @@
     },
     "play3d": {
       "selectedBefore": "",
-      "selectedAfter": "tile-185"
+      "selectedAfter": "tile-187"
     },
     "export": {
-      "fileName": "ai_level_363265768.json",
+      "fileName": "ai_level_3058702925.json",
       "gridUnit": "sheep_7x8_mini8",
       "tileCount": 202
     },
@@ -1367,10 +1367,10 @@
   },
   "media": {
     "file": "paws-level-editor-tutorial.mp4",
-    "sha256": "58fe1d8b1338e7ef396d1524b6a4e80df73474e5e0ac523a5d851d2651b9d577"
+    "sha256": "9487f53cd6e1d932bc7de5380783883b21da1618a7514bd94ec568837de01def"
   },
   "sources": {
-    "projects/paws-level-editor/index.html": "310cfffad59984fe5a187246634a4b3a41a4d761385fc180084b33ac1581b41a",
+    "projects/paws-level-editor/index.html": "203d1d0d8402495d2b4c96ed07cb99fbdbe13f44bdba03ec6658d958daa00735",
     "projects/paws-level-editor/styles.css": "1286f9081a248308d5842bb786f081f99e8a388a81c1cf46836d80c3d4dc839b",
     "projects/paws-level-editor/app.mjs": "d54ca4e1fa3c1aa524e63f9b7a743d8b883710c1ff340a8e290190d293e485c7",
     "projects/paws-level-editor/static-api-client.mjs": "a37e3bcaa2bfed9ddf10aa800fb5fbaa025bc751398e4201eddf236e4e740c84",

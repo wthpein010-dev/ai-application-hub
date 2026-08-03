@@ -56,7 +56,7 @@ test("Workbench video page lazy-loads MP4 with default Chinese captions", () => 
 test("Workbench video page returns to the Hub home through the shared player shell", () => {
   const html = readFileSync(join(videoRoot, "index.html"), "utf8");
   assert.match(html, /class="hub-video-home"/);
-  assert.match(html, /href="\.\.\/\.\.\/\.\.\/index\.html"/);
+  assert.match(html, /href="\.\.\/\.\.\/\.\.\/index\.html#apps"/);
   assert.match(html, /hub-video-player\.css/);
   assert.match(html, /hub-video-player\.js/);
 });

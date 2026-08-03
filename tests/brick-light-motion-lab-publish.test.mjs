@@ -59,7 +59,7 @@ test("demo and video pages use their current Hub shells and return-home paths", 
 
   assert.match(demo, /subpage-shell\.css/);
   assert.match(demo, /class="hub-home-link"/);
-  assert.match(demo, /href="\.\.\/\.\.\/index\.html#games"/);
+  assert.match(demo, /href="\.\.\/\.\.\/index\.html#engineering"/);
   assert.match(demo, /src="\.\/lab\/index\.html"/);
   assert.match(demo, /id="motionLabLoading"/);
   assert.match(demo, /role="progressbar"/);
@@ -69,7 +69,7 @@ test("demo and video pages use their current Hub shells and return-home paths", 
   assert.match(demo, /background-ready/);
   assert.match(video, /data-hub-video-page/);
   assert.match(video, /class="hub-video-home"/);
-  assert.match(video, /href="\.\.\/\.\.\/\.\.\/index\.html"/);
+  assert.match(video, /href="\.\.\/\.\.\/\.\.\/index\.html#engineering"/);
   assert.match(video, /hub-video-player\.css/);
   assert.match(video, /hub-video-player\.js/);
   assert.match(video, /class="hub-video-stage"/);

@@ -25,11 +25,9 @@ test("GamePulse video page lazy-loads MP4 with default Chinese captions", () => 
   assert.doesNotMatch(html, /<video[^>]+\ssrc=/);
 });
 
-test("GamePulse video page returns to the Hub home top", () => {
+test("GamePulse video page returns to the application collection", () => {
   const html = readFileSync(join(videoRoot, "index.html"), "utf8");
-  assert.match(html, /class="hub-video-home" href="\.\.\/\.\.\/\.\.\/index\.html"/);
-  assert.doesNotMatch(html, /index\.html#/);
-  assert.doesNotMatch(html, /index\.html#games/);
+  assert.match(html, /class="hub-video-home" href="\.\.\/\.\.\/\.\.\/index\.html#apps"/);
 });
 
 test("GamePulse video shell uses the shared Hub player assets", () => {

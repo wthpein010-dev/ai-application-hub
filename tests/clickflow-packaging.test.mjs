@@ -14,6 +14,10 @@ const verificationWorkflowPath = join(
   "workflows",
   "verify-clickflow-publish.yml",
 );
+const hubBrowserGates = [
+  join(root, "tests", "hub-video-pages-browser-smoke.mjs"),
+  join(root, "tests", "hub-entry-pages-browser-smoke.mjs"),
+];
 
 test("the published ClickFlow build snapshot passes its real Python suite", () => {
   const required = [
@@ -80,6 +84,23 @@ test("the publication workflow runs the full Hub suite and ClickFlow browser acc
   assert.match(workflow, /npm ci/);
   assert.match(workflow, /playwright install --with-deps chromium/);
   assert.match(workflow, /node --test/);
+  assert.match(workflow, /npm run audit:hub -- --check-external/);
+  assert.match(workflow, /node tests\/hub-video-pages-browser-smoke\.mjs/);
+  assert.match(workflow, /node tests\/hub-entry-pages-browser-smoke\.mjs/);
   assert.match(workflow, /node tests\/clickflow-browser-smoke\.mjs/);
   assert.match(workflow, /tests\/artifacts\/clickflow\/browser/);
+  assert.match(workflow, /projects\/\*\*/);
+  assert.match(workflow, /tests\/\*\*/);
+  assert.match(workflow, /- "styles\.css"/);
+  assert.match(workflow, /- "package\.json"/);
+  assert.match(workflow, /- "package-lock\.json"/);
+});
+
+test("the Hub browser gates run with system or Playwright Chromium across operating systems", () => {
+  for (const path of hubBrowserGates) {
+    const source = readFileSync(path, "utf8");
+    assert.match(source, /\/Applications\/Google Chrome\.app/);
+    assert.match(source, /\/usr\/bin\/google-chrome/);
+    assert.match(source, /chromium\.executablePath\(\)/);
+  }
 });

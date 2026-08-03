@@ -4,8 +4,10 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
     <meta name="description" content="箱了个箱 2D 推箱子解谜小游戏网页体验入口，点击后进入竖屏预览窗口。" />
-    <title>箱了个箱 | 2D 推箱子解谜</title>
+    <link rel="icon" href="data:," />
+    <title>箱了个箱</title>
     <link rel="stylesheet" href="./styles.css?v=canvas-resync-v2">
+    <link rel="stylesheet" href="../../assets/subpage-shell.css">
     <link rel="preload" as="image" href="./assets/art/icon-moves.svg" type="image/svg+xml">
     <link rel="preload" as="image" href="./assets/art/icon-undo.svg" type="image/svg+xml">
     <link rel="preload" as="image" href="./assets/art/icon-reset.svg" type="image/svg+xml">
@@ -14,10 +16,10 @@
     <link rel="preload" as="image" href="./assets/art/clear-burst.svg" type="image/svg+xml">
     <link rel="preload" as="image" href="./assets/art/confetti.svg" type="image/svg+xml">
   </head>
-  <body>
+  <body class="hub-subpage">
+    <a class="hub-home-link" href="../../index.html#games" aria-label="返回主页"><span class="hub-home-link__icon" aria-hidden="true">←</span><span>返回主页</span></a>
     <div class="page">
       <header class="topbar">
-        <a href="../../index.html#games">返回小游戏集合</a>
         <span>HTML5 Canvas · 竖屏小游戏预览</span>
       </header>
 
@@ -34,7 +36,6 @@
           </div>
           <div class="actions">
             <button id="startButton" type="button">开始体验</button>
-            <a class="button" href="../../index.html#games">返回合集</a>
           </div>
         </section>
 

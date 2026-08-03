@@ -1,9 +1,11 @@
 import { spawnSync } from "node:child_process";
 
-const ffmpeg = process.env.FFMPEG_PATH || "ffmpeg";
+function ffmpegCommand() {
+  return process.env.FFMPEG_PATH || "ffmpeg";
+}
 
 export function inspectMedia(filePath) {
-  const result = spawnSync(ffmpeg, ["-hide_banner", "-i", filePath], { encoding: "utf8" });
+  const result = spawnSync(ffmpegCommand(), ["-hide_banner", "-i", filePath], { encoding: "utf8" });
   if (result.error) throw result.error;
 
   const output = `${result.stdout || ""}${result.stderr || ""}`;
@@ -22,7 +24,7 @@ export function inspectMedia(filePath) {
 }
 
 export function decodeMedia(filePath) {
-  const result = spawnSync(ffmpeg, ["-v", "error", "-i", filePath, "-f", "null", "-"], { encoding: "utf8" });
+  const result = spawnSync(ffmpegCommand(), ["-v", "error", "-i", filePath, "-f", "null", "-"], { encoding: "utf8" });
   if (result.error) throw result.error;
   return result;
 }

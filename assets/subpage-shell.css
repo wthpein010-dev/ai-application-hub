@@ -2,26 +2,6 @@ body.hub-subpage {
   position: relative;
   isolation: isolate;
   min-height: 100vh;
-  background: #07101e;
-}
-
-body.hub-subpage::before,
-body.hub-subpage::after {
-  content: "";
-  position: fixed;
-  inset: 0;
-  pointer-events: none;
-}
-
-body.hub-subpage::before {
-  z-index: -2;
-  background: url("./hero-ai-companion.png") right center / cover no-repeat;
-  opacity: 0.2;
-}
-
-body.hub-subpage::after {
-  z-index: -1;
-  background: rgba(5, 10, 18, 0.78);
 }
 
 .hub-home-link {
@@ -72,10 +52,9 @@ body.hub-subpage::after {
 
 @media (max-width: 760px) {
   .hub-home-link {
-    position: absolute;
-    right: max(14px, env(safe-area-inset-right));
     left: max(14px, env(safe-area-inset-left));
     width: max-content;
+    max-width: calc(100vw - max(28px, env(safe-area-inset-left) + env(safe-area-inset-right)));
   }
 
   .hub-subpage .topbar {

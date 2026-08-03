@@ -103,6 +103,16 @@ body[data-hub-video-page] {
   background: #000;
 }
 
+body[data-hub-video-page][data-video-orientation="portrait"] .hub-video-player {
+  width: min(420px, 100%);
+  margin-inline: auto;
+}
+
+body[data-hub-video-page][data-video-orientation="portrait"] .hub-video-stage {
+  width: 100%;
+  aspect-ratio: 9 / 16;
+}
+
 .hub-video-load-card {
   position: absolute;
   inset: 0;

@@ -4,7 +4,9 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="description" content="网页素材一键收桌面版：扫描公开网页中的图片、视频、音频和文档资源，在桌面窗口中筛选、预览并批量下载。" />
+    <link rel="icon" href="data:," />
     <title>网页素材一键收桌面版</title>
+    <link rel="stylesheet" href="../../../../assets/subpage-shell.css" />
     <style>
       :root {
         color-scheme: dark;
@@ -306,25 +308,25 @@
       }
     </style>
   </head>
-  <body>
+  <body class="hub-subpage">
+    <a class="hub-home-link" href="../../../../index.html#apps" aria-label="返回主页"><span class="hub-home-link__icon" aria-hidden="true">←</span><span>返回主页</span></a>
     <div class="shell">
       <header class="topbar">
-        <a class="brand" href="../../../../index.html#apps">
+        <div class="brand">
           <img src="./assets/icon.png" alt="" />
           <span><strong>网页素材一键收桌面版</strong><span>公开网页资源整理工具</span></span>
-        </a>
-        <a class="back-link" href="../../../../index.html#apps">返回全部项目总览</a>
+        </div>
       </header>
 
       <main>
         <section class="hero">
           <div>
-            <span class="eyebrow">Windows / macOS 桌面工具</span>
-            <h1>把公开网页素材收进一个桌面窗口。</h1>
-            <p class="lead">输入网页地址后，工具会扫描图片、视频、音频和常见文档资源。你可以在始终置顶的窗口中筛选、预览并批量下载，适合做设计参考、资料整理与内容采集。</p>
+            <span class="eyebrow">跨平台网页演示</span>
+            <h1>预览公开网页素材的整理流程。</h1>
+            <p class="lead">演示从输入网页地址，到扫描图片、视频、音频和常见文档，再进行筛选、预览与下载队列整理的完整操作思路。</p>
             <div class="actions">
-              <a class="button primary" href="../../../../downloads/web-media-collector-desktop-source.zip" download>下载源码包</a>
-              <a class="button secondary" href="#macos">查看 macOS 使用方式</a>
+              <a class="button primary" href="./视频资源/演示视频.html">观看教学视频</a>
+              <a class="button secondary" href="#workflow">查看使用流程</a>
             </div>
           </div>
           <aside class="preview-panel" aria-label="桌面工具功能示意">
@@ -341,8 +343,8 @@
         </section>
 
         <section class="section">
-          <h2>桌面版能力</h2>
-          <p>浏览器端仅提供项目介绍与源码获取；扫描和下载任务在本机桌面应用内执行。</p>
+          <h2>演示内容</h2>
+          <p>网页入口用于查看产品界面、操作流程和跨平台使用方式，不提供未经验证的系统安装包。</p>
           <div class="feature-grid">
             <article class="feature"><strong>公开资源扫描</strong><p>识别当前可访问网页内的图片、视频、音频及常见文档资源。</p></article>
             <article class="feature"><strong>筛选与预览</strong><p>按资源类型快速聚焦内容，确认后再加入下载队列。</p></article>
@@ -350,33 +352,30 @@
           </div>
         </section>
 
-        <section class="section">
+        <section class="section" id="workflow">
           <h2>使用流程</h2>
           <ol class="steps">
-            <li><b>01</b><span>下载源码包并解压到本机目录。</span></li>
-            <li><b>02</b><span>安装 Node.js 后，在项目目录执行 <code>npm install</code>。</span></li>
-            <li><b>03</b><span>执行 <code>npm start</code>，输入公开网页 URL 后开始扫描与整理。</span></li>
+            <li><b>01</b><span>输入需要整理的公开网页地址。</span></li>
+            <li><b>02</b><span>按图片、视频、音频或文档筛选扫描结果。</span></li>
+            <li><b>03</b><span>预览资源后加入下载队列，并按来源路径归档。</span></li>
           </ol>
         </section>
 
         <section class="section" id="macos">
-          <h2>跨系统使用</h2>
-          <p>源码包同时包含 Windows 与 macOS 的运行、打包配置。Windows 的 <code>.exe</code> 不能直接在 macOS 运行；Mac 需在本机完成依赖安装和应用打包。</p>
+          <h2>跨系统查看</h2>
+          <p>此网页演示可直接在 Windows 与 macOS 的现代浏览器中打开，界面和教学视频保持一致。</p>
           <div class="platform-grid">
             <article class="platform" id="windows">
               <strong>Windows</strong>
-              <p>下载源码包后可运行 <code>npm.cmd install</code> 与 <code>npm.cmd start</code>；也可执行 <code>npm.cmd run dist:win-portable</code> 生成便携版。</p>
-              <a class="button secondary" href="../../../../downloads/web-media-collector-desktop-source.zip" download>下载源码包</a>
+              <p>使用 Edge、Chrome 或其他现代浏览器查看演示与教学视频。</p>
             </article>
             <article class="platform">
               <strong>Intel Mac</strong>
-              <p>在 Mac 里执行 <code>npm install</code>，随后运行 <code>npm run pack:mac-x64</code> 打包 Intel 版本。</p>
-              <a class="button secondary" href="../../../../downloads/web-media-collector-desktop-source.zip" download>下载源码包</a>
+              <p>使用 Safari、Chrome 或其他现代浏览器查看同一网页版本。</p>
             </article>
             <article class="platform">
               <strong>Apple Silicon</strong>
-              <p>在 Mac 里执行 <code>npm install</code>，随后运行 <code>npm run pack:mac-arm64</code> 打包 Apple Silicon 版本。</p>
-              <a class="button secondary" href="../../../../downloads/web-media-collector-desktop-source.zip" download>下载源码包</a>
+              <p>无需单独安装，直接通过浏览器打开网页演示。</p>
             </article>
           </div>
           <p class="notice">仅处理当前网络可访问的公开网页资源，不绕过登录、付费墙、DRM 或网站权限限制。</p>

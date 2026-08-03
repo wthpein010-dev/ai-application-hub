@@ -7,7 +7,7 @@ button,select,input { font:inherit; }
 .eyebrow { color:#66d4c0; font-size:12px; font-weight:900; letter-spacing:.12em; }
 h1 { margin:8px 0; font-size:clamp(30px,5vw,52px); line-height:1.08; letter-spacing:0; }
 .page-intro p { max-width:620px; margin:0; color:var(--muted); line-height:1.7; }
-.video-link,.tool-footer a { color:#ddecff; text-decoration:none; }
+.video-link { color:#ddecff; text-decoration:none; }
 .video-link { flex:0 0 auto; padding:11px 14px; border:1px solid var(--line); border-radius:8px; background:#13253a; font-weight:800; }
 .tool-window { overflow:hidden; border:1px solid rgba(148,181,218,.32); border-radius:8px; background:#eaf0f7; color:#142238; box-shadow:0 30px 80px rgba(0,0,0,.44); }
 .tool-header { display:flex; align-items:center; justify-content:space-between; gap:14px; padding:22px 27px; color:white; background:linear-gradient(105deg,#246da6,#277d84); }
@@ -41,6 +41,6 @@ button { border:0; border-radius:4px; cursor:pointer; }
 .quick-actions button.secondary { color:#184f77; background:#ddecf6; }
 .notice { min-height:20px; margin:5px 0 0; color:#36745d; font-size:13px; }
 .tool-footer { display:flex; align-items:center; justify-content:space-between; gap:14px; padding:14px 27px; border-top:1px solid #c8d5e1; background:#f5f8fb; }
-.tool-footer a { color:#326b99; font-size:13px; }
+.platform-note { color:#326b99; font-size:13px; }
 .tool-footer button { min-width:120px; min-height:38px; padding:0 15px; color:#fff; background:#1d7f70; font-weight:900; }
 @media (max-width:680px) { .demo-shell { width:min(100% - 24px,980px); padding-top:86px; } .page-intro { align-items:flex-start; flex-direction:column; } .page-intro > div { width:100%; } .tool-header,.tool-body,.tool-footer { padding-left:16px; padding-right:16px; } .tool-header { align-items:flex-start; flex-direction:column; } .tool-header strong { font-size:21px; } .model-controls,.shortcut-controls { margin-left:0; } .quick-actions { grid-template-columns:1fr; gap:0; } .quick-actions button { justify-self:start; margin:-4px 0 10px; } .action-copy { align-items:flex-start; flex-direction:column; gap:4px; } }

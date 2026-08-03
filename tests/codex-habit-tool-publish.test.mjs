@@ -10,8 +10,7 @@ test("Codex habit tool is available from the application collection", () => {
   const source = readFileSync(join(root, "app-20260706-restore-games.js"), "utf8");
   assert.match(source, /id:\s*"codex-habit-tool"/);
   assert.match(source, /Codex 习惯设置工具/);
-  assert.match(source, /codex-habit-tool-windows\.zip/);
-  assert.match(source, /codex-habit-tool-mac-source\.zip/);
+  assert.doesNotMatch(source, /codex-habit-tool-(?:windows|mac-source)\.zip/);
   assert.match(source, /codex-habit-tool-demo\.html/);
 });
 
@@ -23,14 +22,14 @@ test("preview and video pages both provide a return path to the hub", () => {
   assert.match(readFileSync(preview, "utf8"), /\.\.\/\.\.\/index\.html#apps/);
   const videoPage = readFileSync(video, "utf8");
   assert.match(videoPage, /class="hub-video-home"/);
-  assert.match(videoPage, /href="\.\.\/index\.html"/);
+  assert.match(videoPage, /href="\.\.\/index\.html#apps"/);
   assert.match(videoPage, /hub-video-player\.css/);
   assert.match(videoPage, /codex-habit-tool-demo\.mp4/);
 });
 
-test("both operating-system download archives are shipped", () => {
-  assert.equal(existsSync(join(root, "downloads", "codex-habit-tool-windows.zip")), true);
-  assert.equal(existsSync(join(root, "downloads", "codex-habit-tool-mac-source.zip")), true);
+test("unverified operating-system archives are not shipped", () => {
+  assert.equal(existsSync(join(root, "downloads", "codex-habit-tool-windows.zip")), false);
+  assert.equal(existsSync(join(root, "downloads", "codex-habit-tool-mac-source.zip")), false);
 });
 
 test("mobile preview keeps the introduction at full content width", () => {

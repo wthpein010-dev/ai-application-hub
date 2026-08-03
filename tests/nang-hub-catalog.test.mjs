@@ -112,7 +112,7 @@ test("stored Nang metadata migrates to the games catalog", () => {
 });
 
 test("homepage refreshes the Nang game catalog runtime for existing visitors", () => {
-  assert.match(home, /app-20260706-restore-games\.js\?v=20260730-pureshrink-auxiliary-20260803-nang-game-catalog-refresh/);
+  assert.match(home, /app-20260706-restore-games\.js\?v=20260730-pureshrink-auxiliary-20260803-nang-game-catalog-refresh-20260803-hub-full-audit-v2/);
 });
 
 test("Nang WebGL build self-decompresses Gzip without server compression headers", () => {

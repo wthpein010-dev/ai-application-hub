@@ -86,14 +86,21 @@ function urlPath(path) {
     .join("/");
 }
 
+const playwrightBrowserPath = chromium.executablePath();
 const browserPath = [
   process.env.CHROME_PATH,
   "C:/Program Files/Google/Chrome/Application/chrome.exe",
   "C:/Program Files (x86)/Google/Chrome/Application/chrome.exe",
   "C:/Program Files (x86)/Microsoft/Edge/Application/msedge.exe",
+  "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome",
+  "/Applications/Microsoft Edge.app/Contents/MacOS/Microsoft Edge",
+  "/usr/bin/google-chrome",
+  "/usr/bin/chromium",
+  "/usr/bin/chromium-browser",
+  playwrightBrowserPath,
 ].find((path) => path && existsSync(path));
 
-assert.ok(browserPath, "A local Chrome or Edge executable is required for browser verification.");
+assert.ok(browserPath, "A system or Playwright Chromium executable is required for browser verification.");
 
 const server = createStaticServer();
 const baseUrl = await startServer(server);
@@ -146,8 +153,10 @@ try {
 
       assert.ok(layout.homeLeft >= 0 && layout.homeTop >= 0, app.id + " home action placement");
       assert.equal(layout.homeHref.split("#")[0].endsWith("/index.html"), true, app.id + " home action target");
-      assert.ok(layout.stageWidth <= 960.1, app.id + " stage max width");
-      assert.ok(Math.abs(layout.stageWidth / layout.stageHeight - 16 / 9) <= 0.01, app.id + " stage ratio");
+      const expectedRatio = app.id === "nang-keng-pai-pai-xiang" ? 9 / 16 : 16 / 9;
+      const expectedMaxWidth = app.id === "nang-keng-pai-pai-xiang" ? 420.1 : 960.1;
+      assert.ok(layout.stageWidth <= expectedMaxWidth, app.id + " stage max width");
+      assert.ok(Math.abs(layout.stageWidth / layout.stageHeight - expectedRatio) <= 0.01, app.id + " stage ratio");
       assert.ok(layout.scrollWidth <= layout.viewportWidth, app.id + " horizontal overflow");
     }
 

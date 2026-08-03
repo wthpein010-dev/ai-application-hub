@@ -3,6 +3,7 @@
   "private": true,
   "type": "module",
   "scripts": {
+    "audit:hub": "node scripts/hub-publication-audit.mjs",
     "playwright:install": "playwright install chromium",
     "test:paws-browser": "node --test tests/paws-level-editor-static-server.test.mjs && node tests/paws-level-editor-browser-smoke.mjs",
     "verify:paws-ai-corpus": "node scripts/verify-paws-ai-corpus.mjs"

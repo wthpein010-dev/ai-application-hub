@@ -3,7 +3,7 @@ const PAGE_TEXT_STORAGE_KEY = "ai-competition-hub-v2-page-text";
 const SELECTED_KEY = "ai-competition-hub-v2-selected";
 const PROJECT_ROOT_URL = "./projects/";
 const OLD_HUB_BRIEF = "把所有应用、体验入口、下载包和提交材料集中在一个本地页面中，方便审核和维护。";
-const HUB_BRIEF = "通过 Codex 调用 HyperFrames，快速制作网页动态效果；支持编辑和调整网页描述，沉淀可定制化网页模板的小工具设计。";
+const HUB_BRIEF = "集中汇总全部应用、小游戏和工程体验，统一查看演示、视频与适用的平台版本。";
 
 const statusLabel = {
   navigation: "项目导航",
@@ -88,16 +88,16 @@ const defaultApps = [
     category: "项目总览",
     status: "navigation",
     brief: HUB_BRIEF,
-    problem: "项目材料分散在多个目录，临近提交时难以快速判断哪个项目最完整、入口在哪里、还缺什么。",
-    aiUse: "AI 用于整理应用说明、维护建议、入口状态和提交材料清单。",
+    problem: "应用、小游戏和工程体验分散在多个目录，查找入口、视频和适用平台时不够直观。",
+    aiUse: "AI 用于整理项目说明、入口状态、兼容信息和维护建议。",
     folder: "./",
     entry: "./index.html",
     video: "./projects/AI\u5e94\u7528\u65b9\u6848\u6574\u7406\u5668/\u89c6\u9891\u8d44\u6e90/index.html",
-    package: "./downloads/ai-application-hub.zip",
+    package: "",
     platforms: {
       web: "./index.html",
-      windows: "./downloads/ai-application-hub.zip",
-      mac: "./downloads/ai-application-hub.zip"
+      windows: "",
+      mac: ""
     },
     tags: ["总览", "导航", "清单", "维护"],
     speed: 9,
@@ -137,16 +137,16 @@ const defaultApps = [
     category: "Unity 微信小游戏",
     status: "game",
     brief: "面向微信小游戏的竖屏冰激凌配单游戏：按顾客需求选择口味、制作甜筒并连续闯过 10 个关卡。",
-    problem: "需要一套可直接网页试玩、可下载完整 Unity 工程、同时提供微信小游戏转换包的 UGUI 项目样例。",
+    problem: "需要一个打开网页即可试玩的竖屏配单原型，快速验证操作节奏、关卡难度和移动端适配。",
     aiUse: "AI 参与玩法扩展、10 关配置、UGUI 预制体、750×1624 安全区适配、进度存档、WebGL 与微信小游戏构建及发布验证。",
     folder: "./projects/icecream/",
     entry: "./projects/icecream/index.html",
     video: "./projects/icecream/video/index.html",
-    package: "./downloads/icecream-unity-project.zip",
+    package: "",
     platforms: {
       web: { href: "./projects/icecream/index.html", label: "试玩" },
-      windows: { href: "./downloads/icecream-unity-project.zip", label: "工程下载" },
-      mac: { href: "./downloads/icecream-wechat-minigame.zip", label: "微信包下载" }
+      windows: "",
+      mac: ""
     },
     tags: ["Unity", "UGUI", "冰激凌", "微信小游戏"],
     speed: 9,
@@ -165,11 +165,11 @@ const defaultApps = [
     folder: "./projects/vita-mahjong/",
     entry: "./projects/vita-mahjong/index.html",
     video: "./projects/vita-mahjong/video/index.html",
-    package: "./downloads/vita-mahjong-webgl.zip",
+    package: "",
     platforms: {
       web: "./projects/vita-mahjong/index.html",
-      windows: "./downloads/vita-mahjong-webgl.zip",
-      mac: "./downloads/vita-mahjong-webgl.zip"
+      windows: "",
+      mac: ""
     },
     tags: ["Unity", "WebGL", "AI版", "羊了个羊"],
     speed: 8,
@@ -252,15 +252,16 @@ const defaultApps = [
     category: "Unity 微信小游戏原型",
     status: "game",
     brief: "以成语填字和诗意来信为核心的竖屏小游戏，使用 Unity UGUI 搭建界面，支持调试面板、关卡快照和过关结算。",
-    problem: "需要一个能直接在线体验、又能下载完整 Unity 工程继续改预制体和资源的小游戏样例，方便后续迁移到微信小游戏流程。",
+    problem: "需要一个打开网页即可体验的成语填字原型，便于检查竖屏操作、关卡内容和结算流程。",
     aiUse: "AI 参与玩法拆解、UGUI 预制体结构、750×1624 适配、关卡内容、WebGL 发布页和下载包整理。",
     folder: "./projects/fill-what/",
     entry: "./projects/fill-what/index.html",
     video: "./projects/fill-what/\u89c6\u9891\u8d44\u6e90/index.html",
-    package: "./downloads/fill-what-unity-project.zip",
+    package: "",
     platforms: {
       web: { href: "./projects/fill-what/index.html", label: "演示" },
-      windows: { href: "./downloads/fill-what-unity-project.zip", label: "下载工程" }
+      windows: "",
+      mac: ""
     },
     tags: ["Unity", "UGUI", "成语填字", "微信小游戏"],
     speed: 8,
@@ -325,11 +326,11 @@ const defaultApps = [
     folder: "./projects/朋友圈发图神器/01_作品体验入口/网页素材一键收桌面版/",
     entry: "./projects/朋友圈发图神器/01_作品体验入口/网页素材一键收桌面版/index.html",
     video: "./projects/\u670b\u53cb\u5708\u53d1\u56fe\u795e\u5668/01_\u4f5c\u54c1\u4f53\u9a8c\u5165\u53e3/\u7f51\u9875\u7d20\u6750\u4e00\u952e\u6536\u684c\u9762\u7248/\u89c6\u9891\u8d44\u6e90/\u6f14\u793a\u89c6\u9891.html",
-    package: "./downloads/web-media-collector-desktop-source.zip",
+    package: "",
     platforms: {
       web: { href: "./projects/朋友圈发图神器/01_作品体验入口/网页素材一键收桌面版/index.html", label: "演示" },
-      windows: { href: "./downloads/web-media-collector-desktop-source.zip", label: "源码包" },
-      mac: { href: "./projects/朋友圈发图神器/01_作品体验入口/网页素材一键收桌面版/index.html#macos", label: "macOS说明" }
+      windows: "",
+      mac: ""
     },
     tags: ["网页素材", "桌面版", "始终置顶", "批量下载"],
     speed: 8,
@@ -371,10 +372,10 @@ const defaultApps = [
     folder: "./projects/minigame-project-tool/",
     entry: "./projects/minigame-project-tool/index.html",
     video: "./projects/minigame-project-tool/video/index.html",
-    package: "./downloads/minigame-project-simulator-windows.zip",
+    package: "",
     platforms: {
       web: { href: "./projects/minigame-project-tool/index.html", label: "演示" },
-      windows: { href: "./downloads/minigame-project-simulator-windows.zip", label: "Windows下载" },
+      windows: "",
       mac: ""
     },
     tags: ["微信小游戏", "Unity", "需求文档", "Codex"],
@@ -440,11 +441,11 @@ const defaultApps = [
     folder: "./projects/朋友圈发图神器/",
     entry: "./projects/朋友圈发图神器/01_作品体验入口/app/index.html",
     video: "./projects/朋友圈发图神器/03_演示视频/演示视频.html",
-    package: "./downloads/travel-generator-universal.zip",
+    package: "",
     platforms: {
       web: "./projects/朋友圈发图神器/01_作品体验入口/app/index.html",
-      windows: "./downloads/travel-generator-universal.zip",
-      mac: "./downloads/travel-generator-mac-source.zip"
+      windows: "",
+      mac: ""
     },
     tags: ["旅行", "朋友圈", "文案", "九宫格"],
     speed: 9,
@@ -480,17 +481,17 @@ const defaultApps = [
     name: "Codex 对话评分工具",
     category: "效率工具",
     status: "assistant",
-    brief: "读取 Codex 对话记录并进行整理、分析和导出，帮助复盘 AI 协作过程。",
+    brief: "导入 Codex 对话记录，按维度评分并给出问题与改进建议，可导出 Excel 复盘表。",
     problem: "长对话里有大量决策、修改和验证记录，人工复盘成本高，也不容易发现质量波动。",
     aiUse: "AI 用于总结对话、抽取任务进展、检查风险点并形成复盘报告。",
     folder: "./projects/Codex对话评分工具/",
     entry: "./projects/Codex对话评分工具/index.html",
     video: "./projects/Codex对话评分工具/视频资源/演示视频.html",
-    package: "./downloads/codex-reviewer-windows.zip",
+    package: "",
     platforms: {
       web: "./projects/Codex对话评分工具/index.html",
-      windows: "./downloads/codex-reviewer-windows.zip",
-      mac: "./downloads/codex-reviewer-mac-source.zip"
+      windows: "",
+      mac: ""
     },
     tags: ["Codex", "复盘", "报告", "整理"],
     speed: 8,
@@ -509,11 +510,11 @@ const defaultApps = [
     folder: "./projects/codex-habit-tool/",
     entry: "./projects/codex-habit-tool/index.html",
     video: "./videos/codex-habit-tool-demo.html",
-    package: "./downloads/codex-habit-tool-windows.zip",
+    package: "",
     platforms: {
       web: { href: "./projects/codex-habit-tool/index.html", label: "演示" },
-      windows: { href: "./downloads/codex-habit-tool-windows.zip", label: "Windows 下载" },
-      mac: { href: "./downloads/codex-habit-tool-mac-source.zip", label: "Mac 源码包" }
+      windows: "",
+      mac: ""
     },
     tags: ["Codex", "快捷键", "中文界面", "任务命名"],
     speed: 9,
@@ -532,11 +533,11 @@ const defaultApps = [
     folder: "./projects/万话筒/",
     entry: "./projects/万话筒/index.html",
     video: "./projects/万话筒/视频资源/演示视频.html",
-    package: "./downloads/wanhuatong.zip",
+    package: "",
     platforms: {
       web: "./projects/万话筒/index.html",
-      windows: "./downloads/wanhuatong.zip",
-      mac: "./downloads/wanhuatong.zip"
+      windows: "",
+      mac: ""
     },
     tags: ["表达转换", "多语言", "情书", "古诗古文"],
     speed: 9,
@@ -935,6 +936,9 @@ function gameDisplayRank(app) {
 
 function handleAppCardClick(event) {
   if (event.target.closest("a, button, .inline-edit-button, .region-edit-button")) return;
+  const card = event.target.closest("[data-app-id]");
+  if (!card) return;
+  selectApp(card.dataset.appId);
 }
 
 function updateSelectedCards() {
@@ -1331,6 +1335,11 @@ function normalizeApp(app) {
       normalized.tags = [...base.tags];
     }
   }
+  if (normalized.id === "planner-daily-quiz") {
+    normalized.category = base.category;
+    normalized.status = base.status;
+    normalized.badge = base.badge;
+  }
   if (normalized.id === "clickflow") {
     if (normalized.name === "ClickFlow 鼠标自动化工作台") {
       normalized.name = base.name;
@@ -1353,14 +1362,22 @@ function normalizeApp(app) {
       normalized.badge = base.badge;
     }
   }
+  if (normalized.id === "hub") {
+    normalized.package = "";
+    normalized.platforms = {
+      web: "./index.html",
+      windows: "",
+      mac: ""
+    };
+  }
   if (normalized.id === "icecream") {
     if (normalized.name === "IceCream 冰激凌工坊") normalized.name = base.name;
     normalized.entry = "./projects/icecream/index.html";
-    normalized.package = "./downloads/icecream-unity-project.zip";
+    normalized.package = "";
     normalized.platforms = {
       web: { href: "./projects/icecream/index.html", label: "试玩" },
-      windows: { href: "./downloads/icecream-unity-project.zip", label: "工程下载" },
-      mac: { href: "./downloads/icecream-wechat-minigame.zip", label: "微信包下载" }
+      windows: "",
+      mac: ""
     };
     normalized.status = "game";
   }
@@ -1391,23 +1408,21 @@ function normalizeApp(app) {
   if (normalized.id === "vita-mahjong") {
     normalized.category = "Unity H5 AI版";
     normalized.entry = "./projects/vita-mahjong/index.html";
-    normalized.package = "./downloads/vita-mahjong-webgl.zip";
+    normalized.package = "";
     normalized.platforms = {
-      ...normalized.platforms,
       web: "./projects/vita-mahjong/index.html",
-      windows: "./downloads/vita-mahjong-webgl.zip",
-      mac: "./downloads/vita-mahjong-webgl.zip"
+      windows: "",
+      mac: ""
     };
     normalized.status = "ai";
     normalized.tags = ["Unity", "WebGL", "AI版", "羊了个羊"];
   }
   if (normalized.id === "fill-what") {
     normalized.entry = "./projects/fill-what/index.html";
-    normalized.package = "./downloads/fill-what-unity-project.zip";
+    normalized.package = "";
     normalized.platforms = {
-      ...normalized.platforms,
       web: { href: "./projects/fill-what/index.html", label: "演示" },
-      windows: { href: "./downloads/fill-what-unity-project.zip", label: "下载工程" },
+      windows: "",
       mac: ""
     };
     normalized.status = "game";
@@ -1415,12 +1430,11 @@ function normalizeApp(app) {
   if (normalized.id === "web-media-collector") {
     normalized.video = "./projects/\u670b\u53cb\u5708\u53d1\u56fe\u795e\u5668/01_\u4f5c\u54c1\u4f53\u9a8c\u5165\u53e3/\u7f51\u9875\u7d20\u6750\u4e00\u952e\u6536\u684c\u9762\u7248/\u89c6\u9891\u8d44\u6e90/\u6f14\u793a\u89c6\u9891.html";
     normalized.entry = "./projects/朋友圈发图神器/01_作品体验入口/网页素材一键收桌面版/index.html";
-    normalized.package = "./downloads/web-media-collector-desktop-source.zip";
+    normalized.package = "";
     normalized.platforms = {
-      ...normalized.platforms,
       web: { href: "./projects/朋友圈发图神器/01_作品体验入口/网页素材一键收桌面版/index.html", label: "演示" },
-      windows: { href: "./downloads/web-media-collector-desktop-source.zip", label: "源码包" },
-      mac: { href: "./projects/朋友圈发图神器/01_作品体验入口/网页素材一键收桌面版/index.html#macos", label: "macOS说明" }
+      windows: "",
+      mac: ""
     };
     normalized.status = "desktop";
   }
@@ -1444,26 +1458,52 @@ function normalizeApp(app) {
     normalized.folder = "./projects/minigame-project-tool/";
     normalized.entry = "./projects/minigame-project-tool/index.html";
     normalized.video = "./projects/minigame-project-tool/video/index.html";
-    normalized.package = "./downloads/minigame-project-simulator-windows.zip";
+    normalized.package = "";
     normalized.platforms = {
       web: { href: "./projects/minigame-project-tool/index.html", label: "演示" },
-      windows: { href: "./downloads/minigame-project-simulator-windows.zip", label: "Windows下载" },
+      windows: "",
       mac: ""
     };
     normalized.tags = ["微信小游戏", "Unity", "需求文档", "Codex"];
   }
   if (normalized.id === "codex-reviewer") {
     normalized.video = "./projects/Codex对话评分工具/视频资源/演示视频.html";
+    normalized.package = "";
+    normalized.platforms = {
+      web: "./projects/Codex对话评分工具/index.html",
+      windows: "",
+      mac: ""
+    };
+  }
+  if (normalized.id === "codex-habit-tool") {
+    normalized.entry = "./projects/codex-habit-tool/index.html";
+    normalized.video = "./videos/codex-habit-tool-demo.html";
+    normalized.package = "";
+    normalized.platforms = {
+      web: { href: "./projects/codex-habit-tool/index.html", label: "演示" },
+      windows: "",
+      mac: ""
+    };
+  }
+  if (normalized.id === "travel-generator") {
+    normalized.entry = "./projects/朋友圈发图神器/01_作品体验入口/app/index.html";
+    normalized.package = "";
+    normalized.platforms = {
+      web: "./projects/朋友圈发图神器/01_作品体验入口/app/index.html",
+      windows: "",
+      mac: ""
+    };
   }
   if (normalized.id === "wanhuatong") {
     normalized.name = "万话筒";
     normalized.folder = "./projects/万话筒/";
     normalized.entry = "./projects/万话筒/index.html";
     normalized.video = "./projects/万话筒/视频资源/演示视频.html";
-    normalized.package = "./downloads/wanhuatong.zip";
+    normalized.package = "";
     normalized.platforms = {
-      ...normalized.platforms,
-      web: "./projects/万话筒/index.html"
+      web: "./projects/万话筒/index.html",
+      windows: "",
+      mac: ""
     };
   }
   const currentPlatforms = normalized.platforms || {};
