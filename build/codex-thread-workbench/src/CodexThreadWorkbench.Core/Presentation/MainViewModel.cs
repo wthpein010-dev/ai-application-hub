@@ -213,20 +213,32 @@ public sealed class MainViewModel : ObservableObject, IAsyncDisposable
     {
         var sourceIndex = -1;
         var targetIndex = -1;
+        var sourceMatchCount = 0;
+        var targetMatchCount = 0;
         for (var index = 0; index < OpenThreads.Count; index++)
         {
-            if (OpenThreads[index].ThreadId == sourceThreadId)
+            if (string.Equals(
+                    OpenThreads[index].ThreadId,
+                    sourceThreadId,
+                    StringComparison.Ordinal))
             {
                 sourceIndex = index;
+                sourceMatchCount++;
             }
 
-            if (OpenThreads[index].ThreadId == targetThreadId)
+            if (string.Equals(
+                    OpenThreads[index].ThreadId,
+                    targetThreadId,
+                    StringComparison.Ordinal))
             {
                 targetIndex = index;
+                targetMatchCount++;
             }
         }
 
-        if (sourceIndex < 0 || targetIndex < 0 || sourceIndex == targetIndex)
+        if (sourceMatchCount != 1 ||
+            targetMatchCount != 1 ||
+            sourceIndex == targetIndex)
         {
             return false;
         }

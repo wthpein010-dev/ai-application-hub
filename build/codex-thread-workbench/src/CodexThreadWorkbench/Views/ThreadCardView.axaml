@@ -7,28 +7,37 @@
              DragDrop.DragOver="ThreadCard_OnDragOver"
              DragDrop.Drop="ThreadCard_OnDrop">
   <UserControl.Styles>
-    <Style Selector="Border#CardShell.dragging">
-      <Setter Property="Opacity" Value="0.68" />
+    <Style Selector="Border#CardShell">
       <Setter Property="BorderBrush" Value="{StaticResource BorderBrush}" />
+      <Setter Property="BorderThickness" Value="1" />
+      <Setter Property="BoxShadow" Value="0 3 13 0 #14344047" />
+    </Style>
+    <Style Selector="Border#CardShell Border#DragSurface">
+      <Setter Property="Background" Value="#F3F6F6" />
+    </Style>
+    <Style Selector="Border#CardShell.dragging">
+      <Setter Property="Opacity" Value="0.76" />
+      <Setter Property="BorderBrush" Value="{StaticResource PrimaryBrush}" />
+      <Setter Property="BorderThickness" Value="2" />
+      <Setter Property="BoxShadow" Value="0 10 26 0 #3D18724F" />
     </Style>
     <Style Selector="Border#CardShell.drop-target">
       <Setter Property="BorderBrush" Value="{StaticResource PrimaryBrush}" />
       <Setter Property="BorderThickness" Value="2" />
       <Setter Property="BoxShadow" Value="0 0 0 2 #334CAF71" />
     </Style>
+    <Style Selector="Border#CardShell.drop-target Border#DragSurface">
+      <Setter Property="Background" Value="#E5F5EE" />
+    </Style>
   </UserControl.Styles>
   <Border x:Name="CardShell"
           Margin="7"
           Background="{StaticResource CardBackgroundBrush}"
-          BorderBrush="{StaticResource BorderBrush}"
-          BorderThickness="1"
-          CornerRadius="12"
-          BoxShadow="0 3 13 0 #14344047">
+          CornerRadius="12">
     <Grid RowDefinitions="45,*">
       <Border Grid.Row="0"
               x:Name="DragSurface"
               Padding="11,0"
-              Background="#F3F6F6"
               BorderBrush="{StaticResource BorderBrush}"
               BorderThickness="0,0,0,1"
               CornerRadius="12,12,0,0"

@@ -72,6 +72,7 @@ document.addEventListener("keydown", event => {
 });
 
 document.addEventListener("pointerdown", event => {
+  if (dragGesture || event.isPrimary === false) return;
   const surface = event.target.closest('[data-role="drag-surface"]');
   if (!surface || !grid.contains(surface) || event.button !== 0) return;
   if (event.target.closest("button, a, input, textarea, select")) return;

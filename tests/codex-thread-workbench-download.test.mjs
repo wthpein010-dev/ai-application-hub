@@ -47,7 +47,7 @@ test("published manifest fixes the 1.3.0 archive contract and ordered five-part 
 
   assert.equal(manifest.version, 1);
   assert.equal(manifest.fileName, "CodexThreadWorkbench-Windows-x64.zip");
-  assert.equal(manifest.totalSize, 40_179_580);
+  assert.equal(manifest.totalSize, 40_179_034);
   assert.equal(manifest.chunkSize, 8_388_608);
   assert.equal(manifest.parts.length, 5);
   assert.deepEqual(
@@ -68,7 +68,7 @@ test("published manifest fixes the 1.3.0 archive contract and ordered five-part 
       8_388_608,
       8_388_608,
       8_388_608,
-      6_625_148
+      6_624_602
     ]
   );
   assert.equal(
@@ -77,7 +77,7 @@ test("published manifest fixes the 1.3.0 archive contract and ordered five-part 
   );
   assert.equal(
     manifest.sha256,
-    "D774AC535CD4C62598622112B33D539F62608435868CEA96EAC65D666583D9A1"
+    "631AC7D0DBA2EA7CC01F4EB0B1BE77201AA93C0DA81E4F763654B0F4151BDCF4"
   );
 });
 

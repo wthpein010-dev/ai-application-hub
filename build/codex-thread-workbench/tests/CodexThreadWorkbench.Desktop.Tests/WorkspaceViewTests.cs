@@ -1,5 +1,6 @@
 using Avalonia.Controls.Presenters;
 using Avalonia.Input;
+using Avalonia.Media;
 using Avalonia.VisualTree;
 using CodexThreadWorkbench.Codex;
 using CodexThreadWorkbench.Converters;
@@ -44,6 +45,47 @@ public sealed class WorkspaceViewTests
         Assert.NotNull(card.FindControl<TextBlock>("DragGrip"));
         Assert.NotNull(card.FindControl<TextBox>("MessageInput"));
         Assert.NotNull(card.FindControl<Button>("SendButton"));
+    }
+
+    [AvaloniaFact]
+    public void ThreadCard_DraggingAndDropTargetStatesUsePrimaryGreenVisualContract()
+    {
+        var card = new ThreadCardView();
+        var window = new Window { Width = 900, Height = 700, Content = card };
+        window.Show();
+        try
+        {
+            Layout(card);
+            var cardShell = card.FindControl<Border>("CardShell")!;
+            var dragSurface = card.FindControl<Border>("DragSurface")!;
+            var primary = Assert.IsAssignableFrom<ISolidColorBrush>(
+                Application.Current!.Resources["PrimaryBrush"]);
+            var restingShadow = cardShell.BoxShadow;
+
+            cardShell.Classes.Add("dragging");
+            Layout(card);
+
+            Assert.Equal(
+                primary.Color,
+                Assert.IsAssignableFrom<ISolidColorBrush>(cardShell.BorderBrush).Color);
+            Assert.NotEqual(restingShadow, cardShell.BoxShadow);
+
+            cardShell.Classes.Remove("dragging");
+            cardShell.Classes.Add("drop-target");
+            Layout(card);
+
+            Assert.Equal(new Thickness(2), cardShell.BorderThickness);
+            Assert.Equal(
+                primary.Color,
+                Assert.IsAssignableFrom<ISolidColorBrush>(cardShell.BorderBrush).Color);
+            Assert.Equal(
+                Color.Parse("#E5F5EE"),
+                Assert.IsAssignableFrom<ISolidColorBrush>(dragSurface.Background).Color);
+        }
+        finally
+        {
+            window.Close();
+        }
     }
 
     [AvaloniaFact]
@@ -143,17 +185,83 @@ public sealed class WorkspaceViewTests
     }
 
     [AvaloniaFact]
-    public void ThreadCard_PointerCaptureLost_CancelsArmedDrag()
+    public void ThreadCard_PointerCaptureLost_ClearsSourceAndActiveTargetVisuals()
     {
-        var card = new ThreadCardView();
-        var dragSurface = card.FindControl<Border>("DragSurface")!;
-        SetPrivateField(card, "_dragStartPoint", new Point(4, 4));
+        var client = new ObservableThreadClient();
+        var source = CreateCard(client, "thread-source");
+        var target = CreateCard(client, "thread-target");
+        var panel = new StackPanel();
+        panel.Children.Add(source);
+        panel.Children.Add(target);
+        var window = new Window { Width = 900, Height = 700, Content = panel };
+        window.Show();
+        try
+        {
+            Layout(panel);
+            var sourceShell = source.FindControl<Border>("CardShell")!;
+            var targetShell = target.FindControl<Border>("CardShell")!;
+            var dragSurface = source.FindControl<Border>("DragSurface")!;
+            SetPrivateField(source, "_dragStartPoint", new Point(4, 4));
+            sourceShell.Classes.Add("dragging");
+            RaiseDragEnter(target, "thread-source");
+            Assert.Contains("drop-target", targetShell.Classes);
 
-        dragSurface.RaiseEvent(new PointerCaptureLostEventArgs(
-            dragSurface,
-            new Pointer(1, PointerType.Mouse, isPrimary: true)));
+            dragSurface.RaiseEvent(new PointerCaptureLostEventArgs(
+                dragSurface,
+                new Pointer(1, PointerType.Mouse, isPrimary: true)));
 
-        Assert.Null(GetPrivateField<Point?>(card, "_dragStartPoint"));
+            Assert.Null(GetPrivateField<Point?>(source, "_dragStartPoint"));
+            Assert.DoesNotContain("dragging", sourceShell.Classes);
+            Assert.DoesNotContain("drop-target", targetShell.Classes);
+        }
+        finally
+        {
+            window.Close();
+        }
+    }
+
+    [AvaloniaFact]
+    public void ThreadCard_SourceCleanupClearsOnlyTheActiveTargetInItsWindow()
+    {
+        var client = new ObservableThreadClient();
+        var sourceA = CreateCard(client, "source-a");
+        var targetA = CreateCard(client, "target-a");
+        var sourceB = CreateCard(client, "source-b");
+        var targetB = CreateCard(client, "target-b");
+        var panelA = new StackPanel();
+        panelA.Children.Add(sourceA);
+        panelA.Children.Add(targetA);
+        var panelB = new StackPanel();
+        panelB.Children.Add(sourceB);
+        panelB.Children.Add(targetB);
+        var windowA = new Window { Width = 900, Height = 700, Content = panelA };
+        var windowB = new Window { Width = 900, Height = 700, Content = panelB };
+        windowA.Show();
+        windowB.Show();
+        try
+        {
+            Layout(panelA);
+            Layout(panelB);
+            var sourceShellA = sourceA.FindControl<Border>("CardShell")!;
+            var targetShellA = targetA.FindControl<Border>("CardShell")!;
+            var targetShellB = targetB.FindControl<Border>("CardShell")!;
+            sourceShellA.Classes.Add("dragging");
+            RaiseDragEnter(targetA, "source-a");
+            RaiseDragEnter(targetB, "source-b");
+            Assert.Contains("drop-target", targetShellA.Classes);
+            Assert.Contains("drop-target", targetShellB.Classes);
+
+            InvokePrivate(sourceA, "ClearDragVisuals");
+
+            Assert.DoesNotContain("dragging", sourceShellA.Classes);
+            Assert.DoesNotContain("drop-target", targetShellA.Classes);
+            Assert.Contains("drop-target", targetShellB.Classes);
+        }
+        finally
+        {
+            windowA.Close();
+            windowB.Close();
+        }
     }
 
     [AvaloniaFact]
@@ -256,6 +364,52 @@ public sealed class WorkspaceViewTests
         control.Measure(new Size(900, 700));
         control.Arrange(new Rect(0, 0, 900, 700));
     }
+
+    private static ThreadCardView CreateCard(
+        ICodexThreadClient client,
+        string threadId)
+    {
+        var summary = new ThreadSummary(
+            threadId,
+            threadId,
+            "Preview",
+            "C:\\work",
+            DateTimeOffset.UtcNow,
+            ThreadStatusKind.Idle);
+        return new ThreadCardView
+        {
+            DataContext = new ThreadCardViewModel(
+                client,
+                new ThreadCardState(summary, [], ThreadStatusKind.Idle))
+        };
+    }
+
+    private static void RaiseDragEnter(ThreadCardView target, string sourceThreadId)
+    {
+        var format = Assert.IsType<DataFormat<string>>(
+            typeof(ThreadCardView)
+                .GetField(
+                    "ThreadIdDataFormat",
+                    System.Reflection.BindingFlags.Static |
+                    System.Reflection.BindingFlags.NonPublic)!
+                .GetValue(null));
+        var transfer = new DataTransfer();
+        transfer.Add(DataTransferItem.Create(format, sourceThreadId));
+        target.RaiseEvent(new DragEventArgs(
+            DragDrop.DragEnterEvent,
+            transfer,
+            target,
+            new Point(),
+            KeyModifiers.None));
+    }
+
+    private static void InvokePrivate(object target, string methodName) =>
+        target.GetType()
+            .GetMethod(
+                methodName,
+                System.Reflection.BindingFlags.Instance |
+                System.Reflection.BindingFlags.NonPublic)!
+            .Invoke(target, null);
 
     private static T? GetPrivateField<T>(object target, string fieldName) =>
         (T?)target.GetType()

@@ -1,4 +1,5 @@
 using System.Collections.Specialized;
+using System.Runtime.CompilerServices;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Input;
@@ -15,10 +16,14 @@ public partial class ThreadCardView : UserControl
     private const double DragThresholdPixels = 6;
     private static readonly DataFormat<string> ThreadIdDataFormat =
         DataFormat.CreateStringApplicationFormat("codex-thread-workbench.thread-id");
+    private static readonly ConditionalWeakTable<TopLevel, ActiveDropTargetState>
+        ActiveDropTargets = new();
 
     private ThreadCardViewModel? _viewModel;
     private Point? _dragStartPoint;
     private bool _dragInProgress;
+    private WeakReference<TopLevel>? _dragVisualRoot;
+    private WeakReference<TopLevel>? _dropTargetVisualRoot;
 
     public ThreadCardView()
     {
@@ -53,7 +58,16 @@ public partial class ThreadCardView : UserControl
     private void Detach()
     {
         _dragStartPoint = null;
-        ClearDragVisuals();
+        if (_dragInProgress ||
+            _dragVisualRoot is not null ||
+            HasCardClass("dragging"))
+        {
+            ClearDragVisuals();
+        }
+        else
+        {
+            ClearDropTargetVisual();
+        }
 
         if (_viewModel is null)
         {
@@ -138,18 +152,27 @@ public partial class ThreadCardView : UserControl
     private void DragSurface_OnPointerReleased(object? sender, PointerReleasedEventArgs e)
     {
         CancelArmedDrag();
+        ClearDragVisuals();
         if (e.Pointer.Captured == sender)
         {
             e.Pointer.Capture(null);
         }
     }
 
-    private void DragSurface_OnPointerCaptureLost(object? sender, PointerCaptureLostEventArgs e) =>
+    private void DragSurface_OnPointerCaptureLost(object? sender, PointerCaptureLostEventArgs e)
+    {
         CancelArmedDrag();
+        ClearDragVisuals();
+    }
 
     private async Task StartDragAsync(PointerEventArgs triggerEvent, string sourceThreadId)
     {
         _dragInProgress = true;
+        if (TopLevel.GetTopLevel(this) is { } root)
+        {
+            _dragVisualRoot = new WeakReference<TopLevel>(root);
+        }
+
         try
         {
             SetCardClass("dragging", true);
@@ -163,9 +186,9 @@ public partial class ThreadCardView : UserControl
         }
         finally
         {
-            _dragInProgress = false;
             CancelArmedDrag();
             ClearDragVisuals();
+            _dragInProgress = false;
         }
     }
 
@@ -212,12 +235,12 @@ public partial class ThreadCardView : UserControl
         if (TryGetReorderThreadIds(e, out _, out _))
         {
             e.DragEffects = DragDropEffects.Move;
-            SetCardClass("drop-target", true);
+            SetDropTargetVisual();
             return;
         }
 
         e.DragEffects = DragDropEffects.None;
-        SetCardClass("drop-target", false);
+        ClearDropTargetVisual();
     }
 
     private bool TryGetReorderThreadIds(
@@ -239,12 +262,44 @@ public partial class ThreadCardView : UserControl
 
     private void ClearDragVisuals()
     {
+        var dragRoot = TryGetRoot(_dragVisualRoot) ?? TopLevel.GetTopLevel(this);
         SetCardClass("dragging", false);
         ClearDropTargetVisual();
+        if (dragRoot is not null && ActiveDropTargets.TryGetValue(dragRoot, out var state))
+        {
+            state.Clear();
+        }
+
+        _dragVisualRoot = null;
     }
 
-    private void ClearDropTargetVisual() =>
-        SetCardClass("drop-target", false);
+    private void SetDropTargetVisual()
+    {
+        if (TopLevel.GetTopLevel(this) is not { } root)
+        {
+            SetCardClass("drop-target", true);
+            return;
+        }
+
+        _dropTargetVisualRoot = new WeakReference<TopLevel>(root);
+        ActiveDropTargets.GetValue(root, _ => new ActiveDropTargetState())
+            .Set(this);
+    }
+
+    private void ClearDropTargetVisual()
+    {
+        var root = TryGetRoot(_dropTargetVisualRoot) ?? TopLevel.GetTopLevel(this);
+        if (root is not null && ActiveDropTargets.TryGetValue(root, out var state))
+        {
+            state.Clear(this);
+        }
+        else
+        {
+            SetCardClass("drop-target", false);
+        }
+
+        _dropTargetVisualRoot = null;
+    }
 
     private void CancelArmedDrag() =>
         _dragStartPoint = null;
@@ -264,5 +319,52 @@ public partial class ThreadCardView : UserControl
         }
 
         cardShell.Classes.Remove(className);
+    }
+
+    private bool HasCardClass(string className) =>
+        this.FindControl<Border>("CardShell")?.Classes.Contains(className) == true;
+
+    private static TopLevel? TryGetRoot(WeakReference<TopLevel>? reference) =>
+        reference is not null && reference.TryGetTarget(out var root)
+            ? root
+            : null;
+
+    private sealed class ActiveDropTargetState
+    {
+        private WeakReference<ThreadCardView>? _target;
+
+        public void Set(ThreadCardView target)
+        {
+            if (_target is not null &&
+                _target.TryGetTarget(out var previous) &&
+                !ReferenceEquals(previous, target))
+            {
+                previous.SetCardClass("drop-target", false);
+                previous._dropTargetVisualRoot = null;
+            }
+
+            _target = new WeakReference<ThreadCardView>(target);
+            target.SetCardClass("drop-target", true);
+        }
+
+        public void Clear(ThreadCardView? expectedTarget = null)
+        {
+            if (_target is null || !_target.TryGetTarget(out var target))
+            {
+                _target = null;
+                expectedTarget?.SetCardClass("drop-target", false);
+                return;
+            }
+
+            if (expectedTarget is not null && !ReferenceEquals(target, expectedTarget))
+            {
+                expectedTarget.SetCardClass("drop-target", false);
+                return;
+            }
+
+            target.SetCardClass("drop-target", false);
+            target._dropTargetVisualRoot = null;
+            _target = null;
+        }
     }
 }

@@ -23,6 +23,25 @@ if [[ -z "${output_root}" ]]; then
 fi
 
 project="${repository_root}/src/CodexThreadWorkbench/CodexThreadWorkbench.csproj"
+project_version_lines="$(
+  sed -nE \
+    's/^[[:space:]]*<Version>[[:space:]]*([^<[:space:]]+)[[:space:]]*<\/Version>[[:space:]]*$/\1/p' \
+    "${project}"
+)"
+project_version_count="$(
+  printf '%s\n' "${project_version_lines}" |
+    awk 'NF { count += 1 } END { print count + 0 }'
+)"
+if [[ "${project_version_count}" != "1" ]]; then
+  echo "Expected exactly one non-empty <Version> in ${project}." >&2
+  exit 65
+fi
+project_version="${project_version_lines}"
+if [[ -z "${project_version}" || ! "${project_version}" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+  echo "Invalid project version '${project_version}'. Expected major.minor.patch." >&2
+  exit 65
+fi
+
 publish_directory="${output_root}/publish-${runtime}"
 app_directory="${output_root}/CodexThreadWorkbench.app"
 contents_directory="${app_directory}/Contents"
@@ -49,7 +68,7 @@ cp -R "${publish_directory}/." "${macos_directory}/"
 chmod +x "${macos_directory}/CodexThreadWorkbench"
 cp "${repository_root}/README.md" "${resources_directory}/README.md"
 
-cat > "${contents_directory}/Info.plist" <<'PLIST'
+cat > "${contents_directory}/Info.plist" <<PLIST
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
@@ -69,9 +88,9 @@ cat > "${contents_directory}/Info.plist" <<'PLIST'
   <key>CFBundlePackageType</key>
   <string>APPL</string>
   <key>CFBundleShortVersionString</key>
-  <string>1.1.0</string>
+  <string>${project_version}</string>
   <key>CFBundleVersion</key>
-  <string>1.1.0</string>
+  <string>${project_version}</string>
   <key>LSMinimumSystemVersion</key>
   <string>13.0</string>
   <key>NSHighResolutionCapable</key>
