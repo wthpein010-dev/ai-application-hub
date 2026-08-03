@@ -173,6 +173,10 @@ test("title-bar drag starts at six pixels, swaps exact card DOM nodes, and persi
     assert.equal(await page.locator('[data-role="drag-surface"]').count(), 4);
     assert.equal(await page.locator('[data-role="drag-grip"] i').count(), 24);
     await page.evaluate(() => {
+      window.__lastPointerId = null;
+      document.addEventListener("pointerdown", event => {
+        window.__lastPointerId = event.pointerId;
+      }, { capture: true });
       window.__initialCards = [...document.querySelectorAll(".thread-card")];
       window.__initialContent = Object.fromEntries(window.__initialCards.map(card => [
         card.dataset.threadId,
@@ -198,6 +202,74 @@ test("title-bar drag starts at six pixels, swaps exact card DOM nodes, and persi
       await page.locator(".thread-card").evaluateAll(cards => cards.map(card => card.dataset.threadId)),
       ["release", "quota", "approval", "research"],
     );
+
+    await page.mouse.move(startX, startY);
+    await page.mouse.down();
+    await page.mouse.move(startX + 6, startY);
+    assert.equal(await page.locator('[data-thread-id="release"]').evaluate(card => card.classList.contains("is-dragging")), true);
+    await page.mouse.up();
+    assert.deepEqual(
+      await page.locator(".thread-card").evaluateAll(cards => cards.map(card => card.dataset.threadId)),
+      ["release", "quota", "approval", "research"],
+    );
+    assert.equal(await page.locator(".is-dragging, .is-drop-target").count(), 0);
+    assert.equal(await page.evaluate(storageKey => localStorage.getItem(storageKey), orderStorageKey), null);
+
+    const secondHeader = page.locator('[data-thread-id="quota"] [data-role="drag-surface"]');
+    const secondBox = await secondHeader.boundingBox();
+    assert.ok(secondBox);
+    await page.mouse.move(startX, startY);
+    await page.mouse.down();
+    await page.mouse.move(secondBox.x + 24, secondBox.y + secondBox.height / 2, { steps: 5 });
+    assert.equal(await page.locator('[data-thread-id="quota"]').evaluate(card => card.classList.contains("is-drop-target")), true);
+    await page.evaluate(() => {
+      document.dispatchEvent(new PointerEvent("pointerup", {
+        bubbles: true,
+        button: 0,
+        buttons: 0,
+        clientX: -20,
+        clientY: -20,
+        pointerId: window.__lastPointerId,
+        pointerType: "mouse",
+      }));
+    });
+    await page.mouse.up();
+    assert.deepEqual(
+      await page.locator(".thread-card").evaluateAll(cards => cards.map(card => card.dataset.threadId)),
+      ["release", "quota", "approval", "research"],
+    );
+    assert.equal(await page.locator(".is-dragging, .is-drop-target").count(), 0);
+    assert.equal(await page.evaluate(storageKey => localStorage.getItem(storageKey), orderStorageKey), null);
+
+    await page.mouse.move(startX, startY);
+    await page.mouse.down();
+    await page.mouse.move(secondBox.x + 24, secondBox.y + secondBox.height / 2, { steps: 5 });
+    await page.evaluate(() => {
+      document.dispatchEvent(new PointerEvent("pointercancel", {
+        bubbles: true,
+        pointerId: window.__lastPointerId,
+        pointerType: "mouse",
+      }));
+    });
+    await page.mouse.up();
+    assert.deepEqual(
+      await page.locator(".thread-card").evaluateAll(cards => cards.map(card => card.dataset.threadId)),
+      ["release", "quota", "approval", "research"],
+    );
+    assert.equal(await page.locator(".is-dragging, .is-drop-target").count(), 0);
+    assert.equal(await page.evaluate(storageKey => localStorage.getItem(storageKey), orderStorageKey), null);
+
+    await page.mouse.move(startX, startY);
+    await page.mouse.down();
+    await page.mouse.move(secondBox.x + 24, secondBox.y + secondBox.height / 2, { steps: 5 });
+    await page.evaluate(() => window.dispatchEvent(new Event("blur")));
+    await page.mouse.up();
+    assert.deepEqual(
+      await page.locator(".thread-card").evaluateAll(cards => cards.map(card => card.dataset.threadId)),
+      ["release", "quota", "approval", "research"],
+    );
+    assert.equal(await page.locator(".is-dragging, .is-drop-target").count(), 0);
+    assert.equal(await page.evaluate(storageKey => localStorage.getItem(storageKey), orderStorageKey), null);
 
     await page.mouse.move(startX, startY);
     await page.mouse.down();

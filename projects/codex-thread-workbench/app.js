@@ -113,16 +113,17 @@ document.addEventListener("pointermove", event => {
     return;
   }
 
-  const hovered = document.elementFromPoint(event.clientX, event.clientY);
-  const target = hovered?.closest(".thread-card");
-  setDropTarget(target && target !== dragGesture.source && !target.hidden ? target : null);
+  setDropTarget(getDropTargetAtPoint(event.clientX, event.clientY, dragGesture.source));
 });
 
 document.addEventListener("pointerup", event => {
   if (!dragGesture || event.pointerId !== dragGesture.pointerId) return;
-  const { dragging, source, target } = dragGesture;
-  if (dragging && target) {
-    swapCardPositions(source, target);
+  const { dragging, source } = dragGesture;
+  const releaseTarget = dragging
+    ? getDropTargetAtPoint(event.clientX, event.clientY, source)
+    : null;
+  if (releaseTarget) {
+    swapCardPositions(source, releaseTarget);
     persistCardOrder();
   }
   cancelCardDrag();
@@ -368,6 +369,20 @@ function setDropTarget(target) {
   dragGesture.target?.classList.remove("is-drop-target");
   dragGesture.target = target;
   dragGesture.target?.classList.add("is-drop-target");
+}
+
+function getDropTargetAtPoint(clientX, clientY, source) {
+  const gridBounds = grid.getBoundingClientRect();
+  const insideGrid = clientX >= gridBounds.left
+    && clientX <= gridBounds.right
+    && clientY >= gridBounds.top
+    && clientY <= gridBounds.bottom;
+  if (!insideGrid) return null;
+
+  const target = document.elementFromPoint(clientX, clientY)?.closest(".thread-card");
+  return target && grid.contains(target) && target !== source && !target.hidden
+    ? target
+    : null;
 }
 
 function cancelCardDrag() {
