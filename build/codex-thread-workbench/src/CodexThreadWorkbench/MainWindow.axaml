@@ -98,7 +98,7 @@
         </ItemsControl.ItemsPanel>
         <ItemsControl.ItemTemplate>
           <DataTemplate>
-            <views:ThreadCardView />
+            <views:ThreadCardView ReorderRequested="ThreadCard_OnReorderRequested" />
           </DataTemplate>
         </ItemsControl.ItemTemplate>
       </ItemsControl>

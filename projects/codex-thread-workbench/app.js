@@ -3,6 +3,10 @@ const picker = document.querySelector('[data-role="picker"]');
 const pickerSearch = document.querySelector('[data-role="picker-search"]');
 const threadCount = document.querySelector('[data-role="thread-count"]');
 const toast = document.querySelector('[data-role="toast"]');
+const orderStorageKey = "codex-thread-workbench-demo-thread-order-v1";
+const dragThreshold = 6;
+const defaultThreadOrder = [...grid.querySelectorAll(".thread-card")]
+  .map(card => card.dataset.threadId);
 
 const extraThreads = {
   memory: {
@@ -24,6 +28,9 @@ const extraThreads = {
 };
 
 let toastTimer;
+let dragGesture = null;
+
+restoreCardOrder();
 
 document.addEventListener("click", event => {
   const actionButton = event.target.closest("[data-action]");
@@ -46,6 +53,12 @@ document.addEventListener("submit", event => {
 });
 
 document.addEventListener("keydown", event => {
+  if (event.key === "Escape" && dragGesture) {
+    event.preventDefault();
+    cancelCardDrag();
+    return;
+  }
+
   if (event.key === "Escape" && !picker.hidden) {
     closePicker();
     return;
@@ -57,6 +70,71 @@ document.addEventListener("keydown", event => {
     textarea.closest("form").requestSubmit();
   }
 });
+
+document.addEventListener("pointerdown", event => {
+  const surface = event.target.closest('[data-role="drag-surface"]');
+  if (!surface || !grid.contains(surface) || event.button !== 0) return;
+  if (event.target.closest("button, a, input, textarea, select")) return;
+
+  const source = surface.closest(".thread-card");
+  if (!source || source.hidden) return;
+  dragGesture = {
+    pointerId: event.pointerId,
+    source,
+    target: null,
+    startX: event.clientX,
+    startY: event.clientY,
+    dragging: false
+  };
+  event.preventDefault();
+});
+
+document.addEventListener("pointermove", event => {
+  if (!dragGesture || event.pointerId !== dragGesture.pointerId) return;
+  if (!dragGesture.dragging) {
+    const distance = Math.hypot(
+      event.clientX - dragGesture.startX,
+      event.clientY - dragGesture.startY
+    );
+    if (distance < dragThreshold) return;
+    dragGesture.dragging = true;
+    dragGesture.source.classList.add("is-dragging");
+    document.body.classList.add("is-dragging-thread-card");
+  }
+
+  event.preventDefault();
+  const gridBounds = grid.getBoundingClientRect();
+  const outsideGrid = event.clientX < gridBounds.left
+    || event.clientX > gridBounds.right
+    || event.clientY < gridBounds.top
+    || event.clientY > gridBounds.bottom;
+  if (outsideGrid) {
+    cancelCardDrag();
+    return;
+  }
+
+  const hovered = document.elementFromPoint(event.clientX, event.clientY);
+  const target = hovered?.closest(".thread-card");
+  setDropTarget(target && target !== dragGesture.source && !target.hidden ? target : null);
+});
+
+document.addEventListener("pointerup", event => {
+  if (!dragGesture || event.pointerId !== dragGesture.pointerId) return;
+  const { dragging, source, target } = dragGesture;
+  if (dragging && target) {
+    swapCardPositions(source, target);
+    persistCardOrder();
+  }
+  cancelCardDrag();
+});
+
+document.addEventListener("pointercancel", event => {
+  if (dragGesture && event.pointerId === dragGesture.pointerId) {
+    cancelCardDrag();
+  }
+});
+
+window.addEventListener("blur", cancelCardDrag);
 
 pickerSearch.addEventListener("input", () => {
   const query = pickerSearch.value.trim().toLowerCase();
@@ -125,6 +203,13 @@ function updateFullscreenLabel() {
 }
 
 function resetLayout() {
+  cancelCardDrag();
+  restoreDefaultCardOrder();
+  try {
+    localStorage.removeItem(orderStorageKey);
+  } catch {
+    // Storage may be unavailable in a privacy-restricted browser.
+  }
   grid.querySelectorAll(".thread-card").forEach(card => {
     card.hidden = false;
     card.classList.remove("is-minimized", "is-closing");
@@ -240,7 +325,8 @@ function openThread(id, pickerButton) {
 function renderThread(id, thread) {
   return `
     <article class="thread-card" data-thread-id="${escapeHtml(id)}">
-      <header class="thread-header">
+      <header class="thread-header" data-role="drag-surface" title="拖动调整任务位置">
+        <span class="drag-grip" data-role="drag-grip" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i></span>
         <div class="thread-identity">
           <div class="thread-title-row">
             <h2>${escapeHtml(thread.title)}</h2>
@@ -275,6 +361,70 @@ function setStatus(node, text, className) {
 function updateThreadCount() {
   const count = [...grid.querySelectorAll(".thread-card")].filter(card => !card.hidden).length;
   threadCount.textContent = `当前显示 ${count} 个会话`;
+}
+
+function setDropTarget(target) {
+  if (!dragGesture || dragGesture.target === target) return;
+  dragGesture.target?.classList.remove("is-drop-target");
+  dragGesture.target = target;
+  dragGesture.target?.classList.add("is-drop-target");
+}
+
+function cancelCardDrag() {
+  if (!dragGesture) return;
+  dragGesture.source.classList.remove("is-dragging");
+  dragGesture.target?.classList.remove("is-drop-target");
+  document.body.classList.remove("is-dragging-thread-card");
+  dragGesture = null;
+}
+
+function swapCardPositions(source, target) {
+  const marker = document.createComment("thread-card-swap");
+  source.replaceWith(marker);
+  target.replaceWith(source);
+  marker.replaceWith(target);
+}
+
+function currentCardOrder() {
+  return [...grid.querySelectorAll(".thread-card")].map(card => card.dataset.threadId);
+}
+
+function persistCardOrder() {
+  try {
+    localStorage.setItem(orderStorageKey, JSON.stringify(currentCardOrder()));
+  } catch {
+    // The demo still reorders for this session when storage is unavailable.
+  }
+}
+
+function restoreCardOrder() {
+  try {
+    const order = JSON.parse(localStorage.getItem(orderStorageKey));
+    if (!Array.isArray(order) || order.some(id => typeof id !== "string")) return;
+    applyCardOrder(order);
+  } catch {
+    // Ignore malformed or unavailable local storage and keep the default order.
+  }
+}
+
+function restoreDefaultCardOrder() {
+  applyCardOrder(defaultThreadOrder);
+}
+
+function applyCardOrder(order) {
+  const cards = new Map(
+    [...grid.querySelectorAll(".thread-card")].map(card => [card.dataset.threadId, card])
+  );
+  const seen = new Set();
+  order.forEach(id => {
+    const card = cards.get(id);
+    if (!card || seen.has(id)) return;
+    seen.add(id);
+    grid.append(card);
+  });
+  cards.forEach((card, id) => {
+    if (!seen.has(id)) grid.append(card);
+  });
 }
 
 function showToast(message) {

@@ -141,7 +141,7 @@ public sealed class CodexAppServerClient : ICodexThreadClient
     {
         await _rpc.RequestAsync(
             "thread/resume",
-            new { threadId, excludeTurns = true },
+            new { threadId },
             cancellationToken);
     }
 

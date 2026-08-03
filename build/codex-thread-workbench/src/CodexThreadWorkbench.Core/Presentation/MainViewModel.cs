@@ -207,6 +207,44 @@ public sealed class MainViewModel : ObservableObject, IAsyncDisposable
         _ = SaveWorkspaceInBackgroundAsync();
     }
 
+    public async Task<bool> SwapOpenThreadsAsync(
+        string sourceThreadId,
+        string targetThreadId)
+    {
+        var sourceIndex = -1;
+        var targetIndex = -1;
+        for (var index = 0; index < OpenThreads.Count; index++)
+        {
+            if (OpenThreads[index].ThreadId == sourceThreadId)
+            {
+                sourceIndex = index;
+            }
+
+            if (OpenThreads[index].ThreadId == targetThreadId)
+            {
+                targetIndex = index;
+            }
+        }
+
+        if (sourceIndex < 0 || targetIndex < 0 || sourceIndex == targetIndex)
+        {
+            return false;
+        }
+
+        (OpenThreads[sourceIndex], OpenThreads[targetIndex]) =
+            (OpenThreads[targetIndex], OpenThreads[sourceIndex]);
+        try
+        {
+            await SaveWorkspaceAsync();
+        }
+        catch (Exception error)
+        {
+            GlobalError = error.Message;
+        }
+
+        return true;
+    }
+
     public ValueTask DisposeAsync()
     {
         lock (_disposeGate)

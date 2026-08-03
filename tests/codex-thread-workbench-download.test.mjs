@@ -42,12 +42,12 @@ const makeManifest = (chunks, overrides = {}) => {
   };
 };
 
-test("published manifest fixes the 1.2.0 archive contract and ordered five-part layout", async () => {
+test("published manifest fixes the 1.3.0 archive contract and ordered five-part layout", async () => {
   const manifest = JSON.parse(await readFile(manifestUrl, "utf8"));
 
   assert.equal(manifest.version, 1);
   assert.equal(manifest.fileName, "CodexThreadWorkbench-Windows-x64.zip");
-  assert.equal(manifest.totalSize, 40_171_855);
+  assert.equal(manifest.totalSize, 40_179_580);
   assert.equal(manifest.chunkSize, 8_388_608);
   assert.equal(manifest.parts.length, 5);
   assert.deepEqual(
@@ -58,7 +58,7 @@ test("published manifest fixes the 1.2.0 archive contract and ordered five-part 
     manifest.parts.map(part => part.path),
     Array.from(
       { length: 5 },
-      (_, index) => `parts/v1.2.0/part-${String(index).padStart(3, "0")}.bin`
+      (_, index) => `parts/v1.3.0/part-${String(index).padStart(3, "0")}.bin`
     )
   );
   assert.deepEqual(
@@ -68,7 +68,7 @@ test("published manifest fixes the 1.2.0 archive contract and ordered five-part 
       8_388_608,
       8_388_608,
       8_388_608,
-      6_617_423
+      6_625_148
     ]
   );
   assert.equal(
@@ -77,7 +77,7 @@ test("published manifest fixes the 1.2.0 archive contract and ordered five-part 
   );
   assert.equal(
     manifest.sha256,
-    "64ECD8D394FBF472950D80F9595EF6D91D8BD3F04FC81F025A2B9C82020A54E9"
+    "D774AC535CD4C62598622112B33D539F62608435868CEA96EAC65D666583D9A1"
   );
 });
 
