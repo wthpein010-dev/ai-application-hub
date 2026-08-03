@@ -156,8 +156,111 @@ test("project and download pages identify the Windows and Mac 1.3.0 update", asy
   assert.match(downloadHtml, /40\.2 MB/);
   assert.match(
     downloadHtml,
-    /D774AC535CD4C62598622112B33D539F62608435868CEA96EAC65D666583D9A1/,
+    /631AC7D0DBA2EA7CC01F4EB0B1BE77201AA93C0DA81E4F763654B0F4151BDCF4/,
   );
+});
+
+test("only the first primary pointer owns a card drag gesture", async () => {
+  const server = createStaticServer();
+  const baseUrl = await startServer(server);
+  const browser = await launchBrowser();
+
+  try {
+    const page = await browser.newPage({ viewport: { width: 1440, height: 1100 } });
+    await page.goto(`${baseUrl}/projects/codex-thread-workbench/index.html`);
+
+    const evidence = await page.evaluate(() => {
+      const card = id => document.querySelector(`[data-thread-id="${id}"]`);
+      const surface = id => card(id).querySelector('[data-role="drag-surface"]');
+      const center = node => {
+        const bounds = node.getBoundingClientRect();
+        return {
+          x: bounds.left + 24,
+          y: bounds.top + bounds.height / 2,
+        };
+      };
+      const dispatch = (target, type, pointerId, isPrimary, point, buttons) => {
+        target.dispatchEvent(new PointerEvent(type, {
+          bubbles: true,
+          button: 0,
+          buttons,
+          clientX: point.x,
+          clientY: point.y,
+          isPrimary,
+          pointerId,
+          pointerType: "touch",
+        }));
+      };
+      const snapshot = () => ({
+        releaseDragging: card("release").classList.contains("is-dragging"),
+        quotaDragging: card("quota").classList.contains("is-dragging"),
+        researchTarget: card("research").classList.contains("is-drop-target"),
+        approvalTarget: card("approval").classList.contains("is-drop-target"),
+        visualCount: document.querySelectorAll(".is-dragging, .is-drop-target").length,
+        bodyDragging: document.body.classList.contains("is-dragging-thread-card"),
+      });
+
+      const releasePoint = center(surface("release"));
+      const quotaPoint = center(surface("quota"));
+      const researchPoint = center(surface("research"));
+      const approvalPoint = center(surface("approval"));
+
+      dispatch(surface("release"), "pointerdown", 101, true, releasePoint, 1);
+      dispatch(surface("quota"), "pointerdown", 202, true, quotaPoint, 1);
+      dispatch(document, "pointermove", 101, true, researchPoint, 1);
+      const afterFirstMove = snapshot();
+      dispatch(document, "pointermove", 202, true, approvalPoint, 1);
+      const afterSecondMove = snapshot();
+      dispatch(document, "pointercancel", 202, true, approvalPoint, 0);
+      const afterSecondCancel = snapshot();
+      dispatch(document, "pointercancel", 101, true, researchPoint, 0);
+      const afterFirstCancel = snapshot();
+
+      window.dispatchEvent(new Event("blur"));
+      dispatch(surface("release"), "pointerdown", 303, false, releasePoint, 1);
+      dispatch(document, "pointermove", 303, false, quotaPoint, 1);
+      const afterNonPrimaryMove = snapshot();
+      dispatch(document, "pointercancel", 303, false, quotaPoint, 0);
+      const afterNonPrimaryCancel = snapshot();
+
+      return {
+        afterFirstMove,
+        afterSecondMove,
+        afterSecondCancel,
+        afterFirstCancel,
+        afterNonPrimaryMove,
+        afterNonPrimaryCancel,
+        order: [...document.querySelectorAll(".thread-card")]
+          .map(node => node.dataset.threadId),
+      };
+    });
+
+    const firstPointerOwnsGesture = {
+      releaseDragging: true,
+      quotaDragging: false,
+      researchTarget: true,
+      approvalTarget: false,
+      visualCount: 2,
+      bodyDragging: true,
+    };
+    assert.deepEqual(evidence.afterFirstMove, firstPointerOwnsGesture);
+    assert.deepEqual(evidence.afterSecondMove, firstPointerOwnsGesture);
+    assert.deepEqual(evidence.afterSecondCancel, firstPointerOwnsGesture);
+    assert.deepEqual(evidence.afterFirstCancel, {
+      releaseDragging: false,
+      quotaDragging: false,
+      researchTarget: false,
+      approvalTarget: false,
+      visualCount: 0,
+      bodyDragging: false,
+    });
+    assert.deepEqual(evidence.afterNonPrimaryMove, evidence.afterFirstCancel);
+    assert.deepEqual(evidence.afterNonPrimaryCancel, evidence.afterFirstCancel);
+    assert.deepEqual(evidence.order, ["release", "quota", "approval", "research"]);
+  } finally {
+    await browser.close();
+    await stopServer(server);
+  }
 });
 
 test("title-bar drag starts at six pixels, swaps exact card DOM nodes, and persists order", async () => {

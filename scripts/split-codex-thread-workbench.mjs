@@ -9,10 +9,10 @@ import { basename, join, resolve } from "node:path";
 
 const FILE_NAME = "CodexThreadWorkbench-Windows-x64.zip";
 const RELEASE_DIRECTORY = "v1.3.0";
-const TOTAL_SIZE = 40_179_580;
+const TOTAL_SIZE = 40_179_034;
 const CHUNK_SIZE = 8_388_608;
 const ARCHIVE_SHA256 =
-  "D774AC535CD4C62598622112B33D539F62608435868CEA96EAC65D666583D9A1";
+  "631AC7D0DBA2EA7CC01F4EB0B1BE77201AA93C0DA81E4F763654B0F4151BDCF4";
 
 const sha256 = bytes =>
   createHash("sha256").update(bytes).digest("hex").toUpperCase();

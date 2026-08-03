@@ -115,6 +115,36 @@ public sealed class MainViewModelTests : IDisposable
             viewModel.OpenThreads.Select(card => card.ThreadId));
     }
 
+    [Theory]
+    [InlineData("thread-1")]
+    [InlineData("thread-2")]
+    public async Task SwapOpenThreadsAsync_DuplicateSourceOrTargetId_IsNoOpAndDoesNotSave(
+        string duplicatedThreadId)
+    {
+        var client = CreateClient(threadCount: 4);
+        var path = Path.Combine(_directory, "workspace.json");
+        var store = new WorkspaceStore(path);
+        await using var viewModel = new MainViewModel(client, store);
+        await viewModel.InitializeAsync();
+        var duplicate = viewModel.OpenThreads.Single(
+            card => card.ThreadId == duplicatedThreadId);
+        viewModel.OpenThreads.Add(duplicate);
+        var expectedOrder = viewModel.OpenThreads.ToArray();
+        var persistedBefore = await store.LoadAsync();
+
+        var changed = await viewModel.SwapOpenThreadsAsync("thread-1", "thread-2");
+
+        Assert.False(changed);
+        Assert.Equal(expectedOrder.Length, viewModel.OpenThreads.Count);
+        for (var index = 0; index < expectedOrder.Length; index++)
+        {
+            Assert.Same(expectedOrder[index], viewModel.OpenThreads[index]);
+        }
+
+        var persistedAfter = await store.LoadAsync();
+        Assert.Equal(persistedBefore.OpenThreadIds, persistedAfter.OpenThreadIds);
+    }
+
     [Fact]
     public async Task SwapOpenThreadsAsync_ValidIds_PersistsOrderForFreshViewModel()
     {

@@ -33,6 +33,40 @@ public sealed class PackagingScriptTests
     }
 
     [Fact]
+    public void MacScript_DerivesBothBundleVersionsFromValidatedProjectVersion()
+    {
+        var script = Read("scripts", "publish-macos.sh");
+
+        Assert.Contains(
+            "src/CodexThreadWorkbench/CodexThreadWorkbench.csproj",
+            script);
+        Assert.Contains("project_version", script);
+        Assert.Contains("^[0-9]+\\.[0-9]+\\.[0-9]+$", script);
+        Assert.DoesNotContain("<string>1.1.0</string>", script);
+        Assert.Equal(
+            2,
+            System.Text.RegularExpressions.Regex.Matches(
+                script,
+                "<string>\\$\\{project_version\\}</string>").Count);
+    }
+
+    [Fact]
+    public void MacPackageTest_VerifiesBothBundleVersionsWithPlutil()
+    {
+        var script = Read("scripts", "test-macos-package.sh");
+
+        Assert.Contains(
+            "plutil -extract CFBundleShortVersionString raw",
+            script);
+        Assert.Contains(
+            "plutil -extract CFBundleVersion raw",
+            script);
+        Assert.Contains("expected_version", script);
+        Assert.Contains("CFBundleShortVersionString=${short_version}", script);
+        Assert.Contains("CFBundleVersion=${bundle_version}", script);
+    }
+
+    [Fact]
     public void Workflow_UsesMatchingMacArchitectureRunners()
     {
         var workflow = Read(".github", "workflows", "build-cross-platform.yml");
