@@ -59,6 +59,9 @@ jobs:
         with:
           node-version: "24"
 
+      - name: Install the public Codex CLI
+        run: npm install --global @openai/codex
+
       - name: Verify the native runner
         shell: bash
         run: |

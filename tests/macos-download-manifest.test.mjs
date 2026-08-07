@@ -240,6 +240,7 @@ test("the native audit workflow covers both Mac architectures and emits evidence
   assert.match(workflow, /actions\/upload-artifact@v4/);
   assert.match(workflow, /macos-download-audit-\$\{\{ matrix\.arch \}\}/);
   assert.match(workflow, /GITHUB_STEP_SUMMARY/);
+  assert.match(workflow, /npm install --global @openai\/codex/);
 });
 
 test("the audit script rejects an archive with the wrong digest", async (t) => {
