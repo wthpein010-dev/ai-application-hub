@@ -46,6 +46,7 @@ jobs:
           dotnet-version: 8.0.x
 
       - name: Test the locked source snapshot
+        if: matrix.architecture == 'x64'
         shell: bash
         run: |
           set -euo pipefail

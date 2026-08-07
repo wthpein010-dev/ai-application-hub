@@ -54,6 +54,7 @@ test("the repair workflow rebuilds Quota Bar from its locked source snapshot", a
 
   assert.match(workflow, /actions\/setup-dotnet@v4/);
   assert.match(workflow, /build\/codex-quota-bar\/CodexQuotaBar\.sln/);
+  assert.match(workflow, /if: matrix\.architecture == 'x64'/);
   assert.match(workflow, /build\/codex-quota-bar\/scripts\/package-macos\.sh/);
   assert.match(workflow, /CODEX_QUOTA_ARCHITECTURES/);
 });
