@@ -4,6 +4,7 @@ on:
   workflow_dispatch:
   push:
     branches:
+      - main
       - audit/mac-downloads-20260807
     paths:
       - ".github/workflows/audit-macos-downloads.yml"

@@ -208,6 +208,7 @@ test("the native audit workflow covers both Mac architectures and emits evidence
     .sort();
   assert.deepEqual(runners, ["macos-14", "macos-15-intel"]);
   assert.match(workflow, /workflow_dispatch:/);
+  assert.match(workflow, /^\s+- main$/m);
   assert.match(workflow, /audit\/mac-downloads-20260807/);
   assert.match(workflow, /docs\/audits\/evidence\/2026-08-07-macos-download-manifest\.json/);
   assert.match(workflow, /downloads\/CodexQuotaBar-macOS\.zip/);
