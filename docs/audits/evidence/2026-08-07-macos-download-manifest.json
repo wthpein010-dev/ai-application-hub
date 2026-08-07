@@ -7,9 +7,12 @@
       "kind": "native",
       "catalogUrl": "https://github.com/wthpein010-dev/ai-application-hub/releases/download/codex-quota-bar-v1.0.0/CodexQuotaBar-macOS.zip",
       "archiveUrl": "https://github.com/wthpein010-dev/ai-application-hub/releases/download/codex-quota-bar-v1.0.0/CodexQuotaBar-macOS.zip",
-      "bytes": 63795422,
-      "sha256": "31160179A15DC23E9C02B6137F4D4E0F45F59035CF41AAB15C9282E6C9C710DF",
-      "architectures": ["arm64", "x64"]
+      "bytes": 82013746,
+      "sha256": "70E070878DB703B960C3AD0792429CDAAE9F52994A00F52EFAFDC3012F73C6B2",
+      "architectures": [
+        "arm64",
+        "x64"
+      ]
     },
     {
       "id": "codex-thread-workbench",
@@ -52,7 +55,10 @@
       "archiveUrl": "https://github.com/wthpein010-dev/ai-application-hub/releases/download/clickflow-v2.0.0/ClickFlow-macOS.zip",
       "bytes": 24377657,
       "sha256": "5378C5D4E957BA22B2DB7F119803901BF6B85E4A94184892678EC42CA5778793",
-      "architectures": ["arm64", "x64"]
+      "architectures": [
+        "arm64",
+        "x64"
+      ]
     },
     {
       "id": "pureshrink",
@@ -62,7 +68,10 @@
       "archiveUrl": "https://github.com/wthpein010-dev/ai-application-hub/releases/download/pureshrink-v1.0.3/PureShrink-macOS.zip",
       "bytes": 313421626,
       "sha256": "D3AD9964171BA5943B2FB520846918E5BA5B142A0EB398D5FD2A17D328280ED1",
-      "architectures": ["arm64", "x64"]
+      "architectures": [
+        "arm64",
+        "x64"
+      ]
     }
   ]
 }
