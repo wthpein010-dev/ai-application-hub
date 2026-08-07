@@ -1,0 +1,7 @@
+Asset: suit-hamster.gif
+Source: user-provided asset, 2026-07-27
+SHA-256: A3E00783DC4A6C2C0656CF3E79915D214AF2DAEA8BCE8C75EB99616F3BDE3BE8
+Dimensions: 133x142
+Frames: 62
+Frame duration: 30ms
+Loop duration: 1.86s

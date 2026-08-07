@@ -7,8 +7,10 @@ on:
       - audit/mac-downloads-20260807
     paths:
       - ".github/workflows/repair-codex-quota-bar-macos.yml"
+      - "build/codex-quota-bar/**"
       - "projects/codex-quota-bar/release/README-zh-CN.md"
       - "tests/codex-quota-bar-download.test.mjs"
+      - "tests/codex-quota-bar-source-package.test.mjs"
 
 permissions:
   contents: write
@@ -32,32 +34,56 @@ jobs:
             expected_architecture: x86_64
     runs-on: ${{ matrix.runner }}
     steps:
-      - name: Check out the published archive
+      - name: Check out the locked source snapshot
         uses: actions/checkout@v4
         with:
           sparse-checkout: |
-            downloads/CodexQuotaBar-macOS.zip
-          sparse-checkout-cone-mode: false
+            build/codex-quota-bar
 
-      - name: Extract, repair, sign, and verify the matching app
+      - name: Install .NET 8
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 8.0.x
+
+      - name: Test the locked source snapshot
+        shell: bash
+        run: |
+          set -euo pipefail
+          dotnet test build/codex-quota-bar/CodexQuotaBar.sln \
+            --configuration Release
+
+      - name: Build the native app archive
+        env:
+          CODEX_QUOTA_ARCHITECTURES: ${{ matrix.architecture }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          bash build/codex-quota-bar/scripts/package-macos.sh
+
+      - name: Extract, sign, and verify the matching app
         shell: bash
         run: |
           set -euo pipefail
           test "$(uname -m)" = "${{ matrix.expected_architecture }}"
-          archive="downloads/CodexQuotaBar-macOS.zip"
+          archive="build/codex-quota-bar/dist/macos/CodexQuotaBar-macOS.zip"
           stage="$RUNNER_TEMP/codex-quota-bar-${{ matrix.architecture }}"
           app="$stage/CodexQuotaBar-macOS/${{ matrix.architecture }}/CodexQuotaBar.app"
           launcher="$app/Contents/MacOS/CodexQuotaBar"
           mkdir -p "$stage"
-          unzip -q "$archive" \
-            "CodexQuotaBar-macOS/${{ matrix.architecture }}/CodexQuotaBar.app/*" \
-            -d "$stage"
+          ditto -x -k "$archive" "$stage"
           test -d "$app"
-          chmod 755 "$launcher"
           test -x "$launcher"
           plutil -lint "$app/Contents/Info.plist"
           file "$launcher" | tee "$RUNNER_TEMP/codex-quota-bar-${{ matrix.architecture }}.architecture.txt"
           grep -q "${{ matrix.expected_architecture }}" "$RUNNER_TEMP/codex-quota-bar-${{ matrix.architecture }}.architecture.txt"
+          for library in \
+            libAvaloniaNative.dylib \
+            libHarfBuzzSharp.dylib \
+            libSkiaSharp.dylib; do
+            library_path="$app/Contents/MacOS/$library"
+            test -x "$library_path"
+            file "$library_path" | grep -q "${{ matrix.expected_architecture }}"
+          done
           codesign --force --deep --sign - "$app"
           codesign --verify --deep --strict "$app"
           open -n "$app"
@@ -164,6 +190,12 @@ jobs:
             test -f "$app/Contents/Info.plist"
             chmod 755 "$launcher"
             test -x "$launcher"
+            for library in \
+              libAvaloniaNative.dylib \
+              libHarfBuzzSharp.dylib \
+              libSkiaSharp.dylib; do
+              test -x "$app/Contents/MacOS/$library"
+            done
           done
           cp projects/codex-quota-bar/release/README-zh-CN.md "$release_root/README-zh-CN.md"
           (
