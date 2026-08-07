@@ -65,6 +65,13 @@ test("the Mac audit manifest rejects catalog URL drift", () => {
   assert.throws(() => validateMacDownloadManifest({ apps, manifest: invalidManifest }));
 });
 
+test("the Mac audit manifest rejects combined archive URL drift", () => {
+  const invalidManifest = structuredClone(manifest);
+  invalidManifest.downloads[0].archiveUrl = "https://example.com/CodexQuotaBar-macOS.zip";
+
+  assert.throws(() => validateMacDownloadManifest({ apps, manifest: invalidManifest }));
+});
+
 test("the Mac audit manifest rejects non-HTTPS public URLs", () => {
   const invalidManifest = structuredClone(manifest);
   invalidManifest.downloads[0].catalogUrl = "http://example.com/CodexQuotaBar-macOS.zip";

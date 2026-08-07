@@ -101,9 +101,11 @@ function macCatalog(apps) {
   return catalog;
 }
 
-function validateCombinedNative(record) {
+function validateCombinedNative(record, catalogAction) {
   assertExactKeys(record, COMBINED_NATIVE_KEYS, `record ${record.id}`);
-  assertPublicUrl(record.archiveUrl, `record ${record.id}.archiveUrl`);
+  if (assertPublicUrl(record.archiveUrl, `record ${record.id}.archiveUrl`) !== catalogAction.catalogUrl) {
+    fail(`record ${record.id} archive URL does not match public catalog action`);
+  }
   assertBytes(record.bytes, `record ${record.id}.bytes`);
   assertDigest(record.sha256, `record ${record.id}.sha256`);
   if (
@@ -172,7 +174,7 @@ export function validateMacDownloadManifest({ apps, manifest }) {
       validateWorkbenchNative(record);
       native.push(record);
     } else {
-      validateCombinedNative(record);
+      validateCombinedNative(record, catalogAction);
       native.push(record);
     }
   }
