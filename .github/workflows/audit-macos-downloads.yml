@@ -1,0 +1,106 @@
+name: Audit every public macOS download
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+      - audit/mac-downloads-20260807
+    paths:
+      - ".github/workflows/audit-macos-downloads.yml"
+      - "app-20260706-restore-games.js"
+      - "scripts/audit-public-macos-downloads.sh"
+      - "scripts/macos-download-manifest.mjs"
+      - "tests/helpers/default-apps.mjs"
+      - "build/codex-thread-workbench/scripts/test-macos-package.sh"
+      - "build/codex-thread-workbench/src/CodexThreadWorkbench/CodexThreadWorkbench.csproj"
+      - "docs/audits/evidence/2026-08-07-macos-download-manifest.json"
+      - "downloads/CodexQuotaBar-macOS.zip"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: public-macos-download-audit-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  audit:
+    name: Audit public downloads (${{ matrix.arch }})
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - arch: arm64
+            runner: macos-14
+            expected-machine: arm64
+          - arch: x64
+            runner: macos-15-intel
+            expected-machine: x86_64
+    runs-on: ${{ matrix.runner }}
+    steps:
+      - name: Check out the read-only audit inputs
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+          sparse-checkout: |
+            .github/workflows/audit-macos-downloads.yml
+            app-20260706-restore-games.js
+            scripts/audit-public-macos-downloads.sh
+            scripts/macos-download-manifest.mjs
+            tests/helpers/default-apps.mjs
+            build/codex-thread-workbench/scripts/test-macos-package.sh
+            build/codex-thread-workbench/src/CodexThreadWorkbench/CodexThreadWorkbench.csproj
+            docs/audits/evidence/2026-08-07-macos-download-manifest.json
+          sparse-checkout-cone-mode: false
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+
+      - name: Install the public Codex CLI
+        run: npm install --global @openai/codex
+
+      - name: Verify the native runner
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(uname -m)" = "${{ matrix.expected-machine }}"
+
+      - name: Validate the public Mac catalog manifest
+        shell: bash
+        run: node scripts/macos-download-manifest.mjs --check
+
+      - name: Audit exact public downloads
+        id: public-audit
+        shell: bash
+        run: |
+          set -euo pipefail
+          chmod +x \
+            scripts/audit-public-macos-downloads.sh \
+            build/codex-thread-workbench/scripts/test-macos-package.sh
+          scripts/audit-public-macos-downloads.sh \
+            --arch "${{ matrix.arch }}" \
+            --manifest docs/audits/evidence/2026-08-07-macos-download-manifest.json \
+            --evidence-dir "${{ runner.temp }}/macos-download-audit-${{ matrix.arch }}"
+
+      - name: Publish the architecture summary
+        if: always()
+        shell: bash
+        run: |
+          summary="${{ runner.temp }}/macos-download-audit-${{ matrix.arch }}/macos-download-audit-${{ matrix.arch }}.md"
+          if [[ -f "$summary" ]]; then
+            cat "$summary" >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "macOS audit did not produce a Markdown summary." >> "$GITHUB_STEP_SUMMARY"
+          fi
+
+      - name: Upload architecture evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: macos-download-audit-${{ matrix.arch }}
+          path: ${{ runner.temp }}/macos-download-audit-${{ matrix.arch }}/
+          if-no-files-found: error
+          retention-days: 30

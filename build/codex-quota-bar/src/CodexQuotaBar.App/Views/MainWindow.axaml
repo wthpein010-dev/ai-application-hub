@@ -1,0 +1,507 @@
+<Window
+    x:Class="CodexQuotaBar.App.Views.MainWindow"
+    x:Name="Root"
+    x:DataType="vm:MainWindowViewModel"
+    x:CompileBindings="True"
+    xmlns="https://github.com/avaloniaui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:automation="clr-namespace:Avalonia.Automation;assembly=Avalonia.Controls"
+    xmlns:converters="clr-namespace:CodexQuotaBar.App.Converters"
+    xmlns:pets="clr-namespace:CodexQuotaBar.App.Pets"
+    xmlns:vm="clr-namespace:CodexQuotaBar.Core.ViewModels;assembly=CodexQuotaBar.Core"
+    Title="Codex Quota Bar"
+    Width="370"
+    Height="230"
+    MinWidth="370"
+    MaxWidth="370"
+    MinHeight="48"
+    MaxHeight="230"
+    CanResize="False"
+    ShowInTaskbar="False"
+    Topmost="True"
+    SystemDecorations="None"
+    Background="Transparent"
+    TransparencyLevelHint="Transparent"
+    WindowStartupLocation="Manual">
+  <Window.Resources>
+    <converters:QuotaToneBrushConverter x:Key="ToneBrush" />
+  </Window.Resources>
+
+  <VisualLayerManager>
+    <Grid>
+    <Border
+        x:Name="QuotaOnlyPanel"
+        Background="#FBFBF8"
+        BorderBrush="#D9DDD8"
+        BorderThickness="1"
+        CornerRadius="8"
+        ClipToBounds="True">
+      <Grid>
+        <Grid x:Name="ExpandedPanel" RowDefinitions="40,*" IsVisible="{Binding !IsCollapsed}">
+          <Border
+              Grid.Row="0"
+              Background="#F6F7F4"
+              BorderBrush="#DDE1DD"
+              BorderThickness="0,0,0,1"
+              PointerPressed="OnTitleBarPointerPressed">
+            <Grid Margin="13,0,8,0" ColumnDefinitions="Auto,Auto,Auto,*,Auto,Auto,Auto">
+              <Ellipse Grid.Column="0" Width="8" Height="8" Fill="#E5543D" />
+              <Ellipse Grid.Column="1" Width="8" Height="8" Margin="6,0,0,0" Fill="#F1B24A" />
+              <Ellipse Grid.Column="2" Width="8" Height="8" Margin="6,0,0,0" Fill="#1F8A70" />
+              <TextBlock
+                  Grid.Column="3"
+                  Margin="12,0,0,0"
+                  VerticalAlignment="Center"
+                  FontSize="11"
+                  FontWeight="Bold"
+                  Foreground="#17202A"
+                  Text="CODEX QUOTA" />
+              <TextBlock
+                  Grid.Column="3"
+                  Margin="0,0,4,0"
+                  HorizontalAlignment="Right"
+                  VerticalAlignment="Center"
+                  FontSize="10"
+                  FontWeight="SemiBold"
+                  Foreground="#1F8A70"
+                  Text="{Binding ConnectionLabel}" />
+              <Button
+                  x:Name="PetToggleButton"
+                  Grid.Column="4"
+                  Width="28"
+                  Height="28"
+                  Margin="3,0,0,0"
+                  Padding="0"
+                  Background="Transparent"
+                  BorderThickness="0"
+                  Command="{Binding TogglePetCommand}"
+                  Content="◉"
+                  FontSize="15"
+                  Foreground="#66727A"
+                  IsVisible="{Binding PetAvailable}"
+                  ToolTip.Tip="桌宠"
+                  automation:AutomationProperties.Name="开启或关闭桌宠" />
+              <Button
+                  x:Name="CollapseButton"
+                  Grid.Column="5"
+                  Width="28"
+                  Height="28"
+                  Margin="3,0,0,0"
+                  Padding="0"
+                  Background="Transparent"
+                  BorderThickness="0"
+                  Command="{Binding ToggleCollapsedCommand}"
+                  Content="−"
+                  FontSize="17"
+                  Foreground="#66727A"
+                  ToolTip.Tip="折叠"
+                  automation:AutomationProperties.Name="折叠用量窗口" />
+              <Button
+                  x:Name="CloseButton"
+                  Grid.Column="6"
+                  Width="28"
+                  Height="28"
+                  Margin="2,0,0,0"
+                  Padding="0"
+                  Background="Transparent"
+                  BorderThickness="0"
+                  Command="{Binding HideCommand}"
+                  Content="×"
+                  FontSize="16"
+                  Foreground="#66727A"
+                  ToolTip.Tip="隐藏到托盘"
+                  automation:AutomationProperties.Name="隐藏到托盘" />
+            </Grid>
+          </Border>
+
+          <ScrollViewer Grid.Row="1" HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
+            <StackPanel Margin="16,13,16,12" Spacing="8">
+              <Grid ColumnDefinitions="*,Auto">
+                <StackPanel Grid.Column="0" Spacing="1">
+                  <TextBlock FontSize="10" Foreground="#66727A" Text="CODEX 剩余" />
+                  <TextBlock
+                      FontSize="36"
+                      FontWeight="Bold"
+                      Foreground="#17202A"
+                      Text="{Binding PrimaryBucket.RemainingPercent, StringFormat={}{0}%}" />
+                </StackPanel>
+                <TextBlock
+                    Grid.Column="1"
+                    VerticalAlignment="Bottom"
+                    Margin="0,0,0,5"
+                    FontSize="10"
+                    Foreground="#66727A"
+                    Text="{Binding PrimaryBucket.ResetText}" />
+              </Grid>
+
+              <ProgressBar
+                  Height="10"
+                  Minimum="0"
+                  Maximum="100"
+                  Value="{Binding PrimaryBucket.RemainingPercent}"
+                  Foreground="{Binding PrimaryBucket.Tone, Converter={StaticResource ToneBrush}}"
+                  Background="#E3E7E5" />
+
+              <ItemsControl ItemsSource="{Binding AdditionalBuckets}">
+                <ItemsControl.ItemTemplate>
+                  <DataTemplate x:DataType="vm:QuotaBucketViewModel">
+                    <Border BorderBrush="#DDE1DD" BorderThickness="0,1,0,0" Padding="0,8,0,0">
+                      <StackPanel Spacing="5">
+                        <Grid ColumnDefinitions="*,Auto">
+                          <TextBlock
+                              Grid.Column="0"
+                              FontSize="11"
+                              FontWeight="SemiBold"
+                              Foreground="#34414A"
+                              Text="{Binding DisplayName}"
+                              TextTrimming="CharacterEllipsis" />
+                          <TextBlock
+                              Grid.Column="1"
+                              FontSize="16"
+                              FontWeight="Bold"
+                              Foreground="#17202A"
+                              Text="{Binding RemainingPercent, StringFormat={}{0}%}" />
+                        </Grid>
+                        <ProgressBar
+                            Height="5"
+                            Minimum="0"
+                            Maximum="100"
+                            Value="{Binding RemainingPercent}"
+                            Foreground="{Binding Tone, Converter={StaticResource ToneBrush}}"
+                            Background="#E3E7E5" />
+                      </StackPanel>
+                    </Border>
+                  </DataTemplate>
+                </ItemsControl.ItemTemplate>
+              </ItemsControl>
+
+              <Grid ColumnDefinitions="*,Auto">
+                <TextBlock FontSize="9" Foreground="#68737A" Text="{Binding ResetCreditsText}" />
+                <TextBlock Grid.Column="1" FontSize="9" Foreground="#68737A" Text="每 30 秒刷新" />
+              </Grid>
+            </StackPanel>
+          </ScrollViewer>
+        </Grid>
+
+        <Grid
+            x:Name="CollapsedPanel"
+            Height="40"
+            Margin="10,4"
+            ColumnDefinitions="Auto,*,46,98,Auto,Auto"
+            IsVisible="{Binding IsCollapsed}"
+            PointerPressed="OnTitleBarPointerPressed">
+          <TextBlock
+              Grid.Column="0"
+              VerticalAlignment="Center"
+              FontSize="11"
+              FontWeight="Bold"
+              Foreground="#17202A"
+              Text="CODEX" />
+          <TextBlock
+              x:Name="CollapsedPercent"
+              Grid.Column="2"
+              Width="46"
+              HorizontalAlignment="Right"
+              VerticalAlignment="Center"
+              TextAlignment="Right"
+              FontSize="15"
+              FontWeight="Bold"
+              Foreground="{Binding PrimaryBucket.Tone, Converter={StaticResource ToneBrush}}"
+              Text="{Binding PrimaryBucket.RemainingPercent, StringFormat={}{0}%}" />
+          <ProgressBar
+              x:Name="CollapsedProgress"
+              Grid.Column="3"
+              Width="90"
+              MinWidth="0"
+              Height="5"
+              HorizontalAlignment="Right"
+              VerticalAlignment="Center"
+              Minimum="0"
+              Maximum="100"
+              Value="{Binding PrimaryBucket.RemainingPercent}"
+              Foreground="{Binding PrimaryBucket.Tone, Converter={StaticResource ToneBrush}}"
+              Background="#E3E7E5" />
+          <Button
+              Grid.Column="4"
+              Width="28"
+              Height="28"
+              Padding="0"
+              Background="Transparent"
+              BorderThickness="0"
+              Command="{Binding ToggleCollapsedCommand}"
+              Content="□"
+              FontSize="13"
+              Foreground="#66727A"
+              ToolTip.Tip="展开"
+              automation:AutomationProperties.Name="展开用量窗口" />
+          <Button
+              Grid.Column="5"
+              Width="28"
+              Height="28"
+              Padding="0"
+              Background="Transparent"
+              BorderThickness="0"
+              Command="{Binding HideCommand}"
+              Content="×"
+              FontSize="16"
+              Foreground="#66727A"
+              ToolTip.Tip="隐藏到托盘"
+              automation:AutomationProperties.Name="隐藏到托盘" />
+        </Grid>
+      </Grid>
+    </Border>
+
+    <Canvas
+        x:Name="PetDashboardPanel"
+        Width="168"
+        Height="200"
+        HorizontalAlignment="Left"
+        VerticalAlignment="Top"
+        IsVisible="False">
+      <Canvas x:Name="PetColumn" Width="168" Height="200">
+        <Button
+            x:Name="PetQuotaStripButton"
+            Canvas.Left="0"
+            Canvas.Top="0"
+            Width="168"
+            Height="72"
+            Padding="0"
+            HorizontalContentAlignment="Stretch"
+            VerticalContentAlignment="Stretch"
+            Background="Transparent"
+            BorderThickness="0"
+            Click="OnPetDetailsToggleClick"
+            ToolTip.Tip="额度详情"
+            automation:AutomationProperties.Name="显示或隐藏额度详情">
+          <Border
+              x:Name="PetQuotaStrip"
+              Width="168"
+              Height="72"
+              Padding="12,7"
+              Background="#E6151719"
+              BorderBrush="#4CFFFFFF"
+              BorderThickness="1"
+              CornerRadius="8">
+            <Grid RowDefinitions="18,30,8">
+              <Grid Grid.Row="0" ColumnDefinitions="*,Auto">
+                <TextBlock
+                    VerticalAlignment="Center"
+                    FontSize="10"
+                    FontWeight="SemiBold"
+                    Foreground="#CDD3D8"
+                    Text="剩余额度" />
+                <TextBlock
+                    Grid.Column="1"
+                    VerticalAlignment="Center"
+                    FontSize="9"
+                    Foreground="#CDD3D8"
+                    Text="{Binding ConnectionLabel}"
+                    TextTrimming="CharacterEllipsis" />
+              </Grid>
+              <TextBlock
+                  x:Name="PetQuotaPercent"
+                  Grid.Row="1"
+                  VerticalAlignment="Center"
+                  FontSize="28"
+                  FontWeight="Bold"
+                  Foreground="#FFFFFF"
+                  Text="{Binding PrimaryBucket.RemainingPercent, StringFormat={}{0}%}" />
+              <ProgressBar
+                  x:Name="PetQuotaProgress"
+                  Grid.Row="2"
+                  Height="8"
+                  Minimum="0"
+                  Maximum="100"
+                  Value="{Binding PrimaryBucket.RemainingPercent}"
+                  Foreground="{Binding PrimaryBucket.Tone, Converter={StaticResource ToneBrush}}"
+                  Background="#4C5F6368" />
+            </Grid>
+          </Border>
+        </Button>
+        <Border
+            x:Name="PetDragSurface"
+            Canvas.Left="24"
+            Canvas.Top="66"
+            Width="120"
+            Height="130"
+            Background="Transparent"
+            PointerCaptureLost="OnPetPointerCaptureLost"
+            PointerPressed="OnPetPointerPressed"
+            PointerMoved="OnPetPointerMoved"
+            PointerReleased="OnPetPointerReleased"
+            ToolTip.Tip="额度详情"
+            automation:AutomationProperties.Name="显示或隐藏额度详情">
+          <pets:PetSpriteControl
+              x:Name="PetSprite"
+              Width="120"
+              Height="130"
+              IsHitTestVisible="False" />
+        </Border>
+      </Canvas>
+    </Canvas>
+
+    <Popup
+        x:Name="PetSidePopup"
+        PlacementTarget="{Binding #PetColumn}"
+        IsLightDismissEnabled="False"
+        WindowManagerAddShadowHint="False"
+        PlacementConstraintAdjustment="None">
+      <Canvas x:Name="PetSideLane" Width="224" Height="184">
+        <Border
+            x:Name="TaskNotification"
+            Canvas.Left="0"
+            Canvas.Top="0"
+            Width="224"
+            Height="82"
+            Padding="10,6,8,6"
+            Background="#F0151719"
+            BorderBrush="#4CFFFFFF"
+            BorderThickness="1"
+            CornerRadius="8"
+            IsVisible="False">
+          <Grid RowDefinitions="18,18,*" ColumnDefinitions="*,24">
+            <TextBlock
+                x:Name="TaskNotificationTitle"
+                Grid.Row="0"
+                VerticalAlignment="Center"
+                FontSize="11"
+                FontWeight="Bold"
+                Foreground="#FFFFFF"
+                Text="任务已完成" />
+            <Button
+                x:Name="TaskNotificationCloseButton"
+                Grid.Row="0"
+                Grid.Column="1"
+                Width="24"
+                Height="24"
+                Margin="0,-3,0,0"
+                Padding="0"
+                Background="Transparent"
+                BorderThickness="0"
+                Command="{Binding DismissTaskNotificationCommand}"
+                Content="×"
+                FontSize="15"
+                Foreground="#CDD3D8"
+                ToolTip.Tip="关闭"
+                automation:AutomationProperties.Name="关闭任务完成提示" />
+            <Grid Grid.Row="1" Grid.ColumnSpan="2" ColumnDefinitions="Auto,*">
+              <TextBlock
+                  x:Name="TaskWorkspaceLabel"
+                  VerticalAlignment="Center"
+                  FontSize="9"
+                  Foreground="#CDD3D8"
+                  Text="工作区" />
+              <TextBlock
+                  Grid.Column="1"
+                  Margin="6,0,0,0"
+                  VerticalAlignment="Center"
+                  FontSize="10"
+                  FontWeight="SemiBold"
+                  Foreground="#F6C453"
+                  Text="{Binding CurrentTaskCompletion.WorkspaceName}"
+                  TextTrimming="CharacterEllipsis" />
+            </Grid>
+            <Grid Grid.Row="2" Grid.ColumnSpan="2" ColumnDefinitions="*,Auto,Auto">
+              <TextBlock
+                  Grid.Column="0"
+                  VerticalAlignment="Top"
+                  FontSize="10"
+                  Foreground="#E4E7EA"
+                  MaxLines="2"
+                  Text="{Binding CurrentTaskCompletion.Summary}"
+                  TextTrimming="CharacterEllipsis"
+                  TextWrapping="Wrap" />
+              <TextBlock
+                  x:Name="TaskDurationLabel"
+                  Grid.Column="1"
+                  Margin="8,0,4,0"
+                  VerticalAlignment="Bottom"
+                  FontSize="9"
+                  Foreground="#F6C453"
+                  Text="耗时" />
+              <TextBlock
+                  Grid.Column="2"
+                  VerticalAlignment="Bottom"
+                  FontSize="9"
+                  Foreground="#F6C453"
+                  Text="{Binding CurrentTaskCompletion.Duration, StringFormat={}{0:g}}" />
+            </Grid>
+          </Grid>
+        </Border>
+
+        <Border
+            x:Name="PetQuotaDetails"
+            Canvas.Left="0"
+            Canvas.Top="92"
+            Width="224"
+            Height="84"
+            Padding="10,6,8,6"
+            Background="#F0151719"
+            BorderBrush="#4CFFFFFF"
+            BorderThickness="1"
+            CornerRadius="8"
+            IsVisible="False">
+          <Grid RowDefinitions="18,27,27">
+            <Grid Grid.Row="0" ColumnDefinitions="*,24">
+              <TextBlock
+                  x:Name="PetQuotaDetailsTitle"
+                  VerticalAlignment="Center"
+                  FontSize="11"
+                  FontWeight="Bold"
+                  Foreground="#FFFFFF"
+                  Text="额度详情" />
+              <Button
+                  x:Name="PetQuotaDetailsCloseButton"
+                  Grid.Column="1"
+                  Width="24"
+                  Height="24"
+                  Margin="0,-3,0,0"
+                  Padding="0"
+                  Background="Transparent"
+                  BorderThickness="0"
+                  Click="OnPetDetailsToggleClick"
+                  Content="×"
+                  FontSize="15"
+                  Foreground="#CDD3D8"
+                  ToolTip.Tip="关闭额度详情"
+                  automation:AutomationProperties.Name="关闭额度详情" />
+            </Grid>
+            <Grid Grid.Row="1" ColumnDefinitions="Auto,*">
+              <TextBlock
+                  x:Name="PetQuotaDetailsCreditsLabel"
+                  VerticalAlignment="Center"
+                  FontSize="9"
+                  Foreground="#CDD3D8"
+                  Text="重置额度" />
+              <TextBlock
+                  Grid.Column="1"
+                  Margin="8,0,0,0"
+                  VerticalAlignment="Center"
+                  FontSize="9"
+                  Foreground="#FFFFFF"
+                  Text="{Binding ResetCreditsText}"
+                  TextTrimming="CharacterEllipsis" />
+            </Grid>
+            <Grid Grid.Row="2" ColumnDefinitions="Auto,*">
+              <TextBlock
+                  x:Name="PetQuotaDetailsResetLabel"
+                  VerticalAlignment="Center"
+                  FontSize="9"
+                  Foreground="#CDD3D8"
+                  Text="重置时间" />
+              <TextBlock
+                  Grid.Column="1"
+                  Margin="8,0,0,0"
+                  VerticalAlignment="Center"
+                  FontSize="9"
+                  Foreground="#FFFFFF"
+                  Text="{Binding PrimaryBucket.ResetText}"
+                  TextTrimming="CharacterEllipsis" />
+            </Grid>
+          </Grid>
+        </Border>
+      </Canvas>
+    </Popup>
+    </Grid>
+  </VisualLayerManager>
+</Window>

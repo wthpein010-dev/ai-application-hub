@@ -1,0 +1,10 @@
+.superpowers/
+.worktrees/
+bin/
+obj/
+dist/
+artifacts/
+.vs/
+.idea/
+*.user
+*.log

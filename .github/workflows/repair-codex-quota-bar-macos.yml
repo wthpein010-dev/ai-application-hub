@@ -1,0 +1,302 @@
+name: Repair Codex Quota Bar macOS download
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - audit/mac-downloads-20260807
+    paths:
+      - ".github/workflows/repair-codex-quota-bar-macos.yml"
+      - "build/codex-quota-bar/**"
+      - "projects/codex-quota-bar/release/README-zh-CN.md"
+      - "tests/codex-quota-bar-download.test.mjs"
+      - "tests/codex-quota-bar-source-package.test.mjs"
+
+permissions:
+  contents: write
+
+concurrency:
+  group: repair-codex-quota-bar-macos-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  repair:
+    name: Repair and verify ${{ matrix.architecture }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - architecture: arm64
+            runner: macos-14
+            expected_architecture: arm64
+          - architecture: x64
+            runner: macos-15-intel
+            expected_architecture: x86_64
+    runs-on: ${{ matrix.runner }}
+    steps:
+      - name: Check out the locked source snapshot
+        uses: actions/checkout@v4
+        with:
+          sparse-checkout: |
+            build/codex-quota-bar
+
+      - name: Install .NET 8
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 8.0.x
+
+      - name: Test the locked source snapshot
+        if: matrix.architecture == 'x64'
+        shell: bash
+        run: |
+          set -euo pipefail
+          dotnet test build/codex-quota-bar/CodexQuotaBar.sln \
+            --configuration Release
+
+      - name: Build the native app archive
+        env:
+          CODEX_QUOTA_ARCHITECTURES: ${{ matrix.architecture }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          bash build/codex-quota-bar/scripts/package-macos.sh
+
+      - name: Extract, sign, and verify the matching app
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(uname -m)" = "${{ matrix.expected_architecture }}"
+          archive="build/codex-quota-bar/dist/macos/CodexQuotaBar-macOS.zip"
+          stage="$RUNNER_TEMP/codex-quota-bar-${{ matrix.architecture }}"
+          app="$stage/CodexQuotaBar-macOS/${{ matrix.architecture }}/CodexQuotaBar.app"
+          launcher="$app/Contents/MacOS/CodexQuotaBar"
+          mkdir -p "$stage"
+          ditto -x -k "$archive" "$stage"
+          test -d "$app"
+          test -x "$launcher"
+          plutil -lint "$app/Contents/Info.plist"
+          file "$launcher" | tee "$RUNNER_TEMP/codex-quota-bar-${{ matrix.architecture }}.architecture.txt"
+          grep -q "${{ matrix.expected_architecture }}" "$RUNNER_TEMP/codex-quota-bar-${{ matrix.architecture }}.architecture.txt"
+          for library in \
+            libAvaloniaNative.dylib \
+            libHarfBuzzSharp.dylib \
+            libSkiaSharp.dylib; do
+            library_path="$app/Contents/MacOS/$library"
+            test -x "$library_path"
+            file "$library_path" | grep -q "${{ matrix.expected_architecture }}"
+          done
+          codesign --force --deep --sign - "$app"
+          codesign --verify --deep --strict "$app"
+          open -n "$app"
+          pid=""
+          for attempt in {1..15}; do
+            pid="$(pgrep -f "$launcher" | head -n 1 || true)"
+            if [ -n "$pid" ]; then
+              break
+            fi
+            sleep 1
+          done
+          if [ -z "$pid" ]; then
+            log show --last 2m --style compact \
+              --predicate 'process == "CodexQuotaBar"' | tail -n 200 || true
+            echo "CodexQuotaBar did not start from its app bundle." >&2
+            exit 1
+          fi
+          sleep 5
+          if ! kill -0 "$pid" 2>/dev/null; then
+            log show --last 2m --style compact \
+              --predicate 'process == "CodexQuotaBar"' | tail -n 200 || true
+            echo "CodexQuotaBar exited before the five-second launch check." >&2
+            exit 1
+          fi
+          kill "$pid" || true
+          wait "$pid" || true
+          mkdir -p artifacts
+          ditto -c -k --keepParent "$app" "artifacts/CodexQuotaBar-macOS-${{ matrix.architecture }}.zip"
+          shasum -a 256 "artifacts/CodexQuotaBar-macOS-${{ matrix.architecture }}.zip"
+
+      - name: Collect launch diagnostics
+        if: failure()
+        shell: bash
+        run: |
+          set -uo pipefail
+          diagnostics="$RUNNER_TEMP/codex-quota-bar-launch-diagnostics-${{ matrix.architecture }}"
+          mkdir -p "$diagnostics"
+          launcher="$RUNNER_TEMP/codex-quota-bar-${{ matrix.architecture }}/CodexQuotaBar-macOS/${{ matrix.architecture }}/CodexQuotaBar.app/Contents/MacOS/CodexQuotaBar"
+          if [ -x "$launcher" ]; then
+            COREHOST_TRACE=1 "$launcher" \
+              > "$diagnostics/direct-launch.txt" 2>&1
+            printf 'Direct launch exit code: %s\n' "$?" \
+              >> "$diagnostics/direct-launch.txt"
+            sleep 3
+          fi
+          diagnostic_reports="$HOME/Library/Logs/DiagnosticReports"
+          if [ -d "$diagnostic_reports" ]; then
+            find "$diagnostic_reports" -maxdepth 1 -type f \
+              \( -name 'CodexQuotaBar*' -o -name 'dotnet*' \) \
+              -exec cp {} "$diagnostics/" \;
+          fi
+          log show --last 5m --style compact \
+            --predicate 'process == "CodexQuotaBar" OR eventMessage CONTAINS[c] "CodexQuotaBar"' \
+            > "$diagnostics/unified-log.txt" 2>&1 || true
+          find "$RUNNER_TEMP/codex-quota-bar-${{ matrix.architecture }}" \
+            -maxdepth 6 -print -ls > "$diagnostics/package-tree.txt" 2>&1 || true
+
+      - name: Upload launch diagnostics
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: codex-quota-bar-launch-diagnostics-${{ matrix.architecture }}
+          path: ${{ runner.temp }}/codex-quota-bar-launch-diagnostics-${{ matrix.architecture }}/
+          if-no-files-found: error
+          retention-days: 7
+
+      - name: Upload verified native app
+        uses: actions/upload-artifact@v4
+        with:
+          name: codex-quota-bar-macos-${{ matrix.architecture }}
+          path: artifacts/CodexQuotaBar-macOS-${{ matrix.architecture }}.zip
+          if-no-files-found: error
+          retention-days: 7
+
+  publish:
+    name: Publish verified macOS download
+    needs: repair
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out the publication branch
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.ref_name }}
+          fetch-depth: 0
+
+      - name: Download verified native apps
+        uses: actions/download-artifact@v4
+        with:
+          pattern: codex-quota-bar-macos-*
+          path: artifacts/native
+          merge-multiple: true
+
+      - name: Assemble a Unix-origin macOS archive
+        shell: bash
+        run: |
+          set -euo pipefail
+          release_root="release-root/CodexQuotaBar-macOS"
+          mkdir -p "$release_root/arm64" "$release_root/x64" release
+          unzip -q artifacts/native/CodexQuotaBar-macOS-arm64.zip -d "$release_root/arm64"
+          unzip -q artifacts/native/CodexQuotaBar-macOS-x64.zip -d "$release_root/x64"
+          for architecture in arm64 x64; do
+            app="$release_root/$architecture/CodexQuotaBar.app"
+            launcher="$app/Contents/MacOS/CodexQuotaBar"
+            test -f "$app/Contents/Info.plist"
+            chmod 755 "$launcher"
+            test -x "$launcher"
+            for library in \
+              libAvaloniaNative.dylib \
+              libHarfBuzzSharp.dylib \
+              libSkiaSharp.dylib; do
+              test -x "$app/Contents/MacOS/$library"
+            done
+          done
+          cp projects/codex-quota-bar/release/README-zh-CN.md "$release_root/README-zh-CN.md"
+          (
+            cd release-root
+            zip -qry ../release/CodexQuotaBar-macOS.zip CodexQuotaBar-macOS
+          )
+          unzip -t release/CodexQuotaBar-macOS.zip
+          cp release/CodexQuotaBar-macOS.zip downloads/CodexQuotaBar-macOS.zip
+
+      - name: Stage local evidence for regression checks
+        shell: bash
+        run: |
+          set -euo pipefail
+          node --input-type=module <<'NODE'
+          import { createHash } from "node:crypto";
+          import { readFile, stat, writeFile } from "node:fs/promises";
+
+          const archivePath = "downloads/CodexQuotaBar-macOS.zip";
+          const evidencePath = "docs/audits/evidence/2026-08-07-macos-download-manifest.json";
+          const [archive, rawEvidence, archiveStat] = await Promise.all([
+            readFile(archivePath),
+            readFile(evidencePath, "utf8"),
+            stat(archivePath),
+          ]);
+          const evidence = JSON.parse(rawEvidence);
+          const record = evidence.downloads.find((item) => item.id === "codex-quota-bar");
+          if (!record) throw new Error("Codex Quota Bar evidence record is missing");
+          record.bytes = archiveStat.size;
+          record.sha256 = createHash("sha256").update(archive).digest("hex").toUpperCase();
+          await writeFile(evidencePath, `${JSON.stringify(evidence, null, 2)}\n`);
+          NODE
+
+      - name: Run catalog and archive regressions
+        shell: bash
+        run: |
+          set -euo pipefail
+          node --test tests/codex-quota-bar-download.test.mjs tests/macos-download-manifest.test.mjs
+          node scripts/macos-download-manifest.mjs --check
+          git diff --check
+
+      - name: Upload the release asset after local checks
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          gh release upload codex-quota-bar-v1.0.0 release/CodexQuotaBar-macOS.zip --clobber \
+            --repo "$GITHUB_REPOSITORY"
+
+      - name: Confirm the public release asset before committing evidence
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          expected="release/CodexQuotaBar-macOS.zip"
+          verified="verified-release/CodexQuotaBar-macOS.zip"
+          mkdir -p verified-release
+          for attempt in 1 2 3 4 5; do
+            rm -f "$verified"
+            if gh release download codex-quota-bar-v1.0.0 \
+              --pattern CodexQuotaBar-macOS.zip \
+              --dir verified-release \
+              --clobber \
+              --repo "$GITHUB_REPOSITORY"; then
+              if test -f "$verified" && cmp -s "$expected" "$verified"; then
+                break
+              fi
+            fi
+            sleep "$attempt"
+          done
+          test -f "$verified"
+          cmp -s "$expected" "$verified"
+          expected_sha256="$(sha256sum "$expected" | cut -d ' ' -f 1)"
+          verified_sha256="$(sha256sum "$verified" | cut -d ' ' -f 1)"
+          test "$expected_sha256" = "$verified_sha256"
+          printf 'Confirmed public release SHA-256: %s\n' "$verified_sha256"
+          cp "$verified" downloads/CodexQuotaBar-macOS.zip
+
+      - name: Re-run regressions against the public release asset
+        shell: bash
+        run: |
+          set -euo pipefail
+          node --test tests/codex-quota-bar-download.test.mjs tests/macos-download-manifest.test.mjs
+          node scripts/macos-download-manifest.mjs --check
+          git diff --check
+
+      - name: Commit the verified archive and evidence
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add \
+            downloads/CodexQuotaBar-macOS.zip \
+            docs/audits/evidence/2026-08-07-macos-download-manifest.json
+          if git diff --cached --quiet; then
+            echo "Verified archive and evidence are already current."
+            exit 0
+          fi
+          git commit -m "release: repair Codex Quota Bar macOS archive"
+          git pull --rebase origin "$GITHUB_REF_NAME"
+          git push origin "HEAD:$GITHUB_REF_NAME"
