@@ -12,6 +12,13 @@ const root = dirname(dirname(fileURLToPath(import.meta.url)));
 const videoRoot = join(root, "projects", "gamepulse-mini-radar", "video");
 const mediaPath = join(videoRoot, "gamepulse-mini-radar-demo.mp4");
 
+function cueSeconds(value) {
+  const parts = value.split(":").map(Number);
+  return parts.length === 2
+    ? parts[0] * 60 + parts[1]
+    : parts[0] * 3600 + parts[1] * 60 + parts[2];
+}
+
 function decodeNumericEntities(value) {
   return value.replace(/&#(\d+);/g, (_, codePoint) =>
     String.fromCodePoint(Number(codePoint)),
@@ -87,4 +94,21 @@ test("GamePulse walkthrough is silent 16:9 H.264 and 60 to 90 seconds", () => {
   const decode = decodeMedia(mediaPath);
   assert.equal(decode.status, 0, decode.stderr || decode.error?.message);
   assert.equal(decode.stderr.trim(), "");
+});
+
+test("GamePulse captions end within the published video", () => {
+  const captions = readFileSync(
+    join(videoRoot, "gamepulse-mini-radar-demo.vtt"),
+    "utf8",
+  );
+  const cueEnds = [...captions.matchAll(/-->\s*([^\s]+)/g)].map((match) =>
+    cueSeconds(match[1]),
+  );
+  const media = inspectMedia(mediaPath);
+
+  assert.ok(cueEnds.length > 0);
+  assert.ok(
+    cueEnds.at(-1) <= media.duration + 0.001,
+    `captions exceed ${media.duration}s`,
+  );
 });
