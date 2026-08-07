@@ -88,6 +88,34 @@ jobs:
           ditto -c -k --keepParent "$app" "artifacts/CodexQuotaBar-macOS-${{ matrix.architecture }}.zip"
           shasum -a 256 "artifacts/CodexQuotaBar-macOS-${{ matrix.architecture }}.zip"
 
+      - name: Collect launch diagnostics
+        if: failure()
+        shell: bash
+        run: |
+          set -uo pipefail
+          diagnostics="$RUNNER_TEMP/codex-quota-bar-launch-diagnostics-${{ matrix.architecture }}"
+          mkdir -p "$diagnostics"
+          diagnostic_reports="$HOME/Library/Logs/DiagnosticReports"
+          if [ -d "$diagnostic_reports" ]; then
+            find "$diagnostic_reports" -maxdepth 1 -type f \
+              \( -name 'CodexQuotaBar*' -o -name 'dotnet*' \) \
+              -exec cp {} "$diagnostics/" \;
+          fi
+          log show --last 5m --style compact \
+            --predicate 'process == "CodexQuotaBar" OR eventMessage CONTAINS[c] "CodexQuotaBar"' \
+            > "$diagnostics/unified-log.txt" 2>&1 || true
+          find "$RUNNER_TEMP/codex-quota-bar-${{ matrix.architecture }}" \
+            -maxdepth 6 -print -ls > "$diagnostics/package-tree.txt" 2>&1 || true
+
+      - name: Upload launch diagnostics
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: codex-quota-bar-launch-diagnostics-${{ matrix.architecture }}
+          path: ${{ runner.temp }}/codex-quota-bar-launch-diagnostics-${{ matrix.architecture }}/
+          if-no-files-found: error
+          retention-days: 7
+
       - name: Upload verified native app
         uses: actions/upload-artifact@v4
         with:

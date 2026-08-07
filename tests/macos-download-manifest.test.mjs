@@ -206,6 +206,8 @@ test("the Quota Bar repair launches the app bundle like Finder", async () => {
   const workflow = await readFile(repairWorkflow, "utf8");
   assert.match(workflow, /open -n "\$app"/);
   assert.match(workflow, /pgrep -f "\$launcher"/);
+  assert.match(workflow, /DiagnosticReports/);
+  assert.match(workflow, /codex-quota-bar-launch-diagnostics-/);
 });
 
 test("the native audit workflow covers both Mac architectures and emits evidence", async () => {
