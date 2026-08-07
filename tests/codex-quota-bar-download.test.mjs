@@ -1,6 +1,5 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { spawnSync } from "node:child_process";
 import { createHash } from "node:crypto";
 import { readFileSync, statSync } from "node:fs";
 import { dirname, join } from "node:path";
@@ -20,9 +19,7 @@ function sha256(path) {
 }
 
 function zipEntries(path) {
-  const result = spawnSync("tar", ["-tf", path], { encoding: "utf8" });
-  assert.equal(result.status, 0, result.stderr || result.error?.message);
-  return result.stdout.replace(/\r/g, "").split("\n").filter(Boolean);
+  return [...zipEntryPermissions(path).keys()];
 }
 
 function zipEntryPermissions(path) {
@@ -47,7 +44,10 @@ function zipEntryPermissions(path) {
     const extraLength = archive.readUInt16LE(offset + 30);
     const commentLength = archive.readUInt16LE(offset + 32);
     const externalAttributes = archive.readUInt32LE(offset + 38);
-    const name = archive.subarray(offset + 46, offset + 46 + nameLength).toString("utf8");
+    const name = archive
+      .subarray(offset + 46, offset + 46 + nameLength)
+      .toString("utf8")
+      .replaceAll("\\", "/");
     permissions.set(name, {
       creatorPlatform: versionMadeBy >>> 8,
       mode: (externalAttributes >>> 16) & 0xffff,
