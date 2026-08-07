@@ -211,6 +211,12 @@ test("the native audit preserves actionable diagnostics when an app bundle canno
   assert.match(script, /direct-launch\.txt/);
 });
 
+test("the native audit canonicalizes an app executable before matching its launched process", async () => {
+  const script = await readFile(auditScript, "utf8");
+  assert.match(script, /canonical_executable=.*pwd -P/);
+  assert.match(script, /pgrep -f "\$\{canonical_executable\}"/);
+});
+
 test("the Quota Bar repair launches the app bundle like Finder", async () => {
   const workflow = await readFile(repairWorkflow, "utf8");
   assert.match(workflow, /open -n "\$app"/);

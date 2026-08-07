@@ -366,11 +366,13 @@ collect_launch_diagnostics() {
 launch_for_five_seconds() {
   local app="$1"
   local executable="$2"
+  local canonical_executable
+  canonical_executable="$(cd "$(dirname "${executable}")" && pwd -P)/$(basename "${executable}")"
   open -n "${app}"
   active_pid=""
   local attempt
   for attempt in {1..15}; do
-    active_pid="$(pgrep -f "${executable}" | head -n 1 || true)"
+    active_pid="$(pgrep -f "${canonical_executable}" | head -n 1 || true)"
     if [[ -n "${active_pid}" ]]; then
       break
     fi
