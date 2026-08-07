@@ -306,6 +306,63 @@ verify_macho_architecture() {
     die "${label} does not match ${expected_machine}"
 }
 
+collect_launch_diagnostics() {
+  local app="$1"
+  local executable="$2"
+  local label="$3"
+  local diagnostics="${evidence_directory}/launch-diagnostics/${label}"
+  local diagnostic_pid=""
+  local direct_status="not-started"
+  mkdir -p "${diagnostics}"
+
+  {
+    date
+    uname -a
+    sw_vers
+    echo "App: ${app}"
+    echo "Executable: ${executable}"
+    find "${app}" -maxdepth 4 -print -ls
+    file "${app}/Contents/MacOS/"* || true
+    codesign --display --verbose=4 "${app}" || true
+    codesign --verify --deep --strict --verbose=4 "${app}" || true
+    xattr -lr "${app}" || true
+    ps axww
+  } > "${diagnostics}/bundle-state.txt" 2>&1
+
+  set +e
+  COREHOST_TRACE=1 DOTNET_HOST_TRACE=1 "${executable}" \
+    > "${diagnostics}/direct-launch.txt" 2>&1 &
+  diagnostic_pid="$!"
+  direct_status="running"
+  for _ in {1..5}; do
+    if ! kill -0 "${diagnostic_pid}" 2>/dev/null; then
+      wait "${diagnostic_pid}"
+      direct_status="exit-$?"
+      diagnostic_pid=""
+      break
+    fi
+    sleep 1
+  done
+  if [[ -n "${diagnostic_pid}" ]] && kill -0 "${diagnostic_pid}" 2>/dev/null; then
+    kill "${diagnostic_pid}" 2>/dev/null
+    wait "${diagnostic_pid}" 2>/dev/null
+    direct_status="running-after-5s"
+  fi
+  printf 'Direct launch status: %s\n' "${direct_status}" \
+    >> "${diagnostics}/direct-launch.txt"
+  set -e
+
+  log show --last 5m --style compact \
+    --predicate 'process == "CodexQuotaBar" OR eventMessage CONTAINS[c] "CodexQuotaBar"' \
+    > "${diagnostics}/unified-log.txt" 2>&1 || true
+  local diagnostic_reports="${HOME}/Library/Logs/DiagnosticReports"
+  if [[ -d "${diagnostic_reports}" ]]; then
+    find "${diagnostic_reports}" -maxdepth 1 -type f \
+      \( -name 'CodexQuotaBar*' -o -name 'dotnet*' \) \
+      -mmin -10 -exec cp -p {} "${diagnostics}/" \; || true
+  fi
+}
+
 launch_for_five_seconds() {
   local app="$1"
   local executable="$2"
@@ -320,12 +377,14 @@ launch_for_five_seconds() {
     sleep 1
   done
   if [[ -z "${active_pid}" ]]; then
+    collect_launch_diagnostics "${app}" "${executable}" "${architecture}-bundle-launch"
     die "application did not start from its app bundle: ${app}"
   fi
   sleep 5
   if ! kill -0 "${active_pid}" 2>/dev/null; then
     wait "${active_pid}" 2>/dev/null || true
     active_pid=""
+    collect_launch_diagnostics "${app}" "${executable}" "${architecture}-early-exit"
     die "application exited before the five-second launch check: ${executable}"
   fi
   kill "${active_pid}" 2>/dev/null || true

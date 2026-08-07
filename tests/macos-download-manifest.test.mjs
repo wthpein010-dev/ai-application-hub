@@ -202,6 +202,15 @@ test("the native audit script enforces product checks and refreshes stale downlo
   assert.match(script, /sleep 5/);
 });
 
+test("the native audit preserves actionable diagnostics when an app bundle cannot launch", async () => {
+  const script = await readFile(auditScript, "utf8");
+  assert.match(script, /COREHOST_TRACE=1/);
+  assert.match(script, /DiagnosticReports/);
+  assert.match(script, /log show --last/);
+  assert.match(script, /launch-diagnostics/);
+  assert.match(script, /direct-launch\.txt/);
+});
+
 test("the Quota Bar repair launches the app bundle like Finder", async () => {
   const workflow = await readFile(repairWorkflow, "utf8");
   assert.match(workflow, /open -n "\$app"/);
