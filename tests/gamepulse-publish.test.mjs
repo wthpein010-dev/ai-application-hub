@@ -34,12 +34,13 @@ test("GamePulse is published once in the application collection", () => {
     app.video,
     "./projects/gamepulse-mini-radar/video/index.html",
   );
-  assert.match(app.brief, /国内.*海外.*前十/);
+  assert.match(app.brief, /国内.*海外.*行业知识库/);
+  assert.match(app.brief, /玩法拆解.*市场情报/);
   assert.doesNotMatch(app.brief, /Top 10/);
   assert.match(app.aiUse, /07:10/);
   assert.deepEqual(
     [...app.tags],
-    ["小游戏排行", "微信小游戏", "iOS 休闲榜", "产品洞察"],
+    ["小游戏排行", "行业知识库", "玩法拆解", "市场情报"],
   );
 });
 
@@ -47,6 +48,6 @@ test("the page cache key changes for the GamePulse release", () => {
   const html = readFileSync(join(root, "index.html"), "utf8");
   assert.match(
     html,
-    /app-20260706-restore-games\.js\?v=[^"]+/,
+    /app-20260706-restore-games\.js\?v=[^"]*20260807-gamepulse-knowledge-hub/,
   );
 });

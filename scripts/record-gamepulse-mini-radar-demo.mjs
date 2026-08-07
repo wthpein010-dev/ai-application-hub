@@ -24,7 +24,7 @@ const recordingRoot = join(tmpdir(), "gamepulse-mini-radar-recording");
 const ffmpegPath = process.env.FFMPEG_PATH || bundledFfmpeg;
 const targetUrl =
   "https://gamepulse-mini-radar.polite-chord-7994.chatgpt.site";
-const targetDuration = 75;
+const targetDuration = 78;
 
 function delay(milliseconds) {
   return new Promise((resolveDelay) => setTimeout(resolveDelay, milliseconds));
@@ -105,59 +105,63 @@ async function recordWalkthrough() {
 
   const rawStartedAt = Date.now();
   await page.goto(targetUrl, { waitUntil: "domcontentloaded" });
-  await page.locator("h1").waitFor({ state: "visible" });
-  await page.locator("#rankings").waitFor({ state: "attached" });
-  await page
-    .locator('input[aria-label^="加入比较："]')
-    .first()
-    .waitFor({ state: "attached" });
+  await page.getByRole("heading", { name: "先看榜单，再读为什么" }).waitFor();
+  await page.getByRole("navigation", { name: "主导航" }).waitFor();
   await page.evaluate(() => window.scrollTo(0, 0));
   await delay(1_200);
 
   const startedAt = Date.now();
   const preRollMs = startedAt - rawStartedAt;
 
-  await waitUntil(startedAt, 10);
-  await page.locator("#rankings").scrollIntoViewIfNeeded();
-  await delay(700);
+  await waitUntil(startedAt, 12);
+  await page.getByRole("button", { name: "排行榜", exact: true }).click();
+  await page.getByRole("tab", { name: /四榜概览/ }).click();
+  await page.getByRole("heading", { name: "今日四榜概览" }).waitFor();
 
-  await waitUntil(startedAt, 22);
-  await page.getByRole("tab", { name: /海外榜/ }).click();
+  await waitUntil(startedAt, 25);
+  await page.getByRole("button", { name: "行业知识库", exact: true }).click();
+  const knowledgeSearch = page.getByPlaceholder("搜索标题、摘要、来源、游戏名或发行商");
+  await knowledgeSearch.waitFor();
+  await knowledgeSearch.fill("玩法");
 
-  await waitUntil(startedAt, 28);
-  await page.getByRole("tab", { name: /双榜概览/ }).click();
-
-  await waitUntil(startedAt, 35);
-  await page.getByRole("tab", { name: /国内榜/ }).click();
+  await waitUntil(startedAt, 34);
+  await page.getByRole("button", { name: "重置", exact: true }).click();
 
   await waitUntil(startedAt, 38);
-  await page.getByRole("textbox", { name: "搜索游戏" }).fill("羊");
+  await page.locator(".knowledge-card-actions button").filter({ hasText: "查看详情" }).first().click();
+  await page.getByRole("dialog").waitFor();
 
-  await waitUntil(startedAt, 43);
-  await page.getByRole("button", { name: "重置" }).click();
-
-  await waitUntil(startedAt, 48);
+  await waitUntil(startedAt, 41);
   await page
-    .getByRole("button", {
-      name: "查看 向僵尸开炮 详情",
-      exact: true,
-    })
+    .getByRole("dialog")
+    .getByRole("button", { name: "收藏", exact: true })
     .click();
 
-  await waitUntil(startedAt, 55);
-  await page.getByRole("button", { name: "关闭详情", exact: true }).click();
+  await waitUntil(startedAt, 46);
+  await page.getByRole("button", { name: "关闭情报详情" }).click();
+  await page.getByRole("button", { name: "浏览历史", exact: true }).click();
+
+  await waitUntil(startedAt, 49);
+  await page.getByRole("button", { name: "我的收藏", exact: true }).click();
+
+  await waitUntil(startedAt, 51);
+  await page.getByRole("button", { name: "排行榜", exact: true }).click();
+  await page.locator('button.row-arrow[aria-label^="查看 "]').first().click();
+  await page.getByRole("heading", { name: "市场表现" }).waitFor();
 
   await waitUntil(startedAt, 57);
-  for (const title of ["向僵尸开炮", "羊了个羊：星球", "三国：冰河时代"]) {
-    await page
-      .locator(`input[aria-label="加入比较：${title}"]`)
-      .check({ force: true });
-    await delay(900);
-  }
-  await page.locator(".compare-tray").waitFor({ state: "visible" });
+  await page.getByRole("heading", { name: "玩法拆解" }).scrollIntoViewIfNeeded();
 
-  await waitUntil(startedAt, 62);
-  await page.getByText(/下次自动检查/).scrollIntoViewIfNeeded();
+  await waitUntil(startedAt, 61);
+  await page.getByRole("heading", { name: "相关情报" }).scrollIntoViewIfNeeded();
+
+  await waitUntil(startedAt, 64);
+  await page.getByRole("button", { name: "关闭详情" }).click();
+  await page.getByRole("button", { name: "更新说明", exact: true }).click();
+  await page
+    .locator(".updates-view time")
+    .filter({ hasText: "每天 07:10 后" })
+    .waitFor();
 
   await waitUntil(startedAt, targetDuration);
   assert.deepEqual(errors.console, []);

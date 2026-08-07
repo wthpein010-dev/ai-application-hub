@@ -12,6 +12,12 @@ const root = dirname(dirname(fileURLToPath(import.meta.url)));
 const videoRoot = join(root, "projects", "gamepulse-mini-radar", "video");
 const mediaPath = join(videoRoot, "gamepulse-mini-radar-demo.mp4");
 
+function decodeNumericEntities(value) {
+  return value.replace(/&#(\d+);/g, (_, codePoint) =>
+    String.fromCodePoint(Number(codePoint)),
+  );
+}
+
 test("GamePulse video page lazy-loads MP4 with default Chinese captions", () => {
   const html = readFileSync(join(videoRoot, "index.html"), "utf8");
   assert.match(html, /id="loadVideo"/);
@@ -45,16 +51,31 @@ test("GamePulse script and captions cover the six walkthrough chapters", () => {
   const script = readFileSync(join(videoRoot, "tutorial-script.md"), "utf8");
   for (const cue of [
     "00:00.000",
-    "00:10.000",
-    "00:22.000",
-    "00:35.000",
-    "00:48.000",
-    "01:02.000",
+    "00:12.000",
+    "00:25.000",
+    "00:38.000",
+    "00:51.000",
+    "01:04.000",
   ]) {
     assert.equal(captions.includes(cue), true, `captions should include ${cue}`);
   }
-  assert.match(script, /00:00/);
-  assert.match(script, /01:02/);
+  for (const chapter of [
+    "总览与双核心定位",
+    "四榜工作台",
+    "知识搜索和筛选",
+    "知识详情、收藏与历史",
+    "游戏详情：玩法拆解与市场表现",
+    "07:10 更新、来源可信度与返回主页",
+  ]) {
+    assert.match(script, new RegExp(chapter));
+  }
+
+  const visiblePage = decodeNumericEntities(
+    readFileSync(join(videoRoot, "index.html"), "utf8"),
+  );
+  assert.match(visiblePage, /排行榜与行业知识库/);
+  assert.match(visiblePage, /知识详情、收藏与历史/);
+  assert.match(visiblePage, /玩法拆解与市场表现/);
   assert.equal(existsSync(join(videoRoot, "poster.jpg")), true);
 });
 

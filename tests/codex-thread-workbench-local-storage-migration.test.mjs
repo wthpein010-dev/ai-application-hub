@@ -95,3 +95,32 @@ test("GamePulse migration preserves user-customized text and tags", () => {
   assert.equal(gamePulse.brief, customizedGamePulse.brief);
   assert.deepEqual(JSON.parse(JSON.stringify(gamePulse.tags)), customizedGamePulse.tags);
 });
+
+test("previous GamePulse defaults migrate to the knowledge hub metadata", () => {
+  const defaults = loadDefaultApps();
+  const gamePulseDefault = defaults.find((app) => app.id === "gamepulse-mini-radar");
+  const expectedMetadata = {
+    brief: "把国内微信小游戏与海外 iOS 四榜、行业知识库、玩法拆解和市场情报放在同一张开发者工作台上。",
+    problem: "小游戏开发者既要扫描可信榜位，也要持续沉淀玩法案例、产品动态与市场佐证，避免在多个来源之间来回切换。",
+    aiUse: "AI 参与榜单清洗、知识摘要、关联推荐和异常回退；站点每天北京时间 07:10 后检查更新。",
+    tags: ["小游戏排行", "行业知识库", "玩法拆解", "市场情报"],
+  };
+  const previousGamePulse = {
+    ...gamePulseDefault,
+    brief: "把国内微信小游戏热门榜、畅销榜与海外美国 iOS 休闲前十放在同一张开发者工作台上。",
+    problem: "小游戏开发者需要快速发现国内轻休闲产品与海外休闲榜变化，同时保留可核验的原始名次和数据状态。",
+    aiUse: "AI 参与榜单清洗、轻休闲筛选、产品信号整理和异常回退；站点每天北京时间 07:10 后检查更新。",
+    tags: ["小游戏排行", "微信小游戏", "iOS 休闲榜", "产品洞察"],
+  };
+
+  const apps = loadAppsWithStoredValue([previousGamePulse]);
+  const migrated = apps.find((app) => app.id === "gamepulse-mini-radar");
+
+  assert.equal(migrated.brief, expectedMetadata.brief);
+  assert.equal(migrated.problem, expectedMetadata.problem);
+  assert.equal(migrated.aiUse, expectedMetadata.aiUse);
+  assert.deepEqual(
+    JSON.parse(JSON.stringify(migrated.tags)),
+    expectedMetadata.tags,
+  );
+});

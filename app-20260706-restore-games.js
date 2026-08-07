@@ -110,9 +110,9 @@ const defaultApps = [
     name: "小游戏每日排行",
     category: "小游戏产品洞察",
     status: "assistant",
-    brief: "把国内微信小游戏热门榜、畅销榜与海外美国 iOS 休闲前十放在同一张开发者工作台上。",
-    problem: "小游戏开发者需要快速发现国内轻休闲产品与海外休闲榜变化，同时保留可核验的原始名次和数据状态。",
-    aiUse: "AI 参与榜单清洗、轻休闲筛选、产品信号整理和异常回退；站点每天北京时间 07:10 后检查更新。",
+    brief: "把国内微信小游戏与海外 iOS 四榜、行业知识库、玩法拆解和市场情报放在同一张开发者工作台上。",
+    problem: "小游戏开发者既要扫描可信榜位，也要持续沉淀玩法案例、产品动态与市场佐证，避免在多个来源之间来回切换。",
+    aiUse: "AI 参与榜单清洗、知识摘要、关联推荐和异常回退；站点每天北京时间 07:10 后检查更新。",
     folder: "https://gamepulse-mini-radar.polite-chord-7994.chatgpt.site",
     entry: "https://gamepulse-mini-radar.polite-chord-7994.chatgpt.site",
     video: "./projects/gamepulse-mini-radar/video/index.html",
@@ -125,7 +125,7 @@ const defaultApps = [
       windows: "",
       mac: ""
     },
-    tags: ["小游戏排行", "微信小游戏", "iOS 休闲榜", "产品洞察"],
+    tags: ["小游戏排行", "行业知识库", "玩法拆解", "市场情报"],
     speed: 9,
     impact: 9,
     risk: 8,
@@ -1326,11 +1326,19 @@ function normalizeApp(app) {
     const legacyName = "GamePulse 小游雷达";
     const legacyBrief = "把国内微信小游戏热门榜、畅销榜与海外 US iOS Casual Top 10 放在同一张开发者工作台上。";
     const legacyTags = ["小游戏排行", "微信小游戏", "iOS Casual", "产品洞察"];
+    const previousBrief = "把国内微信小游戏热门榜、畅销榜与海外美国 iOS 休闲前十放在同一张开发者工作台上。";
+    const previousProblem = "小游戏开发者需要快速发现国内轻休闲产品与海外休闲榜变化，同时保留可核验的原始名次和数据状态。";
+    const previousAiUse = "AI 参与榜单清洗、轻休闲筛选、产品信号整理和异常回退；站点每天北京时间 07:10 后检查更新。";
+    const previousTags = ["小游戏排行", "微信小游戏", "iOS 休闲榜", "产品洞察"];
     if (normalized.name === legacyName) normalized.name = base.name;
-    if (normalized.brief === legacyBrief) normalized.brief = base.brief;
+    if ([legacyBrief, previousBrief].includes(normalized.brief)) normalized.brief = base.brief;
+    if (normalized.problem === previousProblem) normalized.problem = base.problem;
+    if (normalized.aiUse === previousAiUse) normalized.aiUse = base.aiUse;
     if (
-      normalized.tags.length === legacyTags.length &&
-      normalized.tags.every((tag, index) => tag === legacyTags[index])
+      [legacyTags, previousTags].some(
+        (tags) => normalized.tags.length === tags.length &&
+          normalized.tags.every((tag, index) => tag === tags[index]),
+      )
     ) {
       normalized.tags = [...base.tags];
     }
