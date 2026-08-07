@@ -307,10 +307,21 @@ verify_macho_architecture() {
 }
 
 launch_for_five_seconds() {
-  local executable="$1"
-  local log_path="$2"
-  "${executable}" >"${log_path}" 2>&1 &
-  active_pid=$!
+  local app="$1"
+  local executable="$2"
+  open -n "${app}"
+  active_pid=""
+  local attempt
+  for attempt in {1..15}; do
+    active_pid="$(pgrep -f "${executable}" | head -n 1 || true)"
+    if [[ -n "${active_pid}" ]]; then
+      break
+    fi
+    sleep 1
+  done
+  if [[ -z "${active_pid}" ]]; then
+    die "application did not start from its app bundle: ${app}"
+  fi
   sleep 5
   if ! kill -0 "${active_pid}" 2>/dev/null; then
     wait "${active_pid}" 2>/dev/null || true
@@ -416,7 +427,7 @@ audit_combined_native() {
 
   case "${id}" in
     codex-quota-bar|clickflow)
-      launch_for_five_seconds "${executable}" "${work_directory}/${id}-launch.log"
+      launch_for_five_seconds "${app}" "${executable}"
       ;;
     pureshrink)
       local ffmpeg="${app}/Contents/Resources/app.asar.unpacked/node_modules/ffmpeg-static/ffmpeg"

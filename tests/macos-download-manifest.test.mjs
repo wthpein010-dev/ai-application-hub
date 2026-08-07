@@ -31,6 +31,7 @@ const manifest = JSON.parse(
 const execFileAsync = promisify(execFile);
 const auditScript = join(root, "scripts", "audit-public-macos-downloads.sh");
 const auditWorkflow = join(root, ".github", "workflows", "audit-macos-downloads.yml");
+const repairWorkflow = join(root, ".github", "workflows", "repair-codex-quota-bar-macos.yml");
 
 function bashPath(value) {
   return value.replaceAll("\\", "/");
@@ -197,7 +198,14 @@ test("the native audit script enforces product checks and refreshes stale downlo
   assert.match(script, /ffmpeg-static\/ffmpeg/);
   assert.match(script, /--smoke-test/);
   assert.match(script, /node --check/);
+  assert.match(script, /open -n/);
   assert.match(script, /sleep 5/);
+});
+
+test("the Quota Bar repair launches the app bundle like Finder", async () => {
+  const workflow = await readFile(repairWorkflow, "utf8");
+  assert.match(workflow, /open -n "\$app"/);
+  assert.match(workflow, /pgrep -f "\$launcher"/);
 });
 
 test("the native audit workflow covers both Mac architectures and emits evidence", async () => {

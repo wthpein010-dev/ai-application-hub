@@ -60,11 +60,29 @@ jobs:
           grep -q "${{ matrix.expected_architecture }}" "$RUNNER_TEMP/codex-quota-bar-${{ matrix.architecture }}.architecture.txt"
           codesign --force --deep --sign - "$app"
           codesign --verify --deep --strict "$app"
-          "$launcher" >"$RUNNER_TEMP/codex-quota-bar-${{ matrix.architecture }}.log" 2>&1 &
-          pid="$!"
+          open -n "$app"
+          pid=""
+          for attempt in {1..15}; do
+            pid="$(pgrep -f "$launcher" | head -n 1 || true)"
+            if [ -n "$pid" ]; then
+              break
+            fi
+            sleep 1
+          done
+          if [ -z "$pid" ]; then
+            log show --last 2m --style compact \
+              --predicate 'process == "CodexQuotaBar"' | tail -n 200 || true
+            echo "CodexQuotaBar did not start from its app bundle." >&2
+            exit 1
+          fi
           sleep 5
-          kill -0 "$pid"
-          kill "$pid"
+          if ! kill -0 "$pid" 2>/dev/null; then
+            log show --last 2m --style compact \
+              --predicate 'process == "CodexQuotaBar"' | tail -n 200 || true
+            echo "CodexQuotaBar exited before the five-second launch check." >&2
+            exit 1
+          fi
+          kill "$pid" || true
           wait "$pid" || true
           mkdir -p artifacts
           ditto -c -k --keepParent "$app" "artifacts/CodexQuotaBar-macOS-${{ matrix.architecture }}.zip"
