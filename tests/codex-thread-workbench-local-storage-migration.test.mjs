@@ -96,14 +96,14 @@ test("GamePulse migration preserves user-customized text and tags", () => {
   assert.deepEqual(JSON.parse(JSON.stringify(gamePulse.tags)), customizedGamePulse.tags);
 });
 
-test("previous GamePulse defaults migrate to the knowledge hub metadata", () => {
+test("previous GamePulse defaults migrate to the current community metadata", () => {
   const defaults = loadDefaultApps();
   const gamePulseDefault = defaults.find((app) => app.id === "gamepulse-mini-radar");
   const expectedMetadata = {
-    brief: "把国内微信小游戏与海外 iOS 四榜、行业知识库、玩法拆解和市场情报放在同一张开发者工作台上。",
-    problem: "小游戏开发者既要扫描可信榜位，也要持续沉淀玩法案例、产品动态与市场佐证，避免在多个来源之间来回切换。",
-    aiUse: "AI 参与榜单清洗、知识摘要、关联推荐和异常回退；站点每天北京时间 07:10 后检查更新。",
-    tags: ["小游戏排行", "行业知识库", "玩法拆解", "市场情报"],
+    brief: "把国内与海外榜单、行业知识库、玩法拆解、发布合作和开放接口放在同一张开发者工作台上。",
+    problem: "小游戏开发者既要扫描可信榜位，也要持续沉淀玩法案例、寻找合作机会，并把公开信息接入自己的工作流。",
+    aiUse: "AI 参与榜单清洗、知识摘要、关联推荐和异常回退；投稿审核后公开，站点每天北京时间 07:10 后检查更新。",
+    tags: ["小游戏排行", "行业知识库", "玩法拆解", "发布合作", "开放接口"],
   };
   const previousGamePulse = {
     ...gamePulseDefault,
