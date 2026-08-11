@@ -50,7 +50,7 @@ test("GamePulse video shell uses the shared Hub player assets", () => {
   assert.match(html, /assets\/hub-video-player\.js/);
 });
 
-test("GamePulse script and captions cover the six walkthrough chapters", () => {
+test("GamePulse script and captions cover the six v18 walkthrough chapters", () => {
   const captions = readFileSync(
     join(videoRoot, "gamepulse-mini-radar-demo.vtt"),
     "utf8",
@@ -58,21 +58,21 @@ test("GamePulse script and captions cover the six walkthrough chapters", () => {
   const script = readFileSync(join(videoRoot, "tutorial-script.md"), "utf8");
   for (const cue of [
     "00:00.000",
-    "00:12.000",
-    "00:25.000",
-    "00:38.000",
-    "00:51.000",
-    "01:04.000",
+    "00:13.000",
+    "00:27.000",
+    "00:40.000",
+    "00:55.000",
+    "01:09.000",
   ]) {
     assert.equal(captions.includes(cue), true, `captions should include ${cue}`);
   }
   for (const chapter of [
-    "总览与双核心定位",
-    "四榜工作台",
-    "知识搜索和筛选",
-    "知识详情、收藏与历史",
-    "游戏详情：玩法拆解与市场表现",
-    "07:10 更新、来源可信度与返回主页",
+    "今日与五页签总览",
+    "四榜与玩法拆解",
+    "行业知识库",
+    "发布合作与四类信息",
+    "我的发布与接口说明",
+    "每日更新与返回主页",
   ]) {
     assert.match(script, new RegExp(chapter));
   }
@@ -81,16 +81,46 @@ test("GamePulse script and captions cover the six walkthrough chapters", () => {
     readFileSync(join(videoRoot, "index.html"), "utf8"),
   );
   assert.match(visiblePage, /排行榜与行业知识库/);
-  assert.match(visiblePage, /知识详情、收藏与历史/);
-  assert.match(visiblePage, /玩法拆解与市场表现/);
+  assert.match(visiblePage, /发布合作/);
+  assert.match(visiblePage, /我的发布与接口说明/);
   assert.equal(existsSync(join(videoRoot, "poster.jpg")), true);
 });
 
-test("GamePulse walkthrough is silent 16:9 H.264 and 60 to 90 seconds", () => {
+test("GamePulse captions keep one visible Chinese line at a time", () => {
+  const captions = readFileSync(
+    join(videoRoot, "gamepulse-mini-radar-demo.vtt"),
+    "utf8",
+  );
+  const cueBlocks = captions.trim().split(/\r?\n\r?\n/).slice(1);
+  assert.equal(cueBlocks.length, 6);
+  for (const block of cueBlocks) {
+    const lines = block.split(/\r?\n/).filter(Boolean);
+    assert.equal(lines.length, 2, `caption should be one line: ${block}`);
+    assert.ok(lines[1].length <= 38, `caption is too long: ${lines[1]}`);
+  }
+});
+
+test("GamePulse recorder follows the current five-tab navigation", () => {
+  const recorder = readFileSync(
+    join(root, "scripts", "record-gamepulse-mini-radar-demo.mjs"),
+    "utf8",
+  );
+  for (const label of ["今日", "榜单", "情报", "发布合作", "我的"]) {
+    assert.match(recorder, new RegExp(`name: "${label}"`));
+  }
+  assert.match(recorder, /name: "我的发布"/);
+  assert.match(recorder, /name: "接口说明"/);
+  assert.match(recorder, /getByRole\("tab", \{ name: \/四榜概览\//);
+  assert.match(recorder, /name: "查看 赵云与阿斗 详情"/);
+  assert.doesNotMatch(recorder, /row-arrow/);
+  assert.doesNotMatch(recorder, /name: "排行榜"|name: "行业知识库"|name: "更新说明"/);
+});
+
+test("GamePulse walkthrough is silent 16:9 H.264 and 70 to 100 seconds", () => {
   const media = inspectMedia(mediaPath);
   assert.equal(media.videoCodec, "h264");
   assert.equal(media.width / media.height, 16 / 9);
-  assert.ok(media.duration >= 60 && media.duration <= 90);
+  assert.ok(media.duration >= 70 && media.duration <= 100);
   const decode = decodeMedia(mediaPath);
   assert.equal(decode.status, 0, decode.stderr || decode.error?.message);
   assert.equal(decode.stderr.trim(), "");

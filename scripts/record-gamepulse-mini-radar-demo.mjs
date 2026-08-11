@@ -24,7 +24,7 @@ const recordingRoot = join(tmpdir(), "gamepulse-mini-radar-recording");
 const ffmpegPath = process.env.FFMPEG_PATH || bundledFfmpeg;
 const targetUrl =
   "https://gamepulse-mini-radar.polite-chord-7994.chatgpt.site";
-const targetDuration = 78;
+const targetDuration = 83;
 
 function delay(milliseconds) {
   return new Promise((resolveDelay) => setTimeout(resolveDelay, milliseconds));
@@ -105,7 +105,7 @@ async function recordWalkthrough() {
 
   const rawStartedAt = Date.now();
   await page.goto(targetUrl, { waitUntil: "domcontentloaded" });
-  await page.getByRole("heading", { name: "先看榜单，再读为什么" }).waitFor();
+  await page.getByRole("heading", { name: "看榜单、读拆解、找合作" }).waitFor();
   await page.getByRole("navigation", { name: "主导航" }).waitFor();
   await page.evaluate(() => window.scrollTo(0, 0));
   await delay(1_200);
@@ -113,55 +113,55 @@ async function recordWalkthrough() {
   const startedAt = Date.now();
   const preRollMs = startedAt - rawStartedAt;
 
-  await waitUntil(startedAt, 12);
-  await page.getByRole("button", { name: "排行榜", exact: true }).click();
+  await waitUntil(startedAt, 13);
+  await page.getByRole("button", { name: "榜单", exact: true }).click();
   await page.getByRole("tab", { name: /四榜概览/ }).click();
   await page.getByRole("heading", { name: "今日四榜概览" }).waitFor();
 
-  await waitUntil(startedAt, 25);
-  await page.getByRole("button", { name: "行业知识库", exact: true }).click();
+  await waitUntil(startedAt, 19);
+  await page.getByRole("tab", { name: /国内榜/ }).click();
+  await page
+    .getByRole("button", { name: "查看 赵云与阿斗 详情", exact: true })
+    .click();
+  await page.getByRole("heading", { name: "玩法拆解" }).waitFor();
+
+  await waitUntil(startedAt, 24);
+  await page.getByRole("button", { name: "关闭详情" }).click();
+
+  await waitUntil(startedAt, 27);
+  await page.getByRole("button", { name: "情报", exact: true }).click();
   const knowledgeSearch = page.getByPlaceholder("搜索标题、摘要、来源、游戏名或发行商");
   await knowledgeSearch.waitFor();
   await knowledgeSearch.fill("玩法");
 
-  await waitUntil(startedAt, 34);
+  await waitUntil(startedAt, 35);
   await page.getByRole("button", { name: "重置", exact: true }).click();
 
-  await waitUntil(startedAt, 38);
-  await page.locator(".knowledge-card-actions button").filter({ hasText: "查看详情" }).first().click();
-  await page.getByRole("dialog").waitFor();
+  await waitUntil(startedAt, 40);
+  await page.getByRole("button", { name: "发布合作", exact: true }).click();
+  await page.getByRole("heading", { name: "让好项目遇见对的人" }).waitFor();
 
-  await waitUntil(startedAt, 41);
-  await page
-    .getByRole("dialog")
-    .getByRole("button", { name: "收藏", exact: true })
-    .click();
+  await waitUntil(startedAt, 44);
+  await page.getByRole("button", { name: "我要发布" }).click();
+  await page.getByRole("combobox", { name: "信息类型" }).selectOption({ label: "活动" });
+  await page.getByLabel("开始时间").waitFor();
 
-  await waitUntil(startedAt, 46);
-  await page.getByRole("button", { name: "关闭情报详情" }).click();
-  await page.getByRole("button", { name: "浏览历史", exact: true }).click();
+  await waitUntil(startedAt, 52);
+  await page.getByRole("button", { name: "关闭发布表单" }).click();
 
-  await waitUntil(startedAt, 49);
-  await page.getByRole("button", { name: "我的收藏", exact: true }).click();
+  await waitUntil(startedAt, 55);
+  await page.getByRole("button", { name: "我的", exact: true }).click();
+  await page.getByRole("button", { name: "我的发布", exact: true }).click();
+  await page.getByRole("heading", { name: "我的发布" }).waitFor();
 
-  await waitUntil(startedAt, 51);
-  await page.getByRole("button", { name: "排行榜", exact: true }).click();
-  await page.locator('button.row-arrow[aria-label^="查看 "]').first().click();
-  await page.getByRole("heading", { name: "市场表现" }).waitFor();
+  await waitUntil(startedAt, 63);
+  await page.getByRole("button", { name: "接口说明", exact: true }).click();
+  await page.getByRole("heading", { name: "把合作信息接入你的工作流" }).waitFor();
 
-  await waitUntil(startedAt, 57);
-  await page.getByRole("heading", { name: "玩法拆解" }).scrollIntoViewIfNeeded();
-
-  await waitUntil(startedAt, 61);
-  await page.getByRole("heading", { name: "相关情报" }).scrollIntoViewIfNeeded();
-
-  await waitUntil(startedAt, 64);
-  await page.getByRole("button", { name: "关闭详情" }).click();
-  await page.getByRole("button", { name: "更新说明", exact: true }).click();
-  await page
-    .locator(".updates-view time")
-    .filter({ hasText: "每天 07:10 后" })
-    .waitFor();
+  await waitUntil(startedAt, 69);
+  await page.getByRole("button", { name: "今日", exact: true }).click();
+  await page.getByRole("heading", { name: "看榜单、读拆解、找合作" }).waitFor();
+  await page.evaluate(() => window.scrollTo(0, 0));
 
   await waitUntil(startedAt, targetDuration);
   assert.deepEqual(errors.console, []);
@@ -217,7 +217,7 @@ async function main() {
     "-loglevel",
     "error",
     "-ss",
-    "00:00:26",
+    "00:00:46",
     "-i",
     outputPath,
     "-frames:v",
