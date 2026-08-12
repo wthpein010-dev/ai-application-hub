@@ -42,7 +42,7 @@ function commit(nextRoot) { state.history.push(clone(state.root)); state.history
 function setLayout(layout, announce = true) { if (!layoutLabels[layout]) return; state.layout = layout; save(); render(); requestAnimationFrame(centerMap); if (announce) showToast(`已切换为${layoutLabels[layout]}`); }
 
 function nodeWidth(item) { return item.id === state.root.id ? 186 : 158; }
-function nodeRows(item) { return Math.max(1, Math.ceil([...item.title].length / (item.id === state.root.id ? 13 : 10))); }
+function nodeRows(item) { return Math.max(1, Math.ceil([...item.title].length / (item.id === state.root.id ? 9 : 8))); }
 function nodeHeight(item, depth = 2) { return Math.max(item.id === state.root.id ? 64 : depth === 1 ? 52 : 46, 20 + nodeRows(item) * (item.id === state.root.id ? 23 : 22)); }
 function leafSpan(item) { return item.children.length ? Math.max(nodeHeight(item), item.children.reduce((sum, child) => sum + leafSpan(child), 0)) : nodeHeight(item); }
 function maxDepth(item, depth = 0) { return item.children.reduce((value, child) => Math.max(value, maxDepth(child, depth + 1)), depth); }
@@ -57,19 +57,28 @@ function rawPositions() {
     place(root, 0); const last = levelHeights.length - 1; return { points, width: Math.max(1100, cursorX + 80), height: Math.max(760, levelY[last] + levelHeights[last] + 120), rootPoint: points.get(root.id) };
   }
   if (state.layout === "timeline") {
-    points.set(root.id, { x: margin, y: 250 }); let cursorX = 330;
-    const place = (item, depth) => { const x = cursorX; const y = 250 + (depth - 1) * 145; points.set(item.id, { x, y }); cursorX += 210; item.children.forEach((child) => place(child, depth + 1)); };
-    root.children.forEach((item) => place(item, 1)); return { points, width: Math.max(1100, cursorX + 80), height: Math.max(760, 370 + maxDepth(root) * 150), rootPoint: points.get(root.id) };
+    const topRow = 145; const levelGap = 66; const branchGap = 52; const subtreeGap = 28; const levelHeights = [];
+    root.children.forEach((branch) => walk(branch, (item, _parent, depth) => { const actualDepth = depth + 1; levelHeights[actualDepth] = Math.max(levelHeights[actualDepth] || 0, nodeHeight(item, actualDepth)); }));
+    const topRowHeight = Math.max(nodeHeight(root, 0), levelHeights[1] || 0); const levelTops = [topRow, topRow]; let levelTop = topRow + topRowHeight + levelGap;
+    for (let depth = 2; depth <= maxDepth(root); depth += 1) { levelTops[depth] = levelTop; levelTop += (levelHeights[depth] || 46) + levelGap; }
+    const subtreeWidth = (item, depth) => Math.max(nodeWidth(item) + subtreeGap, item.children.reduce((sum, child) => sum + subtreeWidth(child, depth + 1), 0));
+    points.set(root.id, { x: margin, y: topRow }); let branchLeft = margin + nodeWidth(root) + 86;
+    const place = (item, depth, left) => { const span = subtreeWidth(item, depth); const childrenWidth = item.children.reduce((sum, child) => sum + subtreeWidth(child, depth + 1), 0); let center = left + span / 2; if (item.children.length) { let childLeft = left + (span - childrenWidth) / 2; const centers = item.children.map((child) => { const childCenter = place(child, depth + 1, childLeft); childLeft += subtreeWidth(child, depth + 1); return childCenter; }); center = (centers[0] + centers.at(-1)) / 2; } points.set(item.id, { x: center - nodeWidth(item) / 2, y: levelTops[depth] ?? levelTop }); return center; };
+    root.children.forEach((item) => { place(item, 1, branchLeft); branchLeft += subtreeWidth(item, 1) + branchGap; }); return { points, width: Math.max(1100, branchLeft + 80), height: Math.max(760, levelTop + 90), rootPoint: points.get(root.id) };
   }
   if (state.layout === "fishbone") {
-    const rootY = 450; points.set(root.id, { x: margin, y: rootY - nodeHeight(root, 0) / 2 }); let cursorX = 350; let farX = cursorX;
-    root.children.forEach((branch, branchIndex) => {
-      const side = branchIndex % 2 === 0 ? -1 : 1; const baseX = cursorX; let distance = 105; const baseY = rootY + side * distance; points.set(branch.id, { x: baseX, y: baseY }); farX = Math.max(farX, baseX);
-      let branchFarX = baseX; const place = (item, depth) => { const height = nodeHeight(item, depth + 1); distance += height / 2 + 38; const x = baseX + depth * 190; const y = rootY + side * distance; points.set(item.id, { x, y }); branchFarX = Math.max(branchFarX, x); farX = Math.max(farX, x); distance += height / 2; item.children.forEach((child) => place(child, depth + 1)); };
+    const rootY = 450; const branchGap = 260; const depthGap = 230; const rootHeight = nodeHeight(root, 0); let cursorX = 350; let farX = cursorX; let minY = rootY; let maxY = rootY;
+    const branchData = root.children.map((branch, branchIndex) => ({ branch, branchIndex, side: branchIndex % 2 === 0 ? -1 : 1, height: nodeHeight(branch, 1) }));
+    const maxTopHalf = Math.max(0, ...branchData.filter((item) => item.side < 0).map((item) => item.height / 2)); const maxBottomHalf = Math.max(0, ...branchData.filter((item) => item.side > 0).map((item) => item.height / 2));
+    const requiredHalf = Math.max(rootHeight / 2, maxTopHalf + maxBottomHalf + 110);
+    points.set(root.id, { x: margin, y: rootY + requiredHalf - rootHeight / 2 });
+    branchData.forEach(({ branch, branchIndex, side, height: branchHeight }) => {
+      const baseX = cursorX; let distance = requiredHalf + branchHeight / 2 + 28 + Math.floor(branchIndex / 2) * 96; points.set(branch.id, { x: baseX, y: rootY + requiredHalf + side * distance }); farX = Math.max(farX, baseX);
+      const place = (item, depth) => { const height = nodeHeight(item, depth + 1); distance += height / 2 + 42; const x = baseX + depth * depthGap; const y = rootY + requiredHalf + side * distance; points.set(item.id, { x, y }); farX = Math.max(farX, x); minY = Math.min(minY, y); maxY = Math.max(maxY, y + height); distance += height / 2; item.children.forEach((child) => place(child, depth + 1)); };
       branch.children.forEach((child) => place(child, 1));
-      cursorX = branchFarX + 260;
+      cursorX = baseX + Math.max(1, maxDepth(branch)) * depthGap + branchGap;
     });
-    return { points, width: Math.max(1200, farX + 300), height: Math.max(850, rootY * 2 + 100), rootPoint: points.get(root.id) };
+    return { points, width: Math.max(1200, farX + 300), height: Math.max(850, maxY + Math.max(100, Math.abs(minY))), rootPoint: points.get(root.id) };
   }
   const branches = root.children; const rightOnly = state.layout === "right" || state.layout === "logic";
   const left = rightOnly ? [] : branches.filter((_, index) => index % 2 === 0); const right = rightOnly ? branches : branches.filter((_, index) => index % 2 === 1);
@@ -97,8 +106,8 @@ function pathFor(parent, item, from, to, depth) {
   const fromHeight = nodeHeight(parent, fromDepth); const toHeight = nodeHeight(item, depth);
   if (state.layout === "tree") { const aX = from.x + fromWidth / 2 + portOffset(siblingIndex, siblingCount, fromWidth); const aY = from.y + fromHeight; const bX = to.x + toWidth / 2; const bY = to.y; const curve = Math.max(28, Math.min(96, Math.abs(bY - aY) * .52)); return `M ${aX} ${aY} C ${aX} ${aY + curve}, ${bX} ${bY - curve}, ${bX} ${bY}`; }
   const fromCenterY = from.y + fromHeight / 2; const toCenterY = to.y + toHeight / 2;
-  if (state.layout === "timeline" && Math.abs(fromCenterY - toCenterY) < 4) { const aX = from.x + fromWidth / 2 + portOffset(siblingIndex, siblingCount, fromWidth); const aY = from.y; const bX = to.x + toWidth / 2; const bY = to.y; const laneY = Math.min(aY, bY) - 45 - siblingIndex * 24; return `M ${aX} ${aY} C ${aX} ${laneY}, ${bX} ${laneY}, ${bX} ${bY}`; }
-  if (state.layout === "timeline") { const aX = from.x + fromWidth / 2 + portOffset(siblingIndex, siblingCount, fromWidth); const aY = from.y + fromHeight; const bX = to.x + toWidth / 2; const bY = to.y; const laneY = aY + Math.max(24, Math.min(70, (bY - aY) * .42)); return `M ${aX} ${aY} C ${aX} ${laneY}, ${bX} ${laneY}, ${bX} ${bY}`; }
+  if (state.layout === "timeline") { if (parent.id === state.root.id) { const aX = from.x + fromWidth / 2 + portOffset(siblingIndex, siblingCount, fromWidth); const aY = from.y; const bX = to.x + toWidth / 2; const bY = to.y; const laneY = aY - (24 + siblingIndex * 12); return `M ${aX} ${aY} C ${aX} ${laneY}, ${aX} ${laneY}, ${aX} ${laneY} C ${aX} ${laneY}, ${bX} ${laneY}, ${bX} ${laneY} C ${bX} ${laneY}, ${bX} ${bY}, ${bX} ${bY}`; } const direction = toCenterY >= fromCenterY ? 1 : -1; const aX = from.x + fromWidth / 2 + portOffset(siblingIndex, siblingCount, fromWidth); const aY = direction > 0 ? from.y + fromHeight : from.y; const bX = to.x + toWidth / 2; const bY = direction > 0 ? to.y : to.y + toHeight; const laneY = aY + direction * (20 + siblingIndex * 10); return `M ${aX} ${aY} C ${aX} ${laneY}, ${bX} ${laneY}, ${bX} ${bY}`; }
+  if (state.layout === "fishbone") { const direction = toCenterY < fromCenterY ? -1 : 1; const fromX = parent.id === state.root.id ? from.x + fromWidth / 2 + portOffset(siblingIndex, siblingCount, fromWidth) : from.x + fromWidth; const fromY = parent.id === state.root.id ? (direction < 0 ? from.y : from.y + fromHeight) : fromCenterY + portOffset(siblingIndex, siblingCount, fromHeight); const toX = to.x; const laneX = parent.id === state.root.id ? toX - 28 - siblingIndex * 4 : Math.min(toX - 18, Math.max(fromX + 6, from.x + fromWidth + 12 + siblingIndex * 8)); const horizontalB = laneX + (toX - laneX) * .35; return `M ${fromX} ${fromY} C ${laneX} ${fromY}, ${laneX} ${toCenterY}, ${laneX} ${toCenterY} C ${horizontalB} ${toCenterY}, ${toX} ${toCenterY}, ${toX} ${toCenterY}`; }
   const rightward = to.x >= from.x; const direction = rightward ? 1 : -1; const fromX = rightward ? from.x + fromWidth : from.x; const toX = rightward ? to.x : to.x + toWidth; const fromY = fromCenterY + portOffset(siblingIndex, siblingCount, fromHeight); const toY = toCenterY; const curve = Math.max(30, Math.min(118, Math.abs(toX - fromX) * .5));
   return `M ${fromX} ${fromY} C ${fromX + direction * curve} ${fromY}, ${toX - direction * curve} ${toY}, ${toX} ${toY}`;
 }
@@ -107,7 +116,7 @@ function nodeTools(item) { const base = `<span class="node-tools"><button data-t
 
 function renderMap() {
   const mapLayout = positions(); const layout = mapLayout.points; ui.mapStage.style.width = `${mapLayout.width}px`; ui.mapStage.style.height = `${mapLayout.height}px`; ui.mapStage.dataset.rootX = mapLayout.rootPoint.x; ui.mapStage.dataset.rootY = mapLayout.rootPoint.y; ui.mapStage.dataset.layout = state.layout; ui.nodesLayer.innerHTML = "";
-  walk(state.root, (item, _parent, depth) => { const point = layout.get(item.id); if (!point) return; const element = document.createElement("button"); element.type = "button"; element.className = `map-node level-${Math.min(depth, 2)} ${item.id === "root" ? "root" : ""} ${item.id === state.selectedId ? "selected" : ""}`; element.dataset.id = item.id; element.style.left = `${point.x}px`; element.style.top = `${point.y}px`; element.style.width = `${nodeWidth(item)}px`; element.style.minHeight = `${nodeHeight(item, depth)}px`; element.style.setProperty("--node-color", branchColor(item)); const label = document.createElement("span"); label.textContent = item.title; element.append(label); element.insertAdjacentHTML("beforeend", nodeTools(item)); ui.nodesLayer.append(element); });
+  walk(state.root, (item, _parent, depth) => { const point = layout.get(item.id); if (!point) return; const element = document.createElement("button"); element.type = "button"; element.className = `map-node level-${Math.min(depth, 2)} ${item.id === "root" ? "root" : ""} ${item.id === state.selectedId ? "selected" : ""}`; element.dataset.id = item.id; element.style.left = `${point.x}px`; element.style.top = `${point.y}px`; element.style.width = `${nodeWidth(item)}px`; element.style.height = `${nodeHeight(item, depth)}px`; element.style.setProperty("--node-color", branchColor(item)); const label = document.createElement("span"); label.textContent = item.title; element.append(label); element.insertAdjacentHTML("beforeend", nodeTools(item)); ui.nodesLayer.append(element); });
   renderConnections(layout); ui.mapStage.style.transform = `scale(${state.scale})`; ui.zoomValue.textContent = `${Math.round(state.scale * 100)}%`;
 }
 function renderOutline() { ui.outlineList.innerHTML = ""; walk(state.root, (item, _parent, depth) => { const button = document.createElement("button"); button.type = "button"; button.className = `outline-item ${item.id === state.selectedId ? "selected" : ""}`; button.dataset.id = item.id; button.style.paddingLeft = `${10 + depth * 24}px`; button.style.setProperty("--node-color", branchColor(item)); const dot = document.createElement("i"); const title = document.createElement("b"); title.textContent = item.title; const count = document.createElement("small"); count.textContent = item.children.length ? `${item.children.length} 项` : ""; button.append(dot, title, count); ui.outlineList.append(button); }); }

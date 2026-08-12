@@ -108,7 +108,7 @@ async function assertEdgeRoutesClear(page, layoutLabel) {
       child: path.dataset.child,
       start: (() => { const point = path.getPointAtLength(0); return { x: point.x, y: point.y }; })(),
       length: path.getTotalLength(),
-      samples: Array.from({ length: 31 }, (_, index) => { const point = path.getPointAtLength(path.getTotalLength() * index / 30); return { x: point.x, y: point.y }; }),
+      samples: (() => { const length = path.getTotalLength(); const count = Math.max(2, Math.ceil(length / 2) + 1); return Array.from({ length: count }, (_, index) => { const point = path.getPointAtLength(length * index / (count - 1)); return { x: point.x, y: point.y }; }); })(),
     })),
     nodes: [...stage.querySelectorAll(".map-node")].map((node) => ({
       id: node.dataset.id,
@@ -129,11 +129,53 @@ async function assertEdgeRoutesClear(page, layoutLabel) {
     siblingStarts.set(path.parent, starts);
     for (const node of geometry.nodes) {
       if (node.id === path.parent || node.id === path.child) continue;
-      const crosses = path.samples.slice(1, -1).some((point) => point.x > node.left + 2 && point.x < node.right - 2 && point.y > node.top + 2 && point.y < node.bottom - 2);
-      assert.equal(crosses, false, `${layoutLabel}:${path.parent}/${path.child} must not pass through ${node.id}`);
+      const rect = { left: node.left + 2, top: node.top + 2, right: node.right - 2, bottom: node.bottom - 2 };
+      const crosses = path.samples.slice(0, -1).some((point, index) => segmentIntersectsRect(point, path.samples[index + 1], rect));
+      assert.equal(crosses, false, `${layoutLabel}:${path.parent}/${path.child} must not pass through ${node.id}: ${path.d} :: ${JSON.stringify(node)}`);
     }
   }
   for (const [parent, starts] of siblingStarts) assert.equal(new Set(starts).size, starts.length, `${layoutLabel}:${parent} sibling routes should have unique ports`);
+  for (let first = 0; first < geometry.paths.length; first += 1) for (let second = first + 1; second < geometry.paths.length; second += 1) {
+    const a = geometry.paths[first]; const b = geometry.paths[second];
+    assert.equal(pathsShareVisibleRun(a.samples, b.samples), false, `${layoutLabel}:${a.parent}/${a.child} must not overlap ${b.parent}/${b.child}: ${a.d} :: ${b.d}`);
+  }
+  if (layoutLabel.startsWith("时间轴")) {
+    const root = geometry.nodes.find((node) => node.id === "root");
+    for (const path of geometry.paths.filter((edge) => edge.parent === "root")) assert.ok(Math.abs(path.start.y - root.top) < 1 || Math.abs(path.start.y - root.bottom) < 1, `timeline root route should use a dedicated vertical port: ${JSON.stringify(path.start)}`);
+  }
+}
+
+function segmentIntersectsRect(a, b, rect) {
+  let start = 0; let end = 1; const dx = b.x - a.x; const dy = b.y - a.y;
+  for (const [p, q] of [[-dx, a.x - rect.left], [dx, rect.right - a.x], [-dy, a.y - rect.top], [dy, rect.bottom - a.y]]) {
+    if (Math.abs(p) < 1e-9) { if (q < 0) return false; continue; }
+    const ratio = q / p;
+    if (p < 0) start = Math.max(start, ratio); else end = Math.min(end, ratio);
+    if (start > end) return false;
+  }
+  return true;
+}
+
+function pathsShareVisibleRun(first, second) {
+  const cellSize = 2; const grid = new Map();
+  second.forEach((point, index) => { const key = `${Math.round(point.x / cellSize)}:${Math.round(point.y / cellSize)}`; grid.set(key, [...(grid.get(key) ?? []), index]); });
+  let run = 0;
+  for (let index = 1; index < first.length - 1; index += 1) {
+    const point = first[index]; const cellX = Math.round(point.x / cellSize); const cellY = Math.round(point.y / cellSize); let parallelMatch = false;
+    for (let x = cellX - 1; x <= cellX + 1 && !parallelMatch; x += 1) for (let y = cellY - 1; y <= cellY + 1 && !parallelMatch; y += 1) {
+      for (const matchIndex of grid.get(`${x}:${y}`) ?? []) {
+        if (matchIndex < 1 || matchIndex >= second.length - 1) continue;
+        const match = second[matchIndex]; if (Math.hypot(point.x - match.x, point.y - match.y) > .2) continue;
+        const firstDx = first[index + 1].x - first[index - 1].x; const firstDy = first[index + 1].y - first[index - 1].y;
+        const secondDx = second[matchIndex + 1].x - second[matchIndex - 1].x; const secondDy = second[matchIndex + 1].y - second[matchIndex - 1].y;
+        const cosine = Math.abs((firstDx * secondDx + firstDy * secondDy) / (Math.hypot(firstDx, firstDy) * Math.hypot(secondDx, secondDy) || 1));
+        if (cosine > 0.995) { parallelMatch = true; break; }
+      }
+    }
+    run = parallelMatch ? run + 1 : 0;
+    if (run >= 8) return true;
+  }
+  return false;
 }
 
 async function assertReadableTypography(page, viewportName) {
@@ -277,7 +319,16 @@ try {
       for (const layout of ["左右脑图", "横向脑图", "树状图", "鱼骨图", "逻辑结构", "时间轴"]) {
         await app.locator(`.structure-picker [data-layout]`, { hasText: layout }).click();
         await assertMapFitsStage(app, layout);
+        await assertEdgeRoutesClear(app, layout);
       }
+      const rootTitle = app.getByLabel("脑图名称");
+      await rootTitle.fill("这是一个需要多行完整显示并保持所有连线端口准确的中长策划主题名称"); await rootTitle.press("Tab");
+      for (const layout of ["左右脑图", "横向脑图", "树状图", "鱼骨图", "逻辑结构", "时间轴"]) {
+        await app.locator(`.structure-picker [data-layout]`, { hasText: layout }).click();
+        await assertMapFitsStage(app, `${layout}-长根标题`);
+        await assertEdgeRoutesClear(app, `${layout}-长根标题`);
+      }
+      await rootTitle.fill("校园音乐节策划"); await rootTitle.press("Tab");
       await app.getByLabel("打开设置").click();
       await app.locator('[data-provider="openai"]').click();
       await app.locator("#modelEndpoint").fill("https://private.example/v1");

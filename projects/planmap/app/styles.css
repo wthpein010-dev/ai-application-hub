@@ -19,7 +19,7 @@
 .message-row>span{width:29px;height:29px;font-size:12px}.message-row p{font-size:14px;line-height:1.65;padding:10px 12px}
 .quick-prompts small{font-size:11px}.quick-prompts button{font-size:13px;line-height:1.4;padding:9px 11px}
 .selection-chip{font-size:12px}.composer textarea{font-size:14px;line-height:1.6;min-height:44px}.composer-wrap>p{font-size:11px}
-.map-node{width:158px;min-height:46px;font-size:13px;line-height:1.45}.map-node.root{width:186px;min-height:64px;font-size:16px}.map-node.level-1{min-height:52px;font-size:14px}
+.map-node{width:158px;min-height:46px;font-size:13px;line-height:1.45;overflow-wrap:anywhere}.map-node.root{width:186px;min-height:64px;font-size:16px}.map-node.level-1{min-height:52px;font-size:14px}
 .canvas-heading span{font-size:13px}.canvas-heading small{font-size:11px}.view-tabs button,.secondary,.primary{font-size:11px}.structure-picker button{font-size:11px}
 .outline-head span{font-size:12px}.outline-item b{font-size:13px}.outline-item small{font-size:11px}.presentation-card li{font-size:14px}
 .setting-title strong{font-size:14px}.setting-title p,.info-note{font-size:12px}.model-presets button,.theme-options button{font-size:12px}.model-presets button small,.model-fields label{font-size:11px}.model-fields input{font-size:12px}
