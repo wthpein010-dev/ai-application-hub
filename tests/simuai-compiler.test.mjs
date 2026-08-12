@@ -176,12 +176,29 @@ test("compiler treats a successful offline envelope as a domain error", async ()
 test("resolver uses a strong local match without calling the compiler", async () => {
   let calls = 0;
   const result = await resolveQuestion("小游戏买量多久回本", {
+    mode: "static",
     compileImpl: async () => { calls += 1; },
     cache: { get: () => null, set: () => {} },
   });
 
   assert.equal(result.experiment.id, "game-payback");
   assert.equal(result.mode, "local");
+  assert.deepEqual(result.matchedTerms, ["小游戏", "买量", "回本"]);
+  assert.equal(calls, 0);
+});
+
+test("static resolver keeps an unmatched question local and returns recommendations", async () => {
+  let calls = 0;
+  const result = await resolveQuestion("量子香蕉天气", {
+    mode: "static",
+    compileImpl: async () => { calls += 1; return getExperiment("sales-funnel"); },
+    cache: { get: () => getExperiment("inventory-runway"), set: () => {} },
+  });
+
+  assert.equal(result.mode, "recommendations");
+  assert.equal(result.experiment, null);
+  assert.equal(result.recommendations.length, 3);
+  assert.deepEqual(result.matchedTerms, []);
   assert.equal(calls, 0);
 });
 
@@ -191,6 +208,7 @@ test("resolver compiles an unmatched question once and caches it", async () => {
   const generated = getExperiment("sales-funnel");
   generated.source = "ai";
   const result = await resolveQuestion("量子香蕉天气", {
+    mode: "proxy",
     compileImpl: async () => { calls += 1; return generated; },
     cache: { get: () => null, set: (question, spec) => { stored = { question, spec }; } },
   });
@@ -203,6 +221,7 @@ test("resolver compiles an unmatched question once and caches it", async () => {
 
 test("resolver keeps three offline recommendations when compilation fails", async () => {
   const result = await resolveQuestion("量子香蕉天气", {
+    mode: "proxy",
     compileImpl: async () => { throw new CompilerError("OFFLINE", "offline"); },
     cache: { get: () => null, set: () => {} },
   });

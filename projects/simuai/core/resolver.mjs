@@ -5,7 +5,21 @@ export async function resolveQuestion(question, options = {}) {
   const matches = rankExperiments(question, 3);
   const strongMatch = matches[0]?.score >= (options.localThreshold ?? 8);
   if (strongMatch) {
-    return { mode: "local", experiment: matches[0].experiment, recommendations: matches };
+    return {
+      mode: "local",
+      experiment: matches[0].experiment,
+      recommendations: matches,
+      matchedTerms: matches[0].matchedTerms,
+    };
+  }
+
+  if (options.mode !== "proxy") {
+    return {
+      mode: "recommendations",
+      experiment: null,
+      recommendations: matches,
+      matchedTerms: matches[0]?.matchedTerms ?? [],
+    };
   }
 
   const cached = options.cache?.get(question);
