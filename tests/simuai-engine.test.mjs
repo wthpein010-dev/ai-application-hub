@@ -142,6 +142,101 @@ test("payback includes retained cohorts and can cross over after several days", 
   assert.equal(Math.round(result.series[2].activeUsers), 150);
 });
 
+test("logistic growth approaches but does not exceed its carrying capacity", () => {
+  const result = runModel({ modelType: "logistic" }, {
+    initial: 10,
+    capacity: 100,
+    growthRate: 30,
+    duration: 20,
+  });
+
+  assert.equal(result.series[0].value, 10);
+  assert.ok(result.outputs.finalValue > 90 && result.outputs.finalValue < 100);
+  assert.ok(result.outputs.capacityPercent > 90 && result.outputs.capacityPercent < 100);
+});
+
+test("logistic growth respects a capacity below the initial value", () => {
+  const result = runModel({ modelType: "logistic" }, {
+    initial: 200,
+    capacity: 10,
+    growthRate: 30,
+    duration: 20,
+  });
+
+  assert.ok(Math.abs(result.series[0].value - 200) < 1e-9);
+  assert.ok(result.outputs.finalValue > 10 && result.outputs.finalValue < 200);
+  assert.ok(result.outputs.capacityPercent > 100);
+});
+
+test("queue drains at the net service rate and never becomes negative", () => {
+  const result = runModel({ modelType: "queue" }, {
+    initialQueue: 20,
+    arrivalRate: 3,
+    serviceRate: 7,
+    duration: 10,
+  });
+
+  assert.equal(result.outputs.clearTime, 5);
+  assert.equal(result.outputs.netRate, -4);
+  assert.equal(result.outputs.finalValue, 0);
+  assert.equal(Math.min(...result.series.map(point => point.value)), 0);
+});
+
+test("queue reports no clearing time when arrivals meet or exceed service", () => {
+  const result = runModel({ modelType: "queue" }, {
+    initialQueue: 20,
+    arrivalRate: 7,
+    serviceRate: 3,
+    duration: 10,
+  });
+
+  assert.equal(result.outputs.clearTime, -1);
+  assert.equal(result.outputs.finalValue, 60);
+  assert.ok(result.warnings.length > 0);
+});
+
+test("an empty queue reports zero clearing time before future arrivals accumulate", () => {
+  const result = runModel({ modelType: "queue" }, {
+    initialQueue: 0,
+    arrivalRate: 7,
+    serviceRate: 3,
+    duration: 10,
+  });
+
+  assert.equal(result.outputs.clearTime, 0);
+  assert.equal(result.outputs.finalValue, 40);
+  assert.match(result.warnings.join(" "), /当前队列为空/);
+});
+
+test("probability calculates ordinary cumulative chance and hard guarantee", () => {
+  const ordinary = runModel({ modelType: "probability" }, {
+    chance: 2,
+    attempts: 50,
+    guaranteeAt: 90,
+  });
+  const guaranteed = runModel({ modelType: "probability" }, {
+    chance: 2,
+    attempts: 90,
+    guaranteeAt: 90,
+  });
+
+  assert.ok(ordinary.outputs.finalValue > 63 && ordinary.outputs.finalValue < 64);
+  assert.equal(guaranteed.outputs.finalValue, 100);
+  assert.equal(guaranteed.series.at(-1).value, 100);
+});
+
+test("probability can convert people into pairwise comparisons", () => {
+  const result = runModel({ modelType: "probability", attemptTransform: "pairwise" }, {
+    chance: 100 / 365,
+    attempts: 23,
+    guaranteeAt: 0,
+  });
+
+  assert.equal(result.outputs.effectiveTrials, 253);
+  assert.ok(result.outputs.finalValue > 50 && result.outputs.finalValue < 51);
+  assert.equal(result.outputs.medianAttempt, 23);
+});
+
 test("model inputs must be finite and model types must be supported", () => {
   assert.throws(
     () => runModel({ modelType: "linear" }, { initial: Number.NaN, rate: 1, duration: 2 }),
@@ -158,6 +253,30 @@ test("schema accepts a complete safe experiment", () => {
 
   assert.equal(checked.ok, true, checked.errors.join("\n"));
   assert.notEqual(checked.value, validSpec);
+});
+
+test("schema accepts chart modes when the recommended mode is supported", () => {
+  const checked = validateExperiment({
+    ...validSpec,
+    chart: { ...validSpec.chart, modes: ["line", "area", "bar", "step"] },
+  });
+
+  assert.equal(checked.ok, true, checked.errors.join("\n"));
+  assert.deepEqual(checked.value.chart.modes, ["line", "area", "bar", "step"]);
+});
+
+test("schema rejects duplicate chart modes and a recommended mode outside the supported list", () => {
+  const duplicate = validateExperiment({
+    ...validSpec,
+    chart: { ...validSpec.chart, modes: ["line", "line"] },
+  });
+  const missingRecommended = validateExperiment({
+    ...validSpec,
+    chart: { ...validSpec.chart, modes: ["area", "bar"] },
+  });
+
+  assert.match(duplicate.errors.join(" "), /chart\.modes.*unique/i);
+  assert.match(missingRecommended.errors.join(" "), /recommended.*chart\.modes/i);
 });
 
 test("schema rejects executable content, unknown models and invalid ranges", () => {

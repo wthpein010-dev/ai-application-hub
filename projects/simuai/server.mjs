@@ -28,7 +28,7 @@ const MIME = {
 };
 
 const systemPrompt = `你是 SimuAI 的结构化模型编译器。只返回 JSON，不要 Markdown，不要解释。
-允许的 modelType 只有 linear、compound、decay、funnel、inventory、payback。
+允许的 modelType 只有 linear、compound、decay、funnel、inventory、payback、logistic、queue、probability。
 实验必须含 version=1、id、title、category、question、modelType、3到5个 parameters、1到4个 metrics、chart、explanation、keywords、source="ai"。
 parameters 每项必须含 id、label、unit、min、max、step、default；metrics 只能引用对应模型的已知输出。
 不得输出 JavaScript、HTML、表达式、外部 URL、医疗诊断、投资承诺、法律结论或安全操作指令。
@@ -47,7 +47,7 @@ const experimentJsonSchema = {
     title: { type: "string" },
     category: { type: "string" },
     question: { type: "string" },
-    modelType: { type: "string", enum: ["linear", "compound", "decay", "funnel", "inventory", "payback"] },
+    modelType: { type: "string", enum: ["linear", "compound", "decay", "funnel", "inventory", "payback", "logistic", "queue", "probability"] },
     parameters: {
       type: "array",
       minItems: 3,
@@ -89,7 +89,7 @@ const experimentJsonSchema = {
       additionalProperties: false,
       required: ["type", "xLabel", "yLabel", "series"],
       properties: {
-        type: { type: "string", enum: ["line", "area", "funnel"] },
+        type: { type: "string", enum: ["line", "area", "bar", "step", "funnel"] },
         xLabel: { type: "string" },
         yLabel: { type: "string" },
         series: { type: "array", minItems: 1, maxItems: 3, items: { type: "string" } },

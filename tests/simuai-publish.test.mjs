@@ -28,7 +28,8 @@ test("SimuAI is the final engineering experience with demo and video only", () =
   assert.equal(app.entry, "./projects/simuai/index.html");
   assert.equal(app.video, "./projects/simuai/video/index.html");
   assert.equal(app.package, "");
-  assert.match(app.brief, /12 个受控实验/);
+  assert.match(app.brief, /30 个受控实验/);
+  assert.match(app.brief, /5 种图表视图/);
   assert.match(app.brief, /本地匹配/);
   assert.deepEqual(
     JSON.parse(JSON.stringify(app.platforms)),
@@ -40,7 +41,7 @@ test("SimuAI is the final engineering experience with demo and video only", () =
   );
   assert.deepEqual(
     JSON.parse(JSON.stringify(app.tags)),
-    ["问题模拟", "本地匹配", "参数实验", "透明模型"],
+    ["30 个实验", "本地匹配", "曲线切换", "透明模型"],
   );
 });
 
@@ -50,13 +51,14 @@ test("SimuAI demo returns to the engineering catalog and Hub refreshes its runti
   assert.match(demo, /href="\.\.\/\.\.\/index\.html#engineering"/);
   assert.match(
     homepage,
-    /app-20260706-restore-games\.js\?v=[^"]*simuai-static-search/,
+    /app-20260706-restore-games\.js\?v=[^"]*simuai-30-experiments/,
   );
 });
 
 test("SimuAI exact legacy default copy migrates without a broad overwrite", () => {
   assert.match(runtime, /normalized\.id === "simuai"/);
   assert.match(runtime, /normalized\.brief === "输入一个问题，让 AI 生成可拖动参数、观察曲线的互动实验。"/);
+  assert.match(runtime, /normalized\.brief === "输入一个适合量化的问题，从 12 个受控实验中本地匹配模型，拖动参数观察指标、曲线与结论如何变化。"/);
   assert.doesNotMatch(runtime, /normalized\.id === "simuai"[\s\S]{0,500}normalized\.brief = base\.brief;[\s\S]{0,80}normalized\.problem = base\.problem/);
 });
 
