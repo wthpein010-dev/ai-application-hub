@@ -43,6 +43,7 @@ if (server) {
   } while (!server.listening);
 }
 const origin = requestedBaseUrl || `http://127.0.0.1:${server.address().port}`;
+const navigationState = requestedBaseUrl ? "domcontentloaded" : "networkidle";
 const browserPath = [process.env.CHROME_PATH, "C:/Program Files/Google/Chrome/Application/chrome.exe", chromium.executablePath()].find((path) => path && existsSync(path));
 assert.ok(browserPath, "A Chromium browser is required");
 const browser = await chromium.launch({ executablePath: browserPath, headless: true });
@@ -81,7 +82,7 @@ try {
   for (const viewport of [{ name: "desktop", width: 1440, height: 900 }, { name: "mobile", width: 390, height: 844 }]) {
     const context = await browser.newContext({ viewport });
     const hub = await context.newPage(); observe(hub, `${viewport.name}/hub`);
-    await hub.goto(`${origin}/index.html#engineering`, { waitUntil: "networkidle" });
+    await hub.goto(`${origin}/index.html#engineering`, { waitUntil: navigationState });
     const card = hub.locator('#engineeringGrid article[data-app-id="planmap"]');
     await card.waitFor();
     assert.equal(await hub.locator('#appGrid article[data-app-id="planmap"]').count(), 0);
@@ -92,7 +93,7 @@ try {
     await hub.close();
 
     const shell = await context.newPage(); observe(shell, `${viewport.name}/shell`);
-    await shell.goto(`${origin}/projects/planmap/index.html`, { waitUntil: "networkidle" });
+    await shell.goto(`${origin}/projects/planmap/index.html`, { waitUntil: navigationState });
     assert.equal(await shell.locator(".hub-home-link").getAttribute("href"), "../../index.html#engineering");
     assert.equal(await shell.locator('a[href="../../downloads/planmap-source.zip"]').count(), 1);
     assert.equal(await shell.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth + 1), true);
@@ -100,19 +101,19 @@ try {
     await shell.close();
 
     const app = await context.newPage(); observe(app, `${viewport.name}/app`);
-    await app.goto(`${origin}/projects/planmap/app/index.html`, { waitUntil: "networkidle" });
-    await app.evaluate(() => localStorage.clear()); await app.reload({ waitUntil: "networkidle" });
+    await app.goto(`${origin}/projects/planmap/app/index.html`, { waitUntil: navigationState });
+    await app.evaluate(() => localStorage.clear()); await app.reload({ waitUntil: navigationState });
     if (viewport.name === "desktop") {
       for (const root of [
         { id: "broken", title: "损坏数据", children: "not-an-array" },
         { id: "legacy-root", title: "不兼容根节点", children: [] },
       ]) {
         await app.evaluate((storedRoot) => localStorage.setItem("planmap.hub-demo.v1", JSON.stringify({ root: storedRoot, theme: "azure", layout: "mindmap" })), root);
-        await app.reload({ waitUntil: "networkidle" });
+        await app.reload({ waitUntil: navigationState });
         assert.equal(await app.getByLabel("脑图名称").inputValue(), "新品发布会策划", "malformed or incompatible storage should fall back to the starter map");
         assert.equal(await app.locator("#nodesLayer .map-node").count(), 13);
       }
-      await app.evaluate(() => localStorage.clear()); await app.reload({ waitUntil: "networkidle" });
+      await app.evaluate(() => localStorage.clear()); await app.reload({ waitUntil: navigationState });
     }
     await app.evaluate(() => { window.__planmapXss = false; });
     await app.getByPlaceholder("描述你的策划，或告诉我怎么调整…").fill('<img src=x onerror="window.__planmapXss=true">');
@@ -217,7 +218,7 @@ try {
   for (const viewport of [{ name: "desktop", width: 1280, height: 800 }, { name: "mobile", width: 390, height: 844 }]) {
     const context = await browser.newContext({ viewport });
     const video = await context.newPage(); observe(video, `${viewport.name}/video`);
-    await video.goto(`${origin}/projects/planmap/video/index.html`, { waitUntil: "networkidle" });
+    await video.goto(`${origin}/projects/planmap/video/index.html`, { waitUntil: navigationState });
     assert.equal(await video.locator(".hub-video-home").getAttribute("href"), "../../../index.html#engineering");
     await video.locator("#loadVideo").click();
     await video.waitForFunction(() => document.querySelector("#introVideo").currentTime > 0, null, { timeout: 20_000 });
