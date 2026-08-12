@@ -16,12 +16,12 @@ const videoRoot = join(projectRoot, "video");
 const archivePath = join(root, "downloads", "planmap-source.zip");
 process.env.FFMPEG_PATH ||= ffmpegPath;
 
-test("PlanMap remains immediately before SimuAI with only demo and video card actions", () => {
+test("思维导图快捷工具 remains immediately before SimuAI with only demo and video card actions", () => {
   const app = apps.find((item) => item.id === "planmap");
 
   assert.ok(app, "PlanMap should be present in the catalog");
   assert.deepEqual(JSON.parse(JSON.stringify(apps.slice(-2).map((item) => item.id))), ["planmap", "simuai"]);
-  assert.equal(app.name, "PlanMap");
+  assert.equal(app.name, "思维导图快捷工具");
   assert.equal(app.status, "engineering");
   assert.equal(app.entry, "./projects/planmap/index.html");
   assert.equal(app.video, "./projects/planmap/video/index.html");
@@ -47,7 +47,7 @@ test("PlanMap demo uses the Hub shell, returns to engineering and exposes the so
   assert.equal(existsSync(join(projectRoot, "app", "index.html")), true);
 });
 
-test("PlanMap public demo supports conversation edits, themes, layouts and four export formats", () => {
+test("思维导图快捷工具 supports global conversation edits, six structures, three views and open-source model presets", () => {
   const html = readFileSync(join(projectRoot, "app", "index.html"), "utf8");
   const script = readFileSync(join(projectRoot, "app", "app.js"), "utf8");
   const publishedApp = `${html}\n${script}`;
@@ -59,9 +59,20 @@ test("PlanMap public demo supports conversation edits, themes, layouts and four 
   assert.match(publishedApp, /清透办公蓝/);
   assert.match(publishedApp, /清新青绿/);
   assert.match(publishedApp, /温暖珊瑚/);
-  for (const label of ["左右脑图", "向右展开", "组织结构", "PNG 图片", "PDF 文档", "Markdown 大纲", "XMind 文件"]) {
+  assert.match(publishedApp, /思维导图快捷工具/);
+  assert.match(publishedApp, /brand-logo/);
+  assert.match(publishedApp, /脑图 \+ AI/);
+  for (const label of [
+    "左右脑图", "横向脑图", "树状图", "鱼骨图", "逻辑结构", "时间轴",
+    "脑图视图", "大纲模式", "演示模式",
+    "Ollama", "LM Studio", "LocalAI", "OpenAI 兼容",
+    "PNG 图片", "PDF 文档", "Markdown 大纲", "XMind 文件",
+  ]) {
     assert.match(publishedApp, new RegExp(label));
   }
+  assert.match(script, /replaceTextGlobally/);
+  assert.match(script, /findTextCandidates/);
+  assert.match(script, /askCompatibleModel/);
 });
 
 test("PlanMap video page uses the shared player and returns to engineering", () => {

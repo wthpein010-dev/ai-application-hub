@@ -655,13 +655,13 @@ const defaultApps = [
   },
   {
     id: "planmap",
-    name: "PlanMap",
-    category: "AI 策划脑图",
+    name: "思维导图快捷工具",
+    category: "AI 思维导图",
     status: "engineering",
-    badge: "AI 策划工具",
-    brief: "不用手动摆节点：描述策划目标，再通过对话持续扩写、改名、删除与重组，脑图会自动排版到可交付状态。",
+    badge: "脑图 + AI",
+    brief: "不用手动摆节点，也不用先选节点：直接通过对话替换文字、重组内容，或切换鱼骨、树状、横向等结构，脑图自动排版。",
     problem: "传统脑图要求用户一边思考内容、一边处理节点层级和版面，策划调整频繁时容易把精力耗在拖拽与排版上。",
-    aiUse: "AI 将自然语言意图转换为结构化节点操作；用户可点选分支后继续对话，自动完成局部扩写、重命名、删减、重组与版式更新。",
+    aiUse: "AI 将自然语言意图转换为全局或局部节点操作，快速定位原文本完成替换，并可连接 Ollama、LM Studio、LocalAI 等 OpenAI 兼容模型。",
     folder: "./projects/planmap/",
     entry: "./projects/planmap/index.html",
     video: "./projects/planmap/video/index.html",
@@ -671,7 +671,7 @@ const defaultApps = [
       windows: "",
       mac: ""
     },
-    tags: ["策划脑图", "对话编辑", "自动排版", "XMind 导出"],
+    tags: ["思维导图", "全局对话编辑", "六种结构", "开源模型"],
     speed: 9,
     impact: 9,
     risk: 8,
@@ -1355,6 +1355,18 @@ function normalizeApp(app) {
   }
   if (normalized.id === "simuai" && normalized.brief === "输入一个问题，让 AI 生成可拖动参数、观察曲线的互动实验。") {
     normalized.brief = base.brief;
+  }
+  if (normalized.id === "planmap") {
+    const legacy = {
+      name: "PlanMap",
+      category: "AI 策划脑图",
+      badge: "AI 策划工具",
+      brief: "不用手动摆节点：描述策划目标，再通过对话持续扩写、改名、删除与重组，脑图会自动排版到可交付状态。",
+      aiUse: "AI 将自然语言意图转换为结构化节点操作；用户可点选分支后继续对话，自动完成局部扩写、重命名、删减、重组与版式更新。"
+    };
+    Object.entries(legacy).forEach(([field, value]) => { if (normalized[field] === value) normalized[field] = base[field]; });
+    const legacyTags = ["策划脑图", "对话编辑", "自动排版", "XMind 导出"];
+    if (normalized.tags.length === legacyTags.length && normalized.tags.every((tag, index) => tag === legacyTags[index])) normalized.tags = [...base.tags];
   }
   if (
     normalized.id === "paws-level-editor"

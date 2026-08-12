@@ -78,17 +78,48 @@ function observe(page, label) {
   page.on("response", (response) => { if (response.status() >= 400) failures.push(`${label} HTTP ${response.status()}: ${response.url()}`); });
 }
 
+async function assertMapFitsStage(page, layoutLabel) {
+  const geometry = await page.locator("#mapStage").evaluate((stage) => ({
+    width: stage.clientWidth,
+    height: stage.clientHeight,
+    nodes: [...stage.querySelectorAll(".map-node")].map((node) => ({
+      id: node.dataset.id,
+      left: node.offsetLeft,
+      top: node.offsetTop,
+      right: node.offsetLeft + node.offsetWidth,
+      bottom: node.offsetTop + node.offsetHeight,
+    })),
+  }));
+  for (const node of geometry.nodes) {
+    assert.ok(node.left >= 0 && node.top >= 0 && node.right <= geometry.width && node.bottom <= geometry.height, `${layoutLabel}:${node.id} must stay inside ${geometry.width}x${geometry.height}: ${JSON.stringify(node)}`);
+  }
+  for (let first = 0; first < geometry.nodes.length; first += 1) for (let second = first + 1; second < geometry.nodes.length; second += 1) {
+    const a = geometry.nodes[first]; const b = geometry.nodes[second];
+    const overlaps = a.left < b.right && a.right > b.left && a.top < b.bottom && a.bottom > b.top;
+    assert.equal(overlaps, false, `${layoutLabel}:${a.id}/${b.id} must not overlap`);
+  }
+}
+
 try {
   for (const viewport of [{ name: "desktop", width: 1440, height: 900 }, { name: "mobile", width: 390, height: 844 }]) {
     const context = await browser.newContext({ viewport });
     const hub = await context.newPage(); observe(hub, `${viewport.name}/hub`);
     await hub.goto(`${origin}/index.html#engineering`, { waitUntil: navigationState });
+    await hub.evaluate(() => localStorage.setItem("ai-competition-hub-v2-apps", JSON.stringify([{
+      id: "planmap", name: "PlanMap", category: "AI 策划脑图", status: "engineering", badge: "AI 策划工具",
+      brief: "不用手动摆节点：描述策划目标，再通过对话持续扩写、改名、删除与重组，脑图会自动排版到可交付状态。",
+      problem: "传统脑图要求用户一边思考内容、一边处理节点层级和版面，策划调整频繁时容易把精力耗在拖拽与排版上。",
+      aiUse: "AI 将自然语言意图转换为结构化节点操作；用户可点选分支后继续对话，自动完成局部扩写、重命名、删减、重组与版式更新。",
+      tags: ["策划脑图", "对话编辑", "自动排版", "XMind 导出"], platforms: { web: { href: "./projects/planmap/index.html", label: "演示" }, windows: "", mac: "" },
+    }])));
+    await hub.reload({ waitUntil: navigationState });
     const card = hub.locator('#engineeringGrid article[data-app-id="planmap"]');
     await card.waitFor();
+    assert.equal(await card.locator("h3").textContent(), "思维导图快捷工具", "legacy default card text should migrate to the new public name");
     assert.equal(await hub.locator('#appGrid article[data-app-id="planmap"]').count(), 0);
     assert.equal(await hub.locator('#gameGrid article[data-app-id="planmap"]').count(), 0);
     assert.deepEqual(await card.locator(".card-actions a").allTextContents(), ["演示", "视频"]);
-    assert.equal(await card.evaluate((element) => element === element.parentElement.lastElementChild), true);
+    assert.equal(await card.evaluate((element) => element.nextElementSibling?.dataset.appId), "simuai");
     assert.equal(await hub.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth + 1), true);
     await hub.close();
 
@@ -108,81 +139,103 @@ try {
         { id: "broken", title: "损坏数据", children: "not-an-array" },
         { id: "legacy-root", title: "不兼容根节点", children: [] },
       ]) {
-        await app.evaluate((storedRoot) => localStorage.setItem("planmap.hub-demo.v1", JSON.stringify({ root: storedRoot, theme: "azure", layout: "mindmap" })), root);
+        await app.evaluate((storedRoot) => localStorage.setItem("planmap.hub-demo.v2", JSON.stringify({ root: storedRoot, theme: "azure", layout: "mindmap" })), root);
         await app.reload({ waitUntil: navigationState });
         assert.equal(await app.getByLabel("脑图名称").inputValue(), "新品发布会策划", "malformed or incompatible storage should fall back to the starter map");
         assert.equal(await app.locator("#nodesLayer .map-node").count(), 13);
       }
       await app.evaluate(() => localStorage.clear()); await app.reload({ waitUntil: navigationState });
+      await app.getByPlaceholder(/描述你的策划/).fill("把主题概念改成鱼骨分析");
+      await app.getByLabel("发送消息").click();
+      await app.locator("#nodesLayer .map-node", { hasText: "鱼骨分析" }).waitFor();
+      assert.equal(await app.locator("#nodesLayer .map-node", { hasText: "鱼骨分析" }).count(), 1);
+      assert.equal(await app.locator("#mapStage").getAttribute("data-layout"), "mindmap", "replacement target containing 鱼骨 must not switch layout");
+      await app.getByPlaceholder(/描述你的策划/).fill("把鱼骨分析改成主题概念");
+      await app.getByLabel("发送消息").click();
+      await app.locator("#nodesLayer .map-node", { hasText: "主题概念" }).waitFor();
     }
     await app.evaluate(() => { window.__planmapXss = false; });
-    await app.getByPlaceholder("描述你的策划，或告诉我怎么调整…").fill('<img src=x onerror="window.__planmapXss=true">');
+    await app.getByPlaceholder(/描述你的策划/).fill('<img src=x onerror="window.__planmapXss=true">');
     await app.getByLabel("发送消息").click();
-    await app.getByText("我理解了。你可以点选一个节点，再说“展开这部分”“改成…”或“删除这个节点”，也可以让我重新生成完整策划。").waitFor();
+    await app.locator("#messages .message-row.assistant").last().waitFor();
     assert.equal(await app.evaluate(() => window.__planmapXss), false, "chat text must never execute as HTML");
-    if (viewport.name === "mobile") await app.getByRole("tab", { name: /脑图/ }).click();
-    await app.getByText("目标与主题", { exact: true }).click();
-    if (viewport.name === "mobile") await app.getByRole("tab", { name: /对话/ }).click();
-    await app.getByPlaceholder(/告诉我怎么调整/).fill('改成 <img src=x onerror="window.__planmapXss=true">');
+    await app.getByPlaceholder(/描述你的策划/).fill('把核心目标改成 <img src=x onerror="window.__planmapXss=true">');
     await app.getByLabel("发送消息").click();
-    await app.getByText(/已把选中节点改为/).waitFor();
+    await app.locator("#messages .message-row.assistant", { hasText: /核心目标.*→|找到原文并替换|精准更新/ }).last().waitFor();
     assert.equal(await app.evaluate(() => window.__planmapXss), false, "node titles must never execute as HTML");
     assert.equal(await app.locator("#nodesLayer img").count(), 0, "node titles should stay plain text");
-    if (viewport.name === "mobile") await app.getByRole("tab", { name: /脑图/ }).click();
+    if (viewport.name === "mobile") await app.getByRole("tab", { name: /作品/ }).click();
     assert.equal(await app.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth + 1), true);
     if (viewport.name === "mobile") await app.getByRole("tab", { name: /对话/ }).click();
-    await app.getByPlaceholder("描述你的策划，或告诉我怎么调整…").fill("重新做一个校园音乐节完整策划");
+    await app.getByPlaceholder(/描述你的策划/).fill("重新做一个校园音乐节完整策划");
     await app.getByLabel("发送消息").click();
     await app.waitForFunction(() => document.querySelector('[aria-label="脑图名称"]')?.value === "校园音乐节策划");
-    if (viewport.name === "mobile") await app.getByRole("tab", { name: /脑图/ }).click();
-    await app.getByText("执行保障", { exact: true }).click();
+    if (viewport.name === "mobile") await app.getByRole("tab", { name: /作品/ }).click();
+    await app.locator("#nodesLayer .map-node", { hasText: "执行保障" }).click();
     if (viewport.name === "mobile") await app.getByRole("tab", { name: /对话/ }).click();
     await app.getByPlaceholder(/告诉我怎么调整/).fill("展开这部分，补充风险预案");
     await app.getByLabel("发送消息").click();
-    await app.getByText("已在“执行保障”下补充三项风险预案。").waitFor();
+    await app.waitForFunction(() => document.querySelectorAll("#nodesLayer .map-node").length === 22);
     await app.getByRole("button", { name: /演示模式/ }).click();
     await app.getByRole("button", { name: "清新青绿" }).click();
-    await app.getByRole("button", { name: "向右展开" }).click();
     await app.getByRole("button", { name: "完成" }).click();
-    if (viewport.name === "mobile") await app.getByRole("tab", { name: /脑图/ }).click();
-    await app.getByText("风险预案", { exact: true }).click();
+    if (viewport.name === "mobile") await app.getByRole("tab", { name: /作品/ }).click();
+    await app.locator("#nodesLayer .map-node", { hasText: "风险预案" }).click();
     if (viewport.name === "mobile") await app.getByRole("tab", { name: /对话/ }).click();
     await app.getByPlaceholder(/告诉我怎么调整/).fill("展开这部分");
     await app.getByLabel("发送消息").click();
-    await app.getByText("已把“风险预案”展开为三项可执行动作，并保持自动排版。").waitFor();
-    if (viewport.name === "mobile") await app.getByRole("tab", { name: /脑图/ }).click();
-    await app.getByText("下一步动作", { exact: true }).click();
+    await app.waitForFunction(() => document.querySelectorAll("#nodesLayer .map-node").length === 25);
+    if (viewport.name === "mobile") await app.getByRole("tab", { name: /作品/ }).click();
+    await app.locator("#nodesLayer .map-node", { hasText: "下一步动作" }).click();
     if (viewport.name === "mobile") await app.getByRole("tab", { name: /对话/ }).click();
     await app.getByPlaceholder(/告诉我怎么调整/).fill("展开这部分");
     await app.getByLabel("发送消息").click();
-    await app.getByText("已把“下一步动作”展开为三项可执行动作，并保持自动排版。").waitFor();
-    if (viewport.name === "mobile") await app.getByRole("tab", { name: /脑图/ }).click();
-    for (const layout of ["向右展开", "组织结构", "左右脑图"]) {
-      await app.getByRole("button", { name: /演示模式/ }).click();
-      await app.getByRole("button", { name: layout }).click();
-      await app.getByRole("button", { name: "完成" }).click();
+    await app.waitForFunction(() => document.querySelectorAll("#nodesLayer .map-node").length === 28);
+    if (viewport.name === "mobile") await app.getByRole("tab", { name: /作品/ }).click();
+    for (const layout of ["横向脑图", "树状图", "鱼骨图", "逻辑结构", "时间轴", "左右脑图"]) {
+      await app.locator(`.structure-picker [data-layout]`, { hasText: layout }).click();
       assert.equal(await app.locator("#nodesLayer .map-node").count(), 28, `${layout} should render all five levels`);
       assert.equal(await app.locator("#connections path").count(), 27, `${layout} should connect all rendered nodes`);
     }
+    await app.getByRole("tab", { name: "大纲模式" }).click();
+    assert.equal(await app.locator("#outlineList .outline-item").count(), 28);
+    await app.getByRole("tab", { name: "演示模式" }).click();
+    await app.locator("#presentTitle").waitFor();
+    await app.getByRole("tab", { name: "脑图视图" }).click();
     await app.getByRole("button", { name: /导出/ }).click();
     for (const label of ["PNG 图片", "PDF 文档", "Markdown 大纲", "XMind 文件"]) await app.getByText(label, { exact: true }).waitFor();
     await app.getByLabel("导出脑图").getByRole("button", { name: "×" }).click();
     if (viewport.name === "desktop") {
       const fullLongTitle = "这是一条必须完整保留且不能在图片和PDF中被省略的超长策划节点标题".repeat(5);
-      await app.getByText("主题与目标", { exact: true }).click();
+      await app.locator("#nodesLayer .map-node", { hasText: "主题与目标" }).click();
       await app.evaluate(() => { window.__planmapCanvasText = []; const original = CanvasRenderingContext2D.prototype.fillText; CanvasRenderingContext2D.prototype.fillText = function(text, ...args) { window.__planmapCanvasText.push(String(text)); return original.call(this, text, ...args); }; });
       await app.getByPlaceholder(/告诉我怎么调整/).fill(`改成 ${fullLongTitle}`); await app.getByLabel("发送消息").click();
-      await app.getByText(`已把选中节点改为“${fullLongTitle}”。`).waitFor();
-      const renamed = app.getByText(fullLongTitle, { exact: true });
+      const renamed = app.locator("#nodesLayer .map-node", { hasText: fullLongTitle });
+      await renamed.waitFor();
+      await renamed.click();
+      await app.getByPlaceholder(/告诉我怎么调整/).fill("把这个改成横向增长"); await app.getByLabel("发送消息").click();
+      const selectedKeywordRename = app.locator("#nodesLayer .map-node", { hasText: "横向增长" });
+      await selectedKeywordRename.waitFor();
+      assert.equal(await app.locator("#mapStage").getAttribute("data-layout"), "mindmap", "selected-node rename must not switch to a keyword layout");
+      await selectedKeywordRename.click();
+      await app.getByPlaceholder(/告诉我怎么调整/).fill(`把这个改成 ${fullLongTitle}`); await app.getByLabel("发送消息").click();
+      await renamed.waitFor();
       const renamedBox = await renamed.boundingBox(); assert.ok(renamedBox.height > 125, "long DOM titles should exceed the old fixed tree level gap");
-      for (const layout of ["左右脑图", "向右展开", "组织结构"]) {
-        await app.getByRole("button", { name: /演示模式/ }).click(); await app.getByRole("button", { name: layout }).click(); await app.getByRole("button", { name: "完成" }).click();
-        const boxes = await app.locator("#nodesLayer .map-node").evaluateAll((nodes) => nodes.map((node) => { const box = node.getBoundingClientRect(); return { id: node.dataset.id, left: box.left, right: box.right, top: box.top, bottom: box.bottom }; }));
-        for (let first = 0; first < boxes.length; first++) for (let second = first + 1; second < boxes.length; second++) {
-          const overlaps = boxes[first].left < boxes[second].right && boxes[first].right > boxes[second].left && boxes[first].top < boxes[second].bottom && boxes[first].bottom > boxes[second].top;
-          assert.equal(overlaps, false, `${layout} nodes ${boxes[first].id}/${boxes[second].id} must not overlap: ${JSON.stringify([boxes[first],boxes[second]])}`);
-        }
+      for (const layout of ["左右脑图", "横向脑图", "树状图", "鱼骨图", "逻辑结构", "时间轴"]) {
+        await app.locator(`.structure-picker [data-layout]`, { hasText: layout }).click();
+        await assertMapFitsStage(app, layout);
       }
+      await app.getByLabel("打开设置").click();
+      await app.locator('[data-provider="openai"]').click();
+      await app.locator("#modelEndpoint").fill("https://private.example/v1");
+      await app.locator("#modelName").fill("private-model");
+      await app.locator("#modelKey").fill("secret-key");
+      await app.locator('[data-provider="ollama"]').click();
+      assert.equal(await app.locator("#modelEndpoint").inputValue(), "http://localhost:11434/v1");
+      assert.equal(await app.locator("#modelName").inputValue(), "qwen2.5:7b");
+      assert.equal(await app.locator("#modelKey").inputValue(), "", "provider switches must clear credentials");
+      assert.doesNotMatch(await app.evaluate(() => localStorage.getItem("planmap.model-settings.v1") || ""), /secret-key/, "API keys must never be persisted in localStorage");
+      await app.locator(".close-settings").last().click();
       const pngPath = await downloadExport(app, "png", "PNG 图片");
       assert.deepEqual([...readFileSync(pngPath).subarray(0, 8)], [137, 80, 78, 71, 13, 10, 26, 10]);
       assert.equal(await app.evaluate((title) => window.__planmapCanvasText.join("").includes(title), fullLongTitle), true, "PNG should render every character of the long title");
