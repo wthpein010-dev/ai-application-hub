@@ -68,6 +68,11 @@ try {
 
     await page.getByRole("button", { name: "打开咖啡因还剩多少？实验" }).first().click();
     await page.getByRole("heading", { name: "咖啡因还剩多少？", exact: true }).waitFor();
+    assert.equal(
+      await page.getByRole("tab", { name: /生活日常/ }).getAttribute("aria-selected"),
+      "true",
+      `${viewport.name}: opening an experiment synchronizes its library category`,
+    );
     await page.getByRole("tab", { name: /商业决策/ }).click();
     await page.getByRole("button", { name: "打开定期存钱与复利实验" }).click();
     await page.getByRole("heading", { name: "定期存钱与复利", exact: true }).waitFor();

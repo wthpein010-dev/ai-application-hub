@@ -230,7 +230,9 @@ function selectExperiment(id, { scroll = true, source = "内置实验", focus = 
   state.experiment = experiment;
   state.values = defaultValues(experiment);
   state.chartMode = experiment.chart.type;
+  state.activeCategory = experiment.category;
   state.activationSource = source;
+  renderActiveCategory();
   renderExperiment();
   highlightStage();
   if (scroll) nodes.experimentStage.scrollIntoView({ behavior: "smooth", block: "start" });
@@ -314,7 +316,9 @@ async function handleQuestionSubmit(event) {
       state.experiment = result.experiment;
       state.values = defaultValues(result.experiment);
       state.chartMode = result.experiment.chart.type;
+      state.activeCategory = result.experiment.category;
       state.activationSource = result.mode === "local" ? "搜索匹配" : "本地代理生成";
+      renderActiveCategory();
       renderExperiment();
       highlightStage();
       const evidence = result.matchedTerms?.length ? `，命中：${result.matchedTerms.join("、")}` : "";
