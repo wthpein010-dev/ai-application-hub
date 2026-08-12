@@ -79,7 +79,7 @@ try {
     "桌面自动化工具",
   );
   assert.equal(
-    await hub.locator("#appGrid .app-card").last().getAttribute("data-app-id"),
+    await clickFlowCard.locator("xpath=following-sibling::article[1]").getAttribute("data-app-id"),
     "pureshrink",
   );
   assert.deepEqual(
