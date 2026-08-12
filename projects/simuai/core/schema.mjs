@@ -14,7 +14,7 @@ const SOURCES = new Set(["builtin", "ai", "cache"]);
 const STANDARD_DISCLAIMER = "互动估算，不构成专业建议。";
 const EXECUTABLE_CONTENT = /<\/?[a-z][^>]*>|javascript\s*:|\beval\s*\(|new\s+Function\b|on\w+\s*=/i;
 const HIGH_RISK_TOPIC = /医疗|诊断|疾病|用药|药物|手术|健康|减重|投资|股票|个股|基金|证券|法律|诉讼|判决|合同|安全操作|危险品|武器|爆炸|自残|medical|diagnos|invest|stock|legal|weapon/i;
-const DETERMINISTIC_CLAIM = /保证|承诺|必然|一定会|准确(?:预测|判断|结论)|确定(?:上涨|下跌|诊断|违法|安全)|买入|卖出|治愈|处方|guarantee|certain(?:ly)?|must (?:rise|fall)|buy|sell/i;
+const DETERMINISTIC_CLAIM = /保证|(?:收益|回报|获利|治愈|结果)承诺|必然|一定会|准确(?:预测|判断|结论)|确定(?:上涨|下跌|诊断|违法|安全)|买入|卖出|治愈|处方|guarantee|certain(?:ly)?|must (?:rise|fall)|buy|sell/i;
 const EDUCATIONAL_BOUNDARY = /教育|理解|估算|假设|情景|趋势|不用于|不代表|仅用于|仅供|不构成|educational|estimate|scenario|not (?:advice|a diagnosis)/i;
 const SAFE_ID = /^[a-z][a-zA-Z0-9-]{1,63}$/;
 const SAFE_FIELD = /^[a-z][a-zA-Z0-9]{1,63}$/;
@@ -254,13 +254,7 @@ export function validateExperiment(spec) {
     ...(Array.isArray(spec.explanation?.assumptions) ? spec.explanation.assumptions : []),
     ...(Array.isArray(spec.keywords) ? spec.keywords : []),
   ].filter(Boolean).join(" ");
-  const claimText = [
-    spec.title,
-    spec.question,
-    spec.explanation?.formula,
-    ...(Array.isArray(spec.explanation?.assumptions) ? spec.explanation.assumptions : []),
-  ].filter(Boolean).join(" ");
-  if (DETERMINISTIC_CLAIM.test(claimText)) {
+  if (DETERMINISTIC_CLAIM.test(riskText)) {
     errors.push("deterministic high-risk promises or instructions are not allowed");
   } else if (HIGH_RISK_TOPIC.test(riskText)) {
     if (!EDUCATIONAL_BOUNDARY.test(spec.explanation?.boundary ?? "")) {

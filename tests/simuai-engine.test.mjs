@@ -242,6 +242,19 @@ test("schema rejects deterministic promises even when the topic is not enumerate
   }
 });
 
+test("schema rejects deterministic promises hidden in the boundary text", () => {
+  const unsafe = validateExperiment({
+    ...validSpec,
+    explanation: {
+      ...validSpec.explanation,
+      boundary: "仅用于教育情景估算，但保证明年翻倍。",
+    },
+  });
+
+  assert.equal(unsafe.ok, false);
+  assert.match(unsafe.errors.join(" "), /deterministic/i);
+});
+
 test("schema allows educational high-risk estimates with explicit boundaries", () => {
   const educational = validateExperiment({
     ...validSpec,
