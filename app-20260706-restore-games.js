@@ -4,6 +4,7 @@ const SELECTED_KEY = "ai-competition-hub-v2-selected";
 const PROJECT_ROOT_URL = "./projects/";
 const OLD_HUB_BRIEF = "把所有应用、体验入口、下载包和提交材料集中在一个本地页面中，方便审核和维护。";
 const HUB_BRIEF = "集中汇总全部应用、小游戏和工程体验，统一查看演示、视频与适用的平台版本。";
+const SIMUAI_LEGACY_BRIEF = "输入一个问题，让 AI 生成可拖动参数、观察曲线的互动实验。";
 
 const statusLabel = {
   navigation: "项目导航",
@@ -677,6 +678,30 @@ const defaultApps = [
     risk: 8,
     polish: 9
   },
+  {
+    id: "simuai",
+    name: "SimuAI 万物实验室",
+    category: "AI 互动实验",
+    status: "engineering",
+    badge: "工程体验",
+    brief: "输入一个适合量化的问题，从 12 个受控实验中本地匹配模型，拖动参数观察指标、曲线与结论如何变化。",
+    problem: "抽象问题常被直接压缩成一个答案，用户难以看清变量、公式、假设和结果之间的关系。",
+    aiUse: "AI 参与受控模型设计、问题匹配、安全边界、交互体验、自动测试与公开教程制作；公开版不调用远程模型。",
+    folder: "./projects/simuai/",
+    entry: "./projects/simuai/index.html",
+    video: "./projects/simuai/video/index.html",
+    package: "",
+    platforms: {
+      web: { href: "./projects/simuai/index.html", label: "演示" },
+      windows: "",
+      mac: ""
+    },
+    tags: ["问题模拟", "本地匹配", "参数实验", "透明模型"],
+    speed: 9,
+    impact: 9,
+    risk: 9,
+    polish: 9
+  },
 ];
 
 let apps = loadApps();
@@ -1328,6 +1353,9 @@ function normalizeApp(app) {
   }
   if (normalized.id === "hub" && normalized.brief === OLD_HUB_BRIEF) {
     normalized.brief = HUB_BRIEF;
+  }
+  if (normalized.id === "simuai" && normalized.brief === SIMUAI_LEGACY_BRIEF) {
+    normalized.brief = base.brief;
   }
   if (
     normalized.id === "paws-level-editor"

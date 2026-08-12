@@ -29,8 +29,6 @@ button:focus-visible, textarea:focus-visible, input:focus-visible, a:focus-visib
 .site-header, main, footer { width: min(1180px, calc(100% - 48px)); margin-inline: auto; }
 .site-header { height: 86px; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid var(--line); }
 .header-actions { display: flex; align-items: center; gap: 18px; }
-.hub-home-link { min-height: 38px; display: inline-flex; align-items: center; padding: 0 15px; border: 1px solid var(--line); border-radius: 99px; color: var(--ink); background: rgba(15, 22, 36, .72); text-decoration: none; font-size: 12px; transition: border-color .2s, background .2s; }
-.hub-home-link:hover { border-color: rgba(86, 242, 207, .5); background: rgba(25, 63, 59, .45); }
 .brand { color: inherit; text-decoration: none; display: flex; align-items: center; gap: 12px; }
 .brand-mark { width: 38px; height: 38px; display: grid; grid-template-columns: repeat(3, 1fr); gap: 3px; align-items: end; padding: 8px; border: 1px solid rgba(86, 242, 207, .4); border-radius: 12px; background: rgba(86, 242, 207, .08); }
 .brand-mark i { display: block; height: 45%; background: var(--mint); border-radius: 3px 3px 0 0; }
