@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 import { existsSync, readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
+import vm from "node:vm";
 import ffmpegPath from "ffmpeg-static";
 
 import { loadDefaultAppsFromRuntime } from "./helpers/default-apps.mjs";
@@ -14,13 +15,38 @@ const homepage = readFileSync(join(root, "index.html"), "utf8");
 const apps = loadDefaultAppsFromRuntime(runtime);
 process.env.FFMPEG_PATH ||= ffmpegPath;
 
-test("SimuAI follows PlanMap in the application collection with demo and video only", () => {
+function loadNormalizer() {
+  const start = runtime.indexOf("function normalizeApp");
+  const end = runtime.indexOf("function projectHref", start);
+  assert.notEqual(start, -1);
+  assert.notEqual(end, -1);
+  const context = {
+    globalThis: {},
+    defaultApps: apps,
+    statusLabel: {
+      idea: "概念",
+      prototype: "原型",
+      assistant: "应用",
+      engineering: "工程工具",
+      game: "小游戏",
+    },
+    OLD_HUB_BRIEF: "",
+    HUB_BRIEF: "",
+  };
+  vm.runInNewContext(
+    `function cloneApp(app) { return { ...app, tags: [...app.tags], platforms: { ...(app.platforms || {}) } }; }\n${runtime.slice(start, end)}\nglobalThis.normalizeApp = normalizeApp;`,
+    context,
+  );
+  return context.globalThis.normalizeApp;
+}
+
+test("万象实验室 follows PlanMap in the application collection with demo and video only", () => {
   const matches = apps.filter((item) => item.id === "simuai");
 
   assert.equal(matches.length, 1);
   assert.deepEqual(JSON.parse(JSON.stringify(apps.slice(-2).map((item) => item.id))), ["planmap", "simuai"]);
   const app = matches[0];
-  assert.equal(app.name, "SimuAI 万物实验室");
+  assert.equal(app.name, "万象实验室");
   assert.equal(app.category, "AI 互动实验");
   assert.equal(app.status, "assistant");
   assert.equal(app.badge, "AI 实验工具");
@@ -44,24 +70,35 @@ test("SimuAI follows PlanMap in the application collection with demo and video o
   );
 });
 
-test("SimuAI demo returns to the application catalog and Hub refreshes its runtime", () => {
+test("万象实验室 demo returns to the application catalog and Hub refreshes its runtime", () => {
   const demo = readFileSync(join(root, "projects", "simuai", "index.html"), "utf8");
   assert.match(demo, /class="hub-home-link"/);
   assert.match(demo, /href="\.\.\/\.\.\/index\.html#apps"/);
+  assert.match(demo, /<title>万象实验室<\/title>/);
+  assert.match(demo, /aria-label="万象实验室首页"/);
+  assert.doesNotMatch(demo, /SimuAI 万物实验室/);
   assert.match(
     homepage,
-    /app-20260706-restore-games\.js\?v=[^"]*simuai-30-experiments/,
+    /app-20260706-restore-games\.js\?v=[^"]*wanxiang-lab-rename/,
   );
 });
 
-test("SimuAI exact legacy default copy migrates without a broad overwrite", () => {
+test("万象实验室 migrates only the exact legacy default name", () => {
+  const app = apps.find((item) => item.id === "simuai");
+  const normalizeApp = loadNormalizer();
+
+  assert.equal(normalizeApp({ ...app, name: "SimuAI 万物实验室" }).name, "万象实验室");
+  assert.equal(normalizeApp({ ...app, name: "我的实验工具" }).name, "我的实验工具");
+});
+
+test("万象实验室 exact legacy default copy migrates without a broad overwrite", () => {
   assert.match(runtime, /normalized\.id === "simuai"/);
   assert.match(runtime, /normalized\.brief === "输入一个问题，让 AI 生成可拖动参数、观察曲线的互动实验。"/);
   assert.match(runtime, /normalized\.brief === "输入一个适合量化的问题，从 12 个受控实验中本地匹配模型，拖动参数观察指标、曲线与结论如何变化。"/);
   assert.doesNotMatch(runtime, /normalized\.id === "simuai"[\s\S]{0,500}normalized\.brief = base\.brief;[\s\S]{0,80}normalized\.problem = base\.problem/);
 });
 
-test("SimuAI tutorial uses the shared player and returns to applications", () => {
+test("万象实验室 tutorial uses the shared player and returns to applications", () => {
   const videoRoot = join(root, "projects", "simuai", "video");
   const html = readFileSync(join(videoRoot, "index.html"), "utf8");
 
@@ -78,7 +115,7 @@ test("SimuAI tutorial uses the shared player and returns to applications", () =>
   }
 });
 
-test("SimuAI tutorial is short H.264 720p with bounded one-line captions", () => {
+test("万象实验室 tutorial is short H.264 720p with bounded one-line captions", () => {
   const videoRoot = join(root, "projects", "simuai", "video");
   const mediaPath = join(videoRoot, "simuai-tutorial.mp4");
   const media = inspectMedia(mediaPath);

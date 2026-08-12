@@ -679,7 +679,7 @@ const defaultApps = [
   },
   {
     id: "simuai",
-    name: "SimuAI 万物实验室",
+    name: "万象实验室",
     category: "AI 互动实验",
     status: "assistant",
     badge: "AI 实验工具",
@@ -1373,6 +1373,9 @@ function normalizeApp(app) {
     )
   ) {
     normalized.brief = base.brief;
+  }
+  if (normalized.id === "simuai" && normalized.name === "SimuAI 万物实验室") {
+    normalized.name = base.name;
   }
   if (normalized.id === "planmap") {
     const legacy = {
