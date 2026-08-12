@@ -34,6 +34,24 @@ try {
     await page.getByRole("heading", { name: "小游戏买量回本", exact: true }).waitFor();
 
     assert.equal(await page.locator("[data-category]").count(), 6, `${viewport.name}: six category tabs`);
+    const activeCategoryTab = page.locator("[data-category][aria-selected='true']");
+    await activeCategoryTab.focus();
+    await page.keyboard.press("ArrowRight");
+    assert.equal(
+      await page.getByRole("tab", { name: /商业决策/ }).getAttribute("aria-selected"),
+      "true",
+      `${viewport.name}: arrow keys select the next category`,
+    );
+    assert.equal(
+      await page.getByRole("tab", { name: /商业决策/ }).evaluate(element => element === document.activeElement),
+      true,
+      `${viewport.name}: arrow keys move focus with selection`,
+    );
+    await page.keyboard.press("Home");
+    assert.equal(await page.getByRole("tab", { name: /生活日常/ }).getAttribute("aria-selected"), "true");
+    await page.keyboard.press("End");
+    assert.equal(await page.getByRole("tab", { name: /趣味脑洞/ }).getAttribute("aria-selected"), "true");
+    await page.getByRole("tab", { name: /游戏世界/ }).click();
     assert.equal(await page.locator("#templateLibrary [data-experiment-id]").count(), 3, `${viewport.name}: category starts compact`);
     assert.match(await page.locator("#librarySummary").textContent(), /5 个实验/);
     await page.getByRole("button", { name: /展开.*5 个实验/ }).click();

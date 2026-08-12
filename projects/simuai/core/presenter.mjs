@@ -9,6 +9,7 @@ const currencyFormatter = new Intl.NumberFormat("zh-CN", {
 });
 
 function formatMetric(metric, rawValue) {
+  if (metric.output === "clearTime" && rawValue === 0) return "当前已空";
   if (metric.format === "duration" && rawValue < 0) {
     if (metric.output === "depletionTime") return "不会耗尽";
     if (metric.output === "clearTime") return "不会自行清空";
@@ -52,6 +53,11 @@ function conclusionFor(spec, metrics, result, values) {
   }
   if (spec.modelType === "queue") {
     const clear = metrics.find(item => item.output === "clearTime");
+    if (clear?.rawValue === 0) {
+      return result.outputs.netRate > 0
+        ? `队列起点为空，但当前到达速度高于处理速度，之后会逐步累积，期末约为 ${first.displayValue}。`
+        : `队列起点为空；按当前到达与处理速度，期末约为 ${first.displayValue}。`;
+    }
     return clear?.rawValue < 0
       ? `当前到达速度不低于处理速度，排队会继续累积，期末约为 ${first.displayValue}。`
       : `按当前到达与处理速度，队列预计在 ${clear?.displayValue ?? "—"} 左右清空。`;

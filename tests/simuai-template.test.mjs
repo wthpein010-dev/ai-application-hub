@@ -9,6 +9,7 @@ import {
 import {
   EXPERIMENT_CATEGORIES,
   experimentsForCategory,
+  resolveCatalogCategory,
 } from "../projects/simuai/core/catalog.mjs";
 import {
   normalizeQuestion,
@@ -101,4 +102,10 @@ test("getExperiment returns a defensive copy", () => {
   first.title = "changed";
   assert.notEqual(getExperiment("caffeine-decay").title, "changed");
   assert.equal(getExperiment("missing"), null);
+});
+
+test("unknown generated categories keep the current catalog category", () => {
+  assert.equal(resolveCatalogCategory("未来城市", "游戏世界"), "游戏世界");
+  assert.equal(resolveCatalogCategory("自然科学", "游戏世界"), "自然科学");
+  assert.equal(resolveCatalogCategory("未来城市"), EXPERIMENT_CATEGORIES[0]);
 });

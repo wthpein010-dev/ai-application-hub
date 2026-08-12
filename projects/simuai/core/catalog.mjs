@@ -13,3 +13,9 @@ export function experimentsForCategory(category) {
   if (!EXPERIMENT_CATEGORIES.includes(category)) return [];
   return EXPERIMENTS.filter(experiment => experiment.category === category);
 }
+
+export function resolveCatalogCategory(candidate, current = EXPERIMENT_CATEGORIES[0]) {
+  if (EXPERIMENT_CATEGORIES.includes(candidate)) return candidate;
+  if (EXPERIMENT_CATEGORIES.includes(current)) return current;
+  return EXPERIMENT_CATEGORIES[0];
+}

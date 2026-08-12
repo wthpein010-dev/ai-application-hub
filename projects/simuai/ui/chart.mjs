@@ -2,6 +2,13 @@ const NS = "http://www.w3.org/2000/svg";
 const WIDTH = 800;
 const HEIGHT = 360;
 const PAD = { top: 24, right: 24, bottom: 48, left: 66 };
+const chartIds = new WeakMap();
+let nextChartId = 0;
+
+function chartIdFor(svg) {
+  if (!chartIds.has(svg)) chartIds.set(svg, `chart-${nextChartId += 1}`);
+  return chartIds.get(svg);
+}
 
 const createSvg = (name, attrs = {}) => {
   const node = document.createElementNS(NS, name);
@@ -60,8 +67,9 @@ function renderLineChart(svg, chart) {
   const sx = value => PAD.left + (xMax === xMin ? 0 : (value - xMin) / (xMax - xMin) * plotWidth);
   const sy = value => PAD.top + (yMax - value) / (yMax - yMin) * plotHeight;
 
+  const areaGradientId = `${chartIdFor(svg)}-area-gradient`;
   const defs = createSvg("defs");
-  const gradient = createSvg("linearGradient", { id: "chartAreaGradient", x1: 0, y1: 0, x2: 0, y2: 1 });
+  const gradient = createSvg("linearGradient", { id: areaGradientId, x1: 0, y1: 0, x2: 0, y2: 1 });
   gradient.append(
     createSvg("stop", { offset: "0%", "stop-color": "#56f2cf", "stop-opacity": 0.32 }),
     createSvg("stop", { offset: "100%", "stop-color": "#56f2cf", "stop-opacity": 0 }),
@@ -90,7 +98,7 @@ function renderLineChart(svg, chart) {
     }).join(" ");
     if (chart.type === "area" && chart.series.length === 1) {
       const area = `${pathData} L${coordinates.at(-1)[0].toFixed(2)},${sy(yMin).toFixed(2)} L${coordinates[0][0].toFixed(2)},${sy(yMin).toFixed(2)} Z`;
-      svg.append(createSvg("path", { d: area, class: "chart-area", fill: "url(#chartAreaGradient)" }));
+      svg.append(createSvg("path", { d: area, class: "chart-area", fill: `url(#${areaGradientId})` }));
     }
     const path = createSvg("path", { d: pathData, class: `chart-line chart-line-${seriesIndex}` });
     svg.append(path);

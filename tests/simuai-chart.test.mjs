@@ -88,3 +88,23 @@ test("line, area and funnel keep their distinct visual primitives", () => {
   assert.equal(byClass(areaSvg, "chart-area").length, 1);
   assert.equal(byClass(funnelSvg, "funnel-stage").length, 2);
 });
+
+test("area charts use distinct stable gradients per svg", () => {
+  const first = new FakeNode("svg");
+  const second = new FakeNode("svg");
+  renderChart(first, chart("area"));
+  renderChart(second, chart("area"));
+
+  const firstGradient = descendants(first).find(node => node.nodeName === "linearGradient")?.getAttribute("id");
+  const secondGradient = descendants(second).find(node => node.nodeName === "linearGradient")?.getAttribute("id");
+  assert.ok(firstGradient);
+  assert.ok(secondGradient);
+  assert.notEqual(firstGradient, secondGradient);
+  assert.equal(byClass(first, "chart-area")[0].getAttribute("fill"), `url(#${firstGradient})`);
+
+  renderChart(first, chart("area"));
+  assert.equal(
+    descendants(first).find(node => node.nodeName === "linearGradient")?.getAttribute("id"),
+    firstGradient,
+  );
+});

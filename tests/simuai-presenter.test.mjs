@@ -105,6 +105,20 @@ test("inventory and queue use model-specific text when they will not clear", () 
   assert.match(queue.conclusion, /排队|队列/);
 });
 
+test("an initially empty queue explains later accumulation without claiming a future clear", () => {
+  const experiment = getExperiment("restaurant-queue");
+  const view = buildViewModel(experiment, {
+    initialQueue: 0,
+    arrivalRate: 7,
+    serviceRate: 3,
+    duration: 10,
+  });
+
+  assert.equal(view.metrics.find(item => item.output === "clearTime").displayValue, "当前已空");
+  assert.match(view.conclusion, /起点为空/);
+  assert.match(view.conclusion, /累积/);
+});
+
 test("new deterministic models receive specific conclusions", () => {
   const logistic = buildViewModel(getExperiment("plant-growth"));
   const probability = buildViewModel(getExperiment("gacha-pity"));

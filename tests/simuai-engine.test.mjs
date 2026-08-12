@@ -155,6 +155,19 @@ test("logistic growth approaches but does not exceed its carrying capacity", () 
   assert.ok(result.outputs.capacityPercent > 90 && result.outputs.capacityPercent < 100);
 });
 
+test("logistic growth respects a capacity below the initial value", () => {
+  const result = runModel({ modelType: "logistic" }, {
+    initial: 200,
+    capacity: 10,
+    growthRate: 30,
+    duration: 20,
+  });
+
+  assert.ok(Math.abs(result.series[0].value - 200) < 1e-9);
+  assert.ok(result.outputs.finalValue > 10 && result.outputs.finalValue < 200);
+  assert.ok(result.outputs.capacityPercent > 100);
+});
+
 test("queue drains at the net service rate and never becomes negative", () => {
   const result = runModel({ modelType: "queue" }, {
     initialQueue: 20,
@@ -180,6 +193,19 @@ test("queue reports no clearing time when arrivals meet or exceed service", () =
   assert.equal(result.outputs.clearTime, -1);
   assert.equal(result.outputs.finalValue, 60);
   assert.ok(result.warnings.length > 0);
+});
+
+test("an empty queue reports zero clearing time before future arrivals accumulate", () => {
+  const result = runModel({ modelType: "queue" }, {
+    initialQueue: 0,
+    arrivalRate: 7,
+    serviceRate: 3,
+    duration: 10,
+  });
+
+  assert.equal(result.outputs.clearTime, 0);
+  assert.equal(result.outputs.finalValue, 40);
+  assert.match(result.warnings.join(" "), /当前队列为空/);
 });
 
 test("probability calculates ordinary cumulative chance and hard guarantee", () => {
@@ -208,6 +234,7 @@ test("probability can convert people into pairwise comparisons", () => {
 
   assert.equal(result.outputs.effectiveTrials, 253);
   assert.ok(result.outputs.finalValue > 50 && result.outputs.finalValue < 51);
+  assert.equal(result.outputs.medianAttempt, 23);
 });
 
 test("model inputs must be finite and model types must be supported", () => {

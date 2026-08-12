@@ -2,7 +2,7 @@ import { createCache } from "./core/cache.mjs";
 import { buildViewModel } from "./core/presenter.mjs";
 import { resolveQuestion } from "./core/resolver.mjs";
 import { EXPERIMENTS, getExperiment } from "./core/templates.mjs";
-import { EXPERIMENT_CATEGORIES, experimentsForCategory } from "./core/catalog.mjs";
+import { EXPERIMENT_CATEGORIES, experimentsForCategory, resolveCatalogCategory } from "./core/catalog.mjs";
 import { renderChart } from "./ui/chart.mjs";
 
 const nodes = Object.fromEntries([
@@ -316,7 +316,7 @@ async function handleQuestionSubmit(event) {
       state.experiment = result.experiment;
       state.values = defaultValues(result.experiment);
       state.chartMode = result.experiment.chart.type;
-      state.activeCategory = result.experiment.category;
+      state.activeCategory = resolveCatalogCategory(result.experiment.category, state.activeCategory);
       state.activationSource = result.mode === "local" ? "搜索匹配" : "本地代理生成";
       renderActiveCategory();
       renderExperiment();
@@ -352,6 +352,21 @@ nodes.categoryTabs.addEventListener("click", event => {
   if (!button) return;
   state.activeCategory = button.dataset.category;
   renderActiveCategory();
+});
+nodes.categoryTabs.addEventListener("keydown", event => {
+  const button = event.target.closest("[data-category]");
+  if (!button) return;
+  const currentIndex = EXPERIMENT_CATEGORIES.indexOf(button.dataset.category);
+  let nextIndex = null;
+  if (event.key === "ArrowRight") nextIndex = (currentIndex + 1) % EXPERIMENT_CATEGORIES.length;
+  if (event.key === "ArrowLeft") nextIndex = (currentIndex - 1 + EXPERIMENT_CATEGORIES.length) % EXPERIMENT_CATEGORIES.length;
+  if (event.key === "Home") nextIndex = 0;
+  if (event.key === "End") nextIndex = EXPERIMENT_CATEGORIES.length - 1;
+  if (nextIndex === null) return;
+  event.preventDefault();
+  state.activeCategory = EXPERIMENT_CATEGORIES[nextIndex];
+  renderActiveCategory();
+  nodes.categoryTabs.querySelector(`[data-category="${state.activeCategory}"]`)?.focus();
 });
 nodes.toggleCategoryExpansion.addEventListener("click", () => {
   if (state.expandedCategories.has(state.activeCategory)) state.expandedCategories.delete(state.activeCategory);
