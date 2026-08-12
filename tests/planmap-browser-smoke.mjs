@@ -10,6 +10,9 @@ import { chromium } from "playwright";
 const root = dirname(dirname(fileURLToPath(import.meta.url)));
 const artifactRoot = join(root, "tests", "artifacts", "planmap");
 mkdirSync(artifactRoot, { recursive: true });
+const packagedSourceRoot = mkdtempSync(join(tmpdir(), "planmap-packaged-source-"));
+const sourceExtraction = spawnSync("tar", ["-xf", join(root, "downloads", "planmap-source.zip"), "-C", packagedSourceRoot], { encoding: "utf8" });
+assert.equal(sourceExtraction.status, 0, sourceExtraction.stderr);
 const requestedBaseUrl = process.env.HUB_BASE_URL?.replace(/\/+$/, "");
 
 const types = new Map([
@@ -20,6 +23,17 @@ const types = new Map([
 
 const server = requestedBaseUrl ? null : createServer((request, response) => {
   const pathname = decodeURIComponent(new URL(request.url, "http://127.0.0.1").pathname);
+  if (pathname === "/favicon.ico") { response.writeHead(204).end(); return; }
+  if (pathname === "/__planmap-source-test.html") {
+    const sourceCss = readFileSync(join(packagedSourceRoot, "planmap-source", "app", "globals.css"), "utf8").replace(/^@import\s+"tailwindcss";?\s*/u, "");
+    const html = '<!doctype html><style>' + sourceCss + '</style><div class="map-node" style="position:relative;transform:none;width:158px;height:46px">https://example.com/' + "A".repeat(200) + "</div>";
+    response.writeHead(200, { "Cache-Control": "no-store", "Content-Type": "text/html; charset=utf-8" }).end(html); return;
+  }
+  if (pathname.startsWith("/__planmap-source/")) {
+    const relative = pathname.slice("/__planmap-source/".length); const sourceRoot = join(packagedSourceRoot, "planmap-source"); const path = resolve(sourceRoot, relative);
+    if (!path.startsWith(sourceRoot + sep) || !existsSync(path) || statSync(path).isDirectory()) { response.writeHead(404).end(); return; }
+    const stats = statSync(path); response.writeHead(200, { "Cache-Control": "no-store", "Content-Length": stats.size, "Content-Type": types.get(extname(path)) || "application/octet-stream" }); createReadStream(path).pipe(response); return;
+  }
   const target = resolve(root, "." + normalize(pathname));
   if (!target.startsWith(root + sep) && target !== root) { response.writeHead(403).end(); return; }
   const path = existsSync(target) && statSync(target).isDirectory() ? join(target, "index.html") : target;
@@ -145,6 +159,15 @@ async function assertEdgeRoutesClear(page, layoutLabel) {
   }
 }
 
+async function assertRoutesFitStage(page, layoutLabel) {
+  const geometry = await page.locator("#mapStage").evaluate((stage) => ({
+    width: stage.clientWidth,
+    height: stage.clientHeight,
+    points: [...stage.querySelectorAll("#connections path")].flatMap((path) => { const length = path.getTotalLength(); const count = Math.max(2, Math.ceil(length / 2) + 1); return Array.from({ length: count }, (_, index) => { const point = path.getPointAtLength(length * index / (count - 1)); return { x: point.x, y: point.y }; }); }),
+  }));
+  for (const point of geometry.points) assert.ok(point.x >= 0 && point.y >= 0 && point.x <= geometry.width && point.y <= geometry.height, `${layoutLabel} route must stay inside ${geometry.width}x${geometry.height}: ${JSON.stringify(point)}`);
+}
+
 function segmentIntersectsRect(a, b, rect) {
   let start = 0; let end = 1; const dx = b.x - a.x; const dy = b.y - a.y;
   for (const [p, q] of [[-dx, a.x - rect.left], [dx, rect.right - a.x], [-dy, a.y - rect.top], [dy, rect.bottom - a.y]]) {
@@ -158,25 +181,32 @@ function segmentIntersectsRect(a, b, rect) {
 
 function pathsShareVisibleRun(first, second) {
   const cellSize = 2; const grid = new Map();
-  second.forEach((point, index) => { const key = `${Math.round(point.x / cellSize)}:${Math.round(point.y / cellSize)}`; grid.set(key, [...(grid.get(key) ?? []), index]); });
-  let run = 0;
-  for (let index = 1; index < first.length - 1; index += 1) {
-    const point = first[index]; const cellX = Math.round(point.x / cellSize); const cellY = Math.round(point.y / cellSize); let parallelMatch = false;
+  second.slice(0, -1).forEach((point, index) => { for (const endpoint of [point, second[index + 1]]) { const key = `${Math.round(endpoint.x / cellSize)}:${Math.round(endpoint.y / cellSize)}`; grid.set(key, [...new Set([...(grid.get(key) ?? []), index])]); } });
+  let sharedLength = 0;
+  for (let index = 0; index < first.length - 1; index += 1) {
+    const start = first[index]; const end = first[index + 1]; const midpoint = { x: (start.x + end.x) / 2, y: (start.y + end.y) / 2 }; const cellX = Math.round(midpoint.x / cellSize); const cellY = Math.round(midpoint.y / cellSize); let parallelMatch = false;
     for (let x = cellX - 1; x <= cellX + 1 && !parallelMatch; x += 1) for (let y = cellY - 1; y <= cellY + 1 && !parallelMatch; y += 1) {
       for (const matchIndex of grid.get(`${x}:${y}`) ?? []) {
-        if (matchIndex < 1 || matchIndex >= second.length - 1) continue;
-        const match = second[matchIndex]; if (Math.hypot(point.x - match.x, point.y - match.y) > .2) continue;
-        const firstDx = first[index + 1].x - first[index - 1].x; const firstDy = first[index + 1].y - first[index - 1].y;
-        const secondDx = second[matchIndex + 1].x - second[matchIndex - 1].x; const secondDy = second[matchIndex + 1].y - second[matchIndex - 1].y;
+        const otherStart = second[matchIndex]; const otherEnd = second[matchIndex + 1];
+        if (pointToSegmentDistance(midpoint, otherStart, otherEnd) > .35) continue;
+        const firstDx = end.x - start.x; const firstDy = end.y - start.y; const secondDx = otherEnd.x - otherStart.x; const secondDy = otherEnd.y - otherStart.y;
         const cosine = Math.abs((firstDx * secondDx + firstDy * secondDy) / (Math.hypot(firstDx, firstDy) * Math.hypot(secondDx, secondDy) || 1));
-        if (cosine > 0.995) { parallelMatch = true; break; }
+        if (cosine > .995) { parallelMatch = true; break; }
       }
     }
-    run = parallelMatch ? run + 1 : 0;
-    if (run >= 8) return true;
+    sharedLength = parallelMatch ? sharedLength + Math.hypot(end.x - start.x, end.y - start.y) : 0;
+    if (sharedLength >= 12) return true;
   }
   return false;
 }
+
+function pointToSegmentDistance(point, start, end) {
+  const dx = end.x - start.x; const dy = end.y - start.y; const denominator = dx * dx + dy * dy;
+  const ratio = denominator ? Math.max(0, Math.min(1, ((point.x - start.x) * dx + (point.y - start.y) * dy) / denominator)) : 0;
+  return Math.hypot(point.x - (start.x + ratio * dx), point.y - (start.y + ratio * dy));
+}
+
+assert.equal(pathsShareVisibleRun(Array.from({ length: 12 }, (_, index) => ({ x: index * 2, y: 0 })), Array.from({ length: 12 }, (_, index) => ({ x: index * 2 + .7, y: 0 }))), true, "visible overlap detection must not depend on sample phase");
 
 async function assertReadableTypography(page, viewportName) {
   const sizes = await page.evaluate(() => Object.fromEntries(Object.entries({
@@ -364,6 +394,22 @@ try {
       const content = spawnSync("tar", ["-xOf", xmindPath, "content.json"], { encoding: "utf8" });
       assert.equal(content.status, 0, content.stderr);
       assert.equal(JSON.parse(content.stdout)[0].rootTopic.title, "校园音乐节策划"); assert.match(content.stdout, new RegExp(fullLongTitle));
+
+      const stress = await context.newPage(); observe(stress, `${viewport.name}/timeline-stress`);
+      await stress.goto(`${origin}/projects/planmap/app/index.html`, { waitUntil: navigationState });
+      await stress.evaluate(() => localStorage.setItem("planmap.hub-demo.v2", JSON.stringify({ root: { id: "root", title: "多分支时间轴", children: Array.from({ length: 14 }, (_, index) => ({ id: `branch-${index}`, title: `分支 ${index + 1}`, children: [] })) }, theme: "azure", layout: "timeline" })));
+      await stress.reload({ waitUntil: navigationState });
+      await assertMapFitsStage(stress, "时间轴-14根分支");
+      await assertRoutesFitStage(stress, "时间轴-14根分支");
+      await assertEdgeRoutesClear(stress, "时间轴-14根分支");
+      await stress.close();
+
+      const sourceCss = await context.newPage(); observe(sourceCss, `${viewport.name}/packaged-source-css`);
+      await sourceCss.goto(`${origin}/__planmap-source-test.html`, { waitUntil: navigationState });
+      const sourceNode = await sourceCss.locator(".map-node").evaluate((node) => ({ clientWidth: node.clientWidth, scrollWidth: node.scrollWidth, overflowWrap: getComputedStyle(node).overflowWrap }));
+      assert.equal(sourceNode.overflowWrap, "anywhere", `packaged source should wrap arbitrary strings: ${JSON.stringify(sourceNode)}`);
+      assert.ok(sourceNode.scrollWidth <= sourceNode.clientWidth, `packaged source node text must not overflow horizontally: ${JSON.stringify(sourceNode)}`);
+      await sourceCss.close();
     }
     await app.locator("#messages .message-row").evaluateAll((rows) => rows.filter((row) => row.textContent.includes("<img")).forEach((row) => row.remove()));
     await app.screenshot({ path: join(artifactRoot, `${viewport.name}.png`), fullPage: false });
@@ -388,4 +434,5 @@ try {
   await browser.close();
   if (server) await new Promise((resolveServer) => server.close(resolveServer));
   rmSync(downloadRoot, { recursive: true, force: true });
+  rmSync(packagedSourceRoot, { recursive: true, force: true });
 }
