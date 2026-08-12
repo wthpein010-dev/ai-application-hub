@@ -33,6 +33,23 @@ try {
     await page.goto(baseUrl, { waitUntil: "networkidle" });
     await page.getByRole("heading", { name: "小游戏买量回本", exact: true }).waitFor();
 
+    assert.equal(await page.locator("[data-category]").count(), 6, `${viewport.name}: six category tabs`);
+    assert.equal(await page.locator("#templateLibrary [data-experiment-id]").count(), 3, `${viewport.name}: category starts compact`);
+    assert.match(await page.locator("#librarySummary").textContent(), /5 个实验/);
+    await page.getByRole("button", { name: /展开.*5 个实验/ }).click();
+    assert.equal(await page.locator("#templateLibrary [data-experiment-id]").count(), 5, `${viewport.name}: category expands to five`);
+    await page.getByRole("button", { name: /收起/ }).click();
+    assert.equal(await page.locator("#templateLibrary [data-experiment-id]").count(), 3, `${viewport.name}: category collapses to three`);
+
+    const recommendedMode = page.locator("#chartModePicker [data-chart-mode].is-recommended");
+    assert.equal(await recommendedMode.count(), 1, `${viewport.name}: one recommended chart mode`);
+    assert.equal(await recommendedMode.getAttribute("aria-pressed"), "true");
+    const switchableMode = page.locator("#chartModePicker [data-chart-mode]:not(.is-recommended)").first();
+    const metricSnapshot = await page.locator("#metricGrid").textContent();
+    await switchableMode.click();
+    assert.equal(await page.locator("#metricGrid").textContent(), metricSnapshot, `${viewport.name}: chart mode must not change metrics`);
+    assert.equal(await switchableMode.getAttribute("aria-pressed"), "true");
+
     const paybackMetric = page.locator("[data-metric-id='paybackDay'] strong");
     const before = await paybackMetric.textContent();
     await page.getByLabel("每日买量成本精确值").fill("8000");
@@ -49,10 +66,16 @@ try {
     await page.getByRole("heading", { name: "公式与边界" }).waitFor();
     assert.match(await page.locator("#disclaimerText").textContent(), /不构成专业建议/);
 
-    for (const title of ["咖啡因还剩多少？", "定期存钱与复利"]) {
-      await page.getByRole("button", { name: `打开${title}实验` }).first().click();
-      await page.getByRole("heading", { name: title, exact: true }).waitFor();
-    }
+    await page.getByRole("button", { name: "打开咖啡因还剩多少？实验" }).first().click();
+    await page.getByRole("heading", { name: "咖啡因还剩多少？", exact: true }).waitFor();
+    await page.getByRole("tab", { name: /商业决策/ }).click();
+    await page.getByRole("button", { name: "打开定期存钱与复利实验" }).click();
+    await page.getByRole("heading", { name: "定期存钱与复利", exact: true }).waitFor();
+    assert.equal(
+      await page.locator("#chartModePicker [data-chart-mode].is-recommended").getAttribute("aria-pressed"),
+      "true",
+      `${viewport.name}: switching experiments restores the recommended mode`,
+    );
 
     const compileRequests = [];
     page.on("request", request => {
@@ -62,7 +85,7 @@ try {
     await page.getByLabel("想模拟什么？").fill("小游戏每天买量 5000 元多久回本");
     await page.getByRole("button", { name: "匹配实验" }).click();
     await page.locator("#searchResults[data-state='matched']").waitFor();
-    assert.match(await page.locator("#searchResultSummary").textContent(), /匹配到「小游戏买量回本」/);
+    assert.match(await page.locator("#searchResultSummary").textContent(), /已从 30 个实验中匹配到「小游戏买量回本」/);
     assert.equal(await page.locator("#experimentSource").textContent(), "搜索匹配");
     assert.equal(compileRequests.length, 0, `${viewport.name}: matched search must stay local`);
 

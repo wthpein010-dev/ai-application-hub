@@ -26,6 +26,10 @@ test("page contains the complete experiment workflow", async () => {
   assert.match(html, /id="searchRecommendationList"/);
   assert.match(html, /id="searchCapability"/);
   assert.match(html, /id="templateLibrary"/);
+  assert.match(html, /id="categoryTabs"/);
+  assert.match(html, /id="librarySummary"/);
+  assert.match(html, /id="toggleCategoryExpansion"/);
+  assert.match(html, /id="chartModePicker"/);
   assert.match(html, /id="experimentStage"/);
   assert.match(html, /id="parameterControls"/);
   assert.match(html, /id="metricGrid"/);
@@ -33,6 +37,7 @@ test("page contains the complete experiment workflow", async () => {
   assert.match(html, /type="module" src="\.\/app\.mjs"/);
   assert.match(app, /resolveQuestion\(question,\s*\{\s*mode:\s*"static"\s*\}\)/);
   assert.match(app, /data-recommendation-id/);
+  assert.doesNotMatch(app, /12 个实验/);
 });
 
 test("page starts with an honest estimation disclosure", async () => {

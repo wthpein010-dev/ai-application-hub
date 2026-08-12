@@ -2,11 +2,13 @@ import { createCache } from "./core/cache.mjs";
 import { buildViewModel } from "./core/presenter.mjs";
 import { resolveQuestion } from "./core/resolver.mjs";
 import { EXPERIMENTS, getExperiment } from "./core/templates.mjs";
+import { EXPERIMENT_CATEGORIES, experimentsForCategory } from "./core/catalog.mjs";
 import { renderChart } from "./ui/chart.mjs";
 
 const nodes = Object.fromEntries([
   "questionForm", "questionInput", "generateButton", "compileStatus", "searchResults",
   "searchResultSummary", "searchRecommendationList", "searchCapability", "featuredTemplates", "templateLibrary",
+  "categoryTabs", "librarySummary", "toggleCategoryExpansion", "chartModePicker",
   "experimentStage", "experimentCategory", "experimentSource", "experimentTitle", "experimentQuestion",
   "experimentConclusion", "metricGrid", "parameterControls", "resultChart", "chartLegend",
   "chartDescription", "warningText", "resetParameters", "explanationToggle", "explanationPanel",
@@ -22,6 +24,17 @@ const state = {
   values: {},
   view: null,
   activationSource: "内置实验",
+  chartMode: null,
+  activeCategory: "游戏世界",
+  expandedCategories: new Set(),
+};
+
+const chartModeLabels = {
+  line: "折线",
+  area: "面积",
+  bar: "柱状",
+  step: "阶梯",
+  funnel: "漏斗",
 };
 
 function text(tag, content, className) {
@@ -46,8 +59,9 @@ function buttonFor(experiment, featured = false) {
     );
   } else {
     button.append(
+      text("span", experiment.category, "library-card-category"),
       text("strong", experiment.title),
-      text("span", experiment.modelType.toUpperCase(), "model-tag"),
+      text("span", `${experiment.modelType.toUpperCase()} · ${chartModeLabels[experiment.chart.type]}`, "model-tag"),
     );
   }
   return button;
@@ -55,17 +69,37 @@ function buttonFor(experiment, featured = false) {
 
 function renderLibrary() {
   nodes.featuredTemplates.replaceChildren(...EXPERIMENTS.filter(item => item.featured).map(item => buttonFor(item, true)));
-  nodes.templateLibrary.replaceChildren();
-  for (const category of ["生活科普", "游戏产品", "商业决策"]) {
-    const group = document.createElement("section");
-    group.className = "library-group";
-    group.append(text("h3", category));
-    const grid = document.createElement("div");
-    grid.className = "library-grid";
-    grid.append(...EXPERIMENTS.filter(item => item.category === category).map(item => buttonFor(item)));
-    group.append(grid);
-    nodes.templateLibrary.append(group);
-  }
+  nodes.categoryTabs.replaceChildren(...EXPERIMENT_CATEGORIES.map(category => {
+    const button = document.createElement("button");
+    const count = experimentsForCategory(category).length;
+    button.type = "button";
+    button.className = "category-tab";
+    button.dataset.category = category;
+    button.setAttribute("role", "tab");
+    button.setAttribute("aria-selected", String(category === state.activeCategory));
+    button.append(text("span", category), text("small", String(count)));
+    return button;
+  }));
+  renderActiveCategory();
+}
+
+function renderActiveCategory() {
+  const experiments = experimentsForCategory(state.activeCategory);
+  const expanded = state.expandedCategories.has(state.activeCategory);
+  const visible = expanded ? experiments : experiments.slice(0, 3);
+  const grid = document.createElement("div");
+  grid.className = "library-grid";
+  grid.append(...visible.map(item => buttonFor(item)));
+  nodes.templateLibrary.replaceChildren(grid);
+  nodes.librarySummary.textContent = `${state.activeCategory} · ${experiments.length} 个实验${expanded ? "，已全部展开" : "，先看精选 3 个"}`;
+  nodes.toggleCategoryExpansion.textContent = expanded ? "收起为精选 3 个" : `展开本类全部 ${experiments.length} 个实验`;
+  nodes.toggleCategoryExpansion.setAttribute("aria-expanded", String(expanded));
+  nodes.categoryTabs.querySelectorAll("[data-category]").forEach(button => {
+    const active = button.dataset.category === state.activeCategory;
+    button.classList.toggle("is-active", active);
+    button.setAttribute("aria-selected", String(active));
+    button.tabIndex = active ? 0 : -1;
+  });
 }
 
 function defaultValues(experiment) {
@@ -141,8 +175,26 @@ function renderLegend(view) {
   }));
 }
 
+function renderChartModes(view) {
+  nodes.chartModePicker.replaceChildren(...view.chart.modes.map(mode => {
+    const button = document.createElement("button");
+    const recommended = mode === state.experiment.chart.type;
+    button.type = "button";
+    button.className = "chart-mode-button";
+    button.dataset.chartMode = mode;
+    button.classList.toggle("is-recommended", recommended);
+    button.classList.toggle("is-active", mode === view.chart.type);
+    button.setAttribute("aria-pressed", String(mode === view.chart.type));
+    button.setAttribute("aria-label", `${chartModeLabels[mode]}${recommended ? "，推荐视图" : ""}`);
+    button.append(text("span", chartModeLabels[mode]));
+    if (recommended) button.append(text("small", "推荐"));
+    return button;
+  }));
+}
+
 function renderExperiment({ rebuildControls = true } = {}) {
-  const view = buildViewModel(state.experiment, state.values);
+  const view = buildViewModel(state.experiment, state.values, { chartMode: state.chartMode });
+  state.chartMode = view.chart.type;
   state.view = view;
   nodes.experimentCategory.textContent = view.category;
   nodes.experimentSource.textContent = state.activationSource;
@@ -153,6 +205,7 @@ function renderExperiment({ rebuildControls = true } = {}) {
   nodes.chartDescription.textContent = `${view.title}的${view.chart.xLabel}与${view.chart.yLabel}关系图。`;
   renderMetrics(view);
   renderLegend(view);
+  renderChartModes(view);
   renderChart(nodes.resultChart, view.chart);
   renderExplanation(view);
   if (rebuildControls) renderControls(view);
@@ -176,6 +229,7 @@ function selectExperiment(id, { scroll = true, source = "内置实验", focus = 
   if (!experiment) return;
   state.experiment = experiment;
   state.values = defaultValues(experiment);
+  state.chartMode = experiment.chart.type;
   state.activationSource = source;
   renderExperiment();
   highlightStage();
@@ -249,7 +303,7 @@ async function handleQuestionSubmit(event) {
   nodes.generateButton.querySelector("span").textContent = "正在匹配";
   nodes.searchRecommendationList.replaceChildren();
   setSearchState("matching", "正在分析问题并匹配本地实验库……");
-  animateCompile("识别关键词 → 对比 12 个实验 → 返回结果");
+  animateCompile(`识别关键词 → 对比 ${EXPERIMENTS.length} 个实验 → 返回结果`);
 
   try {
     const result = resolverMode === "proxy"
@@ -259,11 +313,12 @@ async function handleQuestionSubmit(event) {
     if (result.experiment) {
       state.experiment = result.experiment;
       state.values = defaultValues(result.experiment);
+      state.chartMode = result.experiment.chart.type;
       state.activationSource = result.mode === "local" ? "搜索匹配" : "本地代理生成";
       renderExperiment();
       highlightStage();
       const evidence = result.matchedTerms?.length ? `，命中：${result.matchedTerms.join("、")}` : "";
-      setSearchState("matched", `已从 12 个实验中匹配到「${result.experiment.title}」${evidence}。`);
+      setSearchState("matched", `已从 ${EXPERIMENTS.length} 个实验中匹配到「${result.experiment.title}」${evidence}。`);
       nodes.compileStatus.textContent = "匹配完成；后续参数变化只在本地计算。";
       nodes.experimentStage.scrollIntoView({ behavior: "smooth", block: "start" });
       nodes.experimentTitle.tabIndex = -1;
@@ -287,6 +342,23 @@ nodes.featuredTemplates.addEventListener("click", event => {
 nodes.templateLibrary.addEventListener("click", event => {
   const card = event.target.closest("[data-experiment-id]");
   if (card) selectExperiment(card.dataset.experimentId);
+});
+nodes.categoryTabs.addEventListener("click", event => {
+  const button = event.target.closest("[data-category]");
+  if (!button) return;
+  state.activeCategory = button.dataset.category;
+  renderActiveCategory();
+});
+nodes.toggleCategoryExpansion.addEventListener("click", () => {
+  if (state.expandedCategories.has(state.activeCategory)) state.expandedCategories.delete(state.activeCategory);
+  else state.expandedCategories.add(state.activeCategory);
+  renderActiveCategory();
+});
+nodes.chartModePicker.addEventListener("click", event => {
+  const button = event.target.closest("[data-chart-mode]");
+  if (!button || !state.view.chart.modes.includes(button.dataset.chartMode)) return;
+  state.chartMode = button.dataset.chartMode;
+  renderExperiment({ rebuildControls: false });
 });
 nodes.searchRecommendationList.addEventListener("click", event => {
   const card = event.target.closest("[data-recommendation-id]");
@@ -313,4 +385,5 @@ nodes.explanationToggle.addEventListener("click", () => {
 
 renderLibrary();
 state.values = defaultValues(state.experiment);
+state.chartMode = state.experiment.chart.type;
 renderExperiment();
