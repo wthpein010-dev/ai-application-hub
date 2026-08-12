@@ -11,37 +11,47 @@ export const MODEL_TYPES = Object.freeze([
 
 const CHART_TYPES = new Set(["line", "area", "funnel"]);
 const SOURCES = new Set(["builtin", "ai", "cache"]);
+const STANDARD_DISCLAIMER = "互动估算，不构成专业建议。";
 const EXECUTABLE_CONTENT = /<\/?[a-z][^>]*>|javascript\s*:|\beval\s*\(|new\s+Function\b|on\w+\s*=/i;
+const HIGH_RISK_TOPIC = /医疗|诊断|疾病|用药|药物|手术|健康|减重|投资|股票|个股|基金|证券|法律|诉讼|判决|合同|安全操作|危险品|武器|爆炸|自残|medical|diagnos|invest|stock|legal|weapon/i;
+const DETERMINISTIC_CLAIM = /保证|承诺|必然|一定会|准确(?:预测|判断|结论)|确定(?:上涨|下跌|诊断|违法|安全)|买入|卖出|治愈|处方|guarantee|certain(?:ly)?|must (?:rise|fall)|buy|sell/i;
+const EDUCATIONAL_BOUNDARY = /教育|理解|估算|假设|情景|趋势|不用于|不代表|仅用于|仅供|不构成|educational|estimate|scenario|not (?:advice|a diagnosis)/i;
 const SAFE_ID = /^[a-z][a-zA-Z0-9-]{1,63}$/;
 const SAFE_FIELD = /^[a-z][a-zA-Z0-9]{1,63}$/;
 const MODEL_CONTRACTS = Object.freeze({
   linear: {
     parameters: ["initial", "rate", "duration"],
+    bounds: { initial: [-1e7, 1e7], rate: [-1e6, 1e6], duration: [0, 1000] },
     outputs: ["finalValue", "totalChange"],
     series: ["value"],
   },
   compound: {
     parameters: ["principal", "contribution", "annualRate", "years"],
+    bounds: { principal: [0, 1e8], contribution: [0, 1e7], annualRate: [-100, 100], years: [0, 100] },
     outputs: ["finalValue", "totalContributed", "interestEarned"],
     series: ["value"],
   },
   decay: {
     parameters: ["initial", "halfLife", "duration"],
+    bounds: { initial: [0, 1e8], halfLife: [0.01, 1e5], duration: [0, 1e5] },
     outputs: ["finalValue", "percentRemaining"],
     series: ["value"],
   },
   funnel: {
     parameters: ["audience", "rate1", "rate2", "rate3", "rate4"],
+    bounds: { audience: [0, 1e9], rate1: [0, 100], rate2: [0, 100], rate3: [0, 100], rate4: [0, 100] },
     outputs: ["finalValue", "overallRate"],
     series: ["value"],
   },
   inventory: {
     parameters: ["initialStock", "dailyInflow", "dailyOutflow", "duration"],
+    bounds: { initialStock: [0, 1e9], dailyInflow: [0, 1e9], dailyOutflow: [0, 1e9], duration: [0, 1000] },
     outputs: ["finalValue", "depletionTime", "netDailyChange"],
     series: ["value"],
   },
   payback: {
     parameters: ["dailySpend", "dailyUsers", "day1Retention", "revenuePerActiveUser", "duration"],
+    bounds: { dailySpend: [0, 1e9], dailyUsers: [0, 1e9], day1Retention: [0, 100], revenuePerActiveUser: [0, 1e6], duration: [0, 1000] },
     outputs: ["finalValue", "totalRevenue", "totalCost", "paybackDay", "roi"],
     series: ["value", "revenue", "cost", "activeUsers"],
   },
@@ -134,6 +144,16 @@ function checkModelContract(spec, errors) {
   if (unsupportedParameters.length) {
     errors.push(`parameter ${unsupportedParameters.join(", ")} is not supported by ${spec.modelType} model`);
   }
+  if (Array.isArray(spec.parameters)) {
+    for (const parameter of spec.parameters) {
+      const bounds = contract.bounds[parameter?.id];
+      if (!bounds) continue;
+      const [safeMin, safeMax] = bounds;
+      if (parameter.min < safeMin || parameter.max > safeMax) {
+        errors.push(`${parameter.id} range must stay inside safe bounds ${safeMin} to ${safeMax}`);
+      }
+    }
+  }
 
   if (spec.modelType === "funnel") {
     const rates = parameterIds
@@ -222,6 +242,25 @@ export function validateExperiment(spec) {
   }
   if (!SOURCES.has(spec.source)) errors.push("source is not supported");
   checkModelContract(spec, errors);
+  if (spec.explanation?.disclaimer !== STANDARD_DISCLAIMER) {
+    errors.push("explanation.disclaimer must use the standard disclaimer");
+  }
+  const riskText = [
+    spec.title,
+    spec.category,
+    spec.question,
+    spec.explanation?.formula,
+    spec.explanation?.boundary,
+    ...(Array.isArray(spec.explanation?.assumptions) ? spec.explanation.assumptions : []),
+    ...(Array.isArray(spec.keywords) ? spec.keywords : []),
+  ].filter(Boolean).join(" ");
+  if (HIGH_RISK_TOPIC.test(riskText)) {
+    if (DETERMINISTIC_CLAIM.test(riskText)) {
+      errors.push("high-risk topics cannot contain deterministic promises or instructions");
+    } else if (!EDUCATIONAL_BOUNDARY.test(spec.explanation?.boundary ?? "")) {
+      errors.push("high-risk topics must state an educational estimation boundary");
+    }
+  }
 
   return errors.length > 0
     ? { ok: false, errors }

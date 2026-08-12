@@ -98,6 +98,12 @@ test("proxy forwards a strict request without returning its secret", async t => 
   assert.equal(upstreamAuthorization, `Bearer ${secret}`);
   assert.equal(upstreamBody.model, "fixture-model");
   assert.match(upstreamBody.input, /只返回 JSON/);
+  assert.equal(upstreamBody.text.format.type, "json_schema");
+  assert.equal(upstreamBody.text.format.strict, true);
+  assert.equal(upstreamBody.text.format.name, "simuai_experiment");
+  assert.deepEqual(upstreamBody.text.format.schema.properties.modelType.enum, [
+    "linear", "compound", "decay", "funnel", "inventory", "payback",
+  ]);
 });
 
 test("proxy rejects oversized, unsupported and unconfigured requests safely", async t => {
@@ -120,6 +126,45 @@ test("proxy rejects oversized, unsupported and unconfigured requests safely", as
   });
   assert.equal(unavailable.status, 200);
   assert.deepEqual(await unavailable.json(), { error: { code: "OFFLINE" } });
+});
+
+test("proxy rate limits repeated compile requests before calling the upstream model", async t => {
+  let upstreamCalls = 0;
+  const server = createSimuAiServer({
+    apiKey: "secret-fixture-key",
+    rateLimitMax: 1,
+    rateLimitWindowMs: 60000,
+    fetchImpl: async () => {
+      upstreamCalls += 1;
+      return new Response(JSON.stringify({
+        output_text: JSON.stringify(getExperiment("sales-funnel")),
+      }), { status: 200 });
+    },
+  });
+  await new Promise(resolve => server.listen(0, "127.0.0.1", resolve));
+  t.after(() => new Promise(resolve => server.close(resolve)));
+  const endpoint = `http://127.0.0.1:${server.address().port}/api/compile`;
+  const request = () => fetch(endpoint, {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({ question: "帮我模拟销售漏斗" }),
+  });
+
+  assert.equal((await request()).status, 200);
+  const limited = await request();
+  assert.equal(limited.status, 429);
+  assert.deepEqual(await limited.json(), { error: { code: "OFFLINE" } });
+  assert.equal(upstreamCalls, 1);
+});
+
+test("static server rejects a malformed encoded path without an unhandled rejection", async t => {
+  const server = createSimuAiServer({ apiKey: "" });
+  await new Promise(resolve => server.listen(0, "127.0.0.1", resolve));
+  t.after(() => new Promise(resolve => server.close(resolve)));
+
+  const response = await fetch(`http://127.0.0.1:${server.address().port}/%`);
+  assert.equal(response.status, 400);
+  assert.match(await response.text(), /Bad request/i);
 });
 
 test("compiler treats a successful offline envelope as a domain error", async () => {

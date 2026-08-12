@@ -193,6 +193,63 @@ test("schema binds parameters, metrics and chart fields to the selected engine",
   assert.match(unknownSeries.errors.join(" "), /chart.*linear/i);
 });
 
+test("schema rejects parameter ranges that can exhaust a model engine", () => {
+  const unsafe = validateExperiment({
+    ...validSpec,
+    modelType: "compound",
+    parameters: [
+      parameter("principal", { min: 0, max: 1000000, default: 1000 }),
+      parameter("contribution", { min: 0, max: 50000, default: 100 }),
+      parameter("annualRate", { min: -10, max: 20, default: 5 }),
+      parameter("years", { min: 1, max: 1e15, default: 40 }),
+    ],
+    metrics: [{ id: "final", label: "Final", output: "finalValue", format: "number", unit: "" }],
+  });
+
+  assert.equal(unsafe.ok, false);
+  assert.match(unsafe.errors.join(" "), /years.*safe bounds/i);
+});
+
+test("schema rejects deterministic promises for high-risk topics", () => {
+  const unsafe = validateExperiment({
+    ...validSpec,
+    title: "个股收益保证",
+    question: "预测这只股票何时保证上涨？",
+    explanation: {
+      ...validSpec.explanation,
+      boundary: "给出准确投资结论。",
+    },
+  });
+
+  assert.equal(unsafe.ok, false);
+  assert.match(unsafe.errors.join(" "), /high-risk/i);
+});
+
+test("schema allows educational high-risk estimates with explicit boundaries", () => {
+  const educational = validateExperiment({
+    ...validSpec,
+    title: "投资复利教育实验",
+    question: "不同收益率假设会怎样影响复利估算？",
+    explanation: {
+      ...validSpec.explanation,
+      boundary: "仅用于教育性质的情景估算，不代表实际投资结果。",
+      disclaimer: "互动估算，不构成专业建议。",
+    },
+  });
+
+  assert.equal(educational.ok, true, educational.errors.join(" "));
+});
+
+test("schema requires the standard professional-advice disclaimer", () => {
+  const missingDisclosure = validateExperiment({
+    ...validSpec,
+    explanation: { ...validSpec.explanation, disclaimer: "结果仅供参考。" },
+  });
+
+  assert.equal(missingDisclosure.ok, false);
+  assert.match(missingDisclosure.errors.join(" "), /standard disclaimer/i);
+});
+
 test("parameter clamping uses schema bounds and defaults", () => {
   const values = clampParameters(validSpec, {
     initial: -50,

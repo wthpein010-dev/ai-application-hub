@@ -9,6 +9,8 @@ import { validateExperiment } from "./core/schema.mjs";
 const ROOT = dirname(fileURLToPath(import.meta.url));
 const MAX_BODY_BYTES = 8192;
 const DEFAULT_API_URL = "https://api.openai.com/v1/responses";
+const DEFAULT_RATE_LIMIT_MAX = 12;
+const DEFAULT_RATE_LIMIT_WINDOW_MS = 60000;
 const MIME = {
   ".html": "text/html; charset=utf-8",
   ".css": "text/css; charset=utf-8",
@@ -25,6 +27,83 @@ const systemPrompt = `你是 SimuAI 的结构化模型编译器。只返回 JSON
 parameters 每项必须含 id、label、unit、min、max、step、default；metrics 只能引用对应模型的已知输出。
 不得输出 JavaScript、HTML、表达式、外部 URL、医疗诊断、投资承诺、法律结论或安全操作指令。
 所有实验必须注明假设、适用边界和“互动估算，不构成专业建议。”`;
+
+const experimentJsonSchema = {
+  type: "object",
+  additionalProperties: false,
+  required: [
+    "version", "id", "title", "category", "question", "modelType", "parameters",
+    "metrics", "chart", "explanation", "keywords", "source",
+  ],
+  properties: {
+    version: { type: "integer", const: 1 },
+    id: { type: "string" },
+    title: { type: "string" },
+    category: { type: "string" },
+    question: { type: "string" },
+    modelType: { type: "string", enum: ["linear", "compound", "decay", "funnel", "inventory", "payback"] },
+    parameters: {
+      type: "array",
+      minItems: 3,
+      maxItems: 5,
+      items: {
+        type: "object",
+        additionalProperties: false,
+        required: ["id", "label", "unit", "min", "max", "step", "default"],
+        properties: {
+          id: { type: "string" },
+          label: { type: "string" },
+          unit: { type: "string" },
+          min: { type: "number" },
+          max: { type: "number" },
+          step: { type: "number" },
+          default: { type: "number" },
+        },
+      },
+    },
+    metrics: {
+      type: "array",
+      minItems: 1,
+      maxItems: 4,
+      items: {
+        type: "object",
+        additionalProperties: false,
+        required: ["id", "label", "output", "format", "unit"],
+        properties: {
+          id: { type: "string" },
+          label: { type: "string" },
+          output: { type: "string" },
+          format: { type: "string", enum: ["number", "currency", "percent", "duration"] },
+          unit: { type: "string" },
+        },
+      },
+    },
+    chart: {
+      type: "object",
+      additionalProperties: false,
+      required: ["type", "xLabel", "yLabel", "series"],
+      properties: {
+        type: { type: "string", enum: ["line", "area", "funnel"] },
+        xLabel: { type: "string" },
+        yLabel: { type: "string" },
+        series: { type: "array", minItems: 1, maxItems: 3, items: { type: "string" } },
+      },
+    },
+    explanation: {
+      type: "object",
+      additionalProperties: false,
+      required: ["formula", "assumptions", "boundary", "disclaimer"],
+      properties: {
+        formula: { type: "string" },
+        assumptions: { type: "array", minItems: 1, maxItems: 6, items: { type: "string" } },
+        boundary: { type: "string" },
+        disclaimer: { type: "string", const: "互动估算，不构成专业建议。" },
+      },
+    },
+    keywords: { type: "array", minItems: 1, maxItems: 20, items: { type: "string" } },
+    source: { type: "string", const: "ai" },
+  },
+};
 
 function json(response, status, payload) {
   const body = JSON.stringify(payload);
@@ -87,6 +166,14 @@ async function compile(request, response, options) {
         model: options.model,
         input: `${systemPrompt}\n\n用户问题：${question}`,
         max_output_tokens: 1800,
+        text: {
+          format: {
+            type: "json_schema",
+            name: "simuai_experiment",
+            strict: true,
+            schema: experimentJsonSchema,
+          },
+        },
       }),
       signal: controller.signal,
     });
@@ -117,8 +204,15 @@ async function compile(request, response, options) {
 }
 
 async function serveStatic(request, response) {
-  const requestPath = new URL(request.url, "http://localhost").pathname;
-  const relative = requestPath === "/" ? "index.html" : decodeURIComponent(requestPath).replace(/^\/+/, "");
+  let relative;
+  try {
+    const requestPath = new URL(request.url, "http://localhost").pathname;
+    relative = requestPath === "/" ? "index.html" : decodeURIComponent(requestPath).replace(/^\/+/, "");
+  } catch {
+    response.writeHead(400, { "content-type": "text/plain; charset=utf-8" });
+    response.end("Bad request");
+    return;
+  }
   const safePath = normalize(relative).replace(/^(\.\.[/\\])+/, "");
   let filePath = join(ROOT, safePath);
   if (!filePath.startsWith(ROOT)) {
@@ -148,9 +242,28 @@ export function createSimuAiServer(options = {}) {
     model: options.model ?? process.env.SIMUAI_MODEL ?? "gpt-5-mini",
     fetchImpl: options.fetchImpl ?? globalThis.fetch,
     timeoutMs: options.timeoutMs ?? 8000,
+    rateLimitMax: options.rateLimitMax ?? DEFAULT_RATE_LIMIT_MAX,
+    rateLimitWindowMs: options.rateLimitWindowMs ?? DEFAULT_RATE_LIMIT_WINDOW_MS,
+  };
+  const compileWindows = new Map();
+  const allowCompile = request => {
+    const key = request.socket.remoteAddress ?? "unknown";
+    const now = Date.now();
+    const current = compileWindows.get(key);
+    if (!current || now - current.startedAt >= config.rateLimitWindowMs) {
+      compileWindows.set(key, { startedAt: now, count: 1 });
+      return true;
+    }
+    if (current.count >= config.rateLimitMax) return false;
+    current.count += 1;
+    return true;
   };
   return createServer(async (request, response) => {
     if (request.method === "POST" && request.url === "/api/compile") {
+      if (!allowCompile(request)) {
+        json(response, 429, { error: { code: "OFFLINE" } });
+        return;
+      }
       await compile(request, response, config);
       return;
     }
