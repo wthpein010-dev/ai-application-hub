@@ -12,7 +12,7 @@ export const MODEL_TYPES = Object.freeze([
 const CHART_TYPES = new Set(["line", "area", "funnel"]);
 const SOURCES = new Set(["builtin", "ai", "cache"]);
 const EXECUTABLE_CONTENT = /<\/?[a-z][^>]*>|javascript\s*:|\beval\s*\(|new\s+Function\b|on\w+\s*=/i;
-const SAFE_ID = /^[a-z][a-z0-9-]{1,63}$/;
+const SAFE_ID = /^[a-z][a-zA-Z0-9-]{1,63}$/;
 const SAFE_FIELD = /^[a-z][a-zA-Z0-9]{1,63}$/;
 
 const isRecord = value => Boolean(value) && typeof value === "object" && !Array.isArray(value);
