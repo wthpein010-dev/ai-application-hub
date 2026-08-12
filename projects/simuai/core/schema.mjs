@@ -51,7 +51,7 @@ const MODEL_CONTRACTS = Object.freeze({
   },
   payback: {
     parameters: ["dailySpend", "dailyUsers", "day1Retention", "revenuePerActiveUser", "duration"],
-    bounds: { dailySpend: [0, 1e9], dailyUsers: [0, 1e9], day1Retention: [0, 100], revenuePerActiveUser: [0, 1e6], duration: [0, 1000] },
+    bounds: { dailySpend: [0, 1e9], dailyUsers: [0, 1e9], day1Retention: [0, 100], revenuePerActiveUser: [0, 1e6], duration: [0, 240] },
     outputs: ["finalValue", "totalRevenue", "totalCost", "paybackDay", "roi"],
     series: ["value", "revenue", "cost", "activeUsers"],
   },
@@ -254,10 +254,16 @@ export function validateExperiment(spec) {
     ...(Array.isArray(spec.explanation?.assumptions) ? spec.explanation.assumptions : []),
     ...(Array.isArray(spec.keywords) ? spec.keywords : []),
   ].filter(Boolean).join(" ");
-  if (HIGH_RISK_TOPIC.test(riskText)) {
-    if (DETERMINISTIC_CLAIM.test(riskText)) {
-      errors.push("high-risk topics cannot contain deterministic promises or instructions");
-    } else if (!EDUCATIONAL_BOUNDARY.test(spec.explanation?.boundary ?? "")) {
+  const claimText = [
+    spec.title,
+    spec.question,
+    spec.explanation?.formula,
+    ...(Array.isArray(spec.explanation?.assumptions) ? spec.explanation.assumptions : []),
+  ].filter(Boolean).join(" ");
+  if (DETERMINISTIC_CLAIM.test(claimText)) {
+    errors.push("deterministic high-risk promises or instructions are not allowed");
+  } else if (HIGH_RISK_TOPIC.test(riskText)) {
+    if (!EDUCATIONAL_BOUNDARY.test(spec.explanation?.boundary ?? "")) {
       errors.push("high-risk topics must state an educational estimation boundary");
     }
   }

@@ -225,6 +225,23 @@ test("schema rejects deterministic promises for high-risk topics", () => {
   assert.match(unsafe.errors.join(" "), /high-risk/i);
 });
 
+test("schema rejects deterministic promises even when the topic is not enumerated", () => {
+  for (const [title, question] of [
+    ["比特币收益保证", "比特币一定会翻倍"],
+    ["癌症治愈预测", "癌症一定会治愈"],
+  ]) {
+    const unsafe = validateExperiment({
+      ...validSpec,
+      title,
+      question,
+      explanation: { ...validSpec.explanation, boundary: "给出准确结论。" },
+    });
+
+    assert.equal(unsafe.ok, false, `${title} must fail closed`);
+    assert.match(unsafe.errors.join(" "), /deterministic/i);
+  }
+});
+
 test("schema allows educational high-risk estimates with explicit boundaries", () => {
   const educational = validateExperiment({
     ...validSpec,
@@ -248,6 +265,25 @@ test("schema requires the standard professional-advice disclaimer", () => {
 
   assert.equal(missingDisclosure.ok, false);
   assert.match(missingDisclosure.errors.join(" "), /standard disclaimer/i);
+});
+
+test("schema keeps payback duration inside the engine's complete calculation horizon", () => {
+  const payback = validateExperiment({
+    ...validSpec,
+    modelType: "payback",
+    parameters: [
+      parameter("dailySpend", { max: 100000, default: 1000 }),
+      parameter("dailyUsers", { max: 100000, default: 1000 }),
+      parameter("day1Retention", { max: 100, default: 50 }),
+      parameter("revenuePerActiveUser", { max: 1000, default: 3 }),
+      parameter("duration", { min: 1, max: 1000, default: 1000 }),
+    ],
+    metrics: [{ id: "final", label: "Final", output: "finalValue", format: "number", unit: "" }],
+    chart: { ...validSpec.chart, series: ["value"] },
+  });
+
+  assert.equal(payback.ok, false);
+  assert.match(payback.errors.join(" "), /duration.*safe bounds.*240/i);
 });
 
 test("parameter clamping uses schema bounds and defaults", () => {
