@@ -44,7 +44,7 @@ assert.equal(normalizeApp({ ...app, name: "SimuAI 万物实验室" }).name, "万
 assert.equal(normalizeApp({ ...app, name: "我的实验工具" }).name, "我的实验工具");
 ```
 
-同时断言演示页和视频页的 `<title>`、主品牌、`aria-label` 都包含「万象实验室」且不包含「SimuAI 万物实验室」。将 `tests/hub-carousel-status.test.mjs` 的测试目录名称与期望文本改为「万象实验室」，并在 `tests/simuai-page.test.mjs` 验证品牌链接和页脚署名。
+同时断言演示页的 `<title>`、主品牌、`aria-label` 都包含「万象实验室」且不包含「SimuAI 万物实验室」。将 `tests/hub-carousel-status.test.mjs` 的测试目录名称与期望文本改为「万象实验室」，并在 `tests/simuai-page.test.mjs` 验证品牌链接和页脚署名。视频页契约留在 Task 2，与视频文案和媒体更新作为同一个可独立验证的交付物。
 
 - [ ] **Step 2: 运行测试并确认因产品仍使用旧品牌而失败**
 
