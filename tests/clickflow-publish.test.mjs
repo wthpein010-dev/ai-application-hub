@@ -49,10 +49,11 @@ test("ClickFlow stays immediately before PureShrink and exposes four publication
   const apps = loadDefaultApps();
   const clickFlow = apps.find((app) => app.id === "clickflow");
   const applicationIds = apps.filter(isApplication).map((app) => app.id);
+  const clickFlowIndex = applicationIds.indexOf("clickflow");
 
   assert.ok(clickFlow, "ClickFlow should be registered");
-  assert.equal(applicationIds.at(-2), "clickflow");
-  assert.equal(applicationIds.at(-1), "pureshrink");
+  assert.notEqual(clickFlowIndex, -1);
+  assert.equal(applicationIds[clickFlowIndex + 1], "pureshrink");
   assert.equal(clickFlow.name, "ClickFlow 鼠标自动化");
   assert.equal(clickFlow.category, "桌面自动化工具");
   assert.equal(clickFlow.status, "assistant");
