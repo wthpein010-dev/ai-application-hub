@@ -1,6 +1,7 @@
 import { createCache } from "./core/cache.mjs";
 import { rankExperiments } from "./core/matcher.mjs";
 import { buildViewModel } from "./core/presenter.mjs";
+import { resolveQuestion } from "./core/resolver.mjs";
 import { EXPERIMENTS, getExperiment } from "./core/templates.mjs";
 import { renderChart } from "./ui/chart.mjs";
 
@@ -188,7 +189,7 @@ function animateCompile(message) {
   window.setTimeout(() => nodes.questionForm.classList.remove("is-compiling"), 520);
 }
 
-function handleQuestionSubmit(event) {
+async function handleQuestionSubmit(event) {
   event.preventDefault();
   const question = nodes.questionInput.value.trim();
   if (question.length < 3) {
@@ -196,21 +197,27 @@ function handleQuestionSubmit(event) {
     return;
   }
   animateCompile("识别问题 → 选择模型 → 生成实验");
-  const cached = cache.get(question);
-  const match = rankExperiments(question, 1)[0];
+  const startedAt = performance.now();
+  const result = await resolveQuestion(question, { cache });
+  const remaining = Math.max(0, 420 - (performance.now() - startedAt));
   window.setTimeout(() => {
-    if (cached) {
-      state.experiment = cached;
-      state.values = defaultValues(cached);
+    if (result.experiment) {
+      state.experiment = result.experiment;
+      state.values = defaultValues(result.experiment);
       renderExperiment();
-      nodes.compileStatus.textContent = "已从本地缓存恢复实验。";
-    } else {
-      selectExperiment(match.experiment.id);
-      nodes.compileStatus.textContent = match.score > 0
-        ? `已匹配离线实验：${match.experiment.title}`
-        : "这个问题暂不适合可靠量化，已推荐最接近的实验。";
+      nodes.experimentStage.scrollIntoView({ behavior: "smooth", block: "start" });
+      nodes.compileStatus.textContent = result.mode === "ai"
+        ? "AI 已生成受控实验；后续拖动只在本地计算。"
+        : result.mode === "cache"
+          ? "已从本地缓存恢复实验。"
+          : `已匹配离线实验：${result.experiment.title}`;
+      return;
     }
-  }, 420);
+    const recommendation = result.recommendations[0];
+    if (recommendation) selectExperiment(recommendation.experiment.id);
+    const titles = result.recommendations.map(item => item.experiment.title).join("、");
+    nodes.compileStatus.textContent = `当前使用离线实验库。推荐：${titles}`;
+  }, remaining);
 }
 
 nodes.featuredTemplates.addEventListener("click", event => {
