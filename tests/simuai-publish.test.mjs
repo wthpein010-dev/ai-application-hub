@@ -56,8 +56,7 @@ test("SimuAI demo returns to the engineering catalog and Hub refreshes its runti
 
 test("SimuAI exact legacy default copy migrates without a broad overwrite", () => {
   assert.match(runtime, /normalized\.id === "simuai"/);
-  assert.match(runtime, /SIMUAI_LEGACY_BRIEF/);
-  assert.match(runtime, /normalized\.brief === SIMUAI_LEGACY_BRIEF/);
+  assert.match(runtime, /normalized\.brief === "输入一个问题，让 AI 生成可拖动参数、观察曲线的互动实验。"/);
   assert.doesNotMatch(runtime, /normalized\.id === "simuai"[\s\S]{0,500}normalized\.brief = base\.brief;[\s\S]{0,80}normalized\.problem = base\.problem/);
 });
 

@@ -32,9 +32,10 @@
 | `clickflow` | ClickFlow 鼠标自动化 | 原生双平台 | Windows： [Wins下载](https://github.com/wthpein010-dev/ai-application-hub/releases/download/clickflow-v2.0.0/ClickFlow-Windows-x64.zip) | macOS： [Mac下载](https://github.com/wthpein010-dev/ai-application-hub/releases/download/clickflow-v2.0.0/ClickFlow-macOS.zip)，arm64/x64 | [项目页](https://wthpein010-dev.github.io/ai-application-hub/projects/clickflow/index.html)；`projects/clickflow/release-manifest.json`、`.github/workflows/build-clickflow-macos.yml` |
 | `pureshrink` | 无损压缩工坊 | 原生双平台 | Windows： [Wins下载](https://github.com/wthpein010-dev/ai-application-hub/releases/download/pureshrink-v1.0.3/PureShrink-Windows-x64.zip) | macOS： [Mac下载](https://github.com/wthpein010-dev/ai-application-hub/releases/download/pureshrink-v1.0.3/PureShrink-macOS.zip)，arm64/x64 | [项目页](https://wthpein010-dev.github.io/ai-application-hub/projects/pureshrink/index.html)；`projects/pureshrink/release-manifest.json` 记录双架构构建、启动和处理验收 |
 | `planmap` | PlanMap | 工程在线体验 | Windows：现代浏览器 | macOS：现代浏览器 | [工程体验](https://wthpein010-dev.github.io/ai-application-hub/projects/planmap/index.html)；源码附件为 [planmap-source.zip](https://wthpein010-dev.github.io/ai-application-hub/downloads/planmap-source.zip)，不作为系统安装包 |
+| `simuai` | SimuAI 万物实验室 | 工程在线体验 | Windows：现代浏览器 | macOS：现代浏览器 | [工程体验](https://wthpein010-dev.github.io/ai-application-hub/projects/simuai/index.html)；公开版从 12 个受控实验中本地匹配，不调用远程模型 |
 
 ## 结论
 
-- 25 个项目都可在 Windows 与 macOS 上通过网页查看或体验。
+- 26 个项目都可在 Windows 与 macOS 上通过网页查看或体验。
 - 4 个项目提供经过验证的原生 Windows/macOS 成品；飞书插件提供同一份跨平台浏览器扩展。
 - 其余项目不再显示来源码、Unity 工程、WebGL 压缩包或占位 ZIP 形式的伪系统下载。

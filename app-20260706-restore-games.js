@@ -4,7 +4,6 @@ const SELECTED_KEY = "ai-competition-hub-v2-selected";
 const PROJECT_ROOT_URL = "./projects/";
 const OLD_HUB_BRIEF = "把所有应用、体验入口、下载包和提交材料集中在一个本地页面中，方便审核和维护。";
 const HUB_BRIEF = "集中汇总全部应用、小游戏和工程体验，统一查看演示、视频与适用的平台版本。";
-const SIMUAI_LEGACY_BRIEF = "输入一个问题，让 AI 生成可拖动参数、观察曲线的互动实验。";
 
 const statusLabel = {
   navigation: "项目导航",
@@ -1354,7 +1353,7 @@ function normalizeApp(app) {
   if (normalized.id === "hub" && normalized.brief === OLD_HUB_BRIEF) {
     normalized.brief = HUB_BRIEF;
   }
-  if (normalized.id === "simuai" && normalized.brief === SIMUAI_LEGACY_BRIEF) {
+  if (normalized.id === "simuai" && normalized.brief === "输入一个问题，让 AI 生成可拖动参数、观察曲线的互动实验。") {
     normalized.brief = base.brief;
   }
   if (

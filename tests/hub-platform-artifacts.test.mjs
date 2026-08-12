@@ -26,7 +26,7 @@ function actionTypes(app) {
 }
 
 test("every card exposes actions that match its actual delivery type", () => {
-  assert.equal(apps.length, 25);
+  assert.equal(apps.length, 26);
   for (const app of apps) {
     const expected = nativeIds.has(app.id) || extensionIds.has(app.id)
       ? ["web", "video", "windows", "mac"]
