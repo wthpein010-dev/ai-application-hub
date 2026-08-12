@@ -45,12 +45,15 @@ function isApplication(app) {
   return !["game", "engineering", "ai"].includes(app.status);
 }
 
-test("PureShrink is the final application and exposes four publication actions", () => {
+test("PureShrink follows ClickFlow and exposes four publication actions", () => {
   const apps = loadDefaultApps();
   const item = apps.find((app) => app.id === "pureshrink");
+  const applicationIds = apps.filter(isApplication).map((app) => app.id);
+  const pureShrinkIndex = applicationIds.indexOf("pureshrink");
 
   assert.ok(item, "PureShrink should be registered");
-  assert.equal(apps.filter(isApplication).at(-1)?.id, "pureshrink");
+  assert.notEqual(pureShrinkIndex, -1);
+  assert.equal(applicationIds[pureShrinkIndex - 1], "clickflow");
   assert.equal(item.name, "无损压缩工坊");
   assert.equal(item.category, "媒体压缩工具");
   assert.equal(item.status, "assistant");

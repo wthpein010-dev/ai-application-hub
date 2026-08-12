@@ -20,7 +20,7 @@
     </a>
     <div class="header-actions">
       <div class="truth-badge"><span aria-hidden="true"></span> 结构化模型 · 透明假设</div>
-      <a class="hub-home-link" href="../../index.html#engineering"><span class="hub-home-link__icon" aria-hidden="true">‹</span>返回主页</a>
+      <a class="hub-home-link" href="../../index.html#apps"><span class="hub-home-link__icon" aria-hidden="true">‹</span>返回主页</a>
     </div>
   </header>
 
@@ -28,7 +28,7 @@
     <section class="hero" aria-labelledby="heroTitle">
       <div class="eyebrow"><span>SIMULATE THE QUESTION</span><b>01</b></div>
       <h1 id="heroTitle">别只问答案。<br><em>动手改变结果。</em></h1>
-      <p class="hero-copy">输入一个“如果……会怎样”的问题，从 12 个受控实验中找到最接近的模型，再亲手改变变量与结果。</p>
+      <p class="hero-copy">输入一个“如果……会怎样”的问题，从 30 个受控实验中找到最接近的模型，再亲手改变变量与结果。</p>
 
       <form id="questionForm" class="question-form">
         <label for="questionInput">想模拟什么？</label>
@@ -40,7 +40,7 @@
           </button>
         </div>
         <div class="question-meta">
-          <span id="compileStatus">12 个实验本地匹配，参数变化实时计算。</span>
+          <span id="compileStatus">30 个实验本地匹配，参数变化实时计算。</span>
           <span>本地匹配 · 透明公式</span>
         </div>
       </form>
@@ -91,6 +91,7 @@
             <div><span>RESULT CURVE</span><h3 id="chartTitle">结果曲线</h3></div>
             <div id="chartLegend" class="chart-legend"></div>
           </div>
+          <div id="chartModePicker" class="chart-mode-picker" aria-label="图表显示方式"></div>
           <div class="chart-shell">
             <svg id="resultChart" viewBox="0 0 800 360" role="img" aria-labelledby="chartTitle chartDescription"></svg>
             <p id="chartDescription" class="sr-only"></p>
@@ -130,9 +131,14 @@
     <section class="library" aria-labelledby="libraryTitle">
       <div class="section-heading">
         <div><span class="section-number">03</span><h2 id="libraryTitle">离线实验库</h2></div>
-        <p>不依赖 API，点击即可完整运行。</p>
+        <p>六类 30 个实验，不依赖 API，点击即可完整运行。</p>
       </div>
-      <div id="templateLibrary" class="library-groups"></div>
+      <div id="categoryTabs" class="category-tabs" role="tablist" aria-label="实验分类"></div>
+      <div class="library-toolbar">
+        <p id="librarySummary" aria-live="polite"></p>
+        <button id="toggleCategoryExpansion" class="library-toggle" type="button"></button>
+      </div>
+      <div id="templateLibrary" class="library-groups" role="tabpanel"></div>
     </section>
   </main>
 

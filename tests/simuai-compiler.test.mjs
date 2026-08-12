@@ -102,7 +102,10 @@ test("proxy forwards a strict request without returning its secret", async t => 
   assert.equal(upstreamBody.text.format.strict, true);
   assert.equal(upstreamBody.text.format.name, "simuai_experiment");
   assert.deepEqual(upstreamBody.text.format.schema.properties.modelType.enum, [
-    "linear", "compound", "decay", "funnel", "inventory", "payback",
+    "linear", "compound", "decay", "funnel", "inventory", "payback", "logistic", "queue", "probability",
+  ]);
+  assert.deepEqual(upstreamBody.text.format.schema.properties.chart.properties.type.enum, [
+    "line", "area", "bar", "step", "funnel",
   ]);
 });
 

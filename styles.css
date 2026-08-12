@@ -2328,3 +2328,116 @@ body.editing .metric .inline-edit-button {
     margin-left: 0;
   }
 }
+
+/* Compact current-project carousel status */
+.showcase-status-host {
+  grid-column: 2;
+  grid-row: 1;
+  min-width: 0;
+}
+
+.showcase-status {
+  display: grid;
+  width: 100%;
+  min-width: 0;
+  min-height: 58px;
+  align-content: center;
+  gap: 9px;
+  padding: 10px 14px 9px;
+  border: 1px solid rgba(255, 255, 255, 0.11);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.045);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.055);
+}
+
+.showcase-status__line {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+}
+
+.showcase-status__line strong {
+  min-width: 0;
+  overflow: hidden;
+  color: var(--text);
+  font-size: 14px;
+  line-height: 1.25;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.showcase-status__line span {
+  flex: 0 0 auto;
+  color: rgba(232, 239, 248, 0.62);
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+  font-weight: 800;
+  line-height: 1;
+}
+
+.showcase-status__track {
+  height: 3px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.showcase-status__track > span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, var(--amber), var(--blue));
+  transition: width 220ms ease;
+}
+
+@media (max-width: 900px) {
+  .showcase-status {
+    min-height: 54px;
+    padding: 9px 12px 8px;
+  }
+}
+
+@media (max-width: 520px) {
+  .hero-board .showcase-controls {
+    grid-template-columns: 44px minmax(0, 1fr) 44px;
+    gap: 9px;
+    margin-right: 16px;
+    margin-left: 16px;
+  }
+
+  .showcase-arrows button {
+    width: 44px;
+    height: 44px;
+  }
+
+  #prevApp::before,
+  #nextApp::before {
+    font-size: 30px;
+  }
+
+  .showcase-status {
+    min-height: 44px;
+    gap: 7px;
+    padding: 7px 10px;
+  }
+
+  .showcase-status__line {
+    gap: 8px;
+  }
+
+  .showcase-status__line strong {
+    font-size: 12px;
+  }
+
+  .showcase-status__line span {
+    font-size: 11px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .showcase-status__track > span {
+    transition: none;
+  }
+}

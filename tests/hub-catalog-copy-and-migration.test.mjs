@@ -75,3 +75,47 @@ test("focused catalog copy describes the product users can actually open", () =>
   assert.match(reviewerBlock, /建议/);
   assert.match(reviewerBlock, /Excel/);
 });
+
+test("PlanMap and SimuAI belong to the application collection", () => {
+  const defaults = loadDefaultAppsFromRuntime(runtime);
+  const planmap = defaults.find((app) => app.id === "planmap");
+  const simuai = defaults.find((app) => app.id === "simuai");
+
+  assert.equal(planmap.status, "assistant");
+  assert.equal(planmap.name, "思维导图快捷工具");
+  assert.equal(planmap.badge, "脑图 + AI");
+  assert.equal(simuai.status, "assistant");
+  assert.equal(simuai.badge, "AI 实验工具");
+});
+
+test("legacy engineering classification migrates without replacing custom project content", () => {
+  const defaults = loadDefaultAppsFromRuntime(runtime);
+  const planmap = defaults.find((app) => app.id === "planmap");
+  const simuai = defaults.find((app) => app.id === "simuai");
+  const storedPlanmap = {
+    ...planmap,
+    status: "engineering",
+    brief: "我在线修改过的 PlanMap 简介",
+    entry: "./custom-planmap/index.html",
+  };
+  const storedSimuai = {
+    ...simuai,
+    status: "engineering",
+    badge: "工程体验",
+    brief: "我在线修改过的 SimuAI 简介",
+    video: "./custom-simuai/video.html",
+  };
+
+  const migrated = loadAppsWithStoredValue([storedPlanmap, storedSimuai]);
+  const migratedPlanmap = migrated.find((app) => app.id === "planmap");
+  const migratedSimuai = migrated.find((app) => app.id === "simuai");
+
+  assert.equal(migratedPlanmap.status, "assistant");
+  assert.equal(migratedPlanmap.badge, "脑图 + AI");
+  assert.equal(migratedPlanmap.brief, storedPlanmap.brief);
+  assert.equal(migratedPlanmap.entry, storedPlanmap.entry);
+  assert.equal(migratedSimuai.status, "assistant");
+  assert.equal(migratedSimuai.badge, "AI 实验工具");
+  assert.equal(migratedSimuai.brief, storedSimuai.brief);
+  assert.equal(migratedSimuai.video, storedSimuai.video);
+});

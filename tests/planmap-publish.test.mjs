@@ -16,13 +16,14 @@ const videoRoot = join(projectRoot, "video");
 const archivePath = join(root, "downloads", "planmap-source.zip");
 process.env.FFMPEG_PATH ||= ffmpegPath;
 
-test("思维导图快捷工具 remains immediately before SimuAI with only demo and video card actions", () => {
+test("思维导图快捷工具 remains immediately before SimuAI in the application collection", () => {
   const app = apps.find((item) => item.id === "planmap");
 
   assert.ok(app, "PlanMap should be present in the catalog");
   assert.deepEqual(JSON.parse(JSON.stringify(apps.slice(-2).map((item) => item.id))), ["planmap", "simuai"]);
   assert.equal(app.name, "思维导图快捷工具");
-  assert.equal(app.status, "engineering");
+  assert.equal(app.status, "assistant");
+  assert.equal(app.badge, "脑图 + AI");
   assert.equal(app.entry, "./projects/planmap/index.html");
   assert.equal(app.video, "./projects/planmap/video/index.html");
   assert.equal(app.package, "");
@@ -36,11 +37,11 @@ test("思维导图快捷工具 remains immediately before SimuAI with only demo 
   );
 });
 
-test("PlanMap demo uses the Hub shell, returns to engineering and exposes the source attachment", () => {
+test("PlanMap demo uses the Hub shell, returns to applications and exposes the source attachment", () => {
   const html = readFileSync(join(projectRoot, "index.html"), "utf8");
 
   assert.match(html, /class="hub-subpage planmap-demo-page"/);
-  assert.match(html, /href="\.\.\/\.\.\/index\.html#engineering"/);
+  assert.match(html, /href="\.\.\/\.\.\/index\.html#apps"/);
   assert.match(html, /href="\.\.\/\.\.\/downloads\/planmap-source\.zip"/);
   assert.match(html, /src="\.\/app\/index\.html"/);
   assert.match(html, /assets\/subpage-shell\.css/);
@@ -89,11 +90,11 @@ test("PlanMap publishes independent curved routes and readable type", () => {
   assert.match(css, /\.map-node\{width:158px[^}]*font-size:13px/);
 });
 
-test("PlanMap video page uses the shared player and returns to engineering", () => {
+test("PlanMap video page uses the shared player and returns to applications", () => {
   const html = readFileSync(join(videoRoot, "index.html"), "utf8");
 
   assert.match(html, /data-hub-video-page/);
-  assert.match(html, /class="hub-video-home" href="\.\.\/\.\.\/\.\.\/index\.html#engineering"/);
+  assert.match(html, /class="hub-video-home" href="\.\.\/\.\.\/\.\.\/index\.html#apps"/);
   assert.match(html, /data-src="\.\/planmap-demo\.mp4"/);
   assert.match(html, /src="\.\/planmap-demo\.vtt"/);
   assert.match(html, /assets\/hub-video-player\.css/);

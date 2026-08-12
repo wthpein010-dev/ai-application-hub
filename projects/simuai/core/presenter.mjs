@@ -9,7 +9,13 @@ const currencyFormatter = new Intl.NumberFormat("zh-CN", {
 });
 
 function formatMetric(metric, rawValue) {
-  if (metric.format === "duration" && rawValue < 0) return "观察期未回本";
+  if (metric.output === "clearTime" && rawValue === 0) return "当前已空";
+  if (metric.format === "duration" && rawValue < 0) {
+    if (metric.output === "depletionTime") return "不会耗尽";
+    if (metric.output === "clearTime") return "不会自行清空";
+    if (metric.output === "medianAttempt") return "概率未过半";
+    return "观察期未回本";
+  }
   if (metric.format === "currency") return currencyFormatter.format(rawValue);
   if (metric.format === "percent") return `${numberFormatter.format(rawValue)}%`;
   const formatted = numberFormatter.format(rawValue);
@@ -41,10 +47,28 @@ function conclusionFor(spec, metrics, result, values) {
   if (spec.modelType === "decay") {
     return `经过设定时长，估算剩余 ${first.displayValue}；拖动半衰期可以观察代谢速度差异。`;
   }
+  if (spec.modelType === "logistic") {
+    const capacity = metrics.find(item => item.output === "capacityPercent");
+    return `按当前增长强度，期末估算为 ${first.displayValue}，约达到设定上限的 ${capacity?.displayValue ?? "—"}。`;
+  }
+  if (spec.modelType === "queue") {
+    const clear = metrics.find(item => item.output === "clearTime");
+    if (clear?.rawValue === 0) {
+      return result.outputs.netRate > 0
+        ? `队列起点为空，但当前到达速度高于处理速度，之后会逐步累积，期末约为 ${first.displayValue}。`
+        : `队列起点为空；按当前到达与处理速度，期末约为 ${first.displayValue}。`;
+    }
+    return clear?.rawValue < 0
+      ? `当前到达速度不低于处理速度，排队会继续累积，期末约为 ${first.displayValue}。`
+      : `按当前到达与处理速度，队列预计在 ${clear?.displayValue ?? "—"} 左右清空。`;
+  }
+  if (spec.modelType === "probability") {
+    return `在当前次数下，累计概率约为 ${first.displayValue}；这是数学概率，不代表单次事件一定发生。`;
+  }
   return `保持当前速度，期末估算为 ${first.displayValue}。该趋势用于比较情景，不代表现实会一直线性变化。`;
 }
 
-function chartFor(spec, result) {
+function chartFor(spec, result, chartMode) {
   const fields = spec.chart.series;
   const series = fields.map((field, index) => ({
     id: field,
@@ -59,10 +83,14 @@ function chartFor(spec, result) {
   if (series.some(item => item.points.some(point => !Number.isFinite(point.value)))) {
     throw new RangeError("Chart contains a non-finite value");
   }
-  return { ...spec.chart, series };
+  const modes = Array.isArray(spec.chart.modes) && spec.chart.modes.length > 0
+    ? [...spec.chart.modes]
+    : [spec.chart.type];
+  const type = modes.includes(chartMode) ? chartMode : spec.chart.type;
+  return { ...spec.chart, type, modes, series };
 }
 
-export function buildViewModel(spec, inputValues = {}) {
+export function buildViewModel(spec, inputValues = {}, options = {}) {
   const values = clampParameters(spec, inputValues);
   const result = runModel(spec, values);
   const metrics = spec.metrics.map(metric => {
@@ -84,7 +112,7 @@ export function buildViewModel(spec, inputValues = {}) {
     source: spec.source,
     parameters: spec.parameters.map(parameter => ({ ...parameter, value: values[parameter.id] })),
     metrics,
-    chart: chartFor(spec, result),
+    chart: chartFor(spec, result, options.chartMode),
     conclusion: conclusionFor(spec, metrics, result, values),
     warnings: [...result.warnings],
     disclosure: structuredClone(spec.explanation),

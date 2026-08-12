@@ -136,6 +136,16 @@ try {
     if (catalogPlacement.apps !== 0 || catalogPlacement.games !== 1 || catalogPlacement.engineering !== 0) {
       failures.push(`${viewport.name}/hub catalog placement: ${JSON.stringify(catalogPlacement)}`);
     }
+    for (const id of ["planmap", "simuai"]) {
+      const placement = await hubPage.evaluate((projectId) => ({
+        apps: document.querySelectorAll(`#appGrid article[data-app-id="${projectId}"]`).length,
+        games: document.querySelectorAll(`#gameGrid article[data-app-id="${projectId}"]`).length,
+        engineering: document.querySelectorAll(`#engineeringGrid article[data-app-id="${projectId}"]`).length,
+      }), id);
+      if (placement.apps !== 1 || placement.games !== 0 || placement.engineering !== 0) {
+        failures.push(`${viewport.name}/hub ${id} application placement: ${JSON.stringify(placement)}`);
+      }
+    }
     await hubPage.evaluate((selector) => {
       window.__hubCardBeforeSelection = document.querySelector(selector);
     }, selectedCard);
@@ -145,16 +155,46 @@ try {
       cardSelected: document.querySelector(selector)?.classList.contains("selected") || false,
       spotlightName: document.querySelector("#spotlightCard strong")?.textContent.trim() || "",
       storedId: localStorage.getItem("ai-competition-hub-v2-selected"),
-      dotSelected: document.querySelector(`[data-dot-id="${id}"]`)?.classList.contains("active") || false,
+      statusName: document.querySelector(".showcase-status__line strong")?.textContent.trim() || "",
+      statusPosition: document.querySelector(".showcase-status__line span")?.textContent.trim() || "",
+      progressNow: Number(document.querySelector(".showcase-status__track")?.getAttribute("aria-valuenow") || 0),
+      progressMax: Number(document.querySelector(".showcase-status__track")?.getAttribute("aria-valuemax") || 0),
+      legacyDots: document.querySelectorAll(".showcase-dot, [data-dot-id]").length,
     }), { id: selectedId, selector: selectedCard });
     for (const [condition, ok] of Object.entries({
       cardPreservedWithoutReplay: selection.cardPreserved,
       clickedCardSelected: selection.cardSelected,
       spotlightSynchronized: selection.spotlightName === "馕了个馕",
       selectedProjectPersisted: selection.storedId === selectedId,
-      navigationDotSynchronized: selection.dotSelected,
+      navigationStatusSynchronized: selection.statusName === "馕了个馕"
+        && /^\d{2,}\s*\/\s*\d{2,}$/.test(selection.statusPosition)
+        && selection.progressNow > 0
+        && selection.progressNow <= selection.progressMax
+        && selection.legacyDots === 0,
     })) {
       if (!ok) failures.push(`${viewport.name}/hub ${condition}: ${JSON.stringify(selection)}`);
+    }
+    await hubPage.locator("#nextApp").click();
+    const afterNext = await hubPage.evaluate(() => ({
+      name: document.querySelector(".showcase-status__line strong")?.textContent.trim() || "",
+      now: Number(document.querySelector(".showcase-status__track")?.getAttribute("aria-valuenow") || 0),
+      spotlightName: document.querySelector("#spotlightCard strong")?.textContent.trim() || "",
+    }));
+    await hubPage.locator("#prevApp").click();
+    const afterPrevious = await hubPage.evaluate(() => ({
+      name: document.querySelector(".showcase-status__line strong")?.textContent.trim() || "",
+      now: Number(document.querySelector(".showcase-status__track")?.getAttribute("aria-valuenow") || 0),
+      spotlightName: document.querySelector("#spotlightCard strong")?.textContent.trim() || "",
+    }));
+    for (const [condition, ok] of Object.entries({
+      nextButtonUpdatesStatus: afterNext.name !== selection.statusName
+        && afterNext.spotlightName === afterNext.name
+        && afterNext.now !== selection.progressNow,
+      previousButtonRestoresStatus: afterPrevious.name === selection.statusName
+        && afterPrevious.spotlightName === selection.statusName
+        && afterPrevious.now === selection.progressNow,
+    })) {
+      if (!ok) failures.push(`${viewport.name}/hub ${condition}: ${JSON.stringify({ selection, afterNext, afterPrevious })}`);
     }
     await hubPage.close();
 

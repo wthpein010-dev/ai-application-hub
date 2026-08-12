@@ -7,9 +7,12 @@ export const MODEL_TYPES = Object.freeze([
   "funnel",
   "inventory",
   "payback",
+  "logistic",
+  "queue",
+  "probability",
 ]);
 
-const CHART_TYPES = new Set(["line", "area", "funnel"]);
+const CHART_TYPES = new Set(["line", "area", "bar", "step", "funnel"]);
 const SOURCES = new Set(["builtin", "ai", "cache"]);
 const STANDARD_DISCLAIMER = "互动估算，不构成专业建议。";
 const EXECUTABLE_CONTENT = /<\/?[a-z][^>]*>|javascript\s*:|\beval\s*\(|new\s+Function\b|on\w+\s*=/i;
@@ -54,6 +57,24 @@ const MODEL_CONTRACTS = Object.freeze({
     bounds: { dailySpend: [0, 1e9], dailyUsers: [0, 1e9], day1Retention: [0, 100], revenuePerActiveUser: [0, 1e6], duration: [0, 240] },
     outputs: ["finalValue", "totalRevenue", "totalCost", "paybackDay", "roi"],
     series: ["value", "revenue", "cost", "activeUsers"],
+  },
+  logistic: {
+    parameters: ["initial", "capacity", "growthRate", "duration"],
+    bounds: { initial: [0, 1e9], capacity: [0.01, 1e9], growthRate: [-100, 100], duration: [0, 1000] },
+    outputs: ["finalValue", "capacityPercent"],
+    series: ["value"],
+  },
+  queue: {
+    parameters: ["initialQueue", "arrivalRate", "serviceRate", "duration"],
+    bounds: { initialQueue: [0, 1e9], arrivalRate: [0, 1e9], serviceRate: [0, 1e9], duration: [0, 1000] },
+    outputs: ["finalValue", "clearTime", "netRate"],
+    series: ["value"],
+  },
+  probability: {
+    parameters: ["chance", "attempts", "guaranteeAt"],
+    bounds: { chance: [0, 100], attempts: [1, 1000], guaranteeAt: [0, 1000] },
+    outputs: ["finalValue", "effectiveTrials", "medianAttempt"],
+    series: ["value"],
   },
 });
 
@@ -219,6 +240,21 @@ export function validateExperiment(spec) {
       errors.push("chart.series must contain 1 to 3 fields");
     } else if (spec.chart.series.some(field => !SAFE_FIELD.test(field))) {
       errors.push("chart.series contains an unsafe field");
+    }
+    if (spec.chart.modes !== undefined) {
+      if (!Array.isArray(spec.chart.modes) || spec.chart.modes.length < 1 || spec.chart.modes.length > CHART_TYPES.size) {
+        errors.push("chart.modes must contain 1 to 5 supported modes");
+      } else {
+        if (spec.chart.modes.some(mode => !CHART_TYPES.has(mode))) {
+          errors.push("chart.modes contains an unsupported mode");
+        }
+        if (new Set(spec.chart.modes).size !== spec.chart.modes.length) {
+          errors.push("chart.modes must contain unique modes");
+        }
+        if (!spec.chart.modes.includes(spec.chart.type)) {
+          errors.push("recommended chart.type must be included in chart.modes");
+        }
+      }
     }
   }
   if (!isRecord(spec.explanation)) {

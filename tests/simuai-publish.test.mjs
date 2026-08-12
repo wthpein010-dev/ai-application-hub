@@ -14,21 +14,21 @@ const homepage = readFileSync(join(root, "index.html"), "utf8");
 const apps = loadDefaultAppsFromRuntime(runtime);
 process.env.FFMPEG_PATH ||= ffmpegPath;
 
-test("SimuAI is the final engineering experience with demo and video only", () => {
+test("SimuAI follows PlanMap in the application collection with demo and video only", () => {
   const matches = apps.filter((item) => item.id === "simuai");
-  const engineering = apps.filter((item) => item.status === "engineering");
 
   assert.equal(matches.length, 1);
-  assert.equal(engineering.at(-1).id, "simuai");
+  assert.deepEqual(JSON.parse(JSON.stringify(apps.slice(-2).map((item) => item.id))), ["planmap", "simuai"]);
   const app = matches[0];
   assert.equal(app.name, "SimuAI 万物实验室");
   assert.equal(app.category, "AI 互动实验");
-  assert.equal(app.status, "engineering");
-  assert.equal(app.badge, "工程体验");
+  assert.equal(app.status, "assistant");
+  assert.equal(app.badge, "AI 实验工具");
   assert.equal(app.entry, "./projects/simuai/index.html");
   assert.equal(app.video, "./projects/simuai/video/index.html");
   assert.equal(app.package, "");
-  assert.match(app.brief, /12 个受控实验/);
+  assert.match(app.brief, /30 个受控实验/);
+  assert.match(app.brief, /5 种图表视图/);
   assert.match(app.brief, /本地匹配/);
   assert.deepEqual(
     JSON.parse(JSON.stringify(app.platforms)),
@@ -40,32 +40,33 @@ test("SimuAI is the final engineering experience with demo and video only", () =
   );
   assert.deepEqual(
     JSON.parse(JSON.stringify(app.tags)),
-    ["问题模拟", "本地匹配", "参数实验", "透明模型"],
+    ["30 个实验", "本地匹配", "曲线切换", "透明模型"],
   );
 });
 
-test("SimuAI demo returns to the engineering catalog and Hub refreshes its runtime", () => {
+test("SimuAI demo returns to the application catalog and Hub refreshes its runtime", () => {
   const demo = readFileSync(join(root, "projects", "simuai", "index.html"), "utf8");
   assert.match(demo, /class="hub-home-link"/);
-  assert.match(demo, /href="\.\.\/\.\.\/index\.html#engineering"/);
+  assert.match(demo, /href="\.\.\/\.\.\/index\.html#apps"/);
   assert.match(
     homepage,
-    /app-20260706-restore-games\.js\?v=[^"]*simuai-static-search/,
+    /app-20260706-restore-games\.js\?v=[^"]*simuai-30-experiments/,
   );
 });
 
 test("SimuAI exact legacy default copy migrates without a broad overwrite", () => {
   assert.match(runtime, /normalized\.id === "simuai"/);
   assert.match(runtime, /normalized\.brief === "输入一个问题，让 AI 生成可拖动参数、观察曲线的互动实验。"/);
+  assert.match(runtime, /normalized\.brief === "输入一个适合量化的问题，从 12 个受控实验中本地匹配模型，拖动参数观察指标、曲线与结论如何变化。"/);
   assert.doesNotMatch(runtime, /normalized\.id === "simuai"[\s\S]{0,500}normalized\.brief = base\.brief;[\s\S]{0,80}normalized\.problem = base\.problem/);
 });
 
-test("SimuAI tutorial uses the shared player and returns to engineering", () => {
+test("SimuAI tutorial uses the shared player and returns to applications", () => {
   const videoRoot = join(root, "projects", "simuai", "video");
   const html = readFileSync(join(videoRoot, "index.html"), "utf8");
 
   assert.match(html, /data-hub-video-page/);
-  assert.match(html, /class="hub-video-home" href="\.\.\/\.\.\/\.\.\/index\.html#engineering"/);
+  assert.match(html, /class="hub-video-home" href="\.\.\/\.\.\/\.\.\/index\.html#apps"/);
   assert.match(html, /hub-video-player\.css/);
   assert.match(html, /hub-video-player\.js/);
   assert.match(html, /<video[^>]+preload="none"[^>]+data-src="\.\/simuai-tutorial\.mp4"/);
