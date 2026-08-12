@@ -404,12 +404,14 @@ try {
       await assertEdgeRoutesClear(stress, "时间轴-14根分支");
       await stress.close();
 
-      const sourceCss = await context.newPage(); observe(sourceCss, `${viewport.name}/packaged-source-css`);
-      await sourceCss.goto(`${origin}/__planmap-source-test.html`, { waitUntil: navigationState });
-      const sourceNode = await sourceCss.locator(".map-node").evaluate((node) => ({ clientWidth: node.clientWidth, scrollWidth: node.scrollWidth, overflowWrap: getComputedStyle(node).overflowWrap }));
-      assert.equal(sourceNode.overflowWrap, "anywhere", `packaged source should wrap arbitrary strings: ${JSON.stringify(sourceNode)}`);
-      assert.ok(sourceNode.scrollWidth <= sourceNode.clientWidth, `packaged source node text must not overflow horizontally: ${JSON.stringify(sourceNode)}`);
-      await sourceCss.close();
+      if (!requestedBaseUrl) {
+        const sourceCss = await context.newPage(); observe(sourceCss, `${viewport.name}/packaged-source-css`);
+        await sourceCss.goto(`${origin}/__planmap-source-test.html`, { waitUntil: navigationState });
+        const sourceNode = await sourceCss.locator(".map-node").evaluate((node) => ({ clientWidth: node.clientWidth, scrollWidth: node.scrollWidth, overflowWrap: getComputedStyle(node).overflowWrap }));
+        assert.equal(sourceNode.overflowWrap, "anywhere", `packaged source should wrap arbitrary strings: ${JSON.stringify(sourceNode)}`);
+        assert.ok(sourceNode.scrollWidth <= sourceNode.clientWidth, `packaged source node text must not overflow horizontally: ${JSON.stringify(sourceNode)}`);
+        await sourceCss.close();
+      }
     }
     await app.locator("#messages .message-row").evaluateAll((rows) => rows.filter((row) => row.textContent.includes("<img")).forEach((row) => row.remove()));
     await app.screenshot({ path: join(artifactRoot, `${viewport.name}.png`), fullPage: false });
