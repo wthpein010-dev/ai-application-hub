@@ -61,6 +61,7 @@ await page.getByRole("heading", { name: "小游戏买量回本", exact: true }).
 const recording = page.video();
 
 await page.waitForTimeout(4000);
+await page.screenshot({ path: join(videoRoot, "poster.jpg"), type: "jpeg", quality: 91 });
 await page.locator("#categoryTabs").scrollIntoViewIfNeeded();
 await page.getByRole("tab", { name: /趣味脑洞/ }).click();
 await page.getByRole("button", { name: /展开.*5 个实验/ }).click();
@@ -78,7 +79,6 @@ await page.waitForTimeout(4500);
 await page.locator("#experimentStage").scrollIntoViewIfNeeded();
 await page.getByLabel("每日买量成本精确值").fill("8000");
 await page.getByLabel("每日买量成本精确值").press("Enter");
-await page.screenshot({ path: join(videoRoot, "poster.jpg"), type: "jpeg", quality: 91 });
 await page.waitForTimeout(5500);
 await page.getByRole("button", { name: "为什么这样算" }).click();
 await page.getByRole("heading", { name: "公式与边界" }).waitFor();

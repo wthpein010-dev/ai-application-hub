@@ -42,6 +42,11 @@ test("page contains the complete experiment workflow", async () => {
 
 test("page starts with an honest estimation disclosure", async () => {
   const html = await readFile(`${projectRoot}/index.html`, "utf8");
+  assert.match(html, /<title>万象实验室<\/title>/);
+  assert.match(html, /class="brand"[^>]+aria-label="万象实验室首页"/);
+  assert.match(html, /<span><strong>万象实验室<\/strong><\/span>/);
+  assert.match(html, /<footer>[\s\S]*?<strong>万象实验室<\/strong>/);
+  assert.doesNotMatch(html, /SimuAI 万物实验室/);
   assert.match(html, /互动估算/);
   assert.match(html, /不构成专业建议/);
   assert.match(html, /匹配实验/);

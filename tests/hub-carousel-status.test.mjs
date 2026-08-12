@@ -20,7 +20,7 @@ function loadCarousel(selectedId = "simuai") {
 
   const navigationApps = [
     { id: "planmap", name: "PlanMap" },
-    { id: "simuai", name: "SimuAI 万物实验室" },
+    { id: "simuai", name: "万象实验室" },
     { id: "fill-what", name: "填了个啥" },
   ];
   const context = {
@@ -47,7 +47,7 @@ test("carousel renders position and progress without repeating the project name"
   const html = page.nodes.dots.innerHTML;
 
   assert.match(html, /class="showcase-status"/);
-  assert.doesNotMatch(html, /SimuAI 万物实验室/);
+  assert.doesNotMatch(html, /万象实验室/);
   assert.match(html, /02\s*\/\s*03/);
   assert.match(html, /role="progressbar"/);
   assert.match(html, /aria-valuenow="2"/);
