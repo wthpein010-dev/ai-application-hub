@@ -20,6 +20,10 @@ const failures = [];
 try {
   for (const viewport of [
     { name: "desktop", width: 1440, height: 900 },
+    { name: "compact-desktop", width: 1200, height: 800 },
+    { name: "small-desktop", width: 1024, height: 768 },
+    { name: "tablet", width: 768, height: 1024 },
+    { name: "above-mobile-breakpoint", width: 721, height: 900 },
     { name: "mobile", width: 390, height: 844 },
   ]) {
     const page = await browser.newPage({ viewport });
