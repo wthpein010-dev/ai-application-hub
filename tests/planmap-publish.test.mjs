@@ -75,6 +75,20 @@ test("思维导图快捷工具 supports global conversation edits, six structure
   assert.match(script, /askCompatibleModel/);
 });
 
+test("PlanMap publishes independent curved routes and readable type", () => {
+  const css = readFileSync(join(projectRoot, "app", "styles.css"), "utf8");
+  const script = readFileSync(join(projectRoot, "app", "app.js"), "utf8");
+
+  assert.match(script, /data-parent=/);
+  assert.match(script, /data-child=/);
+  assert.match(script, /function portOffset/);
+  assert.doesNotMatch(script.match(/function pathFor[\s\S]*?\n\}/)?.[0] ?? "", /\sL\s/);
+  assert.match(css, /\.message-row p\{font-size:14px/);
+  assert.match(css, /\.quick-prompts button\{font-size:13px/);
+  assert.match(css, /\.composer textarea\{font-size:14px/);
+  assert.match(css, /\.map-node\{width:158px[^}]*font-size:13px/);
+});
+
 test("PlanMap video page uses the shared player and returns to engineering", () => {
   const html = readFileSync(join(videoRoot, "index.html"), "utf8");
 

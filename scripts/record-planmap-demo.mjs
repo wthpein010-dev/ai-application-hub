@@ -43,9 +43,9 @@ await page.getByPlaceholder(/描述你的策划/).fill("把现场直播改成全
 await page.getByLabel("发送消息").click();
 await page.locator('#nodesLayer .map-node',{hasText:"全平台直播"}).waitFor();
 await page.waitForTimeout(7000);
-await page.getByPlaceholder(/描述你的策划/).fill("切换成鱼骨图");
+await page.getByPlaceholder(/描述你的策划/).fill("切换成时间轴");
 await page.getByLabel("发送消息").click();
-await page.locator('.structure-picker [data-layout="fishbone"].active').waitFor();
+await page.locator('.structure-picker [data-layout="timeline"].active').waitFor();
 await page.waitForTimeout(8000);
 await page.getByRole("tab",{name:"大纲模式"}).click();
 await page.waitForTimeout(6500);

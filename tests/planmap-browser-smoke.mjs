@@ -100,6 +100,57 @@ async function assertMapFitsStage(page, layoutLabel) {
   }
 }
 
+async function assertEdgeRoutesClear(page, layoutLabel) {
+  const geometry = await page.locator("#mapStage").evaluate((stage) => ({
+    paths: [...stage.querySelectorAll("#connections path")].map((path) => ({
+      d: path.getAttribute("d"),
+      parent: path.dataset.parent,
+      child: path.dataset.child,
+      start: (() => { const point = path.getPointAtLength(0); return { x: point.x, y: point.y }; })(),
+      length: path.getTotalLength(),
+      samples: Array.from({ length: 31 }, (_, index) => { const point = path.getPointAtLength(path.getTotalLength() * index / 30); return { x: point.x, y: point.y }; }),
+    })),
+    nodes: [...stage.querySelectorAll(".map-node")].map((node) => ({
+      id: node.dataset.id,
+      left: node.offsetLeft,
+      top: node.offsetTop,
+      right: node.offsetLeft + node.offsetWidth,
+      bottom: node.offsetTop + node.offsetHeight,
+    })),
+  }));
+
+  const siblingStarts = new Map();
+  for (const path of geometry.paths) {
+    assert.ok(path.parent && path.child, `${layoutLabel} paths should identify both endpoints`);
+    assert.match(path.d, /\sC\s/, `${layoutLabel}:${path.parent}/${path.child} should use a curved route`);
+    assert.doesNotMatch(path.d, /\sL\s/, `${layoutLabel}:${path.parent}/${path.child} must not contain a shareable straight segment`);
+    const starts = siblingStarts.get(path.parent) ?? [];
+    starts.push(`${path.start.x.toFixed(2)}:${path.start.y.toFixed(2)}`);
+    siblingStarts.set(path.parent, starts);
+    for (const node of geometry.nodes) {
+      if (node.id === path.parent || node.id === path.child) continue;
+      const crosses = path.samples.slice(1, -1).some((point) => point.x > node.left + 2 && point.x < node.right - 2 && point.y > node.top + 2 && point.y < node.bottom - 2);
+      assert.equal(crosses, false, `${layoutLabel}:${path.parent}/${path.child} must not pass through ${node.id}`);
+    }
+  }
+  for (const [parent, starts] of siblingStarts) assert.equal(new Set(starts).size, starts.length, `${layoutLabel}:${parent} sibling routes should have unique ports`);
+}
+
+async function assertReadableTypography(page, viewportName) {
+  const sizes = await page.evaluate(() => Object.fromEntries(Object.entries({
+    message: ".message-row p",
+    input: ".composer textarea",
+    quickPrompt: ".quick-prompts button",
+    mapNode: ".map-node:not(.root)",
+    rootNode: ".map-node.root",
+  }).map(([name, selector]) => [name, Number.parseFloat(getComputedStyle(document.querySelector(selector)).fontSize)])));
+  assert.ok(sizes.message >= 14, `${viewportName} message text should be at least 14px: ${sizes.message}`);
+  assert.ok(sizes.input >= 14, `${viewportName} composer text should be at least 14px: ${sizes.input}`);
+  assert.ok(sizes.quickPrompt >= 13, `${viewportName} quick prompts should be at least 13px: ${sizes.quickPrompt}`);
+  assert.ok(sizes.mapNode >= 13, `${viewportName} map nodes should be at least 13px: ${sizes.mapNode}`);
+  assert.ok(sizes.rootNode >= 16, `${viewportName} root node should be at least 16px: ${sizes.rootNode}`);
+}
+
 try {
   for (const viewport of [{ name: "desktop", width: 1440, height: 900 }, { name: "mobile", width: 390, height: 844 }]) {
     const context = await browser.newContext({ viewport });
@@ -134,6 +185,7 @@ try {
     const app = await context.newPage(); observe(app, `${viewport.name}/app`);
     await app.goto(`${origin}/projects/planmap/app/index.html`, { waitUntil: navigationState });
     await app.evaluate(() => localStorage.clear()); await app.reload({ waitUntil: navigationState });
+    await assertReadableTypography(app, viewport.name);
     if (viewport.name === "desktop") {
       for (const root of [
         { id: "broken", title: "损坏数据", children: "not-an-array" },
@@ -196,6 +248,7 @@ try {
       await app.locator(`.structure-picker [data-layout]`, { hasText: layout }).click();
       assert.equal(await app.locator("#nodesLayer .map-node").count(), 28, `${layout} should render all five levels`);
       assert.equal(await app.locator("#connections path").count(), 27, `${layout} should connect all rendered nodes`);
+      await assertEdgeRoutesClear(app, layout);
     }
     await app.getByRole("tab", { name: "大纲模式" }).click();
     assert.equal(await app.locator("#outlineList .outline-item").count(), 28);
