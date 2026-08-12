@@ -7,28 +7,39 @@ import {
   getExperiment,
 } from "../projects/simuai/core/templates.mjs";
 import {
+  EXPERIMENT_CATEGORIES,
+  experimentsForCategory,
+} from "../projects/simuai/core/catalog.mjs";
+import {
   normalizeQuestion,
   rankExperiments,
 } from "../projects/simuai/core/matcher.mjs";
 
-test("the offline library contains twelve unique valid experiments", () => {
-  assert.equal(EXPERIMENTS.length, 12);
-  assert.equal(new Set(EXPERIMENTS.map(item => item.id)).size, 12);
+test("the offline library contains thirty unique valid experiments across six balanced categories", () => {
+  assert.equal(EXPERIMENTS.length, 30);
+  assert.equal(new Set(EXPERIMENTS.map(item => item.id)).size, 30);
+  assert.equal(EXPERIMENT_CATEGORIES.length, 6);
+  assert.deepEqual(
+    EXPERIMENT_CATEGORIES.map(category => experimentsForCategory(category).length),
+    [5, 5, 5, 5, 5, 5],
+  );
   for (const experiment of EXPERIMENTS) {
     const checked = validateExperiment(experiment);
     assert.equal(checked.ok, true, `${experiment.id}: ${checked.errors.join(", ")}`);
+    assert.ok(experiment.chart.modes.includes(experiment.chart.type), experiment.id);
+    assert.ok(experiment.chart.modes.length >= 2, experiment.id);
   }
 });
 
-test("the three showcase experiments cover life, games and business", () => {
+test("the three showcase experiments span distinct categories and model shapes", () => {
   const showcases = EXPERIMENTS.filter(item => item.featured);
   assert.deepEqual(
     showcases.map(item => item.id),
-    ["caffeine-decay", "game-payback", "compound-savings"],
+    ["caffeine-decay", "plant-growth", "game-payback"],
   );
   assert.deepEqual(
     new Set(showcases.map(item => item.category)),
-    new Set(["生活科普", "游戏产品", "商业决策"]),
+    new Set(["生活日常", "游戏世界", "自然科学"]),
   );
 });
 
@@ -45,6 +56,24 @@ const examples = [
   ["团队预算按现在花费速度能撑多久", "budget-burn"],
   ["活动报名的人最终有多少到场", "event-attendance"],
   ["游戏角色升级经验曲线多久满级", "game-progression"],
+  ["手机一直刷视频电量多久用完", "phone-battery"],
+  ["植物多久长到接近最大高度", "plant-growth"],
+  ["培养皿细菌菌落多久铺满", "bacteria-growth"],
+  ["放射性物质经过半衰期还剩多少", "radioactive-decay"],
+  ["下雨和用水后储水箱还剩多少水", "rainwater-tank"],
+  ["生态食物链每一层能量留存多少", "food-chain"],
+  ["游戏体力多久恢复满", "stamina-recovery"],
+  ["抽卡多少抽触发保底概率", "gacha-pity"],
+  ["游戏关卡玩家最终通关多少", "level-funnel"],
+  ["短视频热度几天后衰减多少", "short-video-decay"],
+  ["直播观众开播到结束留存多少", "livestream-retention"],
+  ["社区成员增长会接近多少上限", "community-growth"],
+  ["一条消息最多能扩散到多少人", "message-spread"],
+  ["餐厅排队多久能消化完", "restaurant-queue"],
+  ["多少人生日相同概率超过一半", "birthday-collision"],
+  ["火星殖民人口如何增长", "mars-colony"],
+  ["派对披萨按吃的速度多久耗尽", "pizza-consumption"],
+  ["游乐园项目排队会越来越长吗", "theme-park-queue"],
 ];
 
 for (const [question, expectedId] of examples) {

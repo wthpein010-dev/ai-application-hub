@@ -47,6 +47,7 @@ test("view model uses the recommended chart mode and accepts only supported visu
 
 test("legacy experiments without chart modes remain locked to their recommended view", () => {
   const caffeine = getExperiment("caffeine-decay");
+  delete caffeine.chart.modes;
   const view = buildViewModel(
     caffeine,
     { initial: 200, halfLife: 5, duration: 10 },
