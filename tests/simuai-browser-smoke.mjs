@@ -33,6 +33,15 @@ try {
     await page.goto(baseUrl, { waitUntil: "networkidle" });
     await page.getByRole("heading", { name: "小游戏买量回本", exact: true }).waitFor();
 
+    const brandBox = await page.locator(".brand").boundingBox();
+    const homeBox = await page.locator(".hub-home-link").boundingBox();
+    assert.ok(brandBox && homeBox, `${viewport.name}: brand and home link should be visible`);
+    assert.equal(
+      brandBox.x >= homeBox.x + homeBox.width + 8,
+      true,
+      `${viewport.name}: 万象实验室 brand should not overlap the fixed home link`,
+    );
+
     assert.equal(await page.locator("[data-category]").count(), 6, `${viewport.name}: six category tabs`);
     const activeCategoryTab = page.locator("[data-category][aria-selected='true']");
     await activeCategoryTab.focus();

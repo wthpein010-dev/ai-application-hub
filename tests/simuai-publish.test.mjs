@@ -102,6 +102,10 @@ test("万象实验室 tutorial uses the shared player and returns to application
   const videoRoot = join(root, "projects", "simuai", "video");
   const html = readFileSync(join(videoRoot, "index.html"), "utf8");
 
+  assert.match(html, /<title>万象实验室介绍视频<\/title>/);
+  assert.match(html, /<h1>万象实验室 · 把问题变成可操作实验<\/h1>/);
+  assert.match(html, /aria-label="万象实验室介绍视频"/);
+  assert.doesNotMatch(html, /SimuAI 万物实验室|万物实验室/);
   assert.match(html, /data-hub-video-page/);
   assert.match(html, /class="hub-video-home" href="\.\.\/\.\.\/\.\.\/index\.html#apps"/);
   assert.match(html, /hub-video-player\.css/);
@@ -113,6 +117,22 @@ test("万象实验室 tutorial uses the shared player and returns to application
   for (const fileName of ["simuai-tutorial.mp4", "simuai-tutorial.vtt", "poster.jpg", "tutorial-script.md"]) {
     assert.equal(existsSync(join(videoRoot, fileName)), true, `${fileName} should exist`);
   }
+});
+
+test("万象实验室 current docs describe the renamed thirty-experiment release", () => {
+  const readme = readFileSync(join(root, "projects", "simuai", "README.md"), "utf8");
+  const tutorial = readFileSync(join(root, "projects", "simuai", "video", "tutorial-script.md"), "utf8");
+  const compatibility = readFileSync(join(root, "docs", "audits", "2026-08-03-platform-compatibility.md"), "utf8");
+
+  assert.match(readme, /^# 万象实验室/m);
+  assert.match(readme, /30 个受控实验/);
+  assert.match(readme, /九类内置计算引擎/);
+  assert.doesNotMatch(readme, /SimuAI 万物实验室|12 个受控实验|12 个内置实验/);
+  assert.match(tutorial, /^# 万象实验室功能演示脚本/m);
+  assert.match(tutorial, /认识万象实验室/);
+  assert.doesNotMatch(tutorial, /SimuAI 万物实验室|万物实验室/);
+  assert.match(compatibility, /\| `simuai` \| 万象实验室 \|/);
+  assert.match(compatibility, /30 个受控实验/);
 });
 
 test("万象实验室 tutorial is short H.264 720p with bounded one-line captions", () => {
@@ -127,6 +147,8 @@ test("万象实验室 tutorial is short H.264 720p with bounded one-line caption
   assert.equal(decoded.status, 0, decoded.stderr || decoded.error?.message);
 
   const captions = readFileSync(join(videoRoot, "simuai-tutorial.vtt"), "utf8");
+  assert.match(captions, /欢迎来到万象实验室/);
+  assert.doesNotMatch(captions, /万物实验室/);
   const blocks = captions.replace(/\r/g, "").trim().split(/\n{2,}/).slice(1);
   assert.ok(blocks.length >= 5);
   let previousEnd = 0;
