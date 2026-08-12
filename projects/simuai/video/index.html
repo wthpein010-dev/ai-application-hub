@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="color-scheme" content="dark" />
+    <link rel="icon" href="data:," />
+    <title>SimuAI 万物实验室介绍视频</title>
+    <link rel="stylesheet" href="../../../assets/hub-video-player.css" />
+  </head>
+  <body data-hub-video-page>
+    <a class="hub-video-home" href="../../../index.html#engineering">返回主页</a>
+    <main class="hub-video-page">
+      <p class="hub-video-kicker">功能演示</p>
+      <h1>SimuAI 万物实验室 · 把问题变成可操作实验</h1>
+      <p class="hub-video-description">演示本地匹配问题、拖动变量观察指标与曲线、查看公式边界，以及从三个候选中打开相近实验。</p>
+      <section class="hub-video-player" aria-label="SimuAI 万物实验室介绍视频">
+        <div class="hub-video-stage">
+          <div class="hub-video-load-card" id="loadCard" role="status">
+            <strong>准备播放功能演示</strong>
+            <p data-hub-video-message>点击后再加载视频，避免打开页面时等待。</p>
+            <button id="loadVideo" type="button">加载并播放视频</button>
+          </div>
+          <video id="introVideo" controls playsinline preload="none" data-src="./simuai-tutorial.mp4" poster="./poster.jpg" hidden><track kind="captions" src="./simuai-tutorial.vtt" srclang="zh-CN" label="简体中文字幕" default /></video>
+        </div>
+      </section>
+      <nav class="hub-video-actions" aria-label="视频相关入口">
+        <a href="./simuai-tutorial.mp4">打开 MP4</a>
+        <a href="../index.html">打开项目</a>
+      </nav>
+      <section class="hub-video-chapters" aria-label="视频章节">
+        <button class="hub-video-chapter" type="button" data-time="0"><time>00:00</time><span>认识万物实验室</span></button>
+        <button class="hub-video-chapter" type="button" data-time="4"><time>00:04</time><span>本地匹配问题</span></button>
+        <button class="hub-video-chapter" type="button" data-time="12"><time>00:12</time><span>调整变量观察结果</span></button>
+        <button class="hub-video-chapter" type="button" data-time="20"><time>00:20</time><span>查看公式与边界</span></button>
+        <button class="hub-video-chapter" type="button" data-time="28"><time>00:28</time><span>选择相近实验</span></button>
+        <button class="hub-video-chapter" type="button" data-time="43"><time>00:43</time><span>了解公开版边界</span></button>
+      </section>
+    </main>
+    <script type="module" src="../../../assets/hub-video-player.js"></script>
+  </body>
+</html>
