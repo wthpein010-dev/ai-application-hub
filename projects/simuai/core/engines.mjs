@@ -153,7 +153,68 @@ function payback(_spec, values) {
   };
 }
 
-const engines = { linear, compound, decay, funnel, inventory, payback };
+function logistic(_spec, values) {
+  const initial = Math.max(0, values.initial ?? 0);
+  const capacity = Math.max(initial, values.capacity ?? 0);
+  const growthRate = (values.growthRate ?? 0) / 100;
+  const duration = Math.max(0, values.duration ?? 0);
+  const series = durationPoints(duration, time => {
+    if (initial === 0 || capacity === 0) return 0;
+    return capacity / (1 + ((capacity - initial) / initial) * Math.exp(-growthRate * time));
+  });
+  const finalValue = series.at(-1).value;
+  return {
+    series,
+    outputs: {
+      finalValue,
+      capacityPercent: capacity === 0 ? 0 : finalValue / capacity * 100,
+    },
+    warnings: growthRate < 0 ? ["增长率为负时，数值会向零方向变化。"] : [],
+  };
+}
+
+function queue(_spec, values) {
+  const initialQueue = Math.max(0, values.initialQueue ?? 0);
+  const arrivalRate = Math.max(0, values.arrivalRate ?? 0);
+  const serviceRate = Math.max(0, values.serviceRate ?? 0);
+  const duration = Math.max(0, values.duration ?? 0);
+  const netRate = arrivalRate - serviceRate;
+  const clearTime = netRate < 0 ? initialQueue / -netRate : -1;
+  const series = durationPoints(duration, time => Math.max(0, initialQueue + netRate * time));
+  return {
+    series,
+    outputs: { finalValue: series.at(-1).value, clearTime, netRate },
+    warnings: clearTime < 0 ? ["当前到达速度不低于处理速度，队列不会自行清空。"] : [],
+  };
+}
+
+function probability(spec, values) {
+  const chance = Math.min(100, Math.max(0, values.chance ?? 0));
+  const attempts = Math.max(1, Math.round(values.attempts ?? 1));
+  const guaranteeAt = Math.max(0, Math.round(values.guaranteeAt ?? 0));
+  const effectiveTrialsFor = count => (
+    spec.attemptTransform === "pairwise" ? count * (count - 1) / 2 : count
+  );
+  const probabilityFor = count => {
+    if (guaranteeAt > 0 && count >= guaranteeAt) return 100;
+    return (1 - (1 - chance / 100) ** effectiveTrialsFor(count)) * 100;
+  };
+  const series = durationPoints(attempts, count => probabilityFor(count));
+  const effectiveTrials = effectiveTrialsFor(attempts);
+  const naturalMedian = chance <= 0 || chance >= 100
+    ? (chance >= 100 ? 1 : -1)
+    : Math.ceil(Math.log(0.5) / Math.log(1 - chance / 100));
+  const medianAttempt = guaranteeAt > 0 && (naturalMedian < 0 || guaranteeAt < naturalMedian)
+    ? guaranteeAt
+    : naturalMedian;
+  return {
+    series,
+    outputs: { finalValue: probabilityFor(attempts), effectiveTrials, medianAttempt },
+    warnings: [],
+  };
+}
+
+const engines = { linear, compound, decay, funnel, inventory, payback, logistic, queue, probability };
 
 export function runModel(spec, inputValues) {
   if (!MODEL_TYPES.includes(spec?.modelType) || !engines[spec.modelType]) {
