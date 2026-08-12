@@ -187,6 +187,20 @@ test("resolver uses a strong local match without calling the compiler", async ()
   assert.equal(calls, 0);
 });
 
+test("static server exposes the Hub shared subpage shell without exposing arbitrary parent files", async t => {
+  const server = createSimuAiServer({ apiKey: "" });
+  await new Promise(resolve => server.listen(0, "127.0.0.1", resolve));
+  t.after(() => new Promise(resolve => server.close(resolve)));
+  const origin = `http://127.0.0.1:${server.address().port}`;
+
+  const sharedStyle = await fetch(`${origin}/assets/subpage-shell.css`);
+  assert.equal(sharedStyle.status, 200);
+  assert.match(await sharedStyle.text(), /\.hub-home-link/);
+
+  const packageFile = await fetch(`${origin}/package.json`);
+  assert.equal(packageFile.status, 404);
+});
+
 test("static resolver keeps an unmatched question local and returns recommendations", async () => {
   let calls = 0;
   const result = await resolveQuestion("量子香蕉天气", {

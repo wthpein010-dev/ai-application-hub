@@ -7,6 +7,7 @@ import { fileURLToPath } from "node:url";
 import { validateExperiment } from "./core/schema.mjs";
 
 const ROOT = dirname(fileURLToPath(import.meta.url));
+const HUB_ROOT = dirname(dirname(ROOT));
 const MAX_BODY_BYTES = 8192;
 const DEFAULT_API_URL = "https://api.openai.com/v1/responses";
 const DEFAULT_RATE_LIMIT_MAX = 12;
@@ -19,6 +20,10 @@ const MIME = {
   ".json": "application/json; charset=utf-8",
   ".svg": "image/svg+xml",
   ".png": "image/png",
+  ".jpg": "image/jpeg",
+  ".jpeg": "image/jpeg",
+  ".mp4": "video/mp4",
+  ".vtt": "text/vtt; charset=utf-8",
 };
 
 const systemPrompt = `你是 SimuAI 的结构化模型编译器。只返回 JSON，不要 Markdown，不要解释。
@@ -213,9 +218,11 @@ async function serveStatic(request, response) {
     response.end("Bad request");
     return;
   }
+  const sharedAsset = relative.startsWith("assets/");
+  const serveRoot = sharedAsset ? HUB_ROOT : ROOT;
   const safePath = normalize(relative).replace(/^(\.\.[/\\])+/, "");
-  let filePath = join(ROOT, safePath);
-  if (!filePath.startsWith(ROOT)) {
+  let filePath = join(serveRoot, safePath);
+  if (!filePath.startsWith(serveRoot)) {
     response.writeHead(403).end();
     return;
   }
