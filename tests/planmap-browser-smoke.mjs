@@ -155,19 +155,19 @@ try {
   for (const viewport of [{ name: "desktop", width: 1440, height: 900 }, { name: "mobile", width: 390, height: 844 }]) {
     const context = await browser.newContext({ viewport });
     const hub = await context.newPage(); observe(hub, `${viewport.name}/hub`);
-    await hub.goto(`${origin}/index.html#engineering`, { waitUntil: navigationState });
+    await hub.goto(`${origin}/index.html#apps`, { waitUntil: navigationState });
     await hub.evaluate(() => localStorage.setItem("ai-competition-hub-v2-apps", JSON.stringify([{
-      id: "planmap", name: "PlanMap", category: "AI 策划脑图", status: "engineering", badge: "AI 策划工具",
+      id: "planmap", name: "PlanMap", category: "AI 策划脑图", status: "assistant", badge: "AI 策划工具",
       brief: "不用手动摆节点：描述策划目标，再通过对话持续扩写、改名、删除与重组，脑图会自动排版到可交付状态。",
       problem: "传统脑图要求用户一边思考内容、一边处理节点层级和版面，策划调整频繁时容易把精力耗在拖拽与排版上。",
       aiUse: "AI 将自然语言意图转换为结构化节点操作；用户可点选分支后继续对话，自动完成局部扩写、重命名、删减、重组与版式更新。",
       tags: ["策划脑图", "对话编辑", "自动排版", "XMind 导出"], platforms: { web: { href: "./projects/planmap/index.html", label: "演示" }, windows: "", mac: "" },
     }])));
     await hub.reload({ waitUntil: navigationState });
-    const card = hub.locator('#engineeringGrid article[data-app-id="planmap"]');
+    const card = hub.locator('#appGrid article[data-app-id="planmap"]');
     await card.waitFor();
     assert.equal(await card.locator("h3").textContent(), "思维导图快捷工具", "legacy default card text should migrate to the new public name");
-    assert.equal(await hub.locator('#appGrid article[data-app-id="planmap"]').count(), 0);
+    assert.equal(await hub.locator('#engineeringGrid article[data-app-id="planmap"]').count(), 0);
     assert.equal(await hub.locator('#gameGrid article[data-app-id="planmap"]').count(), 0);
     assert.deepEqual(await card.locator(".card-actions a").allTextContents(), ["演示", "视频"]);
     assert.equal(await card.evaluate((element) => element.nextElementSibling?.dataset.appId), "simuai");
@@ -176,7 +176,7 @@ try {
 
     const shell = await context.newPage(); observe(shell, `${viewport.name}/shell`);
     await shell.goto(`${origin}/projects/planmap/index.html`, { waitUntil: navigationState });
-    assert.equal(await shell.locator(".hub-home-link").getAttribute("href"), "../../index.html#engineering");
+    assert.equal(await shell.locator(".hub-home-link").getAttribute("href"), "../../index.html#apps");
     assert.equal(await shell.locator('a[href="../../downloads/planmap-source.zip"]').count(), 1);
     assert.equal(await shell.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth + 1), true);
     await shell.locator("iframe").contentFrame().locator('[aria-label="AI 对话区"]').waitFor();
@@ -325,7 +325,7 @@ try {
     const context = await browser.newContext({ viewport });
     const video = await context.newPage(); observe(video, `${viewport.name}/video`);
     await video.goto(`${origin}/projects/planmap/video/index.html`, { waitUntil: navigationState });
-    assert.equal(await video.locator(".hub-video-home").getAttribute("href"), "../../../index.html#engineering");
+    assert.equal(await video.locator(".hub-video-home").getAttribute("href"), "../../../index.html#apps");
     await video.locator("#loadVideo").click();
     await video.waitForFunction(() => document.querySelector("#introVideo").currentTime > 0, null, { timeout: 20_000 });
     assert.equal(await video.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth + 1), true);
