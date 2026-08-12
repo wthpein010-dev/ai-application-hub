@@ -39,14 +39,15 @@ function compound(_spec, values) {
   const contribution = Math.max(0, values.contribution ?? 0);
   const annualRate = values.annualRate ?? 0;
   const years = Math.max(0, values.years ?? 0);
-  const months = Math.max(0, Math.min(MAX_POINTS, Math.round(years * 12)));
+  const months = Math.max(0, Math.round(years * 12));
+  const sampleEvery = Math.max(1, Math.ceil(months / MAX_POINTS));
   const monthlyRate = annualRate / 100 / 12;
   let balance = principal;
   const series = [{ x: 0, value: balance }];
   for (let month = 1; month <= months; month += 1) {
     balance = balance * (1 + monthlyRate) + contribution;
     if (!Number.isFinite(balance)) throw new RangeError("Compound result is not finite");
-    series.push({ x: month, value: balance });
+    if (month % sampleEvery === 0 || month === months) series.push({ x: month, value: balance });
   }
   const totalContributed = principal + contribution * months;
   return {

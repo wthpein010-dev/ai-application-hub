@@ -41,6 +41,19 @@ test("payback conclusion handles an unprofitable observation window", () => {
   assert.ok(view.warnings.length > 0);
 });
 
+test("payback conclusion uses the current observation duration", () => {
+  const experiment = getExperiment("game-payback");
+  const view = buildViewModel(experiment, {
+    dailySpend: 10000,
+    dailyUsers: 100,
+    day1Retention: 10,
+    revenuePerActiveUser: 0.1,
+    duration: 14,
+  });
+
+  assert.match(view.conclusion, /14 天/);
+});
+
 test("presenter rejects an unknown model output", () => {
   const experiment = getExperiment("caffeine-decay");
   experiment.metrics[0].output = "notProduced";

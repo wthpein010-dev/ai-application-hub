@@ -76,6 +76,19 @@ test("compound models recurring deposits and periodic interest", () => {
   assert.equal(result.outputs.totalContributed, 2200);
 });
 
+test("compound calculates every month across the full supported horizon", () => {
+  const result = runModel({ modelType: "compound" }, {
+    principal: 1000,
+    contribution: 100,
+    annualRate: 0,
+    years: 50,
+  });
+
+  assert.equal(result.outputs.finalValue, 61000);
+  assert.equal(result.outputs.totalContributed, 61000);
+  assert.equal(result.series.at(-1).x, 600);
+});
+
 test("funnel applies each percentage to the previous stage", () => {
   const result = runModel({ modelType: "funnel" }, {
     audience: 1000,
@@ -159,6 +172,25 @@ test("schema rejects executable content, unknown models and invalid ranges", () 
   assert.match(checked.errors.join(" "), /modelType/);
   assert.match(checked.errors.join(" "), /executable|markup/i);
   assert.match(checked.errors.join(" "), /range/i);
+});
+
+test("schema binds parameters, metrics and chart fields to the selected engine", () => {
+  const unknownParameter = validateExperiment({
+    ...validSpec,
+    parameters: [parameter("initial"), parameter("mysteryRate"), parameter("duration")],
+  });
+  const unknownMetric = validateExperiment({
+    ...validSpec,
+    metrics: [{ id: "mystery", label: "Mystery", output: "notProduced", format: "number", unit: "" }],
+  });
+  const unknownSeries = validateExperiment({
+    ...validSpec,
+    chart: { ...validSpec.chart, series: ["notProduced"] },
+  });
+
+  assert.match(unknownParameter.errors.join(" "), /parameter.*linear/i);
+  assert.match(unknownMetric.errors.join(" "), /metric.*linear/i);
+  assert.match(unknownSeries.errors.join(" "), /chart.*linear/i);
 });
 
 test("parameter clamping uses schema bounds and defaults", () => {

@@ -16,11 +16,12 @@ function formatMetric(metric, rawValue) {
   return metric.unit ? `${formatted} ${metric.unit}` : formatted;
 }
 
-function conclusionFor(spec, metrics, result) {
+function conclusionFor(spec, metrics, result, values) {
   const first = metrics[0];
   if (spec.modelType === "payback") {
     if (result.outputs.paybackDay < 0) {
-      return `按当前假设，${spec.parameters.find(item => item.id === "duration")?.default ?? "本"}个单位观察期内尚未回本；优先调整成本、有效用户或单用户收益。`;
+      const duration = spec.parameters.find(item => item.id === "duration");
+      return `按当前假设，${numberFormatter.format(values.duration)} ${duration?.unit ?? "个单位"}观察期内尚未回本；优先调整成本、有效用户或单用户收益。`;
     }
     return `按当前假设，模型在第 ${numberFormatter.format(result.outputs.paybackDay)} 天达到回本，期末结果为 ${metrics.find(item => item.output === "finalValue")?.displayValue ?? first.displayValue}。`;
   }
@@ -84,7 +85,7 @@ export function buildViewModel(spec, inputValues = {}) {
     parameters: spec.parameters.map(parameter => ({ ...parameter, value: values[parameter.id] })),
     metrics,
     chart: chartFor(spec, result),
-    conclusion: conclusionFor(spec, metrics, result),
+    conclusion: conclusionFor(spec, metrics, result, values),
     warnings: [...result.warnings],
     disclosure: structuredClone(spec.explanation),
   };

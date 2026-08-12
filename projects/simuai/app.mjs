@@ -176,6 +176,7 @@ function syncParameter(event) {
   if (!parameter) return;
   const value = Math.min(parameter.max, Math.max(parameter.min, Number(input.value)));
   if (!Number.isFinite(value)) return;
+  input.value = String(value);
   state.values[parameter.id] = value;
   const pairedSelector = input.type === "range" ? `#number-${parameter.id}` : `#param-${parameter.id}`;
   const paired = document.querySelector(pairedSelector);

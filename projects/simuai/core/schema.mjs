@@ -14,6 +14,38 @@ const SOURCES = new Set(["builtin", "ai", "cache"]);
 const EXECUTABLE_CONTENT = /<\/?[a-z][^>]*>|javascript\s*:|\beval\s*\(|new\s+Function\b|on\w+\s*=/i;
 const SAFE_ID = /^[a-z][a-zA-Z0-9-]{1,63}$/;
 const SAFE_FIELD = /^[a-z][a-zA-Z0-9]{1,63}$/;
+const MODEL_CONTRACTS = Object.freeze({
+  linear: {
+    parameters: ["initial", "rate", "duration"],
+    outputs: ["finalValue", "totalChange"],
+    series: ["value"],
+  },
+  compound: {
+    parameters: ["principal", "contribution", "annualRate", "years"],
+    outputs: ["finalValue", "totalContributed", "interestEarned"],
+    series: ["value"],
+  },
+  decay: {
+    parameters: ["initial", "halfLife", "duration"],
+    outputs: ["finalValue", "percentRemaining"],
+    series: ["value"],
+  },
+  funnel: {
+    parameters: ["audience", "rate1", "rate2", "rate3", "rate4"],
+    outputs: ["finalValue", "overallRate"],
+    series: ["value"],
+  },
+  inventory: {
+    parameters: ["initialStock", "dailyInflow", "dailyOutflow", "duration"],
+    outputs: ["finalValue", "depletionTime", "netDailyChange"],
+    series: ["value"],
+  },
+  payback: {
+    parameters: ["dailySpend", "dailyUsers", "day1Retention", "revenuePerActiveUser", "duration"],
+    outputs: ["finalValue", "totalRevenue", "totalCost", "paybackDay", "roi"],
+    series: ["value", "revenue", "cost", "activeUsers"],
+  },
+});
 
 const isRecord = value => Boolean(value) && typeof value === "object" && !Array.isArray(value);
 const isFiniteNumber = value => typeof value === "number" && Number.isFinite(value);
@@ -93,6 +125,47 @@ function checkMetric(metric, index, errors, seenIds) {
   }
 }
 
+function checkModelContract(spec, errors) {
+  const contract = MODEL_CONTRACTS[spec.modelType];
+  if (!contract) return;
+
+  const parameterIds = Array.isArray(spec.parameters) ? spec.parameters.map(item => item?.id) : [];
+  const unsupportedParameters = parameterIds.filter(id => !contract.parameters.includes(id));
+  if (unsupportedParameters.length) {
+    errors.push(`parameter ${unsupportedParameters.join(", ")} is not supported by ${spec.modelType} model`);
+  }
+
+  if (spec.modelType === "funnel") {
+    const rates = parameterIds
+      .filter(id => /^rate[1-4]$/.test(id))
+      .map(id => Number(id.slice(4)))
+      .toSorted((a, b) => a - b);
+    const contiguous = rates.length >= 2 && rates.every((rate, index) => rate === index + 1);
+    if (!parameterIds.includes("audience") || !contiguous) {
+      errors.push("parameters for funnel model must contain audience and contiguous rate fields starting at rate1");
+    }
+  } else {
+    const missingParameters = contract.parameters.filter(id => !parameterIds.includes(id));
+    if (missingParameters.length) {
+      errors.push(`parameters for ${spec.modelType} model are missing ${missingParameters.join(", ")}`);
+    }
+  }
+
+  const unsupportedMetrics = Array.isArray(spec.metrics)
+    ? spec.metrics.map(item => item?.output).filter(output => !contract.outputs.includes(output))
+    : [];
+  if (unsupportedMetrics.length) {
+    errors.push(`metric output ${unsupportedMetrics.join(", ")} is not supported by ${spec.modelType} model`);
+  }
+
+  const unsupportedSeries = Array.isArray(spec.chart?.series)
+    ? spec.chart.series.filter(field => !contract.series.includes(field))
+    : [];
+  if (unsupportedSeries.length) {
+    errors.push(`chart series ${unsupportedSeries.join(", ")} is not supported by ${spec.modelType} model`);
+  }
+}
+
 export function validateExperiment(spec) {
   const errors = [];
   if (!isRecord(spec)) return { ok: false, errors: ["experiment must be an object"] };
@@ -148,6 +221,7 @@ export function validateExperiment(spec) {
     spec.keywords.forEach((item, index) => checkSafeText(item, `keywords[${index}]`, errors, 40));
   }
   if (!SOURCES.has(spec.source)) errors.push("source is not supported");
+  checkModelContract(spec, errors);
 
   return errors.length > 0
     ? { ok: false, errors }

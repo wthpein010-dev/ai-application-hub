@@ -40,6 +40,10 @@ try {
     await page.waitForTimeout(60);
     const after = await paybackMetric.textContent();
     assert.notEqual(after, before, `${viewport.name}: payback metric should change`);
+    const spendInput = page.getByLabel("每日买量成本精确值");
+    await spendInput.fill("999999");
+    await spendInput.press("Enter");
+    assert.equal(await spendInput.inputValue(), "50000", `${viewport.name}: numeric input should display its clamped value`);
 
     await page.getByRole("button", { name: "为什么这样算" }).click();
     await page.getByRole("heading", { name: "公式与边界" }).waitFor();
