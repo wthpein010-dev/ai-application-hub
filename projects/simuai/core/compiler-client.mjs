@@ -36,6 +36,12 @@ export async function compileQuestion(question, options = {}) {
     } catch {
       throw new CompilerError("INVALID_SPEC", "AI 返回了无法解析的实验说明书。");
     }
+    if (payload?.error?.code) {
+      const code = ["OFFLINE", "TIMEOUT", "UNSUPPORTED", "INVALID_SPEC"].includes(payload.error.code)
+        ? payload.error.code
+        : "OFFLINE";
+      throw new CompilerError(code, "暂时无法生成新实验，请使用离线实验库。");
+    }
     if (!response.ok) {
       const code = ["OFFLINE", "TIMEOUT", "UNSUPPORTED", "INVALID_SPEC"].includes(payload?.error?.code)
         ? payload.error.code

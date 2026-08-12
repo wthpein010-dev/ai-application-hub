@@ -118,8 +118,14 @@ test("proxy rejects oversized, unsupported and unconfigured requests safely", as
     headers: { "content-type": "application/json" },
     body: JSON.stringify({ question: "这是一个可以量化的新问题" }),
   });
-  assert.equal(unavailable.status, 503);
+  assert.equal(unavailable.status, 200);
   assert.deepEqual(await unavailable.json(), { error: { code: "OFFLINE" } });
+});
+
+test("compiler treats a successful offline envelope as a domain error", async () => {
+  await assert.rejects(() => compileQuestion("这是一个可以量化的新问题", {
+    fetchImpl: async () => new Response(JSON.stringify({ error: { code: "OFFLINE" } }), { status: 200 }),
+  }), error => error.code === "OFFLINE");
 });
 
 test("resolver uses a strong local match without calling the compiler", async () => {

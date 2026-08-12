@@ -70,7 +70,7 @@ async function compile(request, response, options) {
     return;
   }
   if (!options.apiKey) {
-    json(response, 503, { error: { code: "OFFLINE" } });
+    json(response, 200, { error: { code: "OFFLINE" } });
     return;
   }
 

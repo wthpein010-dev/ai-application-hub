@@ -33,6 +33,7 @@ test("page starts with an honest estimation disclosure", async () => {
   assert.match(html, /互动估算/);
   assert.match(html, /不构成专业建议/);
   assert.match(html, /生成实验/);
+  assert.match(html, /rel="icon" href="data:,"/);
 });
 
 test("application source does not execute generated code or inject HTML", async () => {
