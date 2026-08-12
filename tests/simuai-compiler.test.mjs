@@ -199,6 +199,9 @@ test("static server exposes the Hub shared subpage shell without exposing arbitr
 
   const packageFile = await fetch(`${origin}/package.json`);
   assert.equal(packageFile.status, 404);
+
+  const escapedAsset = await fetch(`${origin}/assets/..%2fpackage.json`);
+  assert.equal(escapedAsset.status, 404);
 });
 
 test("static resolver keeps an unmatched question local and returns recommendations", async () => {

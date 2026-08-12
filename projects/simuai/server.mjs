@@ -8,6 +8,7 @@ import { validateExperiment } from "./core/schema.mjs";
 
 const ROOT = dirname(fileURLToPath(import.meta.url));
 const HUB_ROOT = dirname(dirname(ROOT));
+const SHARED_ASSET_ROOT = join(HUB_ROOT, "assets");
 const MAX_BODY_BYTES = 8192;
 const DEFAULT_API_URL = "https://api.openai.com/v1/responses";
 const DEFAULT_RATE_LIMIT_MAX = 12;
@@ -219,10 +220,11 @@ async function serveStatic(request, response) {
     return;
   }
   const sharedAsset = relative.startsWith("assets/");
-  const serveRoot = sharedAsset ? HUB_ROOT : ROOT;
-  const safePath = normalize(relative).replace(/^(\.\.[/\\])+/, "");
+  const serveRoot = sharedAsset ? SHARED_ASSET_ROOT : ROOT;
+  const requestedPath = sharedAsset ? relative.slice("assets/".length) : relative;
+  const safePath = normalize(requestedPath).replace(/^(\.\.[/\\])+/, "");
   let filePath = join(serveRoot, safePath);
-  if (!filePath.startsWith(serveRoot)) {
+  if (filePath !== serveRoot && !filePath.startsWith(`${serveRoot}\\`) && !filePath.startsWith(`${serveRoot}/`)) {
     response.writeHead(403).end();
     return;
   }
