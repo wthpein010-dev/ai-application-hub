@@ -657,7 +657,7 @@ const defaultApps = [
     id: "planmap",
     name: "思维导图快捷工具",
     category: "AI 思维导图",
-    status: "engineering",
+    status: "assistant",
     badge: "脑图 + AI",
     brief: "不用手动摆节点，也不用先选节点：直接通过对话替换文字、重组内容，或切换鱼骨、树状、横向等结构，脑图自动排版。",
     problem: "传统脑图要求用户一边思考内容、一边处理节点层级和版面，策划调整频繁时容易把精力耗在拖拽与排版上。",
@@ -681,8 +681,8 @@ const defaultApps = [
     id: "simuai",
     name: "SimuAI 万物实验室",
     category: "AI 互动实验",
-    status: "engineering",
-    badge: "工程体验",
+    status: "assistant",
+    badge: "AI 实验工具",
     brief: "从 30 个受控实验中本地匹配模型，拖动参数，并在 5 种图表视图间切换，观察指标、曲线与结论如何变化。",
     problem: "抽象问题常被直接压缩成一个答案，用户难以看清变量、公式、假设和结果之间的关系。",
     aiUse: "AI 参与 9 种确定性模型设计、问题匹配、安全边界、交互体验、自动测试与公开教程制作；公开版不调用远程模型。",
@@ -784,12 +784,6 @@ function bindEvents() {
   nodes.sort.addEventListener("change", event => {
     state.sort = event.target.value;
     render();
-  });
-
-  nodes.dots.addEventListener("click", event => {
-    const dot = event.target.closest("[data-dot-id]");
-    if (!dot) return;
-    selectApp(dot.dataset.dotId);
   });
 
   nodes.grid.addEventListener("click", handleAppCardClick);
@@ -909,9 +903,30 @@ function spotlightIntro(app) {
 }
 
 function renderDots(filtered = getFilteredApps()) {
-  nodes.dots.innerHTML = getNavigationApps(filtered).map(app => `
-    <button class="showcase-dot ${app.id === state.selectedId ? "active" : ""}" type="button" data-dot-id="${escapeHtml(app.id)}" aria-label="${escapeHtml(app.name)}"></button>
-  `).join("");
+  const navigationApps = getNavigationApps(filtered);
+  const selectedIndex = navigationApps.findIndex(app => app.id === state.selectedId);
+  const currentIndex = selectedIndex >= 0 ? selectedIndex : 0;
+  const currentApp = navigationApps[currentIndex];
+  const total = navigationApps.length;
+  if (!currentApp || !total) {
+    nodes.dots.innerHTML = "";
+    return;
+  }
+  const numberWidth = Math.max(2, String(total).length);
+  const position = String(currentIndex + 1).padStart(numberWidth, "0");
+  const totalLabel = String(total).padStart(numberWidth, "0");
+  const progress = (((currentIndex + 1) / total) * 100).toFixed(2);
+  nodes.dots.innerHTML = `
+    <div class="showcase-status">
+      <div class="showcase-status__line">
+        <strong title="${escapeHtml(currentApp.name)}">${escapeHtml(currentApp.name)}</strong>
+        <span>${position} / ${totalLabel}</span>
+      </div>
+      <div class="showcase-status__track" role="progressbar" aria-label="应用浏览进度" aria-valuemin="1" aria-valuenow="${currentIndex + 1}" aria-valuemax="${total}">
+        <span style="width: ${progress}%"></span>
+      </div>
+    </div>
+  `;
 }
 
 function renderGrid(filtered) {
@@ -1373,6 +1388,12 @@ function normalizeApp(app) {
     Object.entries(legacy).forEach(([field, value]) => { if (normalized[field] === value) normalized[field] = base[field]; });
     const legacyTags = ["策划脑图", "对话编辑", "自动排版", "XMind 导出"];
     if (normalized.tags.length === legacyTags.length && normalized.tags.every((tag, index) => tag === legacyTags[index])) normalized.tags = [...base.tags];
+  }
+  if (["planmap", "simuai"].includes(normalized.id) && normalized.status === "engineering") {
+    normalized.status = base.status;
+  }
+  if (normalized.id === "simuai" && normalized.badge === "工程体验") {
+    normalized.badge = base.badge;
   }
   if (
     normalized.id === "paws-level-editor"

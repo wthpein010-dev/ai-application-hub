@@ -48,7 +48,7 @@ test("page starts with an honest estimation disclosure", async () => {
   assert.match(html, /rel="icon" href="data:,"/);
   assert.match(html, /公开版使用本地受控实验库，不会把输入发送给远程 AI/);
   assert.match(html, /class="hub-home-link"/);
-  assert.match(html, /href="\.\.\/\.\.\/index\.html#engineering"/);
+  assert.match(html, /href="\.\.\/\.\.\/index\.html#apps"/);
 });
 
 test("application source does not execute generated code or inject HTML", async () => {
