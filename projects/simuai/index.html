@@ -1,0 +1,146 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="把适合量化的问题变成可拖动、可观察、可解释的互动实验。">
+  <title>SimuAI 万物实验室</title>
+  <link rel="icon" href="data:,">
+  <link rel="stylesheet" href="../../assets/subpage-shell.css">
+  <link rel="stylesheet" href="./styles.css">
+</head>
+<body class="hub-subpage">
+  <div class="ambient ambient-a" aria-hidden="true"></div>
+  <div class="ambient ambient-b" aria-hidden="true"></div>
+
+  <header class="site-header">
+    <a class="brand" href="#top" aria-label="SimuAI 万物实验室首页">
+      <span class="brand-mark" aria-hidden="true"><i></i><i></i><i></i></span>
+      <span><strong>SimuAI</strong><small>万物实验室</small></span>
+    </a>
+    <div class="header-actions">
+      <div class="truth-badge"><span aria-hidden="true"></span> 结构化模型 · 透明假设</div>
+      <a class="hub-home-link" href="../../index.html#engineering"><span class="hub-home-link__icon" aria-hidden="true">‹</span>返回主页</a>
+    </div>
+  </header>
+
+  <main id="top">
+    <section class="hero" aria-labelledby="heroTitle">
+      <div class="eyebrow"><span>SIMULATE THE QUESTION</span><b>01</b></div>
+      <h1 id="heroTitle">别只问答案。<br><em>动手改变结果。</em></h1>
+      <p class="hero-copy">输入一个“如果……会怎样”的问题，从 12 个受控实验中找到最接近的模型，再亲手改变变量与结果。</p>
+
+      <form id="questionForm" class="question-form">
+        <label for="questionInput">想模拟什么？</label>
+        <div class="question-box">
+          <textarea id="questionInput" name="question" rows="2" maxlength="300" placeholder="例如：小游戏每天买量 5000 元，多久能回本？" required></textarea>
+          <button id="generateButton" type="submit" class="generate-button">
+            <span>匹配实验</span>
+            <span class="button-arrow" aria-hidden="true">↗</span>
+          </button>
+        </div>
+        <div class="question-meta">
+          <span id="compileStatus">12 个实验本地匹配，参数变化实时计算。</span>
+          <span>本地匹配 · 透明公式</span>
+        </div>
+      </form>
+
+      <section id="searchResults" class="search-results" data-state="idle" aria-live="polite" aria-atomic="true">
+        <div class="search-result-heading">
+          <span class="search-result-label">MATCH RESULT</span>
+          <p id="searchResultSummary">输入问题，查看实验库如何回应。</p>
+        </div>
+        <div id="searchRecommendationList" class="search-recommendation-list"></div>
+        <p id="searchCapability" class="search-capability">公开版使用本地受控实验库，不会把输入发送给远程 AI。</p>
+      </section>
+    </section>
+
+    <section class="showcase" aria-labelledby="showcaseTitle">
+      <div class="section-heading">
+        <div><span class="section-number">02</span><h2 id="showcaseTitle">三个主舞台</h2></div>
+        <p>从生活、游戏到商业，先体验最有代表性的模型。</p>
+      </div>
+      <div id="featuredTemplates" class="featured-grid" aria-label="推荐互动实验"></div>
+    </section>
+
+    <section id="experimentStage" class="experiment-stage" aria-labelledby="experimentTitle">
+      <div class="stage-topline">
+        <div>
+          <span id="experimentCategory" class="stage-category"></span>
+          <span id="experimentSource" class="source-pill"></span>
+        </div>
+        <button id="explanationToggle" class="text-button" type="button" aria-expanded="false" aria-controls="explanationPanel">
+          为什么这样算 <span aria-hidden="true">＋</span>
+        </button>
+      </div>
+
+      <div class="stage-title-row">
+        <div>
+          <p class="stage-kicker">LIVE EXPERIMENT</p>
+          <h2 id="experimentTitle"></h2>
+          <p id="experimentQuestion" class="stage-question"></p>
+        </div>
+        <p id="experimentConclusion" class="conclusion"></p>
+      </div>
+
+      <div id="metricGrid" class="metric-grid" aria-label="关键指标"></div>
+
+      <div class="workbench">
+        <section class="chart-panel" aria-labelledby="chartTitle">
+          <div class="panel-heading">
+            <div><span>RESULT CURVE</span><h3 id="chartTitle">结果曲线</h3></div>
+            <div id="chartLegend" class="chart-legend"></div>
+          </div>
+          <div class="chart-shell">
+            <svg id="resultChart" viewBox="0 0 800 360" role="img" aria-labelledby="chartTitle chartDescription"></svg>
+            <p id="chartDescription" class="sr-only"></p>
+          </div>
+          <p id="warningText" class="warning-text" role="status"></p>
+        </section>
+
+        <section class="control-panel" aria-labelledby="controlTitle">
+          <div class="panel-heading">
+            <div><span>CONTROL VARIABLES</span><h3 id="controlTitle">改变变量</h3></div>
+            <button id="resetParameters" class="reset-button" type="button">恢复默认</button>
+          </div>
+          <div id="parameterControls" class="parameter-controls"></div>
+        </section>
+      </div>
+
+      <aside id="explanationPanel" class="explanation-panel" hidden>
+        <div>
+          <span class="explanation-label">MODEL FORMULA</span>
+          <h3>公式与边界</h3>
+        </div>
+        <div class="formula-card">
+          <code id="formulaText"></code>
+        </div>
+        <div>
+          <h4>当前假设</h4>
+          <ul id="assumptionList"></ul>
+        </div>
+        <div>
+          <h4>适用边界</h4>
+          <p id="boundaryText"></p>
+          <p id="disclaimerText" class="disclaimer"></p>
+        </div>
+      </aside>
+    </section>
+
+    <section class="library" aria-labelledby="libraryTitle">
+      <div class="section-heading">
+        <div><span class="section-number">03</span><h2 id="libraryTitle">离线实验库</h2></div>
+        <p>不依赖 API，点击即可完整运行。</p>
+      </div>
+      <div id="templateLibrary" class="library-groups"></div>
+    </section>
+  </main>
+
+  <footer>
+    <div><strong>SimuAI</strong><span>把问题变成可以触摸的模型。</span></div>
+    <p>所有结果均为基于公开假设的互动估算，不构成专业建议。</p>
+  </footer>
+
+  <script type="module" src="./app.mjs"></script>
+</body>
+</html>

@@ -16,11 +16,11 @@ const videoRoot = join(projectRoot, "video");
 const archivePath = join(root, "downloads", "planmap-source.zip");
 process.env.FFMPEG_PATH ||= ffmpegPath;
 
-test("PlanMap is the final engineering experience with only demo and video card actions", () => {
+test("PlanMap remains immediately before SimuAI with only demo and video card actions", () => {
   const app = apps.find((item) => item.id === "planmap");
 
   assert.ok(app, "PlanMap should be present in the catalog");
-  assert.equal(apps.at(-1).id, "planmap");
+  assert.deepEqual(JSON.parse(JSON.stringify(apps.slice(-2).map((item) => item.id))), ["planmap", "simuai"]);
   assert.equal(app.name, "PlanMap");
   assert.equal(app.status, "engineering");
   assert.equal(app.entry, "./projects/planmap/index.html");
