@@ -86,6 +86,35 @@ test("payback conclusion uses the current observation duration", () => {
   assert.match(view.conclusion, /14 天/);
 });
 
+test("inventory and queue use model-specific text when they will not clear", () => {
+  const inventory = buildViewModel(getExperiment("rainwater-tank"), {
+    initialStock: 100,
+    dailyInflow: 20,
+    dailyOutflow: 10,
+    duration: 30,
+  });
+  const queue = buildViewModel(getExperiment("theme-park-queue"), {
+    initialQueue: 100,
+    arrivalRate: 50,
+    serviceRate: 40,
+    duration: 4,
+  });
+
+  assert.equal(inventory.metrics.find(item => item.output === "depletionTime").displayValue, "不会耗尽");
+  assert.equal(queue.metrics.find(item => item.output === "clearTime").displayValue, "不会自行清空");
+  assert.match(queue.conclusion, /排队|队列/);
+});
+
+test("new deterministic models receive specific conclusions", () => {
+  const logistic = buildViewModel(getExperiment("plant-growth"));
+  const probability = buildViewModel(getExperiment("gacha-pity"));
+
+  assert.match(logistic.conclusion, /上限|容量/);
+  assert.match(probability.conclusion, /概率/);
+  assert.doesNotMatch(logistic.conclusion, /线性变化/);
+  assert.doesNotMatch(probability.conclusion, /线性变化/);
+});
+
 test("presenter rejects an unknown model output", () => {
   const experiment = getExperiment("caffeine-decay");
   experiment.metrics[0].output = "notProduced";
