@@ -123,15 +123,20 @@ function payback(_spec, values) {
   const day1Retention = Math.min(100, Math.max(0, values.day1Retention ?? 0));
   const revenuePerActiveUser = Math.max(0, values.revenuePerActiveUser ?? 0);
   const duration = Math.max(0, Math.min(MAX_POINTS, Math.round(values.duration ?? 0)));
-  const dailyRevenue = dailyUsers * (day1Retention / 100) * revenuePerActiveUser;
+  const retention = day1Retention / 100;
   let paybackDay = -1;
-  const series = [{ x: 0, value: 0, revenue: 0, cost: 0 }];
+  let totalRevenue = 0;
+  const series = [{ x: 0, value: 0, revenue: 0, cost: 0, activeUsers: 0 }];
   for (let day = 1; day <= duration; day += 1) {
-    const revenue = dailyRevenue * day;
+    const activeUsers = retention === 1
+      ? dailyUsers * day
+      : dailyUsers * (1 - retention ** day) / (1 - retention);
+    totalRevenue += activeUsers * revenuePerActiveUser;
+    const revenue = totalRevenue;
     const cost = dailySpend * day;
     const value = revenue - cost;
     if (paybackDay === -1 && value >= 0 && revenue > 0) paybackDay = day;
-    series.push({ x: day, value, revenue, cost });
+    series.push({ x: day, value, revenue, cost, activeUsers });
   }
   const final = series.at(-1);
   return {

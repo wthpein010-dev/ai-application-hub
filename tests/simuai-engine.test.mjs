@@ -112,7 +112,21 @@ test("payback reports the first profitable day", () => {
   });
 
   assert.equal(result.outputs.paybackDay, 1);
-  assert.equal(result.outputs.finalValue, 500);
+  assert.equal(Math.round(result.outputs.finalValue), 4401);
+});
+
+test("payback includes retained cohorts and can cross over after several days", () => {
+  const result = runModel({ modelType: "payback" }, {
+    dailySpend: 500,
+    dailyUsers: 100,
+    day1Retention: 50,
+    revenuePerActiveUser: 3,
+    duration: 10,
+  });
+
+  assert.equal(result.outputs.paybackDay, 6);
+  assert.equal(Math.round(result.series[1].activeUsers), 100);
+  assert.equal(Math.round(result.series[2].activeUsers), 150);
 });
 
 test("model inputs must be finite and model types must be supported", () => {
