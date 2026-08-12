@@ -653,6 +653,30 @@ const defaultApps = [
     risk: 9,
     polish: 9
   },
+  {
+    id: "planmap",
+    name: "PlanMap",
+    category: "AI 策划脑图",
+    status: "engineering",
+    badge: "AI 策划工具",
+    brief: "不用手动摆节点：描述策划目标，再通过对话持续扩写、改名、删除与重组，脑图会自动排版到可交付状态。",
+    problem: "传统脑图要求用户一边思考内容、一边处理节点层级和版面，策划调整频繁时容易把精力耗在拖拽与排版上。",
+    aiUse: "AI 将自然语言意图转换为结构化节点操作；用户可点选分支后继续对话，自动完成局部扩写、重命名、删减、重组与版式更新。",
+    folder: "./projects/planmap/",
+    entry: "./projects/planmap/index.html",
+    video: "./projects/planmap/video/index.html",
+    package: "",
+    platforms: {
+      web: { href: "./projects/planmap/index.html", label: "演示" },
+      windows: "",
+      mac: ""
+    },
+    tags: ["策划脑图", "对话编辑", "自动排版", "XMind 导出"],
+    speed: 9,
+    impact: 9,
+    risk: 8,
+    polish: 9
+  },
 ];
 
 let apps = loadApps();

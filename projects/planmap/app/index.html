@@ -1,0 +1,78 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#f5f8fb" />
+    <meta name="description" content="PlanMap：用对话生成、调整并导出策划脑图。" />
+    <title>PlanMap · 对话式策划脑图</title>
+    <link rel="icon" href="data:," />
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <main class="app-shell theme-azure">
+      <header class="app-header">
+        <button class="brand" type="button" id="brandButton" aria-label="打开项目列表"><span class="brand-mark">P</span><strong>PlanMap</strong><span class="chevron">⌄</span></button>
+        <div class="document-meta"><input id="documentTitle" aria-label="脑图名称" value="新品发布会策划" /><span id="saveState">✓ 已保存到本机</span></div>
+        <div class="header-actions">
+          <button class="icon-button" id="undoButton" type="button" aria-label="撤销" title="撤销">↶</button>
+          <button class="icon-button" id="redoButton" type="button" aria-label="重做" title="重做">↷</button>
+          <i></i>
+          <button class="mode-pill" id="modeButton" type="button"><span>✦</span><b>演示模式</b></button>
+          <button class="icon-button" id="settingsButton" type="button" aria-label="打开设置" title="设置">⚙</button>
+        </div>
+      </header>
+
+      <div class="mobile-tabs" role="tablist"><button class="active" data-mobile-view="chat" role="tab">✦ 对话</button><button data-mobile-view="map" role="tab">⌘ 脑图</button></div>
+
+      <div class="workspace mobile-chat">
+        <section class="chat-panel" aria-label="AI 对话区">
+          <div class="panel-heading">
+            <span class="assistant-avatar">✦</span>
+            <div><h1>AI 策划搭档</h1><p><i></i> 正在理解你的策划</p></div>
+            <em>智能共创</em>
+          </div>
+          <div class="chat-scroll" id="chatScroll">
+            <article class="guide-card"><span>✦</span><div><strong>把策划说清楚，脑图自动长出来</strong><p>告诉我目标，或点选右侧节点后直接说怎么改。</p></div></article>
+            <div class="message-row assistant"><span>✦</span><p>你好，我已经根据“新品发布会”搭好了第一版策划脑图。你可以继续告诉我重点，或者点选右侧节点后直接说“展开这部分”。</p></div>
+            <div id="messages"></div>
+            <div class="quick-prompts"><small>试着这样说</small><button type="button">重新做一个校园音乐节完整策划</button><button type="button">补充风险预案</button><button type="button">加入预算与资源</button><button type="button">让结构更可执行</button></div>
+          </div>
+          <div class="composer-wrap">
+            <div class="selection-chip" id="selectionChip" hidden><span></span><button type="button" aria-label="取消选择节点">×</button></div>
+            <div class="composer"><textarea id="chatInput" rows="2" placeholder="描述你的策划，或告诉我怎么调整…"></textarea><button id="sendButton" type="button" aria-label="发送消息">↑</button></div>
+            <p>Enter 发送 · Shift + Enter 换行</p>
+          </div>
+        </section>
+
+        <section class="canvas-panel" aria-label="脑图画布">
+          <div class="canvas-heading"><div><span>脑图画布</span><small id="nodeCount">共 0 个节点 · 已自动排版</small></div><div><button id="autoLayout" class="secondary" type="button">↻ 自动整理</button><button id="exportButton" class="primary" type="button">⇩ 导出</button></div></div>
+          <div class="canvas-viewport" id="canvasViewport">
+            <div class="map-stage" id="mapStage"><svg id="connections" aria-hidden="true"></svg><div id="nodesLayer"></div></div>
+          </div>
+          <div class="zoom-controls"><button type="button" id="zoomOut" aria-label="缩小画布">−</button><span id="zoomValue">100%</span><button type="button" id="zoomIn" aria-label="放大画布">＋</button><button type="button" id="centerMap" aria-label="居中脑图">⌖</button></div>
+          <p class="canvas-hint">拖动节点可调整归属 · 双击节点可改名</p>
+        </section>
+      </div>
+
+      <div class="backdrop" id="settingsBackdrop" hidden>
+        <aside class="settings-drawer" role="dialog" aria-modal="true" aria-label="PlanMap 设置">
+          <header><div><small>工作台偏好</small><h2>设置</h2></div><button class="icon-button close-settings" type="button" aria-label="关闭设置">×</button></header>
+          <div class="settings-scroll">
+            <section><div class="setting-title"><span>✦</span><div><strong>AI 使用方式</strong><p>随时切换，不影响当前脑图</p></div></div><div class="segmented ai-modes"><button class="active" data-mode="演示模式">演示模式</button><button data-mode="PlanMap AI">PlanMap AI</button><button data-mode="自定义模型">自定义模型</button></div><p class="info-note">✓ 无需密钥，可完整体验对话修改流程。</p></section>
+            <section><div class="setting-title"><span>◉</span><div><strong>界面主题</strong><p>分支颜色会随主题自动调整</p></div></div><div class="theme-options"><button class="active" data-theme="azure"><i style="background:#1677ff"></i>清透办公蓝</button><button data-theme="teal"><i style="background:#0f8a7b"></i>清新青绿</button><button data-theme="coral"><i style="background:#e66b45"></i>温暖珊瑚</button></div></section>
+            <section><div class="setting-title"><span>⌘</span><div><strong>脑图结构</strong><p>切换后自动重新排版</p></div></div><div class="layout-options"><button class="active" data-layout="mindmap">左右脑图</button><button data-layout="right">向右展开</button><button data-layout="tree">组织结构</button></div></section>
+          </div>
+          <footer><button class="primary close-settings" type="button">完成</button></footer>
+        </aside>
+      </div>
+
+      <div class="backdrop popover-backdrop" id="exportBackdrop" hidden>
+        <div class="export-popover" role="dialog" aria-modal="true" aria-label="导出脑图"><header><div><small>交付脑图</small><h2>选择导出格式</h2></div><button class="icon-button close-export" type="button">×</button></header><button data-export="png"><b>PNG 图片</b><span>适合汇报和分享</span></button><button data-export="pdf"><b>PDF 文档</b><span>适合打印和归档</span></button><button data-export="markdown"><b>Markdown 大纲</b><span>保留完整层级结构</span></button><button data-export="xmind"><b>XMind 文件</b><span>可继续在 XMind 中编辑</span></button></div>
+      </div>
+
+      <div class="toast" id="toast" role="status" hidden></div>
+    </main>
+    <script src="./app.js"></script>
+  </body>
+</html>

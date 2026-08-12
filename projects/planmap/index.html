@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="color-scheme" content="dark" />
+    <meta name="theme-color" content="#0b1624" />
+    <meta name="description" content="通过对话生成、调整并交付专业策划脑图。" />
+    <title>PlanMap</title>
+    <link rel="icon" href="data:," />
+    <link rel="stylesheet" href="../../assets/subpage-shell.css" />
+    <link rel="stylesheet" href="./shell.css" />
+  </head>
+  <body class="hub-subpage planmap-demo-page">
+    <a class="hub-home-link" href="../../index.html#engineering">
+      <span class="hub-home-link__icon" aria-hidden="true">←</span>
+      返回主页
+    </a>
+
+    <header class="topbar">
+      <div>
+        <p>CONVERSATION-FIRST MIND MAP</p>
+        <strong>PlanMap · 对话式策划脑图</strong>
+      </div>
+      <nav aria-label="项目导航">
+        <a href="../../downloads/planmap-source.zip" download>源码包</a>
+        <a href="./video/index.html">查看视频</a>
+      </nav>
+    </header>
+
+    <main class="demo-frame-shell">
+      <div class="frame-loading" id="planmapLoading" role="progressbar" aria-label="PlanMap 加载进度" aria-valuemin="0" aria-valuemax="100" aria-valuenow="36">
+        <div class="frame-loading__content">
+          <span class="loading-mark">P</span>
+          <strong>正在打开 PlanMap</strong>
+          <span id="planmapLoadingText">准备对话与脑图工作区…</span>
+          <i aria-hidden="true"><b id="planmapLoadingBar"></b></i>
+          <small id="planmapLoadingValue">36%</small>
+        </div>
+      </div>
+      <iframe id="planmapFrame" src="./app/index.html" title="PlanMap 对话式策划脑图交互演示" allow="fullscreen" loading="eager" fetchpriority="high"></iframe>
+    </main>
+
+    <script>
+      const frame = document.querySelector("#planmapFrame");
+      const loading = document.querySelector("#planmapLoading");
+      const text = document.querySelector("#planmapLoadingText");
+      const bar = document.querySelector("#planmapLoadingBar");
+      const value = document.querySelector("#planmapLoadingValue");
+      function progress(amount, message) {
+        loading.setAttribute("aria-valuenow", String(amount));
+        text.textContent = message;
+        bar.style.width = `${amount}%`;
+        value.textContent = `${amount}%`;
+      }
+      progress(64, "正在整理首张策划脑图…");
+      frame.addEventListener("load", () => {
+        progress(100, "工作区已就绪");
+        window.setTimeout(() => loading.classList.add("is-ready"), 160);
+      }, { once: true });
+    </script>
+  </body>
+</html>

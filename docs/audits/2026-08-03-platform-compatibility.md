@@ -1,7 +1,7 @@
 # AI Application Hub 平台兼容矩阵
 
 - 日期：2026-08-03
-- 范围：主页当前 24 张公开项目卡片
+- 范围：主页当前 25 张公开项目卡片
 - 规则：网页、小游戏和工程体验通过现代浏览器覆盖 Windows 与 macOS；只有经过原生构建、架构检查和产物校验的项目显示系统下载。
 - 通用门禁：`tests/hub-entry-pages-browser-smoke.mjs`、`tests/hub-video-pages-browser-smoke.mjs`、`tests/hub-platform-artifacts.test.mjs`。
 
@@ -31,9 +31,10 @@
 | `nang-keng-pai-pai-xiang` | 馕了个馕 | 小游戏在线体验 | Windows：现代浏览器 | macOS：现代浏览器 | [网页体验](https://wthpein010-dev.github.io/ai-application-hub/projects/nang-keng-pai-pai-xiang/index.html) |
 | `clickflow` | ClickFlow 鼠标自动化 | 原生双平台 | Windows： [Wins下载](https://github.com/wthpein010-dev/ai-application-hub/releases/download/clickflow-v2.0.0/ClickFlow-Windows-x64.zip) | macOS： [Mac下载](https://github.com/wthpein010-dev/ai-application-hub/releases/download/clickflow-v2.0.0/ClickFlow-macOS.zip)，arm64/x64 | [项目页](https://wthpein010-dev.github.io/ai-application-hub/projects/clickflow/index.html)；`projects/clickflow/release-manifest.json`、`.github/workflows/build-clickflow-macos.yml` |
 | `pureshrink` | 无损压缩工坊 | 原生双平台 | Windows： [Wins下载](https://github.com/wthpein010-dev/ai-application-hub/releases/download/pureshrink-v1.0.3/PureShrink-Windows-x64.zip) | macOS： [Mac下载](https://github.com/wthpein010-dev/ai-application-hub/releases/download/pureshrink-v1.0.3/PureShrink-macOS.zip)，arm64/x64 | [项目页](https://wthpein010-dev.github.io/ai-application-hub/projects/pureshrink/index.html)；`projects/pureshrink/release-manifest.json` 记录双架构构建、启动和处理验收 |
+| `planmap` | PlanMap | 工程在线体验 | Windows：现代浏览器 | macOS：现代浏览器 | [工程体验](https://wthpein010-dev.github.io/ai-application-hub/projects/planmap/index.html)；源码附件为 [planmap-source.zip](https://wthpein010-dev.github.io/ai-application-hub/downloads/planmap-source.zip)，不作为系统安装包 |
 
 ## 结论
 
-- 24 个项目都可在 Windows 与 macOS 上通过网页查看或体验。
+- 25 个项目都可在 Windows 与 macOS 上通过网页查看或体验。
 - 4 个项目提供经过验证的原生 Windows/macOS 成品；飞书插件提供同一份跨平台浏览器扩展。
 - 其余项目不再显示来源码、Unity 工程、WebGL 压缩包或占位 ZIP 形式的伪系统下载。

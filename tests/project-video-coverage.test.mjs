@@ -19,7 +19,7 @@ function escapeRegExp(value) {
 
 test("every published video entry provides its own lazy-loaded tutorial video", () => {
   const apps = loadDefaultApps();
-  assert.equal(apps.length, 24, "the hub should keep its full project inventory");
+  assert.equal(apps.length, 25, "the hub should keep its full project inventory");
 
   const appsWithoutVideo = apps.filter((app) => !app.video);
   assert.equal(

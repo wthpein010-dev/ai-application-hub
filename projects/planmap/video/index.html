@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="color-scheme" content="dark" />
+    <link rel="icon" href="data:," />
+    <title>PlanMap 介绍视频</title>
+    <link rel="stylesheet" href="../../../assets/hub-video-player.css" />
+  </head>
+  <body data-hub-video-page>
+    <a class="hub-video-home" href="../../../index.html#engineering">返回主页</a>
+    <main class="hub-video-page">
+      <p class="hub-video-kicker">功能演示</p>
+      <h1>PlanMap · 用对话完成一张策划脑图</h1>
+      <p class="hub-video-description">从一句校园音乐节需求开始，继续点选分支、对话扩写，再切换主题与布局，最后查看四种交付格式。</p>
+      <section class="hub-video-player" aria-label="PlanMap 介绍视频">
+        <div class="hub-video-stage">
+          <div class="hub-video-load-card" id="loadCard" role="status">
+            <strong>准备播放功能演示</strong>
+            <p data-hub-video-message>点击后再加载视频，避免打开页面时等待。</p>
+            <button id="loadVideo" type="button">加载并播放视频</button>
+          </div>
+          <video id="introVideo" controls playsinline preload="none" data-src="./planmap-demo.mp4" poster="./poster.jpg" hidden><track kind="captions" src="./planmap-demo.vtt" srclang="zh" label="中文字幕" default /></video>
+        </div>
+      </section>
+      <nav class="hub-video-actions" aria-label="视频相关入口">
+        <a href="./planmap-demo.mp4">打开 MP4</a>
+        <a href="../index.html">打开项目</a>
+        <a href="../../../downloads/planmap-source.zip" download>下载源码包</a>
+      </nav>
+      <section class="hub-video-chapters" aria-label="视频章节">
+        <button class="hub-video-chapter" type="button" data-time="0"><time>00:00</time><span>对话与脑图工作区</span></button>
+        <button class="hub-video-chapter" type="button" data-time="8"><time>00:08</time><span>生成校园音乐节策划</span></button>
+        <button class="hub-video-chapter" type="button" data-time="20"><time>00:20</time><span>点选分支继续扩写</span></button>
+        <button class="hub-video-chapter" type="button" data-time="29"><time>00:29</time><span>切换主题与脑图结构</span></button>
+        <button class="hub-video-chapter" type="button" data-time="43"><time>00:43</time><span>查看四种导出格式</span></button>
+      </section>
+    </main>
+    <script type="module" src="../../../assets/hub-video-player.js"></script>
+  </body>
+</html>
