@@ -155,8 +155,8 @@ try {
       cardSelected: document.querySelector(selector)?.classList.contains("selected") || false,
       spotlightName: document.querySelector("#spotlightCard strong")?.textContent.trim() || "",
       storedId: localStorage.getItem("ai-competition-hub-v2-selected"),
-      statusName: document.querySelector(".showcase-status__line strong")?.textContent.trim() || "",
-      statusPosition: document.querySelector(".showcase-status__line span")?.textContent.trim() || "",
+      repeatedStatusName: document.querySelector(".showcase-status strong")?.textContent.trim() || "",
+      statusPosition: document.querySelector(".showcase-status__position")?.textContent.trim() || "",
       progressNow: Number(document.querySelector(".showcase-status__track")?.getAttribute("aria-valuenow") || 0),
       progressMax: Number(document.querySelector(".showcase-status__track")?.getAttribute("aria-valuemax") || 0),
       legacyDots: document.querySelectorAll(".showcase-dot, [data-dot-id]").length,
@@ -166,7 +166,7 @@ try {
       clickedCardSelected: selection.cardSelected,
       spotlightSynchronized: selection.spotlightName === "馕了个馕",
       selectedProjectPersisted: selection.storedId === selectedId,
-      navigationStatusSynchronized: selection.statusName === "馕了个馕"
+      navigationStatusSynchronized: selection.repeatedStatusName === ""
         && /^\d{2,}\s*\/\s*\d{2,}$/.test(selection.statusPosition)
         && selection.progressNow > 0
         && selection.progressNow <= selection.progressMax
@@ -176,22 +176,22 @@ try {
     }
     await hubPage.locator("#nextApp").click();
     const afterNext = await hubPage.evaluate(() => ({
-      name: document.querySelector(".showcase-status__line strong")?.textContent.trim() || "",
+      position: document.querySelector(".showcase-status__position")?.textContent.trim() || "",
       now: Number(document.querySelector(".showcase-status__track")?.getAttribute("aria-valuenow") || 0),
       spotlightName: document.querySelector("#spotlightCard strong")?.textContent.trim() || "",
     }));
     await hubPage.locator("#prevApp").click();
     const afterPrevious = await hubPage.evaluate(() => ({
-      name: document.querySelector(".showcase-status__line strong")?.textContent.trim() || "",
+      position: document.querySelector(".showcase-status__position")?.textContent.trim() || "",
       now: Number(document.querySelector(".showcase-status__track")?.getAttribute("aria-valuenow") || 0),
       spotlightName: document.querySelector("#spotlightCard strong")?.textContent.trim() || "",
     }));
     for (const [condition, ok] of Object.entries({
-      nextButtonUpdatesStatus: afterNext.name !== selection.statusName
-        && afterNext.spotlightName === afterNext.name
+      nextButtonUpdatesStatus: afterNext.position !== selection.statusPosition
+        && afterNext.spotlightName !== selection.spotlightName
         && afterNext.now !== selection.progressNow,
-      previousButtonRestoresStatus: afterPrevious.name === selection.statusName
-        && afterPrevious.spotlightName === selection.statusName
+      previousButtonRestoresStatus: afterPrevious.position === selection.statusPosition
+        && afterPrevious.spotlightName === selection.spotlightName
         && afterPrevious.now === selection.progressNow,
     })) {
       if (!ok) failures.push(`${viewport.name}/hub ${condition}: ${JSON.stringify({ selection, afterNext, afterPrevious })}`);

@@ -41,13 +41,13 @@ function loadCarousel(selectedId = "simuai") {
   return { ...context, navigationApps };
 }
 
-test("carousel renders one current-project status and progress indicator", () => {
+test("carousel renders position and progress without repeating the project name", () => {
   const page = loadCarousel();
   page.globalThis.renderDots(page.navigationApps);
   const html = page.nodes.dots.innerHTML;
 
   assert.match(html, /class="showcase-status"/);
-  assert.match(html, /SimuAI 万物实验室/);
+  assert.doesNotMatch(html, /SimuAI 万物实验室/);
   assert.match(html, /02\s*\/\s*03/);
   assert.match(html, /role="progressbar"/);
   assert.match(html, /aria-valuenow="2"/);
