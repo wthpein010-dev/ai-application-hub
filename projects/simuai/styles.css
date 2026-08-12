@@ -28,6 +28,7 @@ button:focus-visible, textarea:focus-visible, input:focus-visible, a:focus-visib
 .ambient-b { background: var(--violet); top: 58%; right: -260px; }
 .site-header, main, footer { width: min(1180px, calc(100% - 48px)); margin-inline: auto; }
 .site-header { height: 86px; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid var(--line); }
+.site-header .brand { margin-left: 132px; }
 .header-actions { display: flex; align-items: center; gap: 18px; }
 .brand { color: inherit; text-decoration: none; display: flex; align-items: center; gap: 12px; }
 .brand-mark { width: 38px; height: 38px; display: grid; grid-template-columns: repeat(3, 1fr); gap: 3px; align-items: end; padding: 8px; border: 1px solid rgba(86, 242, 207, .4); border-radius: 12px; background: rgba(86, 242, 207, .08); }
@@ -194,6 +195,7 @@ footer p { max-width: 460px; text-align: right; font-size: 12px; }
 @media (max-width: 720px) {
   .site-header, main, footer { width: min(100% - 28px, 1180px); }
   .site-header { height: 72px; }
+  .site-header .brand { margin-left: 144px; }
   .truth-badge { display: none; }
   .header-actions { gap: 8px; }
   .hero { min-height: auto; padding: 68px 0 54px; }
