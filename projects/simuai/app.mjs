@@ -1,12 +1,12 @@
 import { createCache } from "./core/cache.mjs";
-import { rankExperiments } from "./core/matcher.mjs";
 import { buildViewModel } from "./core/presenter.mjs";
 import { resolveQuestion } from "./core/resolver.mjs";
 import { EXPERIMENTS, getExperiment } from "./core/templates.mjs";
 import { renderChart } from "./ui/chart.mjs";
 
 const nodes = Object.fromEntries([
-  "questionForm", "questionInput", "compileStatus", "featuredTemplates", "templateLibrary",
+  "questionForm", "questionInput", "generateButton", "compileStatus", "searchResults",
+  "searchResultSummary", "searchRecommendationList", "searchCapability", "featuredTemplates", "templateLibrary",
   "experimentStage", "experimentCategory", "experimentSource", "experimentTitle", "experimentQuestion",
   "experimentConclusion", "metricGrid", "parameterControls", "resultChart", "chartLegend",
   "chartDescription", "warningText", "resetParameters", "explanationToggle", "explanationPanel",
@@ -14,10 +14,14 @@ const nodes = Object.fromEntries([
 ].map(id => [id, document.getElementById(id)]));
 
 const cache = createCache(window.localStorage);
+const proxyRequested = new URLSearchParams(window.location.search).get("compiler") === "proxy";
+const localHost = new Set(["127.0.0.1", "localhost", "::1"]).has(window.location.hostname);
+const resolverMode = proxyRequested && localHost ? "proxy" : "static";
 const state = {
   experiment: getExperiment("game-payback"),
   values: {},
   view: null,
+  activationSource: "内置实验",
 };
 
 function text(tag, content, className) {
@@ -141,7 +145,7 @@ function renderExperiment({ rebuildControls = true } = {}) {
   const view = buildViewModel(state.experiment, state.values);
   state.view = view;
   nodes.experimentCategory.textContent = view.category;
-  nodes.experimentSource.textContent = view.source === "builtin" ? "离线验证模型" : view.source === "cache" ? "缓存模型" : "AI 编译模型";
+  nodes.experimentSource.textContent = state.activationSource;
   nodes.experimentTitle.textContent = view.title;
   nodes.experimentQuestion.textContent = view.question;
   nodes.experimentConclusion.textContent = view.conclusion;
@@ -160,13 +164,26 @@ function renderExperiment({ rebuildControls = true } = {}) {
   });
 }
 
-function selectExperiment(id, { scroll = true } = {}) {
+function highlightStage() {
+  nodes.experimentStage.classList.remove("is-highlighted");
+  void nodes.experimentStage.offsetWidth;
+  nodes.experimentStage.classList.add("is-highlighted");
+  window.setTimeout(() => nodes.experimentStage.classList.remove("is-highlighted"), 900);
+}
+
+function selectExperiment(id, { scroll = true, source = "内置实验", focus = false } = {}) {
   const experiment = getExperiment(id);
   if (!experiment) return;
   state.experiment = experiment;
   state.values = defaultValues(experiment);
+  state.activationSource = source;
   renderExperiment();
+  highlightStage();
   if (scroll) nodes.experimentStage.scrollIntoView({ behavior: "smooth", block: "start" });
+  if (focus) {
+    nodes.experimentTitle.tabIndex = -1;
+    nodes.experimentTitle.focus({ preventScroll: true });
+  }
 }
 
 function syncParameter(event) {
@@ -190,35 +207,77 @@ function animateCompile(message) {
   window.setTimeout(() => nodes.questionForm.classList.remove("is-compiling"), 520);
 }
 
+function setSearchState(nextState, summary) {
+  nodes.searchResults.dataset.state = nextState;
+  nodes.searchResultSummary.textContent = summary;
+}
+
+function recommendationButton(match) {
+  const button = document.createElement("button");
+  button.type = "button";
+  button.className = "search-recommendation";
+  button.setAttribute("data-recommendation-id", match.experiment.id);
+  const reason = match.matchedTerms.length
+    ? `相关词：${match.matchedTerms.join("、")}`
+    : match.experiment.question;
+  button.append(
+    text("span", match.experiment.category, "recommendation-category"),
+    text("strong", match.experiment.title),
+    text("small", reason),
+    text("span", "打开实验 ↗", "recommendation-action"),
+  );
+  return button;
+}
+
+function showRecommendations(recommendations) {
+  nodes.searchRecommendationList.replaceChildren(...recommendations.map(recommendationButton));
+  setSearchState(
+    "recommended",
+    `没有完全对应的实验，以下 ${recommendations.length} 个最接近。请选择一个继续。`,
+  );
+}
+
 async function handleQuestionSubmit(event) {
   event.preventDefault();
   const question = nodes.questionInput.value.trim();
   if (question.length < 3) {
-    animateCompile("请再多描述一点，至少输入 3 个字符。");
+    setSearchState("error", "请再多描述一点，至少输入 3 个字符。");
+    nodes.questionInput.focus();
     return;
   }
-  animateCompile("识别问题 → 选择模型 → 生成实验");
-  const startedAt = performance.now();
-  const result = await resolveQuestion(question, { cache });
-  const remaining = Math.max(0, 420 - (performance.now() - startedAt));
-  window.setTimeout(() => {
+  nodes.generateButton.disabled = true;
+  nodes.generateButton.querySelector("span").textContent = "正在匹配";
+  nodes.searchRecommendationList.replaceChildren();
+  setSearchState("matching", "正在分析问题并匹配本地实验库……");
+  animateCompile("识别关键词 → 对比 12 个实验 → 返回结果");
+
+  try {
+    const result = resolverMode === "proxy"
+      ? await resolveQuestion(question, { mode: "proxy", cache })
+      : await resolveQuestion(question, { mode: "static" });
+
     if (result.experiment) {
       state.experiment = result.experiment;
       state.values = defaultValues(result.experiment);
+      state.activationSource = result.mode === "local" ? "搜索匹配" : "本地代理生成";
       renderExperiment();
+      highlightStage();
+      const evidence = result.matchedTerms?.length ? `，命中：${result.matchedTerms.join("、")}` : "";
+      setSearchState("matched", `已从 12 个实验中匹配到「${result.experiment.title}」${evidence}。`);
+      nodes.compileStatus.textContent = "匹配完成；后续参数变化只在本地计算。";
       nodes.experimentStage.scrollIntoView({ behavior: "smooth", block: "start" });
-      nodes.compileStatus.textContent = result.mode === "ai"
-        ? "AI 已生成受控实验；后续拖动只在本地计算。"
-        : result.mode === "cache"
-          ? "已从本地缓存恢复实验。"
-          : `已匹配离线实验：${result.experiment.title}`;
-      return;
+      nodes.experimentTitle.tabIndex = -1;
+      nodes.experimentTitle.focus({ preventScroll: true });
+    } else {
+      showRecommendations(result.recommendations);
+      nodes.compileStatus.textContent = "当前实验保持不变，可从推荐结果中选择。";
     }
-    const recommendation = result.recommendations[0];
-    if (recommendation) selectExperiment(recommendation.experiment.id);
-    const titles = result.recommendations.map(item => item.experiment.title).join("、");
-    nodes.compileStatus.textContent = `当前使用离线实验库。推荐：${titles}`;
-  }, remaining);
+  } catch (_error) {
+    setSearchState("error", "暂时无法完成匹配，请稍后重试。当前实验仍可继续使用。");
+  } finally {
+    nodes.generateButton.disabled = false;
+    nodes.generateButton.querySelector("span").textContent = "匹配实验";
+  }
 }
 
 nodes.featuredTemplates.addEventListener("click", event => {
@@ -228,6 +287,15 @@ nodes.featuredTemplates.addEventListener("click", event => {
 nodes.templateLibrary.addEventListener("click", event => {
   const card = event.target.closest("[data-experiment-id]");
   if (card) selectExperiment(card.dataset.experimentId);
+});
+nodes.searchRecommendationList.addEventListener("click", event => {
+  const card = event.target.closest("[data-recommendation-id]");
+  if (!card) return;
+  const experiment = getExperiment(card.dataset.recommendationId);
+  if (!experiment) return;
+  selectExperiment(experiment.id, { source: "推荐打开", focus: true });
+  setSearchState("matched", `已打开推荐实验「${experiment.title}」。`);
+  nodes.compileStatus.textContent = "推荐实验已打开；参数变化只在本地计算。";
 });
 nodes.parameterControls.addEventListener("input", syncParameter);
 nodes.parameterControls.addEventListener("change", syncParameter);

@@ -17,29 +17,41 @@
       <span class="brand-mark" aria-hidden="true"><i></i><i></i><i></i></span>
       <span><strong>SimuAI</strong><small>万物实验室</small></span>
     </a>
-    <div class="truth-badge"><span aria-hidden="true"></span> 结构化模型 · 透明假设</div>
+    <div class="header-actions">
+      <div class="truth-badge"><span aria-hidden="true"></span> 结构化模型 · 透明假设</div>
+      <a class="hub-home-link" href="../../index.html#engineering">返回主页</a>
+    </div>
   </header>
 
   <main id="top">
     <section class="hero" aria-labelledby="heroTitle">
       <div class="eyebrow"><span>SIMULATE THE QUESTION</span><b>01</b></div>
       <h1 id="heroTitle">别只问答案。<br><em>动手改变结果。</em></h1>
-      <p class="hero-copy">输入一个“如果……会怎样”的问题，让 AI 把变量、曲线和因果关系铺到你面前。</p>
+      <p class="hero-copy">输入一个“如果……会怎样”的问题，从 12 个受控实验中找到最接近的模型，再亲手改变变量与结果。</p>
 
       <form id="questionForm" class="question-form">
         <label for="questionInput">想模拟什么？</label>
         <div class="question-box">
           <textarea id="questionInput" name="question" rows="2" maxlength="300" placeholder="例如：小游戏每天买量 5000 元，多久能回本？" required></textarea>
-          <button type="submit" class="generate-button">
-            <span>生成实验</span>
+          <button id="generateButton" type="submit" class="generate-button">
+            <span>匹配实验</span>
             <span class="button-arrow" aria-hidden="true">↗</span>
           </button>
         </div>
         <div class="question-meta">
-          <span id="compileStatus" role="status" aria-live="polite">当前使用离线实验库，12 个实验无需联网。</span>
-          <span>一次生成 · 本地实时计算</span>
+          <span id="compileStatus">12 个实验本地匹配，参数变化实时计算。</span>
+          <span>本地匹配 · 透明公式</span>
         </div>
       </form>
+
+      <section id="searchResults" class="search-results" data-state="idle" aria-live="polite" aria-atomic="true">
+        <div class="search-result-heading">
+          <span class="search-result-label">MATCH RESULT</span>
+          <p id="searchResultSummary">输入问题，查看实验库如何回应。</p>
+        </div>
+        <div id="searchRecommendationList" class="search-recommendation-list"></div>
+        <p id="searchCapability" class="search-capability">公开版使用本地受控实验库，不会把输入发送给远程 AI。</p>
+      </section>
     </section>
 
     <section class="showcase" aria-labelledby="showcaseTitle">

@@ -58,11 +58,26 @@ try {
     page.on("request", request => {
       if (request.url().endsWith("/api/compile")) compileRequests.push(request.url());
     });
+
+    await page.getByLabel("想模拟什么？").fill("小游戏每天买量 5000 元多久回本");
+    await page.getByRole("button", { name: "匹配实验" }).click();
+    await page.locator("#searchResults[data-state='matched']").waitFor();
+    assert.match(await page.locator("#searchResultSummary").textContent(), /匹配到「小游戏买量回本」/);
+    assert.equal(await page.locator("#experimentSource").textContent(), "搜索匹配");
+    assert.equal(compileRequests.length, 0, `${viewport.name}: matched search must stay local`);
+
     await page.getByLabel("想模拟什么？").fill("量子香蕉天气会如何改变库存");
-    await page.getByRole("button", { name: "生成实验" }).click();
-    await page.waitForTimeout(650);
-    assert.equal(compileRequests.length, 1, `${viewport.name}: unmatched question should compile once`);
-    assert.match(await page.locator("#compileStatus").textContent(), /当前使用离线实验库/);
+    await page.getByRole("button", { name: "匹配实验" }).click();
+    await page.locator("#searchResults[data-state='recommended']").waitFor();
+    assert.equal(await page.getByRole("heading", { name: "小游戏买量回本", exact: true }).count(), 1);
+    assert.equal(await page.locator("[data-recommendation-id]").count(), 3);
+    assert.match(await page.locator("#searchResultSummary").textContent(), /以下 3 个最接近/);
+    assert.equal(compileRequests.length, 0, `${viewport.name}: unmatched search must stay local`);
+
+    const recommendedTitle = await page.locator("[data-recommendation-id]").first().locator("strong").textContent();
+    await page.locator("[data-recommendation-id]").first().click();
+    await page.getByRole("heading", { name: recommendedTitle, exact: true }).waitFor();
+    assert.equal(await page.locator("#experimentSource").textContent(), "推荐打开");
 
     const networkCount = compileRequests.length;
     await page.locator("#parameterControls input[type='range']").first().evaluate(input => {

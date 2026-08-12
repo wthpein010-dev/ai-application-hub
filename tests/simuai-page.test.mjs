@@ -18,22 +18,32 @@ async function readSources(directory = projectRoot) {
 
 test("page contains the complete experiment workflow", async () => {
   const html = await readFile(`${projectRoot}/index.html`, "utf8");
+  const app = await readFile(`${projectRoot}/app.mjs`, "utf8");
 
   assert.match(html, /id="questionForm"/);
+  assert.match(html, /id="searchResults"[^>]+aria-live="polite"/);
+  assert.match(html, /id="searchResultSummary"/);
+  assert.match(html, /id="searchRecommendationList"/);
+  assert.match(html, /id="searchCapability"/);
   assert.match(html, /id="templateLibrary"/);
   assert.match(html, /id="experimentStage"/);
   assert.match(html, /id="parameterControls"/);
   assert.match(html, /id="metricGrid"/);
   assert.match(html, /id="explanationPanel"/);
   assert.match(html, /type="module" src="\.\/app\.mjs"/);
+  assert.match(app, /resolveQuestion\(question,\s*\{\s*mode:\s*"static"\s*\}\)/);
+  assert.match(app, /data-recommendation-id/);
 });
 
 test("page starts with an honest estimation disclosure", async () => {
   const html = await readFile(`${projectRoot}/index.html`, "utf8");
   assert.match(html, /互动估算/);
   assert.match(html, /不构成专业建议/);
-  assert.match(html, /生成实验/);
+  assert.match(html, /匹配实验/);
   assert.match(html, /rel="icon" href="data:,"/);
+  assert.match(html, /公开版使用本地受控实验库，不会把输入发送给远程 AI/);
+  assert.match(html, /class="hub-home-link"/);
+  assert.match(html, /href="\.\.\/\.\.\/index\.html#engineering"/);
 });
 
 test("application source does not execute generated code or inject HTML", async () => {
