@@ -44,7 +44,7 @@ function conclusionFor(spec, metrics, result, values) {
   return `保持当前速度，期末估算为 ${first.displayValue}。该趋势用于比较情景，不代表现实会一直线性变化。`;
 }
 
-function chartFor(spec, result) {
+function chartFor(spec, result, chartMode) {
   const fields = spec.chart.series;
   const series = fields.map((field, index) => ({
     id: field,
@@ -59,10 +59,14 @@ function chartFor(spec, result) {
   if (series.some(item => item.points.some(point => !Number.isFinite(point.value)))) {
     throw new RangeError("Chart contains a non-finite value");
   }
-  return { ...spec.chart, series };
+  const modes = Array.isArray(spec.chart.modes) && spec.chart.modes.length > 0
+    ? [...spec.chart.modes]
+    : [spec.chart.type];
+  const type = modes.includes(chartMode) ? chartMode : spec.chart.type;
+  return { ...spec.chart, type, modes, series };
 }
 
-export function buildViewModel(spec, inputValues = {}) {
+export function buildViewModel(spec, inputValues = {}, options = {}) {
   const values = clampParameters(spec, inputValues);
   const result = runModel(spec, values);
   const metrics = spec.metrics.map(metric => {
@@ -84,7 +88,7 @@ export function buildViewModel(spec, inputValues = {}) {
     source: spec.source,
     parameters: spec.parameters.map(parameter => ({ ...parameter, value: values[parameter.id] })),
     metrics,
-    chart: chartFor(spec, result),
+    chart: chartFor(spec, result, options.chartMode),
     conclusion: conclusionFor(spec, metrics, result, values),
     warnings: [...result.warnings],
     disclosure: structuredClone(spec.explanation),

@@ -26,6 +26,37 @@ test("view model exposes chart, metrics, conclusion and disclosure", () => {
   assert.match(view.disclosure.disclaimer, /不构成专业建议/);
 });
 
+test("view model uses the recommended chart mode and accepts only supported visual overrides", () => {
+  const caffeine = getExperiment("caffeine-decay");
+  caffeine.chart.modes = ["area", "line", "step"];
+  const values = { initial: 200, halfLife: 5, duration: 10 };
+
+  const recommended = buildViewModel(caffeine, values);
+  const line = buildViewModel(caffeine, values, { chartMode: "line" });
+  const rejected = buildViewModel(caffeine, values, { chartMode: "bar" });
+
+  assert.equal(recommended.chart.type, "area");
+  assert.equal(line.chart.type, "line");
+  assert.equal(rejected.chart.type, "area");
+  assert.deepEqual(line.chart.modes, ["area", "line", "step"]);
+  assert.deepEqual(
+    line.metrics.map(metric => metric.rawValue),
+    recommended.metrics.map(metric => metric.rawValue),
+  );
+});
+
+test("legacy experiments without chart modes remain locked to their recommended view", () => {
+  const caffeine = getExperiment("caffeine-decay");
+  const view = buildViewModel(
+    caffeine,
+    { initial: 200, halfLife: 5, duration: 10 },
+    { chartMode: "line" },
+  );
+
+  assert.equal(view.chart.type, "area");
+  assert.deepEqual(view.chart.modes, ["area"]);
+});
+
 test("payback conclusion handles an unprofitable observation window", () => {
   const experiment = getExperiment("game-payback");
   const view = buildViewModel(experiment, {

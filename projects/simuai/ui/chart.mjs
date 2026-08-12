@@ -42,6 +42,12 @@ function renderFunnel(svg, chart) {
   });
 }
 
+function appendAccessibleTitle(svg, chart) {
+  const title = createSvg("title");
+  title.textContent = `${chart.yLabel}随${chart.xLabel}变化`;
+  svg.append(title);
+}
+
 function renderLineChart(svg, chart) {
   const allPoints = chart.series.flatMap(series => series.points);
   const xValues = allPoints.map(point => point.x);
@@ -77,7 +83,11 @@ function renderLineChart(svg, chart) {
 
   chart.series.forEach((series, seriesIndex) => {
     const coordinates = series.points.map(point => [sx(point.x), sy(point.value)]);
-    const pathData = coordinates.map(([x, y], index) => `${index === 0 ? "M" : "L"}${x.toFixed(2)},${y.toFixed(2)}`).join(" ");
+    const pathData = coordinates.map(([x, y], index) => {
+      if (index === 0) return `M${x.toFixed(2)},${y.toFixed(2)}`;
+      if (chart.type === "step") return `H${x.toFixed(2)} V${y.toFixed(2)}`;
+      return `L${x.toFixed(2)},${y.toFixed(2)}`;
+    }).join(" ");
     if (chart.type === "area" && chart.series.length === 1) {
       const area = `${pathData} L${coordinates.at(-1)[0].toFixed(2)},${sy(yMin).toFixed(2)} L${coordinates[0][0].toFixed(2)},${sy(yMin).toFixed(2)} Z`;
       svg.append(createSvg("path", { d: area, class: "chart-area", fill: "url(#chartAreaGradient)" }));
@@ -93,9 +103,44 @@ function renderLineChart(svg, chart) {
   svg.append(xLabel);
 }
 
+function renderBarChart(svg, chart) {
+  const allPoints = chart.series.flatMap(series => series.points);
+  const yValues = allPoints.map(point => point.value);
+  const [yMin, yMax] = extent(yValues);
+  const plotWidth = WIDTH - PAD.left - PAD.right;
+  const plotHeight = HEIGHT - PAD.top - PAD.bottom;
+  const groupCount = Math.max(1, chart.series[0]?.points.length ?? 0);
+  const groupWidth = plotWidth / groupCount;
+  const seriesWidth = Math.min(52, groupWidth * 0.76 / chart.series.length);
+  const sy = value => PAD.top + (yMax - value) / (yMax - yMin) * plotHeight;
+  const baseline = sy(Math.max(yMin, Math.min(yMax, 0)));
+
+  chart.series.forEach((series, seriesIndex) => {
+    series.points.forEach((point, pointIndex) => {
+      const valueY = sy(point.value);
+      const x = PAD.left + pointIndex * groupWidth + (groupWidth - seriesWidth * chart.series.length) / 2 + seriesIndex * seriesWidth;
+      const bar = createSvg("rect", {
+        x,
+        y: Math.min(valueY, baseline),
+        width: Math.max(3, seriesWidth - 4),
+        height: Math.max(1, Math.abs(baseline - valueY)),
+        rx: 5,
+        class: `chart-bar chart-bar-${seriesIndex}`,
+      });
+      svg.append(bar);
+    });
+  });
+
+  const xLabel = createSvg("text", { x: WIDTH / 2, y: HEIGHT - 10, class: "axis-title", "text-anchor": "middle" });
+  xLabel.textContent = chart.xLabel;
+  svg.append(xLabel);
+}
+
 export function renderChart(svg, chart) {
   svg.replaceChildren();
   if (!chart?.series?.length || chart.series.some(series => !series.points.length)) return;
+  appendAccessibleTitle(svg, chart);
   if (chart.type === "funnel") renderFunnel(svg, chart);
+  else if (chart.type === "bar") renderBarChart(svg, chart);
   else renderLineChart(svg, chart);
 }
