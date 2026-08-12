@@ -10,6 +10,9 @@ import { chromium } from "playwright";
 const root = dirname(dirname(fileURLToPath(import.meta.url)));
 const artifactRoot = join(root, "tests", "artifacts", "planmap");
 mkdirSync(artifactRoot, { recursive: true });
+const packagedSourceRoot = mkdtempSync(join(tmpdir(), "planmap-packaged-source-"));
+const sourceExtraction = spawnSync("tar", ["-xf", join(root, "downloads", "planmap-source.zip"), "-C", packagedSourceRoot], { encoding: "utf8" });
+assert.equal(sourceExtraction.status, 0, sourceExtraction.stderr);
 const requestedBaseUrl = process.env.HUB_BASE_URL?.replace(/\/+$/, "");
 
 const types = new Map([
@@ -20,6 +23,17 @@ const types = new Map([
 
 const server = requestedBaseUrl ? null : createServer((request, response) => {
   const pathname = decodeURIComponent(new URL(request.url, "http://127.0.0.1").pathname);
+  if (pathname === "/favicon.ico") { response.writeHead(204).end(); return; }
+  if (pathname === "/__planmap-source-test.html") {
+    const sourceCss = readFileSync(join(packagedSourceRoot, "planmap-source", "app", "globals.css"), "utf8").replace(/^@import\s+"tailwindcss";?\s*/u, "");
+    const html = '<!doctype html><style>' + sourceCss + '</style><div class="map-node" style="position:relative;transform:none;width:158px;height:46px">https://example.com/' + "A".repeat(200) + "</div>";
+    response.writeHead(200, { "Cache-Control": "no-store", "Content-Type": "text/html; charset=utf-8" }).end(html); return;
+  }
+  if (pathname.startsWith("/__planmap-source/")) {
+    const relative = pathname.slice("/__planmap-source/".length); const sourceRoot = join(packagedSourceRoot, "planmap-source"); const path = resolve(sourceRoot, relative);
+    if (!path.startsWith(sourceRoot + sep) || !existsSync(path) || statSync(path).isDirectory()) { response.writeHead(404).end(); return; }
+    const stats = statSync(path); response.writeHead(200, { "Cache-Control": "no-store", "Content-Length": stats.size, "Content-Type": types.get(extname(path)) || "application/octet-stream" }); createReadStream(path).pipe(response); return;
+  }
   const target = resolve(root, "." + normalize(pathname));
   if (!target.startsWith(root + sep) && target !== root) { response.writeHead(403).end(); return; }
   const path = existsSync(target) && statSync(target).isDirectory() ? join(target, "index.html") : target;
@@ -100,23 +114,132 @@ async function assertMapFitsStage(page, layoutLabel) {
   }
 }
 
+async function assertEdgeRoutesClear(page, layoutLabel) {
+  const geometry = await page.locator("#mapStage").evaluate((stage) => ({
+    paths: [...stage.querySelectorAll("#connections path")].map((path) => ({
+      d: path.getAttribute("d"),
+      parent: path.dataset.parent,
+      child: path.dataset.child,
+      start: (() => { const point = path.getPointAtLength(0); return { x: point.x, y: point.y }; })(),
+      length: path.getTotalLength(),
+      samples: (() => { const length = path.getTotalLength(); const count = Math.max(2, Math.ceil(length / 2) + 1); return Array.from({ length: count }, (_, index) => { const point = path.getPointAtLength(length * index / (count - 1)); return { x: point.x, y: point.y }; }); })(),
+    })),
+    nodes: [...stage.querySelectorAll(".map-node")].map((node) => ({
+      id: node.dataset.id,
+      left: node.offsetLeft,
+      top: node.offsetTop,
+      right: node.offsetLeft + node.offsetWidth,
+      bottom: node.offsetTop + node.offsetHeight,
+    })),
+  }));
+
+  const siblingStarts = new Map();
+  for (const path of geometry.paths) {
+    assert.ok(path.parent && path.child, `${layoutLabel} paths should identify both endpoints`);
+    assert.match(path.d, /\sC\s/, `${layoutLabel}:${path.parent}/${path.child} should use a curved route`);
+    assert.doesNotMatch(path.d, /\sL\s/, `${layoutLabel}:${path.parent}/${path.child} must not contain a shareable straight segment`);
+    const starts = siblingStarts.get(path.parent) ?? [];
+    starts.push(`${path.start.x.toFixed(2)}:${path.start.y.toFixed(2)}`);
+    siblingStarts.set(path.parent, starts);
+    for (const node of geometry.nodes) {
+      if (node.id === path.parent || node.id === path.child) continue;
+      const rect = { left: node.left + 2, top: node.top + 2, right: node.right - 2, bottom: node.bottom - 2 };
+      const crosses = path.samples.slice(0, -1).some((point, index) => segmentIntersectsRect(point, path.samples[index + 1], rect));
+      assert.equal(crosses, false, `${layoutLabel}:${path.parent}/${path.child} must not pass through ${node.id}: ${path.d} :: ${JSON.stringify(node)}`);
+    }
+  }
+  for (const [parent, starts] of siblingStarts) assert.equal(new Set(starts).size, starts.length, `${layoutLabel}:${parent} sibling routes should have unique ports`);
+  for (let first = 0; first < geometry.paths.length; first += 1) for (let second = first + 1; second < geometry.paths.length; second += 1) {
+    const a = geometry.paths[first]; const b = geometry.paths[second];
+    assert.equal(pathsShareVisibleRun(a.samples, b.samples), false, `${layoutLabel}:${a.parent}/${a.child} must not overlap ${b.parent}/${b.child}: ${a.d} :: ${b.d}`);
+  }
+  if (layoutLabel.startsWith("时间轴")) {
+    const root = geometry.nodes.find((node) => node.id === "root");
+    for (const path of geometry.paths.filter((edge) => edge.parent === "root")) assert.ok(Math.abs(path.start.y - root.top) < 1 || Math.abs(path.start.y - root.bottom) < 1, `timeline root route should use a dedicated vertical port: ${JSON.stringify(path.start)}`);
+  }
+}
+
+async function assertRoutesFitStage(page, layoutLabel) {
+  const geometry = await page.locator("#mapStage").evaluate((stage) => ({
+    width: stage.clientWidth,
+    height: stage.clientHeight,
+    points: [...stage.querySelectorAll("#connections path")].flatMap((path) => { const length = path.getTotalLength(); const count = Math.max(2, Math.ceil(length / 2) + 1); return Array.from({ length: count }, (_, index) => { const point = path.getPointAtLength(length * index / (count - 1)); return { x: point.x, y: point.y }; }); }),
+  }));
+  for (const point of geometry.points) assert.ok(point.x >= 0 && point.y >= 0 && point.x <= geometry.width && point.y <= geometry.height, `${layoutLabel} route must stay inside ${geometry.width}x${geometry.height}: ${JSON.stringify(point)}`);
+}
+
+function segmentIntersectsRect(a, b, rect) {
+  let start = 0; let end = 1; const dx = b.x - a.x; const dy = b.y - a.y;
+  for (const [p, q] of [[-dx, a.x - rect.left], [dx, rect.right - a.x], [-dy, a.y - rect.top], [dy, rect.bottom - a.y]]) {
+    if (Math.abs(p) < 1e-9) { if (q < 0) return false; continue; }
+    const ratio = q / p;
+    if (p < 0) start = Math.max(start, ratio); else end = Math.min(end, ratio);
+    if (start > end) return false;
+  }
+  return true;
+}
+
+function pathsShareVisibleRun(first, second) {
+  const cellSize = 2; const grid = new Map();
+  second.slice(0, -1).forEach((point, index) => { for (const endpoint of [point, second[index + 1]]) { const key = `${Math.round(endpoint.x / cellSize)}:${Math.round(endpoint.y / cellSize)}`; grid.set(key, [...new Set([...(grid.get(key) ?? []), index])]); } });
+  let sharedLength = 0;
+  for (let index = 0; index < first.length - 1; index += 1) {
+    const start = first[index]; const end = first[index + 1]; const midpoint = { x: (start.x + end.x) / 2, y: (start.y + end.y) / 2 }; const cellX = Math.round(midpoint.x / cellSize); const cellY = Math.round(midpoint.y / cellSize); let parallelMatch = false;
+    for (let x = cellX - 1; x <= cellX + 1 && !parallelMatch; x += 1) for (let y = cellY - 1; y <= cellY + 1 && !parallelMatch; y += 1) {
+      for (const matchIndex of grid.get(`${x}:${y}`) ?? []) {
+        const otherStart = second[matchIndex]; const otherEnd = second[matchIndex + 1];
+        if (pointToSegmentDistance(midpoint, otherStart, otherEnd) > .35) continue;
+        const firstDx = end.x - start.x; const firstDy = end.y - start.y; const secondDx = otherEnd.x - otherStart.x; const secondDy = otherEnd.y - otherStart.y;
+        const cosine = Math.abs((firstDx * secondDx + firstDy * secondDy) / (Math.hypot(firstDx, firstDy) * Math.hypot(secondDx, secondDy) || 1));
+        if (cosine > .995) { parallelMatch = true; break; }
+      }
+    }
+    sharedLength = parallelMatch ? sharedLength + Math.hypot(end.x - start.x, end.y - start.y) : 0;
+    if (sharedLength >= 12) return true;
+  }
+  return false;
+}
+
+function pointToSegmentDistance(point, start, end) {
+  const dx = end.x - start.x; const dy = end.y - start.y; const denominator = dx * dx + dy * dy;
+  const ratio = denominator ? Math.max(0, Math.min(1, ((point.x - start.x) * dx + (point.y - start.y) * dy) / denominator)) : 0;
+  return Math.hypot(point.x - (start.x + ratio * dx), point.y - (start.y + ratio * dy));
+}
+
+assert.equal(pathsShareVisibleRun(Array.from({ length: 12 }, (_, index) => ({ x: index * 2, y: 0 })), Array.from({ length: 12 }, (_, index) => ({ x: index * 2 + .7, y: 0 }))), true, "visible overlap detection must not depend on sample phase");
+
+async function assertReadableTypography(page, viewportName) {
+  const sizes = await page.evaluate(() => Object.fromEntries(Object.entries({
+    message: ".message-row p",
+    input: ".composer textarea",
+    quickPrompt: ".quick-prompts button",
+    mapNode: ".map-node:not(.root)",
+    rootNode: ".map-node.root",
+  }).map(([name, selector]) => [name, Number.parseFloat(getComputedStyle(document.querySelector(selector)).fontSize)])));
+  assert.ok(sizes.message >= 14, `${viewportName} message text should be at least 14px: ${sizes.message}`);
+  assert.ok(sizes.input >= 14, `${viewportName} composer text should be at least 14px: ${sizes.input}`);
+  assert.ok(sizes.quickPrompt >= 13, `${viewportName} quick prompts should be at least 13px: ${sizes.quickPrompt}`);
+  assert.ok(sizes.mapNode >= 13, `${viewportName} map nodes should be at least 13px: ${sizes.mapNode}`);
+  assert.ok(sizes.rootNode >= 16, `${viewportName} root node should be at least 16px: ${sizes.rootNode}`);
+}
+
 try {
   for (const viewport of [{ name: "desktop", width: 1440, height: 900 }, { name: "mobile", width: 390, height: 844 }]) {
     const context = await browser.newContext({ viewport });
     const hub = await context.newPage(); observe(hub, `${viewport.name}/hub`);
-    await hub.goto(`${origin}/index.html#engineering`, { waitUntil: navigationState });
+    await hub.goto(`${origin}/index.html#apps`, { waitUntil: navigationState });
     await hub.evaluate(() => localStorage.setItem("ai-competition-hub-v2-apps", JSON.stringify([{
-      id: "planmap", name: "PlanMap", category: "AI 策划脑图", status: "engineering", badge: "AI 策划工具",
+      id: "planmap", name: "PlanMap", category: "AI 策划脑图", status: "assistant", badge: "AI 策划工具",
       brief: "不用手动摆节点：描述策划目标，再通过对话持续扩写、改名、删除与重组，脑图会自动排版到可交付状态。",
       problem: "传统脑图要求用户一边思考内容、一边处理节点层级和版面，策划调整频繁时容易把精力耗在拖拽与排版上。",
       aiUse: "AI 将自然语言意图转换为结构化节点操作；用户可点选分支后继续对话，自动完成局部扩写、重命名、删减、重组与版式更新。",
       tags: ["策划脑图", "对话编辑", "自动排版", "XMind 导出"], platforms: { web: { href: "./projects/planmap/index.html", label: "演示" }, windows: "", mac: "" },
     }])));
     await hub.reload({ waitUntil: navigationState });
-    const card = hub.locator('#engineeringGrid article[data-app-id="planmap"]');
+    const card = hub.locator('#appGrid article[data-app-id="planmap"]');
     await card.waitFor();
     assert.equal(await card.locator("h3").textContent(), "思维导图快捷工具", "legacy default card text should migrate to the new public name");
-    assert.equal(await hub.locator('#appGrid article[data-app-id="planmap"]').count(), 0);
+    assert.equal(await hub.locator('#engineeringGrid article[data-app-id="planmap"]').count(), 0);
     assert.equal(await hub.locator('#gameGrid article[data-app-id="planmap"]').count(), 0);
     assert.deepEqual(await card.locator(".card-actions a").allTextContents(), ["演示", "视频"]);
     assert.equal(await card.evaluate((element) => element.nextElementSibling?.dataset.appId), "simuai");
@@ -125,7 +248,7 @@ try {
 
     const shell = await context.newPage(); observe(shell, `${viewport.name}/shell`);
     await shell.goto(`${origin}/projects/planmap/index.html`, { waitUntil: navigationState });
-    assert.equal(await shell.locator(".hub-home-link").getAttribute("href"), "../../index.html#engineering");
+    assert.equal(await shell.locator(".hub-home-link").getAttribute("href"), "../../index.html#apps");
     assert.equal(await shell.locator('a[href="../../downloads/planmap-source.zip"]').count(), 1);
     assert.equal(await shell.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth + 1), true);
     await shell.locator("iframe").contentFrame().locator('[aria-label="AI 对话区"]').waitFor();
@@ -134,6 +257,7 @@ try {
     const app = await context.newPage(); observe(app, `${viewport.name}/app`);
     await app.goto(`${origin}/projects/planmap/app/index.html`, { waitUntil: navigationState });
     await app.evaluate(() => localStorage.clear()); await app.reload({ waitUntil: navigationState });
+    await assertReadableTypography(app, viewport.name);
     if (viewport.name === "desktop") {
       for (const root of [
         { id: "broken", title: "损坏数据", children: "not-an-array" },
@@ -196,6 +320,7 @@ try {
       await app.locator(`.structure-picker [data-layout]`, { hasText: layout }).click();
       assert.equal(await app.locator("#nodesLayer .map-node").count(), 28, `${layout} should render all five levels`);
       assert.equal(await app.locator("#connections path").count(), 27, `${layout} should connect all rendered nodes`);
+      await assertEdgeRoutesClear(app, layout);
     }
     await app.getByRole("tab", { name: "大纲模式" }).click();
     assert.equal(await app.locator("#outlineList .outline-item").count(), 28);
@@ -224,7 +349,16 @@ try {
       for (const layout of ["左右脑图", "横向脑图", "树状图", "鱼骨图", "逻辑结构", "时间轴"]) {
         await app.locator(`.structure-picker [data-layout]`, { hasText: layout }).click();
         await assertMapFitsStage(app, layout);
+        await assertEdgeRoutesClear(app, layout);
       }
+      const rootTitle = app.getByLabel("脑图名称");
+      await rootTitle.fill("这是一个需要多行完整显示并保持所有连线端口准确的中长策划主题名称"); await rootTitle.press("Tab");
+      for (const layout of ["左右脑图", "横向脑图", "树状图", "鱼骨图", "逻辑结构", "时间轴"]) {
+        await app.locator(`.structure-picker [data-layout]`, { hasText: layout }).click();
+        await assertMapFitsStage(app, `${layout}-长根标题`);
+        await assertEdgeRoutesClear(app, `${layout}-长根标题`);
+      }
+      await rootTitle.fill("校园音乐节策划"); await rootTitle.press("Tab");
       await app.getByLabel("打开设置").click();
       await app.locator('[data-provider="openai"]').click();
       await app.locator("#modelEndpoint").fill("https://private.example/v1");
@@ -260,6 +394,22 @@ try {
       const content = spawnSync("tar", ["-xOf", xmindPath, "content.json"], { encoding: "utf8" });
       assert.equal(content.status, 0, content.stderr);
       assert.equal(JSON.parse(content.stdout)[0].rootTopic.title, "校园音乐节策划"); assert.match(content.stdout, new RegExp(fullLongTitle));
+
+      const stress = await context.newPage(); observe(stress, `${viewport.name}/timeline-stress`);
+      await stress.goto(`${origin}/projects/planmap/app/index.html`, { waitUntil: navigationState });
+      await stress.evaluate(() => localStorage.setItem("planmap.hub-demo.v2", JSON.stringify({ root: { id: "root", title: "多分支时间轴", children: Array.from({ length: 14 }, (_, index) => ({ id: `branch-${index}`, title: `分支 ${index + 1}`, children: [] })) }, theme: "azure", layout: "timeline" })));
+      await stress.reload({ waitUntil: navigationState });
+      await assertMapFitsStage(stress, "时间轴-14根分支");
+      await assertRoutesFitStage(stress, "时间轴-14根分支");
+      await assertEdgeRoutesClear(stress, "时间轴-14根分支");
+      await stress.close();
+
+      const sourceCss = await context.newPage(); observe(sourceCss, `${viewport.name}/packaged-source-css`);
+      await sourceCss.goto(`${origin}/__planmap-source-test.html`, { waitUntil: navigationState });
+      const sourceNode = await sourceCss.locator(".map-node").evaluate((node) => ({ clientWidth: node.clientWidth, scrollWidth: node.scrollWidth, overflowWrap: getComputedStyle(node).overflowWrap }));
+      assert.equal(sourceNode.overflowWrap, "anywhere", `packaged source should wrap arbitrary strings: ${JSON.stringify(sourceNode)}`);
+      assert.ok(sourceNode.scrollWidth <= sourceNode.clientWidth, `packaged source node text must not overflow horizontally: ${JSON.stringify(sourceNode)}`);
+      await sourceCss.close();
     }
     await app.locator("#messages .message-row").evaluateAll((rows) => rows.filter((row) => row.textContent.includes("<img")).forEach((row) => row.remove()));
     await app.screenshot({ path: join(artifactRoot, `${viewport.name}.png`), fullPage: false });
@@ -272,7 +422,7 @@ try {
     const context = await browser.newContext({ viewport });
     const video = await context.newPage(); observe(video, `${viewport.name}/video`);
     await video.goto(`${origin}/projects/planmap/video/index.html`, { waitUntil: navigationState });
-    assert.equal(await video.locator(".hub-video-home").getAttribute("href"), "../../../index.html#engineering");
+    assert.equal(await video.locator(".hub-video-home").getAttribute("href"), "../../../index.html#apps");
     await video.locator("#loadVideo").click();
     await video.waitForFunction(() => document.querySelector("#introVideo").currentTime > 0, null, { timeout: 20_000 });
     assert.equal(await video.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth + 1), true);
@@ -284,4 +434,5 @@ try {
   await browser.close();
   if (server) await new Promise((resolveServer) => server.close(resolveServer));
   rmSync(downloadRoot, { recursive: true, force: true });
+  rmSync(packagedSourceRoot, { recursive: true, force: true });
 }
