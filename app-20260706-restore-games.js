@@ -918,10 +918,7 @@ function renderDots(filtered = getFilteredApps()) {
   const progress = (((currentIndex + 1) / total) * 100).toFixed(2);
   nodes.dots.innerHTML = `
     <div class="showcase-status">
-      <div class="showcase-status__line">
-        <strong title="${escapeHtml(currentApp.name)}">${escapeHtml(currentApp.name)}</strong>
-        <span>${position} / ${totalLabel}</span>
-      </div>
+      <span class="showcase-status__position">${position} / ${totalLabel}</span>
       <div class="showcase-status__track" role="progressbar" aria-label="应用浏览进度" aria-valuemin="1" aria-valuenow="${currentIndex + 1}" aria-valuemax="${total}">
         <span style="width: ${progress}%"></span>
       </div>
