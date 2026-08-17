@@ -74,28 +74,55 @@ test("stored application metadata migrates into the engineering experience secti
   assert.deepEqual(Array.from(normalized.tags), Array.from(project.tags));
 });
 
-test("page preserves ten 27-character career roles and adds ten illustrated catalog roles", () => {
+test("page preserves career copy and synchronizes the confirmed Feishu skin content", () => {
   const html = readFileSync(join(projectRoot, "index.html"), "utf8");
   const names = Array.from(html.matchAll(/name:\s*"([^"]+)"/g), (match) => match[1]);
+  const summaries = Array.from(html.matchAll(/summary:\s*"([^"]+)"/g), (match) => match[1]);
   const copies = Array.from(html.matchAll(/copy:\s*"([^"]+)"/g), (match) => match[1]);
   const images = Array.from(html.matchAll(/image:\s*"\.\/assets\/([^"]+)"/g), (match) => match[1]);
 
   assert.equal(names.length, 20);
+  assert.equal(summaries.length, 20);
   assert.equal(copies.length, 20);
   assert.equal(copies.slice(0, 10).every((copy) => Array.from(copy).length === 27), true);
-  assert.deepEqual(names.slice(10), [
-    "原生松弛草",
-    "红蝶草公主",
-    "冬帽草团子",
-    "心草恋爱脑",
-    "草场嘻哈仔",
-    "蓝蝶萝卜妹",
-    "木桩发芽啦",
-    "不是棉羊哥",
-    "粉镜毛线精",
-    "黑镜麦霸总",
+  assert.deepEqual(names.slice(10).map((name, index) => ({
+    name,
+    summary: summaries[index + 10],
+    copy: copies[index + 10],
+  })), [
+    { name: "原皮战神", summary: "/", copy: "没有配饰也敢直接出场，原皮才是最强皮肤。" },
+    { name: "邻家甜妹", summary: "甜妹能量满格，烦恼暂不接待", copy: "少女能量上线，专治阴天、困倦和隔壁那位的坏心情。" },
+    { name: "冬帽草团子", summary: "帽檐压住寒风，没压住一脸小脾气", copy: "红色暖帽裹住嫩青草，疲惫感瞬间被自然气息治愈。" },
+    { name: "满眼心动", summary: "爱心镜片映出主角，快乐这回不用向外借", copy: "粉红滤镜只认本人，所有温柔最后都回到自己身上。" },
+    { name: "草场从容哥", summary: "绿帽压着青草，松弛感铺满草场", copy: "出门太急拿错了那顶，回头率却直接拉满；小尴尬也算限定装扮。" },
+    { name: "萝卜界甜心", summary: "蓝蝴蝶结晃一下，甜妹能量满格", copy: "蓝蝶结搭配橙色胡萝卜，甜妹能量已经全部补充完毕。" },
+    { name: "枯木逢春", summary: "不是不开心，只是笑容正在冬眠，预计开春重新加载", copy: "身体还是老木桩，头顶已经偷偷把春天更新到最新版。" },
+    { name: "咩羊哥", summary: "不是哥们，棉花怎么突然长出羊脸了！", copy: "只要没人说破，它就同时保持棉花和小羊两种状态。" },
+    { name: "超前毛线团", summary: "粉镜配毛线团，也能走出时尚秀", copy: "粉色镜框镇住混乱，纠缠半天反而织出了高级感。" },
+    { name: "黑镜麦霸总", summary: "墨镜一戴气场全开，麦穗也当霸总", copy: "别的庄稼迎风弯腰，他扶了扶墨镜，静候秋天亲自递上分红。" },
   ]);
-  assert.equal(images.length, 10);
+  assert.deepEqual(images, [
+    "career-meituan-rider.png",
+    "career-taobao-flash-rider.png",
+    "career-jd-courier.png",
+    "career-sf-courier.png",
+    "career-basketball-player.png",
+    "career-suited-boss.png",
+    "career-grid-programmer.png",
+    "career-construction-worker.png",
+    "career-male-server.png",
+    "career-female-server.png",
+    "native-grass.png",
+    "red-bow-grass.png",
+    "winter-hat-grass.png",
+    "heart-grass.png",
+    "hiphop-grass.png",
+    "carrot-grass.png",
+    "sprout-stump.png",
+    "cotton-sheep.png",
+    "pink-glasses-yarn.png",
+    "black-glasses-wheat.png",
+  ]);
   assert.equal(images.every((image) => existsSync(join(projectRoot, "assets", image))), true);
   assert.match(html, /<body class="hub-subpage">/);
   assert.match(html, /class="hub-home-link" href="\.\.\/\.\.\/index\.html#engineering"/);
