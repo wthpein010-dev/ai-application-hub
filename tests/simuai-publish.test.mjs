@@ -42,9 +42,10 @@ function loadNormalizer() {
 
 test("万象实验室 follows PlanMap in the application collection with demo and video only", () => {
   const matches = apps.filter((item) => item.id === "simuai");
+  const index = apps.findIndex((item) => item.id === "simuai");
 
   assert.equal(matches.length, 1);
-  assert.deepEqual(JSON.parse(JSON.stringify(apps.slice(-2).map((item) => item.id))), ["planmap", "simuai"]);
+  assert.deepEqual(JSON.parse(JSON.stringify(apps.slice(index - 1, index + 1).map((item) => item.id))), ["planmap", "simuai"]);
   const app = matches[0];
   assert.equal(app.name, "万象实验室");
   assert.equal(app.category, "AI 互动实验");
