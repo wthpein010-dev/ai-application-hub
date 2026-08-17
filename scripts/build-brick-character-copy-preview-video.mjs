@@ -63,24 +63,27 @@ const video = page.video();
 try {
   await page.goto(`http://127.0.0.1:${port}/projects/brick-character-copy-preview/index.html`, { waitUntil: "networkidle" });
   await page.evaluate(() => document.fonts.ready);
+  await page.locator('tr[data-index="10"]').scrollIntoViewIfNeeded();
+  await page.locator('tr[data-index="10"]').click();
   await page.screenshot({ path: posterPath, type: "jpeg", quality: 90 });
 
   await page.waitForTimeout(4_000);
-  await page.locator('tr[data-index="4"]').click();
+  await page.locator('tr[data-index="11"]').click();
   await page.waitForTimeout(4_000);
-  await page.locator('tr[data-index="7"]').click();
+  await page.locator('tr[data-index="15"]').click();
   await page.waitForTimeout(4_000);
-  await page.locator('tr[data-index="9"]').scrollIntoViewIfNeeded();
-  await page.locator('tr[data-index="9"]').click();
+  await page.locator('tr[data-index="19"]').click();
+  await page.waitForTimeout(4_000);
+  await page.locator("#search").fill("草");
   await page.waitForTimeout(4_000);
   await page.locator("#search").fill("程序员");
-  await page.waitForTimeout(5_000);
+  await page.waitForTimeout(4_000);
   await page.locator('tr[data-index="6"]').click();
   await page.waitForTimeout(4_000);
   await page.locator("#search").fill("");
-  await page.locator('tr[data-index="0"]').scrollIntoViewIfNeeded();
-  await page.locator('tr[data-index="0"]').click();
-  await page.waitForTimeout(5_000);
+  await page.locator('tr[data-index="10"]').scrollIntoViewIfNeeded();
+  await page.locator('tr[data-index="10"]').click();
+  await page.waitForTimeout(4_000);
 } finally {
   await page.close();
   await context.close();
