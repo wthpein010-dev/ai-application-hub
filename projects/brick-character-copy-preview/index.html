@@ -137,7 +137,7 @@
 
     table {
       width: 100%;
-      min-width: 910px;
+      min-width: 1030px;
       border-collapse: separate;
       border-spacing: 0;
       table-layout: fixed;
@@ -174,6 +174,7 @@
     tbody tr:last-child td { border-bottom: 0; }
 
     .col-code { width: 140px; }
+    .col-image { width: 86px; text-align: center; }
     .col-name { width: 112px; }
     .col-summary { width: 270px; }
     .col-copy { width: auto; }
@@ -196,6 +197,30 @@
       font-size: 16px;
       font-weight: 800;
       white-space: nowrap;
+    }
+
+    .role-thumb {
+      display: block;
+      width: 62px;
+      height: 62px;
+      margin: 0 auto;
+      border: 1px solid #cfd5d1;
+      border-radius: 6px;
+      background: #252825;
+      object-fit: contain;
+    }
+
+    .role-thumb-empty {
+      display: grid;
+      width: 62px;
+      height: 62px;
+      margin: 0 auto;
+      place-items: center;
+      border: 1px dashed #c8ceca;
+      border-radius: 6px;
+      color: #858c87;
+      background: #f7f8f7;
+      font-size: 11px;
     }
 
     .copy-count {
@@ -296,12 +321,33 @@
       white-space: nowrap;
     }
 
-    .character {
+    .character-slot {
       position: relative;
       z-index: 1;
+      width: 100%;
+      height: 240px;
+      margin: 28px auto 16px;
+      display: grid;
+      place-items: center;
+    }
+
+    .character {
+      position: relative;
       width: 154px;
       height: 176px;
-      margin: 50px auto 24px;
+    }
+
+    .character-image {
+      display: block;
+      width: min(280px, 100%);
+      height: 240px;
+      border-radius: 6px;
+      object-fit: contain;
+    }
+
+    .character-image[hidden],
+    .character[hidden] {
+      display: none;
     }
 
     .tile {
@@ -349,7 +395,7 @@
     .shadow {
       position: absolute;
       z-index: 0;
-      top: 315px;
+      top: 354px;
       left: 50%;
       width: 205px;
       height: 32px;
@@ -428,9 +474,9 @@
     <div class="copy-topbar-inner">
       <h1>砖块角色图鉴文案预览</h1>
       <div class="summary" aria-label="文案规范">
-        <span>10个角色</span>
-        <span>名称3—4字</span>
-        <span>详细文案27字</span>
+        <span>20个角色</span>
+        <span>新增10张形象</span>
+        <span>职业组文案27字</span>
       </div>
     </div>
   </header>
@@ -447,6 +493,7 @@
             <thead>
               <tr>
                 <th class="col-code">美术认知代号</th>
+                <th class="col-image">角色形象</th>
                 <th class="col-name">角色名字</th>
                 <th class="col-summary">一句话概述</th>
                 <th class="col-copy">详细文案</th>
@@ -463,21 +510,24 @@
       <aside class="preview-surface" aria-labelledby="preview-title">
         <div class="preview-heading">
           <span id="preview-title">游戏内详情效果</span>
-          <span class="preview-index" id="preview-index">1 / 10</span>
+          <span class="preview-index" id="preview-index">1 / 20</span>
         </div>
         <div class="stage">
           <div class="spotlight"></div>
           <div class="ribbon" id="preview-name">袋鼠团长</div>
-          <div class="character" aria-hidden="true">
-            <div class="tile">
-              <span class="leaf a"></span>
-              <span class="leaf b"></span>
-              <span class="leaf c"></span>
+          <div class="character-slot">
+            <img class="character-image" id="preview-image" alt="" hidden>
+            <div class="character" id="preview-placeholder" aria-hidden="true">
+              <div class="tile">
+                <span class="leaf a"></span>
+                <span class="leaf b"></span>
+                <span class="leaf c"></span>
+              </div>
+              <span class="foot left"></span>
+              <span class="foot right"></span>
             </div>
-            <span class="foot left"></span>
-            <span class="foot right"></span>
           </div>
-          <div class="shadow" aria-hidden="true"></div>
+          <div class="shadow" id="preview-shadow" aria-hidden="true"></div>
           <div class="copy-box">
             <div class="copy-kicker" id="preview-code">美团骑手</div>
             <p class="preview-summary" id="preview-summary"></p>
@@ -549,6 +599,76 @@
         name: "端庄姐",
         summary: "所谓端庄，就是端着盘子还能保持优雅。",
         copy: "笑着说您慢用，转身跑出残影，只有下班才能让她真正停下。"
+      },
+      {
+        code: "图鉴ID 01",
+        name: "原生松弛草",
+        summary: "不加配饰自在生长，基础但绝不普通",
+        copy: "不戴任何配饰自在生长，保持基础模样却从来不普通。",
+        image: "./assets/native-grass.png"
+      },
+      {
+        code: "图鉴ID 02",
+        name: "红蝶草公主",
+        summary: "红蝶结点亮青草，普通日子也精致",
+        copy: "红蝶结点亮普通青草，平凡日子同样值得被认真装点。",
+        image: "./assets/red-bow-grass.png"
+      },
+      {
+        code: "图鉴ID 03",
+        name: "冬帽草团子",
+        summary: "红帽裹住青草，班味瞬间被治愈",
+        copy: "红色暖帽裹住嫩青草，疲惫班味瞬间被自然气息治愈。",
+        image: "./assets/winter-hat-grass.png"
+      },
+      {
+        code: "图鉴ID 04",
+        name: "心草恋爱脑",
+        summary: "爱心镜守着草叶，风一吹就心动",
+        copy: "爱心墨镜守着柔软草叶，只要清风一吹就会怦然心动。",
+        image: "./assets/heart-grass.png"
+      },
+      {
+        code: "图鉴ID 05",
+        name: "草场嘻哈仔",
+        summary: "绿帽压着青草，松弛感铺满草场",
+        copy: "绿帽压着一丛鲜嫩青草，松弛感随着清风铺满整片草场。",
+        image: "./assets/hiphop-grass.png"
+      },
+      {
+        code: "图鉴ID 06",
+        name: "蓝蝶萝卜妹",
+        summary: "蓝蝶结配胡萝卜，甜妹能量满格",
+        copy: "蓝蝶结搭配橙色胡萝卜，甜妹能量已经全部补充完毕。",
+        image: "./assets/carrot-grass.png"
+      },
+      {
+        code: "图鉴ID 07",
+        name: "木桩发芽啦",
+        summary: "枯木头顶冒新芽，活人感重新加载",
+        copy: "枯木头顶重新冒出嫩芽，消失许久的活人感再次加载。",
+        image: "./assets/sprout-stump.png"
+      },
+      {
+        code: "图鉴ID 08",
+        name: "不是棉羊哥",
+        summary: "不是哥们，棉花怎么突然长出羊脸了！",
+        copy: "瞪着两只无辜大眼，主打一个啥也没干却十分显眼。",
+        image: "./assets/cotton-sheep.png"
+      },
+      {
+        code: "图鉴ID 09",
+        name: "粉镜毛线精",
+        summary: "粉墨镜配绿边，显眼包属性拉满",
+        copy: "粉色墨镜配上绿色边框，毛线显眼包水灵灵地闯进全场。",
+        image: "./assets/pink-glasses-yarn.png"
+      },
+      {
+        code: "图鉴ID 10",
+        name: "黑镜麦霸总",
+        summary: "黑镜一戴，整片麦田都被硬控",
+        copy: "黑色墨镜一戴气场全开，整片麦田都被霸总魅力牢牢硬控。",
+        image: "./assets/black-glasses-wheat.png"
       }
     ];
 
@@ -565,6 +685,19 @@
       document.querySelector("#preview-summary").textContent = role.summary;
       document.querySelector("#preview-copy").textContent = role.copy;
       document.querySelector("#preview-index").textContent = `${index + 1} / ${roles.length}`;
+      const previewImage = document.querySelector("#preview-image");
+      const placeholder = document.querySelector("#preview-placeholder");
+      const shadow = document.querySelector("#preview-shadow");
+      previewImage.hidden = !role.image;
+      placeholder.hidden = Boolean(role.image);
+      shadow.hidden = Boolean(role.image);
+      if (role.image) {
+        previewImage.src = role.image;
+        previewImage.alt = `${role.name}角色形象`;
+      } else {
+        previewImage.removeAttribute("src");
+        previewImage.alt = "";
+      }
       document.querySelectorAll("tbody tr").forEach((row) => {
         row.classList.toggle("selected", Number(row.dataset.index) === selected);
       });
@@ -579,10 +712,14 @@
       rows.innerHTML = visible.map(({ role, index }) => `
         <tr data-index="${index}" tabindex="0" aria-label="预览${role.name}">
           <td><span class="code-label">${role.code}</span></td>
+          <td class="col-image">${role.image
+            ? `<img class="role-thumb" src="${role.image}" alt="${role.name}角色缩略图" loading="lazy">`
+            : `<span class="role-thumb-empty" aria-label="${role.name}暂无角色图">待补图</span>`}
+          </td>
           <td><span class="role-name">${role.name}</span></td>
           <td>${role.summary}</td>
           <td>${role.copy}</td>
-          <td class="col-count"><span class="copy-count">${role.copy.length}/27</span></td>
+          <td class="col-count"><span class="copy-count">${role.copy.length}${role.image ? "字" : "/27"}</span></td>
           <td class="col-action"><button class="preview-btn" type="button" data-preview="${index}">预览</button></td>
         </tr>
       `).join("");

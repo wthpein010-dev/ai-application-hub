@@ -32,14 +32,29 @@ test("brick copy preview is the final application card with truthful actions", (
   assert.equal(project.video, "./projects/brick-character-copy-preview/video/index.html");
 });
 
-test("page exposes ten readable role records with exact 27-character detail copy", () => {
+test("page preserves ten 27-character career roles and adds ten illustrated catalog roles", () => {
   const html = readFileSync(join(projectRoot, "index.html"), "utf8");
   const names = Array.from(html.matchAll(/name:\s*"([^"]+)"/g), (match) => match[1]);
   const copies = Array.from(html.matchAll(/copy:\s*"([^"]+)"/g), (match) => match[1]);
+  const images = Array.from(html.matchAll(/image:\s*"\.\/assets\/([^"]+)"/g), (match) => match[1]);
 
-  assert.equal(names.length, 10);
-  assert.equal(copies.length, 10);
-  assert.equal(copies.every((copy) => Array.from(copy).length === 27), true);
+  assert.equal(names.length, 20);
+  assert.equal(copies.length, 20);
+  assert.equal(copies.slice(0, 10).every((copy) => Array.from(copy).length === 27), true);
+  assert.deepEqual(names.slice(10), [
+    "原生松弛草",
+    "红蝶草公主",
+    "冬帽草团子",
+    "心草恋爱脑",
+    "草场嘻哈仔",
+    "蓝蝶萝卜妹",
+    "木桩发芽啦",
+    "不是棉羊哥",
+    "粉镜毛线精",
+    "黑镜麦霸总",
+  ]);
+  assert.equal(images.length, 10);
+  assert.equal(images.every((image) => existsSync(join(projectRoot, "assets", image))), true);
   assert.match(html, /<body class="hub-subpage">/);
   assert.match(html, /class="hub-home-link" href="\.\.\/\.\.\/index\.html#apps"/);
   assert.match(html, /placeholder="搜索代号、名字或文案"/);
@@ -67,7 +82,7 @@ test("video page uses the shared player and a short H.264 walkthrough", () => {
     const timing = lines.find((line) => line.includes(" --> "));
     return { end: seconds(timing.split(" --> ")[1]), text: lines.slice(1).filter(Boolean) };
   });
-  assert.equal(cues.length, 4);
+  assert.equal(cues.length, 5);
   assert.equal(cues.every((cue) => cue.text.length === 1), true);
   assert.ok(cues.at(-1).end <= media.duration);
 });
