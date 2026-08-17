@@ -114,8 +114,14 @@
       font-weight: 750;
     }
 
+    .toolbar-actions {
+      width: min(360px, 50%);
+      display: grid;
+      gap: 5px;
+    }
+
     .search {
-      width: min(320px, 48%);
+      width: 100%;
       height: 38px;
       padding: 0 12px;
       border: 1px solid #bcc4bf;
@@ -128,6 +134,23 @@
     .search:focus {
       border-color: var(--focus);
       box-shadow: 0 0 0 3px rgb(38 112 204 / 14%);
+    }
+
+    .upload-status {
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.4;
+    }
+
+    .upload-status:empty { display: none; }
+
+    .file-input {
+      position: fixed;
+      width: 1px;
+      height: 1px;
+      overflow: hidden;
+      opacity: 0;
+      pointer-events: none;
     }
 
     .table-wrap {
@@ -174,12 +197,12 @@
     tbody tr:last-child td { border-bottom: 0; }
 
     .col-code { width: 140px; }
-    .col-image { width: 86px; text-align: center; }
+    .col-image { width: 92px; padding-inline: 8px; text-align: center; }
     .col-name { width: 112px; }
     .col-summary { width: 270px; }
     .col-copy { width: auto; }
     .col-count { width: 72px; text-align: center; }
-    .col-action { width: 72px; text-align: center; }
+    .col-action { width: 72px; padding-inline: 6px; text-align: center; }
 
     .code-label {
       display: inline-block;
@@ -199,28 +222,65 @@
       white-space: nowrap;
     }
 
-    .role-thumb {
+    .image-control {
+      display: grid;
+      justify-items: center;
+      gap: 4px;
+    }
+
+    .image-upload-btn {
+      position: relative;
       display: block;
-      width: 62px;
-      height: 62px;
-      margin: 0 auto;
+      width: 64px;
+      height: 64px;
+      padding: 0;
+      overflow: hidden;
       border: 1px solid #cfd5d1;
       border-radius: 6px;
       background: #252825;
+      cursor: pointer;
+    }
+
+    .image-upload-btn:hover,
+    .image-upload-btn:focus-visible {
+      border-color: var(--red);
+      outline: 2px solid rgb(237 63 57 / 18%);
+      outline-offset: 1px;
+    }
+
+    .role-thumb {
+      display: block;
+      width: 100%;
+      height: 100%;
       object-fit: contain;
     }
 
-    .role-thumb-empty {
-      display: grid;
-      width: 62px;
-      height: 62px;
-      margin: 0 auto;
-      place-items: center;
-      border: 1px dashed #c8ceca;
-      border-radius: 6px;
-      color: #858c87;
-      background: #f7f8f7;
+    .image-action-label {
+      position: absolute;
+      right: 0;
+      bottom: 0;
+      left: 0;
+      padding: 2px 3px;
+      color: #fff;
+      background: rgb(18 20 18 / 78%);
       font-size: 11px;
+      line-height: 1.35;
+    }
+
+    .restore-image-btn {
+      padding: 1px 4px;
+      border: 0;
+      color: var(--red-dark);
+      background: transparent;
+      font-size: 11px;
+      line-height: 1.4;
+      cursor: pointer;
+    }
+
+    .restore-image-btn:hover,
+    .restore-image-btn:focus-visible {
+      text-decoration: underline;
+      outline: none;
     }
 
     .copy-count {
@@ -237,13 +297,19 @@
     }
 
     .preview-btn {
-      min-width: 48px;
+      display: inline-flex;
+      width: max-content;
+      min-width: 0;
       height: 30px;
-      padding: 0 8px;
+      padding: 0 7px;
+      align-items: center;
+      justify-content: center;
       border: 1px solid #bbb;
       border-radius: 5px;
       color: #333;
       background: #fff;
+      line-height: 1;
+      white-space: nowrap;
       cursor: pointer;
     }
 
@@ -460,7 +526,7 @@
       h1 { font-size: 23px; }
       .summary { justify-content: flex-start; }
       .toolbar { align-items: stretch; flex-direction: column; }
-      .search { width: 100%; }
+      .toolbar-actions { width: 100%; }
       .stage { padding-inline: 16px; }
     }
   </style>
@@ -475,7 +541,7 @@
       <h1>砖块角色图鉴文案预览</h1>
       <div class="summary" aria-label="文案规范">
         <span>20个角色</span>
-        <span>新增10张形象</span>
+          <span>20张角色图</span>
         <span>职业组文案27字</span>
       </div>
     </div>
@@ -486,7 +552,10 @@
       <section class="table-surface" aria-labelledby="table-title">
         <div class="toolbar">
           <div class="toolbar-title" id="table-title">角色文案表</div>
-          <input class="search" id="search" type="search" placeholder="搜索代号、名字或文案" aria-label="搜索角色文案">
+          <div class="toolbar-actions">
+            <input class="search" id="search" type="search" placeholder="搜索代号、名字或文案" aria-label="搜索角色文案">
+            <div class="upload-status" id="upload-status" role="status" aria-live="polite"></div>
+          </div>
         </div>
         <div class="table-wrap">
           <table>
@@ -538,144 +607,158 @@
     </div>
   </main>
 
+  <input class="file-input" id="role-image-input" type="file" accept="image/png,image/jpeg,image/webp" tabindex="-1" aria-hidden="true">
+
   <script>
     const roles = [
       {
         code: "美团骑手",
         name: "袋鼠团长",
         summary: "肚里不装宝宝，专装外卖和一句马上到。",
-        copy: "黄袍加身不是为了登基，只想趁热送到，再晚一秒饭就凉了。"
+        copy: "黄袍加身不是为了登基，只想趁热送到，再晚一秒饭就凉了。",
+        image: "./assets/career-meituan-rider.png"
       },
       {
         code: "淘宝闪购骑手",
         name: "淘闪闪",
         summary: "刚点完付款，他已经在门外整理发型了。",
-        copy: "你刚按下付款键，他已经闪到门口，速度快得像订单会瞬移。"
+        copy: "你刚按下付款键，他已经闪到门口，速度快得像订单会瞬移。",
+        image: "./assets/career-taobao-flash-rider.png"
       },
       {
         code: "京东送货员",
         name: "京东到",
         summary: "名字还没念完，你买的东西已经到了。",
-        copy: "红衣一穿立刻进入送货模式，今天下的单，今天必须亲眼见。"
+        copy: "红衣一穿立刻进入送货模式，今天下的单，今天必须亲眼见。",
+        image: "./assets/career-jd-courier.png"
       },
       {
         code: "顺丰送货员",
         name: "顺风耳",
         summary: "不仅听得见催单，还能跑在催单前面。",
-        copy: "风还没决定往哪边吹，他已经把包裹送到，还顺便签收了风。"
+        copy: "风还没决定往哪边吹，他已经把包裹送到，还顺便签收了风。",
+        image: "./assets/career-sf-courier.png"
       },
       {
         code: "打篮球的蔡徐坤",
         name: "坤投砖",
         summary: "球场输赢不重要，唱跳和气氛必须到位。",
-        copy: "唱跳投篮样样都能整，球进不进不重要，气氛必须先拉满啦。"
+        copy: "唱跳投篮样样都能整，球进不进不重要，气氛必须先拉满啦。",
+        image: "./assets/career-basketball-player.png"
       },
       {
         code: "西装老板",
         name: "砖总裁",
         summary: "从不亲自搬砖，只研究怎么让砖自己动。",
-        copy: "西装一穿全场自动安静，他不亲自搬砖，只研究该谁来搬砖。"
+        copy: "西装一穿全场自动安静，他不亲自搬砖，只研究该谁来搬砖。",
+        image: "./assets/career-suited-boss.png"
       },
       {
         code: "格子衫程序员",
         name: "格码哥",
         summary: "表面安静写代码，心里正和需求打架。",
-        copy: "白天和需求斗智，晚上跟报错拼命，头发是唯一删掉的代码。"
+        copy: "白天和需求斗智，晚上跟报错拼命，头发是唯一删掉的代码。",
+        image: "./assets/career-grid-programmer.png"
       },
       {
         code: "工地搬砖的",
         name: "搬砖本砖",
         summary: "别人搬砖是工作，他搬砖是在照顾同类。",
-        copy: "别人搬砖是工作，他搬砖像照镜子，每一块都是失散的亲戚。"
+        copy: "别人搬砖是工作，他搬砖像照镜子，每一块都是失散的亲戚。",
+        image: "./assets/career-construction-worker.png"
       },
       {
         code: "餐厅服务生男",
         name: "端稳哥",
         summary: "盘子可以晃，脸上的职业微笑不能掉。",
-        copy: "盘子端得稳，微笑挂得住，客人催得再急也得先说句您稍等。"
+        copy: "盘子端得稳，微笑挂得住，客人催得再急也得先说句您稍等。",
+        image: "./assets/career-male-server.png"
       },
       {
         code: "餐厅服务生女",
         name: "端庄姐",
         summary: "所谓端庄，就是端着盘子还能保持优雅。",
-        copy: "笑着说您慢用，转身跑出残影，只有下班才能让她真正停下。"
+        copy: "笑着说您慢用，转身跑出残影，只有下班才能让她真正停下。",
+        image: "./assets/career-female-server.png"
       },
       {
         code: "图鉴ID 01",
-        name: "原生松弛草",
-        summary: "不加配饰自在生长，基础但绝不普通",
-        copy: "不戴任何配饰自在生长，保持基础模样却从来不普通。",
+        name: "原皮战神",
+        summary: "/",
+        copy: "没有配饰也敢直接出场，原皮才是最强皮肤。",
         image: "./assets/native-grass.png"
       },
       {
         code: "图鉴ID 02",
-        name: "红蝶草公主",
-        summary: "红蝶结点亮青草，普通日子也精致",
-        copy: "红蝶结点亮普通青草，平凡日子同样值得被认真装点。",
+        name: "邻家甜妹",
+        summary: "甜妹能量满格，烦恼暂不接待",
+        copy: "少女能量上线，专治阴天、困倦和隔壁那位的坏心情。",
         image: "./assets/red-bow-grass.png"
       },
       {
         code: "图鉴ID 03",
         name: "冬帽草团子",
-        summary: "红帽裹住青草，班味瞬间被治愈",
-        copy: "红色暖帽裹住嫩青草，疲惫班味瞬间被自然气息治愈。",
+        summary: "帽檐压住寒风，没压住一脸小脾气",
+        copy: "红色暖帽裹住嫩青草，疲惫感瞬间被自然气息治愈。",
         image: "./assets/winter-hat-grass.png"
       },
       {
         code: "图鉴ID 04",
-        name: "心草恋爱脑",
-        summary: "爱心镜守着草叶，风一吹就心动",
-        copy: "爱心墨镜守着柔软草叶，只要清风一吹就会怦然心动。",
+        name: "满眼心动",
+        summary: "爱心镜片映出主角，快乐这回不用向外借",
+        copy: "粉红滤镜只认本人，所有温柔最后都回到自己身上。",
         image: "./assets/heart-grass.png"
       },
       {
         code: "图鉴ID 05",
-        name: "草场嘻哈仔",
+        name: "草场从容哥",
         summary: "绿帽压着青草，松弛感铺满草场",
-        copy: "绿帽压着一丛鲜嫩青草，松弛感随着清风铺满整片草场。",
+        copy: "出门太急拿错了那顶，回头率却直接拉满；小尴尬也算限定装扮。",
         image: "./assets/hiphop-grass.png"
       },
       {
         code: "图鉴ID 06",
-        name: "蓝蝶萝卜妹",
-        summary: "蓝蝶结配胡萝卜，甜妹能量满格",
+        name: "萝卜界甜心",
+        summary: "蓝蝴蝶结晃一下，甜妹能量满格",
         copy: "蓝蝶结搭配橙色胡萝卜，甜妹能量已经全部补充完毕。",
         image: "./assets/carrot-grass.png"
       },
       {
         code: "图鉴ID 07",
-        name: "木桩发芽啦",
-        summary: "枯木头顶冒新芽，活人感重新加载",
-        copy: "枯木头顶重新冒出嫩芽，消失许久的活人感再次加载。",
+        name: "枯木逢春",
+        summary: "不是不开心，只是笑容正在冬眠，预计开春重新加载",
+        copy: "身体还是老木桩，头顶已经偷偷把春天更新到最新版。",
         image: "./assets/sprout-stump.png"
       },
       {
         code: "图鉴ID 08",
-        name: "不是棉羊哥",
+        name: "咩羊哥",
         summary: "不是哥们，棉花怎么突然长出羊脸了！",
-        copy: "瞪着两只无辜大眼，主打一个啥也没干却十分显眼。",
+        copy: "只要没人说破，它就同时保持棉花和小羊两种状态。",
         image: "./assets/cotton-sheep.png"
       },
       {
         code: "图鉴ID 09",
-        name: "粉镜毛线精",
-        summary: "粉墨镜配绿边，显眼包属性拉满",
-        copy: "粉色墨镜配上绿色边框，毛线显眼包水灵灵地闯进全场。",
+        name: "超前毛线团",
+        summary: "粉镜配毛线团，也能走出时尚秀",
+        copy: "粉色镜框镇住混乱，纠缠半天反而织出了高级感。",
         image: "./assets/pink-glasses-yarn.png"
       },
       {
         code: "图鉴ID 10",
         name: "黑镜麦霸总",
-        summary: "黑镜一戴，整片麦田都被硬控",
-        copy: "黑色墨镜一戴气场全开，整片麦田都被霸总魅力牢牢硬控。",
+        summary: "墨镜一戴气场全开，麦穗也当霸总",
+        copy: "别的庄稼迎风弯腰，他扶了扶墨镜，静候秋天亲自递上分红。",
         image: "./assets/black-glasses-wheat.png"
       }
     ];
 
-    const rows = document.querySelector("#rows");
-    const empty = document.querySelector("#empty");
-    const search = document.querySelector("#search");
-    let selected = 0;
+      const rows = document.querySelector("#rows");
+      const empty = document.querySelector("#empty");
+      const search = document.querySelector("#search");
+      const imageInput = document.querySelector("#role-image-input");
+      let selected = 0;
+      let uploadTarget = null;
 
     function preview(index) {
       selected = index;
@@ -709,19 +792,24 @@
         .map((role, index) => ({ role, index }))
         .filter(({ role }) => Object.values(role).join(" ").toLowerCase().includes(keyword));
 
-      rows.innerHTML = visible.map(({ role, index }) => `
-        <tr data-index="${index}" tabindex="0" aria-label="预览${role.name}">
-          <td><span class="code-label">${role.code}</span></td>
-          <td class="col-image">${role.image
-            ? `<img class="role-thumb" src="${role.image}" alt="${role.name}角色缩略图" loading="lazy">`
-            : `<span class="role-thumb-empty" aria-label="${role.name}暂无角色图">待补图</span>`}
-          </td>
-          <td><span class="role-name">${role.name}</span></td>
-          <td>${role.summary}</td>
-          <td>${role.copy}</td>
-          <td class="col-count"><span class="copy-count">${role.copy.length}${role.image ? "字" : "/27"}</span></td>
-          <td class="col-action"><button class="preview-btn" type="button" data-preview="${index}">预览</button></td>
-        </tr>
+        rows.innerHTML = visible.map(({ role, index }) => `
+          <tr data-index="${index}" tabindex="0" aria-label="预览${role.name}">
+            <td><span class="code-label">${role.code}</span></td>
+            <td class="col-image">
+              <div class="image-control">
+                <button class="image-upload-btn" type="button" data-upload-index="${index}" aria-label="上传或替换${role.name}图片" title="上传或替换${role.name}图片">
+                  <img class="role-thumb" src="${role.image}" alt="${role.name}角色缩略图" loading="lazy">
+                  <span class="image-action-label">替换</span>
+                </button>
+                ${role.hasImageOverride ? `<button class="restore-image-btn" type="button" data-restore-index="${index}">恢复原图</button>` : ""}
+              </div>
+            </td>
+            <td><span class="role-name">${role.name}</span></td>
+            <td>${role.summary}</td>
+            <td>${role.copy}</td>
+            <td class="col-count"><span class="copy-count">${index < 10 ? `${role.copy.length}/27` : `${role.copy.length}字`}</span></td>
+            <td class="col-action"><button class="preview-btn" type="button" data-preview="${index}">预览</button></td>
+          </tr>
       `).join("");
 
       empty.hidden = visible.length !== 0;
@@ -734,13 +822,22 @@
           }
         });
       });
-      document.querySelectorAll("[data-preview]").forEach((button) => {
+        document.querySelectorAll("[data-preview]").forEach((button) => {
         button.addEventListener("click", (event) => {
           event.stopPropagation();
           preview(Number(button.dataset.preview));
+          });
         });
-      });
-      preview(selected);
+        document.querySelectorAll("[data-upload-index]").forEach((button) => {
+          button.addEventListener("click", (event) => {
+            event.stopPropagation();
+            uploadTarget = Number(button.dataset.uploadIndex);
+            preview(uploadTarget);
+            imageInput.value = "";
+            imageInput.click();
+          });
+        });
+        preview(selected);
     }
 
     search.addEventListener("input", (event) => render(event.target.value));
