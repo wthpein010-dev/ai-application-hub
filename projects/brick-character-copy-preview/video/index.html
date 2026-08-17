@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="color-scheme" content="dark">
+    <link rel="icon" href="data:,">
+    <title>砖块角色文案预览介绍视频</title>
+    <link rel="stylesheet" href="../../../assets/hub-video-player.css">
+  </head>
+  <body data-hub-video-page>
+    <a class="hub-video-home" href="../../../index.html#apps">返回主页</a>
+    <main class="hub-video-page">
+      <p class="hub-video-kicker">功能演示</p>
+      <h1>砖块角色文案预览 · 表格审阅与图鉴实装</h1>
+      <p class="hub-video-description">集中查看美术代号、角色名字、梗概和27字图鉴文案；搜索或选择角色时，右侧详情效果同步更新。</p>
+      <section class="hub-video-player" aria-label="砖块角色文案预览介绍视频">
+        <div class="hub-video-stage">
+          <div class="hub-video-load-card" id="loadCard" role="status">
+            <strong>准备播放功能演示</strong>
+            <p data-hub-video-message>点击后再加载视频，避免打开页面时等待。</p>
+            <button id="loadVideo" type="button">加载并播放视频</button>
+          </div>
+          <video id="introVideo" controls playsinline preload="none" data-src="./brick-character-copy-preview-demo.mp4" poster="./poster.jpg" hidden>
+            <track kind="captions" src="./brick-character-copy-preview-demo.vtt" srclang="zh" label="中文字幕" default>
+          </video>
+        </div>
+      </section>
+      <nav class="hub-video-actions" aria-label="视频相关入口">
+        <a href="./brick-character-copy-preview-demo.mp4">打开 MP4</a>
+        <a href="../index.html">打开项目</a>
+      </nav>
+      <section class="hub-video-chapters" aria-label="视频章节">
+        <button class="hub-video-chapter" type="button" data-time="0"><time>00:00</time><span>完整文案表格</span></button>
+        <button class="hub-video-chapter" type="button" data-time="7"><time>00:07</time><span>切换角色详情</span></button>
+        <button class="hub-video-chapter" type="button" data-time="16"><time>00:16</time><span>搜索美术代号</span></button>
+        <button class="hub-video-chapter" type="button" data-time="25"><time>00:25</time><span>搜索与27字核对</span></button>
+      </section>
+    </main>
+    <script type="module" src="../../../assets/hub-video-player.js"></script>
+  </body>
+</html>
