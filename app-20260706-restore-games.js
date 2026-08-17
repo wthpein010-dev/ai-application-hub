@@ -704,10 +704,10 @@ const defaultApps = [
   {
     id: "brick-character-copy-preview",
     name: "砖块角色文案预览",
-    category: "游戏文案工具",
-    status: "assistant",
-    badge: "美术文案",
-    brief: "集中审阅10个砖块角色的名字、梗概与27字图鉴文案，点击任意角色即可同步查看游戏内详情排版。",
+    category: "美术设计参考",
+    status: "engineering",
+    badge: "工程体验",
+    brief: "集中审阅20个砖块角色的形象、命名与图鉴文案，点击任意角色即可同步查看游戏内详情排版。",
     problem: "角色文案放在表格里容易忽略真实界面的换行、层级和阅读节奏，美术与策划也难以对同一版内容快速确认。",
     aiUse: "AI 参与角色命名、梗概与短文案打磨、字数校验、图鉴详情预览和响应式网页交付。",
     folder: "./projects/brick-character-copy-preview/",
@@ -719,7 +719,7 @@ const defaultApps = [
       windows: "",
       mac: ""
     },
-    tags: ["角色命名", "27字文案", "图鉴预览", "砖块角色"],
+    tags: ["美术参考", "角色命名", "图鉴预览", "砖块角色"],
     speed: 10,
     impact: 8,
     risk: 9,
@@ -1461,6 +1461,18 @@ function normalizeApp(app) {
     normalized.category = base.category;
     normalized.status = base.status;
     normalized.badge = base.badge;
+  }
+  if (normalized.id === "brick-character-copy-preview") {
+    normalized.category = base.category;
+    normalized.status = base.status;
+    normalized.badge = base.badge;
+    if (normalized.brief === "集中审阅10个砖块角色的名字、梗概与27字图鉴文案，点击任意角色即可同步查看游戏内详情排版。") {
+      normalized.brief = base.brief;
+    }
+    const legacyTags = ["角色命名", "27字文案", "图鉴预览", "砖块角色"];
+    if (normalized.tags.length === legacyTags.length && normalized.tags.every((tag, index) => tag === legacyTags[index])) {
+      normalized.tags = [...base.tags];
+    }
   }
   if (normalized.id === "clickflow") {
     if (normalized.name === "ClickFlow 鼠标自动化工作台") {

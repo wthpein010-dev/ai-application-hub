@@ -41,6 +41,15 @@ const origin = `http://127.0.0.1:${server.address().port}`;
 
 try {
   for (const viewport of [{ width: 1440, height: 900 }, { width: 390, height: 844 }]) {
+    const hub = await browser.newPage({ viewport });
+    await hub.goto(`${origin}/index.html#engineering`, { waitUntil: "networkidle" });
+    const engineeringCard = hub.locator('#engineeringGrid article[data-app-id="brick-character-copy-preview"]');
+    assert.equal(await engineeringCard.count(), 1);
+    assert.equal(await hub.locator('#appGrid article[data-app-id="brick-character-copy-preview"]').count(), 0);
+    assert.equal(await engineeringCard.locator(".status-badge").textContent(), "工程体验");
+    assert.equal(await hub.locator("#engineeringGrid article[data-app-id]").last().getAttribute("data-app-id"), "brick-character-copy-preview");
+    await hub.close();
+
     const page = await browser.newPage({ viewport });
     const errors = [];
     page.on("console", (message) => {
