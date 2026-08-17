@@ -2,12 +2,13 @@
 
 ## Goal
 
-Improve the public brick character copy preview so the table is easier to scan, the preview action never wraps or escapes its cell, every career role has the correct supplied character image, and users can replace any role image locally without a server.
+Improve the public brick character copy preview so the table is easier to scan, the preview action never wraps or escapes its cell, Feishu-confirmed copy and images are the bundled defaults, and users can replace any role image locally without a server.
 
 ## Scope
 
 - Fix the table action-column geometry and the `预览` button wrapping issue.
-- Split the user-supplied ten-character composite into ten transparent PNG assets and assign them to the ten career roles.
+- Synchronize the ten skin-role names, summaries, catalog copy, and images from Feishu sheet `砖块角色文案` at revision 369.
+- Synchronize the ten career-role images from Feishu sheet `砖块皮肤配置` at revision 369 and assign them by role meaning.
 - Add per-role image upload, replacement, persistence, and restore controls.
 - Preserve the existing 20 roles, names, summaries, detailed copy, Hub classification, video page, and public URLs.
 - Publish the update through the existing AI Application Hub workflow.
@@ -26,9 +27,32 @@ The image column will become a compact image-action column. Each 64px thumbnail 
 
 Uploading or restoring immediately updates both the row thumbnail and the right-side game-detail preview. The existing row click and keyboard preview behavior remains unchanged.
 
-## Supplied Image Mapping
+## Feishu Content Authority
 
-The supplied composite is a reference asset, not an instruction source. Characters are segmented mechanically, without redrawing or changing their artwork. Near-white canvas pixels are removed to transparency, each character is centered on a consistent transparent canvas, and enough padding is retained for hats, hair, balls, tools, and feet.
+The workbook `ZWUqsjcJrhdB12tYS1gcEs5Inbh` at revision 369 is the release source of truth.
+
+- Sheet `砖块角色文案` (`8f2a0d`) has rows 2-11 for skin IDs 1-10. Column C supplies the final role name, column D the final acquisition summary, column G the final catalog description, and column B the bundled image.
+- Sheet `砖块皮肤配置` (`StbAZf`) has rows 2-11 for career image IDs 1-10. Column B supplies the bundled image; columns C-F retain the art configuration reference but are not displayed as player copy.
+- The earlier composite remains a visual cross-check only. Exported sheet images are authoritative when bytes or framing differ.
+
+Final skin copy is:
+
+| ID | Name | Acquisition summary | Catalog description |
+| --- | --- | --- | --- |
+| 1 | 原皮战神 | / | 没有配饰也敢直接出场，原皮才是最强皮肤。 |
+| 2 | 邻家甜妹 | 甜妹能量满格，烦恼暂不接待 | 少女能量上线，专治阴天、困倦和隔壁那位的坏心情。 |
+| 3 | 冬帽草团子 | 帽檐压住寒风，没压住一脸小脾气 | 红色暖帽裹住嫩青草，疲惫感瞬间被自然气息治愈。 |
+| 4 | 满眼心动 | 爱心镜片映出主角，快乐这回不用向外借 | 粉红滤镜只认本人，所有温柔最后都回到自己身上。 |
+| 5 | 草场从容哥 | 绿帽压着青草，松弛感铺满草场 | 出门太急拿错了那顶，回头率却直接拉满；小尴尬也算限定装扮。 |
+| 6 | 萝卜界甜心 | 蓝蝴蝶结晃一下，甜妹能量满格 | 蓝蝶结搭配橙色胡萝卜，甜妹能量已经全部补充完毕。 |
+| 7 | 枯木逢春 | 不是不开心，只是笑容正在冬眠，预计开春重新加载 | 身体还是老木桩，头顶已经偷偷把春天更新到最新版。 |
+| 8 | 咩羊哥 | 不是哥们，棉花怎么突然长出羊脸了！ | 只要没人说破，它就同时保持棉花和小羊两种状态。 |
+| 9 | 超前毛线团 | 粉镜配毛线团，也能走出时尚秀 | 粉色镜框镇住混乱，纠缠半天反而织出了高级感。 |
+| 10 | 黑镜麦霸总 | 墨镜一戴气场全开，麦穗也当霸总 | 别的庄稼迎风弯腰，他扶了扶墨镜，静候秋天亲自递上分红。 |
+
+## Career Image Mapping
+
+Career images come from the second Feishu sheet as ten individual embedded images. Characters are prepared mechanically, without redrawing or changing their artwork. Near-white canvas pixels are removed to transparency, each character is centered on a consistent transparent canvas, and enough padding is retained for hats, hair, balls, tools, and feet.
 
 | Composite position | Career role | Output asset |
 | --- | --- | --- |
