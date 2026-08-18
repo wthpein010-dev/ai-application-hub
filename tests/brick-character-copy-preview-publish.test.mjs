@@ -53,7 +53,7 @@ test("brick copy preview is the final engineering card with truthful actions", (
   assert.equal(project.platforms.mac, "");
   assert.equal(project.package, "");
   assert.equal(project.video, "./projects/brick-character-copy-preview/video/index.html");
-  assert.match(home, /20260817-brick-copy-preview-engineering/);
+  assert.match(home, /20260818-brick-preview-feishu-upload/);
 });
 
 test("stored application metadata migrates into the engineering experience section", () => {
