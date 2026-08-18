@@ -61,15 +61,16 @@ try {
     assert.equal(await page.title(), "砖块角色文案预览");
     assert.equal(await page.locator("#rows tr").count(), 20);
     assert.equal(await page.locator("#preview-name").textContent(), "袋鼠团长");
-    assert.equal(await page.locator("#preview-image").isHidden(), true);
+    assert.equal(await page.locator("#preview-image").isVisible(), true);
+    assert.equal(await page.locator("#rows .role-thumb").count(), 20);
+    assert.equal(await page.locator("[data-upload-index]").count(), 20);
 
     await page.locator('tr[data-index="10"]').click();
-    assert.equal(await page.locator("#preview-name").textContent(), "原生松弛草");
+    assert.equal(await page.locator("#preview-name").textContent(), "原皮战神");
     assert.equal(await page.locator("#preview-image").isVisible(), true);
     assert.ok(await page.locator("#preview-image").evaluate((image) => image.complete && image.naturalWidth > 0));
-    assert.equal(await page.locator("#rows .role-thumb").count(), 10);
 
-    for (let index = 10; index < 20; index += 1) {
+    for (let index = 0; index < 20; index += 1) {
       await page.locator(`tr[data-index="${index}"]`).click();
       assert.ok(await page.locator("#preview-image").evaluate((image) => image.complete && image.naturalWidth > 0));
     }
@@ -81,6 +82,58 @@ try {
     await page.locator("#search").fill("程序员");
     assert.equal(await page.locator("#rows tr").count(), 1);
     assert.equal(await page.locator("#rows .role-name").textContent(), "格码哥");
+
+    await page.locator("#search").fill("");
+    const previewGeometry = await page.locator(".preview-btn").evaluateAll((buttons) => buttons.map((button) => {
+      const cell = button.closest("td");
+      const buttonRect = button.getBoundingClientRect();
+      const cellRect = cell.getBoundingClientRect();
+      return {
+        oneLine: button.scrollHeight <= button.clientHeight,
+        inside: buttonRect.left >= cellRect.left && buttonRect.right <= cellRect.right,
+      };
+    }));
+    assert.equal(previewGeometry.every(({ oneLine, inside }) => oneLine && inside), true);
+
+    const defaultImageSrc = await page.locator('tr[data-index="0"] .role-thumb').getAttribute("src");
+    const uploadChooserPromise = page.waitForEvent("filechooser");
+    await page.locator('[data-upload-index="0"]').click();
+    const uploadChooser = await uploadChooserPromise;
+    await uploadChooser.setFiles(join(root, "projects", "brick-character-copy-preview", "assets", "career-jd-courier.png"));
+    await page.waitForFunction(() => document.querySelector("#upload-status")?.textContent.includes("已保存到当前浏览器"));
+    assert.match(await page.locator("#upload-status").textContent(), /已保存到当前浏览器/);
+    assert.match(await page.locator('tr[data-index="0"] .role-thumb').getAttribute("src"), /^blob:/);
+    assert.match(await page.locator("#preview-image").getAttribute("src"), /^blob:/);
+
+    await page.reload({ waitUntil: "networkidle" });
+    await page.locator('tr[data-index="0"] .role-thumb').waitFor({ state: "visible" });
+    await page.waitForFunction(() => document.querySelector('tr[data-index="0"] .role-thumb')?.src.startsWith("blob:"));
+    assert.equal(await page.locator('[data-restore-index="0"]').count(), 1);
+    await page.locator('[data-restore-index="0"]').click();
+    await page.waitForFunction(() => document.querySelector("#upload-status")?.textContent.includes("已恢复原图"));
+    assert.match(await page.locator("#upload-status").textContent(), /已恢复原图/);
+    assert.equal(await page.locator('tr[data-index="0"] .role-thumb').getAttribute("src"), defaultImageSrc);
+
+    await page.reload({ waitUntil: "networkidle" });
+    assert.equal(await page.locator('tr[data-index="0"] .role-thumb').getAttribute("src"), defaultImageSrc);
+
+    if (viewport.width === 1440) {
+      const unsupportedChooserPromise = page.waitForEvent("filechooser");
+      await page.locator('[data-upload-index="0"]').click();
+      const unsupportedChooser = await unsupportedChooserPromise;
+      await unsupportedChooser.setFiles({ name: "not-an-image.txt", mimeType: "text/plain", buffer: Buffer.from("not an image") });
+      await page.waitForFunction(() => document.querySelector("#upload-status")?.textContent.includes("仅支持 PNG、JPG 和 WebP"));
+      assert.match(await page.locator("#upload-status").textContent(), /仅支持 PNG、JPG 和 WebP/);
+      assert.equal(await page.locator('tr[data-index="0"] .role-thumb').getAttribute("src"), defaultImageSrc);
+
+      const oversizeChooserPromise = page.waitForEvent("filechooser");
+      await page.locator('[data-upload-index="0"]').click();
+      const oversizeChooser = await oversizeChooserPromise;
+      await oversizeChooser.setFiles({ name: "too-large.png", mimeType: "image/png", buffer: Buffer.alloc(8 * 1024 * 1024 + 1) });
+      await page.waitForFunction(() => document.querySelector("#upload-status")?.textContent.includes("不能超过 8 MB"));
+      assert.match(await page.locator("#upload-status").textContent(), /不能超过 8 MB/);
+      assert.equal(await page.locator('tr[data-index="0"] .role-thumb').getAttribute("src"), defaultImageSrc);
+    }
 
     const layout = await page.evaluate(() => ({
       body: document.documentElement.scrollWidth,
