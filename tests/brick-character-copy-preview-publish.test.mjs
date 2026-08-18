@@ -130,14 +130,44 @@ test("page preserves career copy and synchronizes the confirmed Feishu skin cont
   assert.match(html, /id="preview-copy"/);
 });
 
+test("brick character preview uses the portrait in-game detail artwork contract", () => {
+  const html = readFileSync(join(projectRoot, "index.html"), "utf8");
+  const requiredAssets = [
+    "tujian_juese_title.png",
+    "tujian_juese_turn.png",
+    "tujian_jues_save1.png",
+    "tujian_jues_save2.png",
+    "tujian_btn_bright.png",
+  ];
+
+  for (const asset of requiredAssets) {
+    assert.equal(existsSync(join(projectRoot, "assets", asset)), true, `${asset} should be bundled`);
+    assert.match(html, new RegExp(`\\./assets/${asset.replaceAll(".", "\\.")}`));
+  }
+
+  assert.match(html, /class="game-detail-overlay"/);
+  assert.match(html, /class="game-detail-panel"/);
+  assert.match(html, /id="preview-prev"/);
+  assert.match(html, /id="preview-next"/);
+  assert.match(html, /id="preview-favorite"/);
+  assert.match(html, /id="preview-action"/);
+  assert.match(html, /border-image-source:\s*url\("\.\/assets\/tujian_btn_bright\.png"\)/);
+  assert.match(html, /\.artwork-fixed\s*\{[^}]*object-fit:\s*contain/s);
+  assert.match(html, /\.character-image\s*\{[^}]*object-fit:\s*contain/s);
+  assert.doesNotMatch(html, /<img[^>]+class="[^\"]*(?:title|turn|save)[^\"]*"[^>]+style="[^"]*(?:width|height):\s*100%/i);
+});
+
 test("video page uses the shared player and a short H.264 walkthrough", () => {
   const page = readFileSync(join(videoRoot, "index.html"), "utf8");
   const mediaPath = join(videoRoot, "brick-character-copy-preview-demo.mp4");
+  const tutorial = readFileSync(join(videoRoot, "tutorial-script.md"), "utf8");
 
   assert.match(page, /data-hub-video-page/);
   assert.match(page, /class="hub-video-home" href="\.\.\/\.\.\/\.\.\/index\.html#engineering"/);
   assert.match(page, /id="loadVideo"/);
   assert.match(page, /preload="none" data-src="\.\/brick-character-copy-preview-demo\.mp4"/);
+  assert.match(page, /竖版图鉴详情/);
+  assert.match(tutorial, /左右切换与收藏状态/);
   assert.equal(existsSync(mediaPath), true);
 
   const media = inspectMedia(mediaPath);
@@ -153,5 +183,6 @@ test("video page uses the shared player and a short H.264 walkthrough", () => {
   });
   assert.equal(cues.length, 5);
   assert.equal(cues.every((cue) => cue.text.length === 1), true);
+  assert.match(captions, /参考游戏内样式/);
   assert.ok(cues.at(-1).end <= media.duration);
 });

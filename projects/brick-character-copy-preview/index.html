@@ -324,16 +324,16 @@
       position: sticky;
       top: 20px;
       color: #fff;
-      background: #1f211f;
+      background: #111713;
     }
 
     .preview-heading {
-      min-height: 52px;
+      min-height: 48px;
       padding: 0 16px;
       display: flex;
       align-items: center;
       justify-content: space-between;
-      border-bottom: 1px solid #3a3e3b;
+      border-bottom: 1px solid #343b36;
       font-size: 15px;
       font-weight: 750;
     }
@@ -344,77 +344,174 @@
       font-weight: 500;
     }
 
-    .stage {
+    .game-detail-overlay {
       position: relative;
-      min-height: 630px;
-      padding: 70px 24px 28px;
+      aspect-ratio: 750 / 1350;
       overflow: hidden;
-      background-color: #252825;
+      isolation: isolate;
+      background-color: #07110d;
       background-image:
-        linear-gradient(90deg, transparent 49%, rgb(255 255 255 / 3%) 50%, transparent 51%),
-        linear-gradient(0deg, transparent 49%, rgb(255 255 255 / 3%) 50%, transparent 51%);
-      background-size: 28px 28px;
+        linear-gradient(rgb(2 8 5 / 78%), rgb(2 8 5 / 88%)),
+        repeating-linear-gradient(90deg, transparent 0 58px, rgb(121 147 127 / 16%) 59px 61px),
+        repeating-linear-gradient(0deg, transparent 0 58px, rgb(121 147 127 / 12%) 59px 61px);
+      background-size: auto, auto, auto;
     }
 
-    .spotlight {
+    .game-detail-overlay::before,
+    .game-detail-overlay::after {
       position: absolute;
-      top: 0;
-      left: 50%;
-      width: 260px;
-      height: 430px;
-      transform: translateX(-50%);
-      clip-path: polygon(39% 0, 61% 0, 100% 100%, 0 100%);
-      background: rgb(255 252 220 / 22%);
+      z-index: -1;
+      width: 72px;
+      height: 72px;
+      border: 3px solid rgb(74 111 86 / 34%);
+      border-radius: 8px;
+      background: rgb(41 69 50 / 20%);
+      content: "";
+    }
+
+    .game-detail-overlay::before {
+      top: 100px;
+      left: 18px;
+      box-shadow: 94px 86px 0 rgb(41 69 50 / 18%), 282px 54px 0 rgb(41 69 50 / 16%);
+    }
+
+    .game-detail-overlay::after {
+      right: 24px;
+      bottom: 82px;
+      box-shadow: -102px -8px 0 rgb(41 69 50 / 18%), -248px -64px 0 rgb(41 69 50 / 16%);
+    }
+
+    .game-detail-panel {
+      position: absolute;
+      inset: 14px 10px 12px;
+      overflow: hidden;
+      border: 5px solid #0c0d0c;
+      border-radius: 15px;
+      background: rgb(54 54 52 / 96%);
+      box-shadow: inset 0 0 0 4px #686966, 0 8px 0 rgb(0 0 0 / 54%), 0 18px 28px rgb(0 0 0 / 42%);
+    }
+
+    .game-detail-panel::before {
+      position: absolute;
+      inset: 9px;
+      border: 2px solid rgb(0 0 0 / 55%);
+      border-radius: 9px;
+      content: "";
       pointer-events: none;
     }
 
-    .ribbon {
-      position: relative;
-      z-index: 1;
-      width: fit-content;
-      min-width: 176px;
-      max-width: 240px;
-      margin: 0 auto;
-      padding: 10px 22px;
+    .spotlight-beam {
+      position: absolute;
+      z-index: 0;
+      top: -8%;
+      left: 50%;
+      width: 82%;
+      height: 74%;
+      transform: translateX(-50%);
+      clip-path: polygon(43% 0, 57% 0, 86% 100%, 14% 100%);
+      background: linear-gradient(90deg, transparent, rgb(255 254 227 / 78%) 27%, rgb(255 255 241 / 92%) 50%, rgb(255 254 227 / 78%) 73%, transparent);
+      filter: blur(1px);
+      pointer-events: none;
+    }
+
+    .title-ribbon {
+      position: absolute;
+      z-index: 4;
+      top: 8.5%;
+      left: 50%;
+      width: min(86%, 347px);
+      transform: translateX(-50%);
+    }
+
+    .title-art {
+      display: block;
+      width: 100%;
+      height: auto;
+    }
+
+    .title-ribbon span {
+      position: absolute;
+      inset: 11% 11% 24%;
+      display: grid;
+      place-items: center;
+      overflow: hidden;
       color: #fff;
-      border: 2px solid #ff625c;
-      background: var(--red);
-      box-shadow: 0 8px 0 var(--red-dark);
       text-align: center;
-      font-size: 27px;
-      line-height: 1.2;
+      text-shadow: 0 2px 0 rgb(124 24 24 / 55%);
+      font-size: 32px;
+      line-height: 1;
       font-weight: 900;
       white-space: nowrap;
     }
 
+    .artwork-fixed {
+      object-fit: contain;
+    }
+
+    .character-showcase {
+      position: absolute;
+      z-index: 2;
+      top: 18%;
+      right: 4%;
+      left: 4%;
+      height: 34%;
+      display: grid;
+      grid-template-columns: 38px minmax(0, 1fr) 38px;
+      align-items: center;
+      gap: 4px;
+    }
+
     .character-slot {
       position: relative;
-      z-index: 1;
       width: 100%;
-      height: 240px;
-      margin: 28px auto 16px;
+      height: 100%;
       display: grid;
       place-items: center;
     }
 
     .character {
       position: relative;
-      width: 154px;
-      height: 176px;
+      width: 136px;
+      height: 154px;
     }
 
     .character-image {
       display: block;
-      width: min(280px, 100%);
-      height: 240px;
-      border-radius: 6px;
+      width: 100%;
+      height: 100%;
       object-fit: contain;
+      filter: drop-shadow(0 8px 3px rgb(0 0 0 / 34%));
     }
 
     .character-image[hidden],
     .character[hidden] {
       display: none;
     }
+
+    .turn-control {
+      width: 38px;
+      height: 60px;
+      padding: 5px;
+      border: 0;
+      background: transparent;
+      cursor: pointer;
+      filter: drop-shadow(0 3px 0 rgb(0 0 0 / 35%));
+    }
+
+    .turn-control:hover,
+    .turn-control:focus-visible {
+      outline: 3px solid rgb(255 232 91 / 72%);
+      outline-offset: 1px;
+    }
+
+    .turn-control img {
+      display: block;
+      width: auto;
+      height: 100%;
+      margin: auto;
+    }
+
+    .turn-control--previous img { transform: scaleX(-1); }
 
     .tile {
       position: absolute;
@@ -458,52 +555,138 @@
     .foot.left { left: 42px; }
     .foot.right { right: 37px; }
 
-    .shadow {
+    .character-shadow {
       position: absolute;
-      z-index: 0;
-      top: 354px;
+      z-index: -1;
+      bottom: 4%;
       left: 50%;
-      width: 205px;
-      height: 32px;
+      width: 76%;
+      height: 15%;
       border-radius: 50%;
-      background: rgb(255 255 255 / 72%);
-      box-shadow: 0 0 28px rgb(255 250 210 / 48%);
+      background: rgb(255 255 246 / 78%);
+      box-shadow: 0 0 20px rgb(255 252 221 / 72%);
       transform: translateX(-50%);
     }
 
     .copy-box {
-      position: relative;
-      z-index: 1;
-      min-height: 166px;
-      margin-top: 12px;
-      padding: 18px 20px;
+      position: absolute;
+      z-index: 3;
+      top: 54%;
+      right: 12%;
+      left: 12%;
+      min-height: 20%;
+      padding: 15px 17px;
       border: 4px solid #111;
-      border-radius: 8px;
+      border-radius: 9px;
       color: #1f211f;
-      background: #f4f4f1;
+      background: #f0f0ef;
+      box-shadow: inset 0 0 0 2px rgb(255 255 255 / 55%);
     }
 
     .copy-kicker {
-      margin-bottom: 8px;
-      color: #727873;
-      font-size: 12px;
-      font-weight: 700;
+      margin-bottom: 6px;
+      color: #343835;
+      font-size: 11px;
+      font-weight: 800;
     }
 
     .preview-summary {
-      margin: 0 0 10px;
-      padding-bottom: 10px;
-      border-bottom: 1px solid #cfd4d0;
-      font-size: 14px;
-      line-height: 1.65;
-      font-weight: 650;
+      margin: 0 0 6px;
+      font-size: 12px;
+      line-height: 1.55;
+      font-weight: 750;
     }
 
     .preview-copy {
       margin: 0;
-      font-size: 16px;
-      line-height: 1.75;
+      color: #343835;
+      font-size: 12px;
+      line-height: 1.55;
       font-weight: 700;
+    }
+
+    .detail-actions {
+      position: absolute;
+      z-index: 4;
+      right: 10%;
+      bottom: 8.5%;
+      left: 10%;
+      height: 9%;
+      display: grid;
+      grid-template-columns: 56px minmax(128px, 1fr) 56px;
+      align-items: stretch;
+      justify-content: center;
+      gap: 12px;
+    }
+
+    .favorite-control,
+    .share-control {
+      height: 60px;
+      padding: 0;
+      border: 0;
+      background: transparent;
+      cursor: pointer;
+      filter: drop-shadow(0 4px 0 rgb(0 0 0 / 45%));
+    }
+
+    .favorite-control img {
+      display: block;
+      width: auto;
+      height: 100%;
+      margin: auto;
+    }
+
+    .share-control {
+      display: grid;
+      place-items: center;
+      border: 4px solid #090a09;
+      border-radius: 9px;
+      color: #090a09;
+      background: #fff;
+      font-size: 28px;
+      line-height: 1;
+      font-weight: 900;
+    }
+
+    .favorite-control:focus-visible,
+    .share-control:focus-visible,
+    .game-action:focus-visible {
+      outline: 3px solid #ffe64d;
+      outline-offset: 2px;
+    }
+
+    .game-action {
+      min-width: 0;
+      height: 60px;
+      align-self: center;
+      padding: 0 18px;
+      border: 12px solid transparent;
+      border-image-source: url("./assets/tujian_btn_bright.png");
+      border-image-slice: 16 20 fill;
+      border-image-width: 12px 18px;
+      border-image-repeat: stretch;
+      color: #050505;
+      background: transparent;
+      font-size: 25px;
+      line-height: 1;
+      font-weight: 900;
+      white-space: nowrap;
+      cursor: pointer;
+    }
+
+    .role-position {
+      position: absolute;
+      z-index: 4;
+      bottom: 1.2%;
+      left: 50%;
+      min-width: 98px;
+      padding: 0 10px;
+      color: #ddd;
+      text-align: center;
+      font-size: 18px;
+      line-height: 1.3;
+      font-weight: 900;
+      transform: translateX(-50%);
     }
 
     .empty {
@@ -514,8 +697,11 @@
 
     @media (max-width: 1120px) {
       .workspace { grid-template-columns: 1fr; }
-      .preview-surface { position: static; }
-      .stage { min-height: 570px; }
+      .preview-surface {
+        position: static;
+        width: min(390px, 100%);
+        margin: 0 auto;
+      }
       .table-wrap { max-height: none; }
     }
 
@@ -527,7 +713,9 @@
       .summary { justify-content: flex-start; }
       .toolbar { align-items: stretch; flex-direction: column; }
       .toolbar-actions { width: 100%; }
-      .stage { padding-inline: 16px; }
+      .title-ribbon span { font-size: 28px; }
+      .detail-actions { grid-template-columns: 52px minmax(120px, 1fr) 52px; gap: 9px; }
+      .game-action { font-size: 22px; }
     }
   </style>
 </head>
@@ -581,26 +769,55 @@
           <span id="preview-title">游戏内详情效果</span>
           <span class="preview-index" id="preview-index">1 / 20</span>
         </div>
-        <div class="stage">
-          <div class="spotlight"></div>
-          <div class="ribbon" id="preview-name">袋鼠团长</div>
-          <div class="character-slot">
-            <img class="character-image" id="preview-image" alt="" hidden>
-            <div class="character" id="preview-placeholder" aria-hidden="true">
-              <div class="tile">
-                <span class="leaf a"></span>
-                <span class="leaf b"></span>
-                <span class="leaf c"></span>
-              </div>
-              <span class="foot left"></span>
-              <span class="foot right"></span>
+        <div class="game-detail-overlay">
+          <div class="game-detail-panel">
+            <div class="spotlight-beam" aria-hidden="true"></div>
+            <div class="title-ribbon">
+              <img class="artwork-fixed title-art" src="./assets/tujian_juese_title.png" alt="">
+              <span id="preview-name">袋鼠团长</span>
             </div>
-          </div>
-          <div class="shadow" id="preview-shadow" aria-hidden="true"></div>
-          <div class="copy-box">
-            <div class="copy-kicker" id="preview-code">美团骑手</div>
-            <p class="preview-summary" id="preview-summary"></p>
-            <p class="preview-copy" id="preview-copy"></p>
+
+            <div class="character-showcase">
+              <button class="turn-control turn-control--previous" id="preview-prev" type="button" aria-label="上一个角色" title="上一个角色">
+                <img class="artwork-fixed" src="./assets/tujian_juese_turn.png" alt="">
+              </button>
+              <div class="character-slot">
+                <img class="character-image" id="preview-image" alt="" hidden>
+                <div class="character" id="preview-placeholder" aria-hidden="true">
+                  <div class="tile">
+                    <span class="leaf a"></span>
+                    <span class="leaf b"></span>
+                    <span class="leaf c"></span>
+                  </div>
+                  <span class="foot left"></span>
+                  <span class="foot right"></span>
+                </div>
+                <div class="character-shadow" id="preview-shadow" aria-hidden="true"></div>
+              </div>
+              <button class="turn-control" id="preview-next" type="button" aria-label="下一个角色" title="下一个角色">
+                <img class="artwork-fixed" src="./assets/tujian_juese_turn.png" alt="">
+              </button>
+            </div>
+
+            <div class="copy-box">
+              <div class="copy-kicker">角色代号：<span id="preview-code">美团骑手</span></div>
+              <p class="preview-summary">获取方式：<span id="preview-summary"></span></p>
+              <p class="preview-copy" id="preview-copy"></p>
+            </div>
+
+            <div class="detail-actions">
+              <button class="favorite-control" id="preview-favorite" type="button" aria-label="收藏角色" aria-pressed="false" title="收藏角色">
+                <img class="artwork-fixed" src="./assets/tujian_jues_save1.png" alt="">
+              </button>
+              <button class="game-action" id="preview-action" type="button">装扮</button>
+              <button class="share-control" id="preview-share" type="button" aria-label="分享角色文案" title="分享角色文案">
+                <span aria-hidden="true">↗</span>
+              </button>
+            </div>
+
+            <div class="role-position" aria-label="角色位置">
+              <span id="preview-position">1 / 20</span>
+            </div>
           </div>
         </div>
       </aside>
@@ -759,6 +976,7 @@
       const imageInput = document.querySelector("#role-image-input");
       const uploadStatus = document.querySelector("#upload-status");
       const imageObjectUrls = new Map();
+      const favoriteRoles = new Set();
       const databaseName = "brick-character-copy-preview-v1";
       const imageStoreName = "image-overrides";
       const allowedImageTypes = new Set(["image/png", "image/jpeg", "image/webp"]);
@@ -918,30 +1136,70 @@
       }
 
     function preview(index) {
-      selected = index;
-      const role = roles[index];
+      selected = (index + roles.length) % roles.length;
+      const role = roles[selected];
       document.querySelector("#preview-name").textContent = role.name;
       document.querySelector("#preview-code").textContent = role.code;
       document.querySelector("#preview-summary").textContent = role.summary;
       document.querySelector("#preview-copy").textContent = role.copy;
-      document.querySelector("#preview-index").textContent = `${index + 1} / ${roles.length}`;
+      document.querySelector("#preview-index").textContent = `${selected + 1} / ${roles.length}`;
+      document.querySelector("#preview-position").textContent = `${selected + 1} / ${roles.length}`;
       const previewImage = document.querySelector("#preview-image");
       const placeholder = document.querySelector("#preview-placeholder");
       const shadow = document.querySelector("#preview-shadow");
-        const image = displayedImage(role);
-        previewImage.hidden = !image;
-        placeholder.hidden = Boolean(image);
-        shadow.hidden = Boolean(image);
-        if (image) {
-          previewImage.src = image;
+      const image = displayedImage(role);
+      previewImage.hidden = !image;
+      placeholder.hidden = Boolean(image);
+      shadow.hidden = !image;
+      if (image) {
+        previewImage.src = image;
         previewImage.alt = `${role.name}角色形象`;
       } else {
         previewImage.removeAttribute("src");
         previewImage.alt = "";
       }
+      const favoriteButton = document.querySelector("#preview-favorite");
+      const favoriteIcon = favoriteButton.querySelector("img");
+      const isFavorite = favoriteRoles.has(role.code);
+      favoriteButton.setAttribute("aria-pressed", String(isFavorite));
+      favoriteButton.setAttribute("aria-label", isFavorite ? `取消收藏${role.name}` : `收藏${role.name}`);
+      favoriteButton.title = isFavorite ? "取消收藏" : "收藏角色";
+      favoriteIcon.src = isFavorite
+        ? "./assets/tujian_jues_save2.png"
+        : "./assets/tujian_jues_save1.png";
       document.querySelectorAll("tbody tr").forEach((row) => {
         row.classList.toggle("selected", Number(row.dataset.index) === selected);
       });
+    }
+
+    function toggleFavorite() {
+      const role = roles[selected];
+      if (favoriteRoles.has(role.code)) {
+        favoriteRoles.delete(role.code);
+        announce(`${role.name}已取消收藏。`);
+      } else {
+        favoriteRoles.add(role.code);
+        announce(`${role.name}已收藏。`);
+      }
+      preview(selected);
+    }
+
+    async function shareCurrentRole() {
+      const role = roles[selected];
+      const shareText = `${role.name}：${role.copy}`;
+      try {
+        if (navigator.share) {
+          await navigator.share({ title: `${role.name}角色图鉴`, text: shareText });
+          announce(`${role.name}已打开分享。`);
+        } else if (navigator.clipboard?.writeText) {
+          await navigator.clipboard.writeText(shareText);
+          announce(`${role.name}文案已复制。`);
+        } else {
+          throw new Error("Share is unavailable");
+        }
+      } catch (error) {
+        if (error?.name !== "AbortError") announce("当前浏览器无法分享，请直接查看表格文案。");
+      }
     }
 
     function render(filter = "") {
@@ -1005,6 +1263,13 @@
       }
 
       search.addEventListener("input", (event) => render(event.target.value));
+      document.querySelector("#preview-prev").addEventListener("click", () => preview(selected - 1));
+      document.querySelector("#preview-next").addEventListener("click", () => preview(selected + 1));
+      document.querySelector("#preview-favorite").addEventListener("click", toggleFavorite);
+      document.querySelector("#preview-action").addEventListener("click", () => {
+        announce(`${roles[selected].name}已设为当前装扮预览。`);
+      });
+      document.querySelector("#preview-share").addEventListener("click", shareCurrentRole);
       imageInput.addEventListener("change", async () => {
         const index = uploadTarget;
         const file = imageInput.files?.[0];

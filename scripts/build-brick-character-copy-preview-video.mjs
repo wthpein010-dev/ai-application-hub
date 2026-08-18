@@ -54,7 +54,7 @@ const browserExecutable = [
 ].find((candidate) => candidate && existsSync(candidate));
 const browser = await chromium.launch({ headless: true, executablePath: browserExecutable });
 const context = await browser.newContext({
-  viewport: { width: 1280, height: 720 },
+  viewport: { width: 1440, height: 810 },
   recordVideo: { dir: recordingRoot, size: { width: 1280, height: 720 } },
 });
 const page = await context.newPage();
@@ -63,26 +63,25 @@ const video = page.video();
 try {
   await page.goto(`http://127.0.0.1:${port}/projects/brick-character-copy-preview/index.html`, { waitUntil: "networkidle" });
   await page.evaluate(() => document.fonts.ready);
-  await page.locator('tr[data-index="10"]').scrollIntoViewIfNeeded();
-  await page.locator('tr[data-index="10"]').click();
+  await page.evaluate(() => window.scrollTo({ top: 90, behavior: "instant" }));
+  await page.waitForTimeout(250);
   await page.screenshot({ path: posterPath, type: "jpeg", quality: 90 });
 
   await page.waitForTimeout(4_000);
-  await page.locator('tr[data-index="11"]').click();
+  await page.locator("#preview-next").click();
+  await page.waitForTimeout(4_000);
+  await page.locator("#preview-favorite").click();
+  await page.waitForTimeout(4_000);
+  await page.locator('tr[data-index="7"]').click();
   await page.waitForTimeout(4_000);
   await page.locator('tr[data-index="15"]').click();
-  await page.waitForTimeout(4_000);
-  await page.locator('tr[data-index="19"]').click();
-  await page.waitForTimeout(4_000);
-  await page.locator("#search").fill("草");
   await page.waitForTimeout(4_000);
   await page.locator("#search").fill("程序员");
   await page.waitForTimeout(4_000);
   await page.locator('tr[data-index="6"]').click();
   await page.waitForTimeout(4_000);
   await page.locator("#search").fill("");
-  await page.locator('tr[data-index="10"]').scrollIntoViewIfNeeded();
-  await page.locator('tr[data-index="10"]').click();
+  await page.locator('tr[data-index="19"]').click();
   await page.waitForTimeout(4_000);
 } finally {
   await page.close();
