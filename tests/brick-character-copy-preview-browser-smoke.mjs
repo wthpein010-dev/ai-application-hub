@@ -65,6 +65,40 @@ try {
     assert.equal(await page.locator("#rows .role-thumb").count(), 20);
     assert.equal(await page.locator("[data-upload-index]").count(), 20);
 
+    assert.equal(await page.locator(".game-detail-overlay").isVisible(), true);
+    assert.equal(await page.locator(".game-detail-panel").isVisible(), true);
+    assert.equal(await page.locator("#preview-prev").count(), 1);
+    assert.equal(await page.locator("#preview-next").count(), 1);
+    assert.equal(await page.locator("#preview-favorite").getAttribute("aria-pressed"), "false");
+    assert.match(await page.locator("#preview-favorite img").getAttribute("src"), /tujian_jues_save1\.png$/);
+
+    const initialPreviewImage = await page.locator("#preview-image").getAttribute("src");
+    await page.locator("#preview-next").click();
+    assert.equal(await page.locator("#preview-name").textContent(), "淘闪闪");
+    assert.equal(await page.locator("#preview-code").textContent(), "淘宝闪购骑手");
+    assert.notEqual(await page.locator("#preview-image").getAttribute("src"), initialPreviewImage);
+    assert.match(await page.locator("#preview-copy").textContent(), /付款键/);
+    await page.locator("#preview-prev").click();
+    assert.equal(await page.locator("#preview-name").textContent(), "袋鼠团长");
+
+    await page.locator("#preview-favorite").click();
+    assert.equal(await page.locator("#preview-favorite").getAttribute("aria-pressed"), "true");
+    assert.match(await page.locator("#preview-favorite img").getAttribute("src"), /tujian_jues_save2\.png$/);
+    await page.waitForFunction(() => document.querySelector("#preview-favorite img")?.naturalWidth > 0);
+
+    const fixedArtworkGeometry = await page.locator(".artwork-fixed").evaluateAll((images) => images.map((image) => {
+      const rect = image.getBoundingClientRect();
+      return {
+        renderedRatio: rect.width / rect.height,
+        naturalRatio: image.naturalWidth / image.naturalHeight,
+      };
+    }));
+    assert.equal(
+      fixedArtworkGeometry.every(({ renderedRatio, naturalRatio }) => Math.abs(renderedRatio - naturalRatio) < 0.03),
+      true,
+      `fixed artwork deformation: ${JSON.stringify(fixedArtworkGeometry)}`,
+    );
+
     await page.locator('tr[data-index="10"]').click();
     assert.equal(await page.locator("#preview-name").textContent(), "原皮战神");
     assert.equal(await page.locator("#preview-image").isVisible(), true);
@@ -139,8 +173,18 @@ try {
       body: document.documentElement.scrollWidth,
       viewport: window.innerWidth,
       tableOverflow: document.querySelector(".table-wrap").scrollWidth > document.querySelector(".table-wrap").clientWidth,
+      detail: (() => {
+        const panel = document.querySelector(".game-detail-panel").getBoundingClientRect();
+        const action = document.querySelector(".game-action").getBoundingClientRect();
+        const position = document.querySelector(".role-position").getBoundingClientRect();
+        return {
+          actionInsidePanel: action.top >= panel.top && action.bottom <= panel.bottom,
+          actionClearOfPosition: action.bottom <= position.top,
+        };
+      })(),
     }));
     assert.ok(layout.body <= layout.viewport + 1, `${viewport.width}px body overflow: ${JSON.stringify(layout)}`);
+    assert.deepEqual(layout.detail, { actionInsidePanel: true, actionClearOfPosition: true });
     if (viewport.width === 390) assert.equal(layout.tableOverflow, true);
     assert.deepEqual(errors, []);
     await page.close();
