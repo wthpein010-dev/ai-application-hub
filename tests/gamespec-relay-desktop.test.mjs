@@ -64,6 +64,7 @@ test("desktop package embeds the shared app and defines native Windows and macOS
   assert.equal(packageJson.build.extraResources[0].to, "app/projects/gamespec-relay");
   assert.equal(packageJson.build.win.artifactName, "GameSpec-Relay-Windows-x64.${ext}");
   assert.equal(packageJson.build.mac.artifactName, "GameSpec-Relay-macOS-${arch}.${ext}");
+  assert.equal(packageJson.devDependencies.playwright, "1.61.1");
 });
 
 test("desktop package ships a square high-resolution product icon", () => {
