@@ -329,8 +329,8 @@ const defaultApps = [
     package: "",
     platforms: {
       web: { href: "./projects/朋友圈发图神器/01_作品体验入口/网页素材一键收桌面版/index.html", label: "演示" },
-      windows: "",
-      mac: ""
+      windows: { href: "./projects/朋友圈发图神器/01_作品体验入口/网页素材一键收桌面版/README.md", label: "Windows说明" },
+      mac: { href: "./projects/朋友圈发图神器/01_作品体验入口/网页素材一键收桌面版/macOS版/README.md", label: "macOS说明" }
     },
     tags: ["网页素材", "桌面版", "始终置顶", "批量下载"],
     speed: 8,
@@ -1091,9 +1091,11 @@ function renderActions(app, stopPropagation = false, mode = "default") {
   const mac = platformValue(app, "mac");
   const windowsDownload = isDirectPackageHref(windows) ? " download" : "";
   const macDownload = isDirectPackageHref(mac) ? " download" : "";
+  const windowsLabel = platformLabel(app, "windows", "Wins下载");
+  const macLabel = platformLabel(app, "mac", "Mac下载");
   const webLink = web ? `<a class="primary-link" data-action="web" href="${escapeHtml(projectHref(web))}"${stop}>演示</a>` : "";
-  const windowsLink = windows ? `<a class="download-link" data-action="download" href="${escapeHtml(projectHref(windows))}"${windowsDownload}${stop}>Wins下载</a>` : "";
-  const macLink = mac ? `<a class="mac-link" data-action="mac" href="${escapeHtml(projectHref(mac))}"${macDownload}${stop}>Mac下载</a>` : "";
+  const windowsLink = windows ? `<a class="download-link" data-action="download" href="${escapeHtml(projectHref(windows))}"${windowsDownload}${stop}>${escapeHtml(windowsLabel)}</a>` : "";
+  const macLink = mac ? `<a class="mac-link" data-action="mac" href="${escapeHtml(projectHref(mac))}"${macDownload}${stop}>${escapeHtml(macLabel)}</a>` : "";
   const video = app.video
     ? `<a data-action="video" href="${escapeHtml(projectHref(videoHref(app)))}"${stop}>视频</a>`
     : "";
@@ -1567,8 +1569,8 @@ function normalizeApp(app) {
     normalized.package = "";
     normalized.platforms = {
       web: { href: "./projects/朋友圈发图神器/01_作品体验入口/网页素材一键收桌面版/index.html", label: "演示" },
-      windows: "",
-      mac: ""
+      windows: { href: "./projects/朋友圈发图神器/01_作品体验入口/网页素材一键收桌面版/README.md", label: "Windows说明" },
+      mac: { href: "./projects/朋友圈发图神器/01_作品体验入口/网页素材一键收桌面版/macOS版/README.md", label: "macOS说明" }
     };
     normalized.status = "desktop";
   }
