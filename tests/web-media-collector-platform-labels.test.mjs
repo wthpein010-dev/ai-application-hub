@@ -15,11 +15,15 @@ function sliceFor(marker, length = 1400) {
   return app.slice(start, start + length);
 }
 
-test("Windows and macOS platform actions can use explicit labels", () => {
-  assert.match(app, /const windowsLabel = platformLabel\(app, "windows", "Wins下载"\);/);
-  assert.match(app, /const macLabel = platformLabel\(app, "mac", "Mac下载"\);/);
-  assert.match(app, /data-action="download"[\s\S]{0,160}\$\{escapeHtml\(windowsLabel\)\}/);
-  assert.match(app, /data-action="mac"[\s\S]{0,160}\$\{escapeHtml\(macLabel\)\}/);
+test("card action links include project-specific accessible labels", () => {
+  assert.match(app, /const webActionLabel = `\$\{app\.name\} 演示`;/);
+  assert.match(app, /const videoActionLabel = `\$\{app\.name\} 视频`;/);
+  assert.match(app, /const windowsActionLabel = `\$\{app\.name\} Wins下载`;/);
+  assert.match(app, /const macActionLabel = `\$\{app\.name\} Mac下载`;/);
+  assert.match(app, /data-action="web"[\s\S]{0,220}aria-label="\$\{escapeHtml\(webActionLabel\)\}"/);
+  assert.match(app, /data-action="video"[\s\S]{0,220}aria-label="\$\{escapeHtml\(videoActionLabel\)\}"/);
+  assert.match(app, /data-action="download"[\s\S]{0,220}aria-label="\$\{escapeHtml\(windowsActionLabel\)\}"/);
+  assert.match(app, /data-action="mac"[\s\S]{0,220}aria-label="\$\{escapeHtml\(macActionLabel\)\}"/);
 });
 
 test("web media collector does not expose source notes as fake installers", () => {
