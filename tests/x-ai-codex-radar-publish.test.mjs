@@ -43,13 +43,22 @@ test("the public demo clearly separates sample data from the private live site",
   assert.match(html, /class="hub-home-link"/);
   assert.match(html, /href="\.\.\/\.\.\/index\.html#apps"/);
   assert.match(html, /id="searchInput"/);
-  assert.match(html, /id="pinnedList"/);
+  assert.match(html, /data-daily-brief="true"/);
+  assert.match(html, /data-quick-status="true"/);
+  assert.match(html, /data-priority-section="true"/);
+  assert.match(html, /id="priorityGrid"/);
   assert.match(html, /id="threadList"/);
   assert.match(html, /id="threadDetail"/);
   assert.match(html, /data-filter="token"/);
   assert.match(html, /<script type="module" src="\.\/app\.js"><\/script>/);
   assert.equal(existsSync(join(projectRoot, "styles.css")), true);
   assert.equal(existsSync(join(projectRoot, "app.js")), true);
+
+  const brief = html.indexOf('data-daily-brief="true"');
+  const quickStatus = html.indexOf('data-quick-status="true"');
+  const priority = html.indexOf('data-priority-section="true"');
+  const threads = html.indexOf('id="threads"');
+  assert.ok(brief >= 0 && quickStatus > brief && priority > quickStatus && threads > priority);
 });
 
 test("the demo script provides local filtering, detail inspection and reset", () => {

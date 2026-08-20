@@ -81,9 +81,15 @@ try {
   assert.equal(await desktop.locator("#resultCount").textContent(), "8");
   assert.match(await desktop.locator(".boundary").innerText(), /示例数据/);
   assert.match(await desktop.locator(".secondary-button").innerText(), /需 ChatGPT 登录/);
-  assert.equal(await desktop.locator(".pinned-thread").count(), 3);
+  assert.equal(await desktop.locator("#priorityGrid .priority-card").count(), 3);
   assert.match(await desktop.locator(".token-status").innerText(), /暂无官方确认/);
   assert.equal(await desktop.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 1), true);
+  assert.equal(await desktop.locator('[data-daily-brief="true"]').isVisible(), true);
+  assert.equal(await desktop.locator('[data-quick-status="true"]').isVisible(), true);
+  assert.ok(
+    await desktop.locator('[data-priority-section="true"]').evaluate((element) => element.getBoundingClientRect().top < 720),
+    "desktop should expose priority intelligence in the first viewport",
+  );
 
   await desktop.click('[data-filter="token"]');
   assert.equal(await desktop.locator("#resultCount").textContent(), "2");
@@ -99,6 +105,10 @@ try {
   const mobile = await openPage({ width: 390, height: 844 }, "/projects/x-ai-codex-radar/index.html");
   assert.equal(await mobile.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 1), true);
   await assertMobileHeaderLayout(mobile, "390px");
+  assert.ok(
+    await mobile.locator('[data-priority-section="true"]').evaluate((element) => element.getBoundingClientRect().top < 844),
+    "mobile should reach today's priorities within the first viewport",
+  );
   await mobile.click('[data-filter="musk"]');
   assert.equal(await mobile.locator("#resultCount").textContent(), "1");
   await mobile.click('[data-thread-id="musk-xai-update"]');

@@ -150,7 +150,7 @@ const threads = [
 const nodes = {
   search: document.querySelector("#searchInput"),
   list: document.querySelector("#threadList"),
-  pinned: document.querySelector("#pinnedList"),
+  priority: document.querySelector("#priorityGrid"),
   detail: document.querySelector("#threadDetail"),
   count: document.querySelector("#resultCount"),
   empty: document.querySelector("#emptyState"),
@@ -193,12 +193,16 @@ function badges(thread, includePin = false) {
   </span>`;
 }
 
-function renderPinned() {
-  nodes.pinned.innerHTML = threads.filter((thread) => thread.pinned).map((thread) => `
-    <button class="pinned-thread" type="button" data-open-thread="${escapeHtml(thread.id)}">
-      ${badges(thread, true)}
-      <strong>${escapeHtml(thread.title)}</strong>
-      <span>${escapeHtml(thread.handle)}</span>
+function renderPriorities() {
+  nodes.priority.innerHTML = threads.filter((thread) => thread.pinned).map((thread, index) => `
+    <button class="priority-card" type="button" data-open-thread="${escapeHtml(thread.id)}">
+      <span class="priority-rank" aria-hidden="true">0${index + 1}</span>
+      <span class="priority-copy">
+        ${badges(thread, true)}
+        <strong>${escapeHtml(thread.title)}</strong>
+        <span>${escapeHtml(thread.excerpt)}</span>
+      </span>
+      <span class="priority-meta">${escapeHtml(thread.handle)}<i>查看主题 →</i></span>
     </button>`).join("");
 }
 
@@ -268,8 +272,12 @@ nodes.filters.forEach((button) => button.addEventListener("click", () => setFilt
 document.querySelector("#resetFilters").addEventListener("click", resetFilters);
 document.querySelector("[data-reset-filters]").addEventListener("click", resetFilters);
 document.querySelector("#browseThreads").addEventListener("click", () => document.querySelector("#threads").scrollIntoView({ behavior: "smooth" }));
+document.querySelector("#officialOnly").addEventListener("click", () => {
+  setFilter("official");
+  document.querySelector("#threads").scrollIntoView({ behavior: "smooth" });
+});
 document.querySelector("#refreshDemo").addEventListener("click", () => { resetFilters(); showToast("示例视图已刷新 · 本页仍为非实时数据"); });
-nodes.pinned.addEventListener("click", (event) => {
+nodes.priority.addEventListener("click", (event) => {
   const button = event.target.closest("[data-open-thread]");
   if (!button) return;
   state.selectedId = button.dataset.openThread;
@@ -284,5 +292,5 @@ nodes.list.addEventListener("click", (event) => {
   if (window.matchMedia("(max-width: 900px)").matches) nodes.detail.scrollIntoView({ behavior: "smooth", block: "start" });
 });
 
-renderPinned();
+renderPriorities();
 renderThreads();
