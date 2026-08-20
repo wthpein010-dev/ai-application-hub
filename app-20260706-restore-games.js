@@ -1524,6 +1524,10 @@ function normalizeApp(app) {
     if (normalized.badge === "网页 · Windows · macOS") {
       normalized.badge = base.badge;
     }
+    ["package", "folder", "entry", "video"].forEach((field) => {
+      normalized[field] = base[field];
+    });
+    normalized.platforms = { ...base.platforms };
   }
   if (normalized.id === "hub") {
     normalized.package = "";

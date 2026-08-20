@@ -70,13 +70,31 @@ test("PureShrink follows ClickFlow and exposes four publication actions", () => 
   });
 });
 
-test("legacy PureShrink defaults migrate to the auxiliary-tool card", () => {
+test("legacy PureShrink 1.0.3 actions migrate while customized copy stays intact", () => {
   const current = loadDefaultApps().find((app) => app.id === "pureshrink");
   const legacy = {
     ...current,
     name: "PureShrink 无损压缩工坊",
     status: "desktop",
     badge: "网页 · Windows · macOS",
+    brief: "我的压缩流程简介",
+    problem: "我的媒体整理问题",
+    aiUse: "我的自动化说明",
+    folder: "./cached/pureshrink/",
+    entry: "./cached/pureshrink/index.html",
+    video: "./cached/pureshrink/video.html",
+    package: "https://github.com/wthpein010-dev/ai-application-hub/releases/tag/pureshrink-v1.0.3",
+    platforms: {
+      web: "./cached/pureshrink/index.html",
+      windows: {
+        href: "https://github.com/wthpein010-dev/ai-application-hub/releases/download/pureshrink-v1.0.3/PureShrink-Windows-x64.zip",
+        label: "Wins下载",
+      },
+      mac: {
+        href: "https://github.com/wthpein010-dev/ai-application-hub/releases/download/pureshrink-v1.0.3/PureShrink-macOS.zip",
+        label: "Mac下载",
+      },
+    },
   };
 
   const migrated = loadAppsWithStoredValue([legacy]).find(
@@ -87,6 +105,25 @@ test("legacy PureShrink defaults migrate to the auxiliary-tool card", () => {
   assert.equal(migrated.status, "assistant");
   assert.equal(migrated.badge, "辅助工具");
   assert.equal(migrated.category, "媒体压缩工具");
+  assert.equal(migrated.brief, "我的压缩流程简介");
+  assert.equal(migrated.problem, "我的媒体整理问题");
+  assert.equal(migrated.aiUse, "我的自动化说明");
+  assert.deepEqual(
+    JSON.parse(JSON.stringify({
+      package: migrated.package,
+      folder: migrated.folder,
+      entry: migrated.entry,
+      video: migrated.video,
+      platforms: migrated.platforms,
+    })),
+    JSON.parse(JSON.stringify({
+      package: current.package,
+      folder: current.folder,
+      entry: current.entry,
+      video: current.video,
+      platforms: current.platforms,
+    })),
+  );
 });
 
 test("PureShrink migration preserves a customized name", () => {
@@ -260,7 +297,13 @@ test("PureShrink manifest does not claim deployment evidence before 1.0.4 reache
   });
 });
 
-test("homepage cache key is refreshed for the PureShrink card", () => {
+test("homepage cache key preserves the Hub audit before the PureShrink refresh", () => {
   const html = readFileSync(join(root, "index.html"), "utf8");
-  assert.match(html, /app-20260706-restore-games\.js\?v=[^"]*20260820-pureshrink-v104/);
+  const cacheKey = html.match(/app-20260706-restore-games\.js\?v=([^"]+)/)?.[1];
+  assert.ok(cacheKey, "runtime cache key should be present");
+  const auditIndex = cacheKey.indexOf("20260820-hub-quality-audit");
+  const pureShrinkIndex = cacheKey.indexOf("20260820-pureshrink-v104");
+  assert.notEqual(auditIndex, -1);
+  assert.notEqual(pureShrinkIndex, -1);
+  assert.ok(auditIndex < pureShrinkIndex, cacheKey);
 });

@@ -25,6 +25,7 @@ const {
 const {
   MAX_DESKTOP_ARCHIVE_BYTES,
   mediaFingerprint,
+  NativeRunner,
   resolveBundledBinaryPath,
   runProcess,
   zipLosslessly,
@@ -176,6 +177,189 @@ test("media fingerprint honors cancellation before verification starts", async (
   );
 });
 
+test("NativeRunner accepts controlled native process boundaries", async (t) => {
+  const proofDirectory = mkdtempSync(join(tmpdir(), "pureshrink-runner-boundary-"));
+  t.after(() => rmSync(proofDirectory, { recursive: true, force: true }));
+  const sourcePath = join(proofDirectory, "source.mp4");
+  const outputDirectory = join(proofDirectory, "output");
+  writeFileSync(sourcePath, Buffer.alloc(8, 7));
+  const runner = new NativeRunner({
+    ffmpegPath: "controlled-ffmpeg",
+    runProcess: async (_binary, args) => {
+      writeFileSync(args.at(-1), Buffer.from([1]));
+      return { code: 0, stdout: "", stderr: "" };
+    },
+    mediaFingerprint: async () => "matching-fingerprint",
+  });
+
+  const result = await runner.compress({
+    id: 101,
+    sourcePath,
+    plan: {
+      kind: "video",
+      mode: "lossless",
+      outputExtension: "mp4",
+      isLossless: true,
+    },
+  }, outputDirectory);
+
+  assert.equal(result.verification, "音视频码流 SHA-256 一致");
+  assert.equal(result.outputBytes, 1);
+  assert.equal(existsSync(result.path), true);
+});
+
+test("NativeRunner aborts and awaits a delayed fingerprint sibling before propagating failure", async (t) => {
+  const proofDirectory = mkdtempSync(join(tmpdir(), "pureshrink-fingerprint-failure-"));
+  t.after(() => rmSync(proofDirectory, { recursive: true, force: true }));
+  const sourcePath = join(proofDirectory, "source.mp4");
+  const outputDirectory = join(proofDirectory, "output");
+  const outputPath = join(outputDirectory, "source-pureshrink.mp4");
+  writeFileSync(sourcePath, Buffer.alloc(8, 7));
+  const sourceError = new Error("source fingerprint failed");
+  const events = [];
+  let markOutputStarted;
+  const outputStarted = new Promise((resolve) => { markOutputStarted = resolve; });
+  let settleOutput;
+  const runner = new NativeRunner({
+    ffmpegPath: "controlled-ffmpeg",
+    runProcess: async (_binary, args) => {
+      writeFileSync(args.at(-1), Buffer.from([1]));
+      return { code: 0, stdout: "", stderr: "" };
+    },
+    mediaFingerprint: async (_binary, filePath, _kind, { signal }) => {
+      if (filePath === sourcePath) {
+        events.push("source:start");
+        await outputStarted;
+        events.push("source:failed");
+        throw sourceError;
+      }
+      events.push("output:start");
+      markOutputStarted();
+      return new Promise((resolve, reject) => {
+        signal.addEventListener("abort", () => events.push("output:aborted"), { once: true });
+        settleOutput = () => {
+          events.push("output:settled");
+          if (signal.aborted) {
+            const error = new Error("PureShrink task cancelled");
+            error.name = "AbortError";
+            reject(error);
+          } else {
+            resolve("matching-fingerprint");
+          }
+        };
+      });
+    },
+  });
+  let outcome;
+  const completion = runner.compress({
+    id: 102,
+    sourcePath,
+    plan: {
+      kind: "video",
+      mode: "lossless",
+      outputExtension: "mp4",
+      isLossless: true,
+    },
+  }, outputDirectory).then(
+    (value) => { outcome = { value }; },
+    (error) => { outcome = { error }; },
+  );
+
+  await new Promise((resolve) => setImmediate(resolve));
+  assert.equal(outcome, undefined, "failure must wait for the delayed sibling");
+  assert.equal(runner.active.has(102), true);
+  assert.equal(existsSync(outputPath), true);
+  assert.deepEqual(events, [
+    "source:start",
+    "output:start",
+    "source:failed",
+    "output:aborted",
+  ]);
+
+  settleOutput();
+  await completion;
+  assert.strictEqual(outcome.error, sourceError);
+  assert.equal(runner.active.has(102), false);
+  assert.equal(existsSync(outputPath), false);
+  assert.equal(events.at(-1), "output:settled");
+});
+
+test("NativeRunner cancellation waits for both active fingerprint jobs to settle", async (t) => {
+  const proofDirectory = mkdtempSync(join(tmpdir(), "pureshrink-fingerprint-cancel-"));
+  t.after(() => rmSync(proofDirectory, { recursive: true, force: true }));
+  const sourcePath = join(proofDirectory, "source.mp4");
+  const outputDirectory = join(proofDirectory, "output");
+  const outputPath = join(outputDirectory, "source-pureshrink.mp4");
+  writeFileSync(sourcePath, Buffer.alloc(8, 7));
+  const events = [];
+  let startedCount = 0;
+  let markBothStarted;
+  const bothStarted = new Promise((resolve) => { markBothStarted = resolve; });
+  let settleOutput;
+  const runner = new NativeRunner({
+    ffmpegPath: "controlled-ffmpeg",
+    runProcess: async (_binary, args) => {
+      writeFileSync(args.at(-1), Buffer.from([1]));
+      return { code: 0, stdout: "", stderr: "" };
+    },
+    mediaFingerprint: async (_binary, filePath, _kind, { signal }) => new Promise((resolve, reject) => {
+      const side = filePath === sourcePath ? "source" : "output";
+      events.push(`${side}:start`);
+      startedCount += 1;
+      if (startedCount === 2) markBothStarted();
+      signal.addEventListener("abort", () => {
+        events.push(`${side}:aborted`);
+        const error = new Error("PureShrink task cancelled");
+        error.name = "AbortError";
+        if (side === "source") {
+          events.push("source:settled");
+          reject(error);
+        } else {
+          settleOutput = () => {
+            events.push("output:settled");
+            reject(error);
+          };
+        }
+      }, { once: true });
+    }),
+  });
+  let outcome;
+  const completion = runner.compress({
+    id: 103,
+    sourcePath,
+    plan: {
+      kind: "video",
+      mode: "lossless",
+      outputExtension: "mp4",
+      isLossless: true,
+    },
+  }, outputDirectory).then(
+    (value) => { outcome = { value }; },
+    (error) => { outcome = { error }; },
+  );
+
+  await bothStarted;
+  assert.equal(runner.cancel(103), true);
+  await new Promise((resolve) => setImmediate(resolve));
+  assert.equal(outcome, undefined, "cancellation must wait for the delayed sibling");
+  assert.equal(runner.active.has(103), true);
+  assert.equal(existsSync(outputPath), true);
+  assert.deepEqual(events, [
+    "source:start",
+    "output:start",
+    "source:aborted",
+    "source:settled",
+    "output:aborted",
+  ]);
+
+  settleOutput();
+  await completion;
+  assert.equal(outcome.error?.name, "AbortError");
+  assert.equal(runner.active.has(103), false);
+  assert.equal(existsSync(outputPath), false);
+  assert.equal(events.at(-1), "output:settled");
+});
+
 test("desktop ZIP work runs in a cancellable worker and removes partial output", async (t) => {
   const proofDirectory = mkdtempSync(join(tmpdir(), "pureshrink-archive-cancel-"));
   t.after(() => rmSync(proofDirectory, { recursive: true, force: true }));
@@ -292,11 +476,19 @@ test("desktop install explicitly fetches the Electron runtime", () => {
   assert.equal(packageJson.scripts.postinstall, "install-electron");
 });
 
-test("desktop package keeps the local tutorial video functional", () => {
+test("desktop package prepares 1.0.5 and keeps the local tutorial video functional", () => {
   const packageJson = JSON.parse(readFileSync(desktop("package.json"), "utf8"));
+  const packageLock = JSON.parse(readFileSync(desktop("package-lock.json"), "utf8"));
+  const releaseNotes = readFileSync(
+    join(root, "projects", "pureshrink", "release-notes.md"),
+    "utf8",
+  );
   const [projectResources, sharedResources] = packageJson.build.extraResources;
 
-  assert.equal(packageJson.version, "1.0.4");
+  assert.equal(packageJson.version, "1.0.5");
+  assert.equal(packageLock.version, "1.0.5");
+  assert.equal(packageLock.packages[""].version, "1.0.5");
+  assert.match(releaseNotes, /^# PureShrink 1\.0\.5\s+## 1\.0\.5 生命周期修复/m);
   assert.equal(packageJson.build.extraResources.length, 2);
   assert.equal(projectResources.from, "../../projects/pureshrink");
   assert.equal(projectResources.to, "app/projects/pureshrink");

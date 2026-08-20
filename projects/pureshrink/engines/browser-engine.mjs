@@ -195,12 +195,14 @@ export function createLegacyFfmpegAdapter(legacy, options = {}) {
       let transformInstance;
       let verificationInstance;
       const closeInstance = (instance) => {
-        if (!instance || closedInstances.has(instance)) return;
-        closedInstances.add(instance);
+        if (!instance || closedInstances.has(instance)) return true;
         try {
           instance.exit();
+          closedInstances.add(instance);
+          return true;
         } catch {
-          // Failed or already terminated cores still count as released.
+          // A core may reject exit while load is still settling; final cleanup retries it.
+          return false;
         }
       };
       const createInstance = async () => {
@@ -247,11 +249,17 @@ export function createLegacyFfmpegAdapter(legacy, options = {}) {
         const bytes = new Uint8Array(
           transformInstance.FS("readFile", outputName),
         );
+        removeFiles(transformInstance, [inputName, outputName]);
+        if (!closeInstance(transformInstance)) {
+          throw new Error("FFmpeg WebAssembly 转换核心释放失败");
+        }
+        if (activeInstance === transformInstance) activeInstance = null;
         let losslessMatch;
         if (verifyLossless) {
           const sourceHashName = `${inputName}.streamhash`;
           const outputHashName = `${outputName}.streamhash`;
           try {
+            abortIfNeeded(signal);
             verificationInstance = await createInstance();
             abortIfNeeded(signal);
             verificationInstance.FS("writeFile", inputName, inputBytes);

@@ -1,6 +1,6 @@
 {
   "name": "pureshrink-desktop",
-  "version": "1.0.4",
+  "version": "1.0.5",
   "private": true,
   "description": "PureShrink local-first lossless media compressor for Windows and macOS",
   "author": "wthpein010-dev",

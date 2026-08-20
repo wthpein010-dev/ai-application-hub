@@ -120,6 +120,22 @@ function removeIfPresent(candidatePath) {
   }
 }
 
+async function settleFingerprintGroup(controller, jobs) {
+  let firstError;
+  let hasError = false;
+  const tracked = jobs.map((start) => Promise.resolve().then(start).catch((error) => {
+    if (!hasError) {
+      hasError = true;
+      firstError = error;
+      controller.abort();
+    }
+    throw error;
+  }));
+  const settled = await Promise.allSettled(tracked);
+  if (hasError) throw firstError;
+  return settled.map((result) => result.value);
+}
+
 function zipLosslessly(sourcePath, outputPath, options = {}) {
   if (options.signal?.aborted) {
     removeIfPresent(outputPath);
@@ -178,6 +194,8 @@ class NativeRunner {
     this.ffmpegPath = resolveBundledBinaryPath(
       options.ffmpegPath || require("ffmpeg-static"),
     );
+    this.runProcess = options.runProcess || runProcess;
+    this.mediaFingerprint = options.mediaFingerprint || mediaFingerprint;
     this.active = new Map();
   }
 
@@ -202,7 +220,7 @@ class NativeRunner {
         onProgress(96);
       } else {
         const args = buildArguments(request, outputPath);
-        const result = await runProcess(this.ffmpegPath, args, {
+        const result = await this.runProcess(this.ffmpegPath, args, {
           signal: controller.signal,
           onStderr: (line) => {
             if (/time=|frame=/.test(line)) onProgress(62);
@@ -229,14 +247,15 @@ class NativeRunner {
 
       let verification = "高保真参数重新编码完成";
       if (request.plan?.isLossless && request.plan?.kind !== "archive") {
-        const [sourceFingerprint, outputFingerprint] = await Promise.all([
-          mediaFingerprint(this.ffmpegPath, request.sourcePath, request.plan.kind, {
+        const [sourceFingerprint, outputFingerprint] = await settleFingerprintGroup(controller, [
+          () => this.mediaFingerprint(this.ffmpegPath, request.sourcePath, request.plan.kind, {
             signal: controller.signal,
           }),
-          mediaFingerprint(this.ffmpegPath, outputPath, request.plan.kind, {
+          () => this.mediaFingerprint(this.ffmpegPath, outputPath, request.plan.kind, {
             signal: controller.signal,
           }),
         ]);
+        if (controller.signal.aborted) throw abortError();
         if (!sourceFingerprint || sourceFingerprint !== outputFingerprint) {
           unlinkSync(outputPath);
           throw new Error("PureShrink lossless verification did not match");

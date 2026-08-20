@@ -86,6 +86,70 @@ test("browser FFmpeg adapter releases transform and verification cores", async (
   assert.deepEqual(instances.map((instance) => instance.exits), [1, 1]);
 });
 
+test("browser FFmpeg adapter releases the transform core before creating verification", async () => {
+  const events = [];
+  const encoder = new TextEncoder();
+  let nextId = 0;
+  const adapter = browserEngineModule.createLegacyFfmpegAdapter({
+    createFFmpeg() {
+      const id = ++nextId;
+      const files = new Map();
+      events.push(`create:${id}`);
+      return {
+        setLogger() {},
+        setProgress() {},
+        async load() {},
+        async run(...args) {
+          const hashIndexes = args.flatMap((value, index) => (
+            value === "sha256" ? [index] : []
+          ));
+          if (hashIndexes.length) {
+            for (const index of hashIndexes) {
+              files.set(args[index + 1], encoder.encode("0,video,sha256=verified\n"));
+            }
+          } else {
+            files.set(args.at(-1), Uint8Array.from([9, 8, 7]));
+          }
+        },
+        FS(operation, name, value) {
+          if (operation === "writeFile") files.set(name, new Uint8Array(value));
+          if (operation === "readFile") return files.get(name);
+          if (operation === "unlink") {
+            events.push(`unlink:${id}:${name}`);
+            files.delete(name);
+          }
+          return undefined;
+        },
+        exit() {
+          events.push(`exit:${id}`);
+        },
+      };
+    },
+  }, { corePath: "https://example.test/ffmpeg-core.js" });
+
+  await adapter.transform({
+    inputName: "input.mp4",
+    outputName: "output.mp4",
+    inputBytes: Uint8Array.from([1, 2, 3]),
+    args: ["-i", "input.mp4", "output.mp4"],
+    verifyLossless: true,
+  });
+
+  const transformExit = events.indexOf("exit:1");
+  const verificationCreate = events.indexOf("create:2");
+  assert.notEqual(transformExit, -1);
+  assert.notEqual(verificationCreate, -1);
+  assert.ok(
+    events.indexOf("unlink:1:input.mp4") < transformExit
+      && events.indexOf("unlink:1:output.mp4") < transformExit,
+    `transform VFS should be empty before exit: ${events.join(", ")}`,
+  );
+  assert.ok(
+    transformExit < verificationCreate,
+    `transform exit should precede verification creation: ${events.join(", ")}`,
+  );
+});
+
 test("browser FFmpeg adapter releases a core whose load fails", async () => {
   assert.equal(typeof browserEngineModule.createLegacyFfmpegAdapter, "function");
   let exits = 0;
@@ -115,6 +179,73 @@ test("browser FFmpeg adapter releases a core whose load fails", async () => {
     /core load failed/,
   );
   assert.equal(exits, 1);
+});
+
+test("browser FFmpeg adapter retries loading-time cancellation cleanup after load settles", async () => {
+  const events = [];
+  let releaseFirstLoad;
+  let nextId = 0;
+  const legacy = {
+    createFFmpeg() {
+      const id = ++nextId;
+      const files = new Map();
+      let loaded = id > 1;
+      return {
+        setLogger() {},
+        setProgress() {},
+        async load() {
+          if (id === 1) {
+            await new Promise((resolve) => { releaseFirstLoad = resolve; });
+            loaded = true;
+          }
+        },
+        async run(...args) {
+          files.set(args.at(-1), Uint8Array.from([9, 8, 7]));
+        },
+        FS(operation, name, value) {
+          if (operation === "writeFile") files.set(name, new Uint8Array(value));
+          if (operation === "readFile") return files.get(name);
+          if (operation === "unlink") files.delete(name);
+          return undefined;
+        },
+        exit() {
+          events.push(`exit:${id}:${loaded ? "loaded" : "loading"}`);
+          if (!loaded) throw new Error("core is still loading");
+        },
+      };
+    },
+  };
+  const adapter = browserEngineModule.createLegacyFfmpegAdapter(legacy, {
+    corePath: "https://example.test/ffmpeg-core.js",
+  });
+  const controller = new AbortController();
+  const cancelled = adapter.transform({
+    inputName: "cancelled.mp4",
+    outputName: "cancelled-output.mp4",
+    inputBytes: Uint8Array.from([1, 2, 3]),
+    args: ["-i", "cancelled.mp4", "cancelled-output.mp4"],
+    signal: controller.signal,
+    verifyLossless: false,
+  });
+
+  controller.abort();
+  releaseFirstLoad();
+  await assert.rejects(cancelled, { name: "AbortError" });
+
+  const retried = await adapter.transform({
+    inputName: "retry.mp4",
+    outputName: "retry-output.mp4",
+    inputBytes: Uint8Array.from([4, 5, 6]),
+    args: ["-i", "retry.mp4", "retry-output.mp4"],
+    verifyLossless: false,
+  });
+
+  assert.deepEqual(Array.from(retried.bytes), [9, 8, 7]);
+  assert.deepEqual(events, [
+    "exit:1:loading",
+    "exit:1:loaded",
+    "exit:2:loaded",
+  ]);
 });
 
 test("browser engine returns a downloadable pixel-lossless PNG candidate", async () => {
