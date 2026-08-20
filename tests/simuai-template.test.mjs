@@ -97,6 +97,18 @@ test("ranking is stable when no term matches", () => {
   );
 });
 
+test("category-only questions recommend experiments from the current six-category catalog", () => {
+  for (const category of EXPERIMENT_CATEGORIES) {
+    const matches = rankExperiments(category, 3);
+    assert.deepEqual(
+      matches.map(match => match.experiment.category),
+      [category, category, category],
+      category,
+    );
+    assert.equal(matches.every(match => match.score > 0), true, category);
+  }
+});
+
 test("getExperiment returns a defensive copy", () => {
   const first = getExperiment("caffeine-decay");
   first.title = "changed";

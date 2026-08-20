@@ -69,13 +69,15 @@ function buttonFor(experiment, featured = false) {
 
 function renderLibrary() {
   nodes.featuredTemplates.replaceChildren(...EXPERIMENTS.filter(item => item.featured).map(item => buttonFor(item, true)));
-  nodes.categoryTabs.replaceChildren(...EXPERIMENT_CATEGORIES.map(category => {
+  nodes.categoryTabs.replaceChildren(...EXPERIMENT_CATEGORIES.map((category, index) => {
     const button = document.createElement("button");
     const count = experimentsForCategory(category).length;
     button.type = "button";
+    button.id = `category-tab-${index + 1}`;
     button.className = "category-tab";
     button.dataset.category = category;
     button.setAttribute("role", "tab");
+    button.setAttribute("aria-controls", "templateLibrary");
     button.setAttribute("aria-selected", String(category === state.activeCategory));
     button.append(text("span", category), text("small", String(count)));
     return button;
@@ -100,6 +102,8 @@ function renderActiveCategory() {
     button.setAttribute("aria-selected", String(active));
     button.tabIndex = active ? 0 : -1;
   });
+  const activeTab = nodes.categoryTabs.querySelector("[data-category][aria-selected='true']");
+  if (activeTab) nodes.templateLibrary.setAttribute("aria-labelledby", activeTab.id);
 }
 
 function defaultValues(experiment) {
@@ -192,7 +196,7 @@ function renderChartModes(view) {
   }));
 }
 
-function renderExperiment({ rebuildControls = true } = {}) {
+function renderExperiment({ rebuildControls = true, rebuildStatic = true } = {}) {
   const view = buildViewModel(state.experiment, state.values, { chartMode: state.chartMode });
   state.chartMode = view.chart.type;
   state.view = view;
@@ -204,17 +208,18 @@ function renderExperiment({ rebuildControls = true } = {}) {
   nodes.warningText.textContent = view.warnings.join(" ");
   nodes.chartDescription.textContent = `${view.title}的${view.chart.xLabel}与${view.chart.yLabel}关系图。`;
   renderMetrics(view);
-  renderLegend(view);
-  renderChartModes(view);
   renderChart(nodes.resultChart, view.chart);
-  renderExplanation(view);
   if (rebuildControls) renderControls(view);
-
-  document.querySelectorAll("[data-experiment-id]").forEach(card => {
-    const selected = card.dataset.experimentId === view.id;
-    card.classList.toggle("is-active", selected);
-    card.setAttribute("aria-pressed", String(selected));
-  });
+  if (rebuildStatic) {
+    renderLegend(view);
+    renderChartModes(view);
+    renderExplanation(view);
+    document.querySelectorAll("[data-experiment-id]").forEach(card => {
+      const selected = card.dataset.experimentId === view.id;
+      card.classList.toggle("is-active", selected);
+      card.setAttribute("aria-pressed", String(selected));
+    });
+  }
 }
 
 function highlightStage() {
@@ -247,14 +252,21 @@ function syncParameter(event) {
   if (!input) return;
   const parameter = state.experiment.parameters.find(item => item.id === input.dataset.parameterId);
   if (!parameter) return;
-  const value = Math.min(parameter.max, Math.max(parameter.min, Number(input.value)));
-  if (!Number.isFinite(value)) return;
+  const rawValue = input.value.trim();
+  if (rawValue === "") {
+    if (event.type === "change") input.value = String(state.values[parameter.id] ?? parameter.default);
+    return;
+  }
+  const numericValue = Number(rawValue);
+  if (!Number.isFinite(numericValue)) return;
+  if (input.type === "number" && event.type === "input" && (numericValue < parameter.min || numericValue > parameter.max)) return;
+  const value = Math.min(parameter.max, Math.max(parameter.min, numericValue));
   input.value = String(value);
   state.values[parameter.id] = value;
   const pairedSelector = input.type === "range" ? `#number-${parameter.id}` : `#param-${parameter.id}`;
   const paired = document.querySelector(pairedSelector);
   if (paired) paired.value = String(value);
-  renderExperiment({ rebuildControls: false });
+  renderExperiment({ rebuildControls: false, rebuildStatic: false });
 }
 
 function animateCompile(message) {
