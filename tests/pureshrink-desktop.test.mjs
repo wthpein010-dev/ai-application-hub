@@ -125,6 +125,57 @@ test("native process runner passes arguments directly without a shell", async ()
   assert.equal(result.stderr, "");
 });
 
+test("native process runner does not spawn an already-cancelled process", async (t) => {
+  const proofDirectory = mkdtempSync(join(tmpdir(), "pureshrink-pre-cancel-"));
+  t.after(() => rmSync(proofDirectory, { recursive: true, force: true }));
+  const markerPath = join(proofDirectory, "spawned.txt");
+  const controller = new AbortController();
+  controller.abort();
+
+  await assert.rejects(
+    runProcess(
+      process.execPath,
+      [
+        "-e",
+        "require('node:fs').writeFileSync(process.argv[1], 'spawned')",
+        markerPath,
+      ],
+      { signal: controller.signal },
+    ),
+    { name: "AbortError" },
+  );
+  assert.equal(existsSync(markerPath), false);
+});
+
+test("native process runner keeps only a bounded diagnostic tail", async () => {
+  const result = await runProcess(
+    process.execPath,
+    [
+      "-e",
+      "process.stderr.write('x'.repeat(2 * 1024 * 1024) + 'pureshrink-tail')",
+    ],
+  );
+
+  assert.equal(result.code, 0);
+  assert.ok(Buffer.byteLength(result.stderr, "utf8") <= 1024 * 1024);
+  assert.match(result.stderr, /pureshrink-tail$/);
+});
+
+test("media fingerprint honors cancellation before verification starts", async () => {
+  const controller = new AbortController();
+  controller.abort();
+
+  await assert.rejects(
+    mediaFingerprint(
+      process.execPath,
+      "ignored.mp4",
+      "video",
+      { signal: controller.signal },
+    ),
+    { name: "AbortError" },
+  );
+});
+
 test("desktop ZIP work runs in a cancellable worker and removes partial output", async (t) => {
   const proofDirectory = mkdtempSync(join(tmpdir(), "pureshrink-archive-cancel-"));
   t.after(() => rmSync(proofDirectory, { recursive: true, force: true }));
@@ -245,7 +296,7 @@ test("desktop package keeps the local tutorial video functional", () => {
   const packageJson = JSON.parse(readFileSync(desktop("package.json"), "utf8"));
   const [projectResources, sharedResources] = packageJson.build.extraResources;
 
-  assert.equal(packageJson.version, "1.0.3");
+  assert.equal(packageJson.version, "1.0.4");
   assert.equal(packageJson.build.extraResources.length, 2);
   assert.equal(projectResources.from, "../../projects/pureshrink");
   assert.equal(projectResources.to, "app/projects/pureshrink");
