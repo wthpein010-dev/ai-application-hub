@@ -2,7 +2,11 @@ import test from "node:test";
 import assert from "node:assert/strict";
 
 import { analyzeSources } from "../projects/gamespec-relay/app/core/analyzer.js";
-import { BOSS_PHASE_SAMPLE, GAME_GLOSSARY } from "../projects/gamespec-relay/app/data/boss-phase-sample.js";
+import {
+  BOSS_PHASE_CHANGE_SAMPLE,
+  BOSS_PHASE_SAMPLE,
+  GAME_GLOSSARY,
+} from "../projects/gamespec-relay/app/data/boss-phase-sample.js";
 
 function analyze(version = "V1") {
   return analyzeSources({
@@ -46,4 +50,23 @@ test("analysis IDs are stable across identical runs and version may change indep
   assert.deepEqual(v1.tasks.map((task) => task.id), v2.tasks.map((task) => task.id));
   assert.deepEqual(v1.tests.map((item) => item.id), v2.tests.map((item) => item.id));
   assert.equal(v2.project.version, "V2");
+});
+
+test("confirmed change discussion updates V2 tasks, questions, and regression expectations", () => {
+  const v2 = analyzeSources({
+    projectName: BOSS_PHASE_SAMPLE.projectName,
+    sources: [...BOSS_PHASE_SAMPLE.sources, ...BOSS_PHASE_CHANGE_SAMPLE.sources],
+    glossary: GAME_GLOSSARY,
+    version: "V2",
+  });
+  const client = v2.tasks.find((task) => task.role === "客户端");
+  const audio = v2.tasks.find((task) => task.role === "音频");
+  const hardStunTest = v2.tests.find((item) => item.title.includes("受击硬直"));
+
+  assert.ok(v2.questions.every((question) => question.status === "confirmed"));
+  assert.match(v2.questions.map((question) => question.answer).join("\n"), /新版本 B/);
+  assert.match(client.acceptanceCriteria.join("\n"), /55%/);
+  assert.match(client.acceptanceCriteria.join("\n"), /按钮不参与红屏/);
+  assert.deepEqual(audio.outputs, ["阶段爆发音", "前摇音新版本 B"]);
+  assert.match(hardStunTest.expected.join("\n"), /0\.1 秒内进入二阶段/);
 });

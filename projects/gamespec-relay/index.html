@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="color-scheme" content="dark" />
+    <meta name="theme-color" content="#071512" />
+    <meta name="description" content="GameSpec Relay 将游戏团队群聊、会议纪要和策划文档转成交付任务、验收标准与变更影响。" />
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content="GameSpec Relay · 游戏需求接力 Agent" />
+    <meta property="og:description" content="把游戏团队讨论变成明确决定、跨职能任务、验收标准与 V1/V2 影响。" />
+    <meta property="og:image" content="https://wthpein010-dev.github.io/ai-application-hub/projects/gamespec-relay/og.png" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="GameSpec Relay · 游戏需求接力 Agent" />
+    <meta name="twitter:description" content="讨论 → 决策 → 可验收交付" />
+    <meta name="twitter:image" content="https://wthpein010-dev.github.io/ai-application-hub/projects/gamespec-relay/og.png" />
+    <link rel="icon" href="data:," />
+    <title>GameSpec Relay · 游戏需求接力 Agent</title>
+    <link rel="stylesheet" href="../../assets/subpage-shell.css" />
+    <link rel="stylesheet" href="./shell.css" />
+  </head>
+  <body class="hub-subpage relay-demo-page">
+    <a class="hub-home-link" href="../../index.html#apps" aria-label="返回 AI Application Hub 应用集合">
+      <span class="hub-home-link__icon" aria-hidden="true">←</span>
+      <span>返回主页</span>
+    </a>
+    <header class="topbar">
+      <a class="relay-wordmark" href="./index.html" aria-label="GameSpec Relay 演示首页">
+        <span class="relay-wordmark__mark" aria-hidden="true">GR</span>
+        <span><strong>GameSpec Relay</strong><small>游戏需求接力 Agent</small></span>
+      </a>
+      <div class="topbar-meta" aria-label="产品特性">
+        <span><i aria-hidden="true"></i>离线可用</span>
+        <a href="./video/index.html">3 分钟教学</a>
+      </div>
+    </header>
+    <main class="demo-frame-shell">
+      <div id="relayLoading" class="frame-loading" role="progressbar" aria-label="GameSpec Relay 加载进度" aria-valuemin="0" aria-valuemax="100" aria-valuenow="42">
+        <div class="frame-loading__content">
+          <span class="loading-mark" aria-hidden="true">GR</span>
+          <strong>正在建立游戏交付工作台</strong>
+          <span id="relayLoadingText">装载离线分析器与任务模板…</span>
+          <i aria-hidden="true"><b id="relayLoadingBar"></b></i>
+          <small id="relayLoadingValue">42%</small>
+        </div>
+      </div>
+      <iframe id="relayFrame" src="./app/index.html" title="GameSpec Relay 交互演示" loading="eager" fetchpriority="high"></iframe>
+    </main>
+    <script>
+      const frame = document.querySelector("#relayFrame");
+      const loading = document.querySelector("#relayLoading");
+      const text = document.querySelector("#relayLoadingText");
+      const bar = document.querySelector("#relayLoadingBar");
+      const value = document.querySelector("#relayLoadingValue");
+      function progress(amount, message) {
+        loading.setAttribute("aria-valuenow", String(amount));
+        text.textContent = message;
+        bar.style.width = `${amount}%`;
+        value.textContent = `${amount}%`;
+      }
+      progress(72, "准备 Boss 二阶段演示上下文…");
+      frame.addEventListener("load", () => {
+        progress(100, "工作台已就绪");
+        window.setTimeout(() => loading.classList.add("is-ready"), 180);
+      }, { once: true });
+    </script>
+  </body>
+</html>

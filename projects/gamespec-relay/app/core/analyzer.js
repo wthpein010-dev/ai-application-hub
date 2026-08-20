@@ -197,6 +197,64 @@ function deriveRisks(tasks, questions) {
   return risks;
 }
 
+function applyConfirmedChanges(pack, statements) {
+  const exactChange = (keyword) => statements.find((statement) => statement.text.includes(keyword));
+  const redScreenChange = exactChange("峰值从 70% 降到 55%");
+  const audioChange = exactChange("前摇音选择新版本 B");
+  const uiChange = exactChange("战斗按钮不参与红屏");
+  const hitStunChange = exactChange("硬直结束后 0.1 秒内进入二阶段");
+
+  if (audioChange) {
+    const question = pack.questions.find((item) => item.title.includes("前摇音"));
+    if (question) {
+      question.status = "confirmed";
+      question.answer = "采用前摇音新版本 B";
+      question.evidence = [...question.evidence, extractEvidence(audioChange)];
+    }
+    const task = pack.tasks.find((item) => item.role === "音频");
+    if (task) {
+      task.outputs = ["阶段爆发音", "前摇音新版本 B"];
+      task.evidence = [...task.evidence, extractEvidence(audioChange)];
+    }
+  }
+
+  if (uiChange) {
+    const question = pack.questions.find((item) => /UI|按钮/.test(item.title));
+    if (question) {
+      question.status = "confirmed";
+      question.answer = "战斗按钮不参与红屏";
+      question.evidence = [...question.evidence, extractEvidence(uiChange)];
+    }
+  }
+
+  if (redScreenChange || uiChange) {
+    const task = pack.tasks.find((item) => item.role === "客户端");
+    if (task) {
+      task.acceptanceCriteria = task.acceptanceCriteria.map((criterion) => {
+        if (redScreenChange && criterion.includes("回落至 20%")) return "红屏峰值为 55%，结束时回落至 20%";
+        if (uiChange && criterion.includes("按钮")) return "战斗按钮不参与红屏，红屏期间保持可读和可操作";
+        return criterion;
+      });
+      for (const statement of [redScreenChange, uiChange].filter(Boolean)) {
+        task.evidence = [...task.evidence, extractEvidence(statement)];
+      }
+    }
+    const decision = pack.decisions.find((item) => item.title === "红屏表现时长");
+    if (decision && redScreenChange) {
+      decision.detail = "二阶段红屏保持 0.6 秒，峰值调整为 55%，结束时回落至 20%。";
+      decision.evidence = [...decision.evidence, extractEvidence(redScreenChange)];
+    }
+  }
+
+  if (hitStunChange) {
+    const testCase = pack.tests.find((item) => item.title.includes("受击硬直"));
+    if (testCase) {
+      testCase.expected = ["硬直结束后 0.1 秒内进入二阶段", "阶段表现只播放一次"];
+      testCase.evidence = [...testCase.evidence, extractEvidence(hitStunChange)];
+    }
+  }
+}
+
 export function analyzeSources({ projectName, sources, glossary = [], version = "V1" }) {
   const base = createEmptyDeliveryPack({ projectName, sources, version });
   const statements = segmentSources(base.sources);
@@ -207,6 +265,7 @@ export function analyzeSources({ projectName, sources, glossary = [], version = 
   base.tasks = deriveTasks(statements, glossary);
   base.tests = deriveTests(base.tasks, statements);
   base.risks = deriveRisks(base.tasks, base.questions);
+  applyConfirmedChanges(base, statements);
   const pack = normalizeDeliveryPack(base);
   return assertDeliveryPack(pack);
 }
