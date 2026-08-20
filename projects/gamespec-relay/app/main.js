@@ -7,6 +7,7 @@ import { BOSS_PHASE_CHANGE_SAMPLE, BOSS_PHASE_SAMPLE, GAME_GLOSSARY } from "./da
 import { createRelayStore } from "./store.js";
 
 const store = createRelayStore(localStorage);
+const desktop = window.gameSpecDesktop || null;
 const state = { sources: [], pack: null, savedV1: null, hasChange: false };
 const $ = (selector) => document.querySelector(selector);
 
@@ -205,6 +206,9 @@ function renderPack() {
 function persistCurrentPack() {
   if (!state.pack) return;
   store.saveProject(state.pack);
+  if (window.gameSpecDesktop) {
+    window.gameSpecDesktop.saveProject(state.pack).catch(() => announce("浏览器副本已保存，桌面项目文件保存失败"));
+  }
 }
 
 function announce(message) {
@@ -258,7 +262,11 @@ function renderDiff() {
   $("#openDiff").disabled = false;
 }
 
-function downloadText(name, type, content) {
+async function downloadText(name, type, content) {
+  if (window.gameSpecDesktop) {
+    const result = await window.gameSpecDesktop.exportFile({ name, mime: type.split(";")[0], content });
+    return !result?.canceled;
+  }
   const blob = new Blob([content], { type });
   const href = URL.createObjectURL(blob);
   const link = document.createElement("a");
@@ -268,6 +276,7 @@ function downloadText(name, type, content) {
   link.click();
   link.remove();
   window.setTimeout(() => URL.revokeObjectURL(href), 0);
+  return true;
 }
 
 $("#loadSample").addEventListener("click", () => {
@@ -353,17 +362,14 @@ $("#loadChangeSample").addEventListener("click", () => {
 
 $("#openDiff").addEventListener("click", () => setStep("versions"));
 
-$("#exportMarkdown").addEventListener("click", () => {
-  downloadText("GameSpec-Relay-DeliveryPack.md", "text/markdown;charset=utf-8", toMarkdown(state.pack));
-  announce("Markdown 已导出");
+$("#exportMarkdown").addEventListener("click", async () => {
+  if (await downloadText("GameSpec-Relay-DeliveryPack.md", "text/markdown;charset=utf-8", toMarkdown(state.pack))) announce("Markdown 已导出");
 });
-$("#exportJson").addEventListener("click", () => {
-  downloadText("GameSpec-Relay-DeliveryPack.json", "application/json;charset=utf-8", toJson(state.pack));
-  announce("JSON 已导出");
+$("#exportJson").addEventListener("click", async () => {
+  if (await downloadText("GameSpec-Relay-DeliveryPack.json", "application/json;charset=utf-8", toJson(state.pack))) announce("JSON 已导出");
 });
-$("#exportCsv").addEventListener("click", () => {
-  downloadText("GameSpec-Relay-Tasks.csv", "text/csv;charset=utf-8", `\uFEFF${toTaskCsv(state.pack)}`);
-  announce("任务 CSV 已导出");
+$("#exportCsv").addEventListener("click", async () => {
+  if (await downloadText("GameSpec-Relay-Tasks.csv", "text/csv;charset=utf-8", `\uFEFF${toTaskCsv(state.pack)}`)) announce("任务 CSV 已导出");
 });
 $("#copyCodex").addEventListener("click", async () => {
   const content = toCodexContext(state.pack);
@@ -406,6 +412,19 @@ $("#sourceFiles").addEventListener("change", async (event) => {
   event.target.value = "";
 });
 
+if (desktop) {
+  document.querySelector('label[for="sourceFiles"]').addEventListener("click", async (event) => {
+    event.preventDefault();
+    const sources = await window.gameSpecDesktop.openSources();
+    if (!sources.length) return;
+    state.sources = sources;
+    state.hasChange = false;
+    $("#sourceInput").value = sourceText(state.sources);
+    renderSources();
+    announce(`已从桌面导入 ${sources.length} 个来源`);
+  });
+}
+
 document.querySelectorAll("[data-step-target]").forEach((button) => button.addEventListener("click", () => setStep(button.dataset.stepTarget)));
 
 $("#modelSettings").addEventListener("click", () => $("#modelDialog").showModal());
@@ -435,6 +454,9 @@ $("#runModelAnalysis").addEventListener("click", async () => {
     content: $("#sourceInput").value,
   }];
   try {
+    if (desktop) {
+      await window.gameSpecDesktop.configureModel({ endpoint, model, apiKey });
+    }
     state.pack = await runCompatibleModel({ endpoint, model, apiKey, sources });
     announce("模型结果已通过本地 DeliveryPack 门禁");
   } catch {
@@ -470,6 +492,22 @@ if (state.pack) {
   $("#sourceInput").value = sourceText(state.sources);
   renderPack();
   renderDiff();
+}
+
+if (desktop) {
+  window.gameSpecDesktop.getModelStatus().then((status) => {
+    if (status?.configured) $("#modelSettings").textContent = "模型已配置";
+  });
+  if (!state.pack) {
+    window.gameSpecDesktop.loadProject().then((project) => {
+      if (!project || state.pack) return;
+      state.pack = project;
+      state.sources = structuredClone(project.sources || []);
+      $("#sourceInput").value = sourceText(state.sources);
+      renderPack();
+      renderSources();
+    });
+  }
 }
 
 renderSources();
