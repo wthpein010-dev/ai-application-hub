@@ -9,14 +9,14 @@ import { loadDefaultAppsFromRuntime } from "./helpers/default-apps.mjs";
 const root = dirname(dirname(fileURLToPath(import.meta.url)));
 const runtime = await readFile(join(root, "app-20260706-restore-games.js"), "utf8");
 
-test("GameSpec Relay is the final application with four real actions", () => {
+test("GameSpec Relay keeps four real actions immediately before the newer Radar card", () => {
   const apps = loadDefaultAppsFromRuntime(runtime);
   const matches = apps.filter((app) => app.id === "gamespec-relay");
 
   assert.equal(matches.length, 1, "the catalog should contain one GameSpec Relay card");
   const relay = matches[0];
   assert.equal(relay.status, "assistant");
-  assert.equal(apps.filter((app) => app.status === "assistant").at(-1).id, relay.id);
+  assert.equal(apps[apps.indexOf(relay) + 1]?.id, "x-ai-codex-radar");
   assert.equal(relay.entry, "./projects/gamespec-relay/index.html");
   assert.equal(relay.video, "./projects/gamespec-relay/video/index.html");
   assert.equal(
