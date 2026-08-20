@@ -59,6 +59,15 @@ test("engineering cards retain the demo action and expose a tutorial video when 
   assert.match(engineeringRenderer, /data-action="video"/);
 });
 
+test("fill what stale saved cards migrate to the real tutorial video", () => {
+  const fillWhatMigration = runtime.slice(
+    runtime.indexOf('if (normalized.id === "fill-what")'),
+    runtime.indexOf('if (normalized.id === "web-media-collector")')
+  );
+
+  assert.match(fillWhatMigration, /normalized\.video = "\.\/projects\/fill-what\/\\u89c6\\u9891\\u8d44\\u6e90\/index\.html"/);
+});
+
 test("every video page follows the shared Hub player contract", () => {
   assert.equal(existsSync(join(root, "assets", "hub-video-player.css")), true);
   assert.equal(existsSync(join(root, "assets", "hub-video-player.js")), true);

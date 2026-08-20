@@ -1555,6 +1555,7 @@ function normalizeApp(app) {
   }
   if (normalized.id === "fill-what") {
     normalized.entry = "./projects/fill-what/index.html";
+    normalized.video = "./projects/fill-what/\u89c6\u9891\u8d44\u6e90/index.html";
     normalized.package = "";
     normalized.platforms = {
       web: { href: "./projects/fill-what/index.html", label: "演示" },

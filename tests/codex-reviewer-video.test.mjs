@@ -4,13 +4,15 @@ import { readFileSync } from "node:fs";
 import { spawnSync as childSpawnSync } from "node:child_process";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
-import { inspectMedia } from "./media-inspect.mjs";
+import { findMediaTool, inspectMedia } from "./media-inspect.mjs";
 
 const root = dirname(dirname(fileURLToPath(import.meta.url)));
 const source = readFileSync(join(root, "app-20260706-restore-games.js"), "utf8");
+const ffmpeg = findMediaTool("ffmpeg");
+const ffprobe = findMediaTool("ffprobe");
 
 function spawnSync(command, args, options) {
-  if (command === (process.env.FFPROBE_PATH || "ffprobe")) {
+  if (command === ffprobe) {
     const media = inspectMedia(args.at(-1));
     return {
       status: 0,
@@ -64,7 +66,7 @@ test("recording script builds Chinese paths without depending on PowerShell sour
 });
 
 test("codex reviewer walkthrough is 1080p with audio and under three minutes", () => {
-  const probe = spawnSync(process.env.FFPROBE_PATH || "ffprobe", [
+  const probe = spawnSync(ffprobe, [
     "-v", "error",
     "-show_entries", "format=duration:stream=codec_type,codec_name,width,height",
     "-of", "json",
@@ -78,7 +80,7 @@ test("codex reviewer walkthrough is 1080p with audio and under three minutes", (
   assert.equal(audio.codec_name, "aac");
   assert.ok(Number(data.format.duration) >= 120 && Number(data.format.duration) <= 180);
 
-  const decode = spawnSync(process.env.FFMPEG_PATH || "ffmpeg", [
+  const decode = spawnSync(ffmpeg, [
     "-v", "error", "-i",
     join(root, "projects", "Codex对话评分工具", "视频资源", "codex-reviewer-intro.mp4"),
     "-f", "null", "-"

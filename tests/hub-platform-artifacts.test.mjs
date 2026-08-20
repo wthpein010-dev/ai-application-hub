@@ -55,7 +55,6 @@ test("invalid, wrong-project and placeholder archives are not publicly shipped",
     "codex-habit-tool-windows.zip",
     "codex-reviewer-mac-source.zip",
     "codex-reviewer-windows.zip",
-    "fill-what-unity-project.zip",
     "icecream-unity-project.zip",
     "icecream-wechat-minigame.zip",
     "idea-library.zip",
@@ -102,7 +101,6 @@ test("orphan proposal projects are not published as finished products", () => {
 test("entry pages do not keep links to removed source, project or WebGL archives", () => {
   const pages = [
     ["projects/codex-habit-tool/index.html", "codex-habit-tool-windows.zip"],
-    ["projects/fill-what/index.html", "fill-what-unity-project.zip"],
     ["projects/minigame-project-tool/index.html", "minigame-project-simulator-windows.zip"],
     ["projects/paws-home-client/index.html", "paws-home-client-webgl.zip"],
     ["projects/朋友圈发图神器/01_作品体验入口/网页素材一键收桌面版/index.html", "web-media-collector-desktop-source.zip"],
@@ -112,6 +110,17 @@ test("entry pages do not keep links to removed source, project or WebGL archives
     const html = readFileSync(join(root, ...path.split("/")), "utf8");
     assert.doesNotMatch(html, new RegExp(forbidden.replaceAll(".", "\\.")), `${path} still links ${forbidden}`);
   }
+});
+
+test("Fill What keeps its Unity source download on the demo page only", () => {
+  const app = apps.find((item) => item.id === "fill-what");
+  assert.deepEqual(actionTypes(app), ["web", "video"]);
+  assert.equal(app.package || "", "");
+  assert.equal(existsSync(join(root, "downloads", "fill-what-unity-project.zip")), true);
+
+  const html = readFileSync(join(root, "projects", "fill-what", "index.html"), "utf8");
+  assert.match(html, /href="\.\.\/\.\.\/downloads\/fill-what-unity-project\.zip"/);
+  assert.match(html, /download>下载Unity工程<\/a>/);
 });
 
 test("Codex Reviewer and Feishu entry actions all point to published resources", () => {

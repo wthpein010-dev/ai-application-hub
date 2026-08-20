@@ -1,11 +1,28 @@
 import { spawnSync } from "node:child_process";
+import { existsSync } from "node:fs";
+import { homedir } from "node:os";
+import { join } from "node:path";
 
-function ffmpegCommand() {
-  return process.env.FFMPEG_PATH || "ffmpeg";
+const mediaToolEnv = {
+  ffmpeg: "FFMPEG_PATH",
+  ffprobe: "FFPROBE_PATH"
+};
+
+export function findMediaTool(name) {
+  const envPath = process.env[mediaToolEnv[name]];
+  if (envPath) return envPath;
+
+  const executable = process.platform === "win32" && !name.endsWith(".exe") ? `${name}.exe` : name;
+  const localCandidate = join(homedir(), "AppData", "Local", "kzip_sogou", executable);
+  if (existsSync(localCandidate)) return localCandidate;
+
+  return name;
 }
 
+const ffmpeg = findMediaTool("ffmpeg");
+
 export function inspectMedia(filePath) {
-  const result = spawnSync(ffmpegCommand(), ["-hide_banner", "-i", filePath], { encoding: "utf8" });
+  const result = spawnSync(ffmpeg, ["-hide_banner", "-i", filePath], { encoding: "utf8" });
   if (result.error) throw result.error;
 
   const output = `${result.stdout || ""}${result.stderr || ""}`;
@@ -24,7 +41,7 @@ export function inspectMedia(filePath) {
 }
 
 export function decodeMedia(filePath) {
-  const result = spawnSync(ffmpegCommand(), ["-v", "error", "-i", filePath, "-f", "null", "-"], { encoding: "utf8" });
+  const result = spawnSync(ffmpeg, ["-v", "error", "-i", filePath, "-f", "null", "-"], { encoding: "utf8" });
   if (result.error) throw result.error;
   return result;
 }
