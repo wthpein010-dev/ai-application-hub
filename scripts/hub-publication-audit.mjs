@@ -187,6 +187,31 @@ async function inspectLocalArtifact(root, href) {
   };
 }
 
+async function fetchOnlineTarget(url, fetchImpl) {
+  let lastError;
+  for (let attempt = 0; attempt < 2; attempt += 1) {
+    try {
+      let response = await fetchImpl(url, {
+        method: "HEAD",
+        redirect: "follow",
+        signal: AbortSignal.timeout(15_000),
+      });
+      if (response.status === 403 || response.status === 405) {
+        response = await fetchImpl(url, {
+          method: "GET",
+          redirect: "follow",
+          headers: { Range: "bytes=0-0" },
+          signal: AbortSignal.timeout(15_000),
+        });
+      }
+      return response;
+    } catch (error) {
+      lastError = error;
+    }
+  }
+  throw lastError;
+}
+
 async function inspectOnlineTargets(report, onlineBaseUrl = "", fetchImpl = fetch) {
   const checked = new Set();
   const base = onlineBaseUrl
@@ -202,15 +227,7 @@ async function inspectOnlineTargets(report, onlineBaseUrl = "", fetchImpl = fetc
       if (checked.has(url.href)) continue;
       checked.add(url.href);
       try {
-        let response = await fetchImpl(url, { method: "HEAD", redirect: "follow", signal: AbortSignal.timeout(15_000) });
-        if (response.status === 403 || response.status === 405) {
-          response = await fetchImpl(url, {
-            method: "GET",
-            redirect: "follow",
-            headers: { Range: "bytes=0-0" },
-            signal: AbortSignal.timeout(15_000),
-          });
-        }
+        const response = await fetchOnlineTarget(url, fetchImpl);
         if (!response.ok && response.status !== 206) {
           report.findings.push(finding("online-target", project.id, url.href, `Public target returned HTTP ${response.status}.`));
         }

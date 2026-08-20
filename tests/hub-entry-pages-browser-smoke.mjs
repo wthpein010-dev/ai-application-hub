@@ -192,10 +192,48 @@ try {
         failures.push(`${viewport.name}/hub ${id} application placement: ${JSON.stringify(placement)}`);
       }
     }
+    const enterCard = '#appGrid article[data-app-id="hub"]';
+    await hubPage.locator(enterCard).focus();
+    await hubPage.keyboard.press("Enter");
+    const afterEnter = await hubPage.evaluate((selector) => ({
+      activeId: document.activeElement?.getAttribute("data-app-id") || "",
+      current: document.querySelector(selector)?.getAttribute("aria-current") || "",
+      selectedId: localStorage.getItem("ai-competition-hub-v2-selected") || "",
+    }), enterCard);
+    if (afterEnter.activeId !== "hub" || afterEnter.current !== "true" || afterEnter.selectedId !== "hub") {
+      failures.push(`${viewport.name}/hub Enter card selection: ${JSON.stringify(afterEnter)}`);
+    }
+    await hubPage.locator(selectedCard).focus();
+    await hubPage.keyboard.press(" ");
+    const afterSpace = await hubPage.evaluate(({ id, selector }) => ({
+      activeId: document.activeElement?.getAttribute("data-app-id") || "",
+      current: document.querySelector(selector)?.getAttribute("aria-current") || "",
+      selectedId: localStorage.getItem("ai-competition-hub-v2-selected") || "",
+    }), { id: selectedId, selector: selectedCard });
+    if (afterSpace.activeId !== selectedId || afterSpace.current !== "true" || afterSpace.selectedId !== selectedId) {
+      failures.push(`${viewport.name}/hub Space card selection: ${JSON.stringify(afterSpace)}`);
+    }
+    const actionLink = '#gameGrid article[data-app-id="fill-what"] a[data-action="web"]';
+    const actionHref = await hubPage.locator(actionLink).getAttribute("href");
+    const actionPagePromise = context.waitForEvent("page");
+    await hubPage.locator(actionLink).click({ modifiers: ["ControlOrMeta"] });
+    const actionPage = await actionPagePromise;
+    await actionPage.waitForLoadState("domcontentloaded");
+    const actionBehavior = {
+      openedUrl: actionPage.url(),
+      expectedUrl: new URL(actionHref, hubPage.url()).href,
+      selectedId: await hubPage.evaluate(() => localStorage.getItem("ai-competition-hub-v2-selected") || ""),
+    };
+    await actionPage.close();
+    if (actionBehavior.openedUrl !== actionBehavior.expectedUrl || actionBehavior.selectedId !== selectedId) {
+      failures.push(`${viewport.name}/hub card action navigation: ${JSON.stringify(actionBehavior)}`);
+    }
+    const pointerId = "simuai";
+    const pointerCard = `#appGrid article[data-app-id="${pointerId}"]`;
     await hubPage.evaluate((selector) => {
       window.__hubCardBeforeSelection = document.querySelector(selector);
-    }, selectedCard);
-    await hubPage.locator(`${selectedCard} h3 .editable-value`).click();
+    }, pointerCard);
+    await hubPage.locator(`${pointerCard} h3 .editable-value`).click();
     const selection = await hubPage.evaluate(({ id, selector }) => ({
       cardPreserved: window.__hubCardBeforeSelection === document.querySelector(selector),
       cardSelected: document.querySelector(selector)?.classList.contains("selected") || false,
@@ -211,7 +249,7 @@ try {
       cardAriaCurrent: document.querySelector(selector)?.getAttribute("aria-current") || "",
       cardAriaSelected: document.querySelector(selector)?.getAttribute("aria-selected") || "",
       gridRole: document.querySelector(selector)?.parentElement?.getAttribute("role") || "",
-    }), { id: selectedId, selector: selectedCard });
+    }), { id: pointerId, selector: pointerCard });
     for (const [condition, ok] of Object.entries({
       cardPreservedWithoutReplay: selection.cardPreserved,
       clickedCardSelected: selection.cardSelected,
@@ -220,8 +258,8 @@ try {
         && selection.cardAriaCurrent === "true"
         && selection.cardAriaSelected === ""
         && selection.gridRole === "",
-      spotlightSynchronized: selection.spotlightName === "馕了个馕",
-      selectedProjectPersisted: selection.storedId === selectedId,
+      spotlightSynchronized: selection.spotlightName === "万象实验室",
+      selectedProjectPersisted: selection.storedId === pointerId,
       navigationStatusSynchronized: selection.repeatedStatusName === ""
         && /^\d{2,}\s*\/\s*\d{2,}$/.test(selection.statusPosition)
         && selection.progressNow > 0

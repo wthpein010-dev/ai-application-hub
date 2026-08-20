@@ -1,9 +1,11 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { existsSync, readFileSync } from "node:fs";
+import { existsSync, lstatSync, mkdtempSync, readFileSync, rmSync } from "node:fs";
+import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { loadDefaultAppsFromRuntime } from "./helpers/default-apps.mjs";
+import { extractValidatedZip, readZipEntries, validateZipEntries } from "./helpers/zip-central-directory.mjs";
 
 const root = dirname(dirname(fileURLToPath(import.meta.url)));
 const runtime = readFileSync(join(root, "app-20260706-restore-games.js"), "utf8");
@@ -114,9 +116,39 @@ test("entry pages do not keep links to removed source, project or WebGL archives
 
 test("Fill What keeps its Unity source download on the demo page only", () => {
   const app = apps.find((item) => item.id === "fill-what");
+  const archivePath = join(root, "downloads", "fill-what-unity-project.zip");
   assert.deepEqual(actionTypes(app), ["web", "video"]);
   assert.equal(app.package || "", "");
-  assert.equal(existsSync(join(root, "downloads", "fill-what-unity-project.zip")), true);
+  assert.equal(existsSync(archivePath), true);
+
+  const entries = validateZipEntries(readZipEntries(archivePath));
+  const normalizedEntries = entries.map((entry) => entry.normalizedPath);
+  const forbiddenDirectories = new Set(["library", "temp", "logs", "obj", ".git"]);
+
+  for (const entry of entries) {
+    const normalized = entry.normalizedPath;
+    assert.equal(
+      normalized.split("/").some((segment) => forbiddenDirectories.has(segment.toLowerCase())),
+      false,
+      `generated directory in Unity source archive: ${entry.name}`,
+    );
+  }
+
+  assert.ok(normalizedEntries.some((entry) => entry.startsWith("Assets/")), "Unity archive must contain Assets/");
+  const manifest = entries.find((entry) => entry.normalizedPath === "Packages/manifest.json");
+  const projectVersion = entries.find((entry) => entry.normalizedPath === "ProjectSettings/ProjectVersion.txt");
+  assert.equal(manifest?.isDirectory, false, "Unity archive must contain a regular Packages/manifest.json");
+  assert.equal(projectVersion?.isDirectory, false, "Unity archive must contain a regular ProjectSettings/ProjectVersion.txt");
+
+  const extractionRoot = mkdtempSync(join(tmpdir(), "fill-what-unity-"));
+  try {
+    extractValidatedZip(archivePath, entries, extractionRoot);
+    assert.equal(lstatSync(join(extractionRoot, "Assets")).isDirectory(), true);
+    assert.equal(lstatSync(join(extractionRoot, "Packages", "manifest.json")).isFile(), true);
+    assert.equal(lstatSync(join(extractionRoot, "ProjectSettings", "ProjectVersion.txt")).isFile(), true);
+  } finally {
+    rmSync(extractionRoot, { recursive: true, force: true, maxRetries: 3 });
+  }
 
   const html = readFileSync(join(root, "projects", "fill-what", "index.html"), "utf8");
   assert.match(html, /href="\.\.\/\.\.\/downloads\/fill-what-unity-project\.zip"/);

@@ -19,10 +19,8 @@ export function findMediaTool(name) {
   return name;
 }
 
-const ffmpeg = findMediaTool("ffmpeg");
-
 export function inspectMedia(filePath) {
-  const result = spawnSync(ffmpeg, ["-hide_banner", "-i", filePath], { encoding: "utf8" });
+  const result = spawnSync(findMediaTool("ffmpeg"), ["-hide_banner", "-i", filePath], { encoding: "utf8" });
   if (result.error) throw result.error;
 
   const output = `${result.stdout || ""}${result.stderr || ""}`;
@@ -41,7 +39,7 @@ export function inspectMedia(filePath) {
 }
 
 export function decodeMedia(filePath) {
-  const result = spawnSync(ffmpeg, ["-v", "error", "-i", filePath, "-f", "null", "-"], { encoding: "utf8" });
+  const result = spawnSync(findMediaTool("ffmpeg"), ["-v", "error", "-i", filePath, "-f", "null", "-"], { encoding: "utf8" });
   if (result.error) throw result.error;
   return result;
 }
