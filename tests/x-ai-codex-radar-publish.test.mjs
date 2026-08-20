@@ -11,12 +11,12 @@ const runtime = readFileSync(join(root, "app-20260706-restore-games.js"), "utf8"
 const apps = loadDefaultAppsFromRuntime(runtime);
 const projectRoot = join(root, "projects", "x-ai-codex-radar");
 
-test("AI / Codex Radar is the final Hub tool with demo and video only", () => {
+test("X intelligence forum is the final Hub tool with demo and video only", () => {
   const radar = apps.find((app) => app.id === "x-ai-codex-radar");
 
   assert.ok(radar, "the Radar catalog card should exist");
   assert.equal(apps.at(-1).id, "x-ai-codex-radar");
-  assert.equal(radar.name, "AI / Codex 雷达");
+  assert.equal(radar.name, "X 情报吧｜AI / Codex 雷达");
   assert.equal(radar.category, "AI 情报工具");
   assert.equal(radar.status, "assistant");
   assert.equal(radar.badge, "AI 情报工具");
@@ -26,7 +26,8 @@ test("AI / Codex Radar is the final Hub tool with demo and video only", () => {
   assert.equal(radar.platforms.mac, "");
   assert.equal(radar.package, "");
   assert.equal(radar.video, "./projects/x-ai-codex-radar/video/index.html");
-  assert.match(radar.brief, /X.*AI.*Codex|AI.*Codex.*X/);
+  assert.match(radar.brief, /马斯克/);
+  assert.match(radar.brief, /Token／额度重置/);
 });
 
 test("the public demo clearly separates sample data from the private live site", () => {
