@@ -122,6 +122,7 @@ test("the Mac audit manifest covers every public Mac action exactly once", () =>
     "codex-thread-workbench",
     "clickflow",
     "pureshrink",
+    "gamespec-relay",
   ]);
   assert.deepEqual(result.extension.map((item) => item.id), ["feishu-downloader"]);
 });
