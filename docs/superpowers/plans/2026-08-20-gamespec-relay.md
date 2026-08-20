@@ -58,7 +58,7 @@
 **Interfaces:**
 - Produces: `createEmptyDeliveryPack(meta)`, `normalizeDeliveryPack(value)`, `assertDeliveryPack(value)`, `BOSS_PHASE_SAMPLE`, `BOSS_PHASE_CHANGE_SAMPLE`, `GAME_GLOSSARY`.
 
-- [ ] **Step 1: Write the failing schema test**
+- [x] **Step 1: Write the failing schema test**
 
 ```js
 import test from "node:test";
@@ -73,12 +73,12 @@ test("DeliveryPack starts with every required collection", () => {
 });
 ```
 
-- [ ] **Step 2: Run the test and verify the missing module failure**
+- [x] **Step 2: Run the test and verify the missing module failure**
 
 Run: `node --test tests/gamespec-relay-schema.test.mjs`
 Expected: FAIL with `ERR_MODULE_NOT_FOUND` for `core/schema.js`.
 
-- [ ] **Step 3: Implement canonical constructors and sample fixtures**
+- [x] **Step 3: Implement canonical constructors and sample fixtures**
 
 ```js
 export function createEmptyDeliveryPack({ projectName, sources = [], version = "V1" }) {
@@ -94,12 +94,12 @@ export function createEmptyDeliveryPack({ projectName, sources = [], version = "
 
 The sample must contain conflicting chat statements, numeric timing requirements, client/VFX/audio/QA concerns, two unresolved decisions, and a V2 change message.
 
-- [ ] **Step 4: Run the schema test**
+- [x] **Step 4: Run the schema test**
 
 Run: `node --test tests/gamespec-relay-schema.test.mjs`
 Expected: PASS.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add projects/gamespec-relay/app/core/schema.js projects/gamespec-relay/app/data/boss-phase-sample.js tests/gamespec-relay-schema.test.mjs
@@ -117,7 +117,7 @@ git commit -m "feat: define GameSpec Relay delivery schema"
 - Consumes: `createEmptyDeliveryPack`, sample sources and glossary.
 - Produces: `analyzeSources({ projectName, sources, glossary, version }) -> DeliveryPack` and `extractEvidence(sentence, source) -> Evidence`.
 
-- [ ] **Step 1: Write analyzer acceptance tests**
+- [x] **Step 1: Write analyzer acceptance tests**
 
 ```js
 test("Boss sample becomes a cross-discipline delivery pack", () => {
@@ -130,12 +130,12 @@ test("Boss sample becomes a cross-discipline delivery pack", () => {
 });
 ```
 
-- [ ] **Step 2: Run analyzer tests to observe missing analyzer**
+- [x] **Step 2: Run analyzer tests to observe missing analyzer**
 
 Run: `node --test tests/gamespec-relay-analyzer.test.mjs`
 Expected: FAIL with `ERR_MODULE_NOT_FOUND`.
 
-- [ ] **Step 3: Implement the staged analyzer**
+- [x] **Step 3: Implement the staged analyzer**
 
 ```js
 export function analyzeSources({ projectName, sources, glossary = [], version = "V1" }) {
@@ -153,12 +153,12 @@ export function analyzeSources({ projectName, sources, glossary = [], version = 
 
 Use stable IDs based on role plus normalized title, not array position, so version comparison is deterministic.
 
-- [ ] **Step 4: Run schema and analyzer tests**
+- [x] **Step 4: Run schema and analyzer tests**
 
 Run: `node --test tests/gamespec-relay-schema.test.mjs tests/gamespec-relay-analyzer.test.mjs`
 Expected: PASS with the fixture thresholds above.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add projects/gamespec-relay/app/core/analyzer.js projects/gamespec-relay/app/core/vocabulary.js tests/gamespec-relay-analyzer.test.mjs
@@ -177,7 +177,7 @@ git commit -m "feat: analyze game discussions offline"
 **Interfaces:**
 - Produces: `evaluateDeliveryPack(pack)`, `diffDeliveryPacks(before, after)`, `toMarkdown(pack)`, `toJson(pack)`, `toTaskCsv(pack)`, `toCodexContext(pack)`.
 
-- [ ] **Step 1: Write quality, diff, and export tests**
+- [x] **Step 1: Write quality, diff, and export tests**
 
 ```js
 test("quality gate blocks circular dependencies and open hard blockers", () => {
@@ -196,12 +196,12 @@ test("V2 diff returns task and regression-test impact", () => {
 });
 ```
 
-- [ ] **Step 2: Verify the tests fail for missing modules**
+- [x] **Step 2: Verify the tests fail for missing modules**
 
 Run: `node --test tests/gamespec-relay-quality.test.mjs tests/gamespec-relay-diff-export.test.mjs`
 Expected: FAIL with missing `quality.js`, `diff.js`, and `exporters.js`.
 
-- [ ] **Step 3: Implement deterministic validators, semantic diff, and escaped serializers**
+- [x] **Step 3: Implement deterministic validators, semantic diff, and escaped serializers**
 
 ```js
 export function diffDeliveryPacks(before, after) {
@@ -217,12 +217,12 @@ export function diffDeliveryPacks(before, after) {
 
 CSV serialization must escape quotes, commas, and newlines; JSON must include the edited current pack; Markdown and Codex formats must include unresolved blockers and evidence references.
 
-- [ ] **Step 4: Run all core tests**
+- [x] **Step 4: Run all core tests**
 
 Run: `node --test tests/gamespec-relay-*.test.mjs`
 Expected: PASS.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add projects/gamespec-relay/app/core tests/gamespec-relay-quality.test.mjs tests/gamespec-relay-diff-export.test.mjs
@@ -240,7 +240,7 @@ git commit -m "feat: validate compare and export delivery packs"
 **Interfaces:**
 - Produces: `createRelayStore(storage)`, `runCompatibleModel({ endpoint, model, apiKey, sources, fetchImpl })`.
 
-- [ ] **Step 1: Write persistence and adapter tests**
+- [x] **Step 1: Write persistence and adapter tests**
 
 ```js
 test("edited task and confirmed question survive store reload", () => {
@@ -256,12 +256,12 @@ test("model adapter rejects invalid pack and never returns the key", async () =>
 });
 ```
 
-- [ ] **Step 2: Run and verify failures**
+- [x] **Step 2: Run and verify failures**
 
 Run: `node --test tests/gamespec-relay-store.test.mjs tests/gamespec-relay-model-adapter.test.mjs`
 Expected: FAIL with missing modules.
 
-- [ ] **Step 3: Implement immutable persistence and validated adapter fallback contract**
+- [x] **Step 3: Implement immutable persistence and validated adapter fallback contract**
 
 ```js
 export async function runCompatibleModel({ endpoint, model, apiKey, sources, fetchImpl = fetch }) {
@@ -277,12 +277,12 @@ export async function runCompatibleModel({ endpoint, model, apiKey, sources, fet
 
 Browser storage must never persist the API key. The desktop bridge may use the OS user-data settings file, but the renderer receives only `configured: true/false`.
 
-- [ ] **Step 4: Run persistence and adapter tests**
+- [x] **Step 4: Run persistence and adapter tests**
 
 Run: `node --test tests/gamespec-relay-store.test.mjs tests/gamespec-relay-model-adapter.test.mjs`
 Expected: PASS.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add projects/gamespec-relay/app/store.js projects/gamespec-relay/app/core/model-adapter.js tests/gamespec-relay-store.test.mjs tests/gamespec-relay-model-adapter.test.mjs
@@ -304,7 +304,7 @@ git commit -m "feat: persist projects and support optional models"
 - Consumes every core interface and `createRelayStore`.
 - Produces stable DOM contracts: `#loadSample`, `#sourceInput`, `#analyzeButton`, `#decisionList`, `#questionList`, `#taskLanes`, `#healthPanel`, `#saveVersion`, `#loadChangeSample`, `#diffPanel`, and export buttons.
 
-- [ ] **Step 1: Write static page contracts and Playwright scenario**
+- [x] **Step 1: Write static page contracts and Playwright scenario**
 
 ```js
 test("web page exposes the full requirement-to-delivery workflow", async () => {
@@ -315,12 +315,12 @@ test("web page exposes the full requirement-to-delivery workflow", async () => {
 
 The browser smoke must load the sample, analyze, assert 5+ role lanes and 8+ criteria, edit a task, confirm one question, reload and verify persistence, create V2, inspect affected tests, and exercise four exports at `1440×900` and `390×844` with zero horizontal overflow and browser errors.
 
-- [ ] **Step 2: Run tests and verify missing page failure**
+- [x] **Step 2: Run tests and verify missing page failure**
 
 Run: `node --test tests/gamespec-relay-page.test.mjs`
 Expected: FAIL because `projects/gamespec-relay/app/index.html` does not exist.
 
-- [ ] **Step 3: Implement the accessible three-column workbench and mobile stepper**
+- [x] **Step 3: Implement the accessible three-column workbench and mobile stepper**
 
 ```html
 <main class="relay-workbench">
@@ -332,12 +332,12 @@ Expected: FAIL because `projects/gamespec-relay/app/index.html` does not exist.
 
 All controls must have real behavior. Blocking questions use icon plus text, not color alone. The outer page must use `assets/subpage-shell.css`, a fixed `返回主页` link to `../../index.html#apps`, and an iframe loading state matching current Hub subpage conventions.
 
-- [ ] **Step 4: Run static, core, and browser tests**
+- [x] **Step 4: Run static, core, and browser tests**
 
 Run: `node --test tests/gamespec-relay-*.test.mjs && node tests/gamespec-relay-browser-smoke.mjs`
 Expected: PASS on both viewports with no console, page, request, or overflow failures.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add projects/gamespec-relay tests/gamespec-relay-page.test.mjs tests/gamespec-relay-browser-smoke.mjs
@@ -359,7 +359,7 @@ git commit -m "feat: build GameSpec Relay web workbench"
 **Interfaces:**
 - Renderer bridge: `window.gameSpecDesktop.openSources()`, `saveProject(project)`, `loadProject()`, `exportFile({ name, mime, content })`, `getModelStatus()`, and `configureModel(settings)`.
 
-- [ ] **Step 1: Write desktop security and package-contract tests**
+- [x] **Step 1: Write desktop security and package-contract tests**
 
 ```js
 test("desktop BrowserWindow isolates the renderer", async () => {
@@ -370,12 +370,12 @@ test("desktop BrowserWindow isolates the renderer", async () => {
 });
 ```
 
-- [ ] **Step 2: Run the contract test**
+- [x] **Step 2: Run the contract test**
 
 Run: `node --test tests/gamespec-relay-desktop.test.mjs`
 Expected: FAIL because the desktop build directory does not exist.
 
-- [ ] **Step 3: Implement the minimal IPC bridge, smoke mode, and locked build scripts**
+- [x] **Step 3: Implement the minimal IPC bridge, smoke mode, and locked build scripts**
 
 ```js
 const window = new BrowserWindow({
@@ -386,13 +386,13 @@ const window = new BrowserWindow({
 
 `--smoke-test` must open the packaged app, invoke the built-in sample through the renderer, assert an export payload is generated, and exit with code 0. The Windows target is portable x64; macOS targets are x64 and arm64 directories zipped without losing executable bits.
 
-- [ ] **Step 4: Install, test, and build the local Windows package**
+- [x] **Step 4: Install, test, and build the local Windows package**
 
 Run: `npm ci && npm test && npm run dist:win && node scripts/verify-package.mjs dist windows`
 Working directory: `build/gamespec-relay-desktop`
 Expected: all tests pass, a non-empty Windows executable exists, and package verification reports `windows-native`.
 
-- [ ] **Step 5: Launch packaged smoke mode and commit**
+- [x] **Step 5: Launch packaged smoke mode and commit**
 
 Run: `Start-Process -FilePath '.\dist\GameSpec-Relay-Windows-x64.exe' -ArgumentList '--smoke-test' -Wait -PassThru`
 Expected: exit code 0.
@@ -413,7 +413,7 @@ git commit -m "feat: package GameSpec Relay desktop app"
 - Tag: `gamespec-relay-v1.0.0`.
 - Assets: `GameSpec-Relay-Windows-x64.zip`, `GameSpec-Relay-macOS.zip`, `SHA256SUMS.txt`.
 
-- [ ] **Step 1: Write workflow contract tests**
+- [x] **Step 1: Write workflow contract tests**
 
 ```js
 test("release workflow builds and launches every target", async () => {
@@ -424,21 +424,21 @@ test("release workflow builds and launches every target", async () => {
 });
 ```
 
-- [ ] **Step 2: Run and verify missing workflow failure**
+- [x] **Step 2: Run and verify missing workflow failure**
 
 Run: `node --test tests/gamespec-relay-release-workflow.test.mjs`
 Expected: FAIL because the workflow is absent.
 
-- [ ] **Step 3: Implement three build jobs plus immutable release assembly**
+- [x] **Step 3: Implement three build jobs plus immutable release assembly**
 
 Use Windows x64, Intel macOS, and Apple Silicon macOS runners. Each job runs locked install, core tests, packaged build, architecture verification, ad-hoc signing on macOS, and packaged smoke mode. The release job combines both `.app` variants under `x64/` and `arm64/`, emits SHA-256, and refuses to replace an existing release.
 
-- [ ] **Step 4: Run workflow and desktop contract tests**
+- [x] **Step 4: Run workflow and desktop contract tests**
 
 Run: `node --test tests/gamespec-relay-desktop.test.mjs tests/gamespec-relay-release-workflow.test.mjs`
 Expected: PASS.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add .github/workflows/build-gamespec-relay-release.yml projects/gamespec-relay/release-notes.md tests/gamespec-relay-release-workflow.test.mjs
@@ -456,7 +456,7 @@ git commit -m "ci: build GameSpec Relay desktop releases"
 - Catalog ID: `gamespec-relay`, status `assistant`, application-grid last item.
 - URLs: `./projects/gamespec-relay/index.html`, `./projects/gamespec-relay/video/index.html`, immutable v1.0.0 release asset URLs.
 
-- [ ] **Step 1: Write publication tests**
+- [x] **Step 1: Write publication tests**
 
 ```js
 test("GameSpec Relay is the final application with four real actions", async () => {
@@ -468,12 +468,12 @@ test("GameSpec Relay is the final application with four real actions", async () 
 });
 ```
 
-- [ ] **Step 2: Run and verify missing catalog entry failure**
+- [x] **Step 2: Run and verify missing catalog entry failure**
 
 Run: `node --test tests/gamespec-relay-publish.test.mjs`
 Expected: FAIL because the catalog ID is missing.
 
-- [ ] **Step 3: Append the catalog entry and exact migration rule**
+- [x] **Step 3: Append the catalog entry and exact migration rule**
 
 ```js
 {
@@ -490,12 +490,12 @@ Expected: FAIL because the catalog ID is missing.
 
 Add `gamespec-relay` to the audit's native project set so the audit rejects source or generic archives masquerading as platform builds.
 
-- [ ] **Step 4: Run publication tests and audit**
+- [x] **Step 4: Run publication tests and audit**
 
 Run: `node --test tests/gamespec-relay-publish.test.mjs && npm run audit:hub`
 Expected: tests pass and the audit reports zero findings once release URLs are available; before tagging, online checks are omitted.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add app-20260706-restore-games.js scripts/hub-publication-audit.mjs tests/gamespec-relay-publish.test.mjs
@@ -516,7 +516,7 @@ git commit -m "feat: add GameSpec Relay to the Hub"
 **Interfaces:**
 - Recording manifest chapters at 0, 15, 40, 75, 120, 150, and final duration.
 
-- [ ] **Step 1: Write video-page and media tests**
+- [x] **Step 1: Write video-page and media tests**
 
 ```js
 test("tutorial page uses the shared player and one-line caption track", async () => {
@@ -528,21 +528,21 @@ test("tutorial page uses the shared player and one-line caption track", async ()
 });
 ```
 
-- [ ] **Step 2: Run test and verify missing media/page failure**
+- [x] **Step 2: Run test and verify missing media/page failure**
 
 Run: `node --test tests/gamespec-relay-video.test.mjs`
 Expected: FAIL because the video page and media are missing.
 
-- [ ] **Step 3: Implement deterministic recording and H.264 assembly**
+- [x] **Step 3: Implement deterministic recording and H.264 assembly**
 
 The recording script must drive the real app through sample load, analysis, decision review, task lanes, health gate, V2 diff, and export. The build script must combine captured frames and narrated timing, then use the repository's locked `ffmpeg-static` path to emit 1280×720 H.264/yuv420p with a duration between 150 and 210 seconds.
 
-- [ ] **Step 4: Generate and inspect media**
+- [x] **Step 4: Generate and inspect media**
 
 Run: `node scripts/record-gamespec-relay-demo.mjs && node scripts/build-gamespec-relay-video.mjs && node tests/media-inspect.mjs projects/gamespec-relay/video/gamespec-relay-demo.mp4`
 Expected: H.264, 1280×720, 150-210 seconds, browser-compatible audio/video streams, poster and VTT present.
 
-- [ ] **Step 5: Run video and browser playback tests, then commit**
+- [x] **Step 5: Run video and browser playback tests, then commit**
 
 Run: `node --test tests/gamespec-relay-video.test.mjs && node tests/gamespec-relay-browser-smoke.mjs --video`
 Expected: click-to-load playback advances, captions are `showing`, and no media or browser errors occur.
@@ -561,29 +561,29 @@ git commit -m "feat: add GameSpec Relay tutorial video"
 **Interfaces:**
 - Proof bundle: exact Git commit SHA, release tag/assets/digests, workflow run IDs, Pages run ID, public URLs, video metadata, desktop launch evidence.
 
-- [ ] **Step 1: Run fresh local verification**
+- [x] **Step 1: Run fresh local verification**
 
 Run: `node --test tests/gamespec-relay-*.test.mjs && node tests/gamespec-relay-browser-smoke.mjs && npm run audit:hub && git diff --check`
 Expected: zero failures, zero publication findings, zero browser errors/overflow, and clean whitespace check.
 
-- [ ] **Step 2: Push the feature branch and verify current GitHub write identity**
+- [x] **Step 2: Push the feature branch and verify current GitHub write identity**
 
 Run: `ssh -T git@github.com` followed by a non-force `git push -u origin <feature-branch>`.
 Expected: authentication identifies `wthpein010-dev`; push is a fast-forward creation/update without exposing credentials.
 
-- [ ] **Step 3: Merge through the repository's current protected-main workflow**
+- [x] **Step 3: Merge through the repository's current protected-main workflow**
 
 Create a PR, require the full verification and macOS audit checks, merge only after the exact head SHA is green, and verify `origin/main` contains the feature commit. Do not force-push or overwrite concurrent changes.
 
-- [ ] **Step 4: Tag and verify desktop release**
+- [x] **Step 4: Tag and verify desktop release**
 
 Push `gamespec-relay-v1.0.0` at the verified merged commit. Wait for all three build jobs and release assembly. Download every asset, verify byte size, SHA-256, archive contents, Windows executable, both `.app` architectures, and the workflow smoke evidence.
 
-- [ ] **Step 5: Wait for Pages and perform public browser/media/download acceptance**
+- [x] **Step 5: Wait for Pages and perform public browser/media/download acceptance**
 
 Verify Hub card uniqueness and ordering, all four actions, desktop and 390×844 layouts, complete sample workflow, V2 diff, exports, zero console/request/page errors, video click-to-play and captions, MP4 Range `206`, and all download URLs. Confirm every public text/media file matches the merged commit or release digest.
 
-- [ ] **Step 6: Record confirmed long-term state and close the goal**
+- [x] **Step 6: Record confirmed long-term state and close the goal**
 
 Update both project memories with date, source, status, scope, public URLs, exact SHA, workflow IDs, media duration/hash, package sizes/hashes, platform evidence, test counts, blockers, and next step. Only after the requirement-by-requirement audit proves every item should `update_goal({ status: "complete" })` be called.
 
