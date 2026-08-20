@@ -126,8 +126,54 @@ try {
     const hubPage = await context.newPage();
     const selectedId = "nang-keng-pai-pai-xiang";
     const selectedCard = `#gameGrid article[data-app-id="${selectedId}"]`;
-    await hubPage.goto(`${baseUrl}/index.html#games`, { waitUntil: "domcontentloaded", timeout: 60_000 });
+    await hubPage.goto(`${baseUrl}/index.html`, { waitUntil: "domcontentloaded", timeout: 60_000 });
     await hubPage.waitForSelector(selectedCard);
+    const closedEditor = await hubPage.evaluate(() => {
+      const panel = document.querySelector("#editPanel");
+      const close = document.querySelector("#editClose");
+      close?.focus();
+      return {
+        hidden: panel?.getAttribute("aria-hidden") === "true",
+        inert: Boolean(panel?.inert),
+        focusBlocked: document.activeElement !== close,
+      };
+    });
+    if (!Object.values(closedEditor).every(Boolean)) {
+      failures.push(`${viewport.name}/hub closed editor focus isolation: ${JSON.stringify(closedEditor)}`);
+    }
+    await hubPage.locator("#exportButton").click();
+    const openEditor = await hubPage.evaluate(() => {
+      const panel = document.querySelector("#editPanel");
+      const close = document.querySelector("#editClose");
+      close?.focus();
+      return {
+        visible: panel?.getAttribute("aria-hidden") === "false",
+        interactive: panel?.inert === false,
+        focusable: document.activeElement === close,
+      };
+    });
+    if (!Object.values(openEditor).every(Boolean)) {
+      failures.push(`${viewport.name}/hub open editor focus behavior: ${JSON.stringify(openEditor)}`);
+    }
+    await hubPage.locator("#editClose").click();
+    const hubLayout = await hubPage.evaluate(() => {
+      const header = document.querySelector(".top-nav")?.getBoundingClientRect();
+      const hero = document.querySelector("#overview")?.getBoundingClientRect();
+      const applications = document.querySelector("#apps")?.getBoundingClientRect();
+      return {
+        headerHeight: header?.height || 0,
+        heroBottom: (hero?.bottom || 0) + window.scrollY,
+        applicationsTop: (applications?.top || 0) + window.scrollY,
+        overflow: document.documentElement.scrollWidth > document.documentElement.clientWidth + 1,
+      };
+    });
+    if (hubLayout.overflow) failures.push(`${viewport.name}/hub horizontal overflow: ${JSON.stringify(hubLayout)}`);
+    if (viewport.name === "mobile") {
+      if (hubLayout.headerHeight > 120) failures.push(`${viewport.name}/hub compact header: ${JSON.stringify(hubLayout)}`);
+      if (hubLayout.heroBottom > 1_120 || hubLayout.applicationsTop > 1_170) {
+        failures.push(`${viewport.name}/hub compact first screen: ${JSON.stringify(hubLayout)}`);
+      }
+    }
     const catalogPlacement = await hubPage.evaluate((id) => ({
       apps: document.querySelectorAll(`#appGrid article[data-app-id="${id}"]`).length,
       games: document.querySelectorAll(`#gameGrid article[data-app-id="${id}"]`).length,
@@ -160,10 +206,20 @@ try {
       progressNow: Number(document.querySelector(".showcase-status__track")?.getAttribute("aria-valuenow") || 0),
       progressMax: Number(document.querySelector(".showcase-status__track")?.getAttribute("aria-valuemax") || 0),
       legacyDots: document.querySelectorAll(".showcase-dot, [data-dot-id]").length,
+      cardRole: document.querySelector(selector)?.getAttribute("role") || "",
+      cardTabIndex: document.querySelector(selector)?.tabIndex ?? -1,
+      cardAriaCurrent: document.querySelector(selector)?.getAttribute("aria-current") || "",
+      cardAriaSelected: document.querySelector(selector)?.getAttribute("aria-selected") || "",
+      gridRole: document.querySelector(selector)?.parentElement?.getAttribute("role") || "",
     }), { id: selectedId, selector: selectedCard });
     for (const [condition, ok] of Object.entries({
       cardPreservedWithoutReplay: selection.cardPreserved,
       clickedCardSelected: selection.cardSelected,
+      selectedCardAccessible: selection.cardRole === ""
+        && selection.cardTabIndex === 0
+        && selection.cardAriaCurrent === "true"
+        && selection.cardAriaSelected === ""
+        && selection.gridRole === "",
       spotlightSynchronized: selection.spotlightName === "馕了个馕",
       selectedProjectPersisted: selection.storedId === selectedId,
       navigationStatusSynchronized: selection.repeatedStatusName === ""

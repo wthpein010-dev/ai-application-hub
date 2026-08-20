@@ -813,6 +813,9 @@ function bindEvents() {
   nodes.grid.addEventListener("click", handleAppCardClick);
   nodes.gameGrid?.addEventListener("click", handleAppCardClick);
   nodes.engineeringGrid?.addEventListener("click", handleAppCardClick);
+  nodes.grid.addEventListener("keydown", handleAppCardKeydown);
+  nodes.gameGrid?.addEventListener("keydown", handleAppCardKeydown);
+  nodes.engineeringGrid?.addEventListener("keydown", handleAppCardKeydown);
   document.addEventListener("click", handleInlineEditClick);
 
   nodes.prevApp.addEventListener("click", () => switchApp(-1));
@@ -993,7 +996,7 @@ function renderEngineeringGrid(filtered) {
 
 function renderAppCard(app, index = 0, extraClass = "", actionMode = "default") {
   return `
-    <article class="app-card${extraClass} ${app.id === state.selectedId ? "selected" : ""}" data-app-id="${escapeHtml(app.id)}" style="--card-order:${index}">
+    <article class="app-card${extraClass} ${app.id === state.selectedId ? "selected" : ""}" data-app-id="${escapeHtml(app.id)}" tabindex="0" aria-current="${app.id === state.selectedId ? "true" : "false"}" style="--card-order:${index}">
       <div class="card-topline">
         <div class="card-meta">
           <span class="status-badge status-${escapeHtml(app.status)}">${escapeHtml(app.badge || statusLabel[app.status])}</span>
@@ -1025,9 +1028,20 @@ function handleAppCardClick(event) {
   selectApp(card.dataset.appId);
 }
 
+function handleAppCardKeydown(event) {
+  if (!['Enter', ' '].includes(event.key)) return;
+  if (event.target.closest("a, button, .inline-edit-button, .region-edit-button")) return;
+  const card = event.target.closest("[data-app-id]");
+  if (!card) return;
+  event.preventDefault();
+  selectApp(card.dataset.appId);
+}
+
 function updateSelectedCards() {
-  document.querySelectorAll("[data-app-id]").forEach(card => {
-    card.classList.toggle("selected", card.dataset.appId === state.selectedId);
+  document.querySelectorAll("article.app-card[data-app-id]").forEach(card => {
+    const selected = card.dataset.appId === state.selectedId;
+    card.classList.toggle("selected", selected);
+    card.setAttribute("aria-current", String(selected));
   });
 }
 
@@ -1237,6 +1251,7 @@ function setEditMode(active) {
   state.editing = active;
   document.body.classList.toggle("editing", state.editing);
   nodes.editPanel.setAttribute("aria-hidden", String(!state.editing));
+  nodes.editPanel.inert = !state.editing;
   nodes.exportButton.textContent = state.editing ? "退出编辑" : "编辑";
   renderEditForm();
 }
@@ -1349,8 +1364,18 @@ function loadPageText() {
   return normalizePageText();
 }
 
+function isCorruptedEditableText(value) {
+  if (value.includes("\uFFFD")) return true;
+  const characters = Array.from(value.replace(/\s/g, ""));
+  const questionMarks = characters.filter(character => character === "?").length;
+  return questionMarks >= 2 && questionMarks / characters.length >= 0.6;
+}
+
 function normalizePageText(stored = {}) {
   const merged = { ...defaultPageText, ...Object.fromEntries(Object.entries(stored).filter(([key, value]) => key in defaultPageText && typeof value === "string")) };
+  Object.entries(merged).forEach(([key, value]) => {
+    if (isCorruptedEditableText(value)) merged[key] = defaultPageText[key];
+  });
   const staleGameText = {
     "metrics.games": "训练工具",
     "metrics.gamesNote": "答题与训练原型",
