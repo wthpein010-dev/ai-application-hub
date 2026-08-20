@@ -1,7 +1,26 @@
 import { spawnSync } from "node:child_process";
+import { existsSync } from "node:fs";
+import { homedir } from "node:os";
+import { join } from "node:path";
+
+const mediaToolEnv = {
+  ffmpeg: "FFMPEG_PATH",
+  ffprobe: "FFPROBE_PATH"
+};
+
+export function findMediaTool(name) {
+  const envPath = process.env[mediaToolEnv[name]];
+  if (envPath) return envPath;
+
+  const executable = process.platform === "win32" && !name.endsWith(".exe") ? `${name}.exe` : name;
+  const localCandidate = join(homedir(), "AppData", "Local", "kzip_sogou", executable);
+  if (existsSync(localCandidate)) return localCandidate;
+
+  return name;
+}
 
 function ffmpegCommand() {
-  return process.env.FFMPEG_PATH || "ffmpeg";
+  return findMediaTool("ffmpeg");
 }
 
 export function inspectMedia(filePath) {
