@@ -64,10 +64,10 @@
       "id": "pureshrink",
       "name": "无损压缩工坊",
       "kind": "native",
-      "catalogUrl": "https://github.com/wthpein010-dev/ai-application-hub/releases/download/pureshrink-v1.0.3/PureShrink-macOS.zip",
-      "archiveUrl": "https://github.com/wthpein010-dev/ai-application-hub/releases/download/pureshrink-v1.0.3/PureShrink-macOS.zip",
-      "bytes": 313421626,
-      "sha256": "D3AD9964171BA5943B2FB520846918E5BA5B142A0EB398D5FD2A17D328280ED1",
+      "catalogUrl": "https://github.com/wthpein010-dev/ai-application-hub/releases/download/pureshrink-v1.0.4/PureShrink-macOS.zip",
+      "archiveUrl": "https://github.com/wthpein010-dev/ai-application-hub/releases/download/pureshrink-v1.0.4/PureShrink-macOS.zip",
+      "bytes": 313423419,
+      "sha256": "49CCCBED9A1C083398EAC0601BA40AEBD3D72C98EB3F26E76358FA14EC49199D",
       "architectures": [
         "arm64",
         "x64"

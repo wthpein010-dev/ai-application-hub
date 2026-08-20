@@ -61,11 +61,11 @@ test("PureShrink follows ClickFlow and exposes four publication actions", () => 
   assert.equal(item.video, "./projects/pureshrink/video/index.html");
   assert.equal(item.platforms.web, "./projects/pureshrink/index.html");
   assert.deepEqual(JSON.parse(JSON.stringify(item.platforms.windows)), {
-    href: "https://github.com/wthpein010-dev/ai-application-hub/releases/download/pureshrink-v1.0.3/PureShrink-Windows-x64.zip",
+    href: "https://github.com/wthpein010-dev/ai-application-hub/releases/download/pureshrink-v1.0.4/PureShrink-Windows-x64.zip",
     label: "Wins下载",
   });
   assert.deepEqual(JSON.parse(JSON.stringify(item.platforms.mac)), {
-    href: "https://github.com/wthpein010-dev/ai-application-hub/releases/download/pureshrink-v1.0.3/PureShrink-macOS.zip",
+    href: "https://github.com/wthpein010-dev/ai-application-hub/releases/download/pureshrink-v1.0.4/PureShrink-macOS.zip",
     label: "Mac下载",
   });
 });
@@ -107,7 +107,7 @@ test("PureShrink migration preserves a customized name", () => {
   assert.equal(migrated.badge, "辅助工具");
 });
 
-test("PureShrink keeps the last verified downloads until replacement assets are published", () => {
+test("PureShrink exposes only the published 1.0.4 downloads", () => {
   assert.equal(existsSync(project("index.html")), true);
   assert.equal(existsSync(project("release-manifest.json")), true);
 
@@ -118,8 +118,8 @@ test("PureShrink keeps the last verified downloads until replacement assets are 
   ].join("\n");
 
   assert.doesNotMatch(publicFiles, /C:\\Users|localhost|127\.0\.0\.1|file:\/\//);
-  assert.match(publicFiles, /pureshrink-v1\.0\.3/);
-  assert.doesNotMatch(publicFiles, /pureshrink-v1\.0\.4/);
+  assert.match(publicFiles, /pureshrink-v1\.0\.4/);
+  assert.doesNotMatch(publicFiles, /pureshrink-v1\.0\.3/);
   assert.match(publicFiles, /PureShrink-Windows-x64\.zip/);
   assert.match(publicFiles, /PureShrink-macOS\.zip/);
 });
@@ -127,8 +127,8 @@ test("PureShrink keeps the last verified downloads until replacement assets are 
 test("PureShrink manifest identifies independently built platform assets", () => {
   const manifest = JSON.parse(readFileSync(project("release-manifest.json"), "utf8"));
 
-  assert.equal(manifest.tag, "pureshrink-v1.0.3");
-  assert.equal(manifest.releaseUrl, "https://github.com/wthpein010-dev/ai-application-hub/releases/tag/pureshrink-v1.0.3");
+  assert.equal(manifest.tag, "pureshrink-v1.0.4");
+  assert.equal(manifest.releaseUrl, "https://github.com/wthpein010-dev/ai-application-hub/releases/tag/pureshrink-v1.0.4");
   assert.equal(manifest.assets.windows.name, "PureShrink-Windows-x64.zip");
   assert.equal(manifest.assets.windows.builtOn, "windows-latest");
   assert.equal(manifest.assets.mac.name, "PureShrink-macOS.zip");
@@ -139,8 +139,8 @@ test("PureShrink manifest identifies independently built platform assets", () =>
 test("PureShrink manifest records immutable release assets and native verification", () => {
   const manifest = JSON.parse(readFileSync(project("release-manifest.json"), "utf8"));
 
-  assert.equal(manifest.commit, "997f226e304c51a98eb2fc68cd15037aeb9f93e7");
-  assert.equal(manifest.publishedAt, "2026-07-30T07:11:32Z");
+  assert.equal(manifest.commit, "4cb206a7a1acc59b126c0bc58ed63738455fdfb5");
+  assert.equal(manifest.publishedAt, "2026-08-20T02:02:10Z");
   assert.deepEqual(
     {
       runId: manifest.releaseWorkflow.runId,
@@ -151,12 +151,12 @@ test("PureShrink manifest records immutable release assets and native verificati
       publishJobId: manifest.releaseWorkflow.jobs.publish.jobId,
     },
     {
-      runId: 30521751161,
+      runId: 32322762106,
       conclusion: "success",
-      windowsJobId: 90803504070,
-      arm64JobId: 90803504082,
-      x64JobId: 90803504054,
-      publishJobId: 90804296989,
+      windowsJobId: 96287999527,
+      arm64JobId: 96287999680,
+      x64JobId: 96287999618,
+      publishJobId: 96288829560,
     },
   );
 
@@ -169,8 +169,8 @@ test("PureShrink manifest records immutable release assets and native verificati
       proof: manifest.assets.windows.verification.nativeRunner.proof,
     },
     {
-      bytes: 117970855,
-      sha256: "a1f5533b77d40600bad8cd7ff042486768242bf5b236d35448c92d8537d46489",
+      bytes: 117971010,
+      sha256: "075be39c64b91cd5a94da06f5187970eebe923ab21bb702e00a9ddb4d633e827",
       smokeExitCode: 0,
       archiveTest: "Public ZIP central directory verified",
       proof: "PURESHRINK_NATIVE_PROCESSING_OK",
@@ -191,7 +191,7 @@ test("PureShrink manifest records immutable release assets and native verificati
         "PureShrink-Windows-x64/PureShrink.exe",
         "PureShrink-Windows-x64/README.md",
       ],
-      executableBytes: 117952680,
+      executableBytes: 117952799,
     },
   );
 
@@ -209,7 +209,7 @@ test("PureShrink manifest records immutable release assets and native verificati
       {
         name: "arm64",
         appMachO: "arm64",
-        appSha256: "8a00548d5415ff0719a5f3251bd16f8a23f8f2d23d5fb1a65a26aaf7024ba611",
+        appSha256: "ea73bcfcf4231ad1dc10cc746fef2131fdf6807acb5d247637a5617e0fa8b939",
         ffmpegMachO: "arm64",
         adHocSignatureVerified: true,
         launchSmokeExitCode: 0,
@@ -218,7 +218,7 @@ test("PureShrink manifest records immutable release assets and native verificati
       {
         name: "x64",
         appMachO: "x86_64",
-        appSha256: "a5c232cbaa4d695403b549a71424cd636d45b5d7f57a14303f51f0ac6727d1fa",
+        appSha256: "c4cdcbb0b703a0d6ba593b4af3085feda6d7d8248b3319c336f3affccb6a9cb6",
         ffmpegMachO: "x86_64",
         adHocSignatureVerified: true,
         launchSmokeExitCode: 0,
@@ -238,94 +238,29 @@ test("PureShrink manifest records immutable release assets and native verificati
       checksumSha256: manifest.assets.checksums.sha256,
     },
     {
-      bytes: 313421626,
-      sha256: "d3ad9964171ba5943b2fb520846918e5ba5b142a0eb398d5fd2a17d328280ed1",
+      bytes: 313423419,
+      sha256: "49cccbed9a1c083398eac0601ba40aebd3d72c98eb3f26e76358fa14ec49199d",
       archiveTest: "Public ZIP central directory verified",
       packagedFilesPerArchitecture: 335,
       publicArchiveEntries: 1341,
       checksumBytes: 196,
-      checksumSha256: "15507b0831eb7bd5443d4dbf180984a6ac29d8402ab84985e6c2f9e2b0dba8b4",
+      checksumSha256: "1eb7aee8dcd773a9531146f50ad0ea8eaaa6355b7631aa109582a01031d8b27e",
     },
   );
 });
 
-test("PureShrink manifest records the deployed Pages and public acceptance evidence", () => {
+test("PureShrink manifest does not claim deployment evidence before 1.0.4 reaches Pages", () => {
   const manifest = JSON.parse(readFileSync(project("release-manifest.json"), "utf8"));
 
-  assert.deepEqual(
-    {
-      runId: manifest.pagesWorkflow.runId,
-      commit: manifest.pagesWorkflow.commit,
-      conclusion: manifest.pagesWorkflow.conclusion,
-    },
-    {
-      runId: 30523519262,
-      commit: "d37bf1e52747fb7180569f2e40165474774247dc",
-      conclusion: "success",
-    },
-  );
-  assert.deepEqual(manifest.evidenceDeployment, {
-    commit: "d37bf1e52747fb7180569f2e40165474774247dc",
-    runId: 30523519262,
-    url: "https://github.com/wthpein010-dev/ai-application-hub/actions/runs/30523519262",
-    conclusion: "success",
-    deployedAt: "2026-07-30T07:38:08Z",
+  assert.equal(manifest.pagesWorkflow, null);
+  assert.equal(manifest.evidenceDeployment, null);
+  assert.deepEqual(manifest.publicVerification, {
+    status: "pending",
+    reason: "Awaiting the first GitHub Pages deployment that contains PureShrink 1.0.4",
   });
-  assert.deepEqual(manifest.publicVerification.onlineLossless, {
-    passed: 4,
-    total: 4,
-    genericFile: "README.txt -> inner ZIP -> extracted 1048576 bytes identical",
-    batchZip: "batch ZIP -> inner ZIP -> original bytes identical",
-    png: "decoded RGBA identical; unchanged path covered by regression suite",
-    mp4: "audio and video stream SHA-256 identical; unchanged path covered by regression suite",
-  });
-  assert.deepEqual(manifest.publicVerification.responsive, {
-    compressorWidths: [1440, 390],
-    hubWidth: 390,
-    videoWidth: 390,
-    horizontalOverflow: false,
-  });
-  assert.deepEqual(manifest.publicVerification.video, {
-    codec: "H.264",
-    width: 1280,
-    height: 720,
-    durationSeconds: 42.433333,
-    readyState: 4,
-    playedToSeconds: 1.784415,
-    captionsMode: "showing",
-    rangeStatus: 206,
-  });
-  assert.deepEqual(manifest.publicVerification.vendor, {
-    ffmpegCoreJs: {
-      url: "https://wthpein010-dev.github.io/ai-application-hub/projects/pureshrink/vendor/ffmpeg-core.js",
-      status: 200,
-      bytes: 86309,
-    },
-    ffmpegCoreWasm: {
-      url: "https://wthpein010-dev.github.io/ai-application-hub/projects/pureshrink/vendor/ffmpeg-core.wasm",
-      status: 200,
-      bytes: 24383038,
-    },
-  });
-  assert.deepEqual(manifest.publicVerification.batchDownload, {
-    sourceBytes: 1048576,
-    innerZipBytes: 1151,
-    batchZipBytes: 234,
-    restoredBytes: 1048576,
-    errorRecovered: true,
-    cancellationAborted: true,
-    archiveSignalForwarded: true,
-    workerStatus: 200,
-    fflateStatus: 200,
-  });
-  assert.deepEqual(manifest.publicVerification.deployedHashes.worker, {
-    sha256: "1f892a72b964365dc04115f745d38f9e30b0116aefe88dbc5a4d28dfd638ca03",
-    matchedCommit: true,
-  });
-  assert.equal(manifest.publicVerification.browserErrors, 0);
 });
 
 test("homepage cache key is refreshed for the PureShrink card", () => {
   const html = readFileSync(join(root, "index.html"), "utf8");
-  assert.match(html, /app-20260706-restore-games\.js\?v=20260730-pureshrink-auxiliary/);
+  assert.match(html, /app-20260706-restore-games\.js\?v=[^"]*20260820-pureshrink-v104/);
 });
