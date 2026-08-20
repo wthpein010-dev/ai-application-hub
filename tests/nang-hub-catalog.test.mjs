@@ -156,6 +156,7 @@ test("Nang WebGL retries a transient ranged chunk body before failing", async ()
 
   let attempts = 0;
   const context = {
+    AbortController,
     fetch: async () => {
       attempts += 1;
       return {
@@ -168,6 +169,7 @@ test("Nang WebGL retries a transient ranged chunk body before failing", async ()
       };
     },
     setTimeout: (callback) => callback(),
+    clearTimeout: () => {},
     globalThis: {},
   };
   const source = [
@@ -184,6 +186,103 @@ test("Nang WebGL retries a transient ranged chunk body before failing", async ()
   assert.deepEqual(Array.from(result.bytes), [11, 22]);
   assert.equal(result.complete, false);
   assert.equal(attempts, 2);
+});
+
+test("Nang WebGL aborts a hung ranged chunk before retrying", async () => {
+  const projectRoot = join(root, "projects", "nang-keng-pai-pai-xiang");
+  const preview = readFileSync(join(projectRoot, "index.html"), "utf8");
+  const script = /<script>([\s\S]*?)<\/script>/.exec(preview)?.[1] ?? "";
+  const start = script.indexOf("async function fetchAssetChunkWithRetry");
+  const end = script.indexOf("async function decompressAsset", start);
+  assert.ok(start >= 0, "missing ranged chunk retry helper");
+  assert.ok(end > start, "ranged chunk helper must be defined before decompression");
+
+  let attempts = 0;
+  let aborts = 0;
+  const abortReasons = [];
+  let timerId = 0;
+  const timers = new Map();
+  let markFirstBodyStarted;
+  const firstBodyStarted = new Promise(resolve => {
+    markFirstBodyStarted = resolve;
+  });
+  class TestAbortController {
+    constructor() {
+      const listeners = [];
+      const signal = {
+        reason: undefined,
+        addEventListener: (type, listener) => {
+          if (type === "abort") listeners.push(listener);
+        },
+      };
+      this.signal = signal;
+      this.abort = (reason) => {
+        aborts += 1;
+        abortReasons.push(reason);
+        signal.reason = reason;
+        for (const listener of listeners) listener();
+      };
+    }
+  }
+  const context = {
+    AbortController: TestAbortController,
+    fetch: async (_url, options) => {
+      attempts += 1;
+      if (attempts === 1) {
+        return {
+          ok: true,
+          status: 206,
+          arrayBuffer: () => new Promise((_resolve, reject) => {
+            markFirstBodyStarted();
+            options.signal.addEventListener("abort", () => reject(options.signal.reason));
+          }),
+        };
+      }
+      return {
+        ok: true,
+        status: 206,
+        arrayBuffer: async () => new Uint8Array([11, 22]).buffer,
+      };
+    },
+    setTimeout: (callback, delay) => {
+      timerId += 1;
+      timers.set(timerId, { callback, delay });
+      return timerId;
+    },
+    clearTimeout: (id) => timers.delete(id),
+    globalThis: {},
+  };
+  const source = [
+    script.slice(start, end),
+    "globalThis.fetchAssetChunkWithRetry = fetchAssetChunkWithRetry;",
+  ].join("\n");
+  vm.runInNewContext(source, context);
+
+  const resultPromise = context.globalThis.fetchAssetChunkWithRetry(
+    { url: "Build/WebGL.data.gz?v=test", size: 2 },
+    0,
+    1,
+    3,
+    50,
+  );
+  await firstBodyStarted;
+  const requestTimer = [...timers.entries()].find(([, timer]) => timer.delay === 50);
+  assert.ok(requestTimer, "a hung ranged request must have a bounded attempt timer");
+  timers.delete(requestTimer[0]);
+  requestTimer[1].callback();
+  await new Promise(resolve => setImmediate(resolve));
+  const retryTimer = [...timers.entries()].find(([, timer]) => timer.delay === 600);
+  assert.ok(retryTimer, "the existing retry backoff must run after the timeout abort");
+  timers.delete(retryTimer[0]);
+  retryTimer[1].callback();
+
+  const result = await resultPromise;
+  assert.deepEqual(Array.from(result.bytes), [11, 22]);
+  assert.equal(result.complete, false);
+  assert.equal(attempts, 2);
+  assert.equal(aborts, 1);
+  assert.equal(abortReasons[0]?.message, "资源下载超时，请刷新页面重试。");
+  assert.equal(timers.size, 0);
 });
 
 test("IceCream is named 吃了个冰 and ranks after every other mini-game", () => {
