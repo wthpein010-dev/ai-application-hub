@@ -725,6 +725,39 @@ const defaultApps = [
     risk: 9,
     polish: 9
   },
+  {
+    id: "gamespec-relay",
+    name: "GameSpec Relay",
+    category: "游戏研发效率工具",
+    status: "assistant",
+    badge: "游戏研发 Agent",
+    brief: "把群聊、会议纪要和策划文档转换为决定、阻塞问题、跨职能任务、验收标准、测试与变更影响。",
+    problem: "游戏需求在讨论后仍需人工整理、拆分和补验收口径，信息遗漏会导致跨职能返工。",
+    aiUse: "AI 参与游戏语义分析、证据追溯、任务拆分、质量门禁、变更影响和 Codex 上下文导出；完整示例可离线运行。",
+    folder: "./projects/gamespec-relay/",
+    entry: "./projects/gamespec-relay/index.html",
+    video: "./projects/gamespec-relay/video/index.html",
+    package: "https://github.com/wthpein010-dev/ai-application-hub/releases/tag/gamespec-relay-v1.0.0",
+    platforms: {
+      web: {
+        href: "./projects/gamespec-relay/index.html",
+        label: "演示"
+      },
+      windows: {
+        href: "https://github.com/wthpein010-dev/ai-application-hub/releases/download/gamespec-relay-v1.0.0/GameSpec-Relay-Windows-x64.zip",
+        label: "Wins下载"
+      },
+      mac: {
+        href: "https://github.com/wthpein010-dev/ai-application-hub/releases/download/gamespec-relay-v1.0.0/GameSpec-Relay-macOS.zip",
+        label: "Mac下载"
+      }
+    },
+    tags: ["游戏需求", "跨职能交付", "验收标准", "Vibe Coding"],
+    speed: 10,
+    impact: 10,
+    risk: 9,
+    polish: 9
+  },
 ];
 
 let apps = loadApps();

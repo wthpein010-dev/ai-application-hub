@@ -9,6 +9,7 @@ const NATIVE_PROJECTS = new Set([
   "codex-thread-workbench",
   "clickflow",
   "pureshrink",
+  "gamespec-relay",
 ]);
 const EXTENSION_PROJECTS = new Set(["feishu-downloader"]);
 const PLATFORM_KEYS = ["windows", "mac"];
