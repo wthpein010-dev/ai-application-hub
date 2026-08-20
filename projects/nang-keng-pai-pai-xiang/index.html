@@ -74,6 +74,7 @@
 
       async function fetchAssetChunkWithRetry(asset, start, end, maxAttempts = 3, attemptTimeoutMs = 90000) {
         let lastError;
+        let requestEnd = end;
         for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
           const controller = new AbortController();
           const timeoutId = setTimeout(
@@ -82,8 +83,8 @@
           );
           try {
             const response = await fetch(asset.url, {
-              cache: 'force-cache',
-              headers: { Range: `bytes=${start}-${end}` },
+              cache: attempt === 1 ? 'force-cache' : 'reload',
+              headers: { Range: `bytes=${start}-${requestEnd}` },
               signal: controller.signal
             });
             if (!response.ok) {
@@ -96,7 +97,7 @@
               }
               return { bytes, complete: true };
             }
-            const expectedLength = end - start + 1;
+            const expectedLength = requestEnd - start + 1;
             if (response.status !== 206 || bytes.byteLength !== expectedLength) {
               throw new Error('\u8d44\u6e90\u5206\u6bb5\u54cd\u5e94\u957f\u5ea6\u5f02\u5e38');
             }
@@ -104,6 +105,9 @@
           } catch (error) {
             lastError = error;
             if (attempt === maxAttempts) throw error;
+            if (controller.signal.aborted || error?.message === '\u8d44\u6e90\u5206\u6bb5\u54cd\u5e94\u957f\u5ea6\u5f02\u5e38') {
+              requestEnd = start + Math.floor((requestEnd - start) / 2);
+            }
           } finally {
             clearTimeout(timeoutId);
           }

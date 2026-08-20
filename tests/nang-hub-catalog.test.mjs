@@ -168,7 +168,10 @@ test("Nang WebGL retries a transient ranged chunk body before failing", async ()
         },
       };
     },
-    setTimeout: (callback) => callback(),
+    setTimeout: (callback, delay) => {
+      if (delay < 90000) callback();
+      return 1;
+    },
     clearTimeout: () => {},
     globalThis: {},
   };
@@ -210,6 +213,7 @@ test("Nang WebGL aborts a hung ranged chunk before retrying", async () => {
     constructor() {
       const listeners = [];
       const signal = {
+        aborted: false,
         reason: undefined,
         addEventListener: (type, listener) => {
           if (type === "abort") listeners.push(listener);
@@ -219,6 +223,7 @@ test("Nang WebGL aborts a hung ranged chunk before retrying", async () => {
       this.abort = (reason) => {
         aborts += 1;
         abortReasons.push(reason);
+        signal.aborted = true;
         signal.reason = reason;
         for (const listener of listeners) listener();
       };
@@ -259,9 +264,9 @@ test("Nang WebGL aborts a hung ranged chunk before retrying", async () => {
   vm.runInNewContext(source, context);
 
   const resultPromise = context.globalThis.fetchAssetChunkWithRetry(
-    { url: "Build/WebGL.data.gz?v=test", size: 2 },
+    { url: "Build/WebGL.data.gz?v=test", size: 4 },
     0,
-    1,
+    3,
     3,
     50,
   );
@@ -283,6 +288,59 @@ test("Nang WebGL aborts a hung ranged chunk before retrying", async () => {
   assert.equal(aborts, 1);
   assert.equal(abortReasons[0]?.message, "资源下载超时，请刷新页面重试。");
   assert.equal(timers.size, 0);
+});
+
+test("Nang WebGL shrinks an invalid ranged retry and bypasses the cached body", async () => {
+  const projectRoot = join(root, "projects", "nang-keng-pai-pai-xiang");
+  const preview = readFileSync(join(projectRoot, "index.html"), "utf8");
+  const script = /<script>([\s\S]*?)<\/script>/.exec(preview)?.[1] ?? "";
+  const start = script.indexOf("async function fetchAssetChunkWithRetry");
+  const end = script.indexOf("async function decompressAsset", start);
+  assert.ok(start >= 0, "missing ranged chunk retry helper");
+  assert.ok(end > start, "ranged chunk helper must be defined before decompression");
+
+  const requests = [];
+  let timerId = 0;
+  const context = {
+    AbortController,
+    fetch: async (_url, options) => {
+      requests.push({ cache: options.cache, range: options.headers.Range });
+      return {
+        ok: true,
+        status: 206,
+        arrayBuffer: async () => (
+          requests.length === 1
+            ? new Uint8Array([99]).buffer
+            : new Uint8Array([11, 22]).buffer
+        ),
+      };
+    },
+    setTimeout: (callback, delay) => {
+      timerId += 1;
+      if (delay < 90000) callback();
+      return timerId;
+    },
+    clearTimeout: () => {},
+    globalThis: {},
+  };
+  const source = [
+    script.slice(start, end),
+    "globalThis.fetchAssetChunkWithRetry = fetchAssetChunkWithRetry;",
+  ].join("\n");
+  vm.runInNewContext(source, context);
+
+  const result = await context.globalThis.fetchAssetChunkWithRetry(
+    { url: "Build/WebGL.data.gz?v=test", size: 4 },
+    0,
+    3,
+  );
+
+  assert.deepEqual(Array.from(result.bytes), [11, 22]);
+  assert.equal(result.complete, false);
+  assert.deepEqual(requests, [
+    { cache: "force-cache", range: "bytes=0-3" },
+    { cache: "reload", range: "bytes=0-1" },
+  ]);
 });
 
 test("IceCream is named 吃了个冰 and ranks after every other mini-game", () => {
