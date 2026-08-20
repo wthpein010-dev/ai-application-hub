@@ -9,6 +9,33 @@ import { createSimuAiServer } from "../projects/simuai/server.mjs";
 import { getExperiment } from "../projects/simuai/core/templates.mjs";
 import { resolveQuestion } from "../projects/simuai/core/resolver.mjs";
 
+const FETCH_BLOCKED_DYNAMIC_PORTS = new Set([
+  1719, 1720, 1723, 2049, 3659, 4045, 4190, 5060, 5061, 6000,
+  6566, 6665, 6666, 6667, 6668, 6669, 6679, 6697, 10080,
+]);
+
+async function listenForFetch(server) {
+  while (true) {
+    await new Promise((resolve, reject) => {
+      const onError = (error) => {
+        server.off("listening", onListening);
+        reject(error);
+      };
+      const onListening = () => {
+        server.off("error", onError);
+        resolve();
+      };
+      server.once("error", onError);
+      server.once("listening", onListening);
+      server.listen(0, "127.0.0.1");
+    });
+
+    const { port } = server.address();
+    if (!FETCH_BLOCKED_DYNAMIC_PORTS.has(port)) return `http://127.0.0.1:${port}`;
+    await new Promise((resolve, reject) => server.close((error) => (error ? reject(error) : resolve())));
+  }
+}
+
 test("compiler sends one request and accepts a valid experiment", async () => {
   let calls = 0;
   const experiment = getExperiment("sales-funnel");
@@ -81,11 +108,10 @@ test("proxy forwards a strict request without returning its secret", async t => 
       }), { status: 200 });
     },
   });
-  await new Promise(resolve => server.listen(0, "127.0.0.1", resolve));
+  const origin = await listenForFetch(server);
   t.after(() => new Promise(resolve => server.close(resolve)));
-  const { port } = server.address();
 
-  const response = await fetch(`http://127.0.0.1:${port}/api/compile`, {
+  const response = await fetch(`${origin}/api/compile`, {
     method: "POST",
     headers: { "content-type": "application/json" },
     body: JSON.stringify({ question: "帮我模拟销售漏斗" }),
@@ -111,18 +137,17 @@ test("proxy forwards a strict request without returning its secret", async t => 
 
 test("proxy rejects oversized, unsupported and unconfigured requests safely", async t => {
   const server = createSimuAiServer({ apiKey: "", fetchImpl: fetch });
-  await new Promise(resolve => server.listen(0, "127.0.0.1", resolve));
+  const origin = await listenForFetch(server);
   t.after(() => new Promise(resolve => server.close(resolve)));
-  const { port } = server.address();
 
-  const unsupported = await fetch(`http://127.0.0.1:${port}/api/compile`, {
+  const unsupported = await fetch(`${origin}/api/compile`, {
     method: "POST",
     headers: { "content-type": "application/json" },
     body: JSON.stringify({ question: "短" }),
   });
   assert.equal(unsupported.status, 422);
 
-  const unavailable = await fetch(`http://127.0.0.1:${port}/api/compile`, {
+  const unavailable = await fetch(`${origin}/api/compile`, {
     method: "POST",
     headers: { "content-type": "application/json" },
     body: JSON.stringify({ question: "这是一个可以量化的新问题" }),
@@ -144,9 +169,9 @@ test("proxy rate limits repeated compile requests before calling the upstream mo
       }), { status: 200 });
     },
   });
-  await new Promise(resolve => server.listen(0, "127.0.0.1", resolve));
+  const origin = await listenForFetch(server);
   t.after(() => new Promise(resolve => server.close(resolve)));
-  const endpoint = `http://127.0.0.1:${server.address().port}/api/compile`;
+  const endpoint = `${origin}/api/compile`;
   const request = () => fetch(endpoint, {
     method: "POST",
     headers: { "content-type": "application/json" },
@@ -162,10 +187,10 @@ test("proxy rate limits repeated compile requests before calling the upstream mo
 
 test("static server rejects a malformed encoded path without an unhandled rejection", async t => {
   const server = createSimuAiServer({ apiKey: "" });
-  await new Promise(resolve => server.listen(0, "127.0.0.1", resolve));
+  const origin = await listenForFetch(server);
   t.after(() => new Promise(resolve => server.close(resolve)));
 
-  const response = await fetch(`http://127.0.0.1:${server.address().port}/%`);
+  const response = await fetch(`${origin}/%`);
   assert.equal(response.status, 400);
   assert.match(await response.text(), /Bad request/i);
 });
@@ -192,9 +217,8 @@ test("resolver uses a strong local match without calling the compiler", async ()
 
 test("static server exposes the Hub shared subpage shell without exposing arbitrary parent files", async t => {
   const server = createSimuAiServer({ apiKey: "" });
-  await new Promise(resolve => server.listen(0, "127.0.0.1", resolve));
+  const origin = await listenForFetch(server);
   t.after(() => new Promise(resolve => server.close(resolve)));
-  const origin = `http://127.0.0.1:${server.address().port}`;
 
   const sharedStyle = await fetch(`${origin}/assets/subpage-shell.css`);
   assert.equal(sharedStyle.status, 200);

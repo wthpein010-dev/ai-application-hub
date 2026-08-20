@@ -55,3 +55,24 @@ test("CI external mode reports broken public actions without requiring a Pages b
     && item.projectId === "gamepulse-mini-radar"
     && /HTTP 404/.test(item.message)));
 });
+
+test("CI external mode retries one transient request failure", async () => {
+  const { auditCatalog } = await loadAuditor();
+  const attempts = new Map();
+  const report = await auditCatalog({
+    root,
+    runtime,
+    checkExternalTargets: true,
+    fetchImpl: async (url) => {
+      const key = String(url);
+      const count = (attempts.get(key) || 0) + 1;
+      attempts.set(key, count);
+      if (count === 1) throw new TypeError("transient fetch failure");
+      return { ok: true, status: 200 };
+    },
+  });
+
+  assert.ok(attempts.size > 0);
+  assert.equal(Array.from(attempts.values()).every((count) => count === 2), true);
+  assert.deepEqual(report.findings.filter((item) => item.rule === "online-target"), []);
+});

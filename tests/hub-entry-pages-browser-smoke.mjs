@@ -192,6 +192,42 @@ try {
         failures.push(`${viewport.name}/hub ${id} application placement: ${JSON.stringify(placement)}`);
       }
     }
+    const enterCard = '#appGrid article[data-app-id="hub"]';
+    await hubPage.locator(enterCard).focus();
+    await hubPage.keyboard.press("Enter");
+    const afterEnter = await hubPage.evaluate((selector) => ({
+      activeId: document.activeElement?.getAttribute("data-app-id") || "",
+      current: document.querySelector(selector)?.getAttribute("aria-current") || "",
+      selectedId: localStorage.getItem("ai-competition-hub-v2-selected") || "",
+    }), enterCard);
+    if (afterEnter.activeId !== "hub" || afterEnter.current !== "true" || afterEnter.selectedId !== "hub") {
+      failures.push(`${viewport.name}/hub Enter card selection: ${JSON.stringify(afterEnter)}`);
+    }
+    await hubPage.locator(selectedCard).focus();
+    await hubPage.keyboard.press(" ");
+    const afterSpace = await hubPage.evaluate(({ id, selector }) => ({
+      activeId: document.activeElement?.getAttribute("data-app-id") || "",
+      current: document.querySelector(selector)?.getAttribute("aria-current") || "",
+      selectedId: localStorage.getItem("ai-competition-hub-v2-selected") || "",
+    }), { id: selectedId, selector: selectedCard });
+    if (afterSpace.activeId !== selectedId || afterSpace.current !== "true" || afterSpace.selectedId !== selectedId) {
+      failures.push(`${viewport.name}/hub Space card selection: ${JSON.stringify(afterSpace)}`);
+    }
+    const actionLink = '#gameGrid article[data-app-id="fill-what"] a[data-action="web"]';
+    const actionHref = await hubPage.locator(actionLink).getAttribute("href");
+    const actionPagePromise = context.waitForEvent("page");
+    await hubPage.locator(actionLink).click({ modifiers: ["Control"] });
+    const actionPage = await actionPagePromise;
+    await actionPage.waitForLoadState("domcontentloaded");
+    const actionBehavior = {
+      openedUrl: actionPage.url(),
+      expectedUrl: new URL(actionHref, hubPage.url()).href,
+      selectedId: await hubPage.evaluate(() => localStorage.getItem("ai-competition-hub-v2-selected") || ""),
+    };
+    await actionPage.close();
+    if (actionBehavior.openedUrl !== actionBehavior.expectedUrl || actionBehavior.selectedId !== selectedId) {
+      failures.push(`${viewport.name}/hub card action navigation: ${JSON.stringify(actionBehavior)}`);
+    }
     await hubPage.evaluate((selector) => {
       window.__hubCardBeforeSelection = document.querySelector(selector);
     }, selectedCard);
