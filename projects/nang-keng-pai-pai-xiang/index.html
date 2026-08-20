@@ -47,7 +47,7 @@
       }
 
       const buildUrl = 'Build';
-      const buildVersion = '?v=20260728-gameplay-v2';
+      const buildVersion = '?v=20260820-slot-alignment-guide';
       const loaderUrl = buildUrl + '/WebGL.loader.js' + buildVersion;
       const config = {
         streamingAssetsUrl: 'StreamingAssets',
@@ -59,9 +59,9 @@
       };
 
       const compressedAssets = [
-        { key: 'dataUrl', url: buildUrl + '/WebGL.data.gz' + buildVersion, size: 16079402, type: 'application/octet-stream' },
+        { key: 'dataUrl', url: buildUrl + '/WebGL.data.gz' + buildVersion, size: 16079911, type: 'application/octet-stream' },
         { key: 'frameworkUrl', url: buildUrl + '/WebGL.framework.js.gz' + buildVersion, size: 88308, type: 'text/javascript' },
-        { key: 'codeUrl', url: buildUrl + '/WebGL.wasm.gz' + buildVersion, size: 3452053, type: 'application/wasm' }
+        { key: 'codeUrl', url: buildUrl + '/WebGL.wasm.gz' + buildVersion, size: 3450989, type: 'application/wasm' }
       ];
       const assetProgress = new Map(compressedAssets.map(asset => [asset.key, 0]));
       const assetUrls = [];

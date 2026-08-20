@@ -135,7 +135,7 @@ test("Nang WebGL manifest cache-busts the exact published build sizes", () => {
   const frameworkSize = statSync(join(projectRoot, "Build", "WebGL.framework.js.gz")).size;
   const wasmSize = statSync(join(projectRoot, "Build", "WebGL.wasm.gz")).size;
 
-  assert.match(preview, /const buildVersion = '\?v=20260728-gameplay-v2';/);
+  assert.match(preview, /const buildVersion = '\?v=20260820-slot-alignment-guide';/);
   assert.match(preview, /WebGL\.loader\.js' \+ buildVersion/);
   assert.match(preview, /WebGL\.data\.gz' \+ buildVersion/);
   assert.match(preview, /WebGL\.framework\.js\.gz' \+ buildVersion/);
