@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="color-scheme" content="dark" />
+    <link rel="icon" href="data:," />
+    <title>GameSpec Relay 教学视频</title>
+    <link rel="stylesheet" href="../../../assets/hub-video-player.css" />
+  </head>
+  <body data-hub-video-page>
+    <a class="hub-video-home" href="../../../index.html#apps">返回主页</a>
+    <main class="hub-video-page">
+      <p class="hub-video-kicker">3 分钟上手</p>
+      <h1>GameSpec Relay · 从游戏讨论到可验收交付</h1>
+      <p class="hub-video-description">完整演示如何把 Boss 二阶段讨论转换为可追溯决定、阻塞问题、跨职能任务、验收标准和测试，并用 V2 影响分析控制评审变更。</p>
+      <section class="hub-video-player" aria-label="GameSpec Relay 教学视频">
+        <div class="hub-video-stage">
+          <div class="hub-video-load-card" id="loadCard" role="status">
+            <strong>准备播放教学视频</strong>
+            <p data-hub-video-message>点击后再加载视频，避免打开页面时等待。</p>
+            <button id="loadVideo" type="button">加载并播放视频</button>
+          </div>
+          <video id="introVideo" controls playsinline preload="none" data-src="./gamespec-relay-demo.mp4" poster="./poster.jpg" hidden><track kind="captions" src="./gamespec-relay-demo.vtt" srclang="zh-CN" label="简体中文字幕" default /></video>
+        </div>
+      </section>
+      <nav class="hub-video-actions" aria-label="视频相关入口">
+        <a href="./gamespec-relay-demo.mp4">打开 MP4</a>
+        <a href="../index.html">打开项目</a>
+      </nav>
+      <section class="hub-video-chapters" aria-label="视频章节">
+        <button class="hub-video-chapter" type="button" data-time="0"><time>00:00</time><span>认识需求接力 Agent</span></button>
+        <button class="hub-video-chapter" type="button" data-time="15"><time>00:15</time><span>载入 Boss 示例</span></button>
+        <button class="hub-video-chapter" type="button" data-time="40"><time>00:40</time><span>核对决定与待确认项</span></button>
+        <button class="hub-video-chapter" type="button" data-time="75"><time>01:15</time><span>查看任务、验收与健康度</span></button>
+        <button class="hub-video-chapter" type="button" data-time="120"><time>02:00</time><span>生成 V2 与变更影响</span></button>
+        <button class="hub-video-chapter" type="button" data-time="150"><time>02:30</time><span>导出四类交付包</span></button>
+      </section>
+    </main>
+    <script type="module" src="../../../assets/hub-video-player.js"></script>
+  </body>
+</html>
