@@ -216,7 +216,7 @@ try {
     const actionLink = '#gameGrid article[data-app-id="fill-what"] a[data-action="web"]';
     const actionHref = await hubPage.locator(actionLink).getAttribute("href");
     const actionPagePromise = context.waitForEvent("page");
-    await hubPage.locator(actionLink).click({ modifiers: ["Control"] });
+    await hubPage.locator(actionLink).click({ modifiers: ["ControlOrMeta"] });
     const actionPage = await actionPagePromise;
     await actionPage.waitForLoadState("domcontentloaded");
     const actionBehavior = {
@@ -228,10 +228,12 @@ try {
     if (actionBehavior.openedUrl !== actionBehavior.expectedUrl || actionBehavior.selectedId !== selectedId) {
       failures.push(`${viewport.name}/hub card action navigation: ${JSON.stringify(actionBehavior)}`);
     }
+    const pointerId = "simuai";
+    const pointerCard = `#appGrid article[data-app-id="${pointerId}"]`;
     await hubPage.evaluate((selector) => {
       window.__hubCardBeforeSelection = document.querySelector(selector);
-    }, selectedCard);
-    await hubPage.locator(`${selectedCard} h3 .editable-value`).click();
+    }, pointerCard);
+    await hubPage.locator(`${pointerCard} h3 .editable-value`).click();
     const selection = await hubPage.evaluate(({ id, selector }) => ({
       cardPreserved: window.__hubCardBeforeSelection === document.querySelector(selector),
       cardSelected: document.querySelector(selector)?.classList.contains("selected") || false,
@@ -247,7 +249,7 @@ try {
       cardAriaCurrent: document.querySelector(selector)?.getAttribute("aria-current") || "",
       cardAriaSelected: document.querySelector(selector)?.getAttribute("aria-selected") || "",
       gridRole: document.querySelector(selector)?.parentElement?.getAttribute("role") || "",
-    }), { id: selectedId, selector: selectedCard });
+    }), { id: pointerId, selector: pointerCard });
     for (const [condition, ok] of Object.entries({
       cardPreservedWithoutReplay: selection.cardPreserved,
       clickedCardSelected: selection.cardSelected,
@@ -256,8 +258,8 @@ try {
         && selection.cardAriaCurrent === "true"
         && selection.cardAriaSelected === ""
         && selection.gridRole === "",
-      spotlightSynchronized: selection.spotlightName === "馕了个馕",
-      selectedProjectPersisted: selection.storedId === selectedId,
+      spotlightSynchronized: selection.spotlightName === "万象实验室",
+      selectedProjectPersisted: selection.storedId === pointerId,
       navigationStatusSynchronized: selection.repeatedStatusName === ""
         && /^\d{2,}\s*\/\s*\d{2,}$/.test(selection.statusPosition)
         && selection.progressNow > 0

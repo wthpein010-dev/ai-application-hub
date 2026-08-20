@@ -1,11 +1,11 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { spawnSync } from "node:child_process";
-import { existsSync, mkdtempSync, readFileSync, rmSync, statSync } from "node:fs";
+import { existsSync, lstatSync, mkdtempSync, readFileSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { loadDefaultAppsFromRuntime } from "./helpers/default-apps.mjs";
+import { extractValidatedZip, readZipEntries, validateZipEntries } from "./helpers/zip-central-directory.mjs";
 
 const root = dirname(dirname(fileURLToPath(import.meta.url)));
 const runtime = readFileSync(join(root, "app-20260706-restore-games.js"), "utf8");
@@ -25,23 +25,6 @@ function actionTypes(app) {
     href(app.platforms?.windows) ? "windows" : "",
     href(app.platforms?.mac) ? "mac" : "",
   ].filter(Boolean);
-}
-
-function archiveCommandFailure(result) {
-  return result.error?.message || result.stderr || result.stdout || "archive command failed without output";
-}
-
-function listZipEntries(zipPath) {
-  const result = spawnSync("tar", ["-tf", zipPath], { encoding: "utf8" });
-
-  assert.equal(result.status, 0, archiveCommandFailure(result));
-  return result.stdout.split(/\r?\n/).filter(Boolean);
-}
-
-function extractZip(zipPath, destination) {
-  const result = spawnSync("tar", ["-xf", zipPath, "-C", destination], { encoding: "utf8" });
-
-  assert.equal(result.status, 0, archiveCommandFailure(result));
 }
 
 test("every card exposes actions that match its actual delivery type", () => {
@@ -138,35 +121,31 @@ test("Fill What keeps its Unity source download on the demo page only", () => {
   assert.equal(app.package || "", "");
   assert.equal(existsSync(archivePath), true);
 
-  const entries = listZipEntries(archivePath);
-  const normalizedEntries = entries.map((entry) => entry.replaceAll("\\", "/").replace(/^\.\/+/, ""));
+  const entries = validateZipEntries(readZipEntries(archivePath));
+  const normalizedEntries = entries.map((entry) => entry.normalizedPath);
   const forbiddenDirectories = new Set(["library", "temp", "logs", "obj", ".git"]);
 
-  for (const [index, entry] of entries.entries()) {
-    const normalized = normalizedEntries[index];
-    assert.doesNotMatch(entry, /^[\\/]/, `absolute archive path: ${entry}`);
-    assert.doesNotMatch(entry, /^[A-Za-z]:[\\/]/, `drive-qualified archive path: ${entry}`);
-    assert.equal(normalized.split("/").includes(".."), false, `parent traversal archive path: ${entry}`);
+  for (const entry of entries) {
+    const normalized = entry.normalizedPath;
     assert.equal(
       normalized.split("/").some((segment) => forbiddenDirectories.has(segment.toLowerCase())),
       false,
-      `generated directory in Unity source archive: ${entry}`,
+      `generated directory in Unity source archive: ${entry.name}`,
     );
   }
 
   assert.ok(normalizedEntries.some((entry) => entry.startsWith("Assets/")), "Unity archive must contain Assets/");
-  assert.ok(normalizedEntries.includes("Packages/manifest.json"), "Unity archive must contain Packages/manifest.json");
-  assert.ok(
-    normalizedEntries.includes("ProjectSettings/ProjectVersion.txt"),
-    "Unity archive must contain ProjectSettings/ProjectVersion.txt",
-  );
+  const manifest = entries.find((entry) => entry.normalizedPath === "Packages/manifest.json");
+  const projectVersion = entries.find((entry) => entry.normalizedPath === "ProjectSettings/ProjectVersion.txt");
+  assert.equal(manifest?.isDirectory, false, "Unity archive must contain a regular Packages/manifest.json");
+  assert.equal(projectVersion?.isDirectory, false, "Unity archive must contain a regular ProjectSettings/ProjectVersion.txt");
 
   const extractionRoot = mkdtempSync(join(tmpdir(), "fill-what-unity-"));
   try {
-    extractZip(archivePath, extractionRoot);
-    assert.equal(statSync(join(extractionRoot, "Assets")).isDirectory(), true);
-    assert.equal(statSync(join(extractionRoot, "Packages", "manifest.json")).isFile(), true);
-    assert.equal(statSync(join(extractionRoot, "ProjectSettings", "ProjectVersion.txt")).isFile(), true);
+    extractValidatedZip(archivePath, entries, extractionRoot);
+    assert.equal(lstatSync(join(extractionRoot, "Assets")).isDirectory(), true);
+    assert.equal(lstatSync(join(extractionRoot, "Packages", "manifest.json")).isFile(), true);
+    assert.equal(lstatSync(join(extractionRoot, "ProjectSettings", "ProjectVersion.txt")).isFile(), true);
   } finally {
     rmSync(extractionRoot, { recursive: true, force: true, maxRetries: 3 });
   }
