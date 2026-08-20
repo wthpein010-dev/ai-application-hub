@@ -1,33 +1,33 @@
 {
-  "tag": "pureshrink-v1.0.4",
-  "version": "1.0.4",
-  "commit": "4cb206a7a1acc59b126c0bc58ed63738455fdfb5",
-  "publishedAt": "2026-08-20T02:02:10Z",
-  "releaseUrl": "https://github.com/wthpein010-dev/ai-application-hub/releases/tag/pureshrink-v1.0.4",
+  "tag": "pureshrink-v1.0.5",
+  "version": "1.0.5",
+  "commit": "781806096c852f9242808e3063a57d102fba70a2",
+  "publishedAt": "2026-08-20T03:38:40Z",
+  "releaseUrl": "https://github.com/wthpein010-dev/ai-application-hub/releases/tag/pureshrink-v1.0.5",
   "releaseWorkflow": {
-    "runId": 32322762106,
-    "url": "https://github.com/wthpein010-dev/ai-application-hub/actions/runs/32322762106",
-    "commit": "4cb206a7a1acc59b126c0bc58ed63738455fdfb5",
+    "runId": 32328655224,
+    "url": "https://github.com/wthpein010-dev/ai-application-hub/actions/runs/32328655224",
+    "commit": "781806096c852f9242808e3063a57d102fba70a2",
     "conclusion": "success",
     "jobs": {
       "windows": {
-        "jobId": 96287999527,
-        "url": "https://github.com/wthpein010-dev/ai-application-hub/actions/runs/32322762106/job/96287999527",
+        "jobId": 96304910292,
+        "url": "https://github.com/wthpein010-dev/ai-application-hub/actions/runs/32328655224/job/96304910292",
         "conclusion": "success"
       },
       "macArm64": {
-        "jobId": 96287999680,
-        "url": "https://github.com/wthpein010-dev/ai-application-hub/actions/runs/32322762106/job/96287999680",
+        "jobId": 96304910103,
+        "url": "https://github.com/wthpein010-dev/ai-application-hub/actions/runs/32328655224/job/96304910103",
         "conclusion": "success"
       },
       "macX64": {
-        "jobId": 96287999618,
-        "url": "https://github.com/wthpein010-dev/ai-application-hub/actions/runs/32322762106/job/96287999618",
+        "jobId": 96304910228,
+        "url": "https://github.com/wthpein010-dev/ai-application-hub/actions/runs/32328655224/job/96304910228",
         "conclusion": "success"
       },
       "publish": {
-        "jobId": 96288829560,
-        "url": "https://github.com/wthpein010-dev/ai-application-hub/actions/runs/32322762106/job/96288829560",
+        "jobId": 96305539474,
+        "url": "https://github.com/wthpein010-dev/ai-application-hub/actions/runs/32328655224/job/96305539474",
         "conclusion": "success"
       }
     }
@@ -38,9 +38,9 @@
     "windows": {
       "name": "PureShrink-Windows-x64.zip",
       "builtOn": "windows-latest",
-      "bytes": 117971010,
-      "sha256": "075be39c64b91cd5a94da06f5187970eebe923ab21bb702e00a9ddb4d633e827",
-      "downloadUrl": "https://github.com/wthpein010-dev/ai-application-hub/releases/download/pureshrink-v1.0.4/PureShrink-Windows-x64.zip",
+      "bytes": 117971902,
+      "sha256": "09e8e0d795a67ba9f63ce15b52c54dfc9f83c740189831f9a718d82a136a67ea",
+      "downloadUrl": "https://github.com/wthpein010-dev/ai-application-hub/releases/download/pureshrink-v1.0.5/PureShrink-Windows-x64.zip",
       "entry": "PureShrink-Windows-x64/PureShrink.exe",
       "verification": {
         "ciPackagedFiles": 128,
@@ -52,7 +52,7 @@
         "archiveTest": "Public ZIP central directory verified",
         "smokeExitCode": 0,
         "downloadedExecutable": {
-          "bytes": 117952799,
+          "bytes": 117953652,
           "verification": "Release SHA-256 matched SHA256SUMS; public central-directory size matched CI package"
         },
         "nativeRunner": {
@@ -73,9 +73,9 @@
         "macos-14",
         "macos-15-intel"
       ],
-      "bytes": 313423419,
-      "sha256": "49cccbed9a1c083398eac0601ba40aebd3d72c98eb3f26e76358fa14ec49199d",
-      "downloadUrl": "https://github.com/wthpein010-dev/ai-application-hub/releases/download/pureshrink-v1.0.4/PureShrink-macOS.zip",
+      "bytes": 313422433,
+      "sha256": "228bce72358b2c8b20a30fccafaf7eb50380122023f3b775bfbceadb06f4d820",
+      "downloadUrl": "https://github.com/wthpein010-dev/ai-application-hub/releases/download/pureshrink-v1.0.5/PureShrink-macOS.zip",
       "entries": [
         "arm64/PureShrink.app/Contents/MacOS/PureShrink",
         "x64/PureShrink.app/Contents/MacOS/PureShrink"
@@ -96,7 +96,7 @@
             "name": "arm64",
             "appMachO": "arm64",
             "appBytes": 52112,
-            "appSha256": "ea73bcfcf4231ad1dc10cc746fef2131fdf6807acb5d247637a5617e0fa8b939",
+            "appSha256": "2fe571ca04b14ba998b066b14aaca54cf6c750870fa331c4a6bc57714d408c7c",
             "ffmpegMachO": "arm64",
             "ffmpegBytes": 45568216,
             "ffmpegPackage": "ffmpeg-static@5.2.0",
@@ -113,7 +113,7 @@
             "name": "x64",
             "appMachO": "x86_64",
             "appBytes": 31488,
-            "appSha256": "c4cdcbb0b703a0d6ba593b4af3085feda6d7d8248b3319c336f3affccb6a9cb6",
+            "appSha256": "a39d8a5de17bdda5d8fbe99b0e3ba4d218b7a36925ab36de4093910da0ee9733",
             "ffmpegMachO": "x86_64",
             "ffmpegBytes": 78829164,
             "ffmpegPackage": "ffmpeg-static@5.2.0",
@@ -132,12 +132,12 @@
     "checksums": {
       "name": "SHA256SUMS.txt",
       "bytes": 196,
-      "sha256": "1eb7aee8dcd773a9531146f50ad0ea8eaaa6355b7631aa109582a01031d8b27e",
-      "downloadUrl": "https://github.com/wthpein010-dev/ai-application-hub/releases/download/pureshrink-v1.0.4/SHA256SUMS.txt"
+      "sha256": "8febadfc3f0c78795e2e1dfe4fffbe9d3fdc0b08fbcc60a59b854638f31ae7e8",
+      "downloadUrl": "https://github.com/wthpein010-dev/ai-application-hub/releases/download/pureshrink-v1.0.5/SHA256SUMS.txt"
     }
   },
   "publicVerification": {
     "status": "pending",
-    "reason": "Awaiting the first GitHub Pages deployment that contains PureShrink 1.0.4"
+    "reason": "Awaiting the first GitHub Pages deployment that contains PureShrink 1.0.5"
   }
 }
