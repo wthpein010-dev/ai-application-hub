@@ -77,17 +77,19 @@ async function assertMobileHeaderLayout(page, label) {
 
 try {
   const desktop = await openPage({ width: 1280, height: 720 }, "/projects/x-ai-codex-radar/index.html");
-  assert.equal(await desktop.title(), "AI / Codex 雷达");
+  assert.equal(await desktop.title(), "X 情报吧｜AI / Codex 雷达");
   assert.equal(await desktop.locator("#resultCount").textContent(), "8");
   assert.match(await desktop.locator(".boundary").innerText(), /示例数据/);
   assert.match(await desktop.locator(".secondary-button").innerText(), /需 ChatGPT 登录/);
+  assert.equal(await desktop.locator(".pinned-thread").count(), 3);
+  assert.match(await desktop.locator(".token-status").innerText(), /暂无官方确认/);
   assert.equal(await desktop.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 1), true);
 
-  await desktop.selectOption("#topicFilter", "Codex");
+  await desktop.click('[data-filter="token"]');
   assert.equal(await desktop.locator("#resultCount").textContent(), "2");
-  await desktop.selectOption("#confidenceFilter", "high");
-  await desktop.click('[data-signal-id="codex-review"]');
-  assert.match(await desktop.locator("#detailPanel h3").innerText(), /代码审查/);
+  await desktop.click('[data-thread-id="codex-token-reset"]');
+  assert.match(await desktop.locator("#threadDetail").innerText(), /楼主/);
+  assert.equal(await desktop.locator("#threadDetail .floor").count(), 3);
   await desktop.fill("#searchInput", "不存在的测试词");
   assert.equal(await desktop.locator("#emptyState").isVisible(), true);
   await desktop.click("[data-reset-filters]");
@@ -97,11 +99,11 @@ try {
   const mobile = await openPage({ width: 390, height: 844 }, "/projects/x-ai-codex-radar/index.html");
   assert.equal(await mobile.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 1), true);
   await assertMobileHeaderLayout(mobile, "390px");
-  await mobile.selectOption("#topicFilter", "Agent");
-  assert.equal(await mobile.locator("#resultCount").textContent(), "2");
-  await mobile.click('[data-signal-id="agent-memory"]');
-  assert.match(await mobile.locator("#detailPanel h3").innerText(), /长期记忆/);
-  assert.equal(await mobile.locator("#detailPanel").isVisible(), true);
+  await mobile.click('[data-filter="musk"]');
+  assert.equal(await mobile.locator("#resultCount").textContent(), "1");
+  await mobile.click('[data-thread-id="musk-xai-update"]');
+  assert.match(await mobile.locator("#threadDetail").innerText(), /马斯克本人/);
+  assert.equal(await mobile.locator("#threadDetail").isVisible(), true);
   await mobile.close();
 
   const tablet = await openPage({ width: 760, height: 900 }, "/projects/x-ai-codex-radar/index.html");

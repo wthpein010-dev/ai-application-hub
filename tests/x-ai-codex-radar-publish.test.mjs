@@ -34,7 +34,7 @@ test("the public demo clearly separates sample data from the private live site",
   assert.equal(existsSync(pagePath), true, "the public demo should exist");
   const html = readFileSync(pagePath, "utf8");
 
-  assert.match(html, /<title>AI \/ Codex 雷达<\/title>/);
+  assert.match(html, /<title>X 情报吧｜AI \/ Codex 雷达<\/title>/);
   assert.match(html, /示例数据/);
   assert.match(html, /不代表实时|非实时/);
   assert.match(html, /需 ChatGPT 登录/);
@@ -42,9 +42,10 @@ test("the public demo clearly separates sample data from the private live site",
   assert.match(html, /class="hub-home-link"/);
   assert.match(html, /href="\.\.\/\.\.\/index\.html#apps"/);
   assert.match(html, /id="searchInput"/);
-  assert.match(html, /id="topicFilter"/);
-  assert.match(html, /id="confidenceFilter"/);
-  assert.match(html, /id="signalList"/);
+  assert.match(html, /id="pinnedList"/);
+  assert.match(html, /id="threadList"/);
+  assert.match(html, /id="threadDetail"/);
+  assert.match(html, /data-filter="token"/);
   assert.match(html, /<script type="module" src="\.\/app\.js"><\/script>/);
   assert.equal(existsSync(join(projectRoot, "styles.css")), true);
   assert.equal(existsSync(join(projectRoot, "app.js")), true);
@@ -56,11 +57,11 @@ test("the demo script provides local filtering, detail inspection and reset", ()
   const script = readFileSync(scriptPath, "utf8");
 
   assert.match(script, /addEventListener\(["']input["']/);
-  assert.match(script, /addEventListener\(["']change["']/);
-  assert.match(script, /renderSignals/);
+  assert.match(script, /addEventListener\(["']click["']/);
+  assert.match(script, /renderThreads/);
   assert.match(script, /renderDetail/);
   assert.match(script, /resetFilters/);
-  assert.match(script, /aria-live/);
+  assert.match(readFileSync(join(projectRoot, "index.html"), "utf8"), /aria-live="polite"/);
   assert.doesNotMatch(script, /\bscore\b|SCORE/);
   assert.doesNotMatch(readFileSync(join(projectRoot, "index.html"), "utf8"), /按价值排序/);
 });

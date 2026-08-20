@@ -65,34 +65,36 @@ const browser = await chromium.launch({ headless: true, executablePath: browserE
 const context = await browser.newContext({
   viewport: { width: 1280, height: 720 },
   recordVideo: { dir: captureRoot, size: { width: 1280, height: 720 } },
-  colorScheme: "dark",
+  colorScheme: "light",
 });
 const page = await context.newPage();
 const recording = page.video();
 
 try {
-  console.log("Recording the 78-second walkthrough...");
+  console.log("Recording the forum-style walkthrough...");
   await page.goto(`http://127.0.0.1:${port}/projects/x-ai-codex-radar/index.html`, { waitUntil: "networkidle" });
-  await page.waitForTimeout(8500);
+  await page.waitForTimeout(7000);
   await page.locator(".boundary").scrollIntoViewIfNeeded();
-  await page.waitForTimeout(8500);
-  await page.locator("#signals").scrollIntoViewIfNeeded();
-  await page.waitForTimeout(5500);
-  await page.selectOption("#topicFilter", "Codex");
-  await page.waitForTimeout(5000);
-  await page.selectOption("#confidenceFilter", "high");
-  await page.waitForTimeout(5000);
-  await page.click('[data-signal-id="codex-review"]');
-  await page.waitForTimeout(6500);
-  await page.click("#resetFilters");
-  await page.selectOption("#confidenceFilter", "medium");
-  await page.waitForTimeout(5500);
-  await page.click('[data-signal-id="research-tools"]');
   await page.waitForTimeout(6000);
-  await page.locator(".method").scrollIntoViewIfNeeded();
-  await page.waitForTimeout(9500);
+  await page.locator("#threads").scrollIntoViewIfNeeded();
+  await page.waitForTimeout(5000);
+  await page.click('[data-filter="official"]');
+  await page.waitForTimeout(4000);
+  await page.click('[data-thread-id="codex-official-update"]');
+  await page.waitForTimeout(7000);
+  await page.click('[data-filter="token"]');
+  await page.waitForTimeout(4000);
+  await page.click('[data-thread-id="codex-token-reset"]');
+  await page.locator("#threadDetail").scrollIntoViewIfNeeded();
+  await page.waitForTimeout(8000);
+  await page.click('[data-filter="musk"]');
+  await page.waitForTimeout(4000);
+  await page.click('[data-thread-id="musk-xai-update"]');
+  await page.waitForTimeout(6000);
+  await page.locator(".token-status").scrollIntoViewIfNeeded();
+  await page.waitForTimeout(6000);
   await page.locator("#top").scrollIntoViewIfNeeded();
-  await page.waitForTimeout(8500);
+  await page.waitForTimeout(7000);
 } finally {
   await context.close();
   await browser.close();

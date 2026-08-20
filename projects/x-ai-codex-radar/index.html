@@ -3,10 +3,10 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <meta name="theme-color" content="#07110f" />
-    <meta name="description" content="AI / Codex 雷达公开交互演示：用主题、可信度和证据链整理 X 公开来源中的 AI 与 Codex 信号。" />
+    <meta name="theme-color" content="#3f7fca" />
+    <meta name="description" content="X 情报吧公开演示：贴吧式整理马斯克、Codex 与 OpenAI 官方帖子、更新调整、Token 状态和用户留言。" />
     <link rel="icon" href="data:," />
-    <title>AI / Codex 雷达</title>
+    <title>X 情报吧｜AI / Codex 雷达</title>
     <link rel="stylesheet" href="./styles.css" />
     <link rel="stylesheet" href="../../assets/subpage-shell.css" />
   </head>
@@ -16,13 +16,10 @@
       <span>返回主页</span>
     </a>
 
-    <div class="ambient ambient-one" aria-hidden="true"></div>
-    <div class="ambient ambient-two" aria-hidden="true"></div>
-
     <header class="topbar">
-      <a class="brand" href="#top" aria-label="AI / Codex 雷达首页">
-        <span class="brand-mark" aria-hidden="true"><i></i><i></i><i></i></span>
-        <span><strong>AI / CODEX</strong><small>RADAR · PUBLIC DEMO</small></span>
+      <a class="brand" href="#top" aria-label="X 情报吧首页">
+        <span class="brand-mark" aria-hidden="true">X</span>
+        <span><strong>X 情报吧</strong><small>AI / CODEX RADAR</small></span>
       </a>
       <div class="top-actions">
         <span class="demo-pill"><i aria-hidden="true"></i>示例数据 · 非实时</span>
@@ -31,116 +28,85 @@
     </header>
 
     <main id="top">
-      <section class="hero" aria-labelledby="heroTitle">
-        <div class="hero-copy">
-          <p class="eyebrow"><span>01</span> SIGNAL, NOT NOISE</p>
-          <h1 id="heroTitle">每天少刷 30 分钟，<br /><em>先看值得核验的信号。</em></h1>
-          <p class="hero-lead">把 X 公开来源中分散的 AI 与 Codex 动态，整理成带主题、可信度和证据链的中文情报卡片。</p>
+      <section class="forum-hero" aria-labelledby="heroTitle">
+        <div class="forum-cover" aria-hidden="true"><span>X</span><i></i><i></i><i></i></div>
+        <div class="forum-profile">
+          <div class="forum-avatar" aria-hidden="true">X</div>
+          <div class="forum-copy">
+            <div class="forum-title-row"><h1 id="heroTitle">X 情报吧</h1><span>AI · CODEX</span></div>
+            <p>主要看马斯克、Codex / OpenAI 官方与可核验用户回复。重点追踪版本更新、规则调整、Token / 额度重置和服务变化。</p>
+            <div class="forum-stats"><span><strong>8</strong> 条示例帖</span><span><strong>3</strong> 条置顶</span><span>每天 <strong>08:00</strong> 整理</span></div>
+          </div>
           <div class="hero-actions">
-            <button class="primary-button" id="browseSignals" type="button">浏览示例信号 <span aria-hidden="true">↓</span></button>
+            <button class="primary-button" id="browseThreads" type="button">进入主题帖 <span aria-hidden="true">↓</span></button>
             <a class="secondary-button" href="https://ai-codex-radar.polite-chord-7994.chatgpt.site" target="_blank" rel="noreferrer">打开私有实时站点 <span>需 ChatGPT 登录</span></a>
           </div>
         </div>
-
-        <aside class="system-card" aria-label="雷达运行边界">
-          <div class="system-head">
-            <span>RADAR STATUS</span>
-            <b><i aria-hidden="true"></i> DEMO ONLINE</b>
-          </div>
-          <div class="radar-visual" aria-hidden="true">
-            <div class="sweep"></div>
-            <span class="blip blip-one"></span>
-            <span class="blip blip-two"></span>
-            <span class="blip blip-three"></span>
-            <div class="radar-center">AI</div>
-          </div>
-          <dl class="system-stats">
-            <div><dt>公开演示</dt><dd>8 条样例</dd></div>
-            <div><dt>主题范围</dt><dd>AI / Codex</dd></div>
-            <div><dt>数据状态</dt><dd>非实时</dd></div>
-          </dl>
-        </aside>
       </section>
 
       <section class="boundary" aria-label="公开演示说明">
         <div class="boundary-icon" aria-hidden="true">i</div>
         <div>
-          <strong>透明边界：本页只使用示例数据</strong>
-          <p>用于体验筛选、摘要与证据链交互，不代表 X 的实时结果，也不把示例快照声称为新闻。</p>
+          <strong>透明边界：本页帖子和留言均为示例数据</strong>
+          <p>用于体验贴吧式阅读、筛选与楼层结构，不代表 X 实时结果，也不会把示例留言当成真实引用。</p>
         </div>
         <button id="refreshDemo" type="button">刷新示例视图</button>
       </section>
 
-      <section class="workspace" id="signals" aria-labelledby="workspaceTitle">
-        <div class="workspace-heading">
-          <div>
-            <p class="eyebrow"><span>02</span> SAMPLE SIGNALS</p>
-            <h2 id="workspaceTitle">信号工作台</h2>
-          </div>
-          <p><strong id="resultCount">8</strong> 条示例结果 · 点击卡片查看证据链</p>
-        </div>
+      <div class="forum-layout" id="threads">
+        <div class="forum-main">
+          <section class="pinned-panel" aria-labelledby="pinnedTitle">
+            <div class="panel-heading"><h2 id="pinnedTitle">置顶关注</h2><span>官方身份 × 更新 / 调整 / Token / 故障</span></div>
+            <div class="pinned-list" id="pinnedList"></div>
+          </section>
 
-        <div class="filter-panel" aria-label="筛选示例信号">
-          <label class="search-field" for="searchInput">
-            <span aria-hidden="true">⌕</span>
-            <input id="searchInput" type="search" placeholder="搜索标题、摘要或来源" autocomplete="off" />
-          </label>
-          <label>
-            <span>主题</span>
-            <select id="topicFilter">
-              <option value="all">全部主题</option>
-              <option value="Codex">Codex</option>
-              <option value="模型">模型</option>
-              <option value="Agent">Agent</option>
-              <option value="研究">研究</option>
-            </select>
-          </label>
-          <label>
-            <span>可信度</span>
-            <select id="confidenceFilter">
-              <option value="all">全部等级</option>
-              <option value="high">高可信</option>
-              <option value="medium">待交叉验证</option>
-              <option value="watch">观察中</option>
-            </select>
-          </label>
-          <button class="reset-button" id="resetFilters" type="button">重置</button>
-        </div>
-
-        <div class="signal-layout">
-          <div class="signal-column">
-            <div class="list-head"><span>信号流</span><span>示例顺序</span></div>
-            <div class="signal-list" id="signalList" aria-live="polite"></div>
-            <div class="empty-state" id="emptyState" hidden>
-              <strong>没有匹配的示例信号</strong>
-              <p>换个关键词，或重置筛选条件。</p>
-              <button type="button" data-reset-filters>重置筛选</button>
+          <section class="thread-panel" aria-labelledby="threadTitle">
+            <div class="panel-heading panel-heading-thread"><div><h2 id="threadTitle">主题帖</h2><span>帖子与精选楼层</span></div><strong><span id="resultCount">8</span> 个主题</strong></div>
+            <div class="forum-toolbar">
+              <label class="search-field" for="searchInput"><span aria-hidden="true">⌕</span><input id="searchInput" type="search" placeholder="搜索作者、更新、Token 或关键词" autocomplete="off" /></label>
+              <div class="forum-tabs" aria-label="帖子分类">
+                <button type="button" data-filter="all" aria-pressed="true">全部帖子</button>
+                <button type="button" data-filter="musk" aria-pressed="false">马斯克</button>
+                <button type="button" data-filter="official" aria-pressed="false">Codex / OpenAI 官方</button>
+                <button type="button" data-filter="token" aria-pressed="false">Token / 额度</button>
+                <button type="button" data-filter="community" aria-pressed="false">用户留言</button>
+              </div>
             </div>
-          </div>
-          <aside class="detail-panel" id="detailPanel" aria-live="polite" aria-label="信号详情"></aside>
-        </div>
-      </section>
+            <div class="thread-note"><span>置顶依据官方身份与主题重要性，不依据点赞量</span><button id="resetFilters" type="button">重置筛选</button></div>
+            <div class="thread-list" id="threadList" aria-live="polite"></div>
+            <div class="empty-state" id="emptyState" hidden><strong>没有匹配的示例帖子</strong><p>换个关键词，或重置筛选条件。</p><button type="button" data-reset-filters>重置筛选</button></div>
+          </section>
 
-      <section class="method" aria-labelledby="methodTitle">
-        <div class="method-heading">
-          <p class="eyebrow"><span>03</span> TRUST BY DESIGN</p>
-          <h2 id="methodTitle">先保留出处，再交给 AI 整理。</h2>
-          <p>摘要只是入口。每条信号都应保留原始来源、时间和交叉验证状态，让判断可以复盘。</p>
+          <section class="thread-detail" id="threadDetail" aria-live="polite" aria-label="帖子详情"></section>
         </div>
-        <ol>
-          <li><span>01</span><div><strong>聚合公开来源</strong><p>围绕 AI、Codex 与 Agent 主题检查白名单账号和公开页面。</p></div></li>
-          <li><span>02</span><div><strong>合并重复信号</strong><p>把同一事件的转述聚为一条，保留最接近源头的链接。</p></div></li>
-          <li><span>03</span><div><strong>标记可信度</strong><p>官方原文优先；缺少交叉证据的内容进入“观察中”。</p></div></li>
-          <li><span>04</span><div><strong>生成中文简报</strong><p>提炼“发生了什么、为什么重要、下一步看什么”。</p></div></li>
-        </ol>
-      </section>
+
+        <aside class="forum-sidebar">
+          <section class="token-status">
+            <div class="sidebar-heading"><span>重点状态</span><small>持续核验</small></div>
+            <h2>Token / 额度状态</h2>
+            <strong><i aria-hidden="true"></i>暂无官方确认</strong>
+            <p>示例帖中只有用户讨论，没有可核验的 Codex 或 OpenAI 官方重置说明。</p>
+            <span>用户体验不能代替官方规则</span>
+          </section>
+
+          <section class="watch-card">
+            <div class="sidebar-heading"><span>重点账号</span><small>白名单</small></div>
+            <ul>
+              <li><span class="mini-avatar mini-avatar-musk">M</span><div><strong>Elon Musk</strong><small>@elonmusk · AI / xAI / Grok</small></div></li>
+              <li><span class="mini-avatar mini-avatar-official">✓</span><div><strong>OpenAI Developers</strong><small>@OpenAIDevs · Codex 官方</small></div></li>
+              <li><span class="mini-avatar mini-avatar-official">✓</span><div><strong>OpenAI</strong><small>@OpenAI · 产品与规则</small></div></li>
+            </ul>
+          </section>
+
+          <section class="rules-card">
+            <div class="sidebar-heading"><span>本吧规则</span><small>3 条</small></div>
+            <ol><li>官方原帖优先置顶</li><li>更新与规则分开标记</li><li>留言必须能回到原链接</li></ol>
+          </section>
+        </aside>
+      </div>
     </main>
 
-    <footer>
-      <div><strong>AI / Codex 雷达</strong><span>PUBLIC INTERACTIVE DEMO</span></div>
-      <p>本公开页面使用示例数据，不代表实时新闻或投资建议。</p>
-    </footer>
-
+    <footer><div><strong>X 情报吧</strong><span>AI / CODEX RADAR · PUBLIC DEMO</span></div><p>本页使用示例数据；真实帖子和留言都应回到原链接核验。</p></footer>
     <div class="toast" id="toast" role="status" aria-live="polite"></div>
     <script type="module" src="./app.js"></script>
   </body>

@@ -1,139 +1,164 @@
-const signals = [
+const threads = [
   {
-    id: "codex-workflow",
-    topic: "Codex",
-    confidence: "high",
-    confidenceLabel: "高可信",
-    source: "OpenAI · 示例",
-    handle: "@OpenAI",
-    age: "示例 · 18 分钟前",
-    title: "Codex 工作流能力更新：从单次编码走向持续任务协作",
-    summary: "示例摘要：重点关注任务拆解、环境操作和验证闭环，而不仅是代码生成速度。",
-    why: "如果正式来源确认，这类变化会直接影响团队如何拆分需求、组织验收和沉淀项目上下文。",
-    evidence: ["官方账号原始发布（示例）", "产品文档对应章节（示例）", "版本说明交叉验证（示例）"],
-    sourceType: "官方原始来源",
-    url: "https://openai.com/codex/",
-  },
-  {
-    id: "agent-evals",
-    topic: "Agent",
-    confidence: "high",
-    confidenceLabel: "高可信",
-    source: "OpenAI Developers · 示例",
+    id: "codex-official-update",
+    role: "official",
+    roleLabel: "Codex 官方",
+    topic: "update",
+    topicLabel: "版本更新",
+    pinned: true,
+    author: "OpenAI Developers",
     handle: "@OpenAIDevs",
+    title: "Codex 官方更新帖：关注功能变化、兼容性与使用边界",
+    excerpt: "示例摘要：官方更新会被置顶，并拆成“更新了什么、影响谁、需要调整什么”三部分。",
+    original: "Sample Codex update thread for interface preview.",
+    why: "Codex 官方变化可能直接影响现有任务、工作流与兼容方式。",
+    age: "示例 · 18 分钟前",
+    url: "https://x.com/OpenAIDevs",
+    replies: [
+      { author: "开发者用户 · 示例", handle: "@builder_example", text: "最关心这次更新是否会改变已有任务，以及旧版本是否还能继续使用。" },
+      { author: "团队用户 · 示例", handle: "@team_example", text: "希望官方说明迁移步骤、失败回退方式和生效时间。" },
+    ],
+  },
+  {
+    id: "musk-xai-update",
+    role: "musk",
+    roleLabel: "马斯克本人",
+    topic: "update",
+    topicLabel: "产品更新",
+    pinned: true,
+    author: "Elon Musk",
+    handle: "@elonmusk",
+    title: "马斯克动态帖：只保留与 xAI、Grok 和 AI 产品调整有关的发言",
+    excerpt: "示例摘要：马斯克本人发言单独标识；涉及产品承诺时仍需等待正式公告或文档确认。",
+    original: "Sample xAI and Grok product update for interface preview.",
+    why: "本人发言通常是重要方向信号，但不自动等同于已经上线的产品事实。",
     age: "示例 · 42 分钟前",
-    title: "Agent 评测从单点正确率转向完整任务成功率",
-    summary: "示例摘要：长链任务更需要观察工具调用、恢复能力和最终交付质量。",
-    why: "它提示产品团队把评测从“回答得像不像”升级为“任务是否真正完成”。",
-    evidence: ["开发者渠道原文（示例）", "评测说明页（示例）"],
-    sourceType: "官方开发者来源",
-    url: "https://platform.openai.com/docs/",
+    url: "https://x.com/elonmusk",
+    replies: [
+      { author: "X 用户 · 示例", handle: "@x_user_example", text: "这项变化是已经上线，还是仅代表后续路线？希望看到明确时间表。" },
+    ],
   },
   {
-    id: "model-reasoning",
-    topic: "模型",
-    confidence: "medium",
-    confidenceLabel: "待交叉验证",
-    source: "AI Lab Notes · 示例",
-    handle: "@AILabNotes",
+    id: "openai-policy-update",
+    role: "official",
+    roleLabel: "OpenAI 官方",
+    topic: "policy",
+    topicLabel: "规则调整",
+    pinned: true,
+    author: "OpenAI",
+    handle: "@OpenAI",
+    title: "OpenAI 官方调整帖：模型、套餐与开发者能力变化集中追踪",
+    excerpt: "示例摘要：官方发布优先显示生效范围、时间、受影响产品和对应文档。",
+    original: "Sample OpenAI product update and policy change for interface preview.",
+    why: "模型和产品规则调整会影响成本、能力边界与团队交付计划。",
     age: "示例 · 1 小时前",
-    title: "新推理基准开始加入真实代码库与多轮修复任务",
-    summary: "示例摘要：单题得分正在让位于跨文件修改、测试反馈与回归验证。",
-    why: "真实仓库评测更接近日常工程，但样本构成和泄漏控制仍需核验。",
-    evidence: ["研究团队贴文（示例）", "公开基准仓库（待核验）"],
-    sourceType: "研究团队转述",
-    url: "https://github.com/openai",
+    url: "https://x.com/OpenAI",
+    replies: [],
   },
   {
-    id: "codex-review",
-    topic: "Codex",
-    confidence: "high",
-    confidenceLabel: "高可信",
-    source: "Codex Changelog · 示例",
-    handle: "产品更新",
+    id: "codex-token-reset",
+    role: "community",
+    roleLabel: "用户讨论",
+    topic: "token",
+    topicLabel: "Token / 额度",
+    pinned: false,
+    author: "Codex 用户讨论 · 示例",
+    handle: "@codex_user_example",
+    title: "用户集中追问：Codex Token 或额度究竟什么时候重置？",
+    excerpt: "示例摘要：当前只有用户提问，没有可核验的官方说明，因此状态保持“暂无官方确认”。",
+    original: "Users ask whether Codex token quota resets daily or weekly. No official confirmation is attached.",
+    why: "额度重置会直接影响任务安排，但不能用个别用户体验代替官方规则。",
     age: "示例 · 2 小时前",
-    title: "代码审查更强调可定位证据与风险优先级",
-    summary: "示例摘要：审查结果应指向具体文件与行号，并区分阻塞问题和改进建议。",
-    why: "更少的泛化评论、更明确的风险排序，能降低工程团队处理审查反馈的成本。",
-    evidence: ["产品更新记录（示例）", "文档行为说明（示例）"],
-    sourceType: "官方产品记录",
-    url: "https://developers.openai.com/codex/",
+    url: "https://x.com/",
+    replies: [
+      { author: "高频用户 · 示例", handle: "@power_user_example", text: "不同账号看到的时间似乎不一样，可能与套餐或滚动窗口有关。" },
+      { author: "开发者 · 示例", handle: "@dev_example", text: "在官方文档出现前，建议不要把某个倒计时截图当成统一规则。" },
+    ],
   },
   {
-    id: "agent-memory",
-    topic: "Agent",
-    confidence: "watch",
-    confidenceLabel: "观察中",
-    source: "Builder Thread · 示例",
-    handle: "@BuilderThread",
+    id: "codex-context-token",
+    role: "community",
+    roleLabel: "用户讨论",
+    topic: "token",
+    topicLabel: "Token / 额度",
+    pinned: false,
+    author: "Builder Notes · 示例",
+    handle: "@builder_notes_example",
+    title: "用户实测：长任务中的上下文、压缩与 Token 消耗值得持续观察",
+    excerpt: "示例摘要：整理复现条件和环境差异，不把单次体验直接写成平台规则。",
+    original: "Community discussion about Codex context window, token usage, and long-running tasks.",
+    why: "上下文与消耗变化会影响长任务稳定性，但必须区分体验反馈和正式限制。",
     age: "示例 · 3 小时前",
-    title: "社区讨论：长期记忆应该记录决定，还是记录全部对话？",
-    summary: "示例摘要：高信号观点倾向保存已确认决策与状态，而不是无差别堆叠原始聊天。",
-    why: "观点有实践价值，但目前只是社区讨论，尚不能视为平台正式最佳实践。",
-    evidence: ["社区讨论串（示例）"],
-    sourceType: "社区观点",
     url: "https://x.com/",
+    replies: [],
   },
   {
-    id: "research-tools",
-    topic: "研究",
-    confidence: "medium",
-    confidenceLabel: "待交叉验证",
-    source: "Research Digest · 示例",
-    handle: "@ResearchDigest",
+    id: "codex-workflow-replies",
+    role: "community",
+    roleLabel: "用户讨论",
+    topic: "discussion",
+    topicLabel: "用户留言",
+    pinned: false,
+    author: "Developer Thread · 示例",
+    handle: "@developer_thread_example",
+    title: "开发者跟帖：Codex 更新后哪些工作流真的需要调整？",
+    excerpt: "示例摘要：把有复现步骤、版本信息和公开链接的用户反馈优先展示。",
+    original: "Community workflow discussion with reproducible Codex steps.",
+    why: "带版本与复现信息的用户反馈比泛泛评价更适合辅助判断。",
     age: "示例 · 5 小时前",
-    title: "工具使用研究开始关注失败恢复，而不只看首轮成功",
-    summary: "示例摘要：模型能否识别错误、切换策略并再次验证，成为新的观察维度。",
-    why: "恢复能力决定 Agent 是否能在不稳定外部环境里完成长任务。",
-    evidence: ["论文摘要转述（示例）", "作者页面（待交叉验证）"],
-    sourceType: "研究摘要来源",
-    url: "https://arxiv.org/",
-  },
-  {
-    id: "ai-security",
-    topic: "研究",
-    confidence: "high",
-    confidenceLabel: "高可信",
-    source: "Security Research · 示例",
-    handle: "安全研究",
-    age: "示例 · 7 小时前",
-    title: "Agent 安全边界重新聚焦：权限、目标范围与可恢复操作",
-    summary: "示例摘要：高风险动作需要精确目标、最小权限和可审计的验证步骤。",
-    why: "工具能力越强，产品越需要把授权范围与安全检查做成工作流的一部分。",
-    evidence: ["安全研究原文（示例）", "工程实践文档（示例）"],
-    sourceType: "一手研究来源",
-    url: "https://openai.com/safety/",
-  },
-  {
-    id: "model-rumor",
-    topic: "模型",
-    confidence: "watch",
-    confidenceLabel: "观察中",
-    source: "Unverified Feed · 示例",
-    handle: "转述账号",
-    age: "示例 · 9 小时前",
-    title: "未证实传闻：某模型可能调整上下文与工具调用策略",
-    summary: "示例摘要：目前缺少官方原文和独立证据，仅作为待观察线索保留。",
-    why: "这是雷达应该降权的典型内容：信息可能受关注，但不能写成已发生事实。",
-    evidence: ["单一转述来源（示例）"],
-    sourceType: "未核验转述",
     url: "https://x.com/",
+    replies: [
+      { author: "工程用户 · 示例", handle: "@engineer_example", text: "如果行为变化可以稳定复现，最好附上版本号和最小步骤。" },
+    ],
+  },
+  {
+    id: "codex-service-incident",
+    role: "community",
+    roleLabel: "用户报告",
+    topic: "incident",
+    topicLabel: "故障状态",
+    pinned: false,
+    author: "Status Watch · 示例",
+    handle: "@status_watch_example",
+    title: "服务状态讨论：先核对官方状态页，再汇总用户集中反馈",
+    excerpt: "示例摘要：故障类帖子按时间线组织，区分官方确认、用户报告和恢复状态。",
+    original: "Sample incident discussion: service unavailable and recovery status.",
+    why: "故障时间线能帮助判断问题是否普遍，以及是否需要暂停关键任务。",
+    age: "示例 · 7 小时前",
+    url: "https://status.openai.com/",
+    replies: [],
+  },
+  {
+    id: "community-evidence-rule",
+    role: "community",
+    roleLabel: "用户讨论",
+    topic: "discussion",
+    topicLabel: "用户留言",
+    pinned: false,
+    author: "Community Signals · 示例",
+    handle: "@community_example",
+    title: "普通用户留言只做补充：优先保留有证据、有版本、有复现的信息",
+    excerpt: "示例摘要：情绪和传闻不会置顶；可复现的体验变化才进入重点讨论。",
+    original: "Sample community replies with evidence and reproducible details.",
+    why: "用户讨论能补充官方说明盲区，但不能替代一手来源。",
+    age: "示例 · 9 小时前",
+    url: "https://x.com/",
+    replies: [],
   },
 ];
 
 const nodes = {
   search: document.querySelector("#searchInput"),
-  topic: document.querySelector("#topicFilter"),
-  confidence: document.querySelector("#confidenceFilter"),
-  list: document.querySelector("#signalList"),
-  detail: document.querySelector("#detailPanel"),
+  list: document.querySelector("#threadList"),
+  pinned: document.querySelector("#pinnedList"),
+  detail: document.querySelector("#threadDetail"),
   count: document.querySelector("#resultCount"),
   empty: document.querySelector("#emptyState"),
   toast: document.querySelector("#toast"),
+  filters: [...document.querySelectorAll("[data-filter]")],
 };
 
-const state = { selectedId: signals[0].id };
-nodes.list.setAttribute("aria-live", "polite");
+const state = { filter: "all", selectedId: threads[0].id };
 
 function escapeHtml(value) {
   return String(value)
@@ -144,71 +169,91 @@ function escapeHtml(value) {
     .replaceAll("'", "&#039;");
 }
 
-function filteredSignals() {
+function matchesFilter(thread) {
+  if (state.filter === "musk") return thread.role === "musk";
+  if (state.filter === "official") return thread.role === "official";
+  if (state.filter === "token") return thread.topic === "token";
+  if (state.filter === "community") return thread.role === "community" || thread.replies.length > 0;
+  return true;
+}
+
+function visibleThreads() {
   const query = nodes.search.value.trim().toLowerCase();
-  return signals.filter((signal) => {
-    const haystack = [signal.title, signal.summary, signal.source, signal.handle, signal.topic].join(" ").toLowerCase();
-    return (!query || haystack.includes(query))
-      && (nodes.topic.value === "all" || signal.topic === nodes.topic.value)
-      && (nodes.confidence.value === "all" || signal.confidence === nodes.confidence.value);
+  return threads.filter((thread) => {
+    const haystack = [thread.title, thread.excerpt, thread.original, thread.author, thread.handle, thread.topicLabel].join(" ").toLowerCase();
+    return matchesFilter(thread) && (!query || haystack.includes(query));
   });
 }
 
-function signalCard(signal, index) {
-  const selected = signal.id === state.selectedId;
-  return `
-    <button class="signal-card ${selected ? "selected" : ""}" type="button" data-signal-id="${escapeHtml(signal.id)}" aria-pressed="${selected}">
-      <span class="signal-index" aria-label="示例序号 ${index + 1}"><b>${String(index + 1).padStart(2, "0")}</b><small>SIGNAL</small></span>
-      <span class="signal-copy">
-        <span class="signal-meta"><i class="confidence-dot ${signal.confidence}" aria-hidden="true"></i>${escapeHtml(signal.confidenceLabel)}<em>${escapeHtml(signal.topic)}</em><time>${escapeHtml(signal.age)}</time></span>
-        <strong>${escapeHtml(signal.title)}</strong>
-        <span class="signal-summary">${escapeHtml(signal.summary)}</span>
-        <span class="signal-source">${escapeHtml(signal.source)} <i>·</i> ${escapeHtml(signal.handle)}</span>
-      </span>
-      <span class="signal-arrow" aria-hidden="true">↗</span>
-    </button>`;
+function badges(thread, includePin = false) {
+  return `<span class="thread-badges">
+    ${includePin && thread.pinned ? '<span class="badge badge-pin">置顶</span>' : ""}
+    <span class="badge badge-${escapeHtml(thread.role)}">${escapeHtml(thread.roleLabel)}</span>
+    <span class="badge badge-topic badge-topic-${escapeHtml(thread.topic)}">${escapeHtml(thread.topicLabel)}</span>
+  </span>`;
 }
 
-function renderSignals() {
-  const visible = filteredSignals();
-  if (!visible.some((signal) => signal.id === state.selectedId)) state.selectedId = visible[0]?.id || "";
-  nodes.list.innerHTML = visible.map(signalCard).join("");
+function renderPinned() {
+  nodes.pinned.innerHTML = threads.filter((thread) => thread.pinned).map((thread) => `
+    <button class="pinned-thread" type="button" data-open-thread="${escapeHtml(thread.id)}">
+      ${badges(thread, true)}
+      <strong>${escapeHtml(thread.title)}</strong>
+      <span>${escapeHtml(thread.handle)}</span>
+    </button>`).join("");
+}
+
+function threadCard(thread) {
+  const selected = thread.id === state.selectedId;
+  const avatar = thread.role === "musk" ? "M" : thread.role === "official" ? "✓" : "U";
+  return `<button class="forum-thread ${selected ? "selected" : ""}" type="button" data-thread-id="${escapeHtml(thread.id)}" aria-pressed="${selected}">
+    <span class="reply-count"><strong>${thread.replies.length}</strong><small>回复</small></span>
+    <span class="author-avatar author-avatar-${escapeHtml(thread.role)}" aria-hidden="true">${avatar}</span>
+    <span class="thread-copy">
+      ${badges(thread, thread.pinned)}
+      <strong>${escapeHtml(thread.title)}</strong>
+      <span>${escapeHtml(thread.excerpt)}</span>
+      <small>${escapeHtml(thread.author)} · ${escapeHtml(thread.handle)} · ${escapeHtml(thread.age)}</small>
+    </span>
+    <span class="thread-open" aria-hidden="true">查看</span>
+  </button>`;
+}
+
+function renderDetail(thread) {
+  if (!thread) {
+    nodes.detail.innerHTML = '<div class="detail-empty"><strong>等待匹配帖子</strong><p>调整筛选条件后，这里会显示楼主原帖与精选回复。</p></div>';
+    return;
+  }
+  const avatar = thread.role === "musk" ? "M" : thread.role === "official" ? "✓" : "U";
+  nodes.detail.innerHTML = `
+    <div class="detail-title"><div>${badges(thread, thread.pinned)}<h2>${escapeHtml(thread.title)}</h2></div><span>示例帖子 · 不可引用</span></div>
+    <article class="floor floor-original">
+      <div class="floor-author"><span class="author-avatar author-avatar-${escapeHtml(thread.role)}">${avatar}</span><strong>${escapeHtml(thread.author)}</strong><small>${escapeHtml(thread.handle)}</small></div>
+      <div class="floor-content"><div class="floor-meta"><span>楼主</span><time>${escapeHtml(thread.age)}</time></div><p>${escapeHtml(thread.original)}</p><div class="editor-note"><strong>中文整理</strong><p>${escapeHtml(thread.excerpt)}</p><span>${escapeHtml(thread.why)}</span></div><a href="${escapeHtml(thread.url)}" target="_blank" rel="noreferrer">查看对应监测入口 ↗</a></div>
+    </article>
+    ${thread.replies.map((reply, index) => `<article class="floor"><div class="floor-author"><span class="reply-avatar">${escapeHtml(reply.author.slice(0, 1))}</span><strong>${escapeHtml(reply.author)}</strong><small>${escapeHtml(reply.handle)}</small></div><div class="floor-content"><div class="floor-meta"><span>${index + 2} 楼</span><time>示例留言</time></div><p>${escapeHtml(reply.text)}</p><small class="example-label">示例留言 · 不可作为真实 X 引用</small></div></article>`).join("")}
+    ${thread.replies.length === 0 ? '<div class="reply-empty"><strong>暂未找到可展示的示例回复</strong><p>真实站点只收录能回到 X 原链接的留言。</p></div>' : ""}`;
+}
+
+function renderThreads() {
+  const visible = visibleThreads();
+  if (!visible.some((thread) => thread.id === state.selectedId)) state.selectedId = visible[0]?.id || "";
+  nodes.list.innerHTML = visible.map(threadCard).join("");
   nodes.count.textContent = String(visible.length);
   nodes.empty.hidden = visible.length > 0;
   nodes.list.hidden = visible.length === 0;
-  renderDetail(visible.find((signal) => signal.id === state.selectedId));
+  renderDetail(visible.find((thread) => thread.id === state.selectedId));
 }
 
-function renderDetail(signal) {
-  if (!signal) {
-    nodes.detail.innerHTML = `<div class="detail-empty"><span>⌁</span><strong>等待匹配信号</strong><p>调整左侧筛选条件后，这里会显示证据链。</p></div>`;
-    return;
-  }
-  nodes.detail.innerHTML = `
-    <div class="detail-head">
-      <span>信号详情 · 示例</span>
-      <b class="confidence-badge ${signal.confidence}">${escapeHtml(signal.confidenceLabel)}</b>
-    </div>
-    <p class="detail-topic">${escapeHtml(signal.topic)} / SAMPLE SIGNAL</p>
-    <h3>${escapeHtml(signal.title)}</h3>
-    <div class="detail-section">
-      <span>为什么值得看</span>
-      <p>${escapeHtml(signal.why)}</p>
-    </div>
-    <div class="detail-section">
-      <span>证据链</span>
-      <ol>${signal.evidence.map((item, index) => `<li><i>${String(index + 1).padStart(2, "0")}</i><p>${escapeHtml(item)}</p></li>`).join("")}</ol>
-    </div>
-    <div class="source-box"><span>来源类型</span><strong>${escapeHtml(signal.sourceType)}</strong><small>演示条目 · 请勿作为实时新闻引用</small></div>
-    <a class="source-button" href="${escapeHtml(signal.url)}" target="_blank" rel="noreferrer">查看对应公开入口 <span aria-hidden="true">↗</span></a>`;
+function setFilter(filter) {
+  state.filter = filter;
+  nodes.filters.forEach((button) => button.setAttribute("aria-pressed", String(button.dataset.filter === filter)));
+  renderThreads();
 }
 
 function resetFilters() {
   nodes.search.value = "";
-  nodes.topic.value = "all";
-  nodes.confidence.value = "all";
-  state.selectedId = signals[0].id;
-  renderSignals();
+  state.selectedId = threads[0].id;
+  setFilter("all");
 }
 
 function showToast(message) {
@@ -218,22 +263,26 @@ function showToast(message) {
   showToast.timer = window.setTimeout(() => nodes.toast.classList.remove("visible"), 2400);
 }
 
-nodes.search.addEventListener("input", renderSignals);
-nodes.topic.addEventListener("change", renderSignals);
-nodes.confidence.addEventListener("change", renderSignals);
+nodes.search.addEventListener("input", renderThreads);
+nodes.filters.forEach((button) => button.addEventListener("click", () => setFilter(button.dataset.filter)));
 document.querySelector("#resetFilters").addEventListener("click", resetFilters);
 document.querySelector("[data-reset-filters]").addEventListener("click", resetFilters);
-document.querySelector("#browseSignals").addEventListener("click", () => document.querySelector("#signals").scrollIntoView({ behavior: "smooth" }));
-document.querySelector("#refreshDemo").addEventListener("click", () => {
-  resetFilters();
-  showToast("示例视图已刷新 · 本页仍为非实时数据");
+document.querySelector("#browseThreads").addEventListener("click", () => document.querySelector("#threads").scrollIntoView({ behavior: "smooth" }));
+document.querySelector("#refreshDemo").addEventListener("click", () => { resetFilters(); showToast("示例视图已刷新 · 本页仍为非实时数据"); });
+nodes.pinned.addEventListener("click", (event) => {
+  const button = event.target.closest("[data-open-thread]");
+  if (!button) return;
+  state.selectedId = button.dataset.openThread;
+  setFilter("all");
+  document.querySelector("#threads").scrollIntoView({ behavior: "smooth" });
 });
 nodes.list.addEventListener("click", (event) => {
-  const card = event.target.closest("[data-signal-id]");
-  if (!card) return;
-  state.selectedId = card.dataset.signalId;
-  renderSignals();
+  const button = event.target.closest("[data-thread-id]");
+  if (!button) return;
+  state.selectedId = button.dataset.threadId;
+  renderThreads();
   if (window.matchMedia("(max-width: 900px)").matches) nodes.detail.scrollIntoView({ behavior: "smooth", block: "start" });
 });
 
-renderSignals();
+renderPinned();
+renderThreads();
