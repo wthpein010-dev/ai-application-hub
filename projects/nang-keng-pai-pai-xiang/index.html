@@ -72,13 +72,19 @@
         progressBarFull.style.width = `${Math.round((loaded / total) * 75)}%`;
       }
 
-      async function fetchAssetChunkWithRetry(asset, start, end, maxAttempts = 3) {
+      async function fetchAssetChunkWithRetry(asset, start, end, maxAttempts = 3, attemptTimeoutMs = 90000) {
         let lastError;
         for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
+          const controller = new AbortController();
+          const timeoutId = setTimeout(
+            () => controller.abort(new Error('\u8d44\u6e90\u4e0b\u8f7d\u8d85\u65f6\uff0c\u8bf7\u5237\u65b0\u9875\u9762\u91cd\u8bd5\u3002')),
+            attemptTimeoutMs
+          );
           try {
             const response = await fetch(asset.url, {
               cache: 'force-cache',
-              headers: { Range: `bytes=${start}-${end}` }
+              headers: { Range: `bytes=${start}-${end}` },
+              signal: controller.signal
             });
             if (!response.ok) {
               throw new Error(`\u8d44\u6e90\u52a0\u8f7d\u5931\u8d25\uff1a${response.status}`);
@@ -98,6 +104,10 @@
           } catch (error) {
             lastError = error;
             if (attempt === maxAttempts) throw error;
+          } finally {
+            clearTimeout(timeoutId);
+          }
+          if (attempt < maxAttempts) {
             await new Promise(resolve => setTimeout(resolve, attempt * 600));
           }
         }
