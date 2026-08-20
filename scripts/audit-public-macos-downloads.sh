@@ -466,6 +466,10 @@ audit_combined_native() {
       app="${extracted}/${archive_architecture}/PureShrink.app"
       executable="${app}/Contents/MacOS/PureShrink"
       ;;
+    gamespec-relay)
+      app="${extracted}/${archive_architecture}/GameSpec Relay.app"
+      executable="${app}/Contents/MacOS/GameSpec Relay"
+      ;;
     *)
       die "unsupported native product ${id}"
       ;;
@@ -496,11 +500,16 @@ audit_combined_native() {
       verify_macho_architecture "${ffmpeg}" "${id} bundled FFmpeg"
       "${executable}" --smoke-test
       ;;
+    gamespec-relay)
+      "${executable}" --smoke-test
+      ;;
   esac
 
   local checks="bytes,sha256,zip,info-plist,macho-${expected_machine},codesign"
   if [[ "${id}" == "pureshrink" ]]; then
     checks="${checks},ffmpeg-${expected_machine},smoke-test"
+  elif [[ "${id}" == "gamespec-relay" ]]; then
+    checks="${checks},smoke-test"
   else
     checks="${checks},launch-5s"
   fi
@@ -607,6 +616,7 @@ if (!fixtureMode) {
     ["feishu-downloader", "extension"],
     ["clickflow", "native"],
     ["pureshrink", "native"],
+    ["gamespec-relay", "native"],
   ]);
   if (manifest.downloads.length !== expected.size) {
     throw new Error(`Expected exactly ${expected.size} public Mac downloads`);
