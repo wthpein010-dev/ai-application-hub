@@ -150,7 +150,12 @@ test("PlanMap source attachment is a clean, non-trivial and inspectable ZIP", ()
     "planmap-source/package.json",
     "planmap-source/package-lock.json",
     "planmap-source/app/components/PlanMapApp.tsx",
+    "planmap-source/app/lib/edge-routing.ts",
+    "planmap-source/app/lib/view-actions.ts",
     "planmap-source/tests/mindmap.test.mjs",
+    "planmap-source/tests/view-actions.test.mjs",
+    "planmap-source/docs/superpowers/plans/2026-08-20-planmap-product-audit.md",
+    "planmap-source/docs/superpowers/specs/2026-08-20-planmap-product-audit-design.md",
   ]) {
     assert.equal(files.includes(required), true, `${required} should be packaged`);
   }

@@ -25,7 +25,7 @@
         </div>
       </header>
 
-      <div class="mobile-tabs" role="tablist"><button class="active" data-mobile-view="chat" role="tab">✦ 对话</button><button data-mobile-view="map" role="tab">⌘ 作品</button></div>
+      <div class="mobile-tabs" role="tablist" aria-label="移动端工作区"><button class="active" data-mobile-view="chat" role="tab" aria-selected="true" tabindex="0">✦ 对话</button><button data-mobile-view="map" role="tab" aria-selected="false" tabindex="-1">⌘ 作品</button></div>
 
       <div class="workspace mobile-chat">
         <section class="chat-panel" aria-label="AI 对话区">
@@ -42,23 +42,23 @@
         <section class="canvas-panel" aria-label="脑图画布">
           <div class="canvas-heading">
             <div><span>脑图作品</span><small id="nodeCount">共 0 个节点 · 已自动排版</small></div>
-            <div class="view-tabs" role="tablist" aria-label="作品视图"><button class="active" data-view="map" role="tab">脑图视图</button><button data-view="outline" role="tab">大纲模式</button><button data-view="present" role="tab">演示模式</button></div>
-            <div class="canvas-actions"><button id="autoLayout" class="secondary" type="button">↻ 自动整理</button><button id="exportButton" class="primary" type="button">⇩ 导出</button></div>
+            <div class="view-tabs" role="tablist" aria-label="作品视图"><button class="active" data-view="map" role="tab" aria-selected="true" tabindex="0">脑图视图</button><button data-view="outline" role="tab" aria-selected="false" tabindex="-1">大纲模式</button><button data-view="present" role="tab" aria-selected="false" tabindex="-1">演示模式</button></div>
+            <div class="canvas-actions"><button id="autoLayout" class="secondary auto-layout" type="button">↻ 自动整理</button><button id="shareButton" class="secondary share-action" type="button">↗ 分享</button><button id="exportButton" class="primary" type="button">⇩ 导出</button></div>
           </div>
           <div class="structure-picker" aria-label="选择脑图结构">
-            <button class="active" data-layout="mindmap"><i class="layout-icon mindmap"><b></b><span></span><span></span><span></span></i>左右脑图</button>
-            <button data-layout="right"><i class="layout-icon right"><b></b><span></span><span></span><span></span></i>横向脑图</button>
-            <button data-layout="tree"><i class="layout-icon tree"><b></b><span></span><span></span><span></span></i>树状图</button>
-            <button data-layout="fishbone"><i class="layout-icon fishbone"><b></b><span></span><span></span><span></span></i>鱼骨图</button>
-            <button data-layout="logic"><i class="layout-icon logic"><b></b><span></span><span></span><span></span></i>逻辑结构</button>
-            <button data-layout="timeline"><i class="layout-icon timeline"><b></b><span></span><span></span><span></span></i>时间轴</button>
+            <button class="active" type="button" data-layout="mindmap" aria-pressed="true"><i class="layout-icon mindmap"><b></b><span></span><span></span><span></span></i>左右脑图</button>
+            <button type="button" data-layout="right" aria-pressed="false"><i class="layout-icon right"><b></b><span></span><span></span><span></span></i>横向脑图</button>
+            <button type="button" data-layout="tree" aria-pressed="false"><i class="layout-icon tree"><b></b><span></span><span></span><span></span></i>树状图</button>
+            <button type="button" data-layout="fishbone" aria-pressed="false"><i class="layout-icon fishbone"><b></b><span></span><span></span><span></span></i>鱼骨图</button>
+            <button type="button" data-layout="logic" aria-pressed="false"><i class="layout-icon logic"><b></b><span></span><span></span><span></span></i>逻辑结构</button>
+            <button type="button" data-layout="timeline" aria-pressed="false"><i class="layout-icon timeline"><b></b><span></span><span></span><span></span></i>时间轴</button>
           </div>
-          <div class="view-panel active" id="mapView">
+          <div class="view-panel active" id="mapView" role="tabpanel">
             <div class="canvas-viewport" id="canvasViewport"><div class="map-stage" id="mapStage"><svg id="connections" aria-hidden="true"></svg><div id="nodesLayer"></div></div></div>
-            <div class="zoom-controls"><button type="button" id="zoomOut" aria-label="缩小画布">−</button><span id="zoomValue">100%</span><button type="button" id="zoomIn" aria-label="放大画布">＋</button><button type="button" id="centerMap" aria-label="居中脑图">⌖</button></div>
+            <div class="zoom-controls"><button type="button" id="zoomOut" aria-label="缩小画布">−</button><span id="zoomValue">100%</span><button type="button" id="zoomIn" aria-label="放大画布">＋</button><button type="button" id="centerMap" aria-label="居中脑图">⌖</button><button type="button" id="fullscreenMap" aria-label="全屏查看" aria-pressed="false">⛶</button></div>
           </div>
-          <div class="view-panel" id="outlineView"><div class="outline-head"><strong>大纲</strong><span>点击条目可定位，双击可改名</span></div><div id="outlineList" class="outline-list"></div></div>
-          <div class="view-panel" id="presentView"><div class="presentation-card"><small id="presentProgress">1 / 4</small><h2 id="presentTitle"></h2><div id="presentContent"></div><footer><button id="presentPrev" type="button">← 上一页</button><button id="presentNext" class="primary" type="button">下一页 →</button></footer></div></div>
+          <div class="view-panel" id="outlineView" role="tabpanel"><div class="outline-head"><strong>大纲</strong><span>点击条目可定位，双击可改名</span></div><div id="outlineList" class="outline-list"></div></div>
+          <div class="view-panel" id="presentView" role="tabpanel"><div class="presentation-card"><small id="presentProgress">1 / 4</small><h2 id="presentTitle"></h2><div id="presentContent"></div><footer><button id="presentPrev" type="button">← 上一页</button><button id="presentNext" class="primary" type="button">下一页 →</button></footer></div></div>
         </section>
       </div>
 
@@ -80,6 +80,6 @@
       <div class="backdrop popover-backdrop" id="exportBackdrop" hidden><div class="export-popover" role="dialog" aria-modal="true" aria-label="导出脑图"><header><div><small>交付脑图</small><h2>选择导出格式</h2></div><button class="icon-button close-export" type="button">×</button></header><button data-export="png"><b>PNG 图片</b><span>适合汇报和分享</span></button><button data-export="pdf"><b>PDF 文档</b><span>适合打印和归档</span></button><button data-export="markdown"><b>Markdown 大纲</b><span>保留完整层级结构</span></button><button data-export="xmind"><b>XMind 文件</b><span>可继续在 XMind 中编辑</span></button></div></div>
       <div class="toast" id="toast" role="status" hidden></div>
     </main>
-    <script src="./app.js?v=20260812-mindmap-quick-tool-v2"></script>
+    <script src="./app.js?v=20260820-planmap-product-audit"></script>
   </body>
 </html>

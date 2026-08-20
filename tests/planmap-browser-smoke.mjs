@@ -223,6 +223,27 @@ async function assertReadableTypography(page, viewportName) {
   assert.ok(sizes.rootNode >= 16, `${viewportName} root node should be at least 16px: ${sizes.rootNode}`);
 }
 
+async function assertMapVisibleWithinViewport(page, label) {
+  const geometry = await page.locator("#canvasViewport").evaluate((viewport) => {
+    const viewportBox = viewport.getBoundingClientRect();
+    return {
+      viewport: { left: viewportBox.left, top: viewportBox.top, right: viewportBox.right, bottom: viewportBox.bottom },
+      nodes: [...viewport.querySelectorAll(".map-node")].map((node) => {
+        const box = node.getBoundingClientRect();
+        return { id: node.dataset.id, left: box.left, top: box.top, right: box.right, bottom: box.bottom };
+      }),
+    };
+  });
+  assert.ok(geometry.nodes.length > 0, `${label} should render map nodes`);
+  for (const node of geometry.nodes) {
+    assert.ok(node.right > node.left && node.bottom > node.top, `${label}:${node.id} should have visible dimensions`);
+    assert.ok(node.left >= geometry.viewport.left - 1, `${label}:${node.id} should fit at the left edge`);
+    assert.ok(node.top >= geometry.viewport.top - 1, `${label}:${node.id} should fit at the top edge`);
+    assert.ok(node.right <= geometry.viewport.right + 1, `${label}:${node.id} should fit at the right edge`);
+    assert.ok(node.bottom <= geometry.viewport.bottom + 1, `${label}:${node.id} should fit at the bottom edge`);
+  }
+}
+
 try {
   for (const viewport of [{ name: "desktop", width: 1440, height: 900 }, { name: "mobile", width: 390, height: 844 }]) {
     const context = await browser.newContext({ viewport });
@@ -258,6 +279,65 @@ try {
     await app.goto(`${origin}/projects/planmap/app/index.html`, { waitUntil: navigationState });
     await app.evaluate(() => localStorage.clear()); await app.reload({ waitUntil: navigationState });
     await assertReadableTypography(app, viewport.name);
+    if (viewport.name === "mobile") await app.getByRole("tab", { name: /作品/ }).click();
+    const layoutButtons = app.locator(".structure-picker [data-layout]");
+    assert.equal(await layoutButtons.count(), 6);
+    assert.equal(await layoutButtons.first().getAttribute("aria-pressed"), "true");
+    assert.deepEqual(await layoutButtons.evaluateAll((buttons) => buttons.map((button) => button.getBoundingClientRect().height >= 44)), [true, true, true, true, true, true]);
+    const viewTabs = app.locator(".view-tabs [data-view]");
+    assert.deepEqual(await viewTabs.evaluateAll((buttons) => buttons.map((button) => button.getAttribute("aria-selected"))), ["true", "false", "false"]);
+    if (viewport.name === "mobile") {
+      const picker = await app.locator(".structure-picker").evaluate((element) => ({
+        columns: getComputedStyle(element).gridTemplateColumns.split(" ").filter(Boolean).length,
+        fits: element.scrollWidth <= element.clientWidth + 1,
+      }));
+      assert.deepEqual(picker, { columns: 3, fits: true }, "mobile structure choices should form a non-scrolling two-by-three grid");
+    }
+    await app.getByRole("button", { name: /自动整理/ }).click();
+    await assertMapVisibleWithinViewport(app, `${viewport.name}/auto-fit`);
+    if (viewport.name === "desktop") {
+      const fittedZoom = await app.locator("#zoomValue").textContent();
+      await app.getByLabel("放大画布").click();
+      const manualZoom = await app.locator("#zoomValue").textContent();
+      assert.notEqual(manualZoom, fittedZoom, "manual zoom should change the fitted scale");
+      const scrollBeforeEdit = await app.locator("#canvasViewport").evaluate((element) => ({ left: element.scrollLeft, top: element.scrollTop }));
+      await app.getByPlaceholder(/描述你的策划/).fill("把核心目标改成品牌增长");
+      await app.getByLabel("发送消息").click();
+      await app.locator("#nodesLayer .map-node", { hasText: "品牌增长" }).waitFor();
+      assert.equal(await app.locator("#zoomValue").textContent(), manualZoom, "content edits must preserve manual zoom");
+      const scrollAfterEdit = await app.locator("#canvasViewport").evaluate((element) => ({ left: element.scrollLeft, top: element.scrollTop }));
+      assert.deepEqual(scrollAfterEdit, scrollBeforeEdit, "content edits must preserve the current canvas position");
+      await app.getByPlaceholder(/描述你的策划/).fill("把品牌增长改成核心目标");
+      await app.getByLabel("发送消息").click();
+      await app.locator("#nodesLayer .map-node", { hasText: "核心目标" }).waitFor();
+
+      await app.evaluate(() => {
+        Object.defineProperty(navigator, "share", { configurable: true, value: undefined });
+        Object.defineProperty(navigator, "clipboard", { configurable: true, value: { writeText: async (text) => { window.__planmapSharedText = text; } } });
+      });
+      await app.getByRole("button", { name: "分享" }).click();
+      assert.match(await app.evaluate(() => window.__planmapSharedText || ""), /^# 新品发布会策划$/m, "share should copy the real current outline");
+
+      await app.evaluate(() => {
+        const target = document.querySelector("#mapView");
+        let fullscreenElement = null;
+        Object.defineProperty(document, "fullscreenElement", { configurable: true, get: () => fullscreenElement });
+        target.requestFullscreen = async () => { fullscreenElement = target; document.dispatchEvent(new Event("fullscreenchange")); };
+        document.exitFullscreen = async () => { fullscreenElement = null; document.dispatchEvent(new Event("fullscreenchange")); };
+      });
+      const fullscreenButton = app.getByRole("button", { name: "全屏查看" });
+      await fullscreenButton.click();
+      assert.equal(await app.locator("#fullscreenMap").getAttribute("aria-pressed"), "true");
+      await app.getByRole("button", { name: "退出全屏" }).click();
+      assert.equal(await app.locator("#fullscreenMap").getAttribute("aria-pressed"), "false");
+
+      await app.getByRole("tab", { name: "大纲模式" }).click();
+      app.once("dialog", (dialog) => dialog.accept("目标与定位"));
+      await app.locator("#outlineList .outline-item", { hasText: "目标与主题" }).dblclick();
+      await app.locator("#outlineList .outline-item", { hasText: "目标与定位" }).waitFor();
+      await app.getByRole("tab", { name: "脑图视图" }).click();
+    }
+    if (viewport.name === "mobile") await app.getByRole("tab", { name: /对话/ }).click();
     if (viewport.name === "desktop") {
       for (const root of [
         { id: "broken", title: "损坏数据", children: "not-an-array" },
@@ -318,11 +398,13 @@ try {
     if (viewport.name === "mobile") await app.getByRole("tab", { name: /作品/ }).click();
     for (const layout of ["横向脑图", "树状图", "鱼骨图", "逻辑结构", "时间轴", "左右脑图"]) {
       await app.locator(`.structure-picker [data-layout]`, { hasText: layout }).click();
+      assert.equal(await app.locator(`.structure-picker [data-layout]`, { hasText: layout }).getAttribute("aria-pressed"), "true", `${layout} should expose its selected state`);
       assert.equal(await app.locator("#nodesLayer .map-node").count(), 28, `${layout} should render all five levels`);
       assert.equal(await app.locator("#connections path").count(), 27, `${layout} should connect all rendered nodes`);
       await assertEdgeRoutesClear(app, layout);
     }
     await app.getByRole("tab", { name: "大纲模式" }).click();
+    assert.equal(await app.getByRole("tab", { name: "大纲模式" }).getAttribute("aria-selected"), "true");
     assert.equal(await app.locator("#outlineList .outline-item").count(), 28);
     await app.getByRole("tab", { name: "演示模式" }).click();
     await app.locator("#presentTitle").waitFor();
@@ -414,6 +496,8 @@ try {
       }
     }
     await app.locator("#messages .message-row").evaluateAll((rows) => rows.filter((row) => row.textContent.includes("<img")).forEach((row) => row.remove()));
+    await app.getByRole("button", { name: /自动整理/ }).click();
+    await assertMapVisibleWithinViewport(app, `${viewport.name}/final-auto-fit`);
     await app.screenshot({ path: join(artifactRoot, `${viewport.name}.png`), fullPage: false });
     assert.equal(await app.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth + 1), true);
     await app.close();
