@@ -35,6 +35,7 @@
 | `simuai` | 万象实验室 | 网页跨平台 | Windows：现代浏览器 | macOS：现代浏览器 | [网页体验](https://wthpein010-dev.github.io/ai-application-hub/projects/simuai/index.html)；公开版从 30 个受控实验中本地匹配，不调用远程模型 |
 | `brick-character-copy-preview` | 砖块角色文案预览 | 工程在线体验 | Windows：现代浏览器 | macOS：现代浏览器 | [网页体验](https://wthpein010-dev.github.io/ai-application-hub/projects/brick-character-copy-preview/index.html)；提供表格审阅、角色形象与游戏内详情同步预览 |
 | `gamespec-relay` | GameSpec Relay | 原生双平台 | Windows： [Wins下载](https://github.com/wthpein010-dev/ai-application-hub/releases/download/gamespec-relay-v1.0.0/GameSpec-Relay-Windows-x64.zip)，x64 | macOS： [Mac下载](https://github.com/wthpein010-dev/ai-application-hub/releases/download/gamespec-relay-v1.0.0/GameSpec-Relay-macOS.zip)，arm64/x64 | [项目页](https://wthpein010-dev.github.io/ai-application-hub/projects/gamespec-relay/index.html)；`.github/workflows/build-gamespec-relay-release.yml` 的 [Run 32327989941](https://github.com/wthpein010-dev/ai-application-hub/actions/runs/32327989941) 完成三平台构建与真实启动；`docs/audits/evidence/2026-08-07-macos-download-manifest.json` 记录并审计 macOS 公网包 254,397,768 字节、SHA-256 `AF3B2686F34B3EB2F8F60B03F06A83901D819FDAE68596209158180F180F8170`；Windows 公网包为 95,258,687 字节、SHA-256 `06E01E1AF3655EE53BDED8DE5EB86F0CC841B9015B7BE008B366097B1C4B3A4C` |
+| `x-ai-codex-radar` | AI / Codex 雷达 | 网页跨平台 | Windows：现代浏览器 | macOS：现代浏览器 | [公开演示](https://wthpein010-dev.github.io/ai-application-hub/projects/x-ai-codex-radar/index.html)；无需登录的交互页明确使用示例数据，私有实时采集入口需 ChatGPT 登录；不提供虚假桌面安装包 |
 
 ## 结论
 

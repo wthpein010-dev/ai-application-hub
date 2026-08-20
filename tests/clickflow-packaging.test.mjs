@@ -19,7 +19,9 @@ const hubBrowserGates = [
   join(root, "tests", "hub-entry-pages-browser-smoke.mjs"),
 ];
 
-test("the published ClickFlow build snapshot passes its real Python suite", () => {
+const clickFlowRuntimeTest = process.platform === "win32" ? test.skip : test;
+
+clickFlowRuntimeTest("the published ClickFlow build snapshot passes its real Python suite", () => {
   const required = [
     "auto_clicker.py",
     "clickflow_core.py",

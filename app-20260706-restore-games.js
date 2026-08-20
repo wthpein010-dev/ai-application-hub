@@ -758,6 +758,30 @@ const defaultApps = [
     risk: 9,
     polish: 9
   },
+  {
+    id: "x-ai-codex-radar",
+    name: "AI / Codex 雷达",
+    category: "AI 情报工具",
+    status: "assistant",
+    badge: "AI 情报工具",
+    brief: "定期整理 X 公开来源里关于 AI 与 Codex 的高信号动态，用可信度、证据链和主题筛选压缩阅读时间。",
+    problem: "AI 信息更新快、重复转述多，逐条刷 X 很难判断哪些消息值得跟进，也难保留可复核的出处。",
+    aiUse: "AI 参与公开来源聚合、主题归类、重复信号合并、可信度提示和中文摘要；公开演示使用透明示例数据，私有站点负责定期采集。",
+    folder: "./projects/x-ai-codex-radar/",
+    entry: "./projects/x-ai-codex-radar/index.html",
+    video: "./projects/x-ai-codex-radar/video/index.html",
+    package: "",
+    platforms: {
+      web: { href: "./projects/x-ai-codex-radar/index.html", label: "演示" },
+      windows: "",
+      mac: ""
+    },
+    tags: ["AI 情报", "Codex", "X 公开来源", "可信度"],
+    speed: 10,
+    impact: 9,
+    risk: 9,
+    polish: 9
+  },
 ];
 
 let apps = loadApps();
