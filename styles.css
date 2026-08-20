@@ -517,6 +517,13 @@ select option:hover {
   border-color: rgba(85, 214, 194, 0.38);
 }
 
+.app-card:focus-visible {
+  outline: 3px solid var(--cyan);
+  outline-offset: 3px;
+  border-color: rgba(85, 214, 194, 0.82);
+  box-shadow: 0 0 0 4px rgba(85, 214, 194, 0.15), var(--shadow);
+}
+
 .app-card.selected {
   border-color: rgba(85, 214, 194, 0.7);
   background: linear-gradient(180deg, rgba(85,214,194,0.14), rgba(255,255,255,0.04));
@@ -2413,5 +2420,157 @@ body.editing .metric .inline-edit-button {
 @media (prefers-reduced-motion: reduce) {
   .showcase-status__track > span {
     transition: none;
+  }
+}
+
+/* Keep the catalog within reach on narrow screens without changing the desktop composition. */
+@media (max-width: 720px) {
+  .top-nav {
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 8px 10px;
+    min-height: 0;
+    padding: 8px;
+  }
+
+  .brand {
+    grid-column: 1;
+    grid-row: 1;
+    gap: 8px;
+    min-height: 36px;
+  }
+
+  .brand img,
+  .brand-mark {
+    width: 34px;
+    height: 34px;
+  }
+
+  .brand strong {
+    font-size: 14px;
+  }
+
+  .nav-actions {
+    grid-column: 2;
+    grid-row: 1;
+    gap: 6px;
+  }
+
+  .nav-actions button {
+    min-height: 36px;
+    padding: 0 11px;
+    font-size: 13px;
+  }
+
+  .top-nav nav {
+    grid-column: 1 / -1;
+    grid-row: 2;
+    min-height: 36px;
+    gap: 2px;
+    padding: 2px;
+  }
+
+  .top-nav nav a {
+    flex: 1 1 0;
+    padding: 7px 6px;
+    font-size: 13px;
+    text-align: center;
+  }
+
+  .hero {
+    gap: 20px;
+    padding: 28px 0 12px;
+  }
+
+  .hero-copy {
+    min-height: 0;
+  }
+
+  .hero h1 {
+    margin-bottom: 12px;
+    font-size: 38px;
+  }
+
+  .hero-lead {
+    font-size: 15px;
+    line-height: 1.6;
+  }
+
+  .hero-actions {
+    gap: 8px;
+    margin-top: 18px;
+  }
+
+  .hero-actions a {
+    min-height: 40px;
+    padding: 0 13px;
+    font-size: 14px;
+  }
+
+  .metric-strip {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 8px;
+    margin-top: 16px;
+  }
+
+  .metric {
+    min-height: 82px;
+    padding: 10px 8px;
+    border-left-width: 3px;
+  }
+
+  .metric span {
+    font-size: 12px;
+  }
+
+  .metric-note {
+    margin-top: 2px;
+    font-size: 10px;
+    line-height: 1.25;
+  }
+
+  .metric strong {
+    margin-top: 7px;
+    font-size: 28px;
+  }
+
+  .hero-board {
+    min-height: 370px;
+  }
+
+  .selected-summary {
+    margin: 16px 16px 0;
+  }
+
+  .summary-copy {
+    gap: 10px;
+  }
+
+  .selected-summary strong {
+    font-size: 27px;
+  }
+
+  .selected-summary .summary-intro {
+    display: -webkit-box;
+    overflow: hidden;
+    font-size: 13px;
+    line-height: 1.55;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 3;
+  }
+
+  .summary-richtext {
+    min-height: 76px;
+    padding: 10px 12px;
+    font-size: 13px;
+    line-height: 1.55;
+  }
+
+  .hero-board .showcase-controls {
+    margin-top: 14px;
+    margin-bottom: 16px;
+  }
+
+  .workspace {
+    margin-top: 28px;
   }
 }
