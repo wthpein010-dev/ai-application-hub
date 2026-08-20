@@ -10,10 +10,17 @@ export function normalizeQuestion(text) {
     .trim();
 }
 
+const CATEGORY_TERMS = Object.freeze({
+  "生活日常": ["生活", "日常", "健康"],
+  "自然科学": ["自然", "科学", "生态"],
+  "游戏世界": ["游戏", "玩家", "虚拟"],
+  "商业决策": ["商业", "业务", "经营", "决策"],
+  "社交传播": ["社交", "传播", "内容", "流量"],
+  "趣味脑洞": ["趣味", "脑洞", "假想", "奇思"],
+});
+
 function categoryTerms(category) {
-  if (category === "生活科普") return ["生活", "科普", "健康"];
-  if (category === "游戏产品") return ["游戏", "产品", "玩家"];
-  return ["商业", "业务", "公司"];
+  return CATEGORY_TERMS[category] ?? [];
 }
 
 function scoreExperiment(question, experiment) {

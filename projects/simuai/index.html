@@ -9,7 +9,7 @@
   <link rel="stylesheet" href="../../assets/subpage-shell.css">
   <link rel="stylesheet" href="./styles.css">
 </head>
-<body class="hub-subpage">
+<body id="top" class="hub-subpage">
   <div class="ambient ambient-a" aria-hidden="true"></div>
   <div class="ambient ambient-b" aria-hidden="true"></div>
 
@@ -24,7 +24,7 @@
     </div>
   </header>
 
-  <main id="top">
+  <main>
     <section class="hero" aria-labelledby="heroTitle">
       <div class="eyebrow"><span>SIMULATE THE QUESTION</span><b>01</b></div>
       <h1 id="heroTitle">别只问答案。<br><em>动手改变结果。</em></h1>
@@ -92,6 +92,7 @@
             <div id="chartLegend" class="chart-legend"></div>
           </div>
           <div id="chartModePicker" class="chart-mode-picker" aria-label="图表显示方式"></div>
+          <p id="chartScrollHint" class="chart-scroll-hint">← 左右滑动查看完整曲线 →</p>
           <div class="chart-shell">
             <svg id="resultChart" viewBox="0 0 800 360" role="img" aria-labelledby="chartTitle chartDescription"></svg>
             <p id="chartDescription" class="sr-only"></p>

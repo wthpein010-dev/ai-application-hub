@@ -22,10 +22,9 @@ test("application cards keep demo and video above the two download actions", () 
   assert.match(actions, /\$\{webLink\}\s*\$\{video\}\s*\$\{windowsLink\}\s*\$\{macLink\}/);
   assert.match(actions, /data-action="web"[^>]*>\u6f14\u793a<\/a>/);
   assert.match(actions, /data-action="video"[^>]*>\u89c6\u9891<\/a>/);
-  assert.match(actions, /const windowsLabel = platformLabel\(app, "windows", "[^"]+"\)/);
-  assert.match(actions, /const macLabel = platformLabel\(app, "mac", "[^"]+"\)/);
-  assert.match(actions, /data-action="download"[^>]*>\$\{escapeHtml\(windowsLabel\)\}<\/a>/);
-  assert.match(actions, /data-action="mac"[^>]*>\$\{escapeHtml\(macLabel\)\}<\/a>/);
+  assert.match(actions, /data-action="download"[^>]*>Wins\u4e0b\u8f7d<\/a>/);
+  assert.match(actions, /data-action="mac"[^>]*>Mac\u4e0b\u8f7d<\/a>/);
+  assert.doesNotMatch(actions, /platformLabel\(/);
 });
 
 test("engineering cards use the same two-column action grid", () => {

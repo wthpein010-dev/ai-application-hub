@@ -1091,9 +1091,13 @@ function renderPlatformShowcase(filtered) {
 function renderActions(app, stopPropagation = false, mode = "default") {
   const stop = stopPropagation ? ` onclick="event.stopPropagation()"` : "";
   const web = platformValue(app, "web") || app.entry;
-  const engineeringVideoLink = app.video ? `<a data-action="video" href="${escapeHtml(projectHref(videoHref(app)))}"${stop}>\u89c6\u9891</a>` : "";
+  const webActionLabel = `${app.name} 演示`;
+  const videoActionLabel = `${app.name} 视频`;
+  const windowsActionLabel = `${app.name} Wins下载`;
+  const macActionLabel = `${app.name} Mac下载`;
+  const engineeringVideoLink = app.video ? `<a data-action="video" href="${escapeHtml(projectHref(videoHref(app)))}" aria-label="${escapeHtml(videoActionLabel)}"${stop}>\u89c6\u9891</a>` : "";
   if (mode === "engineering") {
-    const webLink = web ? `<a class="primary-link" data-action="web" href="${escapeHtml(projectHref(web))}"${stop}>演示</a>` : "";
+    const webLink = web ? `<a class="primary-link" data-action="web" href="${escapeHtml(projectHref(web))}" aria-label="${escapeHtml(webActionLabel)}"${stop}>演示</a>` : "";
     return `
       <div class="card-actions actions-engineering">
         ${webLink}
@@ -1105,13 +1109,11 @@ function renderActions(app, stopPropagation = false, mode = "default") {
   const mac = platformValue(app, "mac");
   const windowsDownload = isDirectPackageHref(windows) ? " download" : "";
   const macDownload = isDirectPackageHref(mac) ? " download" : "";
-  const windowsLabel = platformLabel(app, "windows", "Wins下载");
-  const macLabel = platformLabel(app, "mac", "Mac下载");
-  const webLink = web ? `<a class="primary-link" data-action="web" href="${escapeHtml(projectHref(web))}"${stop}>演示</a>` : "";
-  const windowsLink = windows ? `<a class="download-link" data-action="download" href="${escapeHtml(projectHref(windows))}"${windowsDownload}${stop}>${escapeHtml(windowsLabel)}</a>` : "";
-  const macLink = mac ? `<a class="mac-link" data-action="mac" href="${escapeHtml(projectHref(mac))}"${macDownload}${stop}>${escapeHtml(macLabel)}</a>` : "";
+  const webLink = web ? `<a class="primary-link" data-action="web" href="${escapeHtml(projectHref(web))}" aria-label="${escapeHtml(webActionLabel)}"${stop}>演示</a>` : "";
+  const windowsLink = windows ? `<a class="download-link" data-action="download" href="${escapeHtml(projectHref(windows))}" aria-label="${escapeHtml(windowsActionLabel)}"${windowsDownload}${stop}>Wins下载</a>` : "";
+  const macLink = mac ? `<a class="mac-link" data-action="mac" href="${escapeHtml(projectHref(mac))}" aria-label="${escapeHtml(macActionLabel)}"${macDownload}${stop}>Mac下载</a>` : "";
   const video = app.video
-    ? `<a data-action="video" href="${escapeHtml(projectHref(videoHref(app)))}"${stop}>视频</a>`
+    ? `<a data-action="video" href="${escapeHtml(projectHref(videoHref(app)))}" aria-label="${escapeHtml(videoActionLabel)}"${stop}>视频</a>`
     : "";
   return `
     <div class="card-actions">
