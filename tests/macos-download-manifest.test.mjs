@@ -28,6 +28,9 @@ const manifest = JSON.parse(
     "utf8",
   ),
 );
+const pureshrinkReleaseManifest = JSON.parse(
+  await readFile(join(root, "projects", "pureshrink", "release-manifest.json"), "utf8"),
+);
 const execFileAsync = promisify(execFile);
 const auditScript = join(root, "scripts", "audit-public-macos-downloads.sh");
 const auditWorkflow = join(root, ".github", "workflows", "audit-macos-downloads.yml");
@@ -125,6 +128,22 @@ test("the Mac audit manifest covers every public Mac action exactly once", () =>
     "gamespec-relay",
   ]);
   assert.deepEqual(result.extension.map((item) => item.id), ["feishu-downloader"]);
+});
+
+test("the PureShrink Mac audit record matches its immutable release manifest", () => {
+  const auditRecord = manifest.downloads.find((item) => item.id === "pureshrink");
+
+  assert.ok(auditRecord, "PureShrink should have a Mac audit record");
+  assert.deepEqual(
+    {
+      bytes: auditRecord.bytes,
+      sha256: auditRecord.sha256.toLowerCase(),
+    },
+    {
+      bytes: pureshrinkReleaseManifest.assets.mac.bytes,
+      sha256: pureshrinkReleaseManifest.assets.mac.sha256,
+    },
+  );
 });
 
 test("the Mac audit manifest rejects unknown record fields", () => {

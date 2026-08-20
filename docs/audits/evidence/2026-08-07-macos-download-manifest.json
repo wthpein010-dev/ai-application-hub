@@ -66,8 +66,8 @@
       "kind": "native",
       "catalogUrl": "https://github.com/wthpein010-dev/ai-application-hub/releases/download/pureshrink-v1.0.5/PureShrink-macOS.zip",
       "archiveUrl": "https://github.com/wthpein010-dev/ai-application-hub/releases/download/pureshrink-v1.0.5/PureShrink-macOS.zip",
-      "bytes": 313423419,
-      "sha256": "49CCCBED9A1C083398EAC0601BA40AEBD3D72C98EB3F26E76358FA14EC49199D",
+      "bytes": 313422433,
+      "sha256": "228BCE72358B2C8B20A30FCCAFAF7EB50380122023F3B775BFBCEADB06F4D820",
       "architectures": [
         "arm64",
         "x64"
