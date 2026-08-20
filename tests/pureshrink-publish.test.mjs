@@ -286,14 +286,103 @@ test("PureShrink manifest records immutable release assets and native verificati
   );
 });
 
-test("PureShrink manifest does not claim deployment evidence before 1.0.5 reaches Pages", () => {
+test("PureShrink manifest records completed Pages and public acceptance evidence for 1.0.5", () => {
   const manifest = JSON.parse(readFileSync(project("release-manifest.json"), "utf8"));
 
-  assert.equal(manifest.pagesWorkflow, null);
-  assert.equal(manifest.evidenceDeployment, null);
-  assert.deepEqual(manifest.publicVerification, {
-    status: "pending",
-    reason: "Awaiting the first GitHub Pages deployment that contains PureShrink 1.0.5",
+  assert.deepEqual(manifest.pagesWorkflow, {
+    runId: 32331640218,
+    url: "https://github.com/wthpein010-dev/ai-application-hub/actions/runs/32331640218",
+    commit: "f97f8eb65e54608f4e18e8709381bba8713f3aab",
+    conclusion: "success",
+    buildJobId: 96313291543,
+    deployJobId: 96313472406,
+  });
+  assert.deepEqual(manifest.evidenceDeployment, {
+    commit: "f97f8eb65e54608f4e18e8709381bba8713f3aab",
+    runId: 32331640218,
+    url: "https://github.com/wthpein010-dev/ai-application-hub/actions/runs/32331640218",
+    conclusion: "success",
+    deployedAt: "2026-08-20T04:23:51Z",
+  });
+  assert.deepEqual({
+    status: manifest.publicVerification.status,
+    fullHubRunId: manifest.publicVerification.workflowEvidence.fullHubAndBrowser.runId,
+    fullHubJobId: manifest.publicVerification.workflowEvidence.fullHubAndBrowser.jobId,
+    macRunId: manifest.publicVerification.workflowEvidence.macDownloads.runId,
+    macArm64JobId: manifest.publicVerification.workflowEvidence.macDownloads.arm64JobId,
+    macX64JobId: manifest.publicVerification.workflowEvidence.macDownloads.x64JobId,
+    browserErrors: manifest.publicVerification.browserErrors,
+    browserWarnings: manifest.publicVerification.browserWarnings,
+  }, {
+    status: "passed",
+    fullHubRunId: 32331640775,
+    fullHubJobId: 96313289710,
+    macRunId: 32331640792,
+    macArm64JobId: 96313289649,
+    macX64JobId: 96313289802,
+    browserErrors: 0,
+    browserWarnings: 0,
+  });
+  assert.deepEqual(manifest.publicVerification.cardActions, [
+    "演示",
+    "视频",
+    "Wins下载",
+    "Mac下载",
+  ]);
+  assert.deepEqual(manifest.publicVerification.onlineLossless, {
+    mode: "strict-lossless",
+    format: "PDF -> ZIP",
+    fixtureBytes: 1545,
+    queueCompleted: true,
+    result: "ZIP extracted bytes matched original",
+    reductionPercent: 22.3,
+  });
+  assert.deepEqual(manifest.publicVerification.responsive, {
+    hubWidth: 390,
+    compressorWidth: 390,
+    videoWidth: 390,
+    horizontalOverflow: false,
+  });
+  assert.deepEqual(manifest.publicVerification.video, {
+    codec: "H.264",
+    width: 1280,
+    height: 720,
+    durationSeconds: 42.433333,
+    readyState: 4,
+    playedToSeconds: 2.64169,
+    captionsMode: "showing",
+    rangeStatus: 206,
+  });
+  assert.deepEqual({
+    hub: manifest.publicVerification.http.hub,
+    compressor: manifest.publicVerification.http.compressor,
+    video: manifest.publicVerification.http.video,
+    videoFile: manifest.publicVerification.http.videoFile,
+    captions: manifest.publicVerification.http.captions,
+    worker: manifest.publicVerification.http.worker,
+    fflate: manifest.publicVerification.http.fflate,
+    ffmpeg: manifest.publicVerification.http.ffmpeg,
+    ffmpegCoreJs: manifest.publicVerification.http.ffmpegCoreJs,
+    ffmpegCoreWasmRange: manifest.publicVerification.http.ffmpegCoreWasmRange,
+    releaseManifest: manifest.publicVerification.http.releaseManifest,
+    windowsDownload: manifest.publicVerification.http.windowsDownload,
+    macDownload: manifest.publicVerification.http.macDownload,
+    checksums: manifest.publicVerification.http.checksums,
+  }, {
+    hub: 200,
+    compressor: 200,
+    video: 200,
+    videoFile: 200,
+    captions: 200,
+    worker: 200,
+    fflate: 200,
+    ffmpeg: 200,
+    ffmpegCoreJs: 200,
+    ffmpegCoreWasmRange: 206,
+    releaseManifest: 200,
+    windowsDownload: 200,
+    macDownload: 200,
+    checksums: 200,
   });
 });
 
