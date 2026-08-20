@@ -173,139 +173,155 @@ function loadExternalScript(url, globalName) {
   });
 }
 
+export function createLegacyFfmpegAdapter(legacy, options = {}) {
+  const corePath = options.corePath || browserAssetUrl(FFMPEG_CORE_URL);
+
+  return {
+    async transform({
+      inputName,
+      outputName,
+      inputBytes,
+      args,
+      onProgress = () => {},
+      signal,
+      verifyLossless,
+    }) {
+      abortIfNeeded(signal);
+      const recentLogs = [];
+      const instances = new Set();
+      const closedInstances = new WeakSet();
+      let aborted = false;
+      let activeInstance;
+      let transformInstance;
+      let verificationInstance;
+      const closeInstance = (instance) => {
+        if (!instance || closedInstances.has(instance)) return;
+        closedInstances.add(instance);
+        try {
+          instance.exit();
+        } catch {
+          // Failed or already terminated cores still count as released.
+        }
+      };
+      const createInstance = async () => {
+        const created = legacy.createFFmpeg({
+          corePath,
+          mainName: "main",
+          log: false,
+        });
+        instances.add(created);
+        activeInstance = created;
+        created.setLogger(({ message }) => {
+          if (!message) return;
+          recentLogs.push(String(message));
+          if (recentLogs.length > 40) recentLogs.shift();
+        });
+        await created.load();
+        return created;
+      };
+      const removeFiles = (instance, names) => {
+        if (!instance) return;
+        for (const name of names) {
+          try {
+            instance.FS("unlink", name);
+          } catch {
+            // A terminated or failed core may not retain its virtual files.
+          }
+        }
+      };
+      const abort = () => {
+        aborted = true;
+        closeInstance(activeInstance);
+        options.onAbort?.();
+      };
+      signal?.addEventListener("abort", abort, { once: true });
+      try {
+        transformInstance = await createInstance();
+        abortIfNeeded(signal);
+        transformInstance.setProgress(({ ratio }) => {
+          if (Number.isFinite(ratio)) onProgress(Math.min(96, Math.max(1, ratio * 96)));
+        });
+        transformInstance.FS("writeFile", inputName, inputBytes);
+        await transformInstance.run(...args);
+        abortIfNeeded(signal);
+        const bytes = new Uint8Array(
+          transformInstance.FS("readFile", outputName),
+        );
+        let losslessMatch;
+        if (verifyLossless) {
+          const sourceHashName = `${inputName}.streamhash`;
+          const outputHashName = `${outputName}.streamhash`;
+          try {
+            verificationInstance = await createInstance();
+            abortIfNeeded(signal);
+            verificationInstance.FS("writeFile", inputName, inputBytes);
+            verificationInstance.FS("writeFile", outputName, bytes);
+            await verificationInstance.run(
+              "-v", "error",
+              "-i", inputName,
+              "-i", outputName,
+              "-map", "0",
+              "-c", "copy",
+              "-f", "streamhash",
+              "-hash", "sha256",
+              sourceHashName,
+              "-map", "1",
+              "-c", "copy",
+              "-f", "streamhash",
+              "-hash", "sha256",
+              outputHashName,
+            );
+            const decoder = new TextDecoder();
+            const sourceHash = comparableHashOutput(
+              decoder.decode(verificationInstance.FS("readFile", sourceHashName)),
+            );
+            const outputHash = comparableHashOutput(
+              decoder.decode(verificationInstance.FS("readFile", outputHashName)),
+            );
+            losslessMatch = Boolean(sourceHash) && sourceHash === outputHash;
+          } finally {
+            removeFiles(verificationInstance, [
+              inputName,
+              outputName,
+              sourceHashName,
+              outputHashName,
+            ]);
+          }
+        }
+        return {
+          name: outputName,
+          bytes,
+          losslessMatch,
+        };
+      } catch (error) {
+        if (aborted || signal?.aborted) throw abortError();
+        if (error instanceof Error) throw error;
+        const detail = recentLogs.slice(-8).join(" | ");
+        throw new Error(
+          error?.message
+          || detail
+          || String(error || "FFmpeg WebAssembly 处理失败"),
+        );
+      } finally {
+        signal?.removeEventListener("abort", abort);
+        removeFiles(transformInstance, [inputName, outputName]);
+        for (const instance of instances) closeInstance(instance);
+        activeInstance = null;
+      }
+    },
+  };
+}
+
 async function defaultLoadFFmpeg() {
   if (!ffmpegAdapterPromise) {
     ffmpegAdapterPromise = (async () => {
       const legacy = await loadExternalScript(browserAssetUrl(FFMPEG_SCRIPT_URL), "FFmpeg");
-      const recentLogs = [];
-
-      return {
-        async transform({
-          inputName,
-          outputName,
-          inputBytes,
-          args,
-          onProgress,
-          signal,
-          verifyLossless,
-        }) {
-          abortIfNeeded(signal);
-          recentLogs.length = 0;
-          let aborted = false;
-          let activeInstance;
-          let transformInstance;
-          let verificationInstance;
-          const createInstance = async () => {
-            const created = legacy.createFFmpeg({
-              corePath: browserAssetUrl(FFMPEG_CORE_URL),
-              mainName: "main",
-              log: false,
-            });
-            activeInstance = created;
-            created.setLogger(({ message }) => {
-              if (!message) return;
-              recentLogs.push(String(message));
-              if (recentLogs.length > 40) recentLogs.shift();
-            });
-            await created.load();
-            return created;
-          };
-          const removeFiles = (instance, names) => {
-            if (!instance) return;
-            for (const name of names) {
-              try {
-                instance.FS("unlink", name);
-              } catch {
-                // A terminated or failed core may not retain its virtual files.
-              }
-            }
-          };
-          const abort = () => {
-            aborted = true;
-            try {
-              activeInstance?.exit();
-            } catch {
-              // The core may already have terminated after a worker failure.
-            } finally {
-              ffmpegAdapterPromise = null;
-            }
-          };
-          signal?.addEventListener("abort", abort, { once: true });
-          try {
-            transformInstance = await createInstance();
-            abortIfNeeded(signal);
-            transformInstance.setProgress(({ ratio }) => {
-              if (Number.isFinite(ratio)) onProgress(Math.min(96, Math.max(1, ratio * 96)));
-            });
-            transformInstance.FS("writeFile", inputName, inputBytes);
-            await transformInstance.run(...args);
-            abortIfNeeded(signal);
-            const bytes = new Uint8Array(
-              transformInstance.FS("readFile", outputName),
-            );
-            let losslessMatch;
-            if (verifyLossless) {
-              const sourceHashName = `${inputName}.streamhash`;
-              const outputHashName = `${outputName}.streamhash`;
-              try {
-                verificationInstance = await createInstance();
-                abortIfNeeded(signal);
-                verificationInstance.FS("writeFile", inputName, inputBytes);
-                verificationInstance.FS("writeFile", outputName, bytes);
-                await verificationInstance.run(
-                  "-v", "error",
-                  "-i", inputName,
-                  "-i", outputName,
-                  "-map", "0",
-                  "-c", "copy",
-                  "-f", "streamhash",
-                  "-hash", "sha256",
-                  sourceHashName,
-                  "-map", "1",
-                  "-c", "copy",
-                  "-f", "streamhash",
-                  "-hash", "sha256",
-                  outputHashName,
-                );
-                const decoder = new TextDecoder();
-                const sourceHash = comparableHashOutput(
-                  decoder.decode(verificationInstance.FS("readFile", sourceHashName)),
-                );
-                const outputHash = comparableHashOutput(
-                  decoder.decode(verificationInstance.FS("readFile", outputHashName)),
-                );
-                losslessMatch = Boolean(sourceHash) && sourceHash === outputHash;
-              } finally {
-                removeFiles(verificationInstance, [
-                  inputName,
-                  outputName,
-                  sourceHashName,
-                  outputHashName,
-                ]);
-              }
-            }
-            return {
-              name: outputName,
-              bytes,
-              losslessMatch,
-            };
-          } catch (error) {
-            if (aborted || signal?.aborted) throw abortError();
-            if (error instanceof Error) throw error;
-            const detail = recentLogs.slice(-8).join(" | ");
-            throw new Error(
-              error?.message
-              || detail
-              || String(error || "FFmpeg WebAssembly 处理失败"),
-            );
-          } finally {
-            signal?.removeEventListener("abort", abort);
-            if (!aborted) {
-              removeFiles(transformInstance, [inputName, outputName]);
-            }
-          }
+      return createLegacyFfmpegAdapter(legacy, {
+        corePath: browserAssetUrl(FFMPEG_CORE_URL),
+        onAbort: () => {
+          ffmpegAdapterPromise = null;
         },
-      };
+      });
     })().catch((error) => {
       ffmpegAdapterPromise = null;
       throw error;

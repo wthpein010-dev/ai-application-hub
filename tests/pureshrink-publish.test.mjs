@@ -107,19 +107,19 @@ test("PureShrink migration preserves a customized name", () => {
   assert.equal(migrated.badge, "辅助工具");
 });
 
-test("PureShrink page and release metadata use only public production URLs", () => {
+test("PureShrink keeps the last verified downloads until replacement assets are published", () => {
   assert.equal(existsSync(project("index.html")), true);
   assert.equal(existsSync(project("release-manifest.json")), true);
 
   const publicFiles = [
     readFileSync(project("index.html"), "utf8"),
     readFileSync(project("README.md"), "utf8"),
-    readFileSync(project("release-manifest.json"), "utf8"),
     readFileSync(runtimePath, "utf8"),
   ].join("\n");
 
   assert.doesNotMatch(publicFiles, /C:\\Users|localhost|127\.0\.0\.1|file:\/\//);
   assert.match(publicFiles, /pureshrink-v1\.0\.3/);
+  assert.doesNotMatch(publicFiles, /pureshrink-v1\.0\.4/);
   assert.match(publicFiles, /PureShrink-Windows-x64\.zip/);
   assert.match(publicFiles, /PureShrink-macOS\.zip/);
 });

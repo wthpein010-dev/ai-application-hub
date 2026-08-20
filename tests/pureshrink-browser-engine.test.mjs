@@ -2,12 +2,14 @@ import test from "node:test";
 import assert from "node:assert/strict";
 
 import { createPlan } from "../projects/pureshrink/core/policy.mjs";
-import {
+import * as browserEngineModule from "../projects/pureshrink/engines/browser-engine.mjs";
+import { createDesktopEngine } from "../projects/pureshrink/engines/desktop-engine.mjs";
+
+const {
   createArchiveWorkerAdapter,
   createBrowserEngine,
   MAX_BROWSER_ARCHIVE_BYTES,
-} from "../projects/pureshrink/engines/browser-engine.mjs";
-import { createDesktopEngine } from "../projects/pureshrink/engines/desktop-engine.mjs";
+} = browserEngineModule;
 
 function makeFile(name, type, bytes) {
   const data = Uint8Array.from(bytes);
@@ -26,6 +28,94 @@ function makeTask(file, mode = "lossless") {
     plan: createPlan(file, mode),
   };
 }
+
+test("browser FFmpeg adapter releases transform and verification cores", async () => {
+  assert.equal(typeof browserEngineModule.createLegacyFfmpegAdapter, "function");
+  const instances = [];
+  const encoder = new TextEncoder();
+  const legacy = {
+    createFFmpeg() {
+      const files = new Map();
+      const instance = {
+        exits: 0,
+        setLogger() {},
+        setProgress() {},
+        async load() {},
+        async run(...args) {
+          const hashIndexes = args.flatMap((value, index) => (
+            value === "sha256" ? [index] : []
+          ));
+          if (hashIndexes.length) {
+            for (const index of hashIndexes) {
+              files.set(args[index + 1], encoder.encode("0,video,sha256=verified\n"));
+            }
+            return;
+          }
+          files.set(args.at(-1), Uint8Array.from([9, 8, 7]));
+        },
+        FS(operation, name, value) {
+          if (operation === "writeFile") files.set(name, new Uint8Array(value));
+          if (operation === "readFile") return files.get(name);
+          if (operation === "unlink") files.delete(name);
+          return undefined;
+        },
+        exit() {
+          this.exits += 1;
+        },
+      };
+      instances.push(instance);
+      return instance;
+    },
+  };
+  const adapter = browserEngineModule.createLegacyFfmpegAdapter(legacy, {
+    corePath: "https://example.test/ffmpeg-core.js",
+  });
+
+  const result = await adapter.transform({
+    inputName: "input.mp4",
+    outputName: "output.mp4",
+    inputBytes: Uint8Array.from([1, 2, 3]),
+    args: ["-i", "input.mp4", "output.mp4"],
+    onProgress() {},
+    verifyLossless: true,
+  });
+
+  assert.deepEqual(Array.from(result.bytes), [9, 8, 7]);
+  assert.equal(result.losslessMatch, true);
+  assert.equal(instances.length, 2);
+  assert.deepEqual(instances.map((instance) => instance.exits), [1, 1]);
+});
+
+test("browser FFmpeg adapter releases a core whose load fails", async () => {
+  assert.equal(typeof browserEngineModule.createLegacyFfmpegAdapter, "function");
+  let exits = 0;
+  const adapter = browserEngineModule.createLegacyFfmpegAdapter({
+    createFFmpeg() {
+      return {
+        setLogger() {},
+        async load() {
+          throw new Error("core load failed");
+        },
+        exit() {
+          exits += 1;
+        },
+      };
+    },
+  }, { corePath: "https://example.test/ffmpeg-core.js" });
+
+  await assert.rejects(
+    adapter.transform({
+      inputName: "input.mp4",
+      outputName: "output.mp4",
+      inputBytes: Uint8Array.from([1]),
+      args: ["-i", "input.mp4", "output.mp4"],
+      onProgress() {},
+      verifyLossless: false,
+    }),
+    /core load failed/,
+  );
+  assert.equal(exits, 1);
+});
 
 test("browser engine returns a downloadable pixel-lossless PNG candidate", async () => {
   const engine = createBrowserEngine({

@@ -12,6 +12,7 @@ const path = require("node:path");
 const { buildArguments, resolveOutputPath } = require("./policy.cjs");
 
 const MAX_DESKTOP_ARCHIVE_BYTES = 256 * 1024 * 1024;
+const MAX_PROCESS_CAPTURE_BYTES = 1024 * 1024;
 
 function resolveBundledBinaryPath(binaryPath, pathExists = existsSync) {
   const asarSegment = `app.asar${path.sep}`;
@@ -24,6 +25,7 @@ function resolveBundledBinaryPath(binaryPath, pathExists = existsSync) {
 }
 
 function runProcess(binary, args, options = {}) {
+  if (options.signal?.aborted) return Promise.reject(abortError());
   return new Promise((resolve, reject) => {
     const child = spawn(binary, args, {
       shell: false,
@@ -34,16 +36,35 @@ function runProcess(binary, args, options = {}) {
 
     const stdout = [];
     const stderr = [];
-    child.stdout.on("data", (chunk) => stdout.push(chunk));
+    const stdoutState = { bytes: 0 };
+    const stderrState = { bytes: 0 };
+    const appendTail = (chunks, state, chunk) => {
+      const buffer = Buffer.from(chunk);
+      chunks.push(buffer);
+      state.bytes += buffer.byteLength;
+      while (state.bytes > MAX_PROCESS_CAPTURE_BYTES && chunks.length) {
+        const excess = state.bytes - MAX_PROCESS_CAPTURE_BYTES;
+        if (chunks[0].byteLength <= excess) {
+          state.bytes -= chunks.shift().byteLength;
+        } else {
+          chunks[0] = chunks[0].subarray(excess);
+          state.bytes -= excess;
+        }
+      }
+    };
+    child.stdout.on("data", (chunk) => appendTail(stdout, stdoutState, chunk));
     child.stderr.on("data", (chunk) => {
-      stderr.push(chunk);
+      appendTail(stderr, stderrState, chunk);
       options.onStderr?.(chunk.toString("utf8"));
     });
 
     const abort = () => child.kill("SIGTERM");
     options.signal?.addEventListener("abort", abort, { once: true });
 
-    child.once("error", reject);
+    child.once("error", (error) => {
+      options.signal?.removeEventListener("abort", abort);
+      reject(error);
+    });
     child.once("close", (code, signal) => {
       options.signal?.removeEventListener("abort", abort);
       const result = {
@@ -71,12 +92,14 @@ function comparableHashOutput(output) {
     .join("\n");
 }
 
-async function mediaFingerprint(ffmpegPath, filePath, kind) {
+async function mediaFingerprint(ffmpegPath, filePath, kind, options = {}) {
   const format = kind === "image" ? "framemd5" : "streamhash";
   const hashArgs = kind === "image"
     ? ["-v", "error", "-i", filePath, "-vf", "format=rgba", "-f", format, "-"]
     : ["-v", "error", "-i", filePath, "-map", "0", "-c", "copy", "-f", format, "-hash", "sha256", "-"];
-  const result = await runProcess(ffmpegPath, hashArgs);
+  const result = await runProcess(ffmpegPath, hashArgs, {
+    signal: options.signal,
+  });
   if (result.code !== 0) {
     throw new Error(`PureShrink verification failed: ${result.stderr.slice(-600)}`);
   }
@@ -190,6 +213,7 @@ class NativeRunner {
         }
       }
 
+      if (controller.signal.aborted) throw abortError();
       const sourceBytes = statSync(request.sourcePath).size;
       const outputBytes = statSync(outputPath).size;
       if (request.plan?.isLossless && outputBytes >= sourceBytes) {
@@ -206,8 +230,12 @@ class NativeRunner {
       let verification = "高保真参数重新编码完成";
       if (request.plan?.isLossless && request.plan?.kind !== "archive") {
         const [sourceFingerprint, outputFingerprint] = await Promise.all([
-          mediaFingerprint(this.ffmpegPath, request.sourcePath, request.plan.kind),
-          mediaFingerprint(this.ffmpegPath, outputPath, request.plan.kind),
+          mediaFingerprint(this.ffmpegPath, request.sourcePath, request.plan.kind, {
+            signal: controller.signal,
+          }),
+          mediaFingerprint(this.ffmpegPath, outputPath, request.plan.kind, {
+            signal: controller.signal,
+          }),
         ]);
         if (!sourceFingerprint || sourceFingerprint !== outputFingerprint) {
           unlinkSync(outputPath);
