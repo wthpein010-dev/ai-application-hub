@@ -22,12 +22,13 @@ test("Windows and macOS platform actions can use explicit labels", () => {
   assert.match(app, /data-action="mac"[\s\S]{0,160}\$\{escapeHtml\(macLabel\)\}/);
 });
 
-test("web media collector exposes cross-platform source instructions without fake installers", () => {
+test("web media collector does not expose source notes as fake installers", () => {
   const catalog = sliceFor('id: "web-media-collector",');
   const normalized = sliceFor('if (normalized.id === "web-media-collector") {');
 
   for (const section of [catalog, normalized]) {
-    assert.match(section, /windows:\s*\{\s*href: "\.\/projects\/朋友圈发图神器\/01_作品体验入口\/网页素材一键收桌面版\/README\.md",\s*label: "Windows说明"\s*\}/);
-    assert.match(section, /mac:\s*\{\s*href: "\.\/projects\/朋友圈发图神器\/01_作品体验入口\/网页素材一键收桌面版\/macOS版\/README\.md",\s*label: "macOS说明"\s*\}/);
+    assert.match(section, /windows:\s*""/);
+    assert.match(section, /mac:\s*""/);
+    assert.doesNotMatch(section, /README\.md",\s*label:\s*"(?:Windows|macOS)说明"/);
   }
 });

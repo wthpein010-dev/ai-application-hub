@@ -329,8 +329,8 @@ const defaultApps = [
     package: "",
     platforms: {
       web: { href: "./projects/朋友圈发图神器/01_作品体验入口/网页素材一键收桌面版/index.html", label: "演示" },
-      windows: { href: "./projects/朋友圈发图神器/01_作品体验入口/网页素材一键收桌面版/README.md", label: "Windows说明" },
-      mac: { href: "./projects/朋友圈发图神器/01_作品体验入口/网页素材一键收桌面版/macOS版/README.md", label: "macOS说明" }
+      windows: "",
+      mac: ""
     },
     tags: ["网页素材", "桌面版", "始终置顶", "批量下载"],
     speed: 8,
@@ -1569,8 +1569,8 @@ function normalizeApp(app) {
     normalized.package = "";
     normalized.platforms = {
       web: { href: "./projects/朋友圈发图神器/01_作品体验入口/网页素材一键收桌面版/index.html", label: "演示" },
-      windows: { href: "./projects/朋友圈发图神器/01_作品体验入口/网页素材一键收桌面版/README.md", label: "Windows说明" },
-      mac: { href: "./projects/朋友圈发图神器/01_作品体验入口/网页素材一键收桌面版/macOS版/README.md", label: "macOS说明" }
+      windows: "",
+      mac: ""
     };
     normalized.status = "desktop";
   }
