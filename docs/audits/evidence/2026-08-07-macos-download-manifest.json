@@ -72,6 +72,19 @@
         "arm64",
         "x64"
       ]
+    },
+    {
+      "id": "gamespec-relay",
+      "name": "GameSpec Relay",
+      "kind": "native",
+      "catalogUrl": "https://github.com/wthpein010-dev/ai-application-hub/releases/download/gamespec-relay-v1.0.0/GameSpec-Relay-macOS.zip",
+      "archiveUrl": "https://github.com/wthpein010-dev/ai-application-hub/releases/download/gamespec-relay-v1.0.0/GameSpec-Relay-macOS.zip",
+      "bytes": 254397768,
+      "sha256": "AF3B2686F34B3EB2F8F60B03F06A83901D819FDAE68596209158180F180F8170",
+      "architectures": [
+        "arm64",
+        "x64"
+      ]
     }
   ]
 }

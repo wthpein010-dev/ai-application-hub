@@ -122,6 +122,7 @@ test("the Mac audit manifest covers every public Mac action exactly once", () =>
     "codex-thread-workbench",
     "clickflow",
     "pureshrink",
+    "gamespec-relay",
   ]);
   assert.deepEqual(result.extension.map((item) => item.id), ["feishu-downloader"]);
 });
@@ -324,6 +325,33 @@ test("the audit script rejects a Chromium extension without manifest.json", asyn
   const result = await runFixtureAudit({ directory, manifestPath });
   assert.notEqual(result.code, 0);
   assert.match(result.stderr, /missing manifest\.json/i);
+});
+
+test("the audit script accepts a GameSpec Relay combined native fixture", async (t) => {
+  const directory = await withFixture(t);
+  const archive = await createFixtureZip(directory, "gamespec-relay", {
+    "arm64/GameSpec Relay.app/Contents/Info.plist": "fixture",
+    "arm64/GameSpec Relay.app/Contents/MacOS/GameSpec Relay": "fixture",
+  });
+  const artifact = await fixtureArtifact(archive);
+  const manifestPath = await writeFixtureManifest(directory, {
+    id: "gamespec-relay",
+    name: "GameSpec Relay",
+    kind: "native",
+    catalogUrl: artifact.archiveUrl,
+    ...artifact,
+    architectures: ["arm64", "x64"],
+  });
+
+  const result = await runFixtureAudit({ directory, manifestPath });
+  assert.equal(result.code, 0, result.stderr);
+  assert.match(result.stdout, /Verified gamespec-relay/);
+
+  const evidence = JSON.parse(
+    await readFile(join(directory, "evidence", "macos-download-audit-arm64.json"), "utf8"),
+  );
+  assert.equal(evidence.status, "passed");
+  assert.deepEqual(evidence.downloads.map((item) => item.id), ["gamespec-relay"]);
 });
 
 test("the audit script accepts a valid extension fixture without native Mac tools", async (t) => {

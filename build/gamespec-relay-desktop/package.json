@@ -1,0 +1,63 @@
+{
+  "name": "gamespec-relay-desktop",
+  "version": "1.0.0",
+  "private": true,
+  "description": "GameSpec Relay offline game requirement-to-delivery Agent",
+  "author": "wthpein010-dev",
+  "main": "main.cjs",
+  "license": "MIT",
+  "scripts": {
+    "postinstall": "install-electron",
+    "build:icon": "node scripts/build-icon.mjs",
+    "predist:win": "npm run build:icon",
+    "predist:mac:x64": "npm run build:icon",
+    "predist:mac:arm64": "npm run build:icon",
+    "test": "node --test ../../tests/gamespec-relay-schema.test.mjs ../../tests/gamespec-relay-analyzer.test.mjs ../../tests/gamespec-relay-quality.test.mjs ../../tests/gamespec-relay-diff-export.test.mjs ../../tests/gamespec-relay-store.test.mjs ../../tests/gamespec-relay-model-adapter.test.mjs ../../tests/gamespec-relay-page.test.mjs ../../tests/gamespec-relay-desktop.test.mjs",
+    "start": "electron .",
+    "dist:win": "electron-builder --win dir portable --x64",
+    "dist:mac:x64": "electron-builder --mac dir zip --x64",
+    "dist:mac:arm64": "electron-builder --mac dir zip --arm64",
+    "verify:win": "node scripts/verify-package.mjs dist windows",
+    "verify:mac": "node scripts/verify-package.mjs dist macos",
+    "smoke:core": "node scripts/smoke-project.mjs"
+  },
+  "devDependencies": {
+    "electron": "43.2.0",
+    "electron-builder": "26.15.3",
+    "playwright": "1.61.1"
+  },
+  "build": {
+    "appId": "dev.wthpein010.gamespec-relay",
+    "productName": "GameSpec Relay",
+    "icon": "build/icon.png",
+    "asar": true,
+    "files": [
+      "main.cjs",
+      "preload.cjs",
+      "policy.cjs",
+      "package.json"
+    ],
+    "extraResources": [
+      {
+        "from": "../../projects/gamespec-relay",
+        "to": "app/projects/gamespec-relay",
+        "filter": ["**/*"]
+      }
+    ],
+    "directories": {
+      "output": "dist"
+    },
+    "win": {
+      "target": [{ "target": "portable", "arch": ["x64"] }],
+      "artifactName": "GameSpec-Relay-Windows-x64.${ext}"
+    },
+    "mac": {
+      "target": [{ "target": "zip" }],
+      "category": "public.app-category.developer-tools",
+      "identity": null,
+      "hardenedRuntime": false,
+      "gatekeeperAssess": false,
+      "artifactName": "GameSpec-Relay-macOS-${arch}.${ext}"
+    }
+  }
+}
