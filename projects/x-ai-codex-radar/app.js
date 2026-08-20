@@ -4,7 +4,6 @@ const signals = [
     topic: "Codex",
     confidence: "high",
     confidenceLabel: "高可信",
-    score: 96,
     source: "OpenAI · 示例",
     handle: "@OpenAI",
     age: "示例 · 18 分钟前",
@@ -20,7 +19,6 @@ const signals = [
     topic: "Agent",
     confidence: "high",
     confidenceLabel: "高可信",
-    score: 92,
     source: "OpenAI Developers · 示例",
     handle: "@OpenAIDevs",
     age: "示例 · 42 分钟前",
@@ -36,7 +34,6 @@ const signals = [
     topic: "模型",
     confidence: "medium",
     confidenceLabel: "待交叉验证",
-    score: 84,
     source: "AI Lab Notes · 示例",
     handle: "@AILabNotes",
     age: "示例 · 1 小时前",
@@ -52,7 +49,6 @@ const signals = [
     topic: "Codex",
     confidence: "high",
     confidenceLabel: "高可信",
-    score: 89,
     source: "Codex Changelog · 示例",
     handle: "产品更新",
     age: "示例 · 2 小时前",
@@ -68,7 +64,6 @@ const signals = [
     topic: "Agent",
     confidence: "watch",
     confidenceLabel: "观察中",
-    score: 71,
     source: "Builder Thread · 示例",
     handle: "@BuilderThread",
     age: "示例 · 3 小时前",
@@ -84,7 +79,6 @@ const signals = [
     topic: "研究",
     confidence: "medium",
     confidenceLabel: "待交叉验证",
-    score: 78,
     source: "Research Digest · 示例",
     handle: "@ResearchDigest",
     age: "示例 · 5 小时前",
@@ -100,7 +94,6 @@ const signals = [
     topic: "研究",
     confidence: "high",
     confidenceLabel: "高可信",
-    score: 87,
     source: "Security Research · 示例",
     handle: "安全研究",
     age: "示例 · 7 小时前",
@@ -116,7 +109,6 @@ const signals = [
     topic: "模型",
     confidence: "watch",
     confidenceLabel: "观察中",
-    score: 62,
     source: "Unverified Feed · 示例",
     handle: "转述账号",
     age: "示例 · 9 小时前",
@@ -162,11 +154,11 @@ function filteredSignals() {
   });
 }
 
-function signalCard(signal) {
+function signalCard(signal, index) {
   const selected = signal.id === state.selectedId;
   return `
     <button class="signal-card ${selected ? "selected" : ""}" type="button" data-signal-id="${escapeHtml(signal.id)}" aria-pressed="${selected}">
-      <span class="signal-score" aria-label="信号评分 ${signal.score}"><b>${signal.score}</b><small>SCORE</small></span>
+      <span class="signal-index" aria-label="示例序号 ${index + 1}"><b>${String(index + 1).padStart(2, "0")}</b><small>SIGNAL</small></span>
       <span class="signal-copy">
         <span class="signal-meta"><i class="confidence-dot ${signal.confidence}" aria-hidden="true"></i>${escapeHtml(signal.confidenceLabel)}<em>${escapeHtml(signal.topic)}</em><time>${escapeHtml(signal.age)}</time></span>
         <strong>${escapeHtml(signal.title)}</strong>
@@ -197,7 +189,7 @@ function renderDetail(signal) {
       <span>信号详情 · 示例</span>
       <b class="confidence-badge ${signal.confidence}">${escapeHtml(signal.confidenceLabel)}</b>
     </div>
-    <p class="detail-topic">${escapeHtml(signal.topic)} / ${signal.score} SCORE</p>
+    <p class="detail-topic">${escapeHtml(signal.topic)} / SAMPLE SIGNAL</p>
     <h3>${escapeHtml(signal.title)}</h3>
     <div class="detail-section">
       <span>为什么值得看</span>

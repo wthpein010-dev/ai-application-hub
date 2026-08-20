@@ -55,6 +55,26 @@ async function openPage(viewport, path) {
   return page;
 }
 
+async function assertMobileHeaderLayout(page, label) {
+  await page.evaluate(() => window.scrollTo(0, 0));
+  const boxes = await page.evaluate(() => {
+    const rect = (selector) => {
+      const { top, right, bottom, left } = document.querySelector(selector).getBoundingClientRect();
+      return { top, right, bottom, left };
+    };
+    return {
+      home: rect(".hub-home-link"),
+      topbar: rect(".topbar"),
+      brand: rect(".brand"),
+      actions: rect(".top-actions"),
+    };
+  });
+  assert.ok(boxes.home.bottom <= boxes.brand.top, `${label}: return control should not overlap the brand`);
+  assert.ok(boxes.topbar.bottom >= boxes.brand.bottom, `${label}: topbar should contain the brand`);
+  assert.ok(boxes.topbar.bottom >= boxes.actions.bottom, `${label}: topbar should contain its actions`);
+  assert.ok(boxes.actions.right <= boxes.topbar.right, `${label}: actions should stay inside the topbar`);
+}
+
 try {
   const desktop = await openPage({ width: 1280, height: 720 }, "/projects/x-ai-codex-radar/index.html");
   assert.equal(await desktop.title(), "AI / Codex 雷达");
@@ -76,12 +96,18 @@ try {
 
   const mobile = await openPage({ width: 390, height: 844 }, "/projects/x-ai-codex-radar/index.html");
   assert.equal(await mobile.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 1), true);
+  await assertMobileHeaderLayout(mobile, "390px");
   await mobile.selectOption("#topicFilter", "Agent");
   assert.equal(await mobile.locator("#resultCount").textContent(), "2");
   await mobile.click('[data-signal-id="agent-memory"]');
   assert.match(await mobile.locator("#detailPanel h3").innerText(), /长期记忆/);
   assert.equal(await mobile.locator("#detailPanel").isVisible(), true);
   await mobile.close();
+
+  const tablet = await openPage({ width: 760, height: 900 }, "/projects/x-ai-codex-radar/index.html");
+  assert.equal(await tablet.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 1), true);
+  await assertMobileHeaderLayout(tablet, "760px");
+  await tablet.close();
 
   const video = await openPage({ width: 1280, height: 720 }, "/projects/x-ai-codex-radar/video/index.html");
   await video.click("#loadVideo");
@@ -92,11 +118,18 @@ try {
   const media = await video.locator("#introVideo").evaluate(async (player) => {
     await player.play();
     await new Promise((resolve) => setTimeout(resolve, 650));
-    return { currentTime: player.currentTime, duration: player.duration, width: player.videoWidth, height: player.videoHeight };
+    return {
+      currentTime: player.currentTime,
+      duration: player.duration,
+      width: player.videoWidth,
+      height: player.videoHeight,
+      captionMode: player.textTracks[0]?.mode || "",
+    };
   });
   assert.ok(media.currentTime > 0, "video playback should advance");
   assert.ok(media.duration >= 60 && media.duration <= 90);
   assert.deepEqual([media.width, media.height], [1280, 720]);
+  assert.equal(media.captionMode, "showing");
   await video.close();
 
   assert.deepEqual(browserErrors, []);

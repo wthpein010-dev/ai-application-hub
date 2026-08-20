@@ -74,6 +74,7 @@ jobs:
         run: |
           node tests/hub-video-pages-browser-smoke.mjs
           node tests/hub-entry-pages-browser-smoke.mjs
+          node tests/x-ai-codex-radar-browser-smoke.mjs
 
       - name: Run ClickFlow browser acceptance
         run: node tests/clickflow-browser-smoke.mjs

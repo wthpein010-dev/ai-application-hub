@@ -1,7 +1,7 @@
 # AI Application Hub 平台兼容矩阵
 
 - 日期：2026-08-20
-- 范围：主页当前 28 张公开项目卡片
+- 范围：主页当前 29 张公开项目卡片
 - 规则：网页、小游戏和工程体验通过现代浏览器覆盖 Windows 与 macOS；只有经过原生构建、架构检查和产物校验的项目显示系统下载。
 - 通用门禁：`tests/hub-entry-pages-browser-smoke.mjs`、`tests/hub-video-pages-browser-smoke.mjs`、`tests/hub-platform-artifacts.test.mjs`。
 
@@ -39,6 +39,6 @@
 
 ## 结论
 
-- 28 个项目都可在 Windows 与 macOS 上通过网页查看或体验。
+- 29 个项目都可在 Windows 与 macOS 上通过网页查看或体验。
 - 5 个项目提供经过验证的原生 Windows/macOS 成品；飞书插件提供同一份跨平台浏览器扩展。
 - 其余项目不再显示来源码、Unity 工程、WebGL 压缩包或占位 ZIP 形式的伪系统下载。

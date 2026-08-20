@@ -61,6 +61,8 @@ test("the demo script provides local filtering, detail inspection and reset", ()
   assert.match(script, /renderDetail/);
   assert.match(script, /resetFilters/);
   assert.match(script, /aria-live/);
+  assert.doesNotMatch(script, /\bscore\b|SCORE/);
+  assert.doesNotMatch(readFileSync(join(projectRoot, "index.html"), "utf8"), /按价值排序/);
 });
 
 test("the Radar video bundle follows the shared Hub player contract", () => {
@@ -98,4 +100,9 @@ test("the Radar video bundle follows the shared Hub player contract", () => {
     const timingIndex = lines.findIndex((line) => line.includes(" --> "));
     if (timingIndex >= 0) assert.equal(lines.slice(timingIndex + 1).filter(Boolean).length, 1);
   }
+});
+
+test("CI runs the Radar desktop, mobile and playback acceptance", () => {
+  const workflow = readFileSync(join(root, ".github", "workflows", "verify-clickflow-publish.yml"), "utf8");
+  assert.match(workflow, /Run all Hub page browser acceptance[\s\S]*node tests\/x-ai-codex-radar-browser-smoke\.mjs/);
 });

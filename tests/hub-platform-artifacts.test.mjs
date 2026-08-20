@@ -173,6 +173,8 @@ test("the compatibility matrix covers every public card and its delivery evidenc
   const rows = matrix.split(/\r?\n/).filter((line) => /^\| `[^`]+` \|/.test(line));
   const byId = new Map(rows.map((line) => [line.match(/^\| `([^`]+)` \|/)[1], line]));
 
+  assert.match(matrix, new RegExp(`范围：主页当前 ${apps.length} 张公开项目卡片`));
+  assert.match(matrix, new RegExp(`${apps.length} 个项目都可在 Windows 与 macOS`));
   assert.equal(rows.length, apps.length);
   assert.deepEqual([...byId.keys()].sort(), Array.from(apps, (app) => app.id).sort());
 
