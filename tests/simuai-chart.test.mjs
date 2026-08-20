@@ -108,3 +108,36 @@ test("area charts use distinct stable gradients per svg", () => {
     firstGradient,
   );
 });
+
+test("multi-series area mode fills every series with its own gradient", () => {
+  const svg = new FakeNode("svg");
+  const multiSeries = chart("area");
+  multiSeries.series.push({
+    id: "cost",
+    label: "成本",
+    points: [
+      { x: 0, value: 8 },
+      { x: 1, value: 14 },
+      { x: 2, value: 24 },
+    ],
+  });
+  multiSeries.series.push({
+    id: "revenue",
+    label: "收入",
+    points: [
+      { x: 0, value: 12 },
+      { x: 1, value: 18 },
+      { x: 2, value: 29 },
+    ],
+  });
+
+  renderChart(svg, multiSeries);
+
+  const areas = byClass(svg, "chart-area");
+  const gradients = descendants(svg).filter(node => node.nodeName === "linearGradient");
+  const gradientColors = gradients.map(gradient => gradient.children[0].getAttribute("stop-color"));
+  assert.equal(areas.length, 3);
+  assert.equal(gradients.length, 3);
+  assert.equal(new Set(areas.map(area => area.getAttribute("fill"))).size, 3);
+  assert.equal(new Set(gradientColors).size, 3);
+});

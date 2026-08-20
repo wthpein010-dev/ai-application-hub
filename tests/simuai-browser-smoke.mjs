@@ -25,6 +25,7 @@ try {
     { name: "tablet", width: 768, height: 1024 },
     { name: "above-mobile-breakpoint", width: 721, height: 900 },
     { name: "mobile", width: 390, height: 844 },
+    { name: "narrow-mobile", width: 320, height: 800 },
   ]) {
     const page = await browser.newPage({ viewport });
     const errors = [];
@@ -45,8 +46,22 @@ try {
       true,
       `${viewport.name}: 万象实验室 brand should not overlap the fixed home link`,
     );
+    if (viewport.width === 320) {
+      const titleBox = await page.locator("#heroTitle").boundingBox();
+      assert.ok(titleBox && titleBox.height <= 100, `${viewport.name}: hero title should stay within two compact lines`);
+    }
 
     assert.equal(await page.locator("[data-category]").count(), 6, `${viewport.name}: six category tabs`);
+    const tabRelations = await page.locator("[data-category]").evaluateAll(tabs => tabs.map(tab => ({
+      id: tab.id,
+      controls: tab.getAttribute("aria-controls"),
+    })));
+    assert.equal(tabRelations.every(tab => tab.id && tab.controls === "templateLibrary"), true, `${viewport.name}: every category tab should control the library panel`);
+    assert.equal(
+      await page.locator("#templateLibrary").getAttribute("aria-labelledby"),
+      await page.locator("[data-category][aria-selected='true']").getAttribute("id"),
+      `${viewport.name}: library panel should be labelled by the active category`,
+    );
     const activeCategoryTab = page.locator("[data-category][aria-selected='true']");
     await activeCategoryTab.focus();
     await page.keyboard.press("ArrowRight");
@@ -80,6 +95,18 @@ try {
     await switchableMode.click();
     assert.equal(await page.locator("#metricGrid").textContent(), metricSnapshot, `${viewport.name}: chart mode must not change metrics`);
     assert.equal(await switchableMode.getAttribute("aria-pressed"), "true");
+    if (viewport.width <= 720) {
+      const compactTargets = await page.locator("#chartModePicker button, #explanationToggle, #resetParameters, #parameterControls input").evaluateAll(elements => elements.map(element => ({
+        label: element.getAttribute("aria-label") || element.textContent.trim(),
+        height: Math.round(element.getBoundingClientRect().height),
+      })));
+      assert.equal(
+        compactTargets.every(target => target.height >= 44),
+        true,
+        `${viewport.name}: experiment touch targets should be at least 44px high\n${JSON.stringify(compactTargets)}`,
+      );
+      assert.equal(await page.locator("#chartScrollHint").isVisible(), true, `${viewport.name}: horizontally scrollable chart should show a swipe hint`);
+    }
 
     const paybackMetric = page.locator("[data-metric-id='paybackDay'] strong");
     const before = await paybackMetric.textContent();
@@ -92,6 +119,13 @@ try {
     await spendInput.fill("999999");
     await spendInput.press("Enter");
     assert.equal(await spendInput.inputValue(), "50000", `${viewport.name}: numeric input should display its clamped value`);
+
+    await spendInput.press("Control+A");
+    await spendInput.press("Backspace");
+    assert.equal(await spendInput.inputValue(), "", `${viewport.name}: numeric input should allow a transient empty edit`);
+    await spendInput.type("8000");
+    await spendInput.press("Enter");
+    assert.equal(await spendInput.inputValue(), "8000", `${viewport.name}: numeric input should accept a replacement value after clearing`);
 
     await page.getByRole("button", { name: "为什么这样算" }).click();
     await page.getByRole("heading", { name: "公式与边界" }).waitFor();
@@ -139,12 +173,68 @@ try {
     assert.equal(await page.locator("#experimentSource").textContent(), "推荐打开");
 
     const networkCount = compileRequests.length;
+    await page.evaluate(() => {
+      window.__simuaiStaticNodes = {
+        legend: document.querySelector("#chartLegend span"),
+        chartMode: document.querySelector("#chartModePicker button"),
+        formula: document.querySelector("#formulaText"),
+      };
+    });
     await page.locator("#parameterControls input[type='range']").first().evaluate(input => {
       input.value = String(Number(input.min) + Number(input.step));
       input.dispatchEvent(new Event("input", { bubbles: true }));
     });
     await page.waitForTimeout(50);
     assert.equal(compileRequests.length, networkCount, `${viewport.name}: sliders must stay local`);
+    assert.equal(
+      await page.evaluate(() => (
+        window.__simuaiStaticNodes.legend === document.querySelector("#chartLegend span")
+        && window.__simuaiStaticNodes.chartMode === document.querySelector("#chartModePicker button")
+        && window.__simuaiStaticNodes.formula === document.querySelector("#formulaText")
+      )),
+      true,
+      `${viewport.name}: slider updates should preserve static experiment DOM`,
+    );
+
+    const seriesColors = await page.evaluate(async () => {
+      const { renderChart } = await import("/ui/chart.mjs");
+      const svg = document.querySelector("#resultChart");
+      const chart = type => ({
+        type,
+        xLabel: "天",
+        yLabel: "金额",
+        series: ["value", "cost", "revenue"].map((id, index) => ({
+          id,
+          label: id,
+          points: [
+            { x: 0, value: 10 + index },
+            { x: 1, value: 20 + index },
+          ],
+        })),
+      });
+      const stylesFor = (selector, property) => [...svg.querySelectorAll(selector)]
+        .map(node => getComputedStyle(node)[property]);
+
+      renderChart(svg, chart("line"));
+      const lines = stylesFor(".chart-line", "stroke");
+      const dots = stylesFor(".chart-dot", "stroke");
+      renderChart(svg, chart("bar"));
+      const bars = [0, 1, 2].map(index => getComputedStyle(svg.querySelector(`.chart-bar-${index}`)).fill);
+
+      const legendHost = document.createElement("div");
+      legendHost.hidden = true;
+      legendHost.innerHTML = [0, 1, 2]
+        .map(index => `<i class="legend-dot legend-dot-${index}"></i>`)
+        .join("");
+      document.body.append(legendHost);
+      const legends = [...legendHost.children].map(node => getComputedStyle(node).backgroundColor);
+      legendHost.remove();
+      return { lines, dots, bars, legends };
+    });
+    for (const [primitive, colors] of Object.entries(seriesColors)) {
+      assert.equal(colors.length, 3, `${viewport.name}: ${primitive} should render three series`);
+      assert.equal(new Set(colors).size, 3, `${viewport.name}: ${primitive} should use three distinct colors`);
+    }
 
     const overflow = await page.evaluate(() => ({
       pageWidth: document.documentElement.scrollWidth,
@@ -166,6 +256,11 @@ try {
       true,
       `${viewport.name}: page should not overflow horizontally\n${JSON.stringify(overflow)}`,
     );
+
+    await page.locator("footer").scrollIntoViewIfNeeded();
+    await page.getByRole("link", { name: "万象实验室首页" }).click();
+    await page.waitForTimeout(400);
+    assert.equal(Math.round(await page.evaluate(() => window.scrollY)), 0, `${viewport.name}: brand link should return to the true page top`);
     assert.deepEqual(errors, [], `${viewport.name}: browser errors\n${errors.join("\n")}`);
     await page.close();
     process.stdout.write(`PASS ${viewport.name} ${viewport.width}x${viewport.height}\n`);
