@@ -351,23 +351,23 @@ const defaultApps = [
     polish: 9
   },
   {
-    id: "codex-thread-workbench",
-    name: "Codex 多会话工作台",
-    category: "AI 开发桌面工具",
+    id: "codex-confirmation-bar",
+    name: "Codex 待确认悬浮助手",
+    category: "Codex 桌面确认助手",
     status: "desktop",
-    brief: "在同一个 Windows 或 macOS 一级界面中同时查看和操作多个真实 Codex 线程，直接输入、停止、审批，并清晰区分进行中与已完成任务。",
-    problem: "并行推进多个 Codex 任务时，频繁切换线程会打断判断，也难以及时发现等待输入、等待审批或已经完成的任务。",
-    aiUse: "工具通过本机 codex app-server 连接真实线程，不读取凭据；AI 参与协议接入、状态投影、多窗口会话交互和 Windows、macOS 双架构发布验证。",
-    folder: "./projects/codex-thread-workbench/",
-    entry: "./projects/codex-thread-workbench/index.html",
-    video: "./projects/codex-thread-workbench/video/index.html",
-    package: "https://wthpein010-dev.github.io/ai-application-hub/projects/codex-thread-workbench/download/",
+    brief: "常驻扫描最近结束或中断且尚未收到用户后续回复的 Codex 任务；有候选才显示置顶悬浮栏，可单条确认或一键全部确认。",
+    problem: "同时推进多个 Codex 任务时，容易漏掉已经跑完、正在等待用户确认后继续执行的任务，也不适合为此一直打开多会话主界面。",
+    aiUse: "工具通过本机 Codex App Server 与受限会话日志识别待确认任务，不读取凭据；确认后发送固定消息并回读验证，Windows 与 macOS 均保留失败闭合兜底。",
+    folder: "./projects/codex-confirmation-bar/",
+    entry: "./projects/codex-confirmation-bar/index.html",
+    video: "./projects/codex-confirmation-bar/video/index.html",
+    package: "https://wthpein010-dev.github.io/ai-application-hub/projects/codex-confirmation-bar/download/",
     platforms: {
-      web: { href: "./projects/codex-thread-workbench/index.html", label: "交互演示" },
-      windows: { href: "https://wthpein010-dev.github.io/ai-application-hub/projects/codex-thread-workbench/download/", label: "Windows下载" },
-      mac: { href: "https://wthpein010-dev.github.io/ai-application-hub/projects/codex-thread-workbench/download/mac/", label: "Mac下载" }
+      web: { href: "./projects/codex-confirmation-bar/index.html", label: "演示" },
+      windows: { href: "https://wthpein010-dev.github.io/ai-application-hub/projects/codex-confirmation-bar/download/", label: "Wins下载" },
+      mac: { href: "https://wthpein010-dev.github.io/ai-application-hub/projects/codex-confirmation-bar/download/mac/", label: "Mac下载" }
     },
-    tags: ["Codex", "多线程", "桌面工作台", "Windows", "macOS"],
+    tags: ["Codex", "待确认", "悬浮栏", "一键确认", "Windows", "macOS"],
     speed: 9,
     impact: 9,
     risk: 9,
@@ -1512,6 +1512,12 @@ function loadApps() {
     const stored = JSON.parse(localStorage.getItem(STORAGE_KEY) || "null");
     if (Array.isArray(stored) && stored.length) {
       const storedById = new Map(stored.map(app => [app.id, app]));
+      if (!storedById.has("codex-confirmation-bar") && storedById.has("codex-thread-workbench")) {
+        storedById.set("codex-confirmation-bar", {
+          ...storedById.get("codex-thread-workbench"),
+          id: "codex-confirmation-bar"
+        });
+      }
       return defaultApps.map(app => normalizeApp(storedById.get(app.id) || app));
     }
   } catch {
@@ -1572,16 +1578,42 @@ function normalizeApp(app) {
   ) {
     normalized.brief = base.brief;
   }
-  if (normalized.id === "codex-thread-workbench" && app.platforms?.mac === "") {
-    const legacyBrief = "在同一个 Windows 一级界面中同时查看和操作多个真实 Codex 线程，直接输入、停止、审批，并清晰区分进行中与已完成任务。";
-    const legacyAiUse = "工具通过本机 codex app-server 连接真实线程，不读取凭据；AI 参与协议接入、状态投影、多窗口会话交互和 Windows 发布验证。";
-    if (normalized.brief === legacyBrief) normalized.brief = base.brief;
-    if (normalized.aiUse === legacyAiUse) normalized.aiUse = base.aiUse;
-    normalized.tags = [...new Set([...normalized.tags, "macOS"])];
-    normalized.platforms = {
-      ...(normalized.platforms || {}),
-      mac: base.platforms.mac
+  if (normalized.id === "codex-confirmation-bar") {
+    const legacyText = {
+      name: "Codex 多会话工作台",
+      category: "AI 开发桌面工具",
+      brief: "在同一个 Windows 或 macOS 一级界面中同时查看和操作多个真实 Codex 线程，直接输入、停止、审批，并清晰区分进行中与已完成任务。",
+      problem: "并行推进多个 Codex 任务时，频繁切换线程会打断判断，也难以及时发现等待输入、等待审批或已经完成的任务。",
+      aiUse: "工具通过本机 codex app-server 连接真实线程，不读取凭据；AI 参与协议接入、状态投影、多窗口会话交互和 Windows、macOS 双架构发布验证。"
     };
+    const earlierWindowsBrief = "在同一个 Windows 一级界面中同时查看和操作多个真实 Codex 线程，直接输入、停止、审批，并清晰区分进行中与已完成任务。";
+    const earlierWindowsAiUse = "工具通过本机 codex app-server 连接真实线程，不读取凭据；AI 参与协议接入、状态投影、多窗口会话交互和 Windows 发布验证。";
+    Object.entries(legacyText).forEach(([field, value]) => {
+      if (normalized[field] === value) normalized[field] = base[field];
+    });
+    if (normalized.brief === earlierWindowsBrief) normalized.brief = base.brief;
+    if (normalized.aiUse === earlierWindowsAiUse) normalized.aiUse = base.aiUse;
+    const legacyTags = [
+      ["Codex", "多线程", "桌面工作台", "Windows"],
+      ["Codex", "多线程", "桌面工作台", "Windows", "macOS"]
+    ];
+    if (legacyTags.some(tags => normalized.tags.length === tags.length && normalized.tags.every((tag, index) => tag === tags[index]))) {
+      normalized.tags = [...base.tags];
+    }
+    normalized.status = base.status;
+    normalized.folder = base.folder;
+    normalized.entry = base.entry;
+    normalized.video = base.video;
+    normalized.package = base.package;
+    normalized.platforms = {
+      web: { ...base.platforms.web },
+      windows: { ...base.platforms.windows },
+      mac: { ...base.platforms.mac }
+    };
+    normalized.speed = base.speed;
+    normalized.impact = base.impact;
+    normalized.risk = base.risk;
+    normalized.polish = base.polish;
   }
   if (normalized.id === "gamepulse-mini-radar") {
     const legacyName = "GamePulse 小游雷达";

@@ -16,7 +16,7 @@ function loadDefaultApps() {
 function loadAppsWithStoredValue(stored) {
   const start = runtime.indexOf("function loadApps");
   const end = runtime.indexOf("function projectHref", start);
-  const storage = new Map([["ai-applications-v1", JSON.stringify(stored)]]);
+  const storage = new Map([["ai-competition-hub-v2-apps", JSON.stringify(stored)]]);
   const context = {
     globalThis: { defaultApps: loadDefaultApps() },
     localStorage: {
@@ -25,7 +25,7 @@ function loadAppsWithStoredValue(stored) {
     },
   };
   const source = [
-    'const STORAGE_KEY = "ai-applications-v1";',
+    'const STORAGE_KEY = "ai-competition-hub-v2-apps";',
     "const statusLabel = { desktop: true, assistant: true };",
     'const OLD_HUB_BRIEF = "";',
     'const HUB_BRIEF = "";',
@@ -37,20 +37,82 @@ function loadAppsWithStoredValue(stored) {
   return context.globalThis.loadApps();
 }
 
+test("legacy Workbench customization migrates to the confirmation bar id", () => {
+  const defaults = loadDefaultApps();
+  const confirmationBar = defaults.find((app) => app.id === "codex-confirmation-bar");
+  const legacyCustomization = {
+    id: "codex-thread-workbench",
+    name: "我的悬浮栏",
+    category: "我的桌面效率工具",
+    status: "desktop",
+    brief: "只提醒真正等待我确认的任务。",
+    problem: "这是我自己写的问题说明。",
+    aiUse: "这是我自己写的 AI 说明。",
+    folder: "./projects/codex-thread-workbench/",
+    entry: "./projects/codex-thread-workbench/index.html",
+    video: "./projects/codex-thread-workbench/video/index.html",
+    package: "https://example.invalid/legacy.zip",
+    platforms: {
+      web: { href: "./projects/codex-thread-workbench/index.html", label: "交互演示" },
+      windows: { href: "https://example.invalid/windows.zip", label: "Windows下载" },
+      mac: { href: "https://example.invalid/mac.zip", label: "Mac下载" },
+    },
+    tags: ["我的标签", "保持置顶"],
+    speed: 1,
+    impact: 2,
+    risk: 3,
+    polish: 4,
+  };
+
+  const apps = loadAppsWithStoredValue([legacyCustomization]);
+  const migrated = apps.find((app) => app.id === "codex-confirmation-bar");
+
+  assert.ok(migrated);
+  assert.equal(apps.some((app) => app.id === "codex-thread-workbench"), false);
+  assert.equal(migrated.name, "我的悬浮栏");
+  assert.equal(migrated.category, "我的桌面效率工具");
+  assert.equal(migrated.brief, "只提醒真正等待我确认的任务。");
+  assert.equal(migrated.problem, "这是我自己写的问题说明。");
+  assert.equal(migrated.aiUse, "这是我自己写的 AI 说明。");
+  assert.deepEqual(JSON.parse(JSON.stringify(migrated.tags)), ["我的标签", "保持置顶"]);
+  assert.equal(migrated.folder, confirmationBar.folder);
+  assert.equal(migrated.entry, confirmationBar.entry);
+  assert.equal(migrated.video, confirmationBar.video);
+  assert.equal(migrated.package, confirmationBar.package);
+  assert.deepEqual(JSON.parse(JSON.stringify(migrated.platforms)), JSON.parse(JSON.stringify(confirmationBar.platforms)));
+  assert.equal(migrated.speed, confirmationBar.speed);
+  assert.equal(migrated.impact, confirmationBar.impact);
+  assert.equal(migrated.risk, confirmationBar.risk);
+  assert.equal(migrated.polish, confirmationBar.polish);
+});
+
+test("stored confirmation bar wins when both new and legacy ids are present", () => {
+  const defaults = loadDefaultApps();
+  const confirmationBar = defaults.find((app) => app.id === "codex-confirmation-bar");
+  const apps = loadAppsWithStoredValue([
+    { ...confirmationBar, id: "codex-thread-workbench", name: "旧 ID 的名称" },
+    { ...confirmationBar, name: "新 ID 的名称" },
+  ]);
+
+  assert.equal(apps.find((app) => app.id === "codex-confirmation-bar")?.name, "新 ID 的名称");
+});
+
 test("old Windows-only workbench storage migrates to all four published entrances", () => {
   const defaults = loadDefaultApps();
-  const workbench = defaults.find((app) => app.id === "codex-thread-workbench");
+  const confirmationBar = defaults.find((app) => app.id === "codex-confirmation-bar");
+  assert.ok(confirmationBar, "the new confirmation bar default should exist");
   const gamePulseDefault = defaults.find((app) => app.id === "gamepulse-mini-radar");
   const oldWindowsOnlyWorkbench = {
-    ...workbench,
+    ...confirmationBar,
+    id: "codex-thread-workbench",
     name: "我的 Codex 工作台",
     brief: "在同一个 Windows 一级界面中同时查看和操作多个真实 Codex 线程，直接输入、停止、审批，并清晰区分进行中与已完成任务。",
     aiUse: "工具通过本机 codex app-server 连接真实线程，不读取凭据；AI 参与协议接入、状态投影、多窗口会话交互和 Windows 发布验证。",
     video: "",
     tags: ["Codex", "多线程", "桌面工作台", "Windows"],
     platforms: {
-      web: workbench.platforms.web,
-      windows: workbench.platforms.windows,
+      web: { href: "./projects/codex-thread-workbench/index.html", label: "交互演示" },
+      windows: { href: "https://wthpein010-dev.github.io/ai-application-hub/projects/codex-thread-workbench/download/", label: "Windows下载" },
       mac: "",
     },
   };
@@ -62,17 +124,17 @@ test("old Windows-only workbench storage migrates to all four published entrance
   };
 
   const apps = loadAppsWithStoredValue([oldWindowsOnlyWorkbench, oldGamePulse]);
-  const migrated = apps.find((app) => app.id === "codex-thread-workbench");
+  const migrated = apps.find((app) => app.id === "codex-confirmation-bar");
   const gamePulse = apps.find((app) => app.id === "gamepulse-mini-radar");
 
   assert.equal(migrated.name, "我的 Codex 工作台");
-  assert.equal(migrated.brief, workbench.brief);
-  assert.equal(migrated.aiUse, workbench.aiUse);
+  assert.equal(migrated.brief, confirmationBar.brief);
+  assert.equal(migrated.aiUse, confirmationBar.aiUse);
   assert.equal(migrated.tags.includes("macOS"), true);
-  assert.deepEqual(JSON.parse(JSON.stringify(migrated.platforms.web)), JSON.parse(JSON.stringify(workbench.platforms.web)));
-  assert.deepEqual(JSON.parse(JSON.stringify(migrated.platforms.windows)), JSON.parse(JSON.stringify(workbench.platforms.windows)));
-  assert.deepEqual(JSON.parse(JSON.stringify(migrated.platforms.mac)), JSON.parse(JSON.stringify(workbench.platforms.mac)));
-  assert.equal(migrated.video, workbench.video);
+  assert.deepEqual(JSON.parse(JSON.stringify(migrated.platforms.web)), JSON.parse(JSON.stringify(confirmationBar.platforms.web)));
+  assert.deepEqual(JSON.parse(JSON.stringify(migrated.platforms.windows)), JSON.parse(JSON.stringify(confirmationBar.platforms.windows)));
+  assert.deepEqual(JSON.parse(JSON.stringify(migrated.platforms.mac)), JSON.parse(JSON.stringify(confirmationBar.platforms.mac)));
+  assert.equal(migrated.video, confirmationBar.video);
   assert.equal(gamePulse.name, gamePulseDefault.name);
   assert.equal(gamePulse.brief, gamePulseDefault.brief);
   assert.deepEqual(JSON.parse(JSON.stringify(gamePulse.tags)), JSON.parse(JSON.stringify(gamePulseDefault.tags)));
