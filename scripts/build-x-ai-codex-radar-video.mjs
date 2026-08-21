@@ -78,8 +78,12 @@ try {
   await page.waitForTimeout(5000);
   await page.locator(".priority-section").scrollIntoViewIfNeeded();
   await page.waitForTimeout(6000);
-  await page.click('[data-open-thread="codex-official-update"]');
+  await page.click('[data-open-thread="tibo-sites-collaboration"]');
   await page.waitForTimeout(5000);
+  await page.click('[data-filter="tibo"]');
+  await page.waitForTimeout(4000);
+  await page.click('[data-thread-id="tibo-sites-collaboration"]');
+  await page.waitForTimeout(6000);
   await page.click('[data-filter="official"]');
   await page.waitForTimeout(4000);
   await page.click('[data-thread-id="codex-official-update"]');
@@ -91,8 +95,6 @@ try {
   await page.waitForTimeout(8000);
   await page.click('[data-filter="musk"]');
   await page.waitForTimeout(4000);
-  await page.click('[data-thread-id="musk-xai-update"]');
-  await page.waitForTimeout(6000);
   await page.locator(".token-status").scrollIntoViewIfNeeded();
   await page.waitForTimeout(6000);
   await page.locator("#top").scrollIntoViewIfNeeded();

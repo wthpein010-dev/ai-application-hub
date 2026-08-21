@@ -764,7 +764,7 @@ const defaultApps = [
     category: "AI 情报工具",
     status: "assistant",
     badge: "AI 情报工具",
-    brief: "贴吧式整理 X 上马斯克、Codex 与 OpenAI 官方发言，置顶更新调整、Token／额度重置和故障状态，并串起可核验的用户留言。",
+    brief: "贴吧式整理 X 上 Tibo、马斯克、Codex 与 OpenAI 官方发言，置顶更新调整、Token／额度重置和故障状态，并串起可核验的用户留言。",
     problem: "官方更新、Token 规则和用户反馈散落在不同帖子里，逐条刷 X 很难快速判断哪些变化需要立即关注。",
     aiUse: "AI 参与公开来源聚合、官方身份识别、主题归类和中文摘要；公开演示使用明确标注的示例楼层，私有站点负责定期采集真实帖子。",
     folder: "./projects/x-ai-codex-radar/",

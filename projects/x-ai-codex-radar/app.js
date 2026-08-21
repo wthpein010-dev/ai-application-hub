@@ -1,5 +1,24 @@
 const threads = [
   {
+    id: "tibo-sites-collaboration",
+    role: "tibo",
+    roleLabel: "重点关注",
+    topic: "update",
+    topicLabel: "产品更新",
+    pinned: true,
+    author: "Tibo",
+    handle: "@thsottiaux",
+    title: "Tibo 重点更新追踪：ChatGPT Sites 协作、分享与 Codex 自动化",
+    excerpt: "示例摘要：集中追踪 Tibo 分享的 ChatGPT Sites、多人协作发布，以及 Codex 处理 git 与 CI 的产品变化。",
+    original: "Sample monitoring topic for Tibo posts about ChatGPT Sites collaboration, publishing, and Codex automation.",
+    why: "Tibo 经常分享 ChatGPT Sites、协作构建和 Codex 工作流，适合作为产品更新信号源；具体事实仍以可核验原帖为准。",
+    age: "示例 · 12 分钟前",
+    url: "https://x.com/thsottiaux",
+    replies: [
+      { author: "协作建站用户 · 示例", handle: "@sites_builder_example", text: "最关心协作者权限、发布流程，以及 Codex 在后台处理 git 和 CI 时的边界。" },
+    ],
+  },
+  {
     id: "codex-official-update",
     role: "official",
     roleLabel: "Codex 官方",
@@ -44,7 +63,7 @@ const threads = [
     roleLabel: "OpenAI 官方",
     topic: "policy",
     topicLabel: "规则调整",
-    pinned: true,
+    pinned: false,
     author: "OpenAI",
     handle: "@OpenAI",
     title: "OpenAI 官方调整帖：模型、套餐与开发者能力变化集中追踪",
@@ -170,6 +189,7 @@ function escapeHtml(value) {
 }
 
 function matchesFilter(thread) {
+  if (state.filter === "tibo") return thread.role === "tibo";
   if (state.filter === "musk") return thread.role === "musk";
   if (state.filter === "official") return thread.role === "official";
   if (state.filter === "token") return thread.topic === "token";
@@ -208,7 +228,7 @@ function renderPriorities() {
 
 function threadCard(thread) {
   const selected = thread.id === state.selectedId;
-  const avatar = thread.role === "musk" ? "M" : thread.role === "official" ? "✓" : "U";
+  const avatar = thread.role === "tibo" ? "T" : thread.role === "musk" ? "M" : thread.role === "official" ? "✓" : "U";
   return `<button class="forum-thread ${selected ? "selected" : ""}" type="button" data-thread-id="${escapeHtml(thread.id)}" aria-pressed="${selected}">
     <span class="reply-count"><strong>${thread.replies.length}</strong><small>回复</small></span>
     <span class="author-avatar author-avatar-${escapeHtml(thread.role)}" aria-hidden="true">${avatar}</span>
@@ -227,7 +247,7 @@ function renderDetail(thread) {
     nodes.detail.innerHTML = '<div class="detail-empty"><strong>等待匹配帖子</strong><p>调整筛选条件后，这里会显示楼主原帖与精选回复。</p></div>';
     return;
   }
-  const avatar = thread.role === "musk" ? "M" : thread.role === "official" ? "✓" : "U";
+  const avatar = thread.role === "tibo" ? "T" : thread.role === "musk" ? "M" : thread.role === "official" ? "✓" : "U";
   nodes.detail.innerHTML = `
     <div class="detail-title"><div>${badges(thread, thread.pinned)}<h2>${escapeHtml(thread.title)}</h2></div><span>示例帖子 · 不可引用</span></div>
     <article class="floor floor-original">

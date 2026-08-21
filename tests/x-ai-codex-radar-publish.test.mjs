@@ -27,6 +27,7 @@ test("X intelligence forum is the final Hub tool with demo and video only", () =
   assert.equal(radar.package, "");
   assert.equal(radar.video, "./projects/x-ai-codex-radar/video/index.html");
   assert.match(radar.brief, /马斯克/);
+  assert.match(radar.brief, /Tibo/);
   assert.match(radar.brief, /Token／额度重置/);
 });
 
@@ -50,6 +51,9 @@ test("the public demo clearly separates sample data from the private live site",
   assert.match(html, /id="threadList"/);
   assert.match(html, /id="threadDetail"/);
   assert.match(html, /data-filter="token"/);
+  assert.match(html, /data-filter="tibo"/);
+  assert.match(html, /Tibo/);
+  assert.match(html, /@thsottiaux/);
   assert.match(html, /<script type="module" src="\.\/app\.js"><\/script>/);
   assert.equal(existsSync(join(projectRoot, "styles.css")), true);
   assert.equal(existsSync(join(projectRoot, "app.js")), true);
@@ -71,6 +75,8 @@ test("the demo script provides local filtering, detail inspection and reset", ()
   assert.match(script, /renderThreads/);
   assert.match(script, /renderDetail/);
   assert.match(script, /resetFilters/);
+  assert.match(script, /ChatGPT Sites/);
+  assert.match(script, /thsottiaux/);
   assert.match(readFileSync(join(projectRoot, "index.html"), "utf8"), /aria-live="polite"/);
   assert.doesNotMatch(script, /\bscore\b|SCORE/);
   assert.doesNotMatch(readFileSync(join(projectRoot, "index.html"), "utf8"), /按价值排序/);

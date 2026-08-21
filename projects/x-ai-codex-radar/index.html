@@ -4,7 +4,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="theme-color" content="#3f7fca" />
-    <meta name="description" content="X 情报吧公开演示：贴吧式整理马斯克、Codex 与 OpenAI 官方帖子、更新调整、Token 状态和用户留言。" />
+    <meta name="description" content="X 情报吧公开演示：贴吧式整理 Tibo、马斯克、Codex 与 OpenAI 官方帖子、更新调整、Token 状态和用户留言。" />
     <link rel="icon" href="data:," />
     <title>X 情报吧｜AI / Codex 雷达</title>
     <link rel="stylesheet" href="./styles.css" />
@@ -30,10 +30,10 @@
     <main id="top">
       <section class="daily-brief" data-daily-brief="true" aria-labelledby="heroTitle">
         <div class="brief-main">
-          <p class="brief-eyebrow">马斯克 · Codex · 更新 · Token · 故障</p>
+          <p class="brief-eyebrow">Tibo · 马斯克 · Codex · 更新 · Token · 故障</p>
           <h1 id="heroTitle">X 情报每日简报</h1>
-          <p class="brief-summary">先看需要知道的变化，再进入贴吧式主题和楼层。官方原帖优先，用户讨论只作补充。</p>
-          <div class="brief-meta"><span>08 月 20 日 · 08:00 更新</span><span>8 条示例帖</span><span>3 条今日重点</span></div>
+          <p class="brief-summary">先看需要知道的变化，再进入贴吧式主题和楼层。官方与重点账号原帖优先，用户讨论只作补充。</p>
+          <div class="brief-meta"><span>08 月 21 日 · 08:00 更新</span><span>9 条示例帖</span><span>3 条今日重点</span></div>
         </div>
         <div class="brief-actions">
           <button class="primary-button" id="browseThreads" type="button">查看全部帖子 <span aria-hidden="true">↓</span></button>
@@ -51,25 +51,26 @@
         <div class="section-heading"><div><span>DAILY SIGNALS</span><h2 id="quickStatusTitle">一眼结论</h2></div><small>只把可核验信息写成结论</small></div>
         <div class="status-grid">
           <article class="quick-card quick-card-warn"><span>Token / 额度</span><strong>暂无官方确认</strong><p>用户体验不能代替官方规则。</p></article>
-          <article class="quick-card quick-card-good"><span>官方更新</span><strong>2 条</strong><p>Codex / OpenAI 更新优先。</p></article>
+          <article class="quick-card quick-card-good"><span>重点更新</span><strong>3 条</strong><p>Tibo / Codex / OpenAI 产品变化优先。</p></article>
           <article class="quick-card quick-card-warn"><span>故障 / 规则变化</span><strong>1 条待看</strong><p>按确认、观察、恢复分层。</p></article>
           <article class="quick-card"><span>可核验回复</span><strong>0 条</strong><p>没有原链接不当作事实。</p></article>
         </div>
       </section>
 
       <section class="priority-section" data-priority-section="true" aria-labelledby="priorityTitle">
-        <div class="section-heading"><div><span>TOP STORIES</span><h2 id="priorityTitle">今日重点</h2></div><p>官方身份 × 更新 / 调整 / Token / 故障</p></div>
+        <div class="section-heading"><div><span>TOP STORIES</span><h2 id="priorityTitle">今日重点</h2></div><p>重点账号 × 更新 / 调整 / Token / 故障</p></div>
         <div class="priority-grid" id="priorityGrid"></div>
       </section>
 
       <div class="forum-layout" id="threads">
         <div class="forum-main">
           <section class="thread-panel" aria-labelledby="threadTitle">
-            <div class="panel-heading panel-heading-thread"><div><h2 id="threadTitle">主题帖</h2><span>帖子与精选楼层</span></div><strong><span id="resultCount">8</span> 个主题</strong></div>
+            <div class="panel-heading panel-heading-thread"><div><h2 id="threadTitle">主题帖</h2><span>帖子与精选楼层</span></div><strong><span id="resultCount">9</span> 个主题</strong></div>
             <div class="forum-toolbar">
               <label class="search-field" for="searchInput"><span aria-hidden="true">⌕</span><input id="searchInput" type="search" placeholder="搜索作者、更新、Token 或关键词" autocomplete="off" /></label>
               <div class="forum-tabs" aria-label="帖子分类">
                 <button type="button" data-filter="all" aria-pressed="true">全部帖子</button>
+                <button type="button" data-filter="tibo" aria-pressed="false">Tibo</button>
                 <button type="button" data-filter="musk" aria-pressed="false">马斯克</button>
                 <button type="button" data-filter="official" aria-pressed="false">Codex / OpenAI 官方</button>
                 <button type="button" data-filter="token" aria-pressed="false">Token / 额度</button>
@@ -96,6 +97,7 @@
           <section class="watch-card">
             <div class="sidebar-heading"><span>重点账号</span><small>白名单</small></div>
             <ul>
+              <li><span class="mini-avatar mini-avatar-tibo">T</span><div><strong>Tibo</strong><small>@thsottiaux · ChatGPT Sites / Codex / 协作</small></div></li>
               <li><span class="mini-avatar mini-avatar-musk">M</span><div><strong>Elon Musk</strong><small>@elonmusk · AI / xAI / Grok</small></div></li>
               <li><span class="mini-avatar mini-avatar-official">✓</span><div><strong>OpenAI Developers</strong><small>@OpenAIDevs · Codex 官方</small></div></li>
               <li><span class="mini-avatar mini-avatar-official">✓</span><div><strong>OpenAI</strong><small>@OpenAI · 产品与规则</small></div></li>
