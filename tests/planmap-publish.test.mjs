@@ -24,7 +24,7 @@ test("思维导图快捷工具 remains immediately before SimuAI in the applicat
   assert.deepEqual(JSON.parse(JSON.stringify(apps.slice(index, index + 2).map((item) => item.id))), ["planmap", "simuai"]);
   assert.equal(app.name, "思维导图快捷工具");
   assert.equal(app.status, "assistant");
-  assert.equal(app.badge, "脑图 + AI");
+  assert.equal(app.badge, "辅助工具");
   assert.equal(app.entry, "./projects/planmap/index.html");
   assert.equal(app.video, "./projects/planmap/video/index.html");
   assert.equal(app.package, "");

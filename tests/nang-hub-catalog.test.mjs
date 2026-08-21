@@ -44,13 +44,13 @@ function loadAppsWithStoredValue(stored) {
   return context.globalThis.loadApps();
 }
 
-test("brick lighting card uses the orange art-reference badge and revised description", () => {
+test("brick lighting card uses the unified engineering badge and keeps its art-reference purpose", () => {
   const brick = catalogBlock("brick-light-motion-lab");
 
-  assert.match(brick, /badge: "美术设计参考"/);
   assert.match(brick, /category: "美术设计参考"/);
+  assert.match(brick, /badge: "工程体验"/);
   assert.match(brick, /brief: "[^"]*美术[^"]*参考[^"]*"/);
-  assert.match(runtime, /app\.badge \|\| statusLabel\[app\.status\]/);
+  assert.match(runtime, /catalogTypeLabel\(app\)/);
 });
 
 test("Nang mini-game is published in the games catalog with demo and video only", () => {

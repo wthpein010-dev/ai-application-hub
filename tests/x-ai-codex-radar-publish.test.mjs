@@ -19,7 +19,7 @@ test("X intelligence forum is the final Hub tool with demo and video only", () =
   assert.equal(radar.name, "X 情报吧｜AI / Codex 雷达");
   assert.equal(radar.category, "AI 情报工具");
   assert.equal(radar.status, "assistant");
-  assert.equal(radar.badge, "AI 情报工具");
+  assert.equal(radar.badge, "网页情报");
   assert.equal(radar.platforms.web.href, "./projects/x-ai-codex-radar/index.html");
   assert.equal(radar.platforms.web.label, "演示");
   assert.equal(radar.platforms.windows, "");

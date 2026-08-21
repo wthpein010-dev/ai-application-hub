@@ -57,7 +57,7 @@ test("PureShrink follows ClickFlow and exposes four publication actions", () => 
   assert.equal(item.name, "无损压缩工坊");
   assert.equal(item.category, "媒体压缩工具");
   assert.equal(item.status, "assistant");
-  assert.equal(item.badge, "辅助工具");
+  assert.equal(item.badge, "桌面工具");
   assert.equal(item.video, "./projects/pureshrink/video/index.html");
   assert.equal(item.platforms.web, "./projects/pureshrink/index.html");
   assert.deepEqual(JSON.parse(JSON.stringify(item.platforms.windows)), {
@@ -103,7 +103,7 @@ test("legacy PureShrink 1.0.3 actions migrate while customized copy stays intact
 
   assert.equal(migrated.name, "无损压缩工坊");
   assert.equal(migrated.status, "assistant");
-  assert.equal(migrated.badge, "辅助工具");
+  assert.equal(migrated.badge, "桌面工具");
   assert.equal(migrated.category, "媒体压缩工具");
   assert.equal(migrated.brief, "我的压缩流程简介");
   assert.equal(migrated.problem, "我的媒体整理问题");
@@ -141,7 +141,7 @@ test("PureShrink migration preserves a customized name", () => {
 
   assert.equal(migrated.name, "我的压缩工具");
   assert.equal(migrated.status, "assistant");
-  assert.equal(migrated.badge, "辅助工具");
+  assert.equal(migrated.badge, "桌面工具");
 });
 
 test("PureShrink exposes only the published 1.0.5 downloads", () => {

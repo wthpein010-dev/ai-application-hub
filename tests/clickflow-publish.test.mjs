@@ -57,7 +57,7 @@ test("ClickFlow stays immediately before PureShrink and exposes four publication
   assert.equal(clickFlow.name, "ClickFlow 鼠标自动化");
   assert.equal(clickFlow.category, "桌面自动化工具");
   assert.equal(clickFlow.status, "assistant");
-  assert.equal(clickFlow.badge, "辅助工具");
+  assert.equal(clickFlow.badge, "桌面工具");
   assert.equal(clickFlow.video, "./projects/clickflow/video/index.html");
   assert.equal(clickFlow.platforms.web, "./projects/clickflow/index.html");
   assert.deepEqual(
@@ -91,7 +91,7 @@ test("legacy ClickFlow defaults migrate to the shorter auxiliary-tool card", () 
 
   assert.equal(migrated.name, "ClickFlow 鼠标自动化");
   assert.equal(migrated.status, "assistant");
-  assert.equal(migrated.badge, "辅助工具");
+  assert.equal(migrated.badge, "桌面工具");
   assert.equal(migrated.category, "桌面自动化工具");
 });
 
@@ -110,7 +110,7 @@ test("ClickFlow migration preserves a customized name", () => {
 
   assert.equal(migrated.name, "我的鼠标工具");
   assert.equal(migrated.status, "assistant");
-  assert.equal(migrated.badge, "辅助工具");
+  assert.equal(migrated.badge, "桌面工具");
 });
 
 test("ClickFlow guide documents both modes, shortcuts, permissions, and cursor limits", () => {
