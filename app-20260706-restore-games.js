@@ -37,15 +37,37 @@ const catalogTypeOverrides = {
   pureshrink: "desktop"
 };
 
+const applicationCatalogTypes = new Set([
+  "plugin",
+  "assistant",
+  "life",
+  "intelligence",
+  "desktop",
+  "content"
+]);
+
 function catalogTypeKey(app) {
   if (app.status === "game") return "game";
   if (["engineering", "ai"].includes(app.status)) return "engineering";
+  if (applicationCatalogTypes.has(app.catalogType)) return app.catalogType;
+  if (applicationCatalogTypes.has(app.status) && app.status !== "assistant") return app.status;
   return catalogTypeOverrides[app.id]
     || (catalogTypeLabels[app.status] ? app.status : "assistant");
 }
 
 function catalogTypeLabel(app) {
   return catalogTypeLabels[catalogTypeKey(app)];
+}
+
+function setCatalogType(app, catalogType) {
+  const { catalogType: _previousCatalogType, ...base } = app;
+  if (catalogType === "game") return { ...base, status: "game" };
+  if (catalogType === "engineering") {
+    return { ...base, status: ["engineering", "ai"].includes(app.status) ? app.status : "engineering" };
+  }
+  if (!applicationCatalogTypes.has(catalogType)) return app;
+  const status = ["game", "engineering", "ai"].includes(app.status) ? "assistant" : app.status;
+  return { ...base, status, catalogType };
 }
 
 const defaultPageText = {
@@ -1242,7 +1264,10 @@ function renderEditForm() {
   nodes.editName.value = app.name;
   nodes.editCategory.value = app.category;
   nodes.editBrief.value = app.brief;
-  nodes.editStatus.value = app.status;
+  nodes.editStatus.innerHTML = Object.entries(catalogTypeLabels).map(([value, label]) => (
+    `<option value="${escapeHtml(value)}">${escapeHtml(label)}</option>`
+  )).join("");
+  nodes.editStatus.value = catalogTypeKey(app);
   nodes.editTags.value = app.tags.join(", ");
   nodes.editProblem.value = app.problem;
   nodes.editAiUse.value = app.aiUse;
@@ -1363,12 +1388,11 @@ function saveEditForm() {
   pageText = { ...pageText, ...Object.fromEntries(Array.from(document.querySelectorAll("[data-page-text-input]")).map(input => [input.dataset.pageTextInput, input.value.trim()])) };
   apps = apps.map(app => {
     if (app.id !== state.selectedId) return app;
-    return {
+    return setCatalogType({
       ...app,
       name: nodes.editName.value.trim() || app.name,
       category: nodes.editCategory.value.trim() || app.category,
       brief: nodes.editBrief.value.trim() || app.brief,
-      status: nodes.editStatus.value,
       tags: nodes.editTags.value.split(/[,，]/).map(tag => tag.trim()).filter(Boolean),
       problem: nodes.editProblem.value.trim() || app.problem,
       aiUse: nodes.editAiUse.value.trim() || app.aiUse,
@@ -1376,7 +1400,7 @@ function saveEditForm() {
       entry: nodes.editEntry.value.trim() || app.entry,
       package: nodes.editPackage?.value.trim() || app.package,
       video: nodes.editVideo?.value.trim() || app.video
-    };
+    }, nodes.editStatus.value);
   });
   localStorage.setItem(PAGE_TEXT_STORAGE_KEY, JSON.stringify(pageText));
   localStorage.setItem(STORAGE_KEY, JSON.stringify(apps));

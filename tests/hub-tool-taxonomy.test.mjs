@@ -24,6 +24,7 @@ function loadCatalogTypeContract() {
     "globalThis.catalogTypeLabels = catalogTypeLabels;",
     "globalThis.catalogTypeKey = catalogTypeKey;",
     "globalThis.catalogTypeLabel = catalogTypeLabel;",
+    "globalThis.setCatalogType = setCatalogType;",
   ].join("\n"), context);
   return context.globalThis;
 }
@@ -132,6 +133,41 @@ test("the type filter exposes only the six tool types plus games and engineering
   ]);
   assert.doesNotMatch(filter, /AI版|训练工具|创意工具|项目导航/);
   assert.match(homepage, /20260821-tool-taxonomy/);
+});
+
+test("the maintenance editor uses and persists the same public taxonomy", () => {
+  const { catalogTypeKey, setCatalogType } = loadCatalogTypeContract();
+  const radar = apps.find((app) => app.id === "x-ai-codex-radar");
+  const clickflow = apps.find((app) => app.id === "clickflow");
+  const game = apps.find((app) => app.id === "nang-keng-pai-pai-xiang");
+
+  assert.equal(catalogTypeKey(radar), "intelligence");
+  assert.equal(catalogTypeKey(clickflow), "desktop");
+
+  const editedRadar = setCatalogType(radar, "assistant");
+  assert.equal(editedRadar.status, "assistant");
+  assert.equal(editedRadar.catalogType, "assistant");
+  assert.equal(catalogTypeKey(editedRadar), "assistant");
+
+  const editedClickflow = setCatalogType(clickflow, "content");
+  assert.equal(editedClickflow.catalogType, "content");
+  assert.equal(catalogTypeKey(editedClickflow), "content");
+
+  const movedGame = setCatalogType(game, "life");
+  assert.equal(movedGame.status, "assistant");
+  assert.equal(movedGame.catalogType, "life");
+  assert.equal(catalogTypeKey(movedGame), "life");
+
+  const movedBack = setCatalogType(movedGame, "game");
+  assert.equal(movedBack.status, "game");
+  assert.equal("catalogType" in movedBack, false);
+  assert.equal(catalogTypeKey(movedBack), "game");
+
+  assert.match(homepage, /<select id="editStatus"><\/select>/);
+  assert.doesNotMatch(homepage, /<select id="editStatus">[\s\S]*?AI版/);
+  assert.match(runtime, /nodes\.editStatus\.innerHTML = Object\.entries\(catalogTypeLabels\)/);
+  assert.match(runtime, /nodes\.editStatus\.value = catalogTypeKey\(app\);/);
+  assert.match(runtime, /return setCatalogType\(\{[\s\S]*?\}, nodes\.editStatus\.value\);/);
 });
 
 test("filtering, sorting, cards and exports share the public taxonomy", () => {
