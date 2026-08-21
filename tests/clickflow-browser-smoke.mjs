@@ -72,7 +72,7 @@ try {
   );
   assert.equal(
     await clickFlowCard.locator(".status-badge").textContent(),
-    "辅助工具",
+    "桌面工具",
   );
   assert.equal(
     await clickFlowCard.locator(".card-meta > span").nth(1).textContent(),
