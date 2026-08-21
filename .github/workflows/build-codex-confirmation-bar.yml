@@ -123,10 +123,12 @@ jobs:
           ref: ${{ github.ref_name }}
           sparse-checkout: |
             .github/workflows/build-codex-confirmation-bar.yml
+            .github/workflows/build-codex-thread-workbench.yml
             build/codex-confirmation-bar/src/CodexThreadWorkbench/CodexThreadWorkbench.csproj
             package.json
             package-lock.json
             projects/codex-confirmation-bar
+            scripts/split-codex-confirmation-bar.mjs
             scripts/split-codex-confirmation-bar-mac.mjs
             tests/codex-confirmation-bar-download.test.mjs
             tests/codex-confirmation-bar-mac-download.test.mjs
