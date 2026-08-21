@@ -24,6 +24,7 @@ function loadCatalogTypeContract() {
     "globalThis.catalogTypeLabels = catalogTypeLabels;",
     "globalThis.catalogTypeKey = catalogTypeKey;",
     "globalThis.catalogTypeLabel = catalogTypeLabel;",
+    "globalThis.editableCatalogTypes = editableCatalogTypes;",
     "globalThis.setCatalogType = setCatalogType;",
   ].join("\n"), context);
   return context.globalThis;
@@ -136,10 +137,12 @@ test("the type filter exposes only the six tool types plus games and engineering
 });
 
 test("the maintenance editor uses and persists the same public taxonomy", () => {
-  const { catalogTypeKey, setCatalogType } = loadCatalogTypeContract();
+  const { catalogTypeKey, editableCatalogTypes, setCatalogType } = loadCatalogTypeContract();
+  const normalizeApp = loadNormalizer();
   const radar = apps.find((app) => app.id === "x-ai-codex-radar");
   const clickflow = apps.find((app) => app.id === "clickflow");
   const game = apps.find((app) => app.id === "nang-keng-pai-pai-xiang");
+  const engineering = apps.find((app) => app.id === "paws-home-client");
 
   assert.equal(catalogTypeKey(radar), "intelligence");
   assert.equal(catalogTypeKey(clickflow), "desktop");
@@ -148,24 +151,31 @@ test("the maintenance editor uses and persists the same public taxonomy", () => 
   assert.equal(editedRadar.status, "assistant");
   assert.equal(editedRadar.catalogType, "assistant");
   assert.equal(catalogTypeKey(editedRadar), "assistant");
+  assert.equal(catalogTypeKey(normalizeApp(editedRadar)), "assistant");
 
   const editedClickflow = setCatalogType(clickflow, "content");
   assert.equal(editedClickflow.catalogType, "content");
   assert.equal(catalogTypeKey(editedClickflow), "content");
 
-  const movedGame = setCatalogType(game, "life");
-  assert.equal(movedGame.status, "assistant");
-  assert.equal(movedGame.catalogType, "life");
-  assert.equal(catalogTypeKey(movedGame), "life");
+  const unchangedGame = setCatalogType(game, "life");
+  assert.equal(unchangedGame.status, "game");
+  assert.equal("catalogType" in unchangedGame, false);
+  assert.equal(catalogTypeKey(normalizeApp(unchangedGame)), "game");
 
-  const movedBack = setCatalogType(movedGame, "game");
-  assert.equal(movedBack.status, "game");
-  assert.equal("catalogType" in movedBack, false);
-  assert.equal(catalogTypeKey(movedBack), "game");
+  const unchangedEngineering = setCatalogType(engineering, "content");
+  assert.equal(unchangedEngineering.status, "engineering");
+  assert.equal("catalogType" in unchangedEngineering, false);
+  assert.equal(catalogTypeKey(normalizeApp(unchangedEngineering)), "engineering");
+
+  assert.deepEqual(JSON.parse(JSON.stringify(editableCatalogTypes(radar).map(([key]) => key))), [
+    "plugin", "assistant", "life", "intelligence", "desktop", "content",
+  ]);
+  assert.deepEqual(JSON.parse(JSON.stringify(editableCatalogTypes(game))), [["game", "小游戏"]]);
+  assert.deepEqual(JSON.parse(JSON.stringify(editableCatalogTypes(engineering))), [["engineering", "工程体验"]]);
 
   assert.match(homepage, /<select id="editStatus"><\/select>/);
   assert.doesNotMatch(homepage, /<select id="editStatus">[\s\S]*?AI版/);
-  assert.match(runtime, /nodes\.editStatus\.innerHTML = Object\.entries\(catalogTypeLabels\)/);
+  assert.match(runtime, /nodes\.editStatus\.innerHTML = editableCatalogTypes\(app\)/);
   assert.match(runtime, /nodes\.editStatus\.value = catalogTypeKey\(app\);/);
   assert.match(runtime, /return setCatalogType\(\{[\s\S]*?\}, nodes\.editStatus\.value\);/);
 });

@@ -59,15 +59,19 @@ function catalogTypeLabel(app) {
   return catalogTypeLabels[catalogTypeKey(app)];
 }
 
-function setCatalogType(app, catalogType) {
-  const { catalogType: _previousCatalogType, ...base } = app;
-  if (catalogType === "game") return { ...base, status: "game" };
-  if (catalogType === "engineering") {
-    return { ...base, status: ["engineering", "ai"].includes(app.status) ? app.status : "engineering" };
+function editableCatalogTypes(app) {
+  const currentType = catalogTypeKey(app);
+  if (["game", "engineering"].includes(currentType)) {
+    return [[currentType, catalogTypeLabels[currentType]]];
   }
+  return [...applicationCatalogTypes].map(type => [type, catalogTypeLabels[type]]);
+}
+
+function setCatalogType(app, catalogType) {
+  if (["game", "engineering"].includes(catalogTypeKey(app))) return app;
   if (!applicationCatalogTypes.has(catalogType)) return app;
-  const status = ["game", "engineering", "ai"].includes(app.status) ? "assistant" : app.status;
-  return { ...base, status, catalogType };
+  const { catalogType: _previousCatalogType, ...base } = app;
+  return { ...base, catalogType };
 }
 
 const defaultPageText = {
@@ -1264,7 +1268,7 @@ function renderEditForm() {
   nodes.editName.value = app.name;
   nodes.editCategory.value = app.category;
   nodes.editBrief.value = app.brief;
-  nodes.editStatus.innerHTML = Object.entries(catalogTypeLabels).map(([value, label]) => (
+  nodes.editStatus.innerHTML = editableCatalogTypes(app).map(([value, label]) => (
     `<option value="${escapeHtml(value)}">${escapeHtml(label)}</option>`
   )).join("");
   nodes.editStatus.value = catalogTypeKey(app);
