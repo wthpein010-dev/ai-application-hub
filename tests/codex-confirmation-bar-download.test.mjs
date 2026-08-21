@@ -92,11 +92,11 @@ test("published manifest fixes the v2 Windows archive and five verified 8 MiB pa
   assert.equal(manifest.product, "Codex Confirmation Bar");
   assert.equal(manifest.platform, "windows-x64");
   assert.equal(manifest.fileName, "CodexConfirmationBar-Windows-x64.zip");
-  assert.equal(manifest.totalSize, 40_209_312);
+  assert.equal(manifest.totalSize, 41_537_626);
   assert.equal(manifest.chunkSize, 8_388_608);
-  assert.equal(manifest.sha256, "EF988045D6B101B4CBEE838AFA64D02C414D83C5F5F96FE72A87C5F017D7A0DA");
+  assert.equal(manifest.sha256, "56F9966448039F21233241C03F3FAF2F2E32194193B27F4D74CB2CFFAFB11000");
   assert.deepEqual(manifest.parts.map((part) => part.index), [0, 1, 2, 3, 4]);
-  assert.deepEqual(manifest.parts.map((part) => part.size), [8_388_608, 8_388_608, 8_388_608, 8_388_608, 6_654_880]);
+  assert.deepEqual(manifest.parts.map((part) => part.size), [8_388_608, 8_388_608, 8_388_608, 8_388_608, 7_983_194]);
   assert.deepEqual(manifest.parts.map((part) => part.path), Array.from(
     { length: 5 },
     (_, index) => `parts/v2.0.0/part-${String(index).padStart(3, "0")}.bin`,
