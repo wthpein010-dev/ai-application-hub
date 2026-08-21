@@ -50,7 +50,7 @@ test("万象实验室 follows PlanMap in the application collection with demo an
   assert.equal(app.name, "万象实验室");
   assert.equal(app.category, "AI 互动实验");
   assert.equal(app.status, "assistant");
-  assert.equal(app.badge, "AI 实验工具");
+  assert.equal(app.badge, "辅助工具");
   assert.equal(app.entry, "./projects/simuai/index.html");
   assert.equal(app.video, "./projects/simuai/video/index.html");
   assert.equal(app.package, "");

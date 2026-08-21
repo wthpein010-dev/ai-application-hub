@@ -19,6 +19,35 @@ const statusLabel = {
   desktop: "桌面工具"
 };
 
+const catalogTypeLabels = {
+  plugin: "插件工具",
+  assistant: "辅助工具",
+  life: "生活工具",
+  intelligence: "网页情报",
+  desktop: "桌面工具",
+  content: "内容工具",
+  game: "小游戏",
+  engineering: "工程体验"
+};
+
+const catalogTypeOverrides = {
+  "gamepulse-mini-radar": "intelligence",
+  "x-ai-codex-radar": "intelligence",
+  clickflow: "desktop",
+  pureshrink: "desktop"
+};
+
+function catalogTypeKey(app) {
+  if (app.status === "game") return "game";
+  if (["engineering", "ai"].includes(app.status)) return "engineering";
+  return catalogTypeOverrides[app.id]
+    || (catalogTypeLabels[app.status] ? app.status : "assistant");
+}
+
+function catalogTypeLabel(app) {
+  return catalogTypeLabels[catalogTypeKey(app)];
+}
+
 const defaultPageText = {
   "brand.title": "AI 应用总览",
   "nav.overview": "总览",
@@ -87,6 +116,7 @@ const defaultApps = [
     name: "AI 应用方案整理器",
     category: "项目总览",
     status: "navigation",
+    badge: "辅助工具",
     brief: HUB_BRIEF,
     problem: "应用、小游戏和工程体验分散在多个目录，查找入口、视频和适用平台时不够直观。",
     aiUse: "AI 用于整理项目说明、入口状态、兼容信息和维护建议。",
@@ -110,6 +140,7 @@ const defaultApps = [
     name: "小游戏每日排行",
     category: "小游戏产品洞察",
     status: "assistant",
+    badge: "网页情报",
     brief: "把国内与海外榜单、行业知识库、玩法拆解、发布合作和开放接口放在同一张开发者工作台上。",
     problem: "小游戏开发者既要扫描可信榜位，也要持续沉淀玩法案例、寻找合作机会，并把公开信息接入自己的工作流。",
     aiUse: "AI 参与榜单清洗、知识摘要、关联推荐和异常回退；投稿审核后公开，站点每天北京时间 07:10 后检查更新。",
@@ -159,6 +190,7 @@ const defaultApps = [
     name: "羊了个羊：对对碰",
     category: "Unity H5 AI版",
     status: "ai",
+    badge: "工程体验",
     brief: "基于羊了个羊体验做的后续玩法变形，以拟人砖块、槽位、道具和城市羊群包装构成可直接游玩的 H5 原型。",
     problem: "需要一个外网可访问的最新 WebGL 包，方便团队、朋友或外部评审直接打开体验，不依赖局域网服务。",
     aiUse: "AI 参与关卡编辑器、关卡逻辑、道具流程、UI 调整、WebGL 打包和外网发布流程维护。",
@@ -412,6 +444,7 @@ const defaultApps = [
     name: "每日策划知识考核",
     category: "策划训练答卷",
     status: "training",
+    badge: "辅助工具",
     brief: "面向休闲游戏和对对碰项目的每日训练题库，每天 0 点刷新一轮题，限时答题后给出批改、答案说明和错题强化建议。",
     problem: "策划训练如果只靠文档阅读，很难形成稳定复习节奏，也不容易沉淀错题、薄弱能力和每日训练记录。",
     aiUse: "AI 后续可接入主观题点评、错题解释、同类练习生成和能力画像总结；当前版本先完成每日抽题、倒计时、自动批改和本地记录。",
@@ -550,7 +583,7 @@ const defaultApps = [
     name: "砖块点亮动效实验台",
     category: "美术设计参考",
     status: "engineering",
-    badge: "美术设计参考",
+    badge: "工程体验",
     brief: "作为砖块叠层显露的美术参考，用于比较材质、百叶窗、棋盘格、遮罩与形变回退，帮助团队挑选克制且明显不同的呈现。",
     problem: "用于美术、策划和程序共同选择层叠砖块露出后的点亮节奏，避免额外光效让单块砖过度突出。",
     aiUse: "AI 参与动效方案拆分、暴露进度模型、交互原型、慢速对比、自动化测试和公开发布。",
@@ -598,7 +631,7 @@ const defaultApps = [
     name: "ClickFlow 鼠标自动化",
     category: "桌面自动化工具",
     status: "assistant",
-    badge: "辅助工具",
+    badge: "桌面工具",
     brief: "把定点连点、点击录制、动作编辑与循环回放放进同一工作台，用快捷键避开录制控制按钮，并在每次点击后尽快恢复光标位置。",
     problem: "重复点击和固定操作流程既浪费时间，又会持续占用鼠标；用户需要可保存、可复用、可随时停止的本地自动化方案。",
     aiUse: "AI 参与跨平台输入适配、线程安全任务编排、桌面交互设计、自动测试、原生打包和公开教程制作。",
@@ -628,7 +661,7 @@ const defaultApps = [
     name: "无损压缩工坊",
     category: "媒体压缩工具",
     status: "assistant",
-    badge: "辅助工具",
+    badge: "桌面工具",
     brief: "在设备本地批量压缩图片、视频、GIF、音频和一般文件，严格无损默认开启，原件永不覆盖。",
     problem: "媒体资源散落在不同工具中处理，上传等待、隐私风险和误覆盖原件让批量压缩变得低效。",
     aiUse: "AI 参与压缩策略编排、无损边界说明、跨平台执行引擎、自动测试和公开教程制作。",
@@ -658,7 +691,7 @@ const defaultApps = [
     name: "思维导图快捷工具",
     category: "AI 思维导图",
     status: "assistant",
-    badge: "脑图 + AI",
+    badge: "辅助工具",
     brief: "不用手动摆节点，也不用先选节点：直接通过对话替换文字、重组内容，或切换鱼骨、树状、横向等结构，脑图自动排版。",
     problem: "传统脑图要求用户一边思考内容、一边处理节点层级和版面，策划调整频繁时容易把精力耗在拖拽与排版上。",
     aiUse: "AI 将自然语言意图转换为全局或局部节点操作，快速定位原文本完成替换，并可连接 Ollama、LM Studio、LocalAI 等 OpenAI 兼容模型。",
@@ -682,7 +715,7 @@ const defaultApps = [
     name: "万象实验室",
     category: "AI 互动实验",
     status: "assistant",
-    badge: "AI 实验工具",
+    badge: "辅助工具",
     brief: "从 30 个受控实验中本地匹配模型，拖动参数，并在 5 种图表视图间切换，观察指标、曲线与结论如何变化。",
     problem: "抽象问题常被直接压缩成一个答案，用户难以看清变量、公式、假设和结果之间的关系。",
     aiUse: "AI 参与 9 种确定性模型设计、问题匹配、安全边界、交互体验、自动测试与公开教程制作；公开版不调用远程模型。",
@@ -730,7 +763,7 @@ const defaultApps = [
     name: "GameSpec Relay",
     category: "游戏研发效率工具",
     status: "assistant",
-    badge: "游戏研发 Agent",
+    badge: "辅助工具",
     brief: "把群聊、会议纪要和策划文档转换为决定、阻塞问题、跨职能任务、验收标准、测试与变更影响。",
     problem: "游戏需求在讨论后仍需人工整理、拆分和补验收口径，信息遗漏会导致跨职能返工。",
     aiUse: "AI 参与游戏语义分析、证据追溯、任务拆分、质量门禁、变更影响和 Codex 上下文导出；完整示例可离线运行。",
@@ -763,7 +796,7 @@ const defaultApps = [
     name: "X 情报吧｜AI / Codex 雷达",
     category: "AI 情报工具",
     status: "assistant",
-    badge: "AI 情报工具",
+    badge: "网页情报",
     brief: "贴吧式整理 X 上 Tibo、马斯克、Codex 与 OpenAI 官方发言，置顶更新调整、Token／额度重置和故障状态，并串起可核验的用户留言。",
     problem: "官方更新、Token 规则和用户反馈散落在不同帖子里，逐条刷 X 很难快速判断哪些变化需要立即关注。",
     aiUse: "AI 参与公开来源聚合、官方身份识别、主题归类和中文摘要；公开演示使用明确标注的示例楼层，私有站点负责定期采集真实帖子。",
@@ -940,11 +973,11 @@ function getFilteredApps() {
       const haystack = [app.name, app.category, app.brief, app.problem, app.aiUse, ...app.tags].join(" ").toLowerCase();
       const matchesQuery = !query || haystack.includes(query);
       const matchesCategory = state.category === "all" || app.category === state.category;
-      const matchesStatus = state.status === "all" || app.status === state.status;
+      const matchesStatus = state.status === "all" || catalogTypeKey(app) === state.status;
       return matchesQuery && matchesCategory && matchesStatus;
     })
     .sort((a, b) => {
-      if (state.sort === "type") return statusLabel[a.status].localeCompare(statusLabel[b.status], "zh-CN") || a.name.localeCompare(b.name, "zh-CN");
+      if (state.sort === "type") return catalogTypeLabel(a).localeCompare(catalogTypeLabel(b), "zh-CN") || a.name.localeCompare(b.name, "zh-CN");
       if (state.sort === "category") return a.category.localeCompare(b.category, "zh-CN") || a.name.localeCompare(b.name, "zh-CN");
       if (state.sort === "name") return a.name.localeCompare(b.name, "zh-CN");
       return defaultApps.findIndex(item => item.id === a.id) - defaultApps.findIndex(item => item.id === b.id);
@@ -1056,7 +1089,7 @@ function renderAppCard(app, index = 0, extraClass = "", actionMode = "default") 
     <article class="app-card${extraClass} ${app.id === state.selectedId ? "selected" : ""}" data-app-id="${escapeHtml(app.id)}" tabindex="0" aria-current="${app.id === state.selectedId ? "true" : "false"}" style="--card-order:${index}">
       <div class="card-topline">
         <div class="card-meta">
-          <span class="status-badge status-${escapeHtml(app.status)}">${escapeHtml(app.badge || statusLabel[app.status])}</span>
+          <span class="status-badge status-${escapeHtml(catalogTypeKey(app))}">${escapeHtml(catalogTypeLabel(app))}</span>
           <span>${renderEditableText("app", "category", app.category, app.id)}</span>
         </div>
         ${renderRegionEditButton("app", "name", app.id, "name", "编辑此应用")}
@@ -1368,7 +1401,7 @@ function exportList() {
     "",
     ...apps.map(app => [
       `## ${app.name}`,
-      `- 类型：${statusLabel[app.status]}`,
+      `- 类型：${catalogTypeLabel(app)}`,
       `- 分类：${app.category}`,
       `- 简介：${app.brief}`,
       `- 平台：${platformCount(app)}/3`,
@@ -1741,6 +1774,7 @@ function normalizeApp(app) {
   if (normalized.video && normalized.video.includes("演示视频占位")) {
     delete normalized.video;
   }
+  normalized.badge = base.badge || statusLabel[base.status];
   return normalized;
 }
 

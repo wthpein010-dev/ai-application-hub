@@ -581,6 +581,11 @@ select option:hover {
   background: var(--green);
 }
 
+.status-intelligence {
+  color: #2b0a12;
+  background: #fb7185;
+}
+
 .status-engineering,
 .status-ai {
   background: #f59e0b;
