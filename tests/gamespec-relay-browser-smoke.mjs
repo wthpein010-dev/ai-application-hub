@@ -69,6 +69,9 @@ try {
       "3分清谁来做、怎么验",
       "4对比新旧版本影响",
     ]);
+    if (viewport.name === "mobile") {
+      assert.ok(await page.locator("#loadSample").evaluate((node) => node.getBoundingClientRect().height >= 44));
+    }
     await page.locator("#loadSample").click();
     assert.match(await page.locator("#sourceInput").inputValue(), /40%/);
     assert.equal(/[A-Za-z]/.test(await page.locator("#sourceInput").inputValue()), false);

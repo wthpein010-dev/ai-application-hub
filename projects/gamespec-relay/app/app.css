@@ -244,6 +244,7 @@ body h4 { font-size: 15px !important; }
 
 @media (max-width: 900px) {
   body { height: auto; min-height: 100vh; overflow: auto; }
+  body :where(button, .ghost-button) { min-height: 44px !important; }
   .app-header { position: sticky; top: 0; z-index: 12; min-height: 62px; padding: 9px 12px; }
   .project-heading { min-width: 0; }
   .project-kicker { display: none; }
