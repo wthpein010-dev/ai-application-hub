@@ -24,6 +24,7 @@ import {
   resolveTileVisualTone,
   toneFactorToHex,
 } from "../core/tile-visual-tone.mjs";
+import { createTileMaterialSet } from "./three-tile-materials.mjs";
 
 function srgbColor(hex) {
   return new THREE.Color(hex).convertSRGBToLinear();
@@ -186,37 +187,55 @@ export class Three3DView {
     this.grid.position.y = -0.015;
     this.scene.add(this.grid);
 
-    const ambient = new THREE.HemisphereLight(0xfffee8, 0x26744f, 1.45);
+    const ambient = new THREE.HemisphereLight(0xfffee8, 0x26744f, 0.82);
     this.scene.add(ambient);
-    this.keyLight = new THREE.DirectionalLight(0xffffff, 1.35);
+    this.keyLight = new THREE.DirectionalLight(0xffffff, 0.62);
     this.keyLight.position.set(-7, 13, 7);
     this.keyLight.castShadow = true;
     this.keyLight.shadow.mapSize.set(1024, 1024);
     this.keyLight.shadow.bias = -0.0002;
     this.keyLight.shadow.normalBias = 0.02;
     this.scene.add(this.keyLight);
-    const rim = new THREE.DirectionalLight(0xbfffa7, 0.42);
+    const rim = new THREE.DirectionalLight(0xbfffa7, 0.16);
     rim.position.set(10, 7, -9);
     this.scene.add(rim);
 
     this.geometry = new THREE.BoxGeometry(1, 0.16, 1);
     this.sideMaterial = new THREE.MeshStandardMaterial({
       color: srgbColor(0x3f7d0a),
-      roughness: 0.74,
+      roughness: 0.9,
       metalness: 0,
     });
     this.textureLoader = new THREE.TextureLoader();
-    this.trayGeometry = new THREE.PlaneGeometry(3.2, 3.2 * (178 / 256));
-    this.trayMaterial = new THREE.MeshBasicMaterial({
+    this.trayGeometry = new THREE.PlaneGeometry(1.28, 1.41);
+    this.trayBaseMaterial = new THREE.MeshBasicMaterial({
       color: 0x9b5c1b,
       transparent: true,
       side: THREE.DoubleSide,
+      depthWrite: false,
     });
-    this.trayMesh = new THREE.Mesh(this.trayGeometry, this.trayMaterial);
-    this.trayMesh.rotation.x = -Math.PI / 2;
-    this.trayMesh.position.y = 0.015;
-    this.trayMesh.visible = false;
-    this.scene.add(this.trayMesh);
+    this.trayLipMaterial = new THREE.MeshBasicMaterial({
+      color: 0xffffff,
+      transparent: true,
+      side: THREE.DoubleSide,
+      depthWrite: false,
+    });
+    this.trayMeshes = [0, 1].map((slot) => {
+      const base = new THREE.Mesh(this.trayGeometry, this.trayBaseMaterial);
+      const lip = new THREE.Mesh(this.trayGeometry, this.trayLipMaterial);
+      base.rotation.x = -Math.PI / 2;
+      lip.rotation.x = -Math.PI / 2;
+      base.position.y = 0.015;
+      lip.position.y = 0.31;
+      base.renderOrder = -2;
+      lip.renderOrder = 12;
+      base.visible = false;
+      lip.visible = false;
+      base.userData.traySlot = slot;
+      lip.userData.traySlot = slot;
+      this.scene.add(base, lip);
+      return { slot, base, lip };
+    });
     this.loadGameplayArtwork();
     this.raycaster = new THREE.Raycaster();
     this.pointer = new THREE.Vector2();
@@ -380,14 +399,22 @@ export class Three3DView {
       this.invalidateBlockTextures();
     });
     loadImage(GAMEPLAY_ASSETS.grass, (image) => this.buildGrassField(image));
-    this.textureLoader.load(GAMEPLAY_ASSETS.playTray, (texture) => {
-      texture.encoding = THREE.sRGBEncoding;
-      texture.anisotropy = Math.min(8, this.renderer.capabilities.getMaxAnisotropy());
-      this.playTrayTexture = texture;
-      this.trayMaterial.map = texture;
-      this.trayMaterial.color.setHex(0xffffff);
-      this.trayMaterial.needsUpdate = true;
-    });
+    const loadTrayTexture = (url, material, property) => {
+      this.textureLoader.load(url, (texture) => {
+        if (this.destroyed) {
+          texture.dispose();
+          return;
+        }
+        texture.encoding = THREE.sRGBEncoding;
+        texture.anisotropy = Math.min(8, this.renderer.capabilities.getMaxAnisotropy());
+        this[property] = texture;
+        material.map = texture;
+        material.color.setHex(0xffffff);
+        material.needsUpdate = true;
+      });
+    };
+    loadTrayTexture(GAMEPLAY_ASSETS.playTrayBase, this.trayBaseMaterial, "playTrayTexture");
+    loadTrayTexture(GAMEPLAY_ASSETS.playTrayLip, this.trayLipMaterial, "playTrayLipTexture");
   }
 
   invalidateBlockTextures() {
@@ -451,22 +478,10 @@ export class Three3DView {
   }
 
   createMesh(record) {
-    const top = new THREE.MeshStandardMaterial({
-      map: this.textureFor(record),
-      color: 0xffffff,
-      roughness: 0.63,
-      metalness: 0.02,
-      emissive: 0x000000,
+    const { top, side, materials } = createTileMaterialSet(THREE, {
+      texture: this.textureFor(record),
+      sideMaterial: this.sideMaterial,
     });
-    const side = this.sideMaterial.clone();
-    const materials = [
-      side,
-      side,
-      top,
-      side,
-      side,
-      side,
-    ];
     const mesh = new THREE.Mesh(this.geometry, materials);
     mesh.castShadow = true;
     mesh.receiveShadow = true;
@@ -517,8 +532,8 @@ export class Three3DView {
       emissiveIntensity = 0.62;
     }
     top.color.setHex(color).convertSRGBToLinear();
-    top.emissive.setHex(emissive);
-    top.emissiveIntensity = emissiveIntensity;
+    side.emissive.setHex(emissive);
+    side.emissiveIntensity = Math.min(0.28, emissiveIntensity);
     side.color
       .setHex(multiplyHexColor(0x3f7d0a, tone.factor))
       .convertSRGBToLinear();
@@ -606,8 +621,18 @@ export class Three3DView {
     this.updateRelationshipLines(relations.edges);
     const bounds = computeRenderBounds(renderTiles);
     const trayRecords = renderTiles.filter((record) => record.location === "tray");
-    this.trayMesh.visible = this.mode === "play";
-    this.trayMesh.position.z = trayRecords[0]?.worldZ ?? bounds.maxZ + 2;
+    const trayZ = trayRecords[0]?.worldZ ?? bounds.maxZ + 2;
+    const secondSlotUnlocked = this.source?.secondSlotUnlocked === true;
+    for (const tray of this.trayMeshes) {
+      const visible = this.mode === "play" && (tray.slot === 0 || secondSlotUnlocked);
+      const worldX = secondSlotUnlocked ? (tray.slot === 0 ? -1.3 : 1.3) : 0;
+      tray.base.visible = visible;
+      tray.lip.visible = visible;
+      tray.base.position.x = worldX;
+      tray.lip.position.x = worldX;
+      tray.base.position.z = trayZ;
+      tray.lip.position.z = trayZ;
+    }
     this.grid.visible = this.mode === "edit";
     this.grid.scale.set(
       Math.max(0.35, Math.min(1, bounds.width / 30 + 0.25)),
@@ -801,8 +826,10 @@ export class Three3DView {
     for (const material of this.grassMaterials.values()) material.dispose();
     for (const texture of this.grassTextures.values()) texture.dispose();
     this.trayGeometry?.dispose();
-    this.trayMaterial?.dispose();
+    this.trayBaseMaterial?.dispose();
+    this.trayLipMaterial?.dispose();
     this.playTrayTexture?.dispose();
+    this.playTrayLipTexture?.dispose();
     for (const texture of this.textures.values()) {
       texture.dispose();
     }

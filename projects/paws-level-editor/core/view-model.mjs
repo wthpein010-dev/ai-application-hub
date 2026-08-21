@@ -132,13 +132,16 @@ export function buildRenderTiles(
   const centerX = (bounds.minX + bounds.maxX) / 2;
   const centerY = (bounds.minY + bounds.maxY) / 2;
   const boardDepth = Math.max(WORLD_TILE_SIZE, (bounds.maxY - bounds.minY) / TILE_SIZE);
+  const secondSlotUnlocked = documentOrSnapshot?.secondSlotUnlocked === true;
 
   return visibleTiles.map((tile) => {
     const inTray = Number.isInteger(tile.stashedSlot);
     const visualDepthBias = inTray ? 0 : (depthBiasByUid.get(tile.uid) ?? 0);
     const traySlot = inTray ? tile.stashedSlot : null;
     const worldX = inTray
-      ? (traySlot - 0.5) * 1.35
+      ? secondSlotUnlocked
+        ? traySlot === 0 ? -1.3 : 1.3
+        : 0
       : (tile.x + TILE_SIZE / 2 - centerX) / TILE_SIZE;
     const worldZ = inTray
       ? boardDepth / 2 + 2

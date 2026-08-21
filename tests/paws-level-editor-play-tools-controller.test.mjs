@@ -18,7 +18,7 @@ function tile(uid, x, type) {
   };
 }
 
-test("play tool command dispatches through the real session", () => {
+test("slot tool command unlocks the second tray through the real session", () => {
   const session = createPlaySession({
     fileName: "level_0099_r2_controller_tool.json",
     gameplay: { gameLevelOrder: 2 },
@@ -29,15 +29,13 @@ test("play tool command dispatches through the real session", () => {
       tile("d", 48, 2),
     ],
   });
-  const events = runPlayTool(session, "match");
+  const events = runPlayTool(session, "slot");
   const snapshot = session.getSnapshot();
 
-  assert.equal(events[0].type, "tool-match-removed");
-  assert.equal(snapshot.tools.match.remaining, 0);
-  assert.deepEqual(
-    snapshot.tiles.filter(({ removed }) => removed).map(({ uid }) => uid),
-    ["a", "b"],
-  );
+  assert.equal(events[0].type, "tool-slot-unlocked");
+  assert.equal(snapshot.secondSlotUnlocked, true);
+  assert.equal(snapshot.tools.slot.remaining, 0);
+  assert.equal(session.stash("a", 1)[0].type, "tray-changed");
 });
 
 test("unknown play tool command does not change the session", () => {

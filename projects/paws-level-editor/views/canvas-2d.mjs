@@ -189,26 +189,32 @@ export class Canvas2DView {
     return topmostHit(this.boardTiles(), boardPoint);
   }
 
-  trayFrameLayout() {
-    const width = Math.min(228, Math.max(176, this.width * 0.29));
-    const height = width * (178 / 256);
-    return {
-      x: (this.width - width) / 2,
-      y: this.height - height - 104,
-      width,
-      height,
-    };
+  trayLayout() {
+    const width = Math.min(128, Math.max(96, this.width * 0.13));
+    const height = width * (141 / 128);
+    const unlocked = this.snapshot?.secondSlotUnlocked === true;
+    const offset = Math.min(130, width * (130 / 128));
+    const slots = unlocked ? [0, 1] : [0];
+    return slots.map((slot) => {
+      const centerX = this.width / 2 + (unlocked ? (slot === 0 ? -offset : offset) : 0);
+      const x = centerX - width / 2;
+      const y = this.height - height - 104;
+      return {
+        slot,
+        x,
+        y,
+        width,
+        height,
+        tileX: x + width * 0.1,
+        tileY: y + height * 0.08,
+        tileWidth: width * 0.8,
+        tileHeight: height * 0.7,
+      };
+    });
   }
 
-  trayLayout() {
-    const frame = this.trayFrameLayout();
-    return [0, 1].map((slot) => ({
-      slot,
-      x: frame.x + frame.width * (slot === 0 ? 0.095 : 0.525),
-      y: frame.y + frame.height * 0.09,
-      width: frame.width * 0.38,
-      height: frame.height * 0.61,
-    }));
+  trayFrameLayout(slot = 0) {
+    return this.trayLayout().find((item) => item.slot === slot) ?? null;
   }
 
   hitTrayTile(point) {
@@ -610,33 +616,31 @@ export class Canvas2DView {
     if (this.mode !== "play") {
       return;
     }
-    const frame = this.trayFrameLayout();
     const layout = this.trayLayout();
-    context.save();
-    const frameImage = this.getGameplayImage(GAMEPLAY_ASSETS.playTray);
-    if (frameImage) {
-      context.drawImage(frameImage, frame.x, frame.y, frame.width, frame.height);
-    } else {
-      context.fillStyle = "#9b5c1b";
-      context.strokeStyle = "#e8a436";
-      context.lineWidth = 5;
-      context.beginPath();
-      context.roundRect(frame.x, frame.y, frame.width, frame.height, 12);
-      context.fill();
-      context.stroke();
+    const frame = layout[0];
+    if (!frame) {
+      return;
     }
+    context.save();
+    const baseImage = this.getGameplayImage(GAMEPLAY_ASSETS.playTrayBase);
+    const lipImage = this.getGameplayImage(GAMEPLAY_ASSETS.playTrayLip);
     for (const slot of layout) {
+      if (baseImage) {
+        context.drawImage(baseImage, slot.x, slot.y, slot.width, slot.height);
+      } else {
+        context.fillStyle = "#9b5c1b";
+        context.strokeStyle = "#e8a436";
+        context.lineWidth = 4;
+        context.beginPath();
+        context.roundRect(slot.x, slot.y, slot.width, slot.height, 12);
+        context.fill();
+        context.stroke();
+      }
       const uid = this.snapshot?.tray?.[slot.slot];
       if (!uid) {
-        context.fillStyle = "rgba(255,226,151,.7)";
-        context.font = `800 ${Math.max(16, frame.width * 0.1)}px sans-serif`;
-        context.textAlign = "center";
-        context.textBaseline = "middle";
-        context.fillText(
-          slot.slot === 1 && !this.snapshot?.secondSlotUnlocked ? "×" : slot.slot === 1 ? "+" : "",
-          slot.x + slot.width / 2,
-          slot.y + slot.height / 2,
-        );
+        if (lipImage) {
+          context.drawImage(lipImage, slot.x, slot.y, slot.width, slot.height);
+        }
         continue;
       }
       const tile = this.currentTiles().find((item) => item.uid === uid);
@@ -645,16 +649,19 @@ export class Canvas2DView {
       }
       context.save();
       const scale = this.viewport.scale;
-      const tileSize = Math.min(slot.width * 0.88, (slot.height / TILE_ART_ASPECT) * 0.9);
+      const tileSize = Math.min(slot.tileWidth, slot.tileHeight / TILE_ART_ASPECT);
       this.viewport.scale = tileSize / TILE_SIZE;
       const originalOffset = { x: this.viewport.offsetX, y: this.viewport.offsetY };
-      this.viewport.offsetX = slot.x + (slot.width - tileSize) / 2 - tile.x * this.viewport.scale;
-      this.viewport.offsetY = slot.y + (slot.height - tileSize * TILE_ART_ASPECT) / 2 - tile.y * this.viewport.scale;
+      this.viewport.offsetX = slot.tileX + (slot.tileWidth - tileSize) / 2 - tile.x * this.viewport.scale;
+      this.viewport.offsetY = slot.tileY + (slot.tileHeight - tileSize * TILE_ART_ASPECT) / 2 - tile.y * this.viewport.scale;
       this.drawTile(context, tile);
       this.viewport.scale = scale;
       this.viewport.offsetX = originalOffset.x;
       this.viewport.offsetY = originalOffset.y;
       context.restore();
+      if (lipImage) {
+        context.drawImage(lipImage, slot.x, slot.y, slot.width, slot.height);
+      }
     }
     context.fillStyle = "rgba(22,77,52,.84)";
     context.font = "700 11px sans-serif";

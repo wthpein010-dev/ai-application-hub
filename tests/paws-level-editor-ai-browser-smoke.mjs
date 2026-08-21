@@ -142,6 +142,7 @@ async function waitForNetworkAndTextures(page) {
         || !renderer.lockMaskImage
         || !renderer.grassTexture
         || !renderer.playTrayTexture
+        || !renderer.playTrayLipTexture
       )
     ) {
       return false;
@@ -526,6 +527,7 @@ try {
       ordinaryFactor: blockedTone.factor,
       ordinaryOverlayAlpha: blockedTone.overlayAlpha,
       topHex: blockedMesh?.userData.topMaterial.color.getHex() ?? null,
+      topUnlit: blockedMesh?.userData.topMaterial.isMeshBasicMaterial ?? false,
       sideHex: blockedMesh?.userData.sideMaterial.color.getHex() ?? null,
       blindCount: meshes.filter((mesh) =>
         mesh.userData.record?.covered
@@ -548,6 +550,7 @@ try {
   });
   assert.equal(blockedVisual.blockedCount > 0, true);
   assert.equal(blockedVisual.ordinaryUid !== null, true);
+  assert.equal(blockedVisual.topUnlit, true);
   assert.equal(blockedVisual.ordinaryPatchCount > 0, true);
   assert.equal(blockedVisual.ordinaryFactor, 0.58);
   assert.equal(blockedVisual.ordinaryOverlayAlpha, 0.42);

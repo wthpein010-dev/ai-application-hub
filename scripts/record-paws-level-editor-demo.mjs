@@ -108,15 +108,18 @@ const sourceFiles = [
   "projects/paws-level-editor/ui/play-tool-command.mjs",
   "projects/paws-level-editor/ui/workbench-controller.mjs",
   "projects/paws-level-editor/views/canvas-2d.mjs",
+  "projects/paws-level-editor/views/three-tile-materials.mjs",
   "projects/paws-level-editor/views/three-3d.mjs",
   "projects/paws-level-editor/levels/index.json",
   "scripts/record-paws-level-editor-demo.mjs",
   "scripts/paws-recording-support.mjs",
 ];
 const assetFiles = [
+  "projects/paws-level-editor/assets/gameplay/btn_caowei.png",
   "projects/paws-level-editor/assets/gameplay/btn_random.png",
   "projects/paws-level-editor/assets/gameplay/btn_magnet.png",
-  "projects/paws-level-editor/assets/gameplay/btn_rollback.png",
+  "projects/paws-level-editor/assets/gameplay/play_save.png",
+  "projects/paws-level-editor/assets/gameplay/play_save_up.png",
 ];
 
 function delay(milliseconds) {
@@ -200,6 +203,18 @@ async function waitForWorkbench(page) {
     if (
       renderer.images instanceof Map &&
       [...renderer.images.values()].some((image) => !image.complete)
+    ) {
+      return false;
+    }
+    if (
+      renderer.gameplayImages instanceof Map
+      && [...renderer.gameplayImages.values()].some((image) => !image.complete)
+    ) {
+      return false;
+    }
+    if (
+      document.querySelector(".level-canvas-3d")
+      && (!renderer.playTrayTexture || !renderer.playTrayLipTexture)
     ) {
       return false;
     }
@@ -1193,10 +1208,14 @@ async function recordEditor() {
       const initialTools = await page.evaluate(() =>
         window.pawsWorkbench.playSnapshot.tools);
       assert.deepEqual(initialTools, {
+        slot: { remaining: 1 },
         shuffle: { remaining: 1 },
         match: { remaining: 1 },
-        undo: { remaining: 1 },
       });
+      assert.equal(
+        await page.evaluate(() => window.pawsWorkbench.playSnapshot.secondSlotUnlocked),
+        false,
+      );
       const playTools = { initial: initialTools };
       const blockedVisual2d = await page.evaluate(async () => {
         const { resolveTileVisualTone } = await import(
@@ -1315,27 +1334,34 @@ async function recordEditor() {
       await page.locator("#restart-play").click();
       await delay(350);
 
-      const undoUid = await stashAvailableTileIn2d(page);
-      const trayBeforeUndo = await page.evaluate(() => [
-        ...window.pawsWorkbench.playSnapshot.tray,
-      ]);
-      await delay(650);
-      await page.locator("#play-tool-undo").click();
-      await page.waitForFunction(
-        (uid) =>
-          window.pawsWorkbench.playSnapshot.tools.undo.remaining === 0 &&
-          !window.pawsWorkbench.playSnapshot.tray.includes(uid),
-        undoUid,
-      );
-      const undoState = await page.evaluate(() => ({
+      const slotUid = await stashAvailableTileIn2d(page);
+      const trayBeforeSlot = await page.evaluate(() => ({
         tray: [...window.pawsWorkbench.playSnapshot.tray],
-        remaining: window.pawsWorkbench.playSnapshot.tools.undo.remaining,
+        secondSlotUnlocked: window.pawsWorkbench.playSnapshot.secondSlotUnlocked,
+        trayCount: window.pawsWorkbench.renderer.trayLayout().length,
       }));
-      playTools.undo = {
-        uid: undoUid,
-        trayBefore: trayBeforeUndo,
-        trayAfter: undoState.tray,
-        remaining: undoState.remaining,
+      await delay(650);
+      await page.locator("#play-tool-slot").click();
+      await page.waitForFunction(
+        () =>
+          window.pawsWorkbench.playSnapshot.tools.slot.remaining === 0
+          && window.pawsWorkbench.playSnapshot.secondSlotUnlocked,
+      );
+      const slotState = await page.evaluate(() => ({
+        tray: [...window.pawsWorkbench.playSnapshot.tray],
+        secondSlotUnlocked: window.pawsWorkbench.playSnapshot.secondSlotUnlocked,
+        trayCount: window.pawsWorkbench.renderer.trayLayout().length,
+        remaining: window.pawsWorkbench.playSnapshot.tools.slot.remaining,
+      }));
+      playTools.slot = {
+        uid: slotUid,
+        trayBefore: trayBeforeSlot.tray,
+        trayAfter: slotState.tray,
+        secondSlotBefore: trayBeforeSlot.secondSlotUnlocked,
+        secondSlotAfter: slotState.secondSlotUnlocked,
+        trayCountBefore: trayBeforeSlot.trayCount,
+        trayCountAfter: slotState.trayCount,
+        remaining: slotState.remaining,
       };
       await delay(700);
 
@@ -1387,6 +1413,7 @@ async function recordEditor() {
           sideHex: mesh?.userData.sideMaterial.color.getHex() ?? null,
           blindTopHex:
             blindMesh?.userData.topMaterial.color.getHex() ?? null,
+          topUnlit: mesh?.userData.topMaterial.isMeshBasicMaterial ?? false,
           expectedTopHex: 0x4b4b4b,
           expectedSideHex: 0x041000,
           rendererMode: window.pawsWorkbench.renderer.mode,
@@ -1396,6 +1423,7 @@ async function recordEditor() {
       assert.equal(blockedVisual3d.topHex, blockedVisual3d.expectedTopHex);
       assert.equal(blockedVisual3d.sideHex, blockedVisual3d.expectedSideHex);
       assert.equal(blockedVisual3d.blindTopHex, 0xffffff);
+      assert.equal(blockedVisual3d.topUnlit, true);
       assert.equal(blockedVisual3d.rendererMode, "play");
       proof.actions.blockedVisual = {
         twoD: blockedVisual2d,
@@ -1459,6 +1487,9 @@ async function recordEditor() {
           .every(({ remaining }) => remaining === 1));
       playTools.afterRestart = await page.evaluate(() =>
         window.pawsWorkbench.playSnapshot.tools);
+      playTools.secondSlotAfterRestart = await page.evaluate(() =>
+        window.pawsWorkbench.playSnapshot.secondSlotUnlocked);
+      assert.equal(playTools.secondSlotAfterRestart, false);
       proof.actions.playTools = playTools;
       await delay(650);
 

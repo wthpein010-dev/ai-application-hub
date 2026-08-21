@@ -333,6 +333,29 @@ test("visual depth separates only positive-area same-layer conflicts without mut
   );
 });
 
+test("tray render positions stay centered while locked and separate after slot unlock", () => {
+  const first = { ...tile("tray-a", 0, 0, 1), stashedSlot: 0 };
+  const second = { ...tile("tray-b", 8, 0, 1), stashedSlot: 1 };
+
+  const [locked] = buildRenderTiles({
+    secondSlotUnlocked: false,
+    tiles: [first],
+  });
+  assert.equal(locked.worldX, 0);
+
+  const unlocked = buildRenderTiles({
+    secondSlotUnlocked: true,
+    tiles: [first, second],
+  });
+  assert.deepEqual(
+    unlocked.map(({ traySlot, worldX }) => ({ traySlot, worldX })),
+    [
+      { traySlot: 0, worldX: -1.3 },
+      { traySlot: 1, worldX: 1.3 },
+    ],
+  );
+});
+
 test("visual depth colors stay stable when an earlier conflict is removed or stashed", () => {
   const source = [
     tile("a", 0, 0, 1),

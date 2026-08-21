@@ -9,9 +9,9 @@ import { XorShift } from "./xorshift.mjs";
 const isSpecialType = (type) => type >= 1001 && type <= 1006;
 
 const freshTools = () => ({
+  slot: { remaining: 1 },
   shuffle: { remaining: 1 },
   match: { remaining: 1 },
-  undo: { remaining: 1 },
 });
 
 function playEvent(type, values = {}) {
@@ -25,7 +25,8 @@ function sortTopFirst(left, right) {
 export function createPlaySession(document, seed = 1, options = {}) {
   const sourceDocument = structuredClone(document);
   let currentSeed = Number(seed) | 0;
-  let secondSlotUnlocked = options.secondSlotUnlocked !== false;
+  const initialSecondSlotUnlocked = options.secondSlotUnlocked === true;
+  let secondSlotUnlocked = initialSecondSlotUnlocked;
   let tiles = [];
   let tray = [null, null];
   let selectedTileUid = null;
@@ -33,7 +34,6 @@ export function createPlaySession(document, seed = 1, options = {}) {
   let won = false;
   let deadlocked = false;
   let tools = freshTools();
-  let stashHistory = [];
 
   function resetRuntime(nextSeed = currentSeed) {
     const tentativeSeed = Number(nextSeed) | 0;
@@ -46,7 +46,7 @@ export function createPlaySession(document, seed = 1, options = {}) {
       won,
       deadlocked,
       tools,
-      stashHistory,
+      secondSlotUnlocked,
     };
     try {
       const firstRound =
@@ -89,10 +89,10 @@ export function createPlaySession(document, seed = 1, options = {}) {
       selectedTileWasFlip = false;
       won = false;
       deadlocked = false;
+      secondSlotUnlocked = initialSecondSlotUnlocked;
       refreshCoverage();
       updateEndState([]);
       tools = freshTools();
-      stashHistory = [];
       currentSeed = tentativeSeed;
     } catch (error) {
       ({
@@ -104,7 +104,7 @@ export function createPlaySession(document, seed = 1, options = {}) {
         won,
         deadlocked,
         tools,
-        stashHistory,
+        secondSlotUnlocked,
       } = previous);
       throw error;
     }
@@ -346,7 +346,6 @@ export function createPlaySession(document, seed = 1, options = {}) {
     }
     tile.stashedSlot = slotIndex;
     tray[slotIndex] = tile.uid;
-    stashHistory.push(tile.uid);
     if (tile.faceDown) {
       tile.faceDown = false;
       events.push(playEvent("tile-face-changed", { tileUid: uid, faceDown: false }));
@@ -415,6 +414,24 @@ export function createPlaySession(document, seed = 1, options = {}) {
     return events;
   }
 
+  function useSlotTool() {
+    if (tools.slot.remaining <= 0) {
+      return rejectTool("slot", "spent");
+    }
+    if (secondSlotUnlocked) {
+      return rejectTool("slot", "already-unlocked");
+    }
+
+    secondSlotUnlocked = true;
+    tools.slot.remaining -= 1;
+    const events = [playEvent("tool-slot-unlocked", {
+      tray: [...tray],
+      secondSlotUnlocked,
+    })];
+    updateEndState(events);
+    return events;
+  }
+
   function useMatchTool() {
     if (tools.match.remaining <= 0) {
       return rejectTool("match", "spent");
@@ -439,40 +456,6 @@ export function createPlaySession(document, seed = 1, options = {}) {
     return events;
   }
 
-  function useUndoTool() {
-    if (tools.undo.remaining <= 0) {
-      return rejectTool("undo", "spent");
-    }
-
-    while (stashHistory.length > 0) {
-      const uid = stashHistory.pop();
-      const tile = findTile(uid);
-      if (!tile || tile.removed || !isInTray(tile)) {
-        continue;
-      }
-
-      const slotIndex = tile.stashedSlot;
-      clearTrayTile(tile);
-      if (selectedTileUid === uid) {
-        selectedTileUid = null;
-        selectedTileWasFlip = false;
-      }
-      tools.undo.remaining -= 1;
-      refreshCoverage();
-      const events = [
-        playEvent("tool-undone", {
-          tileUid: uid,
-          slotIndex,
-          tray: [...tray],
-        }),
-      ];
-      updateEndState(events);
-      return events;
-    }
-
-    return rejectTool("undo", "empty-history");
-  }
-
   function getSnapshot() {
     return structuredClone({
       seed: currentSeed,
@@ -491,22 +474,14 @@ export function createPlaySession(document, seed = 1, options = {}) {
     return getSnapshot();
   }
 
-  function setSecondSlotUnlocked(value) {
-    secondSlotUnlocked = Boolean(value);
-    const events = [playEvent("tray-changed", { tray: [...tray], secondSlotUnlocked })];
-    updateEndState(events);
-    return events;
-  }
-
   resetRuntime();
   return {
     interact,
     stash,
+    useSlotTool,
     useShuffleTool,
     useMatchTool,
-    useUndoTool,
     restart,
     getSnapshot,
-    setSecondSlotUnlocked,
   };
 }

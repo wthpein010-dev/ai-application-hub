@@ -43,10 +43,11 @@ test("each play tool starts with one use", () => {
   ]));
 
   assert.deepEqual(session.getSnapshot().tools, {
+    slot: { remaining: 1 },
     shuffle: { remaining: 1 },
     match: { remaining: 1 },
-    undo: { remaining: 1 },
   });
+  assert.equal(session.getSnapshot().secondSlotUnlocked, false);
 });
 
 test("shuffle preserves board identities, geometry and type multiset while consuming one use", () => {
@@ -201,90 +202,68 @@ test("restart restores match inventory", () => {
   assert.equal(session.getSnapshot().tools.match.remaining, 1);
 });
 
-test("undo restores the newest tile still in the tray", () => {
+test("the locked second tray slot rejects a stash without changing state", () => {
   const session = createPlaySession(level([
-    tile("first", 0, 0, 1, 1),
-    tile("second", 16, 0, 1, 2),
-    tile("pair-a", 32, 0, 1, 1),
-    tile("pair-b", 48, 0, 1, 2),
+    tile("a", 0, 0, 1, 1),
+    tile("b", 16, 0, 1, 1),
   ]));
-  session.stash("first", 0);
-  session.stash("second", 1);
+  const before = session.getSnapshot();
 
-  const events = session.useUndoTool();
-  const snapshot = session.getSnapshot();
+  assert.deepEqual(session.stash("a", 1), [{
+    type: "tile-rejected",
+    tileUid: "a",
+    slotIndex: 1,
+  }]);
+  assert.deepEqual(session.getSnapshot(), before);
+});
+
+test("slot tool unlocks the second tray slot and consumes its only use", () => {
+  const session = createPlaySession(level([
+    tile("a", 0, 0, 1, 1),
+    tile("b", 16, 0, 1, 1),
+  ]));
+  const events = session.useSlotTool();
 
   assert.deepEqual(events, [{
-    type: "tool-undone",
-    tileUid: "second",
-    slotIndex: 1,
-    tray: ["first", null],
+    type: "tool-slot-unlocked",
+    tray: [null, null],
+    secondSlotUnlocked: true,
   }]);
-  assert.deepEqual(snapshot.tray, ["first", null]);
-  assert.equal(
-    Object.hasOwn(snapshot.tiles.find(({ uid }) => uid === "second"), "stashedSlot"),
-    false,
-  );
-  assert.equal(snapshot.tools.undo.remaining, 0);
+  assert.equal(session.getSnapshot().secondSlotUnlocked, true);
+  assert.equal(session.getSnapshot().tools.slot.remaining, 0);
+  assert.equal(session.stash("a", 1)[0].type, "tray-changed");
+  assert.deepEqual(session.getSnapshot().tray, [null, "a"]);
 });
 
-test("undo skips a stale stash history entry that matching already removed", () => {
+test("a spent slot tool is rejected atomically", () => {
   const session = createPlaySession(level([
-    tile("stale", 0, 0, 1, 1),
-    tile("stale-pair", 16, 0, 1, 1),
-    tile("restorable", 32, 0, 1, 2),
-    tile("other", 48, 0, 1, 3),
-  ]));
-  session.stash("stale", 0);
-  session.interact("stale");
-  session.interact("stale-pair");
-  session.stash("restorable", 0);
-
-  const events = session.useUndoTool();
-
-  assert.equal(events[0].type, "tool-undone");
-  assert.equal(events[0].tileUid, "restorable");
-  assert.deepEqual(session.getSnapshot().tray, [null, null]);
-});
-
-test("undo rejection and a spent undo use leave the session unchanged", () => {
-  const rejected = createPlaySession(level([
     tile("a", 0, 0, 1, 1),
     tile("b", 16, 0, 1, 1),
   ]));
-  const beforeRejected = rejected.getSnapshot();
-  assert.deepEqual(rejected.useUndoTool(), [{
+  session.useSlotTool();
+  const before = session.getSnapshot();
+
+  assert.deepEqual(session.useSlotTool(), [{
     type: "tool-rejected",
-    tool: "undo",
-    reason: "empty-history",
+    tool: "slot",
+    reason: "spent",
   }]);
-  assert.deepEqual(rejected.getSnapshot(), beforeRejected);
-
-  const spent = createPlaySession(level([
-    tile("a", 0, 0, 1, 1),
-    tile("b", 16, 0, 1, 1),
-  ]));
-  spent.stash("a", 0);
-  spent.useUndoTool();
-  const beforeSpent = spent.getSnapshot();
-  assert.equal(spent.useUndoTool()[0].reason, "spent");
-  assert.deepEqual(spent.getSnapshot(), beforeSpent);
+  assert.deepEqual(session.getSnapshot(), before);
 });
 
-test("restart restores undo inventory and clears stash history", () => {
+test("restart relocks the second tray slot and restores the slot tool", () => {
   const session = createPlaySession(level([
     tile("a", 0, 0, 1, 1),
     tile("b", 16, 0, 1, 1),
   ]));
-  session.stash("a", 0);
-  session.useUndoTool();
-  assert.equal(session.getSnapshot().tools.undo.remaining, 0);
+  session.useSlotTool();
+  session.stash("a", 1);
 
   session.restart();
 
-  assert.equal(session.getSnapshot().tools.undo.remaining, 1);
-  assert.equal(session.useUndoTool()[0].reason, "empty-history");
-  assert.equal(session.getSnapshot().tools.undo.remaining, 1);
+  assert.equal(session.getSnapshot().secondSlotUnlocked, false);
+  assert.equal(session.getSnapshot().tools.slot.remaining, 1);
+  assert.deepEqual(session.getSnapshot().tray, [null, null]);
 });
 
 test("first round assigns one distinct concrete type to every random layer", () => {
@@ -522,7 +501,7 @@ test("an AI level with impossible raw geometry fails before random candidate sea
   );
 });
 
-test("blind-box flat-stack bases flip open when exposed and back down when covered again", () => {
+test("blind-box flat-stack bases flip open when exposed and reset face down on restart", () => {
   const session = createPlaySession(level([
     tile("blind-left", 0, 0, 1, 1, 3),
     tile("blind-right", 16, 0, 1, 1, 3),
@@ -536,7 +515,7 @@ test("blind-box flat-stack bases flip open when exposed and back down when cover
   assert.deepEqual(blindFaceStates(), [true, true]);
   session.stash("upper-left", 0);
   assert.deepEqual(blindFaceStates(), [false, true]);
-  session.useUndoTool();
+  session.restart();
   assert.deepEqual(blindFaceStates(), [true, true]);
 });
 
@@ -584,6 +563,7 @@ test("both tray slots participate in matching and are cleared with their pairs",
     tile("c", 32, 0, 1, 2),
     tile("d", 48, 0, 1, 2),
   ]));
+  session.useSlotTool();
   session.stash("a", 0);
   session.stash("c", 1);
   assert.deepEqual(session.getSnapshot().tray, ["a", "c"]);

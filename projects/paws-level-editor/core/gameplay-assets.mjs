@@ -9,10 +9,11 @@ export const GAMEPLAY_ASSETS = Object.freeze({
   lockMask: gameplayAssetUrl("ui_tile_lock_mask.png"),
   setting: gameplayAssetUrl("Setting.png"),
   replayButton: gameplayAssetUrl("btn_replay.png"),
-  playTray: gameplayAssetUrl("play_save2.png"),
+  playTrayBase: gameplayAssetUrl("play_save.png"),
+  playTrayLip: gameplayAssetUrl("play_save_up.png"),
   tools: Object.freeze({
+    slot: gameplayAssetUrl("btn_caowei.png"),
     shuffle: gameplayAssetUrl("btn_random.png"),
     match: gameplayAssetUrl("btn_magnet.png"),
-    undo: gameplayAssetUrl("btn_rollback.png"),
   }),
 });

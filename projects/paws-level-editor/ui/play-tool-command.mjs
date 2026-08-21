@@ -1,7 +1,7 @@
 const TOOL_METHODS = Object.freeze({
+  slot: "useSlotTool",
   shuffle: "useShuffleTool",
   match: "useMatchTool",
-  undo: "useUndoTool",
 });
 
 export function runPlayTool(session, toolName) {

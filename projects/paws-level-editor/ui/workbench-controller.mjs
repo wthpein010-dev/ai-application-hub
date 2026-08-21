@@ -1634,9 +1634,7 @@ export class WorkbenchController {
 
   startPlay() {
     try {
-      this.playSession = createPlaySession(this.document, this.seed, {
-        secondSlotUnlocked: true,
-      });
+      this.playSession = createPlaySession(this.document, this.seed);
       this.playSnapshot = this.playSession.getSnapshot();
       this.mountRenderer(true);
       this.showToast("试玩已开始。左键配对，右键可把可用牌暂存。");
@@ -1765,7 +1763,7 @@ export class WorkbenchController {
       "insufficient-tiles": "剩余砖块不足，无法随机",
       "no-shuffle-pair": "当前局面无法生成可用配对",
       "no-pair": "没有可配对的砖块",
-      "empty-history": "暂无可撤回的砖块",
+      "already-unlocked": "第二个槽位已经解锁",
       "spent": "该道具本局已使用",
     };
     const rejected = events.find(({ type }) => type === "tool-rejected");
@@ -1778,12 +1776,12 @@ export class WorkbenchController {
       return;
     }
     this.pulsePlayTools();
-    if (events.some(({ type }) => type === "tool-shuffled")) {
+    if (events.some(({ type }) => type === "tool-slot-unlocked")) {
+      this.showToast("第二个槽位已解锁。");
+    } else if (events.some(({ type }) => type === "tool-shuffled")) {
       this.showToast("砖块已重新随机。");
     } else if (events.some(({ type }) => type === "tool-match-removed")) {
       this.showToast("配对道具已清除一对砖块。");
-    } else if (events.some(({ type }) => type === "tool-undone")) {
-      this.showToast("已撤回最近暂存的砖块。");
     }
   }
 

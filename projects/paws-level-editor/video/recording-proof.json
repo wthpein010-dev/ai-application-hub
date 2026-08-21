@@ -1,25 +1,25 @@
 {
   "schemaVersion": 1,
-  "recordedAt": "2026-08-03T02:40:27.624Z",
+  "recordedAt": "2026-08-21T08:30:37.169Z",
   "recording": {
     "browser": "system Chrome",
-    "preRollMs": 1799,
-    "completedAt": "2026-08-03T02:41:55.631Z",
-    "durationMs": 88007
+    "preRollMs": 1211,
+    "completedAt": "2026-08-21T08:32:05.171Z",
+    "durationMs": 88002
   },
   "timeline": {
-    "tools": 1,
-    "edit2d": 12000,
-    "view3d": 32001,
-    "play": 50000,
-    "persistence": 70004
+    "tools": 0,
+    "edit2d": 12004,
+    "view3d": 32006,
+    "play": 50002,
+    "persistence": 70008
   },
   "actions": {
     "metadata": {
-      "cardText": "视频本地参考#74000video_reference.json16 tiles08/03",
+      "cardText": "视频本地参考#74000video_reference.json16 tiles08/21",
       "fileName": "video_reference.json",
       "levelId": 74000,
-      "modifiedAt": "2026-08-03T02:40:26.603Z"
+      "modifiedAt": "2026-08-21T08:30:36.395Z"
     },
     "grass": {
       "twoD": {
@@ -48,7 +48,7 @@
       }
     },
     "aiGeneration": {
-      "fileName": "ai_level_3058702925.json",
+      "fileName": "ai_level_2147349750.json",
       "reference": "all",
       "solvable": true,
       "tileCount": 200,
@@ -61,7 +61,7 @@
         "information": 50,
         "choice": 46,
         "route": 49,
-        "endurance": 48
+        "endurance": 49
       },
       "board": {
         "width": 7,
@@ -155,7 +155,7 @@
             "stageLabel": "深层卡点",
             "stageLayerIndex": 0,
             "stageLayerCount": 3,
-            "tileCount": 13,
+            "tileCount": 14,
             "pressureTarget": 65
           },
           {
@@ -173,7 +173,7 @@
             "stageLabel": "深层卡点",
             "stageLayerIndex": 2,
             "stageLayerCount": 3,
-            "tileCount": 14,
+            "tileCount": 13,
             "pressureTarget": 65
           },
           {
@@ -182,7 +182,7 @@
             "stageLabel": "中层塔群",
             "stageLayerIndex": 0,
             "stageLayerCount": 5,
-            "tileCount": 13,
+            "tileCount": 14,
             "pressureTarget": 51
           },
           {
@@ -218,7 +218,7 @@
             "stageLabel": "中层塔群",
             "stageLayerIndex": 4,
             "stageLayerCount": 5,
-            "tileCount": 14,
+            "tileCount": 13,
             "pressureTarget": 51
           },
           {
@@ -270,14 +270,14 @@
         "layerTileCounts": [
           9,
           9,
-          13,
-          13,
           14,
           13,
+          13,
+          14,
           14,
           14,
           13,
-          14,
+          13,
           15,
           15,
           14,
@@ -288,8 +288,8 @@
           {
             "id": "tower-1",
             "role": "high",
-            "x": 40,
-            "y": 26,
+            "x": 39,
+            "y": 34,
             "layerStart": 1,
             "layerEnd": 12,
             "depth": 12,
@@ -298,8 +298,8 @@
           {
             "id": "tower-2",
             "role": "medium",
-            "x": 12,
-            "y": 38,
+            "x": 9,
+            "y": 17,
             "layerStart": 1,
             "layerEnd": 9,
             "depth": 9,
@@ -308,8 +308,8 @@
           {
             "id": "tower-3",
             "role": "small",
-            "x": 47,
-            "y": 1,
+            "x": 48,
+            "y": 53,
             "layerStart": 1,
             "layerEnd": 5,
             "depth": 5,
@@ -318,8 +318,8 @@
           {
             "id": "tower-4",
             "role": "small",
-            "x": 29,
-            "y": 3,
+            "x": 28,
+            "y": 52,
             "layerStart": 1,
             "layerEnd": 5,
             "depth": 5,
@@ -328,8 +328,8 @@
           {
             "id": "tower-5",
             "role": "small",
-            "x": 12,
-            "y": 1,
+            "x": 13,
+            "y": 54,
             "layerStart": 1,
             "layerEnd": 5,
             "depth": 5,
@@ -409,14 +409,14 @@
         "layerTileCounts": [
           9,
           9,
-          13,
-          13,
           14,
           13,
+          13,
+          14,
           14,
           14,
           13,
-          14,
+          13,
           15,
           15,
           14,
@@ -428,14 +428,14 @@
         "maximumComponentShareByLayer": {
           "1": 0.5555555555555556,
           "2": 0.5555555555555556,
-          "3": 0.38461538461538464,
+          "3": 0.35714285714285715,
           "4": 0.38461538461538464,
-          "5": 0.35714285714285715,
-          "6": 0.38461538461538464,
+          "5": 0.38461538461538464,
+          "6": 0.35714285714285715,
           "7": 0.35714285714285715,
           "8": 0.35714285714285715,
           "9": 0.38461538461538464,
-          "10": 0.35714285714285715,
+          "10": 0.38461538461538464,
           "11": 0.3333333333333333,
           "12": 0.3333333333333333,
           "13": 0.35714285714285715,
@@ -451,7 +451,7 @@
         },
         "maximumTowerDepth": 15,
         "releaseDependencyDrop": 0.27586206896551724,
-        "boundaryRatio": 0.405,
+        "boundaryRatio": 0.435,
         "fillTrackCount": 2,
         "stagePressure": {
           "surface": {
@@ -516,17 +516,17 @@
                 "layer": 1
               },
               {
-                "x": 7,
+                "x": 9,
                 "y": 8,
                 "layer": 2
               },
               {
-                "x": 6,
+                "x": 10,
                 "y": 8,
                 "layer": 3
               },
               {
-                "x": 7,
+                "x": 9,
                 "y": 8,
                 "layer": 4
               },
@@ -536,17 +536,17 @@
                 "layer": 5
               },
               {
-                "x": 9,
+                "x": 7,
                 "y": 8,
                 "layer": 6
               },
               {
-                "x": 10,
+                "x": 6,
                 "y": 8,
                 "layer": 7
               },
               {
-                "x": 9,
+                "x": 7,
                 "y": 8,
                 "layer": 8
               },
@@ -556,18 +556,18 @@
                 "layer": 9
               },
               {
-                "x": 7,
+                "x": 9,
                 "y": 8,
                 "layer": 10
               },
               {
-                "x": 6,
+                "x": 10,
                 "y": 8,
                 "layer": 11
               }
             ],
             "topAnchor": {
-              "x": 7,
+              "x": 9,
               "y": 8,
               "layer": 12
             },
@@ -586,17 +586,17 @@
                 "layer": 1
               },
               {
-                "x": 41,
+                "x": 39,
                 "y": 8,
                 "layer": 2
               },
               {
-                "x": 42,
+                "x": 38,
                 "y": 8,
                 "layer": 3
               },
               {
-                "x": 41,
+                "x": 39,
                 "y": 8,
                 "layer": 4
               },
@@ -606,17 +606,17 @@
                 "layer": 5
               },
               {
-                "x": 39,
+                "x": 41,
                 "y": 8,
                 "layer": 6
               },
               {
-                "x": 38,
+                "x": 42,
                 "y": 8,
                 "layer": 7
               },
               {
-                "x": 39,
+                "x": 41,
                 "y": 8,
                 "layer": 8
               },
@@ -626,18 +626,18 @@
                 "layer": 9
               },
               {
-                "x": 41,
+                "x": 39,
                 "y": 8,
                 "layer": 10
               },
               {
-                "x": 42,
+                "x": 38,
                 "y": 8,
                 "layer": 11
               }
             ],
             "topAnchor": {
-              "x": 41,
+              "x": 39,
               "y": 8,
               "layer": 12
             },
@@ -647,14 +647,14 @@
         "layerTileCounts": [
           9,
           9,
-          13,
-          13,
           14,
           13,
+          13,
+          14,
           14,
           14,
           13,
-          14,
+          13,
           15,
           15,
           14,
@@ -707,7 +707,7 @@
             "stageKey": "crisis",
             "motif": "local-island",
             "regionIndex": 3,
-            "tileCount": 4,
+            "tileCount": 5,
             "reservedTrackTiles": 0
           },
           {
@@ -755,7 +755,7 @@
             "stageKey": "crisis",
             "motif": "local-island",
             "regionIndex": 3,
-            "tileCount": 5,
+            "tileCount": 4,
             "reservedTrackTiles": 0
           },
           {
@@ -779,7 +779,7 @@
             "stageKey": "middle",
             "motif": "local-island",
             "regionIndex": 3,
-            "tileCount": 4,
+            "tileCount": 5,
             "reservedTrackTiles": 0
           },
           {
@@ -875,7 +875,7 @@
             "stageKey": "middle",
             "motif": "local-island",
             "regionIndex": 3,
-            "tileCount": 5,
+            "tileCount": 4,
             "reservedTrackTiles": 0
           },
           {
@@ -1008,7 +1008,7 @@
           }
         ],
         "repairLog": [],
-        "topologyHash": "topology-c07de860",
+        "topologyHash": "topology-62763548",
         "blindBoxStackCount": 2,
         "blindBoxStackDepth": 12,
         "fullRandomRatio": 1
@@ -1030,14 +1030,14 @@
       {
         "key": "middle",
         "layer": 10,
-        "sourceCount": 14,
-        "rendererCount": 14
+        "sourceCount": 13,
+        "rendererCount": 13
       },
       {
         "key": "crisis",
         "layer": 5,
-        "sourceCount": 14,
-        "rendererCount": 14
+        "sourceCount": 13,
+        "rendererCount": 13
       },
       {
         "key": "release",
@@ -1158,24 +1158,24 @@
       "cameraBefore": {
         "position": [
           1.4175700417596921,
-          1.3775653901671228,
+          1.3526359087435467,
           -2.5
         ],
         "target": [
           -2,
-          0.33862409747217626,
+          0.3136946160486,
           -2.5
         ]
       },
       "cameraAfter": {
         "position": [
-          -5.419264974282385,
-          0.562911833230882,
-          -3.5087150475895887
+          -5.419264935930867,
+          0.537982351807306,
+          -3.508715177590629
         ],
         "target": [
           -2,
-          0.33862409747217626,
+          0.3136946160486,
           -2.5
         ]
       },
@@ -1208,9 +1208,9 @@
         "focusDistance": 0
       },
       "selectedBefore": "",
-      "selectedAfter": "tile-7",
+      "selectedAfter": "tile-8",
       "deleteUndo": {
-        "uid": "tile-7",
+        "uid": "tile-8",
         "deletedCount": 201,
         "restoredCount": 202,
         "restored": true
@@ -1234,14 +1234,15 @@
         "topHex": 4934475,
         "sideHex": 266240,
         "blindTopHex": 16777215,
+        "topUnlit": true,
         "expectedTopHex": 4934475,
         "expectedSideHex": 266240,
         "rendererMode": "play"
       },
       "recovery": {
-        "uid": "tile-132",
-        "blockerUid": "tile-147",
-        "matchUid": "tile-186",
+        "uid": "tile-172",
+        "blockerUid": "tile-187",
+        "matchUid": "tile-188",
         "beforePatchCount": 1,
         "covered": false,
         "sideBlocked": false,
@@ -1251,26 +1252,30 @@
     },
     "playTools": {
       "initial": {
+        "slot": {
+          "remaining": 1
+        },
         "shuffle": {
           "remaining": 1
         },
         "match": {
           "remaining": 1
-        },
-        "undo": {
-          "remaining": 1
         }
       },
-      "undo": {
+      "slot": {
         "uid": "tile-147",
         "trayBefore": [
           "tile-147",
           null
         ],
         "trayAfter": [
-          null,
+          "tile-147",
           null
         ],
+        "secondSlotBefore": false,
+        "secondSlotAfter": true,
+        "trayCountBefore": 1,
+        "trayCountAfter": 2,
         "remaining": 0
       },
       "match": {
@@ -1279,24 +1284,24 @@
         "remaining": 0
       },
       "shared2d": {
+        "slot": {
+          "remaining": 0
+        },
         "shuffle": {
           "remaining": 1
         },
         "match": {
-          "remaining": 0
-        },
-        "undo": {
           "remaining": 0
         }
       },
       "shared3d": {
+        "slot": {
+          "remaining": 0
+        },
         "shuffle": {
           "remaining": 1
         },
         "match": {
-          "remaining": 0
-        },
-        "undo": {
           "remaining": 0
         }
       },
@@ -1306,27 +1311,28 @@
         "remaining": 0
       },
       "allConsumed": {
+        "slot": {
+          "remaining": 0
+        },
         "shuffle": {
           "remaining": 0
         },
         "match": {
-          "remaining": 0
-        },
-        "undo": {
           "remaining": 0
         }
       },
       "afterRestart": {
+        "slot": {
+          "remaining": 1
+        },
         "shuffle": {
           "remaining": 1
         },
         "match": {
           "remaining": 1
-        },
-        "undo": {
-          "remaining": 1
         }
-      }
+      },
+      "secondSlotAfterRestart": false
     },
     "play2d": {
       "removedBefore": 0,
@@ -1334,10 +1340,10 @@
     },
     "play3d": {
       "selectedBefore": "",
-      "selectedAfter": "tile-187"
+      "selectedAfter": "tile-180"
     },
     "export": {
-      "fileName": "ai_level_3058702925.json",
+      "fileName": "ai_level_2147349750.json",
       "gridUnit": "sheep_7x8_mini8",
       "tileCount": 202
     },
@@ -1367,10 +1373,10 @@
   },
   "media": {
     "file": "paws-level-editor-tutorial.mp4",
-    "sha256": "9487f53cd6e1d932bc7de5380783883b21da1618a7514bd94ec568837de01def"
+    "sha256": "33bbab250081622f876a768e246d791650244137e068efd2694209526db90a15"
   },
   "sources": {
-    "projects/paws-level-editor/index.html": "203d1d0d8402495d2b4c96ed07cb99fbdbe13f44bdba03ec6658d958daa00735",
+    "projects/paws-level-editor/index.html": "7f5d82f8b31f1953aeffb288eab348dbeb056e0fc3a70d38b80473ff3de5907a",
     "projects/paws-level-editor/styles.css": "1286f9081a248308d5842bb786f081f99e8a388a81c1cf46836d80c3d4dc839b",
     "projects/paws-level-editor/app.mjs": "d54ca4e1fa3c1aa524e63f9b7a743d8b883710c1ff340a8e290190d293e485c7",
     "projects/paws-level-editor/static-api-client.mjs": "a37e3bcaa2bfed9ddf10aa800fb5fbaa025bc751398e4201eddf236e4e740c84",
@@ -1379,7 +1385,7 @@
     "projects/paws-level-editor/core/editor-geometry.mjs": "4e718a15f0fb67959ecd22d7a8a4ebcc14c4aa5f224f5f1887937626e29f1f91",
     "projects/paws-level-editor/core/field-grid-layout.mjs": "65830f5bcb8752369616fec825ab82e68ef0c6e5607dfaefafdf02d02c2bf8ab",
     "projects/paws-level-editor/core/fill-tool.mjs": "af97bbfa44ccc63e34bfa9e74f1f40dd93eb27c31dbec6772225da2cc65c2fed",
-    "projects/paws-level-editor/core/gameplay-assets.mjs": "72c615e9e082e7914a2b7ac80f8cc56e464c004509adc1bd6c7f487e96399732",
+    "projects/paws-level-editor/core/gameplay-assets.mjs": "031433e972b4d5bd9b79a268939a9ecc91b92b6ec89a799f8dee24efc2f43f7c",
     "projects/paws-level-editor/core/gameplay-metadata.mjs": "5d8fa3d35d252e7ef824ae5c2c40dc329c06d2e6f2ce856a1ed4bf6ec2f284ff",
     "projects/paws-level-editor/core/grass-layout.mjs": "62649a7d7f99b864490acf7ac8fd5dde04041e646c4f9538534f73568275c931",
     "projects/paws-level-editor/core/level-adapter.mjs": "4dc3645422db52049cecba3dfdc43c77daeea5dfec341a98e276efed74b6d42a",
@@ -1389,7 +1395,7 @@
     "projects/paws-level-editor/core/level-statistics.mjs": "d87f76b241445bb030ee9b3df601ceb03fb6c80fbab37b605d8e28b51dcad00f",
     "projects/paws-level-editor/core/level-validator.mjs": "4545657c912fb11298a588caebcdf6dd4877ace4e9722997ca419f4f8b7d1193",
     "projects/paws-level-editor/core/pass-rate-evaluator.mjs": "a5a439cca258961ef92bbd7300c74ac5b7b0ebb28a7aa0bb55fe22f3fcfd1aa2",
-    "projects/paws-level-editor/core/play-engine.mjs": "ab050ba1b9645c75f3e238332afdfc8528aef7f46722df408dba067a218e081f",
+    "projects/paws-level-editor/core/play-engine.mjs": "95a3c69ed9912c2bc3a30770cbc7dc9b5ef558a254c93b24150c106f044f0042",
     "projects/paws-level-editor/core/random-assigner.mjs": "2156e755e501094c9cfacd82a4f06e0e5579d43c2228f2c369a112296791bb3f",
     "projects/paws-level-editor/core/stage-blueprint.mjs": "1eba679701a897da026bf1e38acbe565334a9f43ea2038c5bcd6691231ddc833",
     "projects/paws-level-editor/core/stage-grammar-generator.mjs": "a2283995f026621ccc366f54d88da754235550896e09971924aba0699158e3fb",
@@ -1397,7 +1403,7 @@
     "projects/paws-level-editor/core/template-motif-generator.mjs": "a85f74f90af8a71ff60914db0342ed10de028f0d218c6129481870ff3f30ee73",
     "projects/paws-level-editor/core/tile-relations.mjs": "75bf4ef64e5e7615b8936f3b7d727139cbbfcf016a8f902e6c5f58bfe5f59c57",
     "projects/paws-level-editor/core/tile-visual-tone.mjs": "331a03ab214816dd7733be8d4209cee78cb70a6a91229091be3018594f40ac85",
-    "projects/paws-level-editor/core/view-model.mjs": "38a3e1ab3cb67e7b71beb2c73b90e11315d259f607a96a718ccc7e4e8cfd4189",
+    "projects/paws-level-editor/core/view-model.mjs": "e48748c37949f9aef67119de823189ca61e97e8552b470d95ff05f7116d21fd6",
     "projects/paws-level-editor/core/xorshift.mjs": "3472afc3a99c70fa0bd3ea7f207f55c113b6c722cffa6a9232d75c4866c0e7ff",
     "projects/paws-level-editor/ui/ai-level-dialog.mjs": "bfbc4ba21f72be8bcf485f01d82979b804fcb079938009219cdc81085f604255",
     "projects/paws-level-editor/ui/ai-reference-selection.mjs": "c5e76563af150ddf32433df467dbdcdc1577f118fe0c9905451e2f52402c9a1f",
@@ -1409,17 +1415,20 @@
     "projects/paws-level-editor/ui/local-level-import.mjs": "651987b8d3c1ca4293218bb1289f48c6c706ce2ba502e0960e5ae02a6883d8e9",
     "projects/paws-level-editor/ui/level-summary.mjs": "f7876ba36caaef6ac9123f98680aad02a65e5134f6ec1486f306e17f359b4713",
     "projects/paws-level-editor/ui/legacy-ai-open-upgrade.mjs": "e413eab44f7b04289015f5eb98f37971ced2057085e902fb2b04e9ac9eb8f2bd",
-    "projects/paws-level-editor/ui/play-tool-command.mjs": "877de31443a4a4d5d7dfd103c0ede802d65e03b0b8c125b59530ab96fbd12089",
-    "projects/paws-level-editor/ui/workbench-controller.mjs": "1d3b5db0e84eb46418b53345696b43aeeb23ed847dcc15df1cc106060f52b2d2",
-    "projects/paws-level-editor/views/canvas-2d.mjs": "5a43dc0c2bbc7a204281868b6ee4b5b87071ede88ab9957f80b198ad912da46e",
-    "projects/paws-level-editor/views/three-3d.mjs": "93b9739ff19dc3cabfee63f3dfc849ded459bd93ce3071f22b7684b1add9bfdb",
+    "projects/paws-level-editor/ui/play-tool-command.mjs": "3e93df1fd1be4b1c657dff0ae3f2acd28292932b41340c98d21db02692381630",
+    "projects/paws-level-editor/ui/workbench-controller.mjs": "2057f25d7a99c13dd5f44efa632873a43c32fa40f4dec302c67773ce7e1badb9",
+    "projects/paws-level-editor/views/canvas-2d.mjs": "ac4ae304e6bc8ede6fba98d6da860dd0519a0304f8e817e23b66f6aac4c4d26f",
+    "projects/paws-level-editor/views/three-tile-materials.mjs": "851d7ca0a315cee9229807358486e5dcec33c25f73637edc45b2dc6d4645d1bf",
+    "projects/paws-level-editor/views/three-3d.mjs": "0efb11ecb04ba22d66d0888a6a722d97285c80ee7a68f95ef3a7dccf9cd2e77f",
     "projects/paws-level-editor/levels/index.json": "7c05176510c105aae0b9951dc20db4ea7db09a03ead34b491d37caa3f842767c",
-    "scripts/record-paws-level-editor-demo.mjs": "2f3e8088e5141b5d2e81834f2680fd267283d6503576a811449174a3c27161aa",
+    "scripts/record-paws-level-editor-demo.mjs": "4e694d97b59b0b21a1cf0994cdcb182368737505bf0db9760dbe2f2ef0e011ec",
     "scripts/paws-recording-support.mjs": "e5d2b2f02b67798c90d080a3202b97ecce50ffd738e31fc374d751ad18ae79c2"
   },
   "assets": {
+    "projects/paws-level-editor/assets/gameplay/btn_caowei.png": "a6ff517584ff8f299cf7cffd67272cb353cdcd6a6e3092df6df5a4f853151206",
     "projects/paws-level-editor/assets/gameplay/btn_random.png": "4a0b49174141dd11b4661169ada716a5948ba5da809b187a77c2930165f63c67",
     "projects/paws-level-editor/assets/gameplay/btn_magnet.png": "bbad8ae6fbedf3f15dffb5323e234d77a8269b59e3d17a364123365266fb1cae",
-    "projects/paws-level-editor/assets/gameplay/btn_rollback.png": "df6505efd51e91ca05095695fb3f8cb4dfad1d3dccf33fb8e61e34d894079e5f"
+    "projects/paws-level-editor/assets/gameplay/play_save.png": "e17d250dcb993387031823141ab01c1c9ee5204fd092dc942f9c650e20816879",
+    "projects/paws-level-editor/assets/gameplay/play_save_up.png": "22d711271e60e02322cfd5b461e413c721b65b8d543422d1feed49da2ae70953"
   }
 }

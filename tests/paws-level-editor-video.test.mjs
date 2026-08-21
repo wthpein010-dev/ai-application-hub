@@ -64,11 +64,11 @@ test("tutorial assets keep the chapter timeline and player references aligned", 
   assert.match(script, /7×8 工程网格/);
   assert.match(script, /五阶段/);
   assert.match(script, /接触阴影/);
-  assert.match(script, /随机、配对、撤回/);
+  assert.match(script, /槽位、随机、配对/);
   assert.match(captions, /工程网格/);
   assert.match(captions, /五阶段/);
   assert.match(captions, /接触阴影/);
-  assert.match(captions, /随机、配对、撤回/);
+  assert.match(captions, /槽位后左右展开/);
   assert.equal(existsSync(join(videoRoot, "poster.jpg")), true);
 });
 
@@ -136,6 +136,7 @@ test("recording proof matches current media, sources, timeline and real state ch
     "projects/paws-level-editor/ui/play-tool-command.mjs",
     "projects/paws-level-editor/ui/workbench-controller.mjs",
     "projects/paws-level-editor/views/canvas-2d.mjs",
+    "projects/paws-level-editor/views/three-tile-materials.mjs",
     "projects/paws-level-editor/views/three-3d.mjs",
     "projects/paws-level-editor/levels/index.json",
     "scripts/record-paws-level-editor-demo.mjs",
@@ -150,9 +151,11 @@ test("recording proof matches current media, sources, timeline and real state ch
     );
   }
   const assetFiles = [
+    "projects/paws-level-editor/assets/gameplay/btn_caowei.png",
     "projects/paws-level-editor/assets/gameplay/btn_random.png",
     "projects/paws-level-editor/assets/gameplay/btn_magnet.png",
-    "projects/paws-level-editor/assets/gameplay/btn_rollback.png",
+    "projects/paws-level-editor/assets/gameplay/play_save.png",
+    "projects/paws-level-editor/assets/gameplay/play_save_up.png",
   ];
   assert.deepEqual(Object.keys(proof.assets).sort(), assetFiles.sort());
   for (const relativePath of assetFiles) {
@@ -332,6 +335,7 @@ test("recording proof matches current media, sources, timeline and real state ch
     actions.blockedVisual.threeD.expectedSideHex,
   );
   assert.equal(actions.blockedVisual.threeD.blindTopHex, 0xffffff);
+  assert.equal(actions.blockedVisual.threeD.topUnlit, true);
   assert.equal(actions.blockedVisual.threeD.rendererMode, "play");
   assert.equal(actions.blockedVisual.recovery.beforePatchCount > 0, true);
   assert.equal(actions.blockedVisual.recovery.covered, false);
@@ -341,13 +345,17 @@ test("recording proof matches current media, sources, timeline and real state ch
   assert.ok(actions.play2d.removedAfter > actions.play2d.removedBefore);
   assert.notEqual(actions.play3d.selectedBefore, actions.play3d.selectedAfter);
   assert.deepEqual(actions.playTools.initial, {
+    slot: { remaining: 1 },
     shuffle: { remaining: 1 },
     match: { remaining: 1 },
-    undo: { remaining: 1 },
   });
-  assert.equal(actions.playTools.undo.trayBefore.includes(actions.playTools.undo.uid), true);
-  assert.equal(actions.playTools.undo.trayAfter.includes(actions.playTools.undo.uid), false);
-  assert.equal(actions.playTools.undo.remaining, 0);
+  assert.equal(actions.playTools.slot.trayBefore.includes(actions.playTools.slot.uid), true);
+  assert.deepEqual(actions.playTools.slot.trayAfter, actions.playTools.slot.trayBefore);
+  assert.equal(actions.playTools.slot.secondSlotBefore, false);
+  assert.equal(actions.playTools.slot.secondSlotAfter, true);
+  assert.equal(actions.playTools.slot.trayCountBefore, 1);
+  assert.equal(actions.playTools.slot.trayCountAfter, 2);
+  assert.equal(actions.playTools.slot.remaining, 0);
   assert.equal(
     actions.playTools.match.removedAfter,
     actions.playTools.match.removedBefore + 2,
@@ -355,23 +363,24 @@ test("recording proof matches current media, sources, timeline and real state ch
   assert.equal(actions.playTools.match.remaining, 0);
   assert.deepEqual(actions.playTools.shared2d, actions.playTools.shared3d);
   assert.deepEqual(actions.playTools.shared3d, {
+    slot: { remaining: 0 },
     shuffle: { remaining: 1 },
     match: { remaining: 0 },
-    undo: { remaining: 0 },
   });
   assert.equal(actions.playTools.shuffle.identityPreserved, true);
   assert.equal(actions.playTools.shuffle.typeMultisetPreserved, true);
   assert.equal(actions.playTools.shuffle.remaining, 0);
   assert.deepEqual(actions.playTools.allConsumed, {
+    slot: { remaining: 0 },
     shuffle: { remaining: 0 },
     match: { remaining: 0 },
-    undo: { remaining: 0 },
   });
   assert.deepEqual(actions.playTools.afterRestart, {
+    slot: { remaining: 1 },
     shuffle: { remaining: 1 },
     match: { remaining: 1 },
-    undo: { remaining: 1 },
   });
+  assert.equal(actions.playTools.secondSlotAfterRestart, false);
   assert.equal(actions.persistence.savedToLocalStorage, true);
   assert.equal(actions.persistence.lastOpenedRestored, true);
   assert.equal(

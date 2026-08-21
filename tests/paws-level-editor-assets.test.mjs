@@ -35,6 +35,7 @@ const requiredFiles = [
   "ui/workbench-controller.mjs",
   "views/canvas-2d.mjs",
   "views/three-3d.mjs",
+  "views/three-tile-materials.mjs",
   "vendor/three.module.js",
   "vendor/OrbitControls.js",
 ];
@@ -50,11 +51,12 @@ const expectedGameplayAssets = new Map([
   ["bg-47bd7f.png", { width: 5, height: 5 }],
   ["grass.png", { width: 94, height: 34 }],
   ["Setting.png", { width: 69, height: 74 }],
+  ["btn_caowei.png", { width: 147, height: 122 }],
   ["btn_random.png", { width: 147, height: 122 }],
   ["btn_magnet.png", { width: 147, height: 122 }],
-  ["btn_rollback.png", { width: 147, height: 122 }],
   ["btn_replay.png", { width: 147, height: 122 }],
-  ["play_save2.png", { width: 256, height: 178 }],
+  ["play_save.png", { width: 128, height: 141 }],
+  ["play_save_up.png", { width: 128, height: 141 }],
 ]);
 
 function naturalSort(left, right) {
@@ -152,9 +154,11 @@ test("editor stage and both renderers consume the gameplay skin without fake con
   assert.match(html, /id="gameplay-fit"[^>]*title="适配游戏舞台"/);
   assert.match(html, /id="gameplay-level-title"/);
   assert.match(html, /id="restart-play"[^>]*title="重新试玩"/);
-  assert.match(html, /id="play-tool-shuffle"[\s\S]*assets\/gameplay\/btn_random\.png/);
-  assert.match(html, /id="play-tool-match"[\s\S]*assets\/gameplay\/btn_magnet\.png/);
-  assert.match(html, /id="play-tool-undo"[\s\S]*assets\/gameplay\/btn_rollback\.png/);
+  assert.match(
+    html,
+    /id="play-tool-slot"[\s\S]*assets\/gameplay\/btn_caowei\.png[\s\S]*id="play-tool-shuffle"[\s\S]*assets\/gameplay\/btn_random\.png[\s\S]*id="play-tool-match"[\s\S]*assets\/gameplay\/btn_magnet\.png/,
+  );
+  assert.doesNotMatch(html, /play-tool-undo|btn_rollback\.png|撤回/);
   assert.match(html, /class="play-tool-dock play-only"/);
   assert.doesNotMatch(html, /<button[^>]*class="[^\"]*gameplay[^\"]*"[^>]*disabled/);
 
@@ -167,8 +171,10 @@ test("editor stage and both renderers consume the gameplay skin without fake con
   assert.match(assets, /block_bg\.png/);
   assert.match(assets, /ui_tile_lock_mask\.png/);
   assert.match(assets, /btn_magnet\.png/);
-  assert.match(assets, /btn_rollback\.png/);
-  assert.match(assets, /play_save2\.png/);
+  assert.match(assets, /btn_caowei\.png/);
+  assert.match(assets, /play_save\.png/);
+  assert.match(assets, /play_save_up\.png/);
+  assert.doesNotMatch(assets, /btn_rollback\.png|play_save2\.png/);
   assert.match(controller, /gameplayLevelTitle\.textContent/);
   assert.match(controller, /gameplayFit\.addEventListener\("click"/);
   assert.match(controller, /playToolButtons/);
@@ -177,21 +183,23 @@ test("editor stage and both renderers consume the gameplay skin without fake con
   assert.match(controller, /剩余砖块不足，无法随机/);
   assert.match(controller, /当前局面无法生成可用配对/);
   assert.match(controller, /没有可配对的砖块/);
-  assert.match(controller, /暂无可撤回的砖块/);
+  assert.match(controller, /第二个槽位已解锁/);
   assert.match(controller, /classList\.add\("play-tool-used"\)/);
   assert.match(grassField, /GAMEPLAY_ASSETS\.grass/);
   assert.match(grassField, /drawGrassAtlasPatch/);
 
   assert.match(canvas2d, /GAMEPLAY_ASSETS\.blockBackground/);
   assert.match(canvas2d, /GAMEPLAY_ASSETS\.lockMask/);
-  assert.match(canvas2d, /GAMEPLAY_ASSETS\.playTray/);
+  assert.match(canvas2d, /GAMEPLAY_ASSETS\.playTrayBase/);
+  assert.match(canvas2d, /GAMEPLAY_ASSETS\.playTrayLip/);
   assert.match(canvas2d, /buildFieldGridLayout/);
   assert.match(canvas2d, /drawFieldGrid/);
   assert.doesNotMatch(canvas2d, /drawGrid\(context\)/);
   assert.match(canvas2d, /TILE_ART_ASPECT\s*=\s*135\s*\/\s*120/);
   assert.match(three3d, /GAMEPLAY_ASSETS\.blockBackground/);
   assert.match(three3d, /GAMEPLAY_ASSETS\.grass/);
-  assert.match(three3d, /GAMEPLAY_ASSETS\.playTray/);
+  assert.match(three3d, /GAMEPLAY_ASSETS\.playTrayBase/);
+  assert.match(three3d, /GAMEPLAY_ASSETS\.playTrayLip/);
   assert.match(three3d, /0x3f7d0a/i);
 });
 

@@ -151,7 +151,8 @@ async function waitForNetworkAndTextures(page) {
         !renderer.blockBackgroundImage ||
         !renderer.lockMaskImage ||
         !renderer.grassTexture ||
-        !renderer.playTrayTexture
+        !renderer.playTrayTexture ||
+        !renderer.playTrayLipTexture
       )
     ) {
       return false;
@@ -663,6 +664,25 @@ try {
   await page.locator("#view-3d").click();
   await page.locator(".level-canvas-3d").waitFor({ state: "visible" });
   await waitForNetworkAndTextures(page);
+  const tray3d = await page.evaluate(() => {
+    const renderer = window.pawsWorkbench.renderer;
+    return {
+      visible: renderer.trayMeshes
+        .filter(({ base, lip }) => base.visible && lip.visible)
+        .map(({ slot, base, lip }) => ({
+          slot,
+          baseX: base.position.x,
+          lipX: lip.position.x,
+          baseY: base.position.y,
+          lipY: lip.position.y,
+        })),
+      unlitTopCount: [...renderer.meshes.values()]
+        .filter((mesh) => mesh.userData.topMaterial.isMeshBasicMaterial).length,
+      meshCount: renderer.meshes.size,
+    };
+  });
+  assert.deepEqual(tray3d.visible, []);
+  assert.equal(tray3d.unlitTopCount, tray3d.meshCount);
   assert.equal(
     await page.evaluate(
       (fileName) => window.pawsWorkbench.document.fileName === fileName,
@@ -1507,11 +1527,15 @@ try {
   const initialPlayTools = await page.evaluate(() =>
     window.pawsWorkbench.playSnapshot.tools);
   assert.deepEqual(initialPlayTools, {
+    slot: { remaining: 1 },
     shuffle: { remaining: 1 },
     match: { remaining: 1 },
-    undo: { remaining: 1 },
   });
-  for (const toolName of ["shuffle", "match", "undo"]) {
+  assert.equal(
+    await page.evaluate(() => window.pawsWorkbench.playSnapshot.secondSlotUnlocked),
+    false,
+  );
+  for (const toolName of ["slot", "shuffle", "match"]) {
     const button = page.locator(`[data-play-tool="${toolName}"]`);
     assert.equal(await button.isVisible(), true, `${toolName} tool should be visible`);
     assert.equal(await button.isEnabled(), true, `${toolName} tool should start enabled`);
@@ -1522,18 +1546,27 @@ try {
     );
   }
 
-  const stashedForUndo = await stashAvailableTileIn2d(page);
-  await page.locator("#play-tool-undo").click();
+  const stashedForSlot = await stashAvailableTileIn2d(page);
+  assert.equal(
+    await page.evaluate(() => window.pawsWorkbench.renderer.trayLayout().length),
+    1,
+  );
+  await page.locator("#play-tool-slot").click();
   await page.waitForFunction(
     (uid) =>
-      window.pawsWorkbench.playSnapshot.tools.undo.remaining === 0
-      && !window.pawsWorkbench.playSnapshot.tray.includes(uid),
-    stashedForUndo,
+      window.pawsWorkbench.playSnapshot.tools.slot.remaining === 0
+      && window.pawsWorkbench.playSnapshot.secondSlotUnlocked
+      && window.pawsWorkbench.playSnapshot.tray.includes(uid),
+    stashedForSlot,
   );
-  assert.equal(await page.locator("#play-tool-undo").isDisabled(), true);
+  assert.equal(await page.locator("#play-tool-slot").isDisabled(), true);
   assert.equal(
-    (await page.locator("#play-tool-undo .play-tool-count").textContent())?.trim(),
+    (await page.locator("#play-tool-slot .play-tool-count").textContent())?.trim(),
     "0",
+  );
+  assert.equal(
+    await page.evaluate(() => window.pawsWorkbench.renderer.trayLayout().length),
+    2,
   );
 
   const removedBeforeToolMatch = await page.evaluate(() =>
@@ -1556,8 +1589,23 @@ try {
   assert.equal(
     await page.evaluate(() => JSON.stringify(window.pawsWorkbench.playSnapshot)),
     playStateAfterTwoTools,
-    "2D to 3D must retain match and undo inventory",
+    "2D to 3D must retain slot and match inventory",
   );
+  const playTray3d = await page.evaluate(() => ({
+    visible: window.pawsWorkbench.renderer.trayMeshes
+      .filter(({ base, lip }) => base.visible && lip.visible)
+      .map(({ slot, base, lip }) => ({
+        slot,
+        baseX: base.position.x,
+        lipX: lip.position.x,
+        baseY: base.position.y,
+        lipY: lip.position.y,
+      })),
+  }));
+  assert.deepEqual(playTray3d.visible, [
+    { slot: 0, baseX: -1.3, lipX: -1.3, baseY: 0.015, lipY: 0.31 },
+    { slot: 1, baseX: 1.3, lipX: 1.3, baseY: 0.015, lipY: 0.31 },
+  ]);
   const beforeToolShuffle = await page.evaluate(() => {
     const boardTiles = window.pawsWorkbench.playSnapshot.tiles
       .filter(({ removed, stashedSlot }) => !removed && !Number.isInteger(stashedSlot));
@@ -1593,9 +1641,9 @@ try {
   assert.deepEqual(afterToolShuffle.identity, beforeToolShuffle.identity);
   assert.deepEqual(afterToolShuffle.types, beforeToolShuffle.types);
   assert.deepEqual(afterToolShuffle.tools, {
+    slot: { remaining: 0 },
     shuffle: { remaining: 0 },
     match: { remaining: 0 },
-    undo: { remaining: 0 },
   });
   assert.equal(await page.locator("#play-tool-shuffle").isDisabled(), true);
   await page.screenshot({
@@ -1614,9 +1662,10 @@ try {
   await page.locator("#restart-play").click();
   await page.waitForFunction(() =>
     Object.values(window.pawsWorkbench.playSnapshot.tools)
-      .every(({ remaining }) => remaining === 1));
+      .every(({ remaining }) => remaining === 1)
+    && !window.pawsWorkbench.playSnapshot.secondSlotUnlocked);
   summary.playTools = {
-    undoRestoredUid: stashedForUndo,
+    slotPreservedUid: stashedForSlot,
     matchRemoved: 2,
     sharedAcrossViews: true,
     restartRestoredUses: true,
@@ -1769,7 +1818,7 @@ try {
     await mobilePage.locator("#delete-local-level").isHidden();
   assert.equal(summary.mobileDeleteHidden, true);
   assert.equal(await mobilePage.locator("#generate-ai-level").isHidden(), true);
-  for (const toolName of ["shuffle", "match", "undo"]) {
+  for (const toolName of ["slot", "shuffle", "match"]) {
     const button = mobilePage.locator(`[data-play-tool="${toolName}"]`);
     assert.equal(await button.isVisible(), true, `${toolName} should be visible on mobile`);
     assert.equal(
