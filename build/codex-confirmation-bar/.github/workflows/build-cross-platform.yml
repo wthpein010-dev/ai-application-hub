@@ -1,0 +1,67 @@
+name: Build Codex Confirmation Bar
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - agent/cross-platform-mac-video
+
+permissions:
+  contents: read
+
+jobs:
+  windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 8.0.x
+      - name: Test Debug
+        run: dotnet test -c Debug
+      - name: Test Release
+        run: dotnet test -c Release
+      - name: Package Windows
+        shell: pwsh
+        run: ./scripts/Publish-Windows.ps1
+      - uses: actions/upload-artifact@v4
+        with:
+          name: CodexConfirmationBar-Windows-x64
+          path: artifacts/release/CodexConfirmationBar-Windows-x64.zip
+
+  macos:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - runner: macos-14
+            runtime: osx-arm64
+            archive: CodexConfirmationBar-macOS-arm64.app.zip
+          - runner: macos-15-intel
+            runtime: osx-x64
+            archive: CodexConfirmationBar-macOS-x64.app.zip
+    runs-on: ${{ matrix.runner }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 8.0.x
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Install public Codex CLI
+        run: npm install --global @openai/codex
+      - name: Test Release
+        run: dotnet test -c Release
+      - name: Build and verify final package
+        run: |
+          chmod +x scripts/publish-macos.sh scripts/test-macos-package.sh
+          scripts/publish-macos.sh "${{ matrix.runtime }}"
+          scripts/test-macos-package.sh "artifacts/release/${{ matrix.archive }}" "${{ matrix.runtime }}"
+          shasum -a 256 "artifacts/release/${{ matrix.archive }}" | tee "artifacts/release/${{ matrix.archive }}.sha256"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.archive }}
+          path: |
+            artifacts/release/${{ matrix.archive }}
+            artifacts/release/${{ matrix.archive }}.sha256

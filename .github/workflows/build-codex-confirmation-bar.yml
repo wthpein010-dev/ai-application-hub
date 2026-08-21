@@ -1,0 +1,107 @@
+name: Build Codex Confirmation Bar v2
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  windows:
+    name: Build and verify Windows x64
+    runs-on: windows-latest
+    defaults:
+      run:
+        working-directory: build/codex-confirmation-bar
+    steps:
+      - name: Check out the build snapshot
+        uses: actions/checkout@v4
+        with:
+          sparse-checkout: |
+            build/codex-confirmation-bar
+          sparse-checkout-cone-mode: false
+
+      - name: Set up .NET 8
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 8.0.x
+
+      - name: Run Release tests
+        run: dotnet test CodexThreadWorkbench.sln --configuration Release
+
+      - name: Package Windows x64
+        shell: pwsh
+        run: ./scripts/Publish-Windows.ps1 -Configuration Release -Runtime win-x64
+
+      - name: Upload verified Windows package
+        uses: actions/upload-artifact@v4
+        with:
+          name: CodexConfirmationBar-Windows-x64
+          path: build/codex-confirmation-bar/artifacts/release/CodexConfirmationBar-Windows-x64.zip
+          if-no-files-found: error
+          retention-days: 7
+
+  macos:
+    name: Build and verify macOS ${{ matrix.architecture }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - architecture: arm64
+            runtime: osx-arm64
+            runner: macos-14
+            archive: CodexConfirmationBar-macOS-arm64.app.zip
+          - architecture: x64
+            runtime: osx-x64
+            runner: macos-15-intel
+            archive: CodexConfirmationBar-macOS-x64.app.zip
+    runs-on: ${{ matrix.runner }}
+    defaults:
+      run:
+        working-directory: build/codex-confirmation-bar
+    steps:
+      - name: Check out the build snapshot
+        uses: actions/checkout@v4
+        with:
+          sparse-checkout: |
+            build/codex-confirmation-bar
+          sparse-checkout-cone-mode: false
+
+      - name: Set up .NET 8
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 8.0.x
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Install the public Codex CLI
+        run: npm install --global @openai/codex
+
+      - name: Run Release tests
+        run: dotnet test CodexThreadWorkbench.sln --configuration Release
+
+      - name: Build, sign, and verify the final app
+        shell: bash
+        run: |
+          set -euo pipefail
+          chmod +x scripts/publish-macos.sh scripts/test-macos-package.sh
+          scripts/publish-macos.sh "${{ matrix.runtime }}"
+          scripts/test-macos-package.sh \
+            "artifacts/release/${{ matrix.archive }}" \
+            "${{ matrix.runtime }}"
+          shasum -a 256 \
+            "artifacts/release/${{ matrix.archive }}" \
+            | tee "artifacts/release/${{ matrix.archive }}.sha256"
+
+      - name: Upload verified macOS package
+        uses: actions/upload-artifact@v4
+        with:
+          name: CodexConfirmationBar-macOS-${{ matrix.architecture }}
+          path: |
+            build/codex-confirmation-bar/artifacts/release/${{ matrix.archive }}
+            build/codex-confirmation-bar/artifacts/release/${{ matrix.archive }}.sha256
+          if-no-files-found: error
+          retention-days: 7

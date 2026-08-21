@@ -1,0 +1,127 @@
+<Window x:Class="CodexThreadWorkbench.ConfirmationOverlayWindow"
+        xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Codex 待确认"
+        Width="560"
+        MinHeight="0"
+        MaxHeight="720"
+        SizeToContent="Height"
+        CanResize="False"
+        ShowInTaskbar="False"
+        ShowActivated="False"
+        Topmost="True"
+        SystemDecorations="None"
+        TransparencyLevelHint="Transparent"
+        Background="Transparent">
+  <Border Padding="16"
+          Background="White"
+          BorderBrush="{StaticResource BorderBrush}"
+          BorderThickness="1"
+          BoxShadow="0 8 28 0 #3D273137"
+          CornerRadius="14">
+    <Grid RowDefinitions="Auto,Auto,*">
+      <Grid Grid.Row="0" ColumnDefinitions="*,Auto">
+        <StackPanel x:Name="DragHandle"
+                    Grid.Column="0"
+                    Background="Transparent"
+                    Cursor="SizeAll"
+                    VerticalAlignment="Center"
+                    Orientation="Horizontal"
+                    PointerPressed="DragHandle_OnPointerPressed"
+                    Spacing="9"
+                    ToolTip.Tip="拖动以移动待确认窗口">
+          <Border Width="28"
+                  Height="28"
+                  Background="{StaticResource PrimaryBrush}"
+                  CornerRadius="9">
+            <TextBlock HorizontalAlignment="Center"
+                       VerticalAlignment="Center"
+                       Foreground="White"
+                       FontSize="13"
+                       FontWeight="Bold"
+                       Text="C" />
+          </Border>
+          <TextBlock VerticalAlignment="Center"
+                     FontSize="15"
+                     FontWeight="SemiBold"
+                     Text="{Binding CountText}" />
+        </StackPanel>
+        <Button x:Name="ConfirmAllButton"
+                Grid.Column="1"
+                Classes="primary"
+                Command="{Binding ConfirmAllCommand}"
+                Content="{Binding ConfirmAllText}" />
+      </Grid>
+
+      <Border Grid.Row="1"
+              Margin="0,12,0,0"
+              Padding="10,7"
+              Background="#FFF4E6"
+              CornerRadius="7"
+              IsVisible="{Binding HasMonitorError}">
+        <TextBlock Foreground="#9A5B18"
+                   FontSize="11"
+                   Text="{Binding MonitorErrorText}"
+                   TextWrapping="Wrap" />
+      </Border>
+
+      <ScrollViewer Grid.Row="2"
+                    MaxHeight="560"
+                    Margin="0,10,0,0"
+                    HorizontalScrollBarVisibility="Disabled"
+                    VerticalScrollBarVisibility="Auto">
+        <ItemsControl x:Name="ConfirmationList"
+                      ItemsSource="{Binding Items}">
+          <ItemsControl.ItemTemplate>
+            <DataTemplate>
+              <Border Margin="0,0,0,8"
+                      Padding="12"
+                      Background="#F7F9FA"
+                      BorderBrush="{StaticResource BorderBrush}"
+                      BorderThickness="1"
+                      CornerRadius="9">
+                <Grid RowDefinitions="Auto,Auto,Auto"
+                      ColumnDefinitions="*,Auto,Auto">
+                  <TextBlock Grid.Row="0"
+                             Grid.ColumnSpan="3"
+                             FontSize="13"
+                             FontWeight="SemiBold"
+                             Text="{Binding Title}"
+                             TextTrimming="CharacterEllipsis" />
+                  <TextBlock Grid.Row="1"
+                             Grid.ColumnSpan="3"
+                             Margin="0,5,0,9"
+                             Foreground="{StaticResource SecondaryTextBrush}"
+                             FontSize="11"
+                             MaxLines="2"
+                             Text="{Binding RequestPreview}"
+                             TextTrimming="CharacterEllipsis"
+                             TextWrapping="Wrap" />
+                  <TextBlock Grid.Row="2"
+                             Grid.Column="0"
+                             Margin="0,0,10,0"
+                             VerticalAlignment="Center"
+                             Foreground="#9A5B18"
+                             FontSize="11"
+                             IsVisible="{Binding HasError}"
+                             Text="{Binding ErrorText}"
+                             TextTrimming="CharacterEllipsis" />
+                  <Button Grid.Row="2"
+                          Grid.Column="1"
+                          Classes="toolbar"
+                          Command="{Binding IgnoreCommand}"
+                          Content="忽略" />
+                  <Button Grid.Row="2"
+                          Grid.Column="2"
+                          Classes="primary"
+                          Command="{Binding ConfirmCommand}"
+                          Content="{Binding ActionText}" />
+                </Grid>
+              </Border>
+            </DataTemplate>
+          </ItemsControl.ItemTemplate>
+        </ItemsControl>
+      </ScrollViewer>
+    </Grid>
+  </Border>
+</Window>
