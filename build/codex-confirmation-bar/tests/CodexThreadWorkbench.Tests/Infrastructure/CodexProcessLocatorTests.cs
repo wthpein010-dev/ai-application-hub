@@ -54,6 +54,28 @@ public sealed class CodexProcessLocatorTests
     }
 
     [Fact]
+    public void Find_OnWindows_UsesTheNativeBinaryFromAGlobalNpmInstall()
+    {
+        var npmPrefix = Path.Combine("Users", "runner", "npm");
+        var expected = Path.Combine(
+            npmPrefix,
+            "node_modules",
+            "@openai",
+            "codex-win32-x64",
+            "vendor",
+            "x86_64-pc-windows-msvc",
+            "bin",
+            "codex.exe");
+        var locator = new CodexProcessLocator(
+            isWindows: true,
+            pathValue: npmPrefix,
+            userProfile: Path.Combine("Users", "runner"),
+            path => path == expected);
+
+        Assert.Equal(expected, locator.Find());
+    }
+
+    [Fact]
     public void Find_PrefersSandboxBinOverPackagedWindowsAppsPath()
     {
         var userProfile = Path.Combine("Users", "test");

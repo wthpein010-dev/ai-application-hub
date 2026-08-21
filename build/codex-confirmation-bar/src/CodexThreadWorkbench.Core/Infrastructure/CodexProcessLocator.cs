@@ -45,7 +45,7 @@ public sealed class CodexProcessLocator : ICodexProcessLocator
 
         var executable = _isWindows ? "codex.exe" : "codex";
         var hint = _isWindows
-            ? $"PATH 或 {Path.Combine(_userProfile, ".codex", ".sandbox-bin", executable)}"
+            ? $"PATH、全局 npm Codex 安装或 {Path.Combine(_userProfile, ".codex", ".sandbox-bin", executable)}"
             : "PATH、~/.local/bin、/opt/homebrew/bin 或 /usr/local/bin";
         throw new FileNotFoundException(
             $"未找到 Codex CLI（{executable}）。请安装 Codex CLI 并检查 {hint}。");
@@ -68,6 +68,18 @@ public sealed class CodexProcessLocator : ICodexProcessLocator
                      StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries))
         {
             yield return Path.Combine(directory, executable);
+            if (_isWindows)
+            {
+                yield return Path.Combine(
+                    directory,
+                    "node_modules",
+                    "@openai",
+                    "codex-win32-x64",
+                    "vendor",
+                    "x86_64-pc-windows-msvc",
+                    "bin",
+                    executable);
+            }
         }
 
         if (!_isWindows)
