@@ -1,6 +1,6 @@
 # AI Application Hub 平台兼容矩阵
 
-- 日期：2026-08-20
+- 日期：2026-08-21
 - 范围：主页当前 29 张公开项目卡片
 - 规则：网页、小游戏和工程体验通过现代浏览器覆盖 Windows 与 macOS；只有经过原生构建、架构检查和产物校验的项目显示系统下载。
 - 通用门禁：`tests/hub-entry-pages-browser-smoke.mjs`、`tests/hub-video-pages-browser-smoke.mjs`、`tests/hub-platform-artifacts.test.mjs`。
@@ -34,7 +34,7 @@
 | `planmap` | 思维导图快捷工具 | 网页跨平台 | Windows：现代浏览器 | macOS：现代浏览器 | [网页体验](https://wthpein010-dev.github.io/ai-application-hub/projects/planmap/index.html)；源码附件为 [planmap-source.zip](https://wthpein010-dev.github.io/ai-application-hub/downloads/planmap-source.zip)，不作为系统安装包 |
 | `simuai` | 万象实验室 | 网页跨平台 | Windows：现代浏览器 | macOS：现代浏览器 | [网页体验](https://wthpein010-dev.github.io/ai-application-hub/projects/simuai/index.html)；公开版从 30 个受控实验中本地匹配，不调用远程模型 |
 | `brick-character-copy-preview` | 砖块角色文案预览 | 工程在线体验 | Windows：现代浏览器 | macOS：现代浏览器 | [网页体验](https://wthpein010-dev.github.io/ai-application-hub/projects/brick-character-copy-preview/index.html)；提供表格审阅、角色形象与游戏内详情同步预览 |
-| `gamespec-relay` | 需求接力站 | 原生双平台 | Windows： [微软版下载](https://github.com/wthpein010-dev/ai-application-hub/releases/download/gamespec-relay-v1.1.0/xuqiu-jielizhan-windows-x64.zip)，x64 | macOS： [苹果电脑版下载](https://github.com/wthpein010-dev/ai-application-hub/releases/download/gamespec-relay-v1.1.0/xuqiu-jielizhan-macos.zip)，arm64/x64 | [项目页](https://wthpein010-dev.github.io/ai-application-hub/projects/gamespec-relay/index.html)；`.github/workflows/build-gamespec-relay-release.yml` 负责三平台构建、架构、签名与真实启动；1.1.0 的包大小、校验值和运行证据在新版发布后回写本表与 `docs/audits/evidence/2026-08-07-macos-download-manifest.json`。 |
+| `gamespec-relay` | 需求接力站 | 原生双平台 | Windows： [微软版下载](https://github.com/wthpein010-dev/ai-application-hub/releases/download/gamespec-relay-v1.1.0/xuqiu-jielizhan-windows-x64.zip)，x64，96,045,541 字节，SHA-256 `CB68B16071C6218540DA7DCABEF43CA83060B8C6A1A74142119A78068228D424` | macOS： [苹果电脑版下载](https://github.com/wthpein010-dev/ai-application-hub/releases/download/gamespec-relay-v1.1.0/xuqiu-jielizhan-macos.zip)，arm64/x64，256,143,029 字节，SHA-256 `A9CC65AF32F17DA61DA0E8350F744C9D2AE6A6735BE066CC01591C20D711F861` | [项目页](https://wthpein010-dev.github.io/ai-application-hub/projects/gamespec-relay/index.html)；`.github/workflows/build-gamespec-relay-release.yml` 的 Release Run `32442113814` 完成三平台构建、架构核对、临时签名、包校验和真实启动；Mac 公网清单见 `docs/audits/evidence/2026-08-07-macos-download-manifest.json`。 |
 | `x-ai-codex-radar` | AI / Codex 雷达 | 网页跨平台 | Windows：现代浏览器 | macOS：现代浏览器 | [公开演示](https://wthpein010-dev.github.io/ai-application-hub/projects/x-ai-codex-radar/index.html)；无需登录的交互页明确使用示例数据，私有实时采集入口需 ChatGPT 登录；不提供虚假桌面安装包 |
 
 ## 结论
