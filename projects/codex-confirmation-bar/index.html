@@ -1,0 +1,86 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="description" content="Codex 待确认悬浮助手安全交互演示：模拟扫描、拖动、单条确认、失败重试和一键全部确认。" />
+  <meta name="theme-color" content="#081714" />
+  <link rel="icon" href="data:," />
+  <link rel="stylesheet" href="../../assets/subpage-shell.css" />
+  <link rel="stylesheet" href="./styles.css" />
+  <title>Codex 待确认悬浮助手</title>
+</head>
+<body class="hub-subpage">
+  <a class="hub-home-link" href="../../index.html#apps" aria-label="返回主页">
+    <span aria-hidden="true">←</span>
+    <span>返回主页</span>
+  </a>
+
+  <main class="page-shell">
+    <section class="hero" aria-labelledby="page-title">
+      <div class="eyebrow"><span></span> CODEX CONFIRMATION BAR · V2.0.0</div>
+      <h1 id="page-title">Codex 待确认悬浮助手</h1>
+      <p class="hero-copy">任务跑完后，不必守着每个对话。助手只在发现尚未回复的结束或中断任务时出现，把“确认继续”放到桌面最上方。</p>
+      <div class="safety-note">
+        <strong>本页仅为安全交互模拟</strong>
+        <span>示例数据全部写死在浏览器中，不读取本机任务、不连接 Codex，也不会发送真实消息。</span>
+      </div>
+    </section>
+
+    <section class="demo-panel" aria-label="悬浮助手交互模拟器">
+      <div class="demo-toolbar">
+        <div>
+          <span class="section-kicker">INTERACTIVE DEMO</span>
+          <h2>模拟一次待确认处理流程</h2>
+        </div>
+        <div class="toolbar-actions">
+          <button class="primary-action" type="button" data-action="scan">开始模拟扫描</button>
+          <button type="button" data-action="fail-next" aria-pressed="false">模拟下次发送失败</button>
+          <button type="button" data-action="reset">重置</button>
+        </div>
+      </div>
+
+      <div class="desktop-scene" aria-label="模拟桌面">
+        <div class="scene-topbar">
+          <span>模拟桌面 · 18:20</span>
+          <span>Codex 已连接</span>
+        </div>
+        <div class="scene-grid" aria-hidden="true">
+          <article><span class="fake-state complete"></span><strong>需求接力站发布</strong><small>回合已结束</small></article>
+          <article><span class="fake-state interrupted"></span><strong>更新 macOS 下载包</strong><small>回合已中断</small></article>
+          <article><span class="fake-state active"></span><strong>整理 AI 与 Codex 新闻</strong><small>仍在进行中</small></article>
+        </div>
+        <div class="scene-hint">
+          <span aria-hidden="true">↗</span>
+          <p>点击“开始模拟扫描”，待确认悬浮栏才会出现；随后可拖动绿色标题栏。</p>
+        </div>
+      </div>
+
+      <div class="demo-status" data-role="status" aria-live="polite">当前没有模拟候选。点击“开始模拟扫描”。</div>
+    </section>
+
+    <section class="message-contract" aria-label="确认消息说明">
+      <div>
+        <span class="section-kicker">FIXED MESSAGE</span>
+        <h2>确认时发送的固定消息</h2>
+      </div>
+      <code>确认，继续开始做，完成前不要停。</code>
+      <p>桌面应用会在发送后回读对应任务；只有观察到这条消息位于候选消息之后，才从列表移除。</p>
+    </section>
+  </main>
+
+  <aside class="confirmation-bar" data-role="confirmation-bar" aria-label="模拟待确认悬浮栏" hidden>
+    <header class="bar-header" data-role="drag-handle">
+      <div class="bar-title">
+        <span class="bar-mark" aria-hidden="true">✓</span>
+        <div><strong>Codex 待确认</strong><small data-role="count">待确认 · 0</small></div>
+      </div>
+      <button class="confirm-all" type="button" data-action="confirm-all">一键全部确认</button>
+    </header>
+    <div class="candidate-list" data-role="candidate-list"></div>
+    <footer>拖动绿色标题栏可改变位置 · 本页不会发送真实消息</footer>
+  </aside>
+
+  <script src="./app.js" defer></script>
+</body>
+</html>
