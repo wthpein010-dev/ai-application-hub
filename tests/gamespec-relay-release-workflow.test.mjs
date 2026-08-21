@@ -19,9 +19,9 @@ test("release workflow builds and launches every native target", async () => {
 test("release assembly emits immutable competition download assets", async () => {
   const workflow = await readFile(workflowUrl, "utf8");
 
-  assert.match(workflow, /GameSpec-Relay-Windows-x64\.zip/);
-  assert.match(workflow, /GameSpec-Relay-macOS\.zip/);
-  assert.match(workflow, /SHA256SUMS\.txt/);
+  assert.match(workflow, /需求接力站-微软系统\.zip/);
+  assert.match(workflow, /需求接力站-苹果电脑\.zip/);
+  assert.match(workflow, /校验值\.txt/);
   assert.match(workflow, /mac-combined\/x64/);
   assert.match(workflow, /mac-combined\/arm64/);
   assert.match(workflow, /sha256sum/);
@@ -36,6 +36,7 @@ test("release workflow is limited to the GameSpec Relay version tag", async () =
 
   assert.match(workflow, /gamespec-relay-v\*/);
   assert.doesNotMatch(workflow, /branches:\s*\n\s*-\s*main/);
+  assert.match(workflow, /--title "需求接力站 \$VERSION"/);
   assert.match(workflow, /permissions:\s*\n\s*contents:\s*read/);
   assert.match(workflow, /release:[\s\S]*permissions:\s*\n\s*contents:\s*write/);
 });

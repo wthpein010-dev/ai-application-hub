@@ -1,0 +1,15 @@
+[data-hub-video-page] :where(p, span, strong, time, a) {
+  font-size: max(14px, 1em);
+}
+
+[data-hub-video-page] :where(button, .hub-video-home, .hub-video-actions a) {
+  min-height: 44px;
+  font-size: 15px;
+}
+
+@media (max-width: 640px) {
+  .hub-video-description {
+    font-size: 16px;
+    line-height: 1.75;
+  }
+}

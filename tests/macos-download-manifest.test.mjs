@@ -59,7 +59,16 @@ async function createFixtureZip(directory, name, entries) {
   }
 
   if (process.platform === "win32") {
-    await execFileAsync("tar.exe", ["-a", "-cf", archive, "-C", source, "."]);
+    await execFileAsync("tar.exe", [
+      "-a",
+      "--options",
+      "zip:hdrcharset=UTF-8",
+      "-cf",
+      archive,
+      "-C",
+      source,
+      ".",
+    ]);
   } else {
     await execFileAsync("zip", ["-q", "-r", archive, "."], { cwd: source });
   }
@@ -346,16 +355,16 @@ test("the audit script rejects a Chromium extension without manifest.json", asyn
   assert.match(result.stderr, /missing manifest\.json/i);
 });
 
-test("the audit script accepts a GameSpec Relay combined native fixture", async (t) => {
+test("the audit script accepts a 需求接力站 combined native fixture", async (t) => {
   const directory = await withFixture(t);
   const archive = await createFixtureZip(directory, "gamespec-relay", {
-    "arm64/GameSpec Relay.app/Contents/Info.plist": "fixture",
-    "arm64/GameSpec Relay.app/Contents/MacOS/GameSpec Relay": "fixture",
+    "arm64/需求接力站.app/Contents/Info.plist": "fixture",
+    "arm64/需求接力站.app/Contents/MacOS/需求接力站": "fixture",
   });
   const artifact = await fixtureArtifact(archive);
   const manifestPath = await writeFixtureManifest(directory, {
     id: "gamespec-relay",
-    name: "GameSpec Relay",
+    name: "需求接力站",
     kind: "native",
     catalogUrl: artifact.archiveUrl,
     ...artifact,

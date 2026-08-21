@@ -1,11 +1,8 @@
-# GameSpec Relay Desktop
+# 需求接力站桌面版
 
-Electron desktop shell for the shared offline GameSpec Relay web workbench.
+需求接力站把游戏群聊、会议纪要和策划文档整理成能开工、能验收的任务，并标出版本变更会影响哪里。
 
-- Renderer isolation: `contextIsolation`, sandbox, and web security stay enabled.
-- Native bridge: source selection, project save/load, exports, and encrypted optional-model settings only.
-- Windows: portable x64 executable plus unpacked package for launch verification.
-- macOS: independently built x64 and arm64 application ZIPs.
-- Smoke mode: `--smoke-test` drives the real built-in sample through the renderer and verifies a JSON export.
-
-Unsigned development packages may require the user to choose the operating system's explicit “Open” action.
+- 离线示例无需账号、网络或访问密钥。
+- 微软系统版解压后双击“需求接力站”。
+- 苹果电脑版分别提供苹果芯片与英特尔芯片目录，请打开对应目录中的应用。
+- 开发版暂未使用商业证书签名，首次打开时可能需要在系统安全设置中明确允许。

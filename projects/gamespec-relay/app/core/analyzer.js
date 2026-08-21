@@ -54,11 +54,11 @@ function findEvidence(statements, keywords, limit = 2) {
 
 function deriveDecisions(statements) {
   const rules = [
-    { title: "二阶段触发阈值", keywords: ["40% 进二阶段"], detail: "Boss 血量首次降至 40% 时进入二阶段。" },
+    { title: "二阶段触发阈值", keywords: ["40% 进二阶段"], detail: "首领血量首次降至 40% 时进入二阶段。" },
     { title: "红屏表现时长", keywords: ["先按 0.6 秒", "红屏 0.6 秒"], detail: "二阶段红屏按 0.6 秒制作，并使用先增强后回落的曲线。" },
     { title: "大招前摇时长", keywords: ["0.4 秒加到 0.8 秒"], detail: "大招前摇从 0.4 秒调整为 0.8 秒，并强化地面预警。" },
     { title: "阶段爆发音", keywords: ["爆发音可以新做"], detail: "二阶段进入时新增独立阶段爆发音。" },
-    { title: "性能底线", keywords: ["45 FPS"], detail: "中端 Android 设备战斗帧率不得低于 45 FPS。" },
+    { title: "性能底线", keywords: ["每秒 45 帧"], detail: "中端安卓设备战斗帧率不得低于每秒 45 帧。" },
   ];
 
   return rules.flatMap((rule) => {
@@ -79,11 +79,11 @@ function deriveQuestions(statements) {
       keywords: ["复用旧的还是", "前摇音先别定"],
     },
     {
-      title: "红屏是否排除战斗 UI",
+      title: "红屏是否排除战斗界面",
       detail: "必须确认红屏的渲染层级，保证战斗按钮保持可读。",
       blockerLevel: "hard",
       ownerRole: "客户端",
-      keywords: ["影响 UI", "排除 UI", "按钮必须保持可读"],
+      keywords: ["影响操作界面", "排除界面", "按钮必须保持可读"],
     },
   ];
 
@@ -141,7 +141,7 @@ function deriveTasks(statements, glossary) {
       const design = tasks.find((candidate) => candidate.role === "策划");
       task.dependencies = design ? [design.id] : [];
     }
-    if (task.role === "QA") task.dependencies = tasks.filter((candidate) => candidate.role !== "QA").map((candidate) => candidate.id);
+    if (task.role === "测试") task.dependencies = tasks.filter((candidate) => candidate.role !== "测试").map((candidate) => candidate.id);
     return task;
   });
 }
@@ -154,7 +154,7 @@ function deriveTests(tasks, statements) {
       task.evidence.some((evidence) => evidence.sourceId === statement.sourceId) &&
       template.keywords.some((keyword) => `${task.title} ${task.objective} ${task.acceptanceCriteria.join(" ")}`.includes(keyword)),
     );
-    const fallbackTask = tasks.find((task) => task.role === "QA") || tasks[0];
+    const fallbackTask = tasks.find((task) => task.role === "测试") || tasks[0];
     return [{
       id: stableId("TEST", template.title),
       type: template.type,
@@ -170,19 +170,19 @@ function deriveTests(tasks, statements) {
 
 function deriveRisks(tasks, questions) {
   const risks = [];
-  const uiQuestion = questions.find((item) => /UI/.test(item.title));
+  const uiQuestion = questions.find((item) => /界面/.test(item.title));
   if (uiQuestion) {
     risks.push({
       id: "RISK-UI-READABILITY",
-      title: "红屏可能降低 HUD 可读性",
+      title: "红屏可能降低战斗界面可读性",
       probability: "medium",
       impact: "high",
-      mitigation: "在合入前确认渲染层级，并用真实战斗 HUD 录屏验收。",
-      taskIds: tasks.filter((task) => ["客户端", "QA"].includes(task.role)).map((task) => task.id),
+      mitigation: "在合入前确认渲染层级，并用真实战斗界面录屏验收。",
+      taskIds: tasks.filter((task) => ["客户端", "测试"].includes(task.role)).map((task) => task.id),
       evidence: uiQuestion.evidence,
     });
   }
-  const perfStatement = tasks.find((task) => task.role === "QA")?.evidence.find((item) => /低端机|45 FPS/.test(item.quote));
+  const perfStatement = tasks.find((task) => task.role === "测试")?.evidence.find((item) => /低端机|每秒 45 帧/.test(item.quote));
   if (perfStatement) {
     risks.push({
       id: "RISK-LOW-END-PERFORMANCE",
@@ -190,7 +190,7 @@ function deriveRisks(tasks, questions) {
       probability: "medium",
       impact: "high",
       mitigation: "建立低档粒子数量和后处理开关，并在目标设备上记录 30 秒帧率。",
-      taskIds: tasks.filter((task) => ["客户端", "特效", "QA"].includes(task.role)).map((task) => task.id),
+      taskIds: tasks.filter((task) => ["客户端", "特效", "测试"].includes(task.role)).map((task) => task.id),
       evidence: [perfStatement],
     });
   }
@@ -200,7 +200,7 @@ function deriveRisks(tasks, questions) {
 function applyConfirmedChanges(pack, statements) {
   const exactChange = (keyword) => statements.find((statement) => statement.text.includes(keyword));
   const redScreenChange = exactChange("峰值从 70% 降到 55%");
-  const audioChange = exactChange("前摇音选择新版本 B");
+  const audioChange = exactChange("前摇音选择新版本乙");
   const uiChange = exactChange("战斗按钮不参与红屏");
   const hitStunChange = exactChange("硬直结束后 0.1 秒内进入二阶段");
 
@@ -208,18 +208,18 @@ function applyConfirmedChanges(pack, statements) {
     const question = pack.questions.find((item) => item.title.includes("前摇音"));
     if (question) {
       question.status = "confirmed";
-      question.answer = "采用前摇音新版本 B";
+      question.answer = "采用前摇音新版本乙";
       question.evidence = [...question.evidence, extractEvidence(audioChange)];
     }
     const task = pack.tasks.find((item) => item.role === "音频");
     if (task) {
-      task.outputs = ["阶段爆发音", "前摇音新版本 B"];
+      task.outputs = ["阶段爆发音", "前摇音新版本乙"];
       task.evidence = [...task.evidence, extractEvidence(audioChange)];
     }
   }
 
   if (uiChange) {
-    const question = pack.questions.find((item) => /UI|按钮/.test(item.title));
+    const question = pack.questions.find((item) => /界面|按钮/.test(item.title));
     if (question) {
       question.status = "confirmed";
       question.answer = "战斗按钮不参与红屏";
@@ -258,7 +258,7 @@ function applyConfirmedChanges(pack, statements) {
 export function analyzeSources({ projectName, sources, glossary = [], version = "V1" }) {
   const base = createEmptyDeliveryPack({ projectName, sources, version });
   const statements = segmentSources(base.sources);
-  base.project.summary = "增强 Boss 二阶段进入与大招前摇的识别度，并形成可跨职能验收的交付包。";
+  base.project.summary = "增强首领二阶段进入与大招前摇的识别度，并形成可跨职能验收的交付包。";
   base.decisions = deriveDecisions(statements);
   base.questions = deriveQuestions(statements);
   base.scope = deriveScope(statements);

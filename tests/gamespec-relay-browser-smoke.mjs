@@ -63,8 +63,15 @@ try {
     assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true);
 
     await page.goto(`${origin}/projects/gamespec-relay/app/index.html`, { waitUntil: "networkidle" });
+    assert.deepEqual(await page.locator("[data-step-target]").allTextContents(), [
+      "1放进讨论和文档",
+      "2把决定与疑问说清楚",
+      "3分清谁来做、怎么验",
+      "4对比新旧版本影响",
+    ]);
     await page.locator("#loadSample").click();
     assert.match(await page.locator("#sourceInput").inputValue(), /40%/);
+    assert.equal(/[A-Za-z]/.test(await page.locator("#sourceInput").inputValue()), false);
     await page.locator("#analyzeButton").click();
     await page.waitForSelector("[data-task-id]", { state: "attached" });
 
@@ -77,7 +84,7 @@ try {
     await firstTask.fill("锁定二阶段最终验收口径");
     await firstTask.blur();
     if (viewport.name === "mobile") await page.locator('[data-step-target="decisions"]').click();
-    await page.locator("[data-question-answer]").first().fill("采用新版本 B");
+    await page.locator("[data-question-answer]").first().fill("采用新版本乙");
     await page.locator("[data-confirm-question]").first().click();
     assert.equal(await page.locator("[data-question-status='confirmed']").count(), 1);
 
@@ -90,7 +97,7 @@ try {
     await page.locator("#saveVersion").click();
     await page.locator("#loadChangeSample").click();
     if (viewport.name === "mobile") await page.locator('[data-step-target="source"]').click();
-    assert.match(await page.locator("#sourceInput").inputValue(), /新版本 B/);
+    assert.match(await page.locator("#sourceInput").inputValue(), /新版本乙/);
     await page.locator("#analyzeButton").click();
     if (viewport.name === "mobile") await page.locator('[data-step-target="versions"]').click();
     else await page.locator("#openDiff").click();
@@ -98,15 +105,41 @@ try {
     assert.ok(Number(await page.locator("#diffChangedCount").textContent()) >= 3);
     assert.ok(await page.locator("[data-affected-test]").count() >= 1);
 
-    for (const id of ["exportMarkdown", "exportJson", "exportCsv"]) {
+    const expectedDownloads = new Map([
+      ["exportMarkdown", "需求接力站-交付文档.md"],
+      ["exportJson", "需求接力站-数据备份.json"],
+      ["exportCsv", "需求接力站-任务表格.csv"],
+    ]);
+    for (const [id, expectedName] of expectedDownloads) {
       const [download] = await Promise.all([
         page.waitForEvent("download"),
         page.locator(`#${id}`).click(),
       ]);
-      assert.ok((await download.suggestedFilename()).startsWith("GameSpec-Relay"));
+      assert.equal(await download.suggestedFilename(), expectedName);
     }
     await page.locator("#copyCodex").click();
-    await page.waitForFunction(() => document.querySelector("#exportStatus")?.textContent.includes("Codex"));
+    await page.waitForFunction(() => document.querySelector("#exportStatus")?.textContent.includes("开发助手包"));
+
+    const readability = await page.evaluate(() => {
+      const visible = (node) => {
+        const style = getComputedStyle(node);
+        const rect = node.getBoundingClientRect();
+        return style.display !== "none" && style.visibility !== "hidden" && rect.width > 0 && rect.height > 0;
+      };
+      const directText = (node) => Array.from(node.childNodes).some((child) => child.nodeType === Node.TEXT_NODE && child.textContent.trim());
+      const tooSmall = Array.from(document.querySelectorAll("body *"))
+        .filter((node) => visible(node) && directText(node) && !["SCRIPT", "STYLE"].includes(node.tagName))
+        .map((node) => ({ tag: node.tagName, text: node.textContent.trim().slice(0, 30), size: Number.parseFloat(getComputedStyle(node).fontSize) }))
+        .filter((item) => item.size < 14);
+      const smallButtons = Array.from(document.querySelectorAll("button, .ghost-button"))
+        .filter(visible)
+        .map((node) => ({ text: node.textContent.trim(), size: Number.parseFloat(getComputedStyle(node).fontSize) }))
+        .filter((item) => item.size < 15);
+      return { tooSmall, smallButtons, visibleText: document.body.innerText };
+    });
+    assert.deepEqual(readability.tooSmall, []);
+    assert.deepEqual(readability.smallButtons, []);
+    assert.equal(/[A-Za-z]/.test(readability.visibleText), false, readability.visibleText.match(/.{0,16}[A-Za-z].{0,16}/)?.[0]);
 
     assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true);
     if (viewport.name === "mobile") {

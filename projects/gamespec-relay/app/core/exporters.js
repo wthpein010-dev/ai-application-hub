@@ -12,9 +12,15 @@ function questionState(question) {
   return question.blockerLevel === "hard" ? "未决硬阻塞" : "未决";
 }
 
+function versionLabel(version) {
+  if (version === "V1") return "第一版";
+  if (version === "V2") return "第二版";
+  return version;
+}
+
 export function toMarkdown(pack) {
   const output = [
-    `# ${pack.project.name} · ${pack.project.version}`,
+    `# ${pack.project.name} · ${versionLabel(pack.project.version)}`,
     "",
     pack.project.summary,
     "",
@@ -63,7 +69,7 @@ function csvCell(value) {
 }
 
 export function toTaskCsv(pack) {
-  const header = "id,role,title,priority,status,objective,dependencies,acceptanceCriteria";
+  const header = "任务编号,职能,任务标题,优先级,状态,目标,依赖,验收标准";
   const rows = pack.tasks.map((task) => [
     task.id,
     task.role,
@@ -80,7 +86,7 @@ export function toTaskCsv(pack) {
 export function toCodexContext(pack) {
   const blockers = pack.questions.filter((question) => question.status === "open");
   return [
-    `# Codex 交付上下文：${pack.project.name} · ${pack.project.version}`,
+    `# 开发助手交付上下文：${pack.project.name} · ${versionLabel(pack.project.version)}`,
     "",
     "## 工作目标",
     pack.project.summary || "按交付包完成实现。",

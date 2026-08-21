@@ -169,18 +169,18 @@ export function normalizeDeliveryPack(value = {}) {
 }
 
 export function assertDeliveryPack(value) {
-  if (!value || typeof value !== "object") throw new TypeError("DeliveryPack must be an object");
+  if (!value || typeof value !== "object") throw new TypeError("交付包必须是数据对象");
   for (const key of PACK_KEYS) {
-    if (!(key in value)) throw new TypeError(`DeliveryPack is missing ${key}`);
+    if (!(key in value)) throw new TypeError(`交付包缺少必要字段：${key}`);
   }
   for (const key of ["sources", "decisions", "questions", "tasks", "tests", "risks"]) {
-    if (!Array.isArray(value[key])) throw new TypeError(`DeliveryPack.${key} must be an array`);
+    if (!Array.isArray(value[key])) throw new TypeError(`交付包字段必须是列表：${key}`);
   }
   const sourceIds = new Set(value.sources.map((source) => source.id));
-  if (sourceIds.size !== value.sources.length || sourceIds.has("")) throw new TypeError("DeliveryPack source IDs must be unique and non-empty");
+  if (sourceIds.size !== value.sources.length || sourceIds.has("")) throw new TypeError("交付包来源编号必须唯一且不能为空");
 
   for (const item of [...value.decisions, ...value.questions, ...value.tasks, ...value.tests, ...value.risks]) {
-    if (!item.id) throw new TypeError("DeliveryPack items require an ID");
+    if (!item.id) throw new TypeError("交付包条目必须具有编号");
     for (const evidence of item.evidence || []) {
       if (!sourceIds.has(evidence.sourceId)) throw new TypeError(`Evidence references missing source ${evidence.sourceId}`);
       if (!evidence.quote) throw new TypeError(`Evidence for ${item.id} requires a quote`);

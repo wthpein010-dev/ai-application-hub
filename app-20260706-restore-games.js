@@ -786,32 +786,32 @@ const defaultApps = [
   },
   {
     id: "gamespec-relay",
-    name: "GameSpec Relay",
+    name: "需求接力站",
     category: "游戏研发效率工具",
     status: "assistant",
     badge: "辅助工具",
-    brief: "把群聊、会议纪要和策划文档转换为决定、阻塞问题、跨职能任务、验收标准、测试与变更影响。",
-    problem: "游戏需求在讨论后仍需人工整理、拆分和补验收口径，信息遗漏会导致跨职能返工。",
-    aiUse: "AI 参与游戏语义分析、证据追溯、任务拆分、质量门禁、变更影响和 Codex 上下文导出；完整示例可离线运行。",
+    brief: "把群聊、会议纪要和策划文档变成能开工、能验收的任务，并说清变更会影响哪里。",
+    problem: "游戏需求讨论后仍要人工整理、拆分和补验收口径，信息遗漏容易造成跨职能返工。",
+    aiUse: "智能助手负责语义分析、证据追溯、任务拆分、质量检查和变更影响；完整示例可离线运行。",
     folder: "./projects/gamespec-relay/",
     entry: "./projects/gamespec-relay/index.html",
     video: "./projects/gamespec-relay/video/index.html",
-    package: "https://github.com/wthpein010-dev/ai-application-hub/releases/tag/gamespec-relay-v1.0.0",
+    package: "https://github.com/wthpein010-dev/ai-application-hub/releases/tag/gamespec-relay-v1.1.0",
     platforms: {
       web: {
         href: "./projects/gamespec-relay/index.html",
         label: "演示"
       },
       windows: {
-        href: "https://github.com/wthpein010-dev/ai-application-hub/releases/download/gamespec-relay-v1.0.0/GameSpec-Relay-Windows-x64.zip",
-        label: "Wins下载"
+        href: "https://github.com/wthpein010-dev/ai-application-hub/releases/download/gamespec-relay-v1.1.0/%E9%9C%80%E6%B1%82%E6%8E%A5%E5%8A%9B%E7%AB%99-%E5%BE%AE%E8%BD%AF%E7%B3%BB%E7%BB%9F.zip",
+        label: "微软版下载"
       },
       mac: {
-        href: "https://github.com/wthpein010-dev/ai-application-hub/releases/download/gamespec-relay-v1.0.0/GameSpec-Relay-macOS.zip",
-        label: "Mac下载"
+        href: "https://github.com/wthpein010-dev/ai-application-hub/releases/download/gamespec-relay-v1.1.0/%E9%9C%80%E6%B1%82%E6%8E%A5%E5%8A%9B%E7%AB%99-%E8%8B%B9%E6%9E%9C%E7%94%B5%E8%84%91.zip",
+        label: "苹果电脑版下载"
       }
     },
-    tags: ["游戏需求", "跨职能交付", "验收标准", "Vibe Coding"],
+    tags: ["游戏需求", "跨职能交付", "验收标准", "版本影响"],
     speed: 10,
     impact: 10,
     risk: 9,
@@ -1791,6 +1791,26 @@ function normalizeApp(app) {
       windows: "",
       mac: ""
     };
+  }
+  if (normalized.id === "gamespec-relay") {
+    const legacyCopy = {
+      brief: "把群聊、会议纪要和策划文档转换为决定、阻塞问题、跨职能任务、验收标准、测试与变更影响。",
+      problem: "游戏需求在讨论后仍需人工整理、拆分和补验收口径，信息遗漏会导致跨职能返工。",
+      aiUse: "AI 参与游戏语义分析、证据追溯、任务拆分、质量门禁、变更影响和 Codex 上下文导出；完整示例可离线运行。"
+    };
+    normalized.name = base.name;
+    normalized.category = base.category;
+    normalized.status = base.status;
+    normalized.badge = base.badge;
+    Object.entries(legacyCopy).forEach(([field, value]) => {
+      if (normalized[field] === value) normalized[field] = base[field];
+    });
+    normalized.folder = base.folder;
+    normalized.entry = base.entry;
+    normalized.video = base.video;
+    normalized.package = base.package;
+    normalized.platforms = { ...base.platforms };
+    normalized.tags = [...base.tags];
   }
   const currentPlatforms = normalized.platforms || {};
   normalized.platforms = {

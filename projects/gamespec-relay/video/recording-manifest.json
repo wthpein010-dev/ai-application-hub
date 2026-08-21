@@ -1,11 +1,11 @@
 {
   "durationSeconds": 168,
   "chapters": [
-    { "start": 0, "title": "认识需求接力 Agent" },
-    { "start": 15, "title": "载入 Boss 示例" },
+    { "start": 0, "title": "认识需求接力站" },
+    { "start": 15, "title": "载入首领示例" },
     { "start": 40, "title": "核对决定与待确认项" },
     { "start": 75, "title": "查看任务、验收与健康度" },
-    { "start": 120, "title": "生成 V2 与变更影响" },
+    { "start": 120, "title": "生成第二版与变更影响" },
     { "start": 150, "title": "导出四类交付包" },
     { "start": 168, "title": "结束" }
   ]

@@ -1,13 +1,13 @@
-# GameSpec Relay 1.0.0
+# 需求接力站 1.1.0
 
-GameSpec Relay turns game-team chat, meeting notes, and design documents into a reviewable delivery pack: confirmed decisions, unresolved blockers, in/out scope, cross-discipline tasks, dependencies, acceptance criteria, tests, risks, and V1/V2 impact.
+需求接力站把游戏团队的群聊、会议纪要和策划文档整理成可复核的交付包：已确认决定、待确认问题、范围边界、跨职能任务、依赖、验收标准、测试、风险和新旧版本影响。
 
-## Included downloads
+## 下载内容
 
-- `GameSpec-Relay-Windows-x64.zip`: Windows x64 portable application.
-- `GameSpec-Relay-macOS.zip`: separate `x64/` and `arm64/` macOS applications in one archive.
-- `SHA256SUMS.txt`: SHA-256 checksums for both downloads.
+- `需求接力站-微软系统.zip`：微软系统便携版。
+- `需求接力站-苹果电脑.zip`：同一压缩包内包含苹果芯片版和英特尔芯片版。
+- `校验值.txt`：两个下载包的完整性校验值。
 
-The complete built-in Boss demo works offline without an account or API key. Optional OpenAI-compatible model output is normalized into the same local `DeliveryPack` and validated before display.
+内置首领示例无需账号、网络或访问密钥。可选模型的结果会统一整理为同一种本地交付包，并在显示前完成检查。
 
-These development builds are not code-signed with a commercial certificate. Windows SmartScreen or macOS Gatekeeper may require the operating system's explicit “Open” action after download.
+这些开发版暂未使用商业证书签名。下载后，系统可能要求用户明确选择“仍要打开”。

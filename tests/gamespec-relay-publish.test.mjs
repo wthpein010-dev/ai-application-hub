@@ -9,19 +9,23 @@ import { loadDefaultAppsFromRuntime } from "./helpers/default-apps.mjs";
 const root = dirname(dirname(fileURLToPath(import.meta.url)));
 const runtime = await readFile(join(root, "app-20260706-restore-games.js"), "utf8");
 
-test("GameSpec Relay keeps four real actions immediately before the newer Radar card", () => {
+test("需求接力站 keeps four real actions immediately before the newer Radar card", () => {
   const apps = loadDefaultAppsFromRuntime(runtime);
   const matches = apps.filter((app) => app.id === "gamespec-relay");
 
-  assert.equal(matches.length, 1, "the catalog should contain one GameSpec Relay card");
+  assert.equal(matches.length, 1, "the catalog should contain one 需求接力站 card");
   const relay = matches[0];
+  assert.equal(relay.name, "需求接力站");
+  assert.equal(relay.badge, "辅助工具");
+  assert.match(relay.brief, /能开工、能验收/);
+  assert.equal([relay.name, relay.badge, relay.brief, relay.problem, relay.aiUse, ...relay.tags].some((value) => /[A-Za-z]/.test(value)), false);
   assert.equal(relay.status, "assistant");
   assert.equal(apps[apps.indexOf(relay) + 1]?.id, "x-ai-codex-radar");
   assert.equal(relay.entry, "./projects/gamespec-relay/index.html");
   assert.equal(relay.video, "./projects/gamespec-relay/video/index.html");
   assert.equal(
     relay.package,
-    "https://github.com/wthpein010-dev/ai-application-hub/releases/tag/gamespec-relay-v1.0.0",
+    "https://github.com/wthpein010-dev/ai-application-hub/releases/tag/gamespec-relay-v1.1.0",
   );
   assert.deepEqual(
     JSON.parse(JSON.stringify(relay.platforms)),
@@ -31,12 +35,12 @@ test("GameSpec Relay keeps four real actions immediately before the newer Radar 
         label: "演示",
       },
       windows: {
-        href: "https://github.com/wthpein010-dev/ai-application-hub/releases/download/gamespec-relay-v1.0.0/GameSpec-Relay-Windows-x64.zip",
-        label: "Wins下载",
+        href: "https://github.com/wthpein010-dev/ai-application-hub/releases/download/gamespec-relay-v1.1.0/%E9%9C%80%E6%B1%82%E6%8E%A5%E5%8A%9B%E7%AB%99-%E5%BE%AE%E8%BD%AF%E7%B3%BB%E7%BB%9F.zip",
+        label: "微软版下载",
       },
       mac: {
-        href: "https://github.com/wthpein010-dev/ai-application-hub/releases/download/gamespec-relay-v1.0.0/GameSpec-Relay-macOS.zip",
-        label: "Mac下载",
+        href: "https://github.com/wthpein010-dev/ai-application-hub/releases/download/gamespec-relay-v1.1.0/%E9%9C%80%E6%B1%82%E6%8E%A5%E5%8A%9B%E7%AB%99-%E8%8B%B9%E6%9E%9C%E7%94%B5%E8%84%91.zip",
+        label: "苹果电脑版下载",
       },
     },
   );
@@ -47,7 +51,7 @@ test("GameSpec Relay keeps four real actions immediately before the newer Radar 
     relay.platforms.windows.label,
     relay.platforms.mac.label,
   ].filter(Boolean);
-  assert.deepEqual(renderedActionLabels, ["演示", "视频", "Wins下载", "Mac下载"]);
+  assert.deepEqual(renderedActionLabels, ["演示", "视频", "微软版下载", "苹果电脑版下载"]);
 });
 
 test("Hub audit treats GameSpec Relay downloads as verified native platforms", async () => {

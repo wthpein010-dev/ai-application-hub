@@ -10,6 +10,13 @@ const store = createRelayStore(localStorage);
 const desktop = window.gameSpecDesktop || null;
 const state = { sources: [], pack: null, savedV1: null, hasChange: false };
 const $ = (selector) => document.querySelector(selector);
+const sourceKindLabels = { chat: "群聊", document: "文档", change: "评审变更", text: "粘贴内容" };
+const roleLabels = { QA: "测试" };
+const statusLabels = { ready: "可执行", draft: "待补全", blocked: "被阻塞", done: "已完成" };
+const priorityLabels = { P0: "最高", P1: "较高", P2: "普通" };
+const riskLabels = { high: "高", medium: "中", low: "低" };
+const testTypeLabels = { functional: "功能", boundary: "边界", recovery: "恢复", compatibility: "兼容", performance: "性能" };
+const versionLabel = (version) => version === "V2" ? "第二版" : version === "V1" ? "第一版" : version;
 
 function sourceText(sources) {
   return sources.map((source) => `【${source.title}】\n${source.content}`).join("\n\n");
@@ -33,7 +40,7 @@ function renderSources() {
   const list = $("#sourceList");
   list.replaceChildren();
   if (!state.sources.length) {
-    list.innerHTML = '<div class="empty-card"><span aria-hidden="true">⌁</span><strong>把讨论放进来</strong><p>Agent 会保留原文证据，不会把未确认意见写成事实。</p></div>';
+    list.innerHTML = '<div class="empty-card"><span aria-hidden="true">⌁</span><strong>把讨论放进来</strong><p>助手会保留原文证据，不会把未确认意见写成事实。</p></div>';
     return;
   }
   for (const source of state.sources) {
@@ -43,7 +50,7 @@ function renderSources() {
     const title = document.createElement("strong");
     title.textContent = source.title;
     const kind = document.createElement("small");
-    kind.textContent = source.kind.toUpperCase();
+    kind.textContent = sourceKindLabels[source.kind] || "已导入来源";
     heading.append(title, kind);
     const preview = document.createElement("p");
     preview.textContent = source.content;
@@ -55,7 +62,8 @@ function renderSources() {
 function evidenceNode(evidence) {
   const node = document.createElement("div");
   node.className = "evidence";
-  node.textContent = evidence ? `依据 · ${evidence.quote}（${evidence.sourceId}）` : "暂无来源证据";
+  const sourceTitle = state.sources.find((source) => source.id === evidence?.sourceId)?.title || "已导入来源";
+  node.textContent = evidence ? `依据 · ${evidence.quote}（${sourceTitle}）` : "暂无来源证据";
   return node;
 }
 
@@ -71,7 +79,7 @@ function renderDecisions(pack) {
     title.textContent = decision.title;
     const confidence = document.createElement("span");
     confidence.className = "confidence";
-    confidence.textContent = `${Math.round(decision.confidence * 100)}% CONF`;
+    confidence.textContent = `${Math.round(decision.confidence * 100)}% 可信`;
     header.append(title, confidence);
     const detail = document.createElement("p");
     detail.textContent = decision.detail;
@@ -131,9 +139,9 @@ function renderTasks(pack) {
     const role = document.createElement("div");
     role.className = "role-label";
     const roleName = document.createElement("strong");
-    roleName.textContent = task.role;
+    roleName.textContent = roleLabels[task.role] || task.role;
     const status = document.createElement("span");
-    status.textContent = task.status.toUpperCase();
+    status.textContent = statusLabels[task.status] || "待处理";
     role.append(roleName, status);
     const card = document.createElement("article");
     card.className = "task-card";
@@ -142,17 +150,17 @@ function renderTasks(pack) {
     const title = document.createElement("input");
     title.dataset.taskTitle = task.id;
     title.value = task.title;
-    title.setAttribute("aria-label", `${task.role}任务标题`);
+    title.setAttribute("aria-label", `${roleLabels[task.role] || task.role}任务标题`);
     const priority = document.createElement("span");
     priority.className = "priority";
-    priority.textContent = task.priority;
+    priority.textContent = priorityLabels[task.priority] || "普通";
     header.append(title, priority);
     const objective = document.createElement("p");
     objective.className = "task-objective";
     objective.textContent = task.objective;
     const meta = document.createElement("div");
     meta.className = "task-meta";
-    meta.textContent = `产物 ${task.outputs.length} · 依赖 ${task.dependencies.length} · 风险 ${task.risk}`;
+    meta.textContent = `产物 ${task.outputs.length} · 依赖 ${task.dependencies.length} · 风险 ${riskLabels[task.risk] || "待评估"}`;
     const criteria = document.createElement("ul");
     criteria.className = "criteria-list";
     for (const criterion of task.acceptanceCriteria) {
@@ -183,7 +191,7 @@ function renderTests(pack) {
     const item = document.createElement("article");
     item.className = "test-item";
     const title = document.createElement("strong");
-    title.textContent = `${testCase.type.toUpperCase()} · ${testCase.title}`;
+    title.textContent = `${testTypeLabels[testCase.type] || "测试"} · ${testCase.title}`;
     item.append(title, document.createTextNode(` — ${testCase.expected.join("；")}`));
     panel.append(item);
   }
@@ -192,7 +200,7 @@ function renderTests(pack) {
 function renderPack() {
   const pack = state.pack;
   if (!pack) return;
-  $("#versionPill").textContent = pack.project.version;
+  $("#versionPill").textContent = versionLabel(pack.project.version);
   $("#roleCount").textContent = String(new Set(pack.tasks.map((task) => task.role)).size);
   renderDecisions(pack);
   renderQuestions(pack);
@@ -344,7 +352,7 @@ $("#saveVersion").addEventListener("click", () => {
   state.savedV1.project.version = "V1";
   store.saveProject(state.savedV1);
   $("#loadChangeSample").disabled = false;
-  announce("V1 已锁定，可以载入评审变更");
+  announce("第一版已锁定，可以载入评审变更");
 });
 
 $("#loadChangeSample").addEventListener("click", () => {
@@ -357,19 +365,19 @@ $("#loadChangeSample").addEventListener("click", () => {
   $("#sourceInput").value = sourceText(state.sources);
   renderSources();
   setStep("source");
-  announce("评审变更已加入来源，请生成 V2");
+  announce("评审变更已加入来源，请生成第二版");
 });
 
 $("#openDiff").addEventListener("click", () => setStep("versions"));
 
 $("#exportMarkdown").addEventListener("click", async () => {
-  if (await downloadText("GameSpec-Relay-DeliveryPack.md", "text/markdown;charset=utf-8", toMarkdown(state.pack))) announce("Markdown 已导出");
+  if (await downloadText("需求接力站-交付文档.md", "text/markdown;charset=utf-8", toMarkdown(state.pack))) announce("文档版已导出");
 });
 $("#exportJson").addEventListener("click", async () => {
-  if (await downloadText("GameSpec-Relay-DeliveryPack.json", "application/json;charset=utf-8", toJson(state.pack))) announce("JSON 已导出");
+  if (await downloadText("需求接力站-数据备份.json", "application/json;charset=utf-8", toJson(state.pack))) announce("数据备份已导出");
 });
 $("#exportCsv").addEventListener("click", async () => {
-  if (await downloadText("GameSpec-Relay-Tasks.csv", "text/csv;charset=utf-8", `\uFEFF${toTaskCsv(state.pack)}`)) announce("任务 CSV 已导出");
+  if (await downloadText("需求接力站-任务表格.csv", "text/csv;charset=utf-8", `\uFEFF${toTaskCsv(state.pack)}`)) announce("任务表格已导出");
 });
 $("#copyCodex").addEventListener("click", async () => {
   const content = toCodexContext(state.pack);
@@ -385,7 +393,7 @@ $("#copyCodex").addEventListener("click", async () => {
     document.execCommand("copy");
     input.remove();
   }
-  announce("Codex 交付包已复制");
+  announce("开发助手包已复制");
 });
 
 $("#sourceFiles").addEventListener("change", async (event) => {
@@ -394,7 +402,7 @@ $("#sourceFiles").addEventListener("change", async (event) => {
   const nextSources = [];
   for (const [index, file] of files.entries()) {
     if (file.size > 2 * 1024 * 1024) {
-      announce(`${file.name} 超过 2 MB，未导入`);
+      announce(`${file.name} 超过 2 兆字节，未导入`);
       continue;
     }
     try {
@@ -432,7 +440,7 @@ $("#modelSettings").addEventListener("click", () => $("#modelDialog").showModal(
 $("#saveModelSettings").addEventListener("click", () => {
   store.saveSettings({ endpoint: $("#modelEndpoint").value.trim(), model: $("#modelName").value.trim() });
   $("#modelKey").value = "";
-  announce("非敏感模型配置已保存；API Key 未写入浏览器");
+  announce("非敏感模型配置已保存；访问密钥未写入浏览器");
 });
 
 $("#runModelAnalysis").addEventListener("click", async () => {
@@ -440,7 +448,7 @@ $("#runModelAnalysis").addEventListener("click", async () => {
   const model = $("#modelName").value.trim();
   const apiKey = $("#modelKey").value;
   if (!endpoint || !model || !apiKey) {
-    announce("请完整填写 Endpoint、Model 与本次 API Key");
+    announce("请完整填写接口地址、模型名称与本次访问密钥");
     return;
   }
   const button = $("#runModelAnalysis");
@@ -458,7 +466,7 @@ $("#runModelAnalysis").addEventListener("click", async () => {
       await window.gameSpecDesktop.configureModel({ endpoint, model, apiKey });
     }
     state.pack = await runCompatibleModel({ endpoint, model, apiKey, sources });
-    announce("模型结果已通过本地 DeliveryPack 门禁");
+    announce("模型结果已通过本地交付包检查");
   } catch {
     state.pack = analyzeSources({
       projectName: BOSS_PHASE_SAMPLE.projectName,
