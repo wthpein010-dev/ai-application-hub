@@ -79,6 +79,18 @@ public sealed class CodexProcessLocator : ICodexProcessLocator
                     "x86_64-pc-windows-msvc",
                     "bin",
                     executable);
+                yield return Path.Combine(
+                    directory,
+                    "node_modules",
+                    "@openai",
+                    "codex",
+                    "node_modules",
+                    "@openai",
+                    "codex-win32-x64",
+                    "vendor",
+                    "x86_64-pc-windows-msvc",
+                    "bin",
+                    executable);
             }
         }
 

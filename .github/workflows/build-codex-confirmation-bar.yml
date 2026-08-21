@@ -58,7 +58,7 @@ jobs:
           $smokeErrorPath = Join-Path $releaseRoot "smoke-stderr.txt"
 
           $npmPrefix = (& npm prefix --global).Trim()
-          $nativeCandidate = Join-Path $npmPrefix "node_modules\@openai\codex-win32-x64\vendor\x86_64-pc-windows-msvc\bin\codex.exe"
+          $nativeCandidate = Join-Path $npmPrefix "node_modules\@openai\codex\node_modules\@openai\codex-win32-x64\vendor\x86_64-pc-windows-msvc\bin\codex.exe"
           $codexCommand = Get-Command codex -ErrorAction SilentlyContinue
           Write-Host "npm prefix: $npmPrefix"
           Write-Host "codex command: $($codexCommand.Source)"

@@ -74,6 +74,7 @@ test("Windows workflow smoke-tests the packaged app and publishes versioned SHA-
   assert.match(workflow, /npm install --global @openai\/codex/);
   assert.match(workflow, /npm prefix --global/);
   assert.match(workflow, /codex-win32-x64/);
+  assert.match(workflow, /codex\\node_modules\\@openai\\codex-win32-x64/);
   assert.match(workflow, /CodexConfirmationBar\.exe[^\n]*--smoke-test/);
   assert.match(workflow, /Start-Process[^\n]+-Wait[^\n]+-PassThru/);
   assert.match(workflow, /RedirectStandardError/);
