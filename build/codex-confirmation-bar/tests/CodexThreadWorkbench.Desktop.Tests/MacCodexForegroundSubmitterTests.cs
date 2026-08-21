@@ -39,6 +39,25 @@ public sealed class MacCodexForegroundSubmitterTests
     }
 
     [Fact]
+    public async Task SubmitAsync_RequiresTheSameOpenAiAppToRemainForegroundAfterPrefillSettles()
+    {
+        var runner = new RecordingProcessRunner(
+            new PlatformProcessResult(0, "OK:com.openai.chat\n", string.Empty));
+        var submitter = new MacCodexForegroundSubmitter(runner);
+
+        await submitter.SubmitAsync();
+
+        var request = Assert.Single(runner.Requests);
+        var script = Assert.Single(request.Arguments, argument => argument.Contains("key code 36"));
+        Assert.Contains("set initialBundleId to frontBundleId", script);
+        Assert.Contains("delay 0.75", script);
+        Assert.Contains("settledBundleId is initialBundleId", script);
+        Assert.True(
+            script.IndexOf("delay 0.75", StringComparison.Ordinal) <
+            script.IndexOf("key code 36", StringComparison.Ordinal));
+    }
+
+    [Fact]
     public async Task SubmitAsync_PreservesTheTaskWhenAccessibilityIsDenied()
     {
         var runner = new RecordingProcessRunner(

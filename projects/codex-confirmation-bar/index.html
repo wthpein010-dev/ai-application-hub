@@ -20,7 +20,7 @@
     <section class="hero" aria-labelledby="page-title">
       <div class="eyebrow"><span></span> CODEX CONFIRMATION BAR · V2.0.0</div>
       <h1 id="page-title">Codex 待确认悬浮助手</h1>
-      <p class="hero-copy">任务跑完后，不必守着每个对话。助手只在发现尚未回复的结束或中断任务时出现，把“确认继续”放到桌面最上方。</p>
+      <p class="hero-copy">任务跑完后，不必守着每个对话。助手常驻在桌面最上方扫描；空闲时显示“暂无待确认”，发现尚未回复的结束或中断任务后直接给出“确认继续”。</p>
       <div class="safety-note">
         <strong>本页仅为安全交互模拟</strong>
         <span>示例数据全部写死在浏览器中，不读取本机任务、不连接 Codex，也不会发送真实消息。</span>
@@ -52,11 +52,11 @@
         </div>
         <div class="scene-hint">
           <span aria-hidden="true">↗</span>
-          <p>点击“开始模拟扫描”，待确认悬浮栏才会出现；随后可拖动绿色标题栏。</p>
+          <p>待确认悬浮栏已常驻桌面；点击“开始模拟扫描”填入候选，随后可拖动绿色标题栏。</p>
         </div>
       </div>
 
-      <div class="demo-status" data-role="status" aria-live="polite">当前没有模拟候选。点击“开始模拟扫描”。</div>
+      <div class="demo-status" data-role="status" aria-live="polite">悬浮栏正在常驻扫描，当前没有模拟候选。点击“开始模拟扫描”。</div>
     </section>
 
     <section class="message-contract" aria-label="确认消息说明">
@@ -69,13 +69,13 @@
     </section>
   </main>
 
-  <aside class="confirmation-bar" data-role="confirmation-bar" aria-label="模拟待确认悬浮栏" hidden>
+  <aside class="confirmation-bar" data-role="confirmation-bar" aria-label="模拟待确认悬浮栏">
     <header class="bar-header" data-role="drag-handle">
       <div class="bar-title">
         <span class="bar-mark" aria-hidden="true">✓</span>
-        <div><strong>Codex 待确认</strong><small data-role="count">待确认 · 0</small></div>
+        <div><strong>Codex 待确认</strong><small data-role="count">暂无待确认 · 常驻扫描</small></div>
       </div>
-      <button class="confirm-all" type="button" data-action="confirm-all">一键全部确认</button>
+      <button class="confirm-all" type="button" data-action="confirm-all" disabled>一键全部确认</button>
     </header>
     <div class="candidate-list" data-role="candidate-list"></div>
     <footer>拖动绿色标题栏可改变位置 · 本页不会发送真实消息</footer>

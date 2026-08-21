@@ -47,8 +47,21 @@ public sealed class MacCodexForegroundSubmitter(
                 end try
             end tell
             if (frontName is "ChatGPT" or frontName is "Codex") and frontBundleId starts with "com.openai." then
-                tell application "System Events" to key code 36
-                return "OK:" & frontBundleId
+                set initialBundleId to frontBundleId
+                delay 0.75
+                tell application "System Events"
+                    set settledProcess to first application process whose frontmost is true
+                    set settledName to name of settledProcess
+                    try
+                        set settledBundleId to bundle identifier of settledProcess
+                    on error
+                        set settledBundleId to ""
+                    end try
+                end tell
+                if (settledName is "ChatGPT" or settledName is "Codex") and settledBundleId is initialBundleId and settledBundleId starts with "com.openai." then
+                    tell application "System Events" to key code 36
+                    return "OK:" & settledBundleId
+                end if
             end if
             if (current date) is greater than deadline then
                 return "TIMEOUT"

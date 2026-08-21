@@ -14,11 +14,12 @@
   const count = document.querySelector('[data-role="count"]');
   const status = document.querySelector('[data-role="status"]');
   const failButton = document.querySelector('[data-action="fail-next"]');
+  const confirmAllButton = document.querySelector('[data-action="confirm-all"]');
 
   let state = {
     candidates: [],
     failNext: false,
-    status: "当前没有模拟候选。点击“开始模拟扫描”。",
+    status: "悬浮栏正在常驻扫描，当前没有模拟候选。点击“开始模拟扫描”。",
   };
   let drag = null;
 
@@ -70,7 +71,7 @@
         return {
           candidates: [],
           failNext: false,
-          status: "模拟已重置。点击“开始模拟扫描”可重新体验。",
+          status: "模拟已重置，悬浮栏继续常驻扫描。点击“开始模拟扫描”可重新体验。",
         };
       default:
         return current;
@@ -106,9 +107,11 @@
 
   function render() {
     list.innerHTML = state.candidates.map(renderCandidate).join("");
-    count.textContent = `待确认 · ${state.candidates.length}`;
+    count.textContent = state.candidates.length > 0
+      ? `待确认 · ${state.candidates.length}`
+      : "暂无待确认 · 常驻扫描";
     status.textContent = state.status;
-    bar.hidden = state.candidates.length === 0;
+    confirmAllButton.disabled = state.candidates.length === 0;
     failButton.setAttribute("aria-pressed", String(state.failNext));
   }
 
@@ -174,7 +177,7 @@
   handle.addEventListener("pointercancel", finishDrag);
   handle.addEventListener("lostpointercapture", () => { drag = null; });
   window.addEventListener("resize", () => {
-    if (bar.hidden || !bar.style.left) return;
+    if (!bar.style.left) return;
     placeBar(Number.parseFloat(bar.style.left), Number.parseFloat(bar.style.top));
   });
 

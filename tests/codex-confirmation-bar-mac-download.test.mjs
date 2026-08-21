@@ -69,6 +69,25 @@ test("Hub workflow builds both native Macs and publishes only verified manifests
   assert.equal(existsSync(join(root, "build", "codex-confirmation-bar", "src", "CodexThreadWorkbench", "CodexThreadWorkbench.csproj")), true);
 });
 
+test("Windows workflow smoke-tests the packaged app and publishes versioned SHA-256 evidence", () => {
+  const workflow = readFileSync(workflowPath, "utf8");
+  assert.match(workflow, /npm install --global @openai\/codex/);
+  assert.match(workflow, /CodexConfirmationBar\.exe[^\n]*--smoke-test/);
+  assert.match(workflow, /Start-Process[^\n]+-Wait[^\n]+-PassThru/);
+  assert.match(workflow, /\.ExitCode/);
+  assert.match(workflow, /FileVersion[^\n]*2\.0\.0/);
+  assert.match(workflow, /ProductVersion[^\n]*2\.0\.0/);
+  assert.ok(
+    (workflow.match(/Get-FileHash[^\n]+SHA256/g) || []).length >= 2,
+    "workflow must hash both the final EXE and ZIP",
+  );
+  assert.match(workflow, /SHA256SUMS\.txt/);
+  assert.match(
+    workflow,
+    /CodexConfirmationBar-Windows-x64\.zip[\s\S]*?SHA256SUMS\.txt/,
+  );
+});
+
 test("Mac splitter creates ordered architecture-specific 8 MiB parts with v2 metadata", async () => {
   const temporaryRoot = await mkdtemp(join(tmpdir(), "confirmation-bar-mac-split-"));
   const archivePath = join(temporaryRoot, "CodexConfirmationBar-macOS-arm64.app.zip");

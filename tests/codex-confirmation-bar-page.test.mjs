@@ -78,6 +78,7 @@ test("confirmation bar demo ships a safe, explicit simulation surface", (context
   const source = readFileSync(appPath, "utf8");
   assert.match(html, /本页仅为安全交互模拟/);
   assert.match(html, /确认，继续开始做，完成前不要停。/);
+  assert.match(html, /暂无待确认 · 常驻扫描/);
   assert.match(html, /class="hub-home-link"/);
   assert.match(html, /href="\.\.\/\.\.\/assets\/subpage-shell\.css"/);
   for (const action of ["scan", "fail-next", "reset", "confirm", "confirm-all", "retry"]) {
@@ -112,14 +113,17 @@ test("demo supports drag, single confirm, failure retry, confirm all, and respon
       page.on("requestfailed", (request) => errors.push(`request: ${request.url()}`));
 
       await page.goto(`${baseUrl}/projects/codex-confirmation-bar/index.html`, { waitUntil: "networkidle" });
-      assert.equal(await page.locator('[data-role="confirmation-bar"]').isHidden(), true);
+      const bar = page.locator('[data-role="confirmation-bar"]');
+      assert.equal(await bar.isVisible(), true);
+      assert.equal(await page.locator('[data-role="count"]').textContent(), "暂无待确认 · 常驻扫描");
+      assert.equal(await page.locator('[data-action="confirm-all"]').isDisabled(), true);
       assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > document.documentElement.clientWidth + 1), false);
 
       await page.locator('[data-action="scan"]').click();
-      const bar = page.locator('[data-role="confirmation-bar"]');
       await bar.waitFor({ state: "visible" });
       assert.equal(await page.locator('[data-role="candidate"]').count(), 3);
       assert.match(await page.locator('[data-role="count"]').textContent(), /3/);
+      assert.equal(await page.locator('[data-action="confirm-all"]').isEnabled(), true);
 
       if (viewport.name === "desktop") {
         const before = await bar.boundingBox();
@@ -149,7 +153,9 @@ test("demo supports drag, single confirm, failure retry, confirm all, and respon
 
         await page.locator('[data-action="confirm-all"]').click();
         assert.equal(await page.locator('[data-role="candidate"]').count(), 0);
-        assert.equal(await bar.isHidden(), true);
+        assert.equal(await bar.isVisible(), true);
+        assert.equal(await page.locator('[data-role="count"]').textContent(), "暂无待确认 · 常驻扫描");
+        assert.equal(await page.locator('[data-action="confirm-all"]').isDisabled(), true);
         assert.match(await page.locator('[data-role="status"]').textContent(), /全部候选已模拟确认/);
       }
 

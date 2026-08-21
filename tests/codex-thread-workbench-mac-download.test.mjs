@@ -1,12 +1,9 @@
 import assert from "node:assert/strict";
-import { execFile } from "node:child_process";
 import { createHash } from "node:crypto";
 import { existsSync, readFileSync } from "node:fs";
-import { mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
-import { tmpdir } from "node:os";
+import { readFile } from "node:fs/promises";
 import { dirname, join } from "node:path";
 import test from "node:test";
-import { promisify } from "node:util";
 import { fileURLToPath } from "node:url";
 
 const root = dirname(dirname(fileURLToPath(import.meta.url)));
@@ -24,20 +21,26 @@ const coreUrl = new URL(
 
 const sha256 = (bytes) =>
   createHash("sha256").update(bytes).digest("hex").toUpperCase();
-const execFileAsync = promisify(execFile);
 
-test("Mac download page offers Apple silicon and Intel packages", () => {
+test("legacy Mac download page redirects to the Confirmation Bar Mac download", () => {
   const html = readFileSync(join(macRoot, "index.html"), "utf8");
 
-  assert.match(html, /Apple\s*(?:芯片|silicon)/i);
-  assert.match(html, /arm64/i);
-  assert.match(html, /Intel/i);
-  assert.match(html, /x64/i);
-  assert.match(html, /macOS\s*13\+/i);
-  assert.match(html, /未公证/);
-  assert.match(html, /data-manifest="\.\/manifest-arm64\.json"/);
-  assert.match(html, /data-manifest="\.\/manifest-x64\.json"/);
-  assert.equal((html.match(/data-role="architecture"/g) || []).length, 2);
+  assert.match(
+    html,
+    /http-equiv="refresh"[^>]+codex-confirmation-bar\/download\/mac\/index\.html/,
+  );
+  assert.match(
+    html,
+    /rel="canonical"[^>]+projects\/codex-confirmation-bar\/download\/mac\//,
+  );
+  assert.match(
+    html,
+    /href="\.\.\/\.\.\/\.\.\/codex-confirmation-bar\/download\/mac\/index\.html"/,
+  );
+  assert.match(
+    html,
+    /location\.replace\("\.\.\/\.\.\/\.\.\/codex-confirmation-bar\/download\/mac\/index\.html"\)/,
+  );
 });
 
 test("Mac downloader reuses the verified core and retries each part three times", () => {
@@ -51,26 +54,24 @@ test("Mac downloader reuses the verified core and retries each part three times"
   assert.match(script, /application\/zip/);
 });
 
-test("Hub workflow builds and verifies both Mac architectures before publishing", () => {
-  const workflow = readFileSync(
+test("legacy workflow dispatches the v2 Confirmation Bar release workflow", () => {
+  const legacyWorkflow = readFileSync(
     join(root, ".github", "workflows", "build-codex-thread-workbench.yml"),
     "utf8",
   );
 
-  assert.match(workflow, /runtime:\s*osx-arm64\s+runner:\s*macos-14/);
-  assert.match(workflow, /runtime:\s*osx-x64\s+runner:\s*macos-15-intel/);
-  assert.equal((workflow.match(/scripts\/test-macos-package\.sh/g) || []).length, 2);
-  assert.match(workflow, /needs:\s*build-macos/);
-  assert.match(workflow, /manifest-arm64\.json/);
-  assert.match(workflow, /manifest-x64\.json/);
-  assert.match(workflow, /git pull --rebase origin/);
-  assert.doesNotMatch(workflow, /git push[^\n]+--force/);
+  assert.match(legacyWorkflow, /workflow_dispatch:/);
+  assert.match(
+    legacyWorkflow,
+    /uses:\s*\.\/\.github\/workflows\/build-codex-confirmation-bar\.yml/,
+  );
+  assert.doesNotMatch(legacyWorkflow, /build\/codex-thread-workbench/);
   assert.equal(
     existsSync(
       join(
         root,
         "build",
-        "codex-thread-workbench",
+        "codex-confirmation-bar",
         "src",
         "CodexThreadWorkbench",
         "CodexThreadWorkbench.csproj",
@@ -117,48 +118,6 @@ test("shared downloader accepts Mac app ZIP manifests and validates every part",
 
   assert.deepEqual(requested, manifest.parts.map((part) => part.path));
   assert.deepEqual(result, Uint8Array.of(1, 2, 3, 4, 5));
-});
-
-test("Mac artifact splitter creates ordered architecture-specific 8 MiB parts", async () => {
-  const temporaryRoot = await mkdtemp(join(tmpdir(), "workbench-mac-split-"));
-  const archivePath = join(
-    temporaryRoot,
-    "CodexThreadWorkbench-macOS-arm64.app.zip",
-  );
-  const outputRoot = join(temporaryRoot, "download");
-  const archive = Buffer.alloc(8_388_608 + 17, 0x5a);
-
-  try {
-    await writeFile(archivePath, archive);
-    await execFileAsync(process.execPath, [
-      join(root, "scripts", "split-workbench-mac.mjs"),
-      archivePath,
-      outputRoot,
-      "arm64",
-    ]);
-
-    const manifest = JSON.parse(
-      await readFile(join(outputRoot, "manifest-arm64.json"), "utf8"),
-    );
-    assert.equal(manifest.fileName, archivePath.split(/[\\/]/).at(-1));
-    assert.equal(manifest.totalSize, archive.byteLength);
-    assert.equal(manifest.chunkSize, 8_388_608);
-    assert.equal(manifest.sha256, sha256(archive));
-    assert.deepEqual(
-      manifest.parts.map((part) => part.path),
-      ["parts/arm64/part-000.bin", "parts/arm64/part-001.bin"],
-    );
-    assert.deepEqual(
-      manifest.parts.map((part) => part.size),
-      [8_388_608, 17],
-    );
-    assert.equal(
-      sha256(await readFile(join(outputRoot, manifest.parts[1].path))),
-      manifest.parts[1].sha256,
-    );
-  } finally {
-    await rm(temporaryRoot, { recursive: true, force: true });
-  }
 });
 
 for (const architecture of ["arm64", "x64"]) {

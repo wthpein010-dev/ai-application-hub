@@ -37,6 +37,45 @@ function loadAppsWithStoredValue(stored) {
   return context.globalThis.loadApps();
 }
 
+function loadSelectedIdWithStoredValue(storedSelectedId) {
+  const stateStart = runtime.indexOf("const state = {");
+  const stateEnd = runtime.indexOf("const nodes", stateStart);
+  const stateSource = runtime.slice(stateStart, stateEnd);
+  const selectedExpression = stateSource.match(/selectedId:\s*([^,\n]+)/)?.[1];
+  assert.ok(selectedExpression, "selectedId initializer should exist");
+
+  const helperStart = runtime.indexOf("function loadSelectedId");
+  const helperEnd = helperStart >= 0 ? runtime.indexOf("\n}\n", helperStart) + 3 : 0;
+  const helperSource = helperStart >= 0 ? runtime.slice(helperStart, helperEnd) : "";
+  const storage = new Map([
+    ["ai-competition-hub-v2-selected", storedSelectedId],
+  ]);
+  const context = {
+    globalThis: {},
+    localStorage: {
+      getItem: (key) => storage.get(key) ?? null,
+      setItem: (key, value) => storage.set(key, value),
+    },
+  };
+  const source = [
+    'const SELECTED_KEY = "ai-competition-hub-v2-selected";',
+    helperSource,
+    `globalThis.selectedId = ${selectedExpression};`,
+  ].join("\n");
+  vm.runInNewContext(source, context);
+  return {
+    selectedId: context.globalThis.selectedId,
+    storedSelectedId: storage.get("ai-competition-hub-v2-selected"),
+  };
+}
+
+test("legacy selected Workbench id migrates to and persists the confirmation bar id", () => {
+  const result = loadSelectedIdWithStoredValue("codex-thread-workbench");
+
+  assert.equal(result.selectedId, "codex-confirmation-bar");
+  assert.equal(result.storedSelectedId, "codex-confirmation-bar");
+});
+
 test("legacy Workbench customization migrates to the confirmation bar id", () => {
   const defaults = loadDefaultApps();
   const confirmationBar = defaults.find((app) => app.id === "codex-confirmation-bar");

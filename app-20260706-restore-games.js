@@ -355,7 +355,7 @@ const defaultApps = [
     name: "Codex 待确认悬浮助手",
     category: "Codex 桌面确认助手",
     status: "desktop",
-    brief: "常驻扫描最近结束或中断且尚未收到用户后续回复的 Codex 任务；有候选才显示置顶悬浮栏，可单条确认或一键全部确认。",
+    brief: "置顶悬浮栏始终常驻扫描最近结束或中断且尚未收到用户后续回复的 Codex 任务；有候选时可单条确认或一键全部确认。",
     problem: "同时推进多个 Codex 任务时，容易漏掉已经跑完、正在等待用户确认后继续执行的任务，也不适合为此一直打开多会话主界面。",
     aiUse: "工具通过本机 Codex App Server 与受限会话日志识别待确认任务，不读取凭据；确认后发送固定消息并回读验证，Windows 与 macOS 均保留失败闭合兜底。",
     folder: "./projects/codex-confirmation-bar/",
@@ -846,12 +846,23 @@ const defaultApps = [
 let apps = loadApps();
 let pageText = loadPageText();
 
+function loadSelectedId() {
+  const storedSelectedId = localStorage.getItem(SELECTED_KEY);
+  if (storedSelectedId !== "codex-thread-workbench") {
+    return storedSelectedId || "travel-generator";
+  }
+
+  const migratedSelectedId = "codex-confirmation-bar";
+  localStorage.setItem(SELECTED_KEY, migratedSelectedId);
+  return migratedSelectedId;
+}
+
 const state = {
   query: "",
   category: "all",
   status: "all",
   sort: "default",
-  selectedId: localStorage.getItem(SELECTED_KEY) || "travel-generator",
+  selectedId: loadSelectedId(),
   editing: false
 };
 

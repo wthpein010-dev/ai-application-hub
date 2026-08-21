@@ -31,6 +31,14 @@ jobs:
         with:
           dotnet-version: 8.0.x
 
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Install the public Codex CLI
+        run: npm install --global @openai/codex
+
       - name: Run Release tests
         run: dotnet test CodexThreadWorkbench.sln --configuration Release
 
@@ -38,11 +46,43 @@ jobs:
         shell: pwsh
         run: ./scripts/Publish-Windows.ps1 -Configuration Release -Runtime win-x64
 
+      - name: Smoke-test and attest the final Windows package
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = "Stop"
+          $releaseRoot = Join-Path $PWD "artifacts\release"
+          $executablePath = Join-Path $releaseRoot "CodexConfirmationBar-Windows-x64\CodexConfirmationBar.exe"
+          $archivePath = Join-Path $releaseRoot "CodexConfirmationBar-Windows-x64.zip"
+          $evidencePath = Join-Path $releaseRoot "SHA256SUMS.txt"
+
+          $smokeProcess = Start-Process -FilePath $executablePath -ArgumentList "--smoke-test" -Wait -PassThru -WindowStyle Hidden
+          if ($smokeProcess.ExitCode -ne 0) {
+            throw "CodexConfirmationBar.exe --smoke-test failed with exit code $($smokeProcess.ExitCode)."
+          }
+
+          $versionInfo = (Get-Item -LiteralPath $executablePath).VersionInfo
+          if (-not $versionInfo.FileVersion.StartsWith("2.0.0", [StringComparison]::Ordinal)) {
+            throw "Expected FileVersion 2.0.0, got $($versionInfo.FileVersion)."
+          }
+          if (-not $versionInfo.ProductVersion.StartsWith("2.0.0", [StringComparison]::Ordinal)) {
+            throw "Expected ProductVersion 2.0.0, got $($versionInfo.ProductVersion)."
+          }
+
+          $executableHash = Get-FileHash -LiteralPath $executablePath -Algorithm SHA256
+          $archiveHash = Get-FileHash -LiteralPath $archivePath -Algorithm SHA256
+          @(
+            "$($executableHash.Hash)  CodexConfirmationBar-Windows-x64/CodexConfirmationBar.exe"
+            "$($archiveHash.Hash)  CodexConfirmationBar-Windows-x64.zip"
+          ) | Set-Content -LiteralPath $evidencePath -Encoding ascii
+          Get-Content -LiteralPath $evidencePath
+
       - name: Upload verified Windows package
         uses: actions/upload-artifact@v4
         with:
           name: CodexConfirmationBar-Windows-x64
-          path: build/codex-confirmation-bar/artifacts/release/CodexConfirmationBar-Windows-x64.zip
+          path: |
+            build/codex-confirmation-bar/artifacts/release/CodexConfirmationBar-Windows-x64.zip
+            build/codex-confirmation-bar/artifacts/release/SHA256SUMS.txt
           if-no-files-found: error
           retention-days: 7
 
