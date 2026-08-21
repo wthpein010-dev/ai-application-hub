@@ -72,8 +72,12 @@ test("Hub workflow builds both native Macs and publishes only verified manifests
 test("Windows workflow smoke-tests the packaged app and publishes versioned SHA-256 evidence", () => {
   const workflow = readFileSync(workflowPath, "utf8");
   assert.match(workflow, /npm install --global @openai\/codex/);
+  assert.match(workflow, /npm prefix --global/);
+  assert.match(workflow, /codex-win32-x64/);
   assert.match(workflow, /CodexConfirmationBar\.exe[^\n]*--smoke-test/);
   assert.match(workflow, /Start-Process[^\n]+-Wait[^\n]+-PassThru/);
+  assert.match(workflow, /RedirectStandardError/);
+  assert.match(workflow, /Get-Content[^\n]+smokeErrorPath/);
   assert.match(workflow, /\.ExitCode/);
   assert.match(workflow, /FileVersion[^\n]*2\.0\.0/);
   assert.match(workflow, /ProductVersion[^\n]*2\.0\.0/);

@@ -54,8 +54,23 @@ jobs:
           $executablePath = Join-Path $releaseRoot "CodexConfirmationBar-Windows-x64\CodexConfirmationBar.exe"
           $archivePath = Join-Path $releaseRoot "CodexConfirmationBar-Windows-x64.zip"
           $evidencePath = Join-Path $releaseRoot "SHA256SUMS.txt"
+          $smokeOutputPath = Join-Path $releaseRoot "smoke-stdout.txt"
+          $smokeErrorPath = Join-Path $releaseRoot "smoke-stderr.txt"
 
-          $smokeProcess = Start-Process -FilePath $executablePath -ArgumentList "--smoke-test" -Wait -PassThru -WindowStyle Hidden
+          $npmPrefix = (& npm prefix --global).Trim()
+          $nativeCandidate = Join-Path $npmPrefix "node_modules\@openai\codex-win32-x64\vendor\x86_64-pc-windows-msvc\bin\codex.exe"
+          $codexCommand = Get-Command codex -ErrorAction SilentlyContinue
+          Write-Host "npm prefix: $npmPrefix"
+          Write-Host "codex command: $($codexCommand.Source)"
+          Write-Host "native codex candidate: $nativeCandidate (exists: $(Test-Path -LiteralPath $nativeCandidate -PathType Leaf))"
+
+          $smokeProcess = Start-Process -FilePath $executablePath -ArgumentList "--smoke-test" -Wait -PassThru -WindowStyle Hidden -RedirectStandardOutput $smokeOutputPath -RedirectStandardError $smokeErrorPath
+          if (Test-Path -LiteralPath $smokeOutputPath) {
+            Get-Content -LiteralPath $smokeOutputPath
+          }
+          if (Test-Path -LiteralPath $smokeErrorPath) {
+            Get-Content -LiteralPath $smokeErrorPath
+          }
           if ($smokeProcess.ExitCode -ne 0) {
             throw "CodexConfirmationBar.exe --smoke-test failed with exit code $($smokeProcess.ExitCode)."
           }
