@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="description" content="下载 Codex Confirmation Bar v2.0.0 macOS 13+ Apple 芯片或 Intel 版本。" />
+  <meta name="theme-color" content="#071815" />
+  <link rel="icon" href="data:," />
+  <link rel="stylesheet" href="../../../../assets/subpage-shell.css" />
+  <link rel="stylesheet" href="../styles.css" />
+  <link rel="stylesheet" href="./styles.css" />
+  <title>Codex Confirmation Bar Mac 下载</title>
+</head>
+<body class="hub-subpage">
+  <a class="hub-home-link" href="../../../../index.html#apps" aria-label="返回主页"><span aria-hidden="true">←</span><span>返回主页</span></a>
+  <main>
+    <section class="download-card" aria-labelledby="download-title">
+      <div class="product-mark" aria-hidden="true">CB</div>
+      <p class="eyebrow">MACOS 13+ · V2.0.0 · UNIVERSAL CHOICE</p>
+      <h1 id="download-title">Codex Confirmation Bar</h1>
+      <p class="lead">选择与你的 Mac 一致的原生架构。两种 App 都在对应 GitHub macOS runner 上完成 Release 测试、启动烟测、架构检查和 ad-hoc 临时签名验证。</p>
+
+      <div class="architecture-grid" aria-label="选择 Mac 架构">
+        <button class="architecture is-selected" type="button" data-role="architecture" data-architecture="arm64" data-manifest="./manifest-arm64.json" aria-pressed="true">
+          <span class="architecture-heading"><strong>Apple 芯片</strong><em>推荐</em></span>
+          <span>M1 / M2 / M3 / M4 及后续 Apple silicon</span><code>arm64</code>
+        </button>
+        <button class="architecture" type="button" data-role="architecture" data-architecture="x64" data-manifest="./manifest-x64.json" aria-pressed="false">
+          <span class="architecture-heading"><strong>Intel</strong></span>
+          <span>使用 Intel 处理器的 Mac</span><code>x64</code>
+        </button>
+      </div>
+
+      <div class="notice">
+        <strong>签名与权限说明</strong>
+        <p>当前包采用 ad-hoc 临时签名，未经 Apple 公证，首次打开可能需要在“隐私与安全性”中允许。辅助功能权限仅用于官方 Codex 发送路径不可用时的键盘提交兜底；正常 App Server 发送不需要该权限。</p>
+      </div>
+
+      <dl class="file-details">
+        <div><dt>已选择</dt><dd data-role="selected-architecture">Apple 芯片 · arm64</dd></div>
+        <div><dt>文件</dt><dd data-role="file-name">正在读取清单…</dd></div>
+        <div><dt>大小</dt><dd data-role="file-size">—</dd></div>
+        <div><dt>分片</dt><dd data-role="part-count">—</dd></div>
+        <div class="hash-row"><dt>SHA-256</dt><dd data-role="sha256">—</dd></div>
+      </dl>
+
+      <div class="status-panel" aria-live="polite">
+        <div class="status-heading"><strong data-role="status">正在读取 Apple 芯片下载清单…</strong><span data-role="progress-text">0%</span></div>
+        <progress data-role="progress" max="100" value="0">0%</progress>
+        <p class="error" data-role="error" hidden></p>
+      </div>
+      <div class="actions">
+        <button class="primary-action" type="button" data-role="download-button" disabled>开始下载 Apple 芯片版</button>
+        <button class="retry-action" type="button" data-role="retry-button" hidden>重试</button>
+      </div>
+      <p class="privacy-note">需要本机已安装并登录公开 Codex CLI。下载后解压，将 <code>CodexConfirmationBar.app</code> 拖入“应用程序”；如启用发送兜底，再按系统提示授予辅助功能权限。</p>
+    </section>
+  </main>
+  <script type="module" src="./download.js"></script>
+</body>
+</html>

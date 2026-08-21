@@ -1,0 +1,14 @@
+.architecture-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 17px; }
+.architecture { display: grid; min-width: 0; min-height: 136px; align-content: start; gap: 10px; padding: 18px; border: 1px solid rgba(176, 222, 206, .18); border-radius: 17px; color: #dff5ed; background: rgba(218, 246, 236, .045); font: inherit; text-align: left; cursor: pointer; }
+.architecture:hover:not(:disabled) { border-color: rgba(85, 229, 174, .6); }
+.architecture.is-selected { border-color: #43d9a1; background: rgba(42, 181, 130, .14); box-shadow: inset 0 0 0 1px rgba(67, 217, 161, .16); }
+.architecture:disabled { cursor: wait; opacity: .68; }
+.architecture-heading { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.architecture strong { font-size: 18px; }
+.architecture em { padding: 4px 8px; border-radius: 999px; color: #073624; background: #72ecc0; font-size: 11px; font-style: normal; font-weight: 900; }
+.architecture > span:not(.architecture-heading) { color: #91b4a8; font-size: 13px; line-height: 1.5; }
+.architecture code { width: max-content; padding: 4px 7px; border-radius: 7px; color: #91e4c5; background: rgba(196, 231, 218, .08); font-family: "Cascadia Code", Consolas, monospace; font-size: 11px; }
+.notice { margin: 17px 0 22px; padding: 15px 17px; border: 1px solid rgba(255, 191, 92, .4); border-radius: 15px; color: #ffe1a9; background: rgba(104, 71, 19, .22); }
+.notice strong { font-size: 14px; }
+.notice p { margin: 6px 0 0; color: #d7bd8d; font-size: 13px; line-height: 1.65; }
+@media (max-width: 620px) { .architecture-grid { grid-template-columns: 1fr; } }

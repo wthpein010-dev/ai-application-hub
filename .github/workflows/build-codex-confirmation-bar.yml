@@ -4,7 +4,11 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: read
+  contents: write
+
+concurrency:
+  group: codex-confirmation-bar-v2-${{ github.ref }}
+  cancel-in-progress: false
 
 jobs:
   windows:
@@ -105,3 +109,97 @@ jobs:
             build/codex-confirmation-bar/artifacts/release/${{ matrix.archive }}.sha256
           if-no-files-found: error
           retention-days: 7
+
+  publish-pages-parts:
+    name: Publish verified macOS Pages parts
+    needs: macos
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out the publishing surface
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: ${{ github.ref_name }}
+          sparse-checkout: |
+            .github/workflows/build-codex-confirmation-bar.yml
+            build/codex-confirmation-bar/src/CodexThreadWorkbench/CodexThreadWorkbench.csproj
+            package.json
+            package-lock.json
+            projects/codex-confirmation-bar
+            scripts/split-codex-confirmation-bar-mac.mjs
+            tests/codex-confirmation-bar-download.test.mjs
+            tests/codex-confirmation-bar-mac-download.test.mjs
+            tests/codex-confirmation-bar-video.test.mjs
+            tests/media-inspect.mjs
+            tests/media-tool-discovery.test.mjs
+          sparse-checkout-cone-mode: false
+
+      - name: Set up Node.js 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install static verification dependencies
+        run: npm ci
+
+      - name: Download both verified Mac apps
+        uses: actions/download-artifact@v4
+        with:
+          pattern: CodexConfirmationBar-macOS-*
+          path: artifacts/macos
+          merge-multiple: true
+
+      - name: Cross-check uploaded SHA-256 evidence
+        shell: bash
+        run: |
+          set -euo pipefail
+          for architecture in arm64 x64; do
+            archive="artifacts/macos/CodexConfirmationBar-macOS-${architecture}.app.zip"
+            expected="$(awk '{print $1}' "${archive}.sha256")"
+            actual="$(sha256sum "${archive}" | awk '{print $1}')"
+            test "${actual^^}" = "${expected^^}"
+          done
+
+      - name: Create verified Pages parts and manifests
+        shell: bash
+        run: |
+          set -euo pipefail
+          node scripts/split-codex-confirmation-bar-mac.mjs \
+            --source artifacts/macos/CodexConfirmationBar-macOS-arm64.app.zip \
+            --output projects/codex-confirmation-bar/download/mac \
+            --architecture arm64 \
+            --version 2.0.0 \
+            --product "Codex Confirmation Bar"
+          node scripts/split-codex-confirmation-bar-mac.mjs \
+            --source artifacts/macos/CodexConfirmationBar-macOS-x64.app.zip \
+            --output projects/codex-confirmation-bar/download/mac \
+            --architecture x64 \
+            --version 2.0.0 \
+            --product "Codex Confirmation Bar"
+
+      - name: Verify all download and media contracts
+        run: |
+          node --test \
+            tests/codex-confirmation-bar-download.test.mjs \
+            tests/codex-confirmation-bar-mac-download.test.mjs \
+            tests/codex-confirmation-bar-video.test.mjs
+
+      - name: Commit verified Mac packages to the feature branch
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -- \
+            projects/codex-confirmation-bar/download/mac/manifest-arm64.json \
+            projects/codex-confirmation-bar/download/mac/manifest-x64.json \
+            projects/codex-confirmation-bar/download/mac/parts/arm64 \
+            projects/codex-confirmation-bar/download/mac/parts/x64
+          if git diff --cached --quiet; then
+            echo "Verified macOS package parts are already current."
+            exit 0
+          fi
+          git commit -m "release: publish verified confirmation bar macOS packages"
+          git pull --rebase origin "${GITHUB_REF_NAME}"
+          git push origin "HEAD:${GITHUB_REF_NAME}"
