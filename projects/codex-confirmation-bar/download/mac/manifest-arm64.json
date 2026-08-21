@@ -1,0 +1,43 @@
+{
+  "version": 1,
+  "releaseVersion": "2.0.0",
+  "product": "Codex Confirmation Bar",
+  "platform": "macos-arm64",
+  "architecture": "arm64",
+  "fileName": "CodexConfirmationBar-macOS-arm64.app.zip",
+  "totalSize": 40700858,
+  "chunkSize": 8388608,
+  "sha256": "850B9334810487F98DFC8CF238EB6C7736F49AAEC771A870C13DAAA9328D874C",
+  "parts": [
+    {
+      "index": 0,
+      "path": "parts/arm64/part-000.bin",
+      "size": 8388608,
+      "sha256": "91CC5121969DAE9850FDE69E310A7652A24F17A15C60D1C66613EF8657B6C58D"
+    },
+    {
+      "index": 1,
+      "path": "parts/arm64/part-001.bin",
+      "size": 8388608,
+      "sha256": "228A6F10CED833BD39078D0370521CA715F877D15AB22693CC2637C4A3D7CE9A"
+    },
+    {
+      "index": 2,
+      "path": "parts/arm64/part-002.bin",
+      "size": 8388608,
+      "sha256": "8AD4F6D1362EF941E1B464BD4C65A1F9853B96BAC262B5ABACABB3F7693BB64E"
+    },
+    {
+      "index": 3,
+      "path": "parts/arm64/part-003.bin",
+      "size": 8388608,
+      "sha256": "0B74EE41BF29144C317CE6B74CFA5A551ED7AE485E7B6CB26566B984F4954FFE"
+    },
+    {
+      "index": 4,
+      "path": "parts/arm64/part-004.bin",
+      "size": 7146426,
+      "sha256": "1D03F6AEB4A2F58671E6757210E24CE1A3A48B1E94592301565A34B3F21D5084"
+    }
+  ]
+}
