@@ -13,6 +13,7 @@ const root = dirname(dirname(fileURLToPath(import.meta.url)));
 const macRoot = join(root, "projects", "codex-confirmation-bar", "download", "mac");
 const coreUrl = new URL("../projects/codex-confirmation-bar/download/download-core.js", import.meta.url);
 const workflowPath = join(root, ".github", "workflows", "build-codex-confirmation-bar.yml");
+const legacyWorkflowPath = join(root, ".github", "workflows", "build-codex-thread-workbench.yml");
 const splitterPath = join(root, "scripts", "split-codex-confirmation-bar-mac.mjs");
 const execFileAsync = promisify(execFile);
 const sha256 = (bytes) => createHash("sha256").update(bytes).digest("hex").toUpperCase();
@@ -46,6 +47,8 @@ test("Mac downloader verifies the selected v2 architecture before saving a ZIP",
 
 test("Hub workflow builds both native Macs and publishes only verified manifests and parts", () => {
   const workflow = readFileSync(workflowPath, "utf8");
+  const legacyWorkflow = readFileSync(legacyWorkflowPath, "utf8");
+  assert.match(workflow, /workflow_call:/);
   assert.match(workflow, /architecture:\s*arm64[\s\S]*?runtime:\s*osx-arm64[\s\S]*?runner:\s*macos-14/);
   assert.match(workflow, /architecture:\s*x64[\s\S]*?runtime:\s*osx-x64[\s\S]*?runner:\s*macos-15-intel/);
   assert.match(workflow, /CodexConfirmationBar-macOS-arm64\.app\.zip/);
@@ -61,6 +64,8 @@ test("Hub workflow builds both native Macs and publishes only verified manifests
   assert.match(workflow, /manifest-x64\.json/);
   assert.match(workflow, /git pull --rebase origin/);
   assert.doesNotMatch(workflow, /git push[^\n]+--force/);
+  assert.match(legacyWorkflow, /uses:\s*\.\/\.github\/workflows\/build-codex-confirmation-bar\.yml/);
+  assert.doesNotMatch(legacyWorkflow, /build\/codex-thread-workbench/);
   assert.equal(existsSync(join(root, "build", "codex-confirmation-bar", "src", "CodexThreadWorkbench", "CodexThreadWorkbench.csproj")), true);
 });
 
