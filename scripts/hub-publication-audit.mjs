@@ -6,7 +6,7 @@ import { loadDefaultAppsFromRuntime } from "../tests/helpers/default-apps.mjs";
 
 const NATIVE_PROJECTS = new Set([
   "codex-quota-bar",
-  "codex-thread-workbench",
+  "codex-confirmation-bar",
   "clickflow",
   "pureshrink",
   "gamespec-relay",

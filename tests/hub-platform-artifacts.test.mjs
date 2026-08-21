@@ -10,7 +10,7 @@ import { extractValidatedZip, readZipEntries, validateZipEntries } from "./helpe
 const root = dirname(dirname(fileURLToPath(import.meta.url)));
 const runtime = readFileSync(join(root, "app-20260706-restore-games.js"), "utf8");
 const apps = loadDefaultAppsFromRuntime(runtime);
-const nativeIds = new Set(["codex-quota-bar", "codex-thread-workbench", "clickflow", "pureshrink", "gamespec-relay"]);
+const nativeIds = new Set(["codex-quota-bar", "codex-confirmation-bar", "clickflow", "pureshrink", "gamespec-relay"]);
 const extensionIds = new Set(["feishu-downloader"]);
 const compatibilityMatrixPath = join(root, "docs", "audits", "2026-08-03-platform-compatibility.md");
 
@@ -210,10 +210,10 @@ test("the compatibility matrix covers every public card and its delivery evidenc
 
   const evidence = {
     "codex-quota-bar": ["tests/codex-quota-bar-download.test.mjs"],
-    "codex-thread-workbench": [
-      "projects/codex-thread-workbench/download/manifest.json",
-      "projects/codex-thread-workbench/download/mac/manifest-arm64.json",
-      "projects/codex-thread-workbench/download/mac/manifest-x64.json",
+    "codex-confirmation-bar": [
+      "projects/codex-confirmation-bar/download/manifest.json",
+      "projects/codex-confirmation-bar/download/mac/manifest-arm64.json",
+      "projects/codex-confirmation-bar/download/mac/manifest-x64.json",
     ],
     clickflow: ["projects/clickflow/release-manifest.json", ".github/workflows/build-clickflow-macos.yml"],
     pureshrink: ["projects/pureshrink/release-manifest.json"],
