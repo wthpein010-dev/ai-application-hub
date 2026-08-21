@@ -803,11 +803,11 @@ const defaultApps = [
         label: "演示"
       },
       windows: {
-        href: "https://github.com/wthpein010-dev/ai-application-hub/releases/download/gamespec-relay-v1.1.0/%E9%9C%80%E6%B1%82%E6%8E%A5%E5%8A%9B%E7%AB%99-%E5%BE%AE%E8%BD%AF%E7%B3%BB%E7%BB%9F.zip",
+        href: "https://github.com/wthpein010-dev/ai-application-hub/releases/download/gamespec-relay-v1.1.0/xuqiu-jielizhan-windows-x64.zip",
         label: "微软版下载"
       },
       mac: {
-        href: "https://github.com/wthpein010-dev/ai-application-hub/releases/download/gamespec-relay-v1.1.0/%E9%9C%80%E6%B1%82%E6%8E%A5%E5%8A%9B%E7%AB%99-%E8%8B%B9%E6%9E%9C%E7%94%B5%E8%84%91.zip",
+        href: "https://github.com/wthpein010-dev/ai-application-hub/releases/download/gamespec-relay-v1.1.0/xuqiu-jielizhan-macos.zip",
         label: "苹果电脑版下载"
       }
     },

@@ -4,6 +4,12 @@ on:
   push:
     tags:
       - "gamespec-relay-v*"
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "要补发的需求接力站版本标签"
+        required: true
+        type: string
 
 permissions:
   contents: read
@@ -178,29 +184,33 @@ jobs:
         run: |
           set -euo pipefail
           mkdir -p release mac-combined/x64 mac-combined/arm64
-          cp artifacts/gamespec-relay-windows/需求接力站-微软系统.zip release/
+          cp artifacts/gamespec-relay-windows/需求接力站-微软系统.zip release/xuqiu-jielizhan-windows-x64.zip
           tar -xzf artifacts/gamespec-relay-mac-x64/GameSpec-Relay-macOS-x64-app.tar.gz -C mac-combined/x64
           tar -xzf artifacts/gamespec-relay-mac-arm64/GameSpec-Relay-macOS-arm64-app.tar.gz -C mac-combined/arm64
           cp build/gamespec-relay-desktop/README.md mac-combined/README.md
           (
             cd mac-combined
-            zip -qry ../release/需求接力站-苹果电脑.zip arm64 x64 README.md
+            zip -qry ../release/xuqiu-jielizhan-macos.zip arm64 x64 README.md
           )
-          sha256sum release/需求接力站-微软系统.zip release/需求接力站-苹果电脑.zip | tee release/校验值.txt
-          test -s release/需求接力站-微软系统.zip
-          test -s release/需求接力站-苹果电脑.zip
+          sha256sum release/xuqiu-jielizhan-windows-x64.zip release/xuqiu-jielizhan-macos.zip | tee release/sha256sum.txt
+          test -s release/xuqiu-jielizhan-windows-x64.zip
+          test -s release/xuqiu-jielizhan-macos.zip
       - name: Create immutable GitHub Release
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
-          TAG="${GITHUB_REF_NAME}"
+          TAG="${{ inputs.tag || github.ref_name }}"
           VERSION="${TAG#gamespec-relay-v}"
+          case "$TAG" in
+            gamespec-relay-v*) ;;
+            *) echo "Invalid release tag: $TAG" >&2; exit 1 ;;
+          esac
           if gh release view "$TAG" >/dev/null 2>&1; then
             echo "Release $TAG already exists; refusing to replace immutable assets." >&2
             exit 1
           fi
-          gh release create "$TAG" release/需求接力站-微软系统.zip release/需求接力站-苹果电脑.zip release/校验值.txt \
-            --target "$GITHUB_SHA" \
+          gh release create "$TAG" release/xuqiu-jielizhan-windows-x64.zip release/xuqiu-jielizhan-macos.zip release/sha256sum.txt \
+            --verify-tag \
             --title "需求接力站 $VERSION" \
             --notes-file projects/gamespec-relay/release-notes.md
