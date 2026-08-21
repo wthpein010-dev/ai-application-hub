@@ -57,7 +57,7 @@ function assertTrustedSender(event) {
     || event?.sender !== mainWindow.webContents
     || !event.senderFrame
     || !isTrustedRendererUrl(event.senderFrame.url)
-  ) throw new Error("GameSpec Relay 拒绝了不可信的桌面请求");
+  ) throw new Error("需求接力站拒绝了不可信的桌面请求");
 }
 
 function dataPath(name) {
@@ -82,7 +82,7 @@ function createWindow({ show = !smokeTest } = {}) {
     minWidth: 1024,
     minHeight: 700,
     show: false,
-    title: "GameSpec Relay",
+    title: "需求接力站",
     backgroundColor: "#07110f",
     webPreferences: {
       preload: path.join(__dirname, "preload.cjs"),
@@ -158,7 +158,7 @@ function registerHandlers() {
       filePath = path.join(directory, exportRequest.name);
     } else {
       const result = await dialog.showSaveDialog(mainWindow, {
-        title: "导出 GameSpec Relay 交付包",
+        title: "导出需求接力站交付包",
         defaultPath: path.join(app.getPath("documents"), exportRequest.name),
       });
       if (result.canceled || !result.filePath) return { canceled: true };
@@ -176,7 +176,7 @@ function registerHandlers() {
   ipcMain.handle(channels.configureModel, (event, value) => {
     assertTrustedSender(event);
     const settings = normalizeModelSettings(value);
-    if (!safeStorage.isEncryptionAvailable()) throw new Error("系统安全存储不可用，API Key 未保存");
+    if (!safeStorage.isEncryptionAvailable()) throw new Error("系统安全存储不可用，访问密钥未保存");
     writeJsonAtomic(dataPath("model-settings.json"), {
       endpoint: settings.endpoint,
       model: settings.model,
@@ -199,7 +199,7 @@ async function runSmoke() {
     const stored = JSON.parse(localStorage.getItem("gamespec-relay:v1"));
     const pack = stored.projects["boss-phase-demo"];
     const exported = await window.gameSpecDesktop.exportFile({
-      name: "GameSpec-Relay-smoke.json",
+      name: "需求接力站-启动检查.json",
       mime: "application/json",
       content: JSON.stringify(pack),
     });

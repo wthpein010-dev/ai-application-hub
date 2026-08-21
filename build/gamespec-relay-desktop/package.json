@@ -1,8 +1,8 @@
 {
   "name": "gamespec-relay-desktop",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "private": true,
-  "description": "GameSpec Relay offline game requirement-to-delivery Agent",
+  "description": "需求接力站离线游戏任务工作台",
   "author": "wthpein010-dev",
   "main": "main.cjs",
   "license": "MIT",
@@ -28,7 +28,7 @@
   },
   "build": {
     "appId": "dev.wthpein010.gamespec-relay",
-    "productName": "GameSpec Relay",
+    "productName": "需求接力站",
     "icon": "build/icon.png",
     "asar": true,
     "files": [
@@ -49,7 +49,7 @@
     },
     "win": {
       "target": [{ "target": "portable", "arch": ["x64"] }],
-      "artifactName": "GameSpec-Relay-Windows-x64.${ext}"
+      "artifactName": "需求接力站-微软系统.${ext}"
     },
     "mac": {
       "target": [{ "target": "zip" }],
@@ -57,7 +57,7 @@
       "identity": null,
       "hardenedRuntime": false,
       "gatekeeperAssess": false,
-      "artifactName": "GameSpec-Relay-macOS-${arch}.${ext}"
+      "artifactName": "需求接力站-苹果电脑-${arch}.${ext}"
     }
   }
 }

@@ -5,16 +5,16 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="color-scheme" content="dark" />
     <meta name="theme-color" content="#07110f" />
-    <meta name="description" content="GameSpec Relay 游戏需求转交付工作台" />
+    <meta name="description" content="需求接力站，把游戏讨论变成能开工、能验收的任务" />
     <link rel="icon" href="data:," />
-    <title>GameSpec Relay 工作台</title>
+    <title>需求接力站工作台</title>
     <link rel="stylesheet" href="./app.css" />
   </head>
   <body>
     <header class="app-header">
       <div class="project-heading">
-        <span class="project-kicker">DELIVERY ROOM / LOCAL</span>
-        <div><h1>Boss 二阶段压迫感增强</h1><span class="version-pill" id="versionPill">待分析</span></div>
+        <span class="project-kicker">需求接力站 · 游戏任务工作台</span>
+        <div><h1>首领二阶段压迫感增强</h1><span class="version-pill" id="versionPill">待分析</span></div>
       </div>
       <div class="project-stats" aria-label="项目状态">
         <span><strong id="sourceCount">0</strong> 来源</span>
@@ -26,43 +26,43 @@
     </header>
 
     <nav class="mobile-steps" aria-label="交付流程步骤">
-      <button class="is-active" type="button" data-step-target="source"><span>1</span>收件箱</button>
-      <button type="button" data-step-target="decisions"><span>2</span>决策台</button>
-      <button type="button" data-step-target="delivery"><span>3</span>交付台</button>
-      <button type="button" data-step-target="versions"><span>4</span>版本</button>
+      <button class="is-active" type="button" data-step-target="source"><span>1</span>放进讨论和文档</button>
+      <button type="button" data-step-target="decisions"><span>2</span>把决定与疑问说清楚</button>
+      <button type="button" data-step-target="delivery"><span>3</span>分清谁来做、怎么验</button>
+      <button type="button" data-step-target="versions"><span>4</span>对比新旧版本影响</button>
     </nav>
 
     <main class="workbench">
       <section class="work-pane source-pane is-active" data-pane="source" aria-labelledby="sourceTitle">
         <header class="pane-header">
-          <div><span class="pane-number">01</span><h2 id="sourceTitle">需求收件箱</h2></div>
-          <span class="pane-state">原始上下文</span>
+          <div><span class="pane-number">一</span><h2 id="sourceTitle">放进讨论和文档</h2></div>
+          <span class="pane-state">保留原文</span>
         </header>
         <div class="source-actions">
-          <button class="secondary-button" id="loadSample" type="button">载入 Boss 示例</button>
+          <button class="secondary-button" id="loadSample" type="button">载入首领示例</button>
           <label class="ghost-button" for="sourceFiles">导入文件</label>
           <input id="sourceFiles" type="file" accept=".txt,.md,.json,.csv,text/plain" multiple hidden />
         </div>
         <label class="input-label" for="sourceInput">群聊、会议纪要或策划文档</label>
-        <textarea id="sourceInput" spellcheck="false" placeholder="粘贴团队讨论，或一键载入可完整演示的 Boss 二阶段需求…"></textarea>
+        <textarea id="sourceInput" spellcheck="false" placeholder="粘贴团队讨论，或一键载入可完整演示的首领二阶段需求…"></textarea>
         <div class="source-summary">
           <span><strong id="characterCount">0</strong> 字符</span>
           <span id="sourceHint">尚未载入来源</span>
         </div>
         <div class="source-list" id="sourceList" aria-live="polite">
-          <div class="empty-card"><span aria-hidden="true">⌁</span><strong>把讨论放进来</strong><p>Agent 会保留原文证据，不会把未确认意见写成事实。</p></div>
+          <div class="empty-card"><span aria-hidden="true">⌁</span><strong>把讨论放进来</strong><p>助手会保留原文证据，不会把未确认意见写成事实。</p></div>
         </div>
         <div class="glossary-block">
           <div><span>游戏词汇表</span><small>自动匹配职能</small></div>
           <p id="glossaryList"><span>二阶段</span><span>红屏</span><span>前摇</span><span>低端机</span><span>受击</span></p>
         </div>
-        <button class="primary-button" id="analyzeButton" type="button" disabled><span>生成交付包</span><small>离线 · 无需 API Key</small></button>
+        <button class="primary-button" id="analyzeButton" type="button" disabled><span>生成交付包</span><small>离线使用 · 无需访问密钥</small></button>
       </section>
 
       <section class="work-pane decision-pane" data-pane="decisions" aria-labelledby="decisionTitle">
         <header class="pane-header">
-          <div><span class="pane-number">02</span><h2 id="decisionTitle">决策与边界</h2></div>
-          <span class="pane-state">可追溯</span>
+          <div><span class="pane-number">二</span><h2 id="decisionTitle">把决定与疑问说清楚</h2></div>
+          <span class="pane-state">有据可查</span>
         </header>
         <section class="result-group">
           <div class="group-heading"><h3>已确认决定</h3><span id="decisionCount">0</span></div>
@@ -73,7 +73,7 @@
           <div id="questionList" class="result-list"><div class="empty-line">关键疑点会留在这里，不擅自补答案</div></div>
         </section>
         <section class="result-group scope-group">
-          <div class="group-heading"><h3>范围边界</h3><span>IN / OUT</span></div>
+          <div class="group-heading"><h3>范围边界</h3><span>这次要做 / 这次不做</span></div>
           <div id="scopePanel" class="scope-grid">
             <div><strong>范围内</strong><p>—</p></div><div><strong>范围外</strong><p>—</p></div>
           </div>
@@ -82,14 +82,14 @@
 
       <section class="work-pane delivery-pane" data-pane="delivery" aria-labelledby="deliveryTitle">
         <header class="pane-header">
-          <div><span class="pane-number">03</span><h2 id="deliveryTitle">跨职能交付台</h2></div>
-          <span class="pane-state">谁做 / 怎么验</span>
+          <div><span class="pane-number">三</span><h2 id="deliveryTitle">分清谁来做、怎么验</h2></div>
+          <span class="pane-state">任务与验收</span>
         </header>
         <div id="healthPanel" class="health-panel" aria-live="polite">
           <div class="health-ring"><strong>—</strong><span>完整度</span></div>
           <div><strong>尚未生成</strong><p>载入来源后自动检查阻塞、验收与依赖。</p></div>
         </div>
-        <div id="taskLanes" class="task-lanes"><div class="empty-card compact"><span aria-hidden="true">⇥</span><strong>任务会按职能接力</strong><p>策划 → 客户端 / 表现 → QA</p></div></div>
+        <div id="taskLanes" class="task-lanes"><div class="empty-card compact"><span aria-hidden="true">⇥</span><strong>任务会按职能接力</strong><p>策划 → 客户端 / 表现 → 测试</p></div></div>
         <details class="test-drawer">
           <summary><span>测试与风险</span><strong id="testRiskCount">0</strong></summary>
           <div id="testRiskPanel"><p class="empty-line">生成后查看功能、边界、恢复、兼容与性能用例。</p></div>
@@ -98,11 +98,11 @@
 
       <section class="work-pane versions-pane" data-pane="versions" aria-labelledby="versionsTitle">
         <header class="pane-header">
-          <div><span class="pane-number">04</span><h2 id="versionsTitle">V1 / V2 变更影响</h2></div>
+          <div><span class="pane-number">四</span><h2 id="versionsTitle">对比新旧版本影响</h2></div>
           <span class="pane-state">回归范围</span>
         </header>
         <div id="diffPanel" class="diff-panel" data-visible="false">
-          <div class="empty-card compact"><span aria-hidden="true">∆</span><strong>先保存 V1，再载入变更</strong><p>修改任务和受影响测试会在这里自动汇总。</p></div>
+          <div class="empty-card compact"><span aria-hidden="true">∆</span><strong>先保存第一版，再载入变更</strong><p>修改任务和受影响测试会在这里自动汇总。</p></div>
           <span id="diffChangedCount" hidden>0</span>
         </div>
       </section>
@@ -110,26 +110,26 @@
 
     <footer class="action-bar">
       <div class="version-actions">
-        <button id="saveVersion" type="button" disabled>保存为 V1</button>
+        <button id="saveVersion" type="button" disabled>保存为第一版</button>
         <button id="loadChangeSample" type="button" disabled>载入评审变更</button>
-        <button id="openDiff" type="button" disabled>查看 V2 影响</button>
+        <button id="openDiff" type="button" disabled>查看第二版影响</button>
       </div>
       <div class="export-actions" aria-label="导出当前交付包">
         <span id="exportStatus" role="status">草稿也可导出</span>
-        <button id="exportMarkdown" type="button" disabled>Markdown</button>
-        <button id="exportJson" type="button" disabled>JSON</button>
-        <button id="exportCsv" type="button" disabled>任务 CSV</button>
-        <button id="copyCodex" class="accent-export" type="button" disabled>复制 Codex 包</button>
+        <button id="exportMarkdown" type="button" disabled>文档版</button>
+        <button id="exportJson" type="button" disabled>数据备份</button>
+        <button id="exportCsv" type="button" disabled>任务表格</button>
+        <button id="copyCodex" class="accent-export" type="button" disabled>开发助手包</button>
       </div>
     </footer>
 
     <dialog id="modelDialog">
       <form method="dialog">
-        <header><div><span>OPTIONAL MODEL</span><h2>复杂自由文本增强</h2></div><button value="cancel" aria-label="关闭">×</button></header>
-        <p>完整示例始终离线可用。可选模型只接受同一 DeliveryPack 结构，并继续通过本地门禁。</p>
-        <label>Endpoint<input id="modelEndpoint" type="url" placeholder="https://example.com/v1" /></label>
-        <label>Model<input id="modelName" type="text" placeholder="model-name" /></label>
-        <label>API Key<input id="modelKey" type="password" autocomplete="off" placeholder="仅用于本次请求，不写入浏览器" /></label>
+        <header><div><span>可选模型</span><h2>复杂自由文本增强</h2></div><button value="cancel" aria-label="关闭">×</button></header>
+        <p>完整示例始终离线可用。可选模型只接受同一交付包结构，并继续通过本地检查。</p>
+        <label>接口地址<input id="modelEndpoint" type="url" placeholder="请输入接口地址" /></label>
+        <label>模型名称<input id="modelName" type="text" placeholder="请输入模型名称" /></label>
+        <label>访问密钥<input id="modelKey" type="password" autocomplete="off" placeholder="仅用于本次请求，不写入浏览器" /></label>
         <menu><button value="cancel">取消</button><button id="saveModelSettings" value="default">保存非敏感配置</button><button id="runModelAnalysis" type="button">用模型生成</button></menu>
       </form>
     </dialog>

@@ -52,7 +52,7 @@ function projectId(project) {
 
 export function createRelayStore(storage = globalThis.localStorage) {
   if (!storage || typeof storage.getItem !== "function" || typeof storage.setItem !== "function") {
-    throw new TypeError("GameSpec Relay storage must implement getItem and setItem");
+    throw new TypeError("需求接力站的本地存储不可用");
   }
 
   function update(mutator) {

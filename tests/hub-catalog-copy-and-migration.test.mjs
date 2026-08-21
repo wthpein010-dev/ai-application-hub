@@ -119,3 +119,31 @@ test("legacy engineering classification migrates without replacing custom projec
   assert.equal(migratedSimuai.brief, storedSimuai.brief);
   assert.equal(migratedSimuai.video, storedSimuai.video);
 });
+
+test("stored GameSpec Relay cards migrate to the Chinese 需求接力站 release", () => {
+  const defaults = loadDefaultAppsFromRuntime(runtime);
+  const relay = defaults.find((app) => app.id === "gamespec-relay");
+  const stored = {
+    ...relay,
+    name: "GameSpec Relay",
+    badge: "游戏研发 Agent",
+    brief: "把群聊、会议纪要和策划文档转换为决定、阻塞问题、跨职能任务、验收标准、测试与变更影响。",
+    problem: "游戏需求在讨论后仍需人工整理、拆分和补验收口径，信息遗漏会导致跨职能返工。",
+    aiUse: "AI 参与游戏语义分析、证据追溯、任务拆分、质量门禁、变更影响和 Codex 上下文导出；完整示例可离线运行。",
+    package: "https://github.com/wthpein010-dev/ai-application-hub/releases/tag/gamespec-relay-v1.0.0",
+    platforms: {
+      web: { href: relay.entry, label: "演示" },
+      windows: { href: "https://example.com/old-windows.zip", label: "Wins下载" },
+      mac: { href: "https://example.com/old-macos.zip", label: "Mac下载" },
+    },
+  };
+
+  const migrated = loadAppsWithStoredValue([stored]).find((app) => app.id === relay.id);
+
+  assert.equal(migrated.name, relay.name);
+  assert.equal(migrated.badge, relay.badge);
+  assert.equal(migrated.brief, relay.brief);
+  assert.equal(migrated.package, relay.package);
+  assert.deepEqual(JSON.parse(JSON.stringify(migrated.platforms)), JSON.parse(JSON.stringify(relay.platforms)));
+  assert.deepEqual(JSON.parse(JSON.stringify(migrated.tags)), JSON.parse(JSON.stringify(relay.tags)));
+});

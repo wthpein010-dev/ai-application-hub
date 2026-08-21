@@ -75,12 +75,12 @@
     },
     {
       "id": "gamespec-relay",
-      "name": "GameSpec Relay",
+      "name": "需求接力站",
       "kind": "native",
-      "catalogUrl": "https://github.com/wthpein010-dev/ai-application-hub/releases/download/gamespec-relay-v1.0.0/GameSpec-Relay-macOS.zip",
-      "archiveUrl": "https://github.com/wthpein010-dev/ai-application-hub/releases/download/gamespec-relay-v1.0.0/GameSpec-Relay-macOS.zip",
-      "bytes": 254397768,
-      "sha256": "AF3B2686F34B3EB2F8F60B03F06A83901D819FDAE68596209158180F180F8170",
+      "catalogUrl": "https://github.com/wthpein010-dev/ai-application-hub/releases/download/gamespec-relay-v1.1.0/xuqiu-jielizhan-macos.zip",
+      "archiveUrl": "https://github.com/wthpein010-dev/ai-application-hub/releases/download/gamespec-relay-v1.1.0/xuqiu-jielizhan-macos.zip",
+      "bytes": 256143029,
+      "sha256": "A9CC65AF32F17DA61DA0E8350F744C9D2AE6A6735BE066CC01591C20D711F861",
       "architectures": [
         "arm64",
         "x64"

@@ -14,7 +14,7 @@ function fileNameOnly(value) {
   return String(value || "")
     .split(/[\\/]/)
     .filter(Boolean)
-    .at(-1) || "GameSpec-Relay-Export.txt";
+    .at(-1) || "需求接力站-导出文件.txt";
 }
 
 function normalizeExportRequest(value) {
@@ -38,10 +38,10 @@ function normalizeModelSettings(value) {
   const model = String(value?.model || "").trim();
   const apiKey = String(value?.apiKey || "");
   let parsed;
-  try { parsed = new URL(endpoint); } catch { throw new TypeError("模型 Endpoint 无效"); }
-  if (!["http:", "https:"].includes(parsed.protocol)) throw new TypeError("模型 Endpoint 只支持 HTTP(S)");
+  try { parsed = new URL(endpoint); } catch { throw new TypeError("模型接口地址无效"); }
+  if (!["http:", "https:"].includes(parsed.protocol)) throw new TypeError("模型接口地址只支持网页协议");
   if (!model || model.length > 160) throw new TypeError("模型名称无效");
-  if (!apiKey || apiKey.length > 8192) throw new TypeError("API Key 无效");
+  if (!apiKey || apiKey.length > 8192) throw new TypeError("访问密钥无效");
   return { endpoint, model, apiKey };
 }
 

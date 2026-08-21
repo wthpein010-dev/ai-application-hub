@@ -25,6 +25,7 @@ button { color: inherit; }
 body {
   height: 100vh;
   overflow: hidden;
+  font-size: 16px;
   color: var(--ink);
   background:
     radial-gradient(circle at 82% -12%, rgba(38, 135, 103, 0.13), transparent 28%),
@@ -60,9 +61,39 @@ button:focus-visible, input:focus-visible, textarea:focus-visible, .ghost-button
 button:disabled { opacity: 0.38; cursor: not-allowed; }
 .quiet-button { padding: 8px 10px; color: var(--muted); font-size: 11px; }
 
-.mobile-steps { display: none; }
+.mobile-steps {
+  min-height: 58px;
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 8px;
+  padding: 8px 16px;
+  border-bottom: 1px solid var(--line);
+  background: rgba(8, 22, 18, 0.94);
+}
+.mobile-steps button {
+  min-width: 0;
+  min-height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 7px 10px;
+  border-color: transparent;
+  color: var(--muted);
+  background: rgba(255, 255, 255, 0.018);
+}
+.mobile-steps button span {
+  display: grid;
+  width: 24px;
+  height: 24px;
+  flex: 0 0 24px;
+  place-items: center;
+  border: 1px solid currentColor;
+  border-radius: 50%;
+}
+.mobile-steps button.is-active { color: var(--green); border-color: rgba(93, 226, 179, 0.35); background: rgba(93, 226, 179, 0.08); }
 .workbench {
-  height: calc(100vh - 126px);
+  height: calc(100vh - 184px);
   display: grid;
   grid-template-columns: minmax(260px, 0.8fr) minmax(310px, 1fr) minmax(430px, 1.45fr);
   min-height: 0;
@@ -70,7 +101,7 @@ button:disabled { opacity: 0.38; cursor: not-allowed; }
 .work-pane { min-width: 0; min-height: 0; overflow: auto; padding: 16px; border-right: 1px solid var(--line); scrollbar-color: rgba(93, 226, 179, 0.25) transparent; }
 .work-pane:last-child { border-right: 0; }
 .versions-pane { display: none; }
-.versions-pane.has-diff.is-active { position: fixed; inset: 66px 0 60px; z-index: 15; display: block; border: 0; background: rgba(7, 17, 15, 0.98); }
+.versions-pane.has-diff.is-active { position: fixed; inset: 124px 0 60px; z-index: 15; display: block; border: 0; background: rgba(7, 17, 15, 0.98); }
 
 .pane-header { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 14px; }
 .pane-header > div { display: flex; align-items: center; gap: 9px; }
@@ -200,6 +231,17 @@ dialog menu button { padding: 8px 11px; font-size: 9px; }
 .toast { position: fixed; right: 14px; bottom: 70px; z-index: 30; max-width: min(320px, calc(100vw - 28px)); padding: 9px 12px; border: 1px solid rgba(93, 226, 179, 0.35); border-radius: 8px; color: var(--green); font-size: 9px; background: rgba(9, 29, 23, 0.96); opacity: 0; transform: translateY(8px); pointer-events: none; transition: opacity 150ms ease, transform 150ms ease; }
 .toast.is-visible { opacity: 1; transform: none; }
 
+/* 可读性底线：正文和辅助文字不再缩成难以辨认的小字。 */
+body :where(p, span, small, strong, label, li, summary, article, input, textarea, time) {
+  font-size: max(14px, 1em) !important;
+}
+body :where(.evidence, .task-meta, .toast) { font-size: 14px !important; }
+body :where(button, .ghost-button) { font-size: 15px !important; }
+body h1 { font-size: 20px !important; }
+body h2 { font-size: 18px !important; }
+body h3 { font-size: 16px !important; }
+body h4 { font-size: 15px !important; }
+
 @media (max-width: 900px) {
   body { height: auto; min-height: 100vh; overflow: auto; }
   .app-header { position: sticky; top: 0; z-index: 12; min-height: 62px; padding: 9px 12px; }
@@ -209,21 +251,21 @@ dialog menu button { padding: 8px 11px; font-size: 9px; }
   .project-stats > span { min-width: 48px; padding: 7px; }
   .project-stats > span:nth-child(2), .project-stats .local-badge { display: none; }
   .quiet-button { display: none; }
-  .mobile-steps { position: sticky; top: 62px; z-index: 11; display: grid; grid-template-columns: repeat(4, 1fr); padding: 7px 8px; border-bottom: 1px solid var(--line); background: rgba(7, 17, 15, 0.97); }
-  .mobile-steps button { display: grid; justify-items: center; gap: 4px; padding: 6px 2px; border-color: transparent; color: var(--faint); font-size: 8px; background: transparent; }
-  .mobile-steps button span { display: grid; width: 18px; height: 18px; place-items: center; border: 1px solid currentColor; border-radius: 50%; font: 800 8px/1 ui-monospace, Consolas, monospace; }
+  .mobile-steps { position: sticky; top: 62px; z-index: 11; grid-template-columns: repeat(2, 1fr); padding: 7px 8px; background: rgba(7, 17, 15, 0.97); }
+  .mobile-steps button { justify-content: flex-start; gap: 7px; padding: 7px 8px; }
+  .mobile-steps button span { width: 22px; height: 22px; flex-basis: 22px; }
   .mobile-steps button.is-active { color: var(--green); }
   .workbench { display: block; height: auto; }
-  .work-pane { display: none; min-height: calc(100vh - 210px); overflow: visible; padding: 13px 12px 110px; border: 0; }
+  .work-pane { display: none; min-height: calc(100vh - 260px); overflow: visible; padding: 16px 14px 118px; border: 0; }
   .work-pane.is-active { display: block; }
-  .versions-pane.has-diff { position: static; inset: auto; }
+  .versions-pane.has-diff.is-active { position: static; inset: auto; z-index: auto; }
   .action-bar { position: fixed; right: 0; bottom: 0; left: 0; z-index: 14; height: auto; min-height: 62px; align-items: stretch; padding: 7px 8px calc(7px + env(safe-area-inset-bottom)); }
   .version-actions { display: grid; grid-template-columns: 1fr 1fr; flex: 1; }
   .export-actions { display: none; }
   body[data-step="versions"] .version-actions { display: none; }
   body[data-step="versions"] .export-actions { display: grid; grid-template-columns: repeat(4, 1fr); flex: 1; }
   body[data-step="versions"] .export-actions > span { display: none; }
-  .action-bar button { min-width: 0; padding: 0 7px; }
+  .action-bar button { min-width: 0; min-height: 44px; padding: 0 8px; }
   .toast { bottom: 76px; }
 }
 
@@ -232,6 +274,7 @@ dialog menu button { padding: 8px 11px; font-size: 9px; }
   .source-actions { grid-template-columns: 1fr 0.72fr; }
   .scope-grid { grid-template-columns: 1fr; }
   .diff-summary { grid-template-columns: 1fr 1fr; }
+  body[data-step="versions"] .export-actions { grid-template-columns: repeat(2, 1fr); }
 }
 
 @media (prefers-reduced-motion: reduce) {

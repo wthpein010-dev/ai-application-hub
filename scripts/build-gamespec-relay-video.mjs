@@ -30,7 +30,7 @@ const conversion = spawnSync(process.env.FFMPEG_PATH || ffmpegPath, [
   "-preset", "veryfast",
   "-crf", "21",
   "-movflags", "+faststart",
-  "-metadata", "title=GameSpec Relay 教学视频",
+  "-metadata", "title=需求接力站教学视频",
   outputPath,
 ], { encoding: "utf8", maxBuffer: 20 * 1024 * 1024 });
 if (conversion.status !== 0) throw new Error(conversion.stderr || "ffmpeg conversion failed");

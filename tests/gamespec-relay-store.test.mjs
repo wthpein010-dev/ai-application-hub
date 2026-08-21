@@ -24,7 +24,7 @@ function editedProject() {
   pack.id = "boss-phase-demo";
   pack.tasks[0].title = "锁定二阶段验收口径";
   pack.questions[0].status = "confirmed";
-  pack.questions[0].answer = "采用新版本 B";
+  pack.questions[0].answer = "采用新版本乙";
   return pack;
 }
 

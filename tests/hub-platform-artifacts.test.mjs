@@ -196,8 +196,8 @@ test("the compatibility matrix covers every public card and its delivery evidenc
     assert.match(row, /https:\/\/wthpein010-dev\.github\.io\/ai-application-hub\//, `${app.id} public entry`);
 
     if (nativeIds.has(app.id)) {
-      assert.match(row, /Wins下载/);
-      assert.match(row, /Mac下载/);
+      assert.ok(row.includes(app.platforms.windows.label), `${app.id} Windows label`);
+      assert.ok(row.includes(app.platforms.mac.label), `${app.id} macOS label`);
       assert.ok(row.includes(href(app.platforms.windows)), `${app.id} Windows URL`);
       assert.ok(row.includes(href(app.platforms.mac)), `${app.id} macOS URL`);
     } else if (extensionIds.has(app.id)) {

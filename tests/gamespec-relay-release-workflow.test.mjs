@@ -19,23 +19,28 @@ test("release workflow builds and launches every native target", async () => {
 test("release assembly emits immutable competition download assets", async () => {
   const workflow = await readFile(workflowUrl, "utf8");
 
-  assert.match(workflow, /GameSpec-Relay-Windows-x64\.zip/);
-  assert.match(workflow, /GameSpec-Relay-macOS\.zip/);
-  assert.match(workflow, /SHA256SUMS\.txt/);
+  assert.match(workflow, /xuqiu-jielizhan-windows-x64\.zip/);
+  assert.match(workflow, /xuqiu-jielizhan-macos\.zip/);
+  assert.match(workflow, /sha256sum\.txt/);
   assert.match(workflow, /mac-combined\/x64/);
   assert.match(workflow, /mac-combined\/arm64/);
   assert.match(workflow, /sha256sum/);
   assert.match(workflow, /gh release view "\$TAG"/);
   assert.match(workflow, /refusing to replace immutable assets/);
   assert.match(workflow, /gh release create/);
-  assert.match(workflow, /--target "\$GITHUB_SHA"/);
 });
 
-test("release workflow is limited to the GameSpec Relay version tag", async () => {
+test("release workflow supports a safe retry without moving the immutable tag", async () => {
   const workflow = await readFile(workflowUrl, "utf8");
 
   assert.match(workflow, /gamespec-relay-v\*/);
+  assert.match(workflow, /workflow_dispatch:[\s\S]*tag:[\s\S]*required:\s*true/);
+  assert.match(workflow, /TAG="\$\{\{ inputs\.tag \|\| github\.ref_name \}\}"/);
+  assert.match(workflow, /case "\$TAG" in[\s\S]*gamespec-relay-v\*/);
+  assert.match(workflow, /--verify-tag/);
+  assert.doesNotMatch(workflow, /--target "\$GITHUB_SHA"/);
   assert.doesNotMatch(workflow, /branches:\s*\n\s*-\s*main/);
+  assert.match(workflow, /--title "需求接力站 \$VERSION"/);
   assert.match(workflow, /permissions:\s*\n\s*contents:\s*read/);
   assert.match(workflow, /release:[\s\S]*permissions:\s*\n\s*contents:\s*write/);
 });

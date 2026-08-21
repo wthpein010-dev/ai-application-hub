@@ -39,7 +39,7 @@ test("compatible model response is normalized and the key stays outside the requ
   assert.equal(captured.url, "https://model.example/v1/chat/completions");
   assert.equal(captured.options.headers.authorization, "Bearer sk-request-only");
   assert.doesNotMatch(captured.options.body, /sk-request-only/);
-  assert.match(captured.options.body, /Boss 体验复盘群聊/);
+  assert.match(captured.options.body, /首领体验复盘群聊/);
   assert.equal(result.project.name, BOSS_PHASE_SAMPLE.projectName);
   assert.doesNotMatch(JSON.stringify(result), /sk-request-only/);
 });
@@ -53,7 +53,7 @@ test("adapter rejects a structurally invalid DeliveryPack", async () => {
 
   await assert.rejects(
     () => runCompatibleModel({ endpoint: "https://model.example/v1", model: "demo", apiKey: "secret", sources: [], fetchImpl }),
-    /DeliveryPack/,
+    /交付包/,
   );
 });
 

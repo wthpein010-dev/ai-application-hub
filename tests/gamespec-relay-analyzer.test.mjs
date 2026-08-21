@@ -26,7 +26,7 @@ test("Boss sample becomes a cross-discipline delivery pack", () => {
   assert.ok(pack.tests.length >= 5);
   assert.ok(pack.questions.filter((item) => item.status === "open").length >= 2);
   assert.ok(pack.decisions.some((item) => /0\.6 秒/.test(`${item.title}${item.detail}`)));
-  assert.ok(pack.scope.outOfScope.some((item) => item.includes("Boss 数值")));
+  assert.ok(pack.scope.outOfScope.some((item) => item.includes("首领数值")));
 
   for (const item of [...pack.decisions, ...pack.questions, ...pack.tasks]) {
     assert.ok(item.evidence.length >= 1, `${item.id} needs evidence`);
@@ -39,7 +39,7 @@ test("unresolved chat questions remain questions instead of invented decisions",
   const decisions = pack.decisions.map((item) => `${item.title} ${item.detail}`).join("\n");
 
   assert.match(unresolved, /前摇音/);
-  assert.match(unresolved, /按钮|UI/);
+  assert.match(unresolved, /按钮|界面/);
   assert.doesNotMatch(decisions, /前摇音.*版本 [AB]/);
 });
 
@@ -64,9 +64,9 @@ test("confirmed change discussion updates V2 tasks, questions, and regression ex
   const hardStunTest = v2.tests.find((item) => item.title.includes("受击硬直"));
 
   assert.ok(v2.questions.every((question) => question.status === "confirmed"));
-  assert.match(v2.questions.map((question) => question.answer).join("\n"), /新版本 B/);
+  assert.match(v2.questions.map((question) => question.answer).join("\n"), /新版本乙/);
   assert.match(client.acceptanceCriteria.join("\n"), /55%/);
   assert.match(client.acceptanceCriteria.join("\n"), /按钮不参与红屏/);
-  assert.deepEqual(audio.outputs, ["阶段爆发音", "前摇音新版本 B"]);
+  assert.deepEqual(audio.outputs, ["阶段爆发音", "前摇音新版本乙"]);
   assert.match(hardStunTest.expected.join("\n"), /0\.1 秒内进入二阶段/);
 });

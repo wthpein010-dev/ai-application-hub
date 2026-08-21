@@ -20,13 +20,13 @@ function versions() {
     criterion.includes("回落至 20%") ? "红屏峰值为 55%，结束时回落至 20%" : criterion,
   );
   const audioTask = v2.tasks.find((task) => task.role === "音频");
-  audioTask.outputs = ["阶段爆发音", "前摇音新版本 B"];
-  v2.questions = v2.questions.map((item) => ({ ...item, status: "confirmed", answer: item.title.includes("前摇音") ? "采用新版本 B" : "排除战斗 UI" }));
+  audioTask.outputs = ["阶段爆发音", "前摇音新版本乙"];
+  v2.questions = v2.questions.map((item) => ({ ...item, status: "confirmed", answer: item.title.includes("前摇音") ? "采用新版本乙" : "排除战斗界面" }));
   v2.tests.push({
     id: "TEST-HIT-STUN-DELAY",
     type: "boundary",
     title: "硬直结束后延迟进入二阶段",
-    preconditions: ["Boss 在硬直中跨过 40% 血量"],
+    preconditions: ["首领在硬直中跨过 40% 血量"],
     steps: ["等待硬直结束"],
     expected: ["0.1 秒内进入二阶段"],
     taskIds: [clientTask.id],
@@ -55,10 +55,10 @@ test("exports use current edited state and escape CSV safely", () => {
   const csv = toTaskCsv(v2);
   const codex = toCodexContext(v2);
 
-  assert.match(markdown, /# Boss 二阶段压迫感增强 · V2/);
-  assert.match(markdown, /采用新版本 B/);
+  assert.match(markdown, /# 首领二阶段压迫感增强 · 第二版/);
+  assert.match(markdown, /采用新版本乙/);
   assert.deepEqual(JSON.parse(json).tasks[0].title, "确认触发、数值与范围");
-  assert.match(csv, /^id,role,title,priority,status,objective,dependencies,acceptanceCriteria/m);
+  assert.match(csv, /^任务编号,职能,任务标题,优先级,状态,目标,依赖,验收标准/m);
   assert.match(csv, /"确认触发、数值与范围"/);
   assert.match(csv, /"处理包含 ""引号"" 与\n换行的内容"/);
   assert.match(codex, /验收标准/);

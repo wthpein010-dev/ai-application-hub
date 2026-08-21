@@ -64,7 +64,7 @@ page.on("pageerror", (error) => errors.push(`page: ${error.message}`));
 page.on("requestfailed", (request) => errors.push(`request: ${request.url()} ${request.failure()?.errorText}`));
 await page.addInitScript(() => localStorage.clear());
 await page.goto(`${origin}/projects/gamespec-relay/app/index.html`, { waitUntil: "networkidle" });
-await page.getByRole("heading", { name: "Boss 二阶段压迫感增强" }).waitFor();
+await page.getByRole("heading", { name: "首领二阶段压迫感增强" }).waitFor();
 const recording = page.video();
 const startedAt = Date.now();
 
@@ -82,7 +82,7 @@ await at(30, () => page.screenshot({ path: join(videoRoot, "poster.jpg"), type: 
 await at(40, () => page.locator(".decision-pane").evaluate((pane) => { pane.scrollTop = 0; }));
 await at(48, async () => {
   const question = page.locator("#questionList .question-card").first();
-  await question.locator("[data-question-answer]").fill("保持 120ms 前摇，低端机同样不跳帧");
+  await question.locator("[data-question-answer]").fill("保持短前摇，低端机同样不跳帧");
   await question.locator("[data-confirm-question]").click();
 });
 await at(60, () => page.locator(".delivery-pane").evaluate((pane) => { pane.scrollTop = 0; }));
@@ -97,7 +97,7 @@ await at(112, () => page.locator(".delivery-pane").evaluate((pane) => { pane.scr
 await at(120, () => page.locator("#saveVersion").click());
 await at(125, () => page.locator("#loadChangeSample").click());
 await at(130, () => page.locator("#analyzeButton").click());
-await page.locator("#versionPill", { hasText: "V2" }).waitFor();
+await page.locator("#versionPill", { hasText: "第二版" }).waitFor();
 await at(143, () => page.locator("#openDiff").click());
 await page.locator("#diffPanel[data-visible='true']").waitFor();
 for (const [second, selector] of [

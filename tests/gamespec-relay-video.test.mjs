@@ -114,6 +114,9 @@ test("tutorial page uses the shared player and complete workflow chapters", asyn
   assert.match(html, /id="loadVideo"/);
   assert.match(html, /preload="none" data-src="\.\/gamespec-relay-demo\.mp4"/);
   assert.match(html, /kind="captions"[^>]+default/);
+  assert.match(html, /<title>需求接力站教学视频<\/title>/);
+  assert.match(html, /把游戏讨论变成能开工、能验收的任务/);
+  assert.doesNotMatch(html, />\s*(?:GameSpec Relay|Agent|Boss|V2|MP4)\s*</);
   assert.deepEqual(
     Array.from(html.matchAll(/data-time="(\d+)"/g), (match) => Number(match[1])),
     [0, 15, 40, 75, 120, 150],
@@ -132,9 +135,10 @@ test("tutorial captions stay one line and teach the entire relay workflow", asyn
   assert.ok(cues.length >= 10);
   assert.equal(cues.every((cue) => cue.text.length === 1), true);
   assert.equal(cues.every((cue, index) => cue.start < cue.end && (!index || cue.start >= cues[index - 1].end)), true);
-  for (const phrase of ["Boss 示例", "决定", "待确认", "跨职能", "验收标准", "健康度", "V2", "变更影响", "Markdown", "JSON", "CSV", "Codex"]) {
+  for (const phrase of ["首领示例", "决定", "待确认", "跨职能", "验收标准", "健康度", "第二版", "变更影响", "文档版", "数据备份", "任务表格", "开发助手包"]) {
     assert.match(text, new RegExp(phrase));
   }
+  assert.equal(/[A-Za-z]/.test(text), false, "captions should not expose English copy");
 });
 
 test("tutorial media is a browser-compatible three-minute H.264 recording", async () => {
