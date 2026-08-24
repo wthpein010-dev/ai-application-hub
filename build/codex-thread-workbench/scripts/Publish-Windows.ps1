@@ -44,8 +44,8 @@ if ([string]::IsNullOrWhiteSpace($OutputRoot)) {
 }
 
 $project = Join-Path $repositoryRoot "src\CodexThreadWorkbench\CodexThreadWorkbench.csproj"
-$publishDirectory = Join-Path $OutputRoot "CodexThreadWorkbench-Windows-x64"
-$archivePath = Join-Path $OutputRoot "CodexThreadWorkbench-Windows-x64.zip"
+$publishDirectory = Join-Path $OutputRoot "CodexConfirmationBar-Windows-x64"
+$archivePath = Join-Path $OutputRoot "CodexConfirmationBar-Windows-x64.zip"
 
 if (Test-Path -LiteralPath $publishDirectory) {
     Remove-Item -LiteralPath $publishDirectory -Recurse -Force
@@ -71,7 +71,7 @@ if ($LASTEXITCODE -ne 0) {
     throw "dotnet publish failed with exit code $LASTEXITCODE."
 }
 
-$executablePath = Join-Path $publishDirectory "CodexThreadWorkbench.exe"
+$executablePath = Join-Path $publishDirectory "CodexConfirmationBar.exe"
 if (-not (Test-Path -LiteralPath $executablePath -PathType Leaf) -or
     (Get-Item -LiteralPath $executablePath).Length -le 0) {
     throw "Published executable is missing or empty: $executablePath"
@@ -110,7 +110,7 @@ if ($null -ne $compressionError) {
 $archive = [System.IO.Compression.ZipFile]::OpenRead($archivePath)
 try {
     $archiveEntries = @($archive.Entries | ForEach-Object FullName)
-    if ($archiveEntries -notcontains "CodexThreadWorkbench.exe" -or
+    if ($archiveEntries -notcontains "CodexConfirmationBar.exe" -or
         $archiveEntries -notcontains "README.md") {
         throw "Windows package is missing the executable or README."
     }

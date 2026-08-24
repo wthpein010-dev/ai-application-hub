@@ -11,6 +11,7 @@ public sealed class MainViewModel : ObservableObject, IAsyncDisposable
     private static readonly TimeSpan StatusRefreshInterval = TimeSpan.FromSeconds(2);
     private readonly ICodexThreadClient _client;
     private readonly WorkspaceStore _workspaceStore;
+    private readonly bool _ownsClient;
     private readonly SynchronizationContext? _synchronizationContext;
     private readonly object _disposeGate = new();
     private readonly SemaphoreSlim _workspaceSaveGate = new(1, 1);
@@ -27,10 +28,12 @@ public sealed class MainViewModel : ObservableObject, IAsyncDisposable
 
     public MainViewModel(
         ICodexThreadClient client,
-        WorkspaceStore workspaceStore)
+        WorkspaceStore workspaceStore,
+        bool ownsClient = true)
     {
         _client = client;
         _workspaceStore = workspaceStore;
+        _ownsClient = ownsClient;
         _synchronizationContext = SynchronizationContext.Current;
         Picker = new ThreadPickerViewModel(client);
         OpenPickerCommand = new AsyncRelayCommand(OpenPickerAsync, () => !IsConnecting);
@@ -283,7 +286,10 @@ public sealed class MainViewModel : ObservableObject, IAsyncDisposable
         finally
         {
             _statusRefreshCancellation.Dispose();
-            await _client.DisposeAsync();
+            if (_ownsClient)
+            {
+                await _client.DisposeAsync();
+            }
         }
     }
 

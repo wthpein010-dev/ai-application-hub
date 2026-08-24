@@ -6,10 +6,10 @@ output_root="${2:-}"
 
 case "${runtime}" in
   osx-arm64)
-    archive_name="CodexThreadWorkbench-macOS-arm64.app.zip"
+    archive_name="CodexConfirmationBar-macOS-arm64.app.zip"
     ;;
   osx-x64)
-    archive_name="CodexThreadWorkbench-macOS-x64.app.zip"
+    archive_name="CodexConfirmationBar-macOS-x64.app.zip"
     ;;
   *)
     echo "Usage: $0 <osx-arm64|osx-x64> [output-root]" >&2
@@ -43,7 +43,7 @@ if [[ -z "${project_version}" || ! "${project_version}" =~ ^[0-9]+\.[0-9]+\.[0-9
 fi
 
 publish_directory="${output_root}/publish-${runtime}"
-app_directory="${output_root}/CodexThreadWorkbench.app"
+app_directory="${output_root}/CodexConfirmationBar.app"
 contents_directory="${app_directory}/Contents"
 macos_directory="${contents_directory}/MacOS"
 resources_directory="${contents_directory}/Resources"
@@ -63,9 +63,9 @@ dotnet publish "${project}" \
   -p:DebugType=None \
   -p:DebugSymbols=false
 
-test -s "${publish_directory}/CodexThreadWorkbench"
+test -s "${publish_directory}/CodexConfirmationBar"
 cp -R "${publish_directory}/." "${macos_directory}/"
-chmod +x "${macos_directory}/CodexThreadWorkbench"
+chmod +x "${macos_directory}/CodexConfirmationBar"
 cp "${repository_root}/README.md" "${resources_directory}/README.md"
 
 cat > "${contents_directory}/Info.plist" <<PLIST
@@ -76,15 +76,15 @@ cat > "${contents_directory}/Info.plist" <<PLIST
   <key>CFBundleDevelopmentRegion</key>
   <string>zh_CN</string>
   <key>CFBundleDisplayName</key>
-  <string>Codex 多会话工作台</string>
+  <string>Codex 待确认悬浮助手</string>
   <key>CFBundleExecutable</key>
-  <string>CodexThreadWorkbench</string>
+  <string>CodexConfirmationBar</string>
   <key>CFBundleIdentifier</key>
-  <string>dev.wthpein010.codex-thread-workbench</string>
+  <string>dev.wthpein010.codex-confirmation-bar</string>
   <key>CFBundleInfoDictionaryVersion</key>
   <string>6.0</string>
   <key>CFBundleName</key>
-  <string>CodexThreadWorkbench</string>
+  <string>CodexConfirmationBar</string>
   <key>CFBundlePackageType</key>
   <string>APPL</string>
   <key>CFBundleShortVersionString</key>

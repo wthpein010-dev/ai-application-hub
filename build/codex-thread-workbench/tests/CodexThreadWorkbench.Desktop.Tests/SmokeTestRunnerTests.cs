@@ -6,6 +6,14 @@ namespace CodexThreadWorkbench.Desktop.Tests;
 public sealed class SmokeTestRunnerTests
 {
     [Fact]
+    public void FormatSmokeTestFailure_UsesThePublishedProductName()
+    {
+        var message = Program.FormatSmokeTestFailure(new InvalidOperationException("boom"));
+
+        Assert.Equal("Codex Confirmation Bar smoke test failed: boom", message);
+    }
+
+    [Fact]
     public async Task RunAsync_InitializesListsAndDisposesClient()
     {
         var client = new SmokeClient();

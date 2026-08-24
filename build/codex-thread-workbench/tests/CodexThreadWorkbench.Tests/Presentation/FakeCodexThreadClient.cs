@@ -15,9 +15,55 @@ internal sealed class FakeCodexThreadClient : ICodexThreadClient
 
     public Dictionary<string, ThreadCardState> ThreadStates { get; } = [];
 
+    public int ListCalls { get; private set; }
+
+    public Dictionary<string, int> ReadCalls { get; } = [];
+
+    public Exception? ListException { get; set; }
+
+    public Dictionary<string, Exception> ReadExceptions { get; } = [];
+
+    public HashSet<string> DelayedReadThreadIds { get; } =
+        new(StringComparer.Ordinal);
+
+    public TaskCompletionSource<string> ReadStarted { get; } =
+        new(TaskCreationOptions.RunContinuationsAsynchronously);
+
+    public TaskCompletionSource ReadCompletion { get; } =
+        new(TaskCreationOptions.RunContinuationsAsynchronously);
+
+    public int ActiveReadCount;
+
+    public int MaxConcurrentReadCount;
+
+    public Dictionary<string, Exception> ResumeExceptions { get; } = [];
+
+    public Dictionary<string, Exception> StartExceptions { get; } = [];
+
+    public List<string> OperationLog { get; } = [];
+
+    public HashSet<string> DelayedStartThreadIds { get; } =
+        new(StringComparer.Ordinal);
+
+    public TaskCompletionSource<(string ThreadId, string Text)> StartStarted { get; } =
+        new(TaskCreationOptions.RunContinuationsAsynchronously);
+
+    public TaskCompletionSource StartCompletion { get; } =
+        new(TaskCreationOptions.RunContinuationsAsynchronously);
+
+    public bool DelayList { get; set; }
+
+    public TaskCompletionSource ListStarted { get; } =
+        new(TaskCreationOptions.RunContinuationsAsynchronously);
+
+    public TaskCompletionSource ListCompletion { get; } =
+        new(TaskCreationOptions.RunContinuationsAsynchronously);
+
     public bool Resumed { get; private set; }
 
     public (string ThreadId, string Text)? LastStart { get; private set; }
+
+    public bool AppendUserMessageOnStart { get; set; }
 
     public (string ThreadId, string TurnId, string Text)? LastSteer { get; private set; }
 
@@ -53,43 +99,128 @@ internal sealed class FakeCodexThreadClient : ICodexThreadClient
         return Task.CompletedTask;
     }
 
-    public Task<IReadOnlyList<ThreadSummary>> ListThreadsAsync(
+    public async Task<IReadOnlyList<ThreadSummary>> ListThreadsAsync(
         int limit = 100,
         string? searchTerm = null,
-        CancellationToken cancellationToken = default) =>
-        Task.FromResult<IReadOnlyList<ThreadSummary>>(
-            Threads
-                .Where(thread =>
-                    string.IsNullOrWhiteSpace(searchTerm) ||
-                    thread.Title.Contains(searchTerm, StringComparison.OrdinalIgnoreCase))
-                .Take(limit)
-                .ToArray());
+        CancellationToken cancellationToken = default)
+    {
+        ListCalls++;
+        ListStarted.TrySetResult();
+        if (DelayList)
+        {
+            await ListCompletion.Task.WaitAsync(cancellationToken);
+        }
 
-    public Task<ThreadCardState> ReadThreadAsync(
+        if (ListException is not null)
+        {
+            throw ListException;
+        }
+
+        return Threads
+            .Where(thread =>
+                string.IsNullOrWhiteSpace(searchTerm) ||
+                thread.Title.Contains(searchTerm, StringComparison.OrdinalIgnoreCase))
+            .Take(limit)
+            .ToArray();
+    }
+
+    public async Task<ThreadCardState> ReadThreadAsync(
         string threadId,
-        CancellationToken cancellationToken = default) =>
-        Task.FromResult(ThreadStates[threadId]);
+        CancellationToken cancellationToken = default)
+    {
+        ReadCalls[threadId] = ReadCalls.GetValueOrDefault(threadId) + 1;
+        var activeReads = Interlocked.Increment(ref ActiveReadCount);
+        UpdateMaximum(ref MaxConcurrentReadCount, activeReads);
+        try
+        {
+            if (DelayedReadThreadIds.Contains(threadId))
+            {
+                ReadStarted.TrySetResult(threadId);
+                await ReadCompletion.Task.WaitAsync(cancellationToken);
+            }
+
+            if (ReadExceptions.TryGetValue(threadId, out var error))
+            {
+                throw error;
+            }
+
+            return ThreadStates[threadId];
+        }
+        finally
+        {
+            Interlocked.Decrement(ref ActiveReadCount);
+        }
+    }
+
+    private static void UpdateMaximum(ref int target, int value)
+    {
+        var current = Volatile.Read(ref target);
+        while (value > current)
+        {
+            var observed = Interlocked.CompareExchange(ref target, value, current);
+            if (observed == current)
+            {
+                return;
+            }
+
+            current = observed;
+        }
+    }
 
     public Task ResumeThreadAsync(
         string threadId,
         CancellationToken cancellationToken = default)
     {
+        OperationLog.Add($"resume:{threadId}");
+        if (ResumeExceptions.TryGetValue(threadId, out var error))
+        {
+            throw error;
+        }
+
         Resumed = true;
         return Task.CompletedTask;
     }
 
-    public Task<string> StartTurnAsync(
+    public async Task<string> StartTurnAsync(
         string threadId,
         string text,
         CancellationToken cancellationToken = default)
     {
+        OperationLog.Add($"start:{threadId}");
+        StartStarted.TrySetResult((threadId, text));
+        if (DelayedStartThreadIds.Contains(threadId))
+        {
+            await StartCompletion.Task.WaitAsync(cancellationToken);
+        }
+
+        if (StartExceptions.TryGetValue(threadId, out var startError))
+        {
+            throw startError;
+        }
+
         if (SendException is not null)
         {
             throw SendException;
         }
 
         LastStart = (threadId, text);
-        return Task.FromResult("new-turn");
+        if (AppendUserMessageOnStart &&
+            ThreadStates.TryGetValue(threadId, out var state))
+        {
+            ThreadStates[threadId] = state with
+            {
+                Messages = state.Messages
+                    .Append(new ChatMessage(
+                        $"confirmed-user-{state.Messages.Count}",
+                        ChatRole.User,
+                        text))
+                    .ToArray(),
+                Status = ThreadStatusKind.Running,
+                ActiveTurnId = "new-turn"
+            };
+        }
+
+        return "new-turn";
     }
 
     public Task SteerTurnAsync(

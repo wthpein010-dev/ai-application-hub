@@ -1,10 +1,10 @@
-name: Build Codex Thread Workbench for macOS
+name: Build Codex Confirmation Bar for macOS
 
 on:
   workflow_dispatch:
   push:
     branches:
-      - agent/workbench-mac-video
+      - codex/workbench-v2-overlay-public
     paths:
       - ".github/workflows/build-codex-thread-workbench.yml"
       - "build/codex-thread-workbench/**"
@@ -66,16 +66,16 @@ jobs:
           chmod +x scripts/publish-macos.sh scripts/test-macos-package.sh
           scripts/publish-macos.sh "${{ matrix.runtime }}"
           scripts/test-macos-package.sh \
-            "artifacts/release/CodexThreadWorkbench-macOS-${{ matrix.architecture }}.app.zip" \
+            "artifacts/release/CodexConfirmationBar-macOS-${{ matrix.architecture }}.app.zip" \
             "${{ matrix.runtime }}"
           shasum -a 256 \
-            "artifacts/release/CodexThreadWorkbench-macOS-${{ matrix.architecture }}.app.zip"
+            "artifacts/release/CodexConfirmationBar-macOS-${{ matrix.architecture }}.app.zip"
 
       - name: Upload verified app
         uses: actions/upload-artifact@v4
         with:
           name: workbench-macos-${{ matrix.architecture }}
-          path: build/codex-thread-workbench/artifacts/release/CodexThreadWorkbench-macOS-${{ matrix.architecture }}.app.zip
+          path: build/codex-thread-workbench/artifacts/release/CodexConfirmationBar-macOS-${{ matrix.architecture }}.app.zip
           if-no-files-found: error
           retention-days: 7
 
@@ -118,11 +118,11 @@ jobs:
         run: |
           set -euo pipefail
           node scripts/split-workbench-mac.mjs \
-            artifacts/workbench-macos/CodexThreadWorkbench-macOS-arm64.app.zip \
+            artifacts/workbench-macos/CodexConfirmationBar-macOS-arm64.app.zip \
             projects/codex-thread-workbench/download/mac \
             arm64
           node scripts/split-workbench-mac.mjs \
-            artifacts/workbench-macos/CodexThreadWorkbench-macOS-x64.app.zip \
+            artifacts/workbench-macos/CodexConfirmationBar-macOS-x64.app.zip \
             projects/codex-thread-workbench/download/mac \
             x64
 
