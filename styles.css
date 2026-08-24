@@ -7,7 +7,7 @@
   --surface-strong: #171a20;
   --text: #17191d;
   --text-muted: #606873;
-  --text-soft: #8a929d;
+  --text-soft: #67717d;
   --line: #dfe3e8;
   --line-strong: #c9d0d8;
   --primary: #176b5b;
@@ -41,7 +41,7 @@ html[data-theme="mist"] {
   --surface-strong: #173033;
   --text: #17282b;
   --text-muted: #5b6e70;
-  --text-soft: #7c9092;
+  --text-soft: #5f7476;
   --line: #d1e0e0;
   --line-strong: #b8cece;
   --primary: #0f746f;
@@ -70,7 +70,7 @@ html[data-theme="coral"] {
   --surface-strong: #34231f;
   --text: #2d211d;
   --text-muted: #75635c;
-  --text-soft: #9a8177;
+  --text-soft: #756058;
   --line: #eedbd2;
   --line-strong: #dfc3b6;
   --primary: #b84e31;
@@ -101,7 +101,7 @@ html[data-theme="night"] {
   --surface-strong: #f2f4f4;
   --text: #edf0f1;
   --text-muted: #aeb6bd;
-  --text-soft: #858e97;
+  --text-soft: #9ba5ae;
   --line: #303740;
   --line-strong: #46505b;
   --primary: #62cbb7;
@@ -352,7 +352,7 @@ html[data-theme="night"] .primary-action {
 
 .theme-menu-head span {
   color: var(--text-soft);
-  font-size: 11px;
+  font-size: 12px;
 }
 
 .theme-options {
@@ -422,7 +422,7 @@ html[data-theme="night"] .primary-action {
 .theme-option-copy small {
   overflow: hidden;
   color: var(--text-muted);
-  font-size: 11px;
+  font-size: 12px;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
@@ -518,8 +518,8 @@ section[id] {
 .metric-note {
   overflow: hidden;
   color: var(--text-soft);
-  font-size: 10px;
-  line-height: 1.4;
+  font-size: 12px;
+  line-height: 1.45;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
@@ -576,7 +576,7 @@ section[id] {
   border: 1px solid var(--hero-line);
   border-radius: 999px;
   color: var(--hero-muted);
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 750;
 }
 
@@ -612,7 +612,7 @@ section[id] {
 
 .summary-richtext span {
   color: var(--hero-muted);
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 750;
 }
 
@@ -620,7 +620,7 @@ section[id] {
   display: -webkit-box;
   overflow: hidden;
   color: var(--hero-text);
-  font-size: 12px;
+  font-size: 13px;
   font-style: normal;
   line-height: 1.6;
   -webkit-box-orient: vertical;
@@ -674,7 +674,7 @@ section[id] {
 
 .showcase-status__position {
   color: var(--hero-muted);
-  font-size: 11px;
+  font-size: 12px;
   font-variant-numeric: tabular-nums;
   font-weight: 720;
 }
@@ -754,7 +754,7 @@ section[id] {
   border-radius: 999px;
   background: var(--surface);
   color: var(--text-muted);
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 700;
   line-height: 20px;
   white-space: nowrap;
@@ -788,7 +788,7 @@ section[id] {
 .search-wrap label,
 .control-group label {
   color: var(--text-soft);
-  font-size: 10px;
+  font-size: 12px;
   font-weight: 720;
 }
 
@@ -805,7 +805,7 @@ section[id] {
   outline: none;
   background: var(--surface);
   color: var(--text);
-  font-size: 12px;
+  font-size: 13px;
 }
 
 .search-wrap input,
@@ -957,7 +957,7 @@ body.card-intro-complete .app-card {
 .card-meta > span:last-child {
   overflow: hidden;
   color: var(--text-soft);
-  font-size: 10px;
+  font-size: 12px;
   font-weight: 650;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -969,7 +969,7 @@ body.card-intro-complete .app-card {
   border-radius: 5px;
   background: var(--primary-soft);
   color: var(--primary);
-  font-size: 10px;
+  font-size: 12px;
   font-weight: 780;
   line-height: 1.2;
 }
@@ -1029,12 +1029,12 @@ html[data-theme="night"] .status-badge {
 
 .app-card > p {
   display: -webkit-box;
-  min-height: 66px;
+  min-height: 70px;
   margin: 0;
   overflow: hidden;
   color: var(--text-muted);
-  font-size: 12px;
-  line-height: 1.8;
+  font-size: 13px;
+  line-height: 1.75;
   -webkit-box-orient: vertical;
   -webkit-line-clamp: 3;
 }
@@ -1056,8 +1056,8 @@ html[data-theme="night"] .status-badge {
   border-radius: 5px;
   background: var(--surface-soft);
   color: var(--text-muted);
-  font-size: 9px;
-  line-height: 1.25;
+  font-size: 12px;
+  line-height: 1.3;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
@@ -1095,7 +1095,7 @@ html[data-theme="night"] .status-badge {
   border-radius: 6px;
   background: var(--surface);
   color: var(--text-muted);
-  font-size: 10px;
+  font-size: 12px;
   font-weight: 760;
   line-height: 20px;
   text-align: center;
@@ -1185,7 +1185,7 @@ html[data-theme="night"] .status-badge {
   min-height: 44px;
   margin: 13px 0;
   color: var(--text-muted);
-  font-size: 11px;
+  font-size: 13px;
   line-height: 1.65;
 }
 
@@ -1207,7 +1207,7 @@ html[data-theme="night"] .status-badge {
   border-radius: 5px;
   background: var(--surface-soft);
   color: var(--text-muted);
-  font-size: 10px;
+  font-size: 12px;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
@@ -1259,7 +1259,7 @@ html[data-theme="night"] .status-badge {
   background: var(--surface-strong);
   color: var(--surface);
   font-family: Consolas, "SFMono-Regular", monospace;
-  font-size: 11px;
+  font-size: 12px;
   line-height: 1.7;
   white-space: pre-wrap;
 }
@@ -1367,7 +1367,7 @@ body.editing .app-shell {
   min-width: 0;
   gap: 5px;
   color: var(--text-muted);
-  font-size: 10px;
+  font-size: 12px;
   font-weight: 700;
 }
 
@@ -1395,7 +1395,7 @@ body.editing .app-shell {
 .edit-note {
   margin: 14px 0 0;
   color: var(--text-soft);
-  font-size: 10px;
+  font-size: 12px;
   line-height: 1.6;
 }
 
@@ -1531,7 +1531,7 @@ body.editing .app-shell {
   .top-nav nav a {
     min-height: 34px;
     padding: 7px 10px;
-    font-size: 11px;
+    font-size: 12px;
   }
 
   .nav-actions {
@@ -1542,7 +1542,7 @@ body.editing .app-shell {
   .theme-toggle {
     min-height: 36px;
     padding: 7px 9px;
-    font-size: 11px;
+    font-size: 12px;
   }
 
   .theme-toggle {
@@ -1735,7 +1735,7 @@ body.editing .app-shell {
   }
 
   .metric span {
-    font-size: 11px;
+    font-size: 12px;
   }
 
   .showcase-status {
@@ -1744,7 +1744,7 @@ body.editing .app-shell {
   }
 
   .card-actions a {
-    font-size: 10px;
+    font-size: 12px;
   }
 }
 
