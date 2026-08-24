@@ -85,3 +85,14 @@ test("the redesign preserves prior release cache markers and accessible action n
   assert.match(runtime, /const webActionLabel = `\$\{app\.name\} 演示`;/u);
   assert.match(runtime, /const videoActionLabel = `\$\{app\.name\} 视频`;/u);
 });
+
+test("any render after first paint disables the list entrance animation immediately", () => {
+  assert.match(runtime, /let hasRenderedCatalog = false;/u);
+  const renderStart = runtime.indexOf("function render()");
+  const renderEnd = runtime.indexOf("function applyTheme", renderStart);
+  const renderer = runtime.slice(renderStart, renderEnd);
+
+  assert.match(renderer, /if \(hasRenderedCatalog\) completeListIntroAnimation\(\);/u);
+  assert.match(renderer, /hasRenderedCatalog = true;/u);
+  assert.match(runtime, /function completeListIntroAnimation\(\)[\s\S]*?card-intro-complete/u);
+});

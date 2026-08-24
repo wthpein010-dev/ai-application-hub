@@ -883,6 +883,7 @@ const defaultApps = [
 
 let apps = loadApps();
 let pageText = loadPageText();
+let hasRenderedCatalog = false;
 
 const state = {
   query: "",
@@ -1045,6 +1046,7 @@ function bindEvents() {
 }
 
 function render() {
+  if (hasRenderedCatalog) completeListIntroAnimation();
   const filtered = getFilteredApps();
   ensureSelectedApp(filtered);
   renderPageText();
@@ -1057,6 +1059,7 @@ function render() {
   renderEngineeringGrid(filtered);
   renderPlatformShowcase(filtered);
   renderEditForm();
+  hasRenderedCatalog = true;
 }
 
 function applyTheme(theme, persist = true) {
@@ -1108,9 +1111,11 @@ function syncTypeChips() {
 }
 
 function finishListIntroAnimation() {
-  window.setTimeout(() => {
-    document.body.classList.add("card-intro-complete");
-  }, 900);
+  window.setTimeout(completeListIntroAnimation, 900);
+}
+
+function completeListIntroAnimation() {
+  document.body.classList.add("card-intro-complete");
 }
 
 function alignHashTarget() {
