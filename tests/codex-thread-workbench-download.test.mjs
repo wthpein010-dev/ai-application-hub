@@ -51,7 +51,7 @@ test("published manifest fixes the 2.0.0 archive contract and ordered five-part 
 
   assert.equal(manifest.version, 1);
   assert.equal(manifest.fileName, "CodexConfirmationBar-Windows-x64.zip");
-  assert.equal(manifest.totalSize, 40_209_878);
+  assert.equal(manifest.totalSize, 41_543_608);
   assert.equal(manifest.chunkSize, 8_388_608);
   assert.equal(manifest.parts.length, 5);
   assert.deepEqual(
@@ -72,7 +72,7 @@ test("published manifest fixes the 2.0.0 archive contract and ordered five-part 
       8_388_608,
       8_388_608,
       8_388_608,
-      6_655_446
+      7_989_176
     ]
   );
   assert.equal(
@@ -81,7 +81,7 @@ test("published manifest fixes the 2.0.0 archive contract and ordered five-part 
   );
   assert.equal(
     manifest.sha256,
-    "8898370651A13146B9F69246268C669C0C36DE8E7BDD6A605880DC1BF758F9FB"
+    "2CD24C70F85563450604AEB9A0ED200792DFB7271CC351108DE004F8E2DF6156"
   );
 });
 

@@ -9,10 +9,10 @@ import { basename, join, resolve } from "node:path";
 
 const FILE_NAME = "CodexConfirmationBar-Windows-x64.zip";
 const RELEASE_DIRECTORY = "v2.0.0";
-const TOTAL_SIZE = 40_209_878;
+const TOTAL_SIZE = 41_543_608;
 const CHUNK_SIZE = 8_388_608;
 const ARCHIVE_SHA256 =
-  "8898370651A13146B9F69246268C669C0C36DE8E7BDD6A605880DC1BF758F9FB";
+  "2CD24C70F85563450604AEB9A0ED200792DFB7271CC351108DE004F8E2DF6156";
 
 const sha256 = bytes =>
   createHash("sha256").update(bytes).digest("hex").toUpperCase();
