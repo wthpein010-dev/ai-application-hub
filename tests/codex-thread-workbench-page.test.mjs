@@ -165,7 +165,7 @@ test("confirmation overlay expands for candidates and retracts after confirmatio
       };
     });
     assert.deepEqual(headerLayout, {
-      homePosition: "static",
+      homePosition: "fixed",
       noHomeBrandOverlap: true,
       noBrandActionOverlap: true,
     });

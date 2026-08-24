@@ -38,7 +38,6 @@ a { color: inherit; }
 }
 .hub-home-link, .header-demo-link, .hero-actions a, .site-footer a { text-decoration: none; }
 .hub-home-link {
-  position: static;
   display: inline-flex;
   width: max-content;
   align-items: center;
@@ -47,7 +46,7 @@ a { color: inherit; }
   font-size: 12px;
   font-weight: 760;
 }
-.brand-lockup { display: flex; align-items: center; gap: 10px; color: #fff; font-size: 13px; font-weight: 850; }
+.brand-lockup { display: flex; grid-column: 2; align-items: center; justify-self: center; gap: 10px; color: #fff; font-size: 13px; font-weight: 850; }
 .brand-mark, .overlay-logo {
   position: relative;
   display: grid;
@@ -66,6 +65,7 @@ a { color: inherit; }
   transform: rotate(-35deg);
 }
 .header-demo-link {
+  grid-column: 3;
   justify-self: end;
   padding: 10px 15px;
   border: 1px solid rgba(255,255,255,.2);
@@ -302,6 +302,7 @@ a { color: inherit; }
 @media (max-width: 900px) {
   .site-header { grid-template-columns: 1fr auto; }
   .brand-lockup { display: none; }
+  .header-demo-link { grid-column: 2; }
   .hero { grid-template-columns: 1fr; min-height: auto; padding-top: 120px; }
   .hero-copy { max-width: 720px; }
   .hero-visual { width: min(620px, 100%); margin: 10px auto 0; }
