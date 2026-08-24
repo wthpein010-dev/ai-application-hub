@@ -18,10 +18,10 @@
   --selected: #d7602b;
   --selected-soft: #fff1e9;
   --focus: #147d6b;
-  --hero-panel: #171c20;
-  --hero-text: #f7f9f8;
-  --hero-muted: #b9c3c0;
-  --hero-line: #38423f;
+  --hero-panel: #ffffff;
+  --hero-text: #1b1f23;
+  --hero-muted: #5c6670;
+  --hero-line: #dce3e1;
   --shadow-sm: 0 1px 2px rgba(20, 27, 32, 0.06);
   --shadow-md: 0 12px 30px rgba(20, 27, 32, 0.1);
   --shadow-lg: 0 24px 60px rgba(20, 27, 32, 0.16);
@@ -52,10 +52,10 @@ html[data-theme="mist"] {
   --selected: #c37324;
   --selected-soft: #fff2dd;
   --focus: #087b75;
-  --hero-panel: #183538;
-  --hero-text: #f4fbfa;
-  --hero-muted: #b9d2d0;
-  --hero-line: #426164;
+  --hero-panel: #fbfdfd;
+  --hero-text: #17282b;
+  --hero-muted: #5b6e70;
+  --hero-line: #cbdcda;
   --shadow-sm: 0 1px 2px rgba(15, 50, 52, 0.06);
   --shadow-md: 0 12px 30px rgba(15, 50, 52, 0.1);
   --shadow-lg: 0 24px 60px rgba(15, 50, 52, 0.16);
@@ -81,10 +81,10 @@ html[data-theme="coral"] {
   --selected: #b84e31;
   --selected-soft: #fde3d8;
   --focus: #a33f26;
-  --hero-panel: #3b2823;
-  --hero-text: #fffaf7;
-  --hero-muted: #e6c9be;
-  --hero-line: #6a4a40;
+  --hero-panel: #fffaf7;
+  --hero-text: #2d211d;
+  --hero-muted: #6d554d;
+  --hero-line: #ead2c7;
   --shadow-sm: 0 1px 2px rgba(73, 39, 29, 0.06);
   --shadow-md: 0 12px 30px rgba(73, 39, 29, 0.1);
   --shadow-lg: 0 24px 60px rgba(73, 39, 29, 0.16);
@@ -552,16 +552,24 @@ section[id] {
   border-radius: 8px;
   background: var(--hero-panel);
   color: var(--hero-text);
-  box-shadow: var(--shadow-lg);
+  box-shadow: var(--shadow-md);
 }
 
 .board-glow {
-  display: none;
+  position: absolute;
+  z-index: 2;
+  top: 0;
+  right: 0;
+  left: 0;
+  display: block;
+  height: 3px;
+  background: var(--primary);
+  pointer-events: none;
 }
 
 .selected-summary {
   min-width: 0;
-  padding: 34px 36px 22px;
+  padding: 34px 72px 22px;
 }
 
 .summary-copy {
@@ -573,9 +581,10 @@ section[id] {
 .summary-type {
   align-self: flex-start;
   padding: 5px 9px;
-  border: 1px solid var(--hero-line);
+  border: 1px solid color-mix(in srgb, var(--primary) 34%, var(--hero-line));
   border-radius: 999px;
-  color: var(--hero-muted);
+  background: color-mix(in srgb, var(--primary) 8%, var(--hero-panel));
+  color: var(--primary);
   font-size: 12px;
   font-weight: 750;
 }
@@ -629,36 +638,59 @@ section[id] {
 
 .showcase-controls {
   display: grid;
-  grid-template-columns: auto minmax(0, 1fr);
+  grid-template-columns: minmax(0, 1fr);
   align-items: center;
-  gap: 22px;
-  padding: 15px 18px;
+  min-height: 58px;
+  padding: 15px 72px;
   border-top: 1px solid var(--hero-line);
+  background: color-mix(in srgb, var(--hero-panel) 84%, var(--page-bg));
 }
 
 .showcase-arrows {
-  display: flex;
-  gap: 8px;
+  display: contents;
 }
 
 .showcase-arrows button {
-  display: grid;
-  width: 44px;
-  height: 44px;
+  position: absolute;
+  z-index: 3;
+  top: calc((100% - 58px) / 2);
+  display: inline-grid;
+  width: 46px;
+  height: 46px;
   padding: 0;
+  transform: translateY(-50%);
   place-items: center;
   border: 1px solid var(--hero-line);
   border-radius: 7px;
-  background: transparent;
+  background: var(--hero-panel);
   color: var(--hero-text);
-  font-size: 24px;
-  font-weight: 520;
+  box-shadow: var(--shadow-sm);
+  font-size: 0;
+  font-weight: 600;
   line-height: 1;
+}
+
+#prevApp {
+  left: 16px;
+}
+
+#nextApp {
+  right: 16px;
+}
+
+.carousel-arrow-icon {
+  display: block;
+  transform: translateY(-1px);
+  font-family: Arial, sans-serif;
+  font-size: 32px;
+  font-weight: 400;
+  line-height: 0.8;
 }
 
 .showcase-arrows button:hover {
   border-color: var(--primary);
-  background: color-mix(in srgb, var(--primary) 22%, transparent);
+  background: var(--primary-soft);
+  color: var(--primary);
 }
 
 .showcase-status-host {
@@ -1632,13 +1664,32 @@ body.editing .app-shell {
   }
 
   .showcase-controls {
-    gap: 14px;
+    grid-template-columns: 42px minmax(0, 1fr) 42px;
+    gap: 10px;
+    min-height: 66px;
     padding: 12px;
   }
 
   .showcase-arrows button {
+    position: static;
     width: 42px;
     height: 42px;
+    transform: none;
+  }
+
+  #prevApp {
+    grid-column: 1;
+    grid-row: 1;
+  }
+
+  #nextApp {
+    grid-column: 3;
+    grid-row: 1;
+  }
+
+  .showcase-status-host {
+    grid-column: 2;
+    grid-row: 1;
   }
 
   .workspace {

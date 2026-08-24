@@ -87,6 +87,32 @@ test("the visual system is white-first and includes four theme token sets", () =
   assert.match(styles, /@media\s*\(prefers-reduced-motion:\s*reduce\)/u);
 });
 
+test("the featured carousel follows each page theme instead of forcing a dark panel", () => {
+  for (const selector of [":root", 'html[data-theme="mist"]', 'html[data-theme="coral"]']) {
+    assert.ok(contrastRatio(colorToken(selector, "hero-text"), colorToken(selector, "hero-panel")) >= 7);
+    assert.ok(contrastRatio(colorToken(selector, "hero-panel"), "#000000") >= 12, `${selector} hero is not a light surface`);
+  }
+
+  assert.ok(contrastRatio(colorToken('html[data-theme="night"]', "hero-text"), colorToken('html[data-theme="night"]', "hero-panel")) >= 7);
+  assert.ok(contrastRatio(colorToken('html[data-theme="night"]', "hero-panel"), "#000000") < 3, "night hero must remain dark");
+  assert.match(rule(".hero-board"), /box-shadow:\s*var\(--shadow-md\)/u);
+});
+
+test("desktop carousel controls sit on opposite content edges and mobile controls return to the status rail", () => {
+  assert.match(html, /class="carousel-arrow-icon"/u);
+  assert.match(rule(".showcase-arrows"), /display:\s*contents/u);
+  assert.match(rule(".showcase-arrows button"), /position:\s*absolute/u);
+  assert.match(rule("#prevApp"), /left:\s*16px/u);
+  assert.match(rule("#nextApp"), /right:\s*16px/u);
+  assert.match(rule(".showcase-controls"), /grid-template-columns:\s*minmax\(0,\s*1fr\)/u);
+
+  const mobile = styles.slice(styles.indexOf("@media (max-width: 720px)"));
+  assert.match(mobile, /\.showcase-controls\s*\{[^}]*grid-template-columns:\s*42px\s+minmax\(0,\s*1fr\)\s+42px/u);
+  assert.match(mobile, /\.showcase-arrows button\s*\{[^}]*position:\s*static/u);
+  assert.match(mobile, /#prevApp\s*\{[^}]*grid-column:\s*1/u);
+  assert.match(mobile, /#nextApp\s*\{[^}]*grid-column:\s*3/u);
+});
+
 test("primary homepage controls and card copy keep a readable text floor", () => {
   assert.doesNotMatch(styles, /font-size:\s*(?:9|10)px/u);
 
@@ -130,7 +156,8 @@ test("the redesign preserves prior release cache markers and accessible action n
     "20260821-tool-taxonomy",
     "20260824-white-workspace-themes",
     "20260824-card-motion-once",
-    "20260824-readable-type"
+    "20260824-readable-type",
+    "20260824-hero-theme-controls"
   ]) {
     assert.match(html, new RegExp(marker, "u"));
   }
