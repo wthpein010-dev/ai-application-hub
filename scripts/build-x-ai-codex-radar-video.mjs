@@ -78,11 +78,11 @@ try {
   await page.waitForTimeout(5000);
   await page.locator(".priority-section").scrollIntoViewIfNeeded();
   await page.waitForTimeout(6000);
-  await page.click('[data-open-thread="tibo-sites-collaboration"]');
+  await page.click('[data-open-thread="tibo-token-reset"]');
   await page.waitForTimeout(5000);
   await page.click('[data-filter="tibo"]');
   await page.waitForTimeout(4000);
-  await page.click('[data-thread-id="tibo-sites-collaboration"]');
+  await page.click('[data-thread-id="tibo-token-reset"]');
   await page.waitForTimeout(6000);
   await page.click('[data-filter="official"]');
   await page.waitForTimeout(4000);
@@ -90,7 +90,7 @@ try {
   await page.waitForTimeout(7000);
   await page.click('[data-filter="token"]');
   await page.waitForTimeout(4000);
-  await page.click('[data-thread-id="codex-token-reset"]');
+  await page.click('[data-thread-id="tibo-token-reset"]');
   await page.locator("#threadDetail").scrollIntoViewIfNeeded();
   await page.waitForTimeout(8000);
   await page.click('[data-filter="musk"]');
@@ -121,7 +121,7 @@ const transcode = spawnSync(ffmpegPath, [
 if (transcode.error) throw transcode.error;
 if (transcode.status !== 0) throw new Error(`ffmpeg transcode failed with ${transcode.status}`);
 
-const posterResult = spawnSync(ffmpegPath, ["-y", "-ss", "00:00:04", "-i", finalVideo, "-frames:v", "1", "-update", "1", "-q:v", "2", poster], { stdio: "inherit" });
+const posterResult = spawnSync(ffmpegPath, ["-y", "-ss", "00:00:13", "-i", finalVideo, "-frames:v", "1", "-update", "1", "-q:v", "2", poster], { stdio: "inherit" });
 if (posterResult.error) throw posterResult.error;
 if (posterResult.status !== 0) throw new Error(`ffmpeg poster failed with ${posterResult.status}`);
 

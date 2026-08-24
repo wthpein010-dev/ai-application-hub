@@ -1,11 +1,32 @@
 const threads = [
   {
+    id: "tibo-token-reset",
+    role: "tibo",
+    roleLabel: "Tibo 重点信号",
+    topic: "token",
+    topicLabel: "Token / 额度",
+    pinned: true,
+    verified: true,
+    author: "Tibo",
+    handle: "@thsottiaux",
+    title: "Tibo 已确认：Codex 全部付费账号额度重置已下发",
+    excerpt: "Tibo 8 月 24 日确认重置已经下发。此前说明覆盖全部付费订阅，修复针对图片长会话多次压缩、Computer History 高尾部用量、标题生成功能额外消耗和缓存命中率下降。",
+    original: "Reset has been propagated to accounts and we landed some fixes to usage for things mentioned yesterday as issues we found. You should feel a positive difference.",
+    why: "这是可核验的 Tibo 重点信号，不是普通用户猜测；当前状态是“已重置”。此前的“即将重置”预告、时间和原因保留在来源时间线中。",
+    age: "8 月 24 日 08:46 · 已核验",
+    url: "https://x.com/thsottiaux/status/2091688655828246890",
+    replies: [
+      { author: "Tibo", handle: "@thsottiaux", text: "8 月 23 日预告：修复下发时将为全部付费订阅完整重置使用额度；随后补充时间约为次日 2pm PST。", url: "https://x.com/thsottiaux/status/2091407991736332689", label: "预告原帖", kind: "timeline" },
+      { author: "Tibo", handle: "@thsottiaux", text: "8 月 22 日原因线索：部分用户缓存命中率下降，可能让额度消耗比此前更快。", url: "https://x.com/thsottiaux/status/2091033630147854385", label: "原因原帖", kind: "timeline" },
+    ],
+  },
+  {
     id: "tibo-sites-collaboration",
     role: "tibo",
     roleLabel: "重点关注",
     topic: "update",
     topicLabel: "产品更新",
-    pinned: true,
+    pinned: false,
     author: "Tibo",
     handle: "@thsottiaux",
     title: "Tibo 重点更新追踪：ChatGPT Sites 协作、分享与 Codex 自动化",
@@ -193,7 +214,9 @@ function matchesFilter(thread) {
   if (state.filter === "musk") return thread.role === "musk";
   if (state.filter === "official") return thread.role === "official";
   if (state.filter === "token") return thread.topic === "token";
-  if (state.filter === "community") return thread.role === "community" || thread.replies.length > 0;
+  if (state.filter === "community") {
+    return thread.role === "community" || thread.replies.some((reply) => reply.kind !== "timeline");
+  }
   return true;
 }
 
@@ -229,8 +252,11 @@ function renderPriorities() {
 function threadCard(thread) {
   const selected = thread.id === state.selectedId;
   const avatar = thread.role === "tibo" ? "T" : thread.role === "musk" ? "M" : thread.role === "official" ? "✓" : "U";
+  const countLabel = thread.replies.length > 0 && thread.replies.every((reply) => reply.kind === "timeline")
+    ? "来源"
+    : "回复";
   return `<button class="forum-thread ${selected ? "selected" : ""}" type="button" data-thread-id="${escapeHtml(thread.id)}" aria-pressed="${selected}">
-    <span class="reply-count"><strong>${thread.replies.length}</strong><small>回复</small></span>
+    <span class="reply-count"><strong>${thread.replies.length}</strong><small>${countLabel}</small></span>
     <span class="author-avatar author-avatar-${escapeHtml(thread.role)}" aria-hidden="true">${avatar}</span>
     <span class="thread-copy">
       ${badges(thread, thread.pinned)}
@@ -249,12 +275,15 @@ function renderDetail(thread) {
   }
   const avatar = thread.role === "tibo" ? "T" : thread.role === "musk" ? "M" : thread.role === "official" ? "✓" : "U";
   nodes.detail.innerHTML = `
-    <div class="detail-title"><div>${badges(thread, thread.pinned)}<h2>${escapeHtml(thread.title)}</h2></div><span>示例帖子 · 不可引用</span></div>
+    <div class="detail-title"><div>${badges(thread, thread.pinned)}<h2>${escapeHtml(thread.title)}</h2></div><span>${thread.verified ? "可核验 X 原帖" : "示例帖子 · 不可引用"}</span></div>
     <article class="floor floor-original">
       <div class="floor-author"><span class="author-avatar author-avatar-${escapeHtml(thread.role)}">${avatar}</span><strong>${escapeHtml(thread.author)}</strong><small>${escapeHtml(thread.handle)}</small></div>
-      <div class="floor-content"><div class="floor-meta"><span>楼主</span><time>${escapeHtml(thread.age)}</time></div><p>${escapeHtml(thread.original)}</p><div class="editor-note"><strong>中文整理</strong><p>${escapeHtml(thread.excerpt)}</p><span>${escapeHtml(thread.why)}</span></div><a href="${escapeHtml(thread.url)}" target="_blank" rel="noreferrer">查看对应监测入口 ↗</a></div>
+      <div class="floor-content"><div class="floor-meta"><span>楼主</span><time>${escapeHtml(thread.age)}</time></div><p>${escapeHtml(thread.original)}</p><div class="editor-note"><strong>中文整理</strong><p>${escapeHtml(thread.excerpt)}</p><span>${escapeHtml(thread.why)}</span></div><a href="${escapeHtml(thread.url)}" target="_blank" rel="noreferrer">${thread.verified ? "查看 Tibo 原帖" : "查看对应监测入口"} ↗</a></div>
     </article>
-    ${thread.replies.map((reply, index) => `<article class="floor"><div class="floor-author"><span class="reply-avatar">${escapeHtml(reply.author.slice(0, 1))}</span><strong>${escapeHtml(reply.author)}</strong><small>${escapeHtml(reply.handle)}</small></div><div class="floor-content"><div class="floor-meta"><span>${index + 2} 楼</span><time>示例留言</time></div><p>${escapeHtml(reply.text)}</p><small class="example-label">示例留言 · 不可作为真实 X 引用</small></div></article>`).join("")}
+    ${thread.replies.map((reply, index) => {
+      const isTimeline = reply.kind === "timeline";
+      return `<article class="floor"><div class="floor-author"><span class="reply-avatar">${escapeHtml(reply.author.slice(0, 1))}</span><strong>${escapeHtml(reply.author)}</strong><small>${escapeHtml(reply.handle)}</small></div><div class="floor-content"><div class="floor-meta"><span>${isTimeline ? "时间线 · 此前说明" : `${index + 2} 楼`}</span><time>${isTimeline ? "可核验原帖" : "示例留言"}</time></div><p>${escapeHtml(reply.text)}</p>${reply.url ? `<a href="${escapeHtml(reply.url)}" target="_blank" rel="noreferrer">查看${escapeHtml(reply.label || "X 原帖")} ↗</a>` : '<small class="example-label">示例留言 · 不可作为真实 X 引用</small>'}</div></article>`;
+    }).join("")}
     ${thread.replies.length === 0 ? '<div class="reply-empty"><strong>暂未找到可展示的示例回复</strong><p>真实站点只收录能回到 X 原链接的留言。</p></div>' : ""}`;
 }
 
