@@ -214,7 +214,9 @@ function matchesFilter(thread) {
   if (state.filter === "musk") return thread.role === "musk";
   if (state.filter === "official") return thread.role === "official";
   if (state.filter === "token") return thread.topic === "token";
-  if (state.filter === "community") return thread.role === "community" || thread.replies.length > 0;
+  if (state.filter === "community") {
+    return thread.role === "community" || thread.replies.some((reply) => reply.kind !== "timeline");
+  }
   return true;
 }
 

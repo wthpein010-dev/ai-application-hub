@@ -113,6 +113,9 @@ try {
   assert.equal(await desktop.locator("#emptyState").isVisible(), true);
   await desktop.click("[data-reset-filters]");
   assert.equal(await desktop.locator("#resultCount").textContent(), "10");
+  await desktop.click('[data-filter="community"]');
+  assert.equal(await desktop.locator('[data-thread-id="tibo-token-reset"]').count(), 0);
+  await desktop.click('[data-filter="all"]');
   await desktop.click('[data-filter="tibo"]');
   assert.equal(await desktop.locator("#resultCount").textContent(), "2");
   await desktop.click('[data-thread-id="tibo-sites-collaboration"]');
