@@ -85,6 +85,15 @@ try {
   assert.match(await desktop.locator("#priorityGrid").innerText(), /Tibo/);
   assert.match(await desktop.locator('[data-token-alert="true"]').innerText(), /Tibo 确认：额度已重置/);
   assert.match(await desktop.locator('[data-token-alert="true"]').innerText(), /图片长会话多次压缩/);
+  const disclosure = desktop.locator('[data-token-alert="true"] .token-disclosure');
+  assert.equal(await disclosure.evaluate((element) => element.open), false);
+  await disclosure.locator("summary").click();
+  assert.equal(await disclosure.evaluate((element) => element.open), true);
+  assert.match(await disclosure.innerText(), /英文原文/);
+  assert.match(await disclosure.innerText(), /You should feel a positive difference/);
+  assert.match(await disclosure.innerText(), /中文整理/);
+  assert.match(await disclosure.innerText(), /每两小时检查/);
+  await disclosure.locator("summary").click();
   assert.match(await desktop.locator(".token-status").innerText(), /Tibo 重点信号/);
   assert.equal(await desktop.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 1), true);
   assert.equal(await desktop.locator('[data-daily-brief="true"]').isVisible(), true);
@@ -129,6 +138,8 @@ try {
     await mobile.locator('[data-priority-section="true"]').evaluate((element) => element.getBoundingClientRect().top < 844),
     "mobile should reach today's priorities within the first viewport",
   );
+  await mobile.locator('[data-token-alert="true"] .token-disclosure summary').click();
+  assert.equal(await mobile.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 1), true);
   await mobile.click('[data-filter="musk"]');
   assert.equal(await mobile.locator("#resultCount").textContent(), "1");
   await mobile.click('[data-thread-id="musk-xai-update"]');

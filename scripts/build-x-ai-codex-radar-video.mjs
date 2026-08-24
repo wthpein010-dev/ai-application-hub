@@ -75,7 +75,11 @@ try {
   await page.goto(`http://127.0.0.1:${port}/projects/x-ai-codex-radar/index.html`, { waitUntil: "networkidle" });
   await page.waitForTimeout(7000);
   await page.locator(".quick-status").scrollIntoViewIfNeeded();
-  await page.waitForTimeout(5000);
+  await page.waitForTimeout(3000);
+  await page.click('[data-token-alert="true"] .token-disclosure summary');
+  await page.waitForTimeout(6000);
+  await page.click('[data-token-alert="true"] .token-disclosure summary');
+  await page.waitForTimeout(2000);
   await page.locator(".priority-section").scrollIntoViewIfNeeded();
   await page.waitForTimeout(6000);
   await page.click('[data-open-thread="tibo-token-reset"]');
