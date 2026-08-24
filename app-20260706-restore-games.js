@@ -1,6 +1,7 @@
 const STORAGE_KEY = "ai-competition-hub-v2-apps";
 const PAGE_TEXT_STORAGE_KEY = "ai-competition-hub-v2-page-text";
 const SELECTED_KEY = "ai-competition-hub-v2-selected";
+const THEME_STORAGE_KEY = "ai-competition-hub-theme";
 const PROJECT_ROOT_URL = "./projects/";
 const OLD_HUB_BRIEF = "把所有应用、体验入口、下载包和提交材料集中在一个本地页面中，方便审核和维护。";
 const HUB_BRIEF = "集中汇总全部应用、小游戏和工程体验，统一查看演示、视频与适用的平台版本。";
@@ -45,6 +46,42 @@ const applicationCatalogTypes = new Set([
   "desktop",
   "content"
 ]);
+
+const THEMES = Object.freeze({
+  clean: {
+    name: "清透白",
+    description: "干净明亮，适合日常浏览"
+  },
+  mist: {
+    name: "雾蓝",
+    description: "低饱和蓝绿，阅读更柔和"
+  },
+  coral: {
+    name: "珊瑚",
+    description: "暖白与橙红，重点更鲜明"
+  },
+  night: {
+    name: "深夜",
+    description: "深色界面，适合弱光环境"
+  }
+});
+
+const PUBLIC_FILTER_TYPES = [
+  ["all", "全部应用"],
+  ...[...applicationCatalogTypes].map(type => [type, catalogTypeLabels[type]])
+];
+
+function normalizeTheme(theme) {
+  return Object.prototype.hasOwnProperty.call(THEMES, theme) ? theme : "clean";
+}
+
+function loadTheme() {
+  try {
+    return normalizeTheme(localStorage.getItem(THEME_STORAGE_KEY));
+  } catch {
+    return "clean";
+  }
+}
 
 function catalogTypeKey(app) {
   if (app.status === "game") return "game";
@@ -853,6 +890,7 @@ const state = {
   status: "all",
   sort: "default",
   selectedId: localStorage.getItem(SELECTED_KEY) || "travel-generator",
+  theme: loadTheme(),
   editing: false
 };
 
@@ -868,6 +906,10 @@ const nodes = {
   category: document.querySelector("#categoryFilter"),
   status: document.querySelector("#statusFilter"),
   sort: document.querySelector("#sortMode"),
+  typeChips: document.querySelector("#typeChips"),
+  themeToggle: document.querySelector("#themeToggle"),
+  themeMenu: document.querySelector("#themeMenu"),
+  themeOptions: document.querySelector("#themeOptions"),
   grid: document.querySelector("#appGrid"),
   resultCount: document.querySelector("#resultCount"),
   gameGrid: document.querySelector("#gameGrid"),
@@ -899,6 +941,8 @@ const nodes = {
   pageTextFields: document.querySelector("#pageTextFields"),
 };
 
+applyTheme(state.theme, false);
+renderTypeChips();
 bindEvents();
 renderCategoryOptions();
 render();
@@ -907,6 +951,40 @@ finishListIntroAnimation();
 log("页面已加载。输入 1 或点击更新，可刷新当前应用清单。");
 
 function bindEvents() {
+  nodes.themeToggle?.addEventListener("click", event => {
+    event.stopPropagation();
+    setThemeMenu(nodes.themeMenu.hidden);
+  });
+
+  nodes.themeOptions?.addEventListener("click", event => {
+    const option = event.target.closest("[data-theme-option]");
+    if (!option) return;
+    applyTheme(option.dataset.themeOption);
+    setThemeMenu(false);
+    nodes.themeToggle.focus();
+  });
+
+  nodes.themeOptions?.addEventListener("keydown", event => {
+    if (!["ArrowDown", "ArrowRight", "ArrowUp", "ArrowLeft", "Home", "End"].includes(event.key)) return;
+    const options = [...nodes.themeOptions.querySelectorAll('[role="menuitemradio"]')];
+    const currentIndex = Math.max(0, options.indexOf(document.activeElement));
+    const nextIndex = event.key === "Home"
+      ? 0
+      : event.key === "End"
+        ? options.length - 1
+        : (currentIndex + (["ArrowDown", "ArrowRight"].includes(event.key) ? 1 : -1) + options.length) % options.length;
+    event.preventDefault();
+    options[nextIndex]?.focus();
+  });
+
+  nodes.typeChips?.addEventListener("click", event => {
+    const chip = event.target.closest("[data-filter-type]");
+    if (!chip) return;
+    state.status = chip.dataset.filterType;
+    nodes.status.value = state.status;
+    render();
+  });
+
   nodes.search.addEventListener("input", event => {
     state.query = event.target.value.trim().toLowerCase();
     render();
@@ -953,12 +1031,24 @@ function bindEvents() {
     selectApp(event.target.value);
     renderEditForm();
   });
+
+  document.addEventListener("keydown", event => {
+    if (event.key !== "Escape" || nodes.themeMenu?.hidden) return;
+    setThemeMenu(false);
+    nodes.themeToggle?.focus();
+  });
+
+  document.addEventListener("click", event => {
+    if (nodes.themeMenu?.hidden || event.target.closest(".theme-control")) return;
+    setThemeMenu(false);
+  });
 }
 
 function render() {
   const filtered = getFilteredApps();
   ensureSelectedApp(filtered);
   renderPageText();
+  syncTypeChips();
   renderStats();
   renderSpotlight();
   renderDots(filtered);
@@ -967,6 +1057,54 @@ function render() {
   renderEngineeringGrid(filtered);
   renderPlatformShowcase(filtered);
   renderEditForm();
+}
+
+function applyTheme(theme, persist = true) {
+  const normalized = normalizeTheme(theme);
+  state.theme = normalized;
+  document.documentElement.dataset.theme = normalized;
+  if (persist) {
+    try {
+      localStorage.setItem(THEME_STORAGE_KEY, normalized);
+    } catch {}
+  }
+  renderThemeOptions();
+  return normalized;
+}
+
+function renderThemeOptions() {
+  if (!nodes.themeOptions) return;
+  nodes.themeOptions.innerHTML = Object.entries(THEMES).map(([theme, details]) => `
+    <button class="theme-option" type="button" role="menuitemradio" aria-checked="${theme === state.theme}" data-theme-option="${theme}">
+      <span class="theme-option-swatch theme-option-swatch--${theme}" aria-hidden="true"></span>
+      <span class="theme-option-copy"><strong>${escapeHtml(details.name)}</strong><small>${escapeHtml(details.description)}</small></span>
+      <span class="theme-option-check" aria-hidden="true">✓</span>
+    </button>
+  `).join("");
+  nodes.themeToggle?.setAttribute("aria-label", `页面配色：${THEMES[state.theme].name}`);
+}
+
+function setThemeMenu(open) {
+  if (!nodes.themeMenu || !nodes.themeToggle) return;
+  nodes.themeMenu.hidden = !open;
+  nodes.themeToggle.setAttribute("aria-expanded", String(open));
+  if (open) {
+    nodes.themeOptions?.querySelector('[aria-checked="true"]')?.focus();
+  }
+}
+
+function renderTypeChips() {
+  if (!nodes.typeChips) return;
+  nodes.typeChips.innerHTML = PUBLIC_FILTER_TYPES.map(([type, label]) => `
+    <button type="button" class="type-chip" data-filter-type="${type}" aria-pressed="${state.status === type}">${escapeHtml(label)}</button>
+  `).join("");
+}
+
+function syncTypeChips() {
+  if (!nodes.typeChips) return;
+  nodes.typeChips.querySelectorAll("[data-filter-type]").forEach(chip => {
+    chip.setAttribute("aria-pressed", String(chip.dataset.filterType === state.status));
+  });
 }
 
 function finishListIntroAnimation() {
@@ -1112,6 +1250,8 @@ function renderEngineeringGrid(filtered) {
 }
 
 function renderAppCard(app, index = 0, extraClass = "", actionMode = "default") {
+  const visibleTags = app.tags.slice(0, 2);
+  const overflowTags = app.tags.length - 2;
   return `
     <article class="app-card${extraClass} ${app.id === state.selectedId ? "selected" : ""}" data-app-id="${escapeHtml(app.id)}" tabindex="0" aria-current="${app.id === state.selectedId ? "true" : "false"}" style="--card-order:${index}">
       <div class="card-topline">
@@ -1123,7 +1263,10 @@ function renderAppCard(app, index = 0, extraClass = "", actionMode = "default") 
       </div>
       <h3>${renderEditableText("app", "name", app.name, app.id)}</h3>
       <p>${renderEditableText("app", "brief", app.brief, app.id)}</p>
-      <div class="tag-row">${app.tags.slice(0, 4).map(tag => `<span>${escapeHtml(tag)}</span>`).join("")}</div>
+      <div class="tag-row">
+        ${visibleTags.map(tag => `<span>${escapeHtml(tag)}</span>`).join("")}
+        ${overflowTags > 0 ? `<span class="tag-overflow" aria-label="另有 ${overflowTags} 个关键词">+${overflowTags}</span>` : ""}
+      </div>
       <div class="card-bottom">
         ${renderActions(app, true, actionMode)}
       </div>
@@ -1209,14 +1352,14 @@ function renderPlatformShowcase(filtered) {
 function renderActions(app, stopPropagation = false, mode = "default") {
   const stop = stopPropagation ? ` onclick="event.stopPropagation()"` : "";
   const web = platformValue(app, "web") || app.entry;
-  const webActionLabel = `${app.name} 演示`;
-  const videoActionLabel = `${app.name} 视频`;
+  const webActionLabel = `${app.name} 网页预览`;
+  const videoActionLabel = `${app.name} 介绍视频`;
   const windowsActionLabel = `${app.name} Wins下载`;
   const macActionLabel = `${app.name} Mac下载`;
   const iosActionLabel = `${app.name} iOS安装`;
-  const engineeringVideoLink = app.video ? `<a data-action="video" href="${escapeHtml(projectHref(videoHref(app)))}" aria-label="${escapeHtml(videoActionLabel)}"${stop}>\u89c6\u9891</a>` : "";
+  const engineeringVideoLink = app.video ? `<a data-action="video" href="${escapeHtml(projectHref(videoHref(app)))}" aria-label="${escapeHtml(videoActionLabel)}"${stop}>介绍视频</a>` : "";
   if (mode === "engineering") {
-    const webLink = web ? `<a class="primary-link" data-action="web" href="${escapeHtml(projectHref(web))}" aria-label="${escapeHtml(webActionLabel)}"${stop}>演示</a>` : "";
+    const webLink = web ? `<a class="primary-link" data-action="web" href="${escapeHtml(projectHref(web))}" aria-label="${escapeHtml(webActionLabel)}"${stop}>网页预览</a>` : "";
     return `
       <div class="card-actions actions-engineering">
         ${webLink}
@@ -1229,12 +1372,12 @@ function renderActions(app, stopPropagation = false, mode = "default") {
   const ios = platformValue(app, "ios");
   const windowsDownload = isDirectPackageHref(windows) ? " download" : "";
   const macDownload = isDirectPackageHref(mac) ? " download" : "";
-  const webLink = web ? `<a class="primary-link" data-action="web" href="${escapeHtml(projectHref(web))}" aria-label="${escapeHtml(webActionLabel)}"${stop}>演示</a>` : "";
+  const webLink = web ? `<a class="primary-link" data-action="web" href="${escapeHtml(projectHref(web))}" aria-label="${escapeHtml(webActionLabel)}"${stop}>网页预览</a>` : "";
   const windowsLink = windows ? `<a class="download-link" data-action="download" href="${escapeHtml(projectHref(windows))}" aria-label="${escapeHtml(windowsActionLabel)}"${windowsDownload}${stop}>Wins下载</a>` : "";
   const macLink = mac ? `<a class="mac-link" data-action="mac" href="${escapeHtml(projectHref(mac))}" aria-label="${escapeHtml(macActionLabel)}"${macDownload}${stop}>Mac下载</a>` : "";
   const iosLink = ios ? `<a class="ios-link" data-action="ios" href="${escapeHtml(projectHref(ios))}" aria-label="${escapeHtml(iosActionLabel)}"${stop}>iOS安装</a>` : "";
   const video = app.video
-    ? `<a data-action="video" href="${escapeHtml(projectHref(videoHref(app)))}" aria-label="${escapeHtml(videoActionLabel)}"${stop}>视频</a>`
+    ? `<a data-action="video" href="${escapeHtml(projectHref(videoHref(app)))}" aria-label="${escapeHtml(videoActionLabel)}"${stop}>介绍视频</a>`
     : "";
   return `
     <div class="card-actions">

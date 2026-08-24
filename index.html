@@ -1,12 +1,22 @@
 <!doctype html>
-<html lang="zh-CN">
+<html lang="zh-CN" data-theme="clean">
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>AI 应用总览</title>
     <meta name="description" content="集中呈现 AI 应用、小游戏与工程体验，统一查看网页演示、介绍视频及 Windows、macOS 下载入口。" />
+    <script>
+      (() => {
+        try {
+          const theme = localStorage.getItem("ai-competition-hub-theme");
+          if (["clean", "mist", "coral", "night"].includes(theme)) {
+            document.documentElement.dataset.theme = theme;
+          }
+        } catch {}
+      })();
+    </script>
     <link rel="icon" href="./assets/app-avatar.png" type="image/png" />
-    <link rel="stylesheet" href="./styles.css?v=20260716-button-order-20260820-hub-quality-audit-20260821-tool-taxonomy" />
+    <link rel="stylesheet" href="./styles.css?v=20260716-button-order-20260821-tool-taxonomy-20260824-white-workspace-themes" />
   </head>
   <body>
     <div class="app-shell">
@@ -26,6 +36,19 @@
         </nav>
 
         <div class="nav-actions">
+          <div class="theme-control">
+            <button id="themeToggle" class="theme-toggle" type="button" aria-expanded="false" aria-controls="themeMenu" aria-haspopup="menu">
+              <span class="theme-toggle-swatch" aria-hidden="true"></span>
+              <span>配色</span>
+            </button>
+            <div id="themeMenu" class="theme-menu" role="menu" aria-label="页面配色" hidden>
+              <div class="theme-menu-head">
+                <strong>选择页面配色</strong>
+                <span>仅保存在当前浏览器</span>
+              </div>
+              <div id="themeOptions" class="theme-options"></div>
+            </div>
+          </div>
           <button id="runUpdate" class="ghost-action" type="button">更新</button>
           <button id="exportButton" class="primary-action" type="button">编辑</button>
         </div>
@@ -67,8 +90,8 @@
             <div id="spotlightCard" class="selected-summary"></div>
             <div class="showcase-controls" aria-label="切换应用介绍">
               <div class="showcase-arrows">
-                <button id="prevApp" type="button" aria-label="上一个应用">‹</button>
-                <button id="nextApp" type="button" aria-label="下一个应用">›</button>
+                <button id="prevApp" type="button" aria-label="上一个应用">←</button>
+                <button id="nextApp" type="button" aria-label="下一个应用">→</button>
               </div>
               <div id="showcaseDots" class="showcase-status-host" aria-live="polite"></div>
             </div>
@@ -76,41 +99,46 @@
         </section>
 
         <section id="apps" class="workspace">
-          <aside class="filter-panel" aria-label="应用筛选">
+          <aside class="filter-toolbar" aria-label="应用筛选">
+            <div class="filter-panel">
             <div class="panel-head">
               <h2>筛选应用</h2>
               <button class="region-edit-button section-edit-button" type="button" aria-label="编辑筛选区文案" title="编辑筛选区文案" data-edit-kind="page" data-edit-key="filter.title"></button>
             </div>
-            <div class="search-wrap">
-              <label for="searchInput">搜索</label>
-              <input id="searchInput" type="search" placeholder="旅行、飞书、错题、情绪..." />
+            <div id="typeChips" class="type-chips" aria-label="按工具类型筛选"></div>
+            <div class="filter-fields">
+              <div class="search-wrap">
+                <label for="searchInput">搜索</label>
+                <input id="searchInput" type="search" placeholder="搜索名称、场景或关键词" />
+              </div>
+              <div class="control-group">
+                <label for="categoryFilter">分类</label>
+                <select id="categoryFilter"></select>
+              </div>
+              <div class="control-group status-fallback" aria-hidden="true">
+                <label for="statusFilter">类型</label>
+                <select id="statusFilter">
+                  <option value="all">全部类型</option>
+                  <option value="plugin">插件工具</option>
+                  <option value="assistant">辅助工具</option>
+                  <option value="life">生活工具</option>
+                  <option value="intelligence">网页情报</option>
+                  <option value="desktop">桌面工具</option>
+                  <option value="content">内容工具</option>
+                  <option value="game">小游戏</option>
+                  <option value="engineering">工程体验</option>
+                </select>
+              </div>
+              <div class="control-group">
+                <label for="sortMode">排序</label>
+                <select id="sortMode">
+                  <option value="default">默认顺序</option>
+                  <option value="type">应用类型</option>
+                  <option value="category">分类名称</option>
+                  <option value="name">应用名称</option>
+                </select>
+              </div>
             </div>
-            <div class="control-group">
-              <label for="categoryFilter">分类</label>
-              <select id="categoryFilter"></select>
-            </div>
-            <div class="control-group">
-              <label for="statusFilter">类型</label>
-              <select id="statusFilter">
-                <option value="all">全部类型</option>
-                <option value="plugin">插件工具</option>
-                <option value="assistant">辅助工具</option>
-                <option value="life">生活工具</option>
-                <option value="intelligence">网页情报</option>
-                <option value="desktop">桌面工具</option>
-                <option value="content">内容工具</option>
-                <option value="game">小游戏</option>
-                <option value="engineering">工程体验</option>
-              </select>
-            </div>
-            <div class="control-group">
-              <label for="sortMode">排序</label>
-              <select id="sortMode">
-                <option value="default">默认顺序</option>
-                <option value="type">应用类型</option>
-                <option value="category">分类名称</option>
-                <option value="name">应用名称</option>
-              </select>
             </div>
           </aside>
 
@@ -251,6 +279,6 @@
       <p class="edit-note">保存内容写入当前浏览器本地存储。需要固化到文件时，可让我继续处理。</p>
     </aside>
 
-    <script src="./app-20260706-restore-games.js?v=20260730-pureshrink-auxiliary-20260803-nang-game-catalog-refresh-20260803-hub-full-audit-v2-20260807-gamepulse-knowledge-hub-20260811-gamepulse-community-api-20260812-planmap-v2-20260812-simuai-30-experiments-20260812-app-group-carousel-20260812-wanxiang-lab-rename-20260818-brick-preview-feishu-upload-20260820-web-media-labels-20260820-hub-quality-audit-20260820-pureshrink-v105-20260821-tool-taxonomy"></script>
+    <script src="./app-20260706-restore-games.js?v=20260821-tool-taxonomy-20260824-white-workspace-themes"></script>
 </body>
 </html>
