@@ -1352,8 +1352,8 @@ function renderPlatformShowcase(filtered) {
 function renderActions(app, stopPropagation = false, mode = "default") {
   const stop = stopPropagation ? ` onclick="event.stopPropagation()"` : "";
   const web = platformValue(app, "web") || app.entry;
-  const webActionLabel = `${app.name} 网页预览`;
-  const videoActionLabel = `${app.name} 介绍视频`;
+  const webActionLabel = `${app.name} 演示`;
+  const videoActionLabel = `${app.name} 视频`;
   const windowsActionLabel = `${app.name} Wins下载`;
   const macActionLabel = `${app.name} Mac下载`;
   const iosActionLabel = `${app.name} iOS安装`;

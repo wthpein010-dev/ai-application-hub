@@ -67,3 +67,21 @@ test("the visual system is white-first and includes four theme token sets", () =
   }
   assert.match(styles, /@media\s*\(prefers-reduced-motion:\s*reduce\)/u);
 });
+
+test("the redesign preserves prior release cache markers and accessible action names", () => {
+  for (const marker of [
+    "20260803-nang-game-catalog-refresh",
+    "20260803-hub-full-audit-v2",
+    "20260811-gamepulse-community-api",
+    "20260812-wanxiang-lab-rename",
+    "20260818-brick-preview-feishu-upload",
+    "20260820-hub-quality-audit",
+    "20260820-pureshrink-v105",
+    "20260821-tool-taxonomy",
+    "20260824-white-workspace-themes"
+  ]) {
+    assert.match(html, new RegExp(marker, "u"));
+  }
+  assert.match(runtime, /const webActionLabel = `\$\{app\.name\} 演示`;/u);
+  assert.match(runtime, /const videoActionLabel = `\$\{app\.name\} 视频`;/u);
+});
