@@ -190,6 +190,9 @@ test("the compatibility matrix covers every public card and its delivery evidenc
             ? "工程在线体验"
             : "网页跨平台";
 
+    if (app.id === "codex-thread-workbench") {
+      assert.ok(row.includes(app.name), `${app.id} name`);
+    }
     assert.match(row, new RegExp(`\\| ${expectedType} \\|`), `${app.id} delivery type`);
     assert.match(row, /Windows/, `${app.id} Windows statement`);
     assert.match(row, /macOS/, `${app.id} macOS statement`);
