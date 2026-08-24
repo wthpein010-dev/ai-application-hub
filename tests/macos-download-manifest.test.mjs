@@ -31,6 +31,32 @@ const manifest = JSON.parse(
 const pureshrinkReleaseManifest = JSON.parse(
   await readFile(join(root, "projects", "pureshrink", "release-manifest.json"), "utf8"),
 );
+const workbenchArm64Manifest = JSON.parse(
+  await readFile(
+    join(
+      root,
+      "projects",
+      "codex-thread-workbench",
+      "download",
+      "mac",
+      "manifest-arm64.json",
+    ),
+    "utf8",
+  ),
+);
+const workbenchX64Manifest = JSON.parse(
+  await readFile(
+    join(
+      root,
+      "projects",
+      "codex-thread-workbench",
+      "download",
+      "mac",
+      "manifest-x64.json",
+    ),
+    "utf8",
+  ),
+);
 const execFileAsync = promisify(execFile);
 const auditScript = join(root, "scripts", "audit-public-macos-downloads.sh");
 const auditWorkflow = join(root, ".github", "workflows", "audit-macos-downloads.yml");
@@ -137,6 +163,42 @@ test("the Mac audit manifest covers every public Mac action exactly once", () =>
     "gamespec-relay",
   ]);
   assert.deepEqual(result.extension.map((item) => item.id), ["feishu-downloader"]);
+});
+
+test("the Workbench Mac audit record matches the catalog and architecture manifests", () => {
+  const catalogApp = apps.find((item) => item.id === "codex-thread-workbench");
+  const auditRecord = manifest.downloads.find((item) => item.id === "codex-thread-workbench");
+
+  assert.ok(catalogApp, "Workbench should have a catalog record");
+  assert.ok(auditRecord, "Workbench should have a Mac audit record");
+  assert.deepEqual(
+    {
+      name: auditRecord.name,
+      artifacts: {
+        arm64: {
+          bytes: auditRecord.artifacts.arm64.bytes,
+          sha256: auditRecord.artifacts.arm64.sha256,
+        },
+        x64: {
+          bytes: auditRecord.artifacts.x64.bytes,
+          sha256: auditRecord.artifacts.x64.sha256,
+        },
+      },
+    },
+    {
+      name: catalogApp.name,
+      artifacts: {
+        arm64: {
+          bytes: workbenchArm64Manifest.totalSize,
+          sha256: workbenchArm64Manifest.sha256,
+        },
+        x64: {
+          bytes: workbenchX64Manifest.totalSize,
+          sha256: workbenchX64Manifest.sha256,
+        },
+      },
+    },
+  );
 });
 
 test("the PureShrink Mac audit record matches its immutable release manifest", () => {

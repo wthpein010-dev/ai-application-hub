@@ -16,20 +16,20 @@
     },
     {
       "id": "codex-thread-workbench",
-      "name": "Codex 多会话工作台",
+      "name": "Codex 待确认悬浮助手",
       "kind": "native",
       "catalogUrl": "https://wthpein010-dev.github.io/ai-application-hub/projects/codex-thread-workbench/download/mac/",
       "artifacts": {
         "arm64": {
           "url": "https://wthpein010-dev.github.io/ai-application-hub/projects/codex-thread-workbench/download/mac/",
-          "bytes": 40667759,
-          "sha256": "089EED265CE2CF9D934D039D7A6B94EC8843660AF6B6D6814970D8CE430C4056",
+          "bytes": 40699163,
+          "sha256": "9CD76B0ED9B2584E29C1D33E1D075A5AE7DA8ADB63E3C9597272B0E7442E2FC0",
           "manifestUrl": "https://wthpein010-dev.github.io/ai-application-hub/projects/codex-thread-workbench/download/mac/manifest-arm64.json"
         },
         "x64": {
           "url": "https://wthpein010-dev.github.io/ai-application-hub/projects/codex-thread-workbench/download/mac/",
-          "bytes": 42022124,
-          "sha256": "08740C695DA560D91B3D26CF7FC99541A35AC2B1012D52F397B65432C10DC30C",
+          "bytes": 42067234,
+          "sha256": "A08997DE85BB2E9E887FDB96E2D3E459F65D7D5976D81943AF3163EC06C8F1ED",
           "manifestUrl": "https://wthpein010-dev.github.io/ai-application-hub/projects/codex-thread-workbench/download/mac/manifest-x64.json"
         }
       }
