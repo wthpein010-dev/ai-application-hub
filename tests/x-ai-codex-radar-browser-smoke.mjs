@@ -78,31 +78,43 @@ async function assertMobileHeaderLayout(page, label) {
 try {
   const desktop = await openPage({ width: 1280, height: 720 }, "/projects/x-ai-codex-radar/index.html");
   assert.equal(await desktop.title(), "X 情报吧｜AI / Codex 雷达");
-  assert.equal(await desktop.locator("#resultCount").textContent(), "9");
-  assert.match(await desktop.locator(".boundary").innerText(), /示例数据/);
+  assert.equal(await desktop.locator("#resultCount").textContent(), "10");
+  assert.match(await desktop.locator(".boundary").innerText(), /演示快照|示例数据/);
   assert.match(await desktop.locator(".secondary-button").innerText(), /需 ChatGPT 登录/);
   assert.equal(await desktop.locator("#priorityGrid .priority-card").count(), 3);
   assert.match(await desktop.locator("#priorityGrid").innerText(), /Tibo/);
-  assert.match(await desktop.locator(".token-status").innerText(), /暂无官方确认/);
+  assert.match(await desktop.locator('[data-token-alert="true"]').innerText(), /Tibo 确认：额度已重置/);
+  assert.match(await desktop.locator('[data-token-alert="true"]').innerText(), /图片长会话多次压缩/);
+  assert.match(await desktop.locator(".token-status").innerText(), /Tibo 重点信号/);
   assert.equal(await desktop.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 1), true);
   assert.equal(await desktop.locator('[data-daily-brief="true"]').isVisible(), true);
   assert.equal(await desktop.locator('[data-quick-status="true"]').isVisible(), true);
+  assert.ok(
+    await desktop.locator('[data-token-alert="true"]').evaluate((element) => element.getBoundingClientRect().bottom < 720),
+    "desktop should show the complete token alert without scrolling",
+  );
   assert.ok(
     await desktop.locator('[data-priority-section="true"]').evaluate((element) => element.getBoundingClientRect().top < 720),
     "desktop should expose priority intelligence in the first viewport",
   );
 
   await desktop.click('[data-filter="token"]');
-  assert.equal(await desktop.locator("#resultCount").textContent(), "2");
-  await desktop.click('[data-thread-id="codex-token-reset"]');
+  assert.equal(await desktop.locator("#resultCount").textContent(), "3");
+  await desktop.click('[data-thread-id="tibo-token-reset"]');
   assert.match(await desktop.locator("#threadDetail").innerText(), /楼主/);
   assert.equal(await desktop.locator("#threadDetail .floor").count(), 3);
+  assert.match(await desktop.locator("#threadDetail").innerText(), /2pm PST/);
+  assert.match(await desktop.locator("#threadDetail").innerText(), /时间线 · 此前说明/);
+  assert.equal(
+    await desktop.locator('[data-thread-id="tibo-token-reset"] .reply-count small').textContent(),
+    "来源",
+  );
   await desktop.fill("#searchInput", "不存在的测试词");
   assert.equal(await desktop.locator("#emptyState").isVisible(), true);
   await desktop.click("[data-reset-filters]");
-  assert.equal(await desktop.locator("#resultCount").textContent(), "9");
+  assert.equal(await desktop.locator("#resultCount").textContent(), "10");
   await desktop.click('[data-filter="tibo"]');
-  assert.equal(await desktop.locator("#resultCount").textContent(), "1");
+  assert.equal(await desktop.locator("#resultCount").textContent(), "2");
   await desktop.click('[data-thread-id="tibo-sites-collaboration"]');
   assert.match(await desktop.locator("#threadDetail").innerText(), /ChatGPT Sites/);
   await desktop.close();

@@ -54,6 +54,10 @@ test("the public demo clearly separates sample data from the private live site",
   assert.match(html, /data-filter="tibo"/);
   assert.match(html, /Tibo/);
   assert.match(html, /@thsottiaux/);
+  assert.match(html, /data-token-alert="true"/);
+  assert.match(html, /Tibo 确认：额度已重置/);
+  assert.match(html, /图片长会话多次压缩/);
+  assert.match(html, /https:\/\/x\.com\/thsottiaux\/status\/2091688655828246890/);
   assert.match(html, /<script type="module" src="\.\/app\.js"><\/script>/);
   assert.equal(existsSync(join(projectRoot, "styles.css")), true);
   assert.equal(existsSync(join(projectRoot, "app.js")), true);
@@ -77,6 +81,8 @@ test("the demo script provides local filtering, detail inspection and reset", ()
   assert.match(script, /resetFilters/);
   assert.match(script, /ChatGPT Sites/);
   assert.match(script, /thsottiaux/);
+  assert.match(script, /2091407991736332689/);
+  assert.match(script, /2091033630147854385/);
   assert.match(readFileSync(join(projectRoot, "index.html"), "utf8"), /aria-live="polite"/);
   assert.doesNotMatch(script, /\bscore\b|SCORE/);
   assert.doesNotMatch(readFileSync(join(projectRoot, "index.html"), "utf8"), /按价值排序/);
