@@ -64,6 +64,8 @@ test("the public demo clearly separates sample data from the private live site",
   assert.match(html, /英文原文/);
   assert.match(html, /中文整理/);
   assert.match(html, /每两小时检查/);
+  assert.match(html, /最新可信事件/);
+  assert.match(html, /时间待确认/);
   assert.match(html, /https:\/\/x\.com\/thsottiaux\/status\/2091688655828246890/);
   assert.match(html, /<script type="module" src="\.\/app\.js"><\/script>/);
   assert.equal(existsSync(join(projectRoot, "styles.css")), true);
@@ -129,6 +131,8 @@ test("the Radar video bundle follows the shared Hub player contract", () => {
   assert.match(html, /中英文/);
   assert.match(tutorial, /展开.*中英文/);
   assert.match(captions, /每两小时/);
+  assert.match(html, /data-time="9"[^>]*><time>00:09<\/time><span>中英文原文下拉/);
+  assert.match(captions, /00:00:09\.000 -->[\s\S]*展开提醒可同时查看/);
 
   const finalCueEnd = [...captions.matchAll(/-->\s*(\d{2}):(\d{2}):(\d{2}\.\d{3})/g)].at(-1);
   assert.ok(finalCueEnd, "captions should include at least one complete timing cue");
