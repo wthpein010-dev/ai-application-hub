@@ -37,7 +37,7 @@ function loadAppsWithStoredValue(stored) {
   return context.globalThis.loadApps();
 }
 
-test("old Windows-only workbench storage migrates to all four published entrances", () => {
+test("old Windows-only workbench storage migrates to all five published entrances", () => {
   const defaults = loadDefaultApps();
   const workbench = defaults.find((app) => app.id === "codex-thread-workbench");
   const gamePulseDefault = defaults.find((app) => app.id === "gamepulse-mini-radar");
@@ -72,10 +72,32 @@ test("old Windows-only workbench storage migrates to all four published entrance
   assert.deepEqual(JSON.parse(JSON.stringify(migrated.platforms.web)), JSON.parse(JSON.stringify(workbench.platforms.web)));
   assert.deepEqual(JSON.parse(JSON.stringify(migrated.platforms.windows)), JSON.parse(JSON.stringify(workbench.platforms.windows)));
   assert.deepEqual(JSON.parse(JSON.stringify(migrated.platforms.mac)), JSON.parse(JSON.stringify(workbench.platforms.mac)));
+  assert.deepEqual(JSON.parse(JSON.stringify(migrated.platforms.ios)), JSON.parse(JSON.stringify(workbench.platforms.ios)));
+  assert.equal(migrated.platforms.ios.href, "./projects/codex-thread-workbench/ios/index.html");
   assert.equal(migrated.video, workbench.video);
   assert.equal(gamePulse.name, gamePulseDefault.name);
   assert.equal(gamePulse.brief, gamePulseDefault.brief);
   assert.deepEqual(JSON.parse(JSON.stringify(gamePulse.tags)), JSON.parse(JSON.stringify(gamePulseDefault.tags)));
+});
+
+test("legacy default workbench name migrates while a custom name stays untouched", () => {
+  const defaults = loadDefaultApps();
+  const workbench = defaults.find((app) => app.id === "codex-thread-workbench");
+  const legacy = {
+    ...workbench,
+    name: "Codex 多会话工作台",
+    platforms: {
+      ...workbench.platforms,
+      ios: "",
+    },
+  };
+
+  const migrated = loadAppsWithStoredValue([legacy]).find(
+    (app) => app.id === "codex-thread-workbench",
+  );
+
+  assert.equal(migrated.name, "Codex 待确认悬浮助手");
+  assert.equal(migrated.platforms.ios.href, "./projects/codex-thread-workbench/ios/index.html");
 });
 
 test("GamePulse migration preserves user-customized text and tags", () => {

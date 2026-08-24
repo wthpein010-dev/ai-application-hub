@@ -60,20 +60,23 @@ async function launchBrowser() {
   throw new Error(`No Chromium-compatible browser is available.\n${failures.join("\n")}`);
 }
 
-test("hub registers the Workbench demo, video, Windows, and Mac actions", async () => {
+test("hub registers the Confirmation Bar demo, video, Windows, Mac, and iOS actions", async () => {
   const source = await read("../app-20260706-restore-games.js");
   const downloadPage =
     "https://wthpein010-dev.github.io/ai-application-hub/projects/codex-thread-workbench/download/";
   const macDownloadPage =
     "https://wthpein010-dev.github.io/ai-application-hub/projects/codex-thread-workbench/download/mac/";
+  const iosInstallPage = "./projects/codex-thread-workbench/ios/index.html";
   const videoPage = "./projects/codex-thread-workbench/video/index.html";
 
   assert.match(source, /id:\s*"codex-thread-workbench"/);
+  assert.match(source, /name:\s*"Codex 待确认悬浮助手"/);
   assert.match(source, /entry:\s*"\.\/projects\/codex-thread-workbench\/index\.html"/);
   assert.match(source, new RegExp(`video:\\s*"${regexEscape(videoPage)}"`));
   assert.match(source, new RegExp(`package:\\s*"${regexEscape(downloadPage)}"`));
   assert.match(source, new RegExp(`windows:\\s*\\{ href: "${regexEscape(downloadPage)}"`));
   assert.match(source, new RegExp(`mac:\\s*\\{ href: "${regexEscape(macDownloadPage)}"`));
+  assert.match(source, new RegExp(`ios:\\s*\\{ href: "${regexEscape(iosInstallPage)}"`));
   assert.equal(
     (source.match(new RegExp(`${regexEscape(downloadPage)}"`, "g")) || []).length,
     2,
@@ -82,6 +85,11 @@ test("hub registers the Workbench demo, video, Windows, and Mac actions", async 
     (source.match(new RegExp(`${regexEscape(macDownloadPage)}"`, "g")) || []).length,
     1,
   );
+  assert.equal(
+    (source.match(new RegExp(`${regexEscape(iosInstallPage)}"`, "g")) || []).length,
+    1,
+  );
+  assert.match(source, /data-action="ios"/);
   assert.match(source, /tags:\s*\[[^\]]*"macOS"/);
   assert.doesNotMatch(source, /releases\/download\/codex-thread-workbench-v1\.0\.0/);
   assert.match(source, /function isDirectPackageHref\(href\)/);
