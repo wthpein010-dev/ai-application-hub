@@ -148,7 +148,7 @@ public partial class ConfirmationOverlayWindow : Window
             {
                 _expandedPosition = _placement.ResolveForShow(
                     area,
-                    _expandedPosition ?? Position,
+                    Position,
                     windowSize);
             }
 

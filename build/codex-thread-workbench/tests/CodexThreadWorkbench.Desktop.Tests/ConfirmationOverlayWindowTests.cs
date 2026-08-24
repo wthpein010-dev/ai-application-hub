@@ -150,6 +150,47 @@ public sealed class ConfirmationOverlayWindowTests
     }
 
     [AvaloniaFact]
+    public async Task Attach_AfterNativeManualMove_RetractsAndExpandsAtDraggedPosition()
+    {
+        var monitor = new PushMonitor();
+        await using var viewModel = new ConfirmationOverlayViewModel(
+            new NoopClient(),
+            monitor,
+            new ConfirmationDetector());
+        var window = new ConfirmationOverlayWindow();
+        window.Attach(viewModel);
+        await WaitForAsync(() => window.IsVisible);
+        var primaryScreen = window.Screens.Primary;
+        Assert.NotNull(primaryScreen);
+        var workingArea = primaryScreen.WorkingArea;
+        var candidate = new ConfirmationCandidate(
+            "thread-1",
+            "待确认任务",
+            "message-1",
+            "请确认方案，确认后开始实施。",
+            DateTimeOffset.UtcNow);
+
+        monitor.Push(candidate);
+        await WaitForAsync(() => window.Position.Y == workingArea.Y + 8);
+
+        var draggedPosition = new PixelPoint(280, 340);
+        window.Position = draggedPosition;
+        window.MarkManuallyPositioned();
+
+        monitor.Push();
+        await WaitForAsync(() =>
+            window.Position.Y + (int)Math.Ceiling(window.Bounds.Height) ==
+            workingArea.Y + ConfirmationOverlayWindow.IdlePeekHeight);
+
+        monitor.Push(candidate);
+        await WaitForAsync(() => viewModel.RequiresAttention);
+        await Task.Delay(250);
+
+        Assert.Equal(draggedPosition, window.Position);
+        window.CloseForShutdown();
+    }
+
+    [AvaloniaFact]
     public async Task Attach_ExpandsForMonitorErrorEvenWithoutCandidates()
     {
         var monitor = new PushMonitor();

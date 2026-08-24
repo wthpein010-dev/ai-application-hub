@@ -91,9 +91,9 @@ test("Windows download page identifies the Confirmation Bar v2 release", async (
   assert.match(html, /Codex 待确认悬浮助手/);
   assert.match(html, /v2\.0\.0/);
   assert.match(html, /CodexConfirmationBar-Windows-x64\.zip/);
-  assert.match(html, /40\.2 MB/);
+  assert.match(html, /41\.5 MB/);
   assert.match(html, /5 个/);
-  assert.match(html, /8898370651A13146B9F69246268C669C0C36DE8E7BDD6A605880DC1BF758F9FB/);
+  assert.match(html, /2CD24C70F85563450604AEB9A0ED200792DFB7271CC351108DE004F8E2DF6156/);
 });
 
 test("validateManifest accepts a complete manifest and rejects broken ordering", async () => {
