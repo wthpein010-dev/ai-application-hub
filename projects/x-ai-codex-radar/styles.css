@@ -100,12 +100,18 @@ main, footer { width: min(100% - 32px, 1120px); margin: 0 auto; }
 .token-alert a { color: #8b5510; font-size: 9px; font-weight: 700; white-space: nowrap; }
 .token-disclosure { margin-top: 9px; border-top: 1px solid rgba(174,118,32,.2); }
 .token-disclosure summary { width: max-content; max-width: 100%; padding-top: 8px; color: #8b5510; font-size: 9px; font-weight: 750; cursor: pointer; }
-.token-disclosure-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 9px; margin-top: 8px; }
-.token-disclosure-grid section { min-width: 0; padding: 9px 10px; border: 1px solid rgba(174,118,32,.18); border-radius: 8px; background: rgba(255,255,255,.72); }
-.token-disclosure-grid section > strong { display: block; margin: 0 0 5px; color: #8b5510; font-size: 9px; }
-.token-disclosure-grid blockquote, .token-disclosure-grid p { margin: 0; color: #5d554a; font-size: 9px; line-height: 1.6; }
-.token-disclosure-grid small { display: block; margin-top: 6px; color: #786b59; font-size: 8px; line-height: 1.5; }
 .token-disclosure footer { display: flex; gap: 10px; align-items: center; justify-content: space-between; margin-top: 8px; color: #786b59; font-size: 8px; line-height: 1.5; }
+.token-disclosure > .bilingual-message { margin-top: 9px; }
+.token-comments { margin-top: 9px; padding: 10px; border: 1px solid rgba(174,118,32,.22); border-radius: 9px; background: rgba(255,255,255,.58); }
+.token-comments-heading { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; }
+.token-comments-heading strong { margin: 0; color: #8b5510; font-size: 10px; }
+.token-comments-heading span { color: #84745e; font-size: 8px; }
+.token-comment-list { display: grid; gap: 7px; margin-top: 8px; }
+.token-comment { min-width: 0; padding: 9px; border: 1px solid rgba(174,118,32,.16); border-radius: 8px; background: white; }
+.token-comment-meta { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; }
+.token-comment-meta strong { margin: 0; color: #3e4a58; font-size: 9px; }
+.token-comment-meta span { color: #8993a0; font: 8px/1.4 var(--mono); }
+.token-comment > a { display: inline-block; margin-top: 7px; }
 .status-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 9px; }
 .quick-card { min-width: 0; padding: 11px 13px; border: 1px solid var(--line); border-radius: 10px; background: rgba(255,255,255,.92); box-shadow: 0 5px 16px rgba(38,64,91,.04); }
 .quick-card > span { color: #77869a; font-size: 8px; }
@@ -201,6 +207,25 @@ main, footer { width: min(100% - 32px, 1120px); margin: 0 auto; }
 .floor-meta { display: flex; justify-content: space-between; gap: 12px; color: #96a1af; font-size: 8px; }
 .floor-meta span { color: var(--blue-dark); }
 .floor-content > p { margin: 14px 0; font-size: 12px; line-height: 1.8; }
+.floor--timeline { background: #fffdf7; }
+.floor--comment { background: #fbfdff; }
+.bilingual-message { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); margin: 14px 0; overflow: hidden; border: 1px solid #dce5ef; border-radius: 9px; background: white; }
+.language-pane { min-width: 0; padding: 13px 14px; overflow-wrap: anywhere; }
+.language-pane + .language-pane { border-left: 1px solid #dce5ef; }
+.language-pane--translation { background: #f5f9fd; }
+.language-pane header { display: flex; align-items: center; gap: 7px; }
+.language-pane header span { display: inline-grid; min-width: 23px; height: 20px; place-items: center; border-radius: 3px; color: #55718f; background: #e9f0f7; font: 700 8px/1 var(--mono); }
+.language-pane header strong { display: inline; margin: 0; color: #3b4c61; font-size: 9px; }
+.language-pane blockquote, .language-pane > p { margin: 9px 0 0; color: #344358; font-size: 11px; line-height: 1.75; white-space: pre-wrap; }
+.language-pane blockquote { font-family: var(--sans); }
+.language-pane small { display: block; margin-top: 8px; color: #65758a; font-size: 8px; line-height: 1.65; }
+.editor-digest { margin-top: 9px; padding: 8px 9px; border-left: 3px solid var(--blue); background: #eaf3fd; }
+.editor-digest strong { display: inline; margin: 0; color: var(--blue-dark); font-size: 8px; }
+.editor-digest p { margin: 5px 0 0; color: #53657b; font-size: 9px; line-height: 1.65; }
+.bilingual-message--compact { margin: 8px 0 0; }
+.bilingual-message--compact .language-pane { padding: 9px 10px; }
+.bilingual-message--compact .language-pane blockquote, .bilingual-message--compact .language-pane > p { margin-top: 6px; font-size: 9px; line-height: 1.65; }
+.bilingual-message--compact .language-pane small { font-size: 8px; }
 .editor-note { margin: 14px 0; padding: 11px 13px; border-left: 3px solid var(--blue); background: var(--blue-soft); }
 .editor-note strong { color: var(--blue-dark); font-size: 9px; }
 .editor-note p { margin: 6px 0 0; font-size: 11px; line-height: 1.7; }
@@ -277,8 +302,9 @@ a:focus-visible, button:focus-visible, input:focus-visible { outline: 3px solid 
   .token-alert strong { margin-top: 2px; font-size: 13px; }
   .token-alert p { display: -webkit-box; overflow: hidden; font-size: 8px; -webkit-box-orient: vertical; -webkit-line-clamp: 2; }
   .token-alert a { font-size: 8px; }
-  .token-disclosure-grid { grid-template-columns: 1fr; gap: 6px; }
   .token-disclosure footer { align-items: flex-start; flex-direction: column; }
+  .token-comments { padding: 8px; }
+  .token-comments-heading, .token-comment-meta { align-items: flex-start; flex-direction: column; gap: 3px; }
   .section-heading { align-items: center; margin-bottom: 6px; }
   .section-heading h2 { font-size: 15px; }
   .section-heading p, .section-heading small, .section-heading > div > span { display: none; }
@@ -319,6 +345,10 @@ a:focus-visible, button:focus-visible, input:focus-visible { outline: 3px solid 
   .floor-author .author-avatar { width: 36px; height: 36px; }
   .floor-author small { max-width: 68px; font-size: 7px; }
   .floor-content { padding: 15px 11px; }
+  .bilingual-message { grid-template-columns: 1fr; }
+  .language-pane + .language-pane { border-top: 1px solid #dce5ef; border-left: 0; }
+  .language-pane { padding: 10px 11px; }
+  .language-pane blockquote, .language-pane > p { font-size: 10px; line-height: 1.7; }
   .forum-sidebar { grid-template-columns: 1fr; }
   footer { flex-direction: column; }
   footer p { text-align: left; line-height: 1.6; }

@@ -89,9 +89,14 @@ try {
   assert.equal(await disclosure.evaluate((element) => element.open), false);
   await disclosure.locator("summary").click();
   assert.equal(await disclosure.evaluate((element) => element.open), true);
-  assert.match(await disclosure.innerText(), /英文原文/);
-  assert.match(await disclosure.innerText(), /You should feel a positive difference/);
-  assert.match(await disclosure.innerText(), /中文整理/);
+  assert.match(await disclosure.innerText(), /英文原帖/);
+  assert.match(await disclosure.innerText(), /Good Sunday\. Reset has been propagated to accounts and we landed some fixes to usage for things mentioned yesterday as issues we found\. You should feel a positive difference\. More to come tomorrow and will keep communicating\./);
+  assert.match(await disclosure.innerText(), /中文翻译/);
+  assert.match(await disclosure.innerText(), /重置已下发到各账号/);
+  assert.match(await disclosure.innerText(), /编辑整理/);
+  assert.match(await disclosure.innerText(), /精选评论 · 3 条/);
+  assert.equal(await disclosure.locator(".token-comment").count(), 3);
+  assert.match(await disclosure.innerText(), /Business 账号/);
   assert.match(await disclosure.innerText(), /每两小时检查/);
   await disclosure.locator("summary").click();
   assert.match(await desktop.locator(".token-status").innerText(), /Tibo 重点信号/);
@@ -111,19 +116,38 @@ try {
   assert.equal(await desktop.locator("#resultCount").textContent(), "3");
   await desktop.click('[data-thread-id="tibo-token-reset"]');
   assert.match(await desktop.locator("#threadDetail").innerText(), /楼主/);
-  assert.equal(await desktop.locator("#threadDetail .floor").count(), 3);
+  assert.equal(await desktop.locator("#threadDetail .floor").count(), 8);
+  assert.equal(await desktop.locator("#threadDetail .floor--timeline").count(), 4);
+  assert.equal(await desktop.locator("#threadDetail .floor--comment").count(), 3);
   assert.match(await desktop.locator("#threadDetail").innerText(), /2pm PST/);
-  assert.match(await desktop.locator("#threadDetail").innerText(), /时间线 · 此前说明/);
+  assert.match(await desktop.locator("#threadDetail").innerText(), /时间线 · Tibo 此前原帖/);
+  assert.match(await desktop.locator("#threadDetail").innerText(), /英文原帖/);
+  assert.match(await desktop.locator("#threadDetail").innerText(), /中文翻译/);
+  assert.match(await desktop.locator("#threadDetail").innerText(), /精选评论/);
   assert.equal(
     await desktop.locator('[data-thread-id="tibo-token-reset"] .reply-count small').textContent(),
-    "来源",
+    "评论",
   );
+  assert.equal(
+    await desktop.locator('[data-thread-id="tibo-token-reset"] .reply-count strong').textContent(),
+    "3",
+  );
+  for (const [query, evidence] of [
+    ["hooftly", "Business 账号"],
+    ["Meant 2pm obviously", "显然，我指的是下午 2 点"],
+    ["重置已下发到各账号", "Good Sunday"],
+  ]) {
+    await desktop.fill("#searchInput", query);
+    assert.equal(await desktop.locator("#resultCount").textContent(), "1", `search should find nested X content: ${query}`);
+    assert.match(await desktop.locator("#threadDetail").innerText(), new RegExp(evidence));
+  }
   await desktop.fill("#searchInput", "不存在的测试词");
   assert.equal(await desktop.locator("#emptyState").isVisible(), true);
   await desktop.click("[data-reset-filters]");
   assert.equal(await desktop.locator("#resultCount").textContent(), "10");
   await desktop.click('[data-filter="community"]');
-  assert.equal(await desktop.locator('[data-thread-id="tibo-token-reset"]').count(), 0);
+  assert.equal(await desktop.locator('[data-thread-id="tibo-token-reset"]').count(), 1);
+  assert.match(await desktop.locator("#threadDetail").innerText(), /Business 账号/);
   await desktop.click('[data-filter="all"]');
   await desktop.click('[data-filter="tibo"]');
   assert.equal(await desktop.locator("#resultCount").textContent(), "2");
@@ -140,6 +164,15 @@ try {
   );
   await mobile.locator('[data-token-alert="true"] .token-disclosure summary').click();
   assert.equal(await mobile.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 1), true);
+  const mobilePanes = await mobile.locator('[data-token-alert="true"] .bilingual-message').first().evaluate((element) => {
+    const [english, chinese] = element.querySelectorAll(".language-pane");
+    return {
+      englishTop: english.getBoundingClientRect().top,
+      englishBottom: english.getBoundingClientRect().bottom,
+      chineseTop: chinese.getBoundingClientRect().top,
+    };
+  });
+  assert.ok(mobilePanes.chineseTop >= mobilePanes.englishBottom - 1, "mobile bilingual panes should stack vertically");
   await mobile.click('[data-filter="musk"]');
   assert.equal(await mobile.locator("#resultCount").textContent(), "1");
   await mobile.click('[data-thread-id="musk-xai-update"]');
