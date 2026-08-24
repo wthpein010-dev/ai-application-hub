@@ -11,13 +11,89 @@ const threads = [
     handle: "@thsottiaux",
     title: "Tibo 已确认：Codex 全部付费账号额度重置已下发",
     excerpt: "Tibo 8 月 24 日确认重置已经下发。此前说明覆盖全部付费订阅，修复针对图片长会话多次压缩、Computer History 高尾部用量、标题生成功能额外消耗和缓存命中率下降。",
-    original: "Reset has been propagated to accounts and we landed some fixes to usage for things mentioned yesterday as issues we found. You should feel a positive difference.",
+    original: "Good Sunday. Reset has been propagated to accounts and we landed some fixes to usage for things mentioned yesterday as issues we found. You should feel a positive difference. More to come tomorrow and will keep communicating.",
+    translation: "周日好。重置已下发到各账号，我们也已经上线了一些修复，处理昨天提到的用量问题。你应该会感受到明显改善。明天还会有更多进展，我们会继续同步。",
     why: "这是可核验的 Tibo 重点信号，不是普通用户猜测；当前状态是“已重置”。此前的“即将重置”预告、时间和原因保留在来源时间线中。",
     age: "8 月 24 日 08:46 · 已核验",
     url: "https://x.com/thsottiaux/status/2091688655828246890",
     replies: [
-      { author: "Tibo", handle: "@thsottiaux", text: "8 月 23 日预告：修复下发时将为全部付费订阅完整重置使用额度；随后补充时间约为次日 2pm PST。", url: "https://x.com/thsottiaux/status/2091407991736332689", label: "预告原帖", kind: "timeline" },
-      { author: "Tibo", handle: "@thsottiaux", text: "8 月 22 日原因线索：部分用户缓存命中率下降，可能让额度消耗比此前更快。", url: "https://x.com/thsottiaux/status/2091033630147854385", label: "原因原帖", kind: "timeline" },
+      {
+        author: "Tibo",
+        handle: "@thsottiaux",
+        text: "8 月 23 日预告：修复下发时将为全部付费订阅完整重置使用额度。",
+        original: "Update on rate limits in Codex. We’ve found (a) some inefficiencies when using images in long sessions with multiple compactions (b) high p95+ usage for Computer History (c) a feature that was meant to generate conversation titles that was draining a bit more usage than intended. And we have a tiger team combing through everything and shipping fixes tomorrow. We also found a novel approach to drive efficiency up significantly that is completely unrelated and we will be working on next week. As part of some of the fixes tomorrow, we will also do a full reset of the usage for all paid subscriptions. See you then.",
+        translation: "关于 Codex 速率限制的更新。我们发现：（a）在包含多次压缩的长会话中使用图片时存在一些效率问题；（b）Computer History 的 p95 以上用量偏高；（c）一个原本用于生成会话标题的功能，消耗的用量比预期更多。我们已经组织专项团队逐项排查，并将在明天上线修复。我们还发现了一种完全独立、可显著提升效率的新方法，计划下周推进。作为明天部分修复的一部分，我们也会为所有付费订阅完整重置使用额度。到时见。",
+        note: "这是“会重置”与“为什么重置”的核心一手说明。",
+        age: "8 月 23 日 14:11",
+        url: "https://x.com/thsottiaux/status/2091407991736332689",
+        kind: "timeline",
+      },
+      {
+        author: "Tibo",
+        handle: "@thsottiaux",
+        text: "Tibo 随后给出预计下发时间，并在下一条回复中将 14pm 更正为 2pm。",
+        original: "Reset will land around 14pm PST tomorrow.",
+        translation: "重置预计会在明天太平洋时间 14pm 左右下发。",
+        note: "Tibo 随后明确更正：这里的“14pm”指 2pm。",
+        age: "8 月 23 日 14:29",
+        url: "https://x.com/thsottiaux/status/2091412393368945027",
+        kind: "timeline",
+      },
+      {
+        author: "Tibo",
+        handle: "@thsottiaux",
+        text: "时间表述更正为太平洋时间下午 2 点。",
+        original: "Meant 2pm obviously",
+        translation: "显然，我指的是下午 2 点。",
+        note: "用于消除上一条“14pm”的时间歧义。",
+        age: "8 月 23 日 14:32",
+        url: "https://x.com/thsottiaux/status/2091413240337326588",
+        kind: "timeline",
+      },
+      {
+        author: "Tibo",
+        handle: "@thsottiaux",
+        text: "8 月 22 日原因线索：部分用户缓存命中率下降，可能导致额度消耗比此前更快。",
+        original: "Update on rate limits in Codex. We do see that for some users the cache hit rate has been worse this week than the stable state the weeks before. This could explain that usage is draining somewhat faster for those users as hitting the cache consistently is an important component of being efficient. We are investigating and will have an update tomorrow.",
+        translation: "关于 Codex 速率限制的更新。我们确实看到，部分用户本周的缓存命中率比此前几周的稳定状态更差。持续命中缓存是提高效率的重要因素，因此这可能解释了为什么这些用户的用量消耗得更快。我们正在调查，并会在明天更新进展。",
+        note: "这是“部分账号为何感觉消耗更快”的前置原因说明。",
+        age: "8 月 22 日 13:24",
+        url: "https://x.com/thsottiaux/status/2091033630147854385",
+        kind: "timeline",
+      },
+      {
+        author: "Braden",
+        handle: "@vxbe_dev",
+        text: "用户反馈实际下发时间晚于预期，并与自己刚使用的留存重置发生冲突。",
+        original: "I’m not gonna lie I’m upset. You gave a time it didn’t come and then your reset hit my account 2 minutes after i used my saved reset.",
+        translation: "说实话我很不满。你给出的时间没有兑现，而在我刚用掉自己留存的重置次数两分钟后，这次重置才落到我的账号上。",
+        note: "提醒关注实际下发时点，以及平台重置是否会覆盖刚使用的留存额度。此评论不是官方规则。",
+        age: "8 月 24 日 08:49",
+        url: "https://x.com/vxbe_dev/status/2091689270499217416",
+        kind: "comment",
+      },
+      {
+        author: "hooftly",
+        handle: "@hooftly",
+        text: "用户质疑“所有付费用户”的表述是否实际包含 Business 账号。",
+        original: "Why do you keep saying all paid users but then exclude biz accounts. Super frustrating",
+        translation: "为什么你一直说覆盖所有付费用户，却又把 Business 账号排除在外？这非常令人沮丧。",
+        note: "适用范围仍有疑问；在正式说明前，不能把“全部付费订阅”自动扩展为每一种企业套餐。",
+        age: "8 月 24 日 08:59",
+        url: "https://x.com/hooftly/status/2091691767267774755",
+        kind: "comment",
+      },
+      {
+        author: "Mark Magyar",
+        handle: "@notpsychxpath",
+        text: "用户根据此前 2pm PST 预告，质疑为何重置比理解中的时间更早出现。",
+        original: "wasn't it supposed to come on the 24th at 14 PM PST? that's still ~20 hours away",
+        translation: "不是说应该在 24 日太平洋时间下午 2 点到吗？那时距离现在仍有大约 20 小时。",
+        note: "反映预告时间与实际下发之间的理解冲突；应以 Tibo 后续确认和账号实际状态共同核验。",
+        age: "8 月 24 日 08:48",
+        url: "https://x.com/notpsychxpath/status/2091689003221188680",
+        kind: "comment",
+      },
     ],
   },
   {
@@ -209,6 +285,18 @@ function escapeHtml(value) {
     .replaceAll("'", "&#039;");
 }
 
+function bilingualMessage(original, translation, summary, why, compact = false) {
+  const hasTranslation = Boolean(translation);
+  const chineseText = translation || summary || "中文内容暂待整理，请先核对左侧原帖。";
+  const editorDigest = hasTranslation && summary && summary !== chineseText
+    ? `<div class="editor-digest"><strong>编辑整理</strong><p>${escapeHtml(summary)}</p></div>`
+    : "";
+  return `<div class="bilingual-message ${compact ? "bilingual-message--compact" : ""}">
+    <section class="language-pane language-pane--source"><header><span>EN</span><strong>英文原帖</strong></header><blockquote lang="en">${escapeHtml(original)}</blockquote></section>
+    <section class="language-pane language-pane--translation"><header><span>中</span><strong>${hasTranslation ? "中文翻译" : "中文整理（非逐字翻译）"}</strong></header><p lang="zh-CN">${escapeHtml(chineseText)}</p>${editorDigest}${why ? `<small>${escapeHtml(why)}</small>` : ""}</section>
+  </div>`;
+}
+
 function matchesFilter(thread) {
   if (state.filter === "tibo") return thread.role === "tibo";
   if (state.filter === "musk") return thread.role === "musk";
@@ -252,11 +340,12 @@ function renderPriorities() {
 function threadCard(thread) {
   const selected = thread.id === state.selectedId;
   const avatar = thread.role === "tibo" ? "T" : thread.role === "musk" ? "M" : thread.role === "official" ? "✓" : "U";
-  const countLabel = thread.replies.length > 0 && thread.replies.every((reply) => reply.kind === "timeline")
-    ? "来源"
-    : "回复";
+  const timelineCount = thread.replies.filter((reply) => reply.kind === "timeline").length;
+  const commentCount = thread.replies.length - timelineCount;
+  const replyCount = commentCount || timelineCount;
+  const countLabel = commentCount ? "评论" : "来源";
   return `<button class="forum-thread ${selected ? "selected" : ""}" type="button" data-thread-id="${escapeHtml(thread.id)}" aria-pressed="${selected}">
-    <span class="reply-count"><strong>${thread.replies.length}</strong><small>${countLabel}</small></span>
+    <span class="reply-count" aria-label="${commentCount} 条精选评论，${timelineCount} 条此前来源"><strong>${replyCount}</strong><small>${countLabel}</small></span>
     <span class="author-avatar author-avatar-${escapeHtml(thread.role)}" aria-hidden="true">${avatar}</span>
     <span class="thread-copy">
       ${badges(thread, thread.pinned)}
@@ -278,11 +367,12 @@ function renderDetail(thread) {
     <div class="detail-title"><div>${badges(thread, thread.pinned)}<h2>${escapeHtml(thread.title)}</h2></div><span>${thread.verified ? "可核验 X 原帖" : "示例帖子 · 不可引用"}</span></div>
     <article class="floor floor-original">
       <div class="floor-author"><span class="author-avatar author-avatar-${escapeHtml(thread.role)}">${avatar}</span><strong>${escapeHtml(thread.author)}</strong><small>${escapeHtml(thread.handle)}</small></div>
-      <div class="floor-content"><div class="floor-meta"><span>楼主</span><time>${escapeHtml(thread.age)}</time></div><p>${escapeHtml(thread.original)}</p><div class="editor-note"><strong>中文整理</strong><p>${escapeHtml(thread.excerpt)}</p><span>${escapeHtml(thread.why)}</span></div><a href="${escapeHtml(thread.url)}" target="_blank" rel="noreferrer">${thread.verified ? "查看 Tibo 原帖" : "查看对应监测入口"} ↗</a></div>
+      <div class="floor-content"><div class="floor-meta"><span>楼主</span><time>${escapeHtml(thread.age)}</time></div>${bilingualMessage(thread.original, thread.translation, thread.excerpt, thread.why)}<a href="${escapeHtml(thread.url)}" target="_blank" rel="noreferrer">${thread.verified ? "查看 Tibo 原帖" : "查看对应监测入口"} ↗</a></div>
     </article>
     ${thread.replies.map((reply, index) => {
       const isTimeline = reply.kind === "timeline";
-      return `<article class="floor"><div class="floor-author"><span class="reply-avatar">${escapeHtml(reply.author.slice(0, 1))}</span><strong>${escapeHtml(reply.author)}</strong><small>${escapeHtml(reply.handle)}</small></div><div class="floor-content"><div class="floor-meta"><span>${isTimeline ? "时间线 · 此前说明" : `${index + 2} 楼`}</span><time>${isTimeline ? "可核验原帖" : "示例留言"}</time></div><p>${escapeHtml(reply.text)}</p>${reply.url ? `<a href="${escapeHtml(reply.url)}" target="_blank" rel="noreferrer">查看${escapeHtml(reply.label || "X 原帖")} ↗</a>` : '<small class="example-label">示例留言 · 不可作为真实 X 引用</small>'}</div></article>`;
+      const isVerifiedReply = Boolean(reply.url);
+      return `<article class="floor ${isTimeline ? "floor--timeline" : "floor--comment"}"><div class="floor-author"><span class="reply-avatar">${escapeHtml(reply.author.slice(0, 1))}</span><strong>${escapeHtml(reply.author)}</strong><small>${escapeHtml(reply.handle)}</small></div><div class="floor-content"><div class="floor-meta"><span>${isTimeline ? "时间线 · Tibo 此前原帖" : `精选评论 · ${index + 2} 楼`}</span><time>${escapeHtml(reply.age || (isVerifiedReply ? "可核验 X 内容" : "示例留言"))}</time></div>${reply.original ? bilingualMessage(reply.original, reply.translation, reply.text, reply.note, true) : `<p>${escapeHtml(reply.text)}</p>`}${isVerifiedReply ? `<a href="${escapeHtml(reply.url)}" target="_blank" rel="noreferrer">${isTimeline ? "查看 X 原帖" : "查看 X 回复"} ↗</a>` : '<small class="example-label">示例留言 · 不可作为真实 X 引用</small>'}</div></article>`;
     }).join("")}
     ${thread.replies.length === 0 ? '<div class="reply-empty"><strong>暂未找到可展示的示例回复</strong><p>真实站点只收录能回到 X 原链接的留言。</p></div>' : ""}`;
 }

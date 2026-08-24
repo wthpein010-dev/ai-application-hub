@@ -30,6 +30,8 @@ test("X intelligence forum is the final Hub tool with demo and video only", () =
   assert.match(radar.brief, /Tibo/);
   assert.match(radar.brief, /Token／额度重置/);
   assert.match(radar.brief, /中英文/);
+  assert.match(radar.brief, /完整原帖/);
+  assert.match(radar.brief, /精选评论/);
   assert.match(radar.brief, /两小时/);
 });
 
@@ -60,9 +62,13 @@ test("the public demo clearly separates sample data from the private live site",
   assert.match(html, /Tibo 确认：额度已重置/);
   assert.match(html, /图片长会话多次压缩/);
   assert.match(html, /<details class="token-disclosure"/);
-  assert.match(html, /查看中英文内容/);
-  assert.match(html, /英文原文/);
-  assert.match(html, /中文整理/);
+  assert.match(html, /展开 Tibo 原帖中英对照与精选评论/);
+  assert.match(html, /英文原帖/);
+  assert.match(html, /中文翻译/);
+  assert.match(html, /编辑整理/);
+  assert.match(html, /精选评论 · 3 条/);
+  assert.match(html, /Good Sunday\. Reset has been propagated to accounts/);
+  assert.match(html, /重置已下发到各账号/);
   assert.match(html, /每两小时检查/);
   assert.match(html, /最新可信事件/);
   assert.match(html, /时间待确认/);
@@ -91,8 +97,14 @@ test("the demo script provides local filtering, detail inspection and reset", ()
   assert.match(script, /ChatGPT Sites/);
   assert.match(script, /thsottiaux/);
   assert.match(script, /2091407991736332689/);
+  assert.match(script, /2091412393368945027/);
+  assert.match(script, /2091413240337326588/);
   assert.match(script, /2091033630147854385/);
   assert.match(script, /You should feel a positive difference/);
+  assert.match(script, /I’m not gonna lie I’m upset/);
+  assert.match(script, /Why do you keep saying all paid users/);
+  assert.match(script, /Business 账号/);
+  assert.match(script, /wasn't it supposed to come on the 24th/);
   assert.match(readFileSync(join(projectRoot, "index.html"), "utf8"), /aria-live="polite"/);
   assert.doesNotMatch(script, /\bscore\b|SCORE/);
   assert.doesNotMatch(readFileSync(join(projectRoot, "index.html"), "utf8"), /按价值排序/);
@@ -119,6 +131,7 @@ test("the Radar video bundle follows the shared Hub player contract", () => {
   const html = readFileSync(pagePath, "utf8");
   const captions = readFileSync(captionsPath, "utf8");
   const tutorial = readFileSync(join(videoRoot, "tutorial-script.md"), "utf8");
+  const recorder = readFileSync(join(root, "scripts", "build-x-ai-codex-radar-video.mjs"), "utf8");
   assert.match(html, /data-hub-video-page/);
   assert.match(html, /class="hub-video-home" href="\.\.\/\.\.\/\.\.\/index\.html#apps"/);
   assert.match(html, /id="loadVideo"/);
@@ -128,11 +141,22 @@ test("the Radar video bundle follows the shared Hub player contract", () => {
   assert.match(html, /\.\.\/\.\.\/\.\.\/assets\/hub-video-player\.css/);
   assert.match(html, /\.\.\/\.\.\/\.\.\/assets\/hub-video-player\.js/);
   assert.match(captions, /^WEBVTT/);
-  assert.match(html, /中英文/);
-  assert.match(tutorial, /展开.*中英文/);
+  assert.match(html, /完整英文原帖/);
+  assert.match(html, /中文翻译/);
+  assert.match(html, /精选评论/);
+  assert.match(tutorial, /完整英文原帖/);
+  assert.match(tutorial, /中文翻译/);
+  assert.match(tutorial, /精选评论/);
+  assert.match(recorder, /locator\("\.token-comments"\)\.scrollIntoViewIfNeeded/);
+  assert.match(recorder, /locator\("#threadDetail \.floor--comment"\)\.last\(\)\.scrollIntoViewIfNeeded/);
   assert.match(captions, /每两小时/);
-  assert.match(html, /data-time="9"[^>]*><time>00:09<\/time><span>中英文原文下拉/);
-  assert.match(captions, /00:00:09\.000 -->[\s\S]*展开提醒可同时查看/);
+  assert.match(html, /data-time="11"[^>]*><time>00:11<\/time><span>完整原帖与中文翻译/);
+  assert.match(html, /data-time="16"[^>]*><time>00:16<\/time><span>精选评论/);
+  assert.match(html, /data-time="44"[^>]*><time>00:44<\/time><span>官方帖子与来源分层/);
+  assert.match(html, /data-time="64"[^>]*><time>01:04<\/time><span>马斯克动态/);
+  assert.match(html, /data-time="68"[^>]*><time>01:08<\/time><span>重点状态与账号边界/);
+  assert.match(captions, /00:00:11\.000 -->[\s\S]*完整英文原帖/);
+  assert.match(captions, /精选评论/);
 
   const finalCueEnd = [...captions.matchAll(/-->\s*(\d{2}):(\d{2}):(\d{2}\.\d{3})/g)].at(-1);
   assert.ok(finalCueEnd, "captions should include at least one complete timing cue");

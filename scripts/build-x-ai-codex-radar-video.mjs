@@ -77,11 +77,13 @@ try {
   await page.locator(".quick-status").scrollIntoViewIfNeeded();
   await page.waitForTimeout(3000);
   await page.click('[data-token-alert="true"] .token-disclosure summary');
-  await page.waitForTimeout(9000);
+  await page.waitForTimeout(5000);
+  await page.locator(".token-comments").scrollIntoViewIfNeeded();
+  await page.waitForTimeout(6000);
   await page.click('[data-token-alert="true"] .token-disclosure summary');
   await page.waitForTimeout(1000);
   await page.locator(".priority-section").scrollIntoViewIfNeeded();
-  await page.waitForTimeout(5000);
+  await page.waitForTimeout(4000);
   await page.click('[data-open-thread="tibo-token-reset"]');
   await page.waitForTimeout(5000);
   await page.click('[data-filter="tibo"]');
@@ -91,12 +93,14 @@ try {
   await page.click('[data-filter="official"]');
   await page.waitForTimeout(4000);
   await page.click('[data-thread-id="codex-official-update"]');
-  await page.waitForTimeout(7000);
+  await page.waitForTimeout(6000);
   await page.click('[data-filter="token"]');
   await page.waitForTimeout(4000);
   await page.click('[data-thread-id="tibo-token-reset"]');
   await page.locator("#threadDetail").scrollIntoViewIfNeeded();
-  await page.waitForTimeout(8000);
+  await page.waitForTimeout(4000);
+  await page.locator("#threadDetail .floor--comment").last().scrollIntoViewIfNeeded();
+  await page.waitForTimeout(5000);
   await page.click('[data-filter="musk"]');
   await page.waitForTimeout(4000);
   await page.locator(".token-status").scrollIntoViewIfNeeded();
@@ -125,7 +129,7 @@ const transcode = spawnSync(ffmpegPath, [
 if (transcode.error) throw transcode.error;
 if (transcode.status !== 0) throw new Error(`ffmpeg transcode failed with ${transcode.status}`);
 
-const posterResult = spawnSync(ffmpegPath, ["-y", "-ss", "00:00:13", "-i", finalVideo, "-frames:v", "1", "-update", "1", "-q:v", "2", poster], { stdio: "inherit" });
+const posterResult = spawnSync(ffmpegPath, ["-y", "-ss", "00:00:16", "-i", finalVideo, "-frames:v", "1", "-update", "1", "-q:v", "2", poster], { stdio: "inherit" });
 if (posterResult.error) throw posterResult.error;
 if (posterResult.status !== 0) throw new Error(`ffmpeg poster failed with ${posterResult.status}`);
 
