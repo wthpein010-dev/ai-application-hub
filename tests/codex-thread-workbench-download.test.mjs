@@ -51,7 +51,7 @@ test("published manifest fixes the 2.0.0 archive contract and ordered five-part 
 
   assert.equal(manifest.version, 1);
   assert.equal(manifest.fileName, "CodexConfirmationBar-Windows-x64.zip");
-  assert.equal(manifest.totalSize, 40_210_021);
+  assert.equal(manifest.totalSize, 40_210_013);
   assert.equal(manifest.chunkSize, 8_388_608);
   assert.equal(manifest.parts.length, 5);
   assert.deepEqual(
@@ -72,7 +72,7 @@ test("published manifest fixes the 2.0.0 archive contract and ordered five-part 
       8_388_608,
       8_388_608,
       8_388_608,
-      6_655_589
+      6_655_581
     ]
   );
   assert.equal(
@@ -81,7 +81,7 @@ test("published manifest fixes the 2.0.0 archive contract and ordered five-part 
   );
   assert.equal(
     manifest.sha256,
-    "24BCA7D49201F5B3CC622A0239474FD1BAEB06E3C63531A3B628150787D264F2"
+    "318FF3135A284D25A873D09F5342F73C0B1D4B2580CD2EC489FA590F19CF0D04"
   );
 });
 
@@ -93,7 +93,7 @@ test("Windows download page identifies the Confirmation Bar v2 release", async (
   assert.match(html, /CodexConfirmationBar-Windows-x64\.zip/);
   assert.match(html, /40\.2 MB/);
   assert.match(html, /5 个/);
-  assert.match(html, /24BCA7D49201F5B3CC622A0239474FD1BAEB06E3C63531A3B628150787D264F2/);
+  assert.match(html, /318FF3135A284D25A873D09F5342F73C0B1D4B2580CD2EC489FA590F19CF0D04/);
 });
 
 test("validateManifest accepts a complete manifest and rejects broken ordering", async () => {
