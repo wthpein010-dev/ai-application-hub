@@ -72,6 +72,18 @@ public sealed class ConfirmationOverlayWindowTests
         Assert.Equal(new PixelPoint(280, -4), position);
     }
 
+    [Fact]
+    public void Placement_ConvertsLogicalBoundsToPhysicalPixelsAtHighDpi()
+    {
+        var placement = new ConfirmationOverlayPlacement();
+
+        var size = placement.ResolvePixelSize(
+            new Size(560, 64),
+            renderScaling: 2);
+
+        Assert.Equal(new PixelSize(1120, 128), size);
+    }
+
     [AvaloniaFact]
     public void Overlay_AfterManualMove_PreservesPositionWhenShownAgain()
     {

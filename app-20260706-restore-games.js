@@ -1591,8 +1591,15 @@ function normalizeApp(app) {
     if (legacyNames.includes(normalized.name)) normalized.name = base.name;
     if (legacyBriefs.includes(normalized.brief)) normalized.brief = base.brief;
     if (legacyAiUses.includes(normalized.aiUse)) normalized.aiUse = base.aiUse;
-    const legacyTags = normalized.tags.every(tag => ["Codex", "多线程", "桌面工作台", "Windows", "macOS"].includes(tag));
-    if (legacyTags) normalized.tags = [...base.tags];
+    const legacyTagSets = [
+      ["Codex", "多线程", "桌面工作台", "Windows"],
+      ["Codex", "多线程", "桌面工作台", "Windows", "macOS"]
+    ];
+    const usesLegacyTags = legacyTagSets.some(
+      tags => normalized.tags.length === tags.length
+        && normalized.tags.every((tag, index) => tag === tags[index])
+    );
+    if (usesLegacyTags) normalized.tags = [...base.tags];
     normalized.platforms = {
       ...(normalized.platforms || {}),
       mac: normalized.platforms?.mac || base.platforms.mac,

@@ -12,6 +12,7 @@ public sealed class ConfirmationOverlayViewModel : ObservableObject, IAsyncDispo
 
     private readonly ICodexThreadClient _client;
     private readonly IConfirmationMonitor _monitor;
+    private readonly ConfirmationDetector _detector;
     private readonly IConfirmationMessageFallback? _messageFallback;
     private readonly IConfirmationThreadReader _threadReader;
     private readonly TimeSpan _verificationTimeout;
@@ -41,6 +42,7 @@ public sealed class ConfirmationOverlayViewModel : ObservableObject, IAsyncDispo
         _verificationPollInterval = verificationPollInterval ??
                                     TimeSpan.FromMilliseconds(200);
         ArgumentNullException.ThrowIfNull(detector);
+        _detector = detector;
         _synchronizationContext = SynchronizationContext.Current;
         _monitorErrorText = monitor.ErrorText;
         ConfirmAllCommand = new AsyncRelayCommand(
@@ -106,6 +108,16 @@ public sealed class ConfirmationOverlayViewModel : ObservableObject, IAsyncDispo
         try
         {
             var threadId = item.Candidate.ThreadId;
+            var current = _detector.Detect(
+                await ReadCandidateStateAsync(item.Candidate));
+            if (current?.MessageId != item.Candidate.MessageId)
+            {
+                _monitor.MarkHandled(
+                    item.Candidate.ThreadId,
+                    item.Candidate.MessageId);
+                return;
+            }
+
             try
             {
                 if (!await EnsureThreadPreloadedAsync(threadId))
@@ -274,14 +286,7 @@ public sealed class ConfirmationOverlayViewModel : ObservableObject, IAsyncDispo
         {
             try
             {
-                var state = await _threadReader.ReadThreadAsync(
-                    new Models.ThreadSummary(
-                        candidate.ThreadId,
-                        candidate.Title,
-                        candidate.RequestPreview,
-                        string.Empty,
-                        candidate.UpdatedAt,
-                        Models.ThreadStatusKind.NotLoaded));
+                var state = await ReadCandidateStateAsync(candidate);
                 lastReadError = null;
                 if (HasConfirmationAfterCandidate(state, candidate.MessageId))
                 {
@@ -312,6 +317,17 @@ public sealed class ConfirmationOverlayViewModel : ObservableObject, IAsyncDispo
         throw new InvalidOperationException(
             $"未确认消息已发送到对应任务{detail}，请重试。");
     }
+
+    private Task<Models.ThreadCardState> ReadCandidateStateAsync(
+        ConfirmationCandidate candidate) =>
+        _threadReader.ReadThreadAsync(
+            new Models.ThreadSummary(
+                candidate.ThreadId,
+                candidate.Title,
+                candidate.RequestPreview,
+                string.Empty,
+                candidate.UpdatedAt,
+                Models.ThreadStatusKind.NotLoaded));
 
     private static bool HasConfirmationAfterCandidate(
         Models.ThreadCardState state,

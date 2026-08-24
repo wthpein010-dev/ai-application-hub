@@ -117,7 +117,7 @@ const loadManifest = async () => {
     if (request !== manifestRequest) return;
 
     const architecture = selectedButton.dataset.architecture;
-    const expectedFileName = `CodexThreadWorkbench-macOS-${architecture}.app.zip`;
+    const expectedFileName = `CodexConfirmationBar-macOS-${architecture}.app.zip`;
     if (nextManifest.fileName !== expectedFileName) {
       throw new Error(`下载清单文件名与 ${architecture} 架构不匹配。`);
     }

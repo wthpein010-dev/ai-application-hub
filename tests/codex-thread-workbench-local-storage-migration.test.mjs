@@ -100,6 +100,23 @@ test("legacy default workbench name migrates while a custom name stays untouched
   assert.equal(migrated.platforms.ios.href, "./projects/codex-thread-workbench/ios/index.html");
 });
 
+test("workbench migration preserves customized tag subsets and an intentional empty list", () => {
+  const defaults = loadDefaultApps();
+  const workbench = defaults.find((app) => app.id === "codex-thread-workbench");
+
+  for (const tags of [["Codex", "Windows"], []]) {
+    const customized = {
+      ...workbench,
+      tags,
+    };
+    const migrated = loadAppsWithStoredValue([customized]).find(
+      (app) => app.id === "codex-thread-workbench",
+    );
+
+    assert.deepEqual(JSON.parse(JSON.stringify(migrated.tags)), tags);
+  }
+});
+
 test("GamePulse migration preserves user-customized text and tags", () => {
   const defaults = loadDefaultApps();
   const gamePulseDefault = defaults.find((app) => app.id === "gamepulse-mini-radar");

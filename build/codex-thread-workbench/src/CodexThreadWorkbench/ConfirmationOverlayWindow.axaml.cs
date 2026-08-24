@@ -326,9 +326,9 @@ public partial class ConfirmationOverlayWindow : Window
     {
         var width = Bounds.Width > 0 ? Bounds.Width : Width;
         var height = Bounds.Height > 0 ? Bounds.Height : 1;
-        return new PixelSize(
-            Math.Max(1, (int)Math.Ceiling(width)),
-            Math.Max(1, (int)Math.Ceiling(height)));
+        return _placement.ResolvePixelSize(
+            new Size(width, height),
+            RenderScaling);
     }
 
     private void InitializeComponent() => AvaloniaXamlLoader.Load(this);

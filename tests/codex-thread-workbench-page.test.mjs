@@ -237,6 +237,41 @@ test("error state is fail-closed and keyboard and mobile controls stay usable", 
   }
 });
 
+test("Mac download page accepts both published Confirmation Bar manifests", async () => {
+  const server = createStaticServer();
+  const baseUrl = await startServer(server);
+  const browser = await launchBrowser();
+
+  try {
+    const page = await browser.newPage({ viewport: { width: 1280, height: 900 } });
+    await page.goto(`${baseUrl}/projects/codex-thread-workbench/download/mac/index.html`);
+
+    const downloadButton = page.locator('[data-role="download-button"]');
+    await page.waitForFunction(() =>
+      document.querySelector('[data-role="download-button"]')?.disabled === false,
+      undefined,
+      { timeout: 1_500 },
+    );
+    assert.equal(await downloadButton.isEnabled(), true);
+    assert.equal(
+      await page.locator('[data-role="file-name"]').textContent(),
+      "CodexConfirmationBar-macOS-arm64.app.zip",
+    );
+
+    await page.locator('[data-architecture="x64"]').click();
+    await page.waitForFunction(() =>
+      document.querySelector('[data-role="file-name"]')?.textContent ===
+        "CodexConfirmationBar-macOS-x64.app.zip",
+      undefined,
+      { timeout: 1_500 },
+    );
+    assert.equal(await downloadButton.isEnabled(), true);
+  } finally {
+    await browser.close();
+    await stopServer(server);
+  }
+});
+
 test("download page exposes progress, verification, failure and retry states", async () => {
   const [html, controller] = await Promise.all([
     read("../projects/codex-thread-workbench/download/index.html"),

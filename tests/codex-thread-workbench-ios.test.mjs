@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { createReadStream, existsSync, statSync } from "node:fs";
 import { readFile } from "node:fs/promises";
 import { createServer } from "node:http";
-import { dirname, extname, normalize, resolve, sep } from "node:path";
+import { dirname, extname, join, normalize, resolve, sep } from "node:path";
 import test from "node:test";
 import vm from "node:vm";
 import { fileURLToPath } from "node:url";
@@ -85,13 +85,101 @@ test("service worker precaches only the iOS static shell", async () => {
   assert.deepEqual(cachedUrls, [
     "./",
     "./index.html",
-    "./styles.css",
-    "./app.js",
+    "./styles.css?v=20260824-v200",
+    "./app.js?v=20260824-v200",
     "./app.webmanifest",
     "./icon-192.png",
     "./icon-512.png",
   ]);
   assert.equal(cachedUrls.every(url => url.startsWith("./") && !url.startsWith("../")), true);
+});
+
+test("service worker activation deletes only obsolete caches owned by this iOS app", async () => {
+  const listeners = new Map();
+  const deleted = [];
+  const context = {
+    self: {
+      addEventListener(type, listener) { listeners.set(type, listener); },
+      skipWaiting() {},
+      clients: { claim: async () => {} },
+      location: new URL("https://example.test/projects/codex-thread-workbench/ios/service-worker.js"),
+    },
+    caches: {
+      async open() { return { async addAll() {} }; },
+      async keys() {
+        return [
+          "codex-confirmation-ios-v1",
+          "codex-confirmation-ios-v2",
+          "another-hub-pwa-v7",
+        ];
+      },
+      async delete(key) { deleted.push(key); return true; },
+      async match() { return undefined; },
+    },
+    fetch: async () => new Response("ok"),
+    Response,
+    URL,
+    Promise,
+  };
+  vm.runInNewContext((await readIos("service-worker.js")).toString("utf8"), context);
+
+  let activatePromise;
+  listeners.get("activate")({ waitUntil(promise) { activatePromise = promise; } });
+  await activatePromise;
+
+  assert.deepEqual(deleted, ["codex-confirmation-ios-v1"]);
+});
+
+test("offline fallback serves cached HTML only for navigation requests", async () => {
+  const listeners = new Map();
+  const cachedIndex = new Response("<main>offline shell</main>", {
+    headers: { "Content-Type": "text/html" },
+  });
+  const context = {
+    self: {
+      addEventListener(type, listener) { listeners.set(type, listener); },
+      skipWaiting() {},
+      clients: { claim: async () => {} },
+      location: new URL("https://example.test/projects/codex-thread-workbench/ios/service-worker.js"),
+    },
+    caches: {
+      async open() { return { async addAll() {} }; },
+      async keys() { return []; },
+      async delete() { return true; },
+      async match(request) {
+        return request === "./index.html" ? cachedIndex : undefined;
+      },
+    },
+    fetch: async () => { throw new Error("offline"); },
+    Response,
+    URL,
+    Promise,
+  };
+  vm.runInNewContext((await readIos("service-worker.js")).toString("utf8"), context);
+
+  const dispatchFetch = request => {
+    let responsePromise;
+    listeners.get("fetch")({
+      request,
+      respondWith(promise) { responsePromise = promise; },
+    });
+    return responsePromise;
+  };
+
+  const assetRequest = {
+    method: "GET",
+    mode: "no-cors",
+    url: "https://example.test/projects/codex-thread-workbench/ios/missing.css",
+  };
+  await assert.rejects(dispatchFetch(assetRequest), /offline/);
+
+  const navigationRequest = {
+    method: "GET",
+    mode: "navigate",
+    url: "https://example.test/projects/codex-thread-workbench/ios/missing-route",
+  };
+  const fallback = await dispatchFetch(navigationRequest);
+  assert.equal(await fallback.text(), "<main>offline shell</main>");
 });
 
 const contentTypes = new Map([
@@ -104,7 +192,8 @@ const contentTypes = new Map([
 
 const server = createServer((request, response) => {
   const pathname = decodeURIComponent(new URL(request.url, "http://127.0.0.1").pathname);
-  const target = resolve(root, "." + normalize(pathname));
+  let target = resolve(root, "." + normalize(pathname));
+  if (existsSync(target) && statSync(target).isDirectory()) target = join(target, "index.html");
   if ((!target.startsWith(root + sep) && target !== root) || !existsSync(target) || !statSync(target).isFile()) {
     response.writeHead(404).end();
     return;
@@ -144,6 +233,39 @@ test("iOS companion remains usable at 390 by 844 and confirms demo candidates", 
     assert.equal(await page.locator('[data-role="candidate"]').count(), 0);
     assert.match(await page.locator('[data-role="activity-log"]').textContent(), /已模拟确认 2 个任务/);
   } finally {
+    await browser?.close();
+    await new Promise(resolveServer => server.close(resolveServer));
+  }
+});
+
+test("installed iOS companion reloads offline with styles and interaction intact", async () => {
+  await new Promise(resolveServer => server.listen(0, "127.0.0.1", resolveServer));
+  let browser;
+  try {
+    browser = await launchBrowser();
+    const page = await browser.newPage({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true });
+    const url = `http://127.0.0.1:${server.address().port}/projects/codex-thread-workbench/ios/index.html`;
+    await page.goto(url);
+    await page.evaluate(() => Promise.race([
+      navigator.serviceWorker.ready,
+      new Promise((_, reject) => setTimeout(() => reject(new Error("service worker timeout")), 5_000)),
+    ]));
+    await page.reload();
+    assert.equal(await page.evaluate(() => Boolean(navigator.serviceWorker.controller)), true);
+
+    await page.context().setOffline(true);
+    await page.reload({ waitUntil: "domcontentloaded" });
+    assert.equal(
+      await page.locator(".install-card").evaluate(element => getComputedStyle(element).borderRadius),
+      "20px",
+    );
+    await page.getByRole("button", { name: "模拟待确认出现" }).click();
+    assert.equal(await page.locator('[data-role="candidate"]').count(), 2);
+  } finally {
+    if (browser) {
+      const contexts = browser.contexts();
+      await Promise.all(contexts.map(context => context.setOffline(false)));
+    }
     await browser?.close();
     await new Promise(resolveServer => server.close(resolveServer));
   }

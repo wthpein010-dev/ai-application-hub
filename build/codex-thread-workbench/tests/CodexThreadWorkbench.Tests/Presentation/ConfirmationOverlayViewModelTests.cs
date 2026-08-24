@@ -26,7 +26,7 @@ public sealed class ConfirmationOverlayViewModelTests
     }
 
     [Fact]
-    public async Task ConfirmAsync_StartsPreloadedThreadWithoutReadingAgain()
+    public async Task ConfirmAsync_StartsPreloadedThreadAfterRevalidatingCandidate()
     {
         var candidate = Candidate("thread-1", "message-1");
         var monitor = new FakeConfirmationMonitor(candidate);
@@ -40,12 +40,45 @@ public sealed class ConfirmationOverlayViewModelTests
         await viewModel.ConfirmAsync(Assert.Single(viewModel.Items));
 
         Assert.Equal(["start:thread-1"], client.OperationLog);
-        Assert.Equal(1, client.ReadCalls["thread-1"]);
+        Assert.Equal(2, client.ReadCalls["thread-1"]);
         Assert.Equal(
             "确认，继续开始做，完成前不要停。",
             client.LastStart?.Text);
         Assert.Empty(viewModel.Items);
         Assert.Equal([("thread-1", "message-1")], monitor.Handled);
+    }
+
+    [Fact]
+    public async Task ConfirmAsync_DropsStaleCandidateWithoutSending()
+    {
+        var candidate = Candidate("thread-1", "message-1");
+        var monitor = new FakeConfirmationMonitor(candidate);
+        var client = ClientWith(WaitingState("thread-1", "message-1"));
+        var staleState = WaitingState("thread-1", "message-1") with
+        {
+            Messages = WaitingState("thread-1", "message-1").Messages
+                .Append(new ChatMessage(
+                    "new-user-message",
+                    ChatRole.User,
+                    "我已经在另一个窗口回复了。"))
+                .ToArray()
+        };
+        var reader = new RecordingThreadReader(() => staleState);
+        await using var viewModel = new ConfirmationOverlayViewModel(
+            client,
+            monitor,
+            new ConfirmationDetector(),
+            verificationTimeout: TimeSpan.FromMilliseconds(20),
+            verificationPollInterval: TimeSpan.FromMilliseconds(5),
+            threadReader: reader);
+        client.OperationLog.Clear();
+
+        await viewModel.ConfirmAsync(Assert.Single(viewModel.Items));
+
+        Assert.DoesNotContain("start:thread-1", client.OperationLog);
+        Assert.Empty(viewModel.Items);
+        Assert.Equal([("thread-1", "message-1")], monitor.Handled);
+        Assert.Equal(["thread-1"], reader.ThreadIds);
     }
 
     [Fact]
@@ -110,7 +143,7 @@ public sealed class ConfirmationOverlayViewModelTests
     }
 
     [Fact]
-    public async Task ConfirmAsync_VerifiesThroughInjectedSnapshotReader()
+    public async Task ConfirmAsync_RevalidatesAndVerifiesThroughInjectedSnapshotReader()
     {
         var candidate = Candidate("thread-1", "message-1");
         var monitor = new FakeConfirmationMonitor(candidate);
@@ -125,7 +158,7 @@ public sealed class ConfirmationOverlayViewModelTests
 
         await viewModel.ConfirmAsync(Assert.Single(viewModel.Items));
 
-        Assert.Equal(["thread-1"], reader.ThreadIds);
+        Assert.Equal(["thread-1", "thread-1"], reader.ThreadIds);
         Assert.Empty(client.ReadCalls);
         Assert.Empty(viewModel.Items);
     }
