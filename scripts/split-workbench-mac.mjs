@@ -23,7 +23,7 @@ if (
   try {
     const sourcePath = resolve(sourceArgument);
     const outputDirectory = resolve(outputArgument);
-    const fileName = `CodexThreadWorkbench-macOS-${architecture}.app.zip`;
+    const fileName = `CodexConfirmationBar-macOS-${architecture}.app.zip`;
     const partsDirectory = join(outputDirectory, "parts", architecture);
     const manifestPath = join(
       outputDirectory,

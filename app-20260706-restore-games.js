@@ -100,7 +100,7 @@ const defaultPageText = {
   "engineering.title": "工程在线体验",
   "engineering.description": "项目组打包内部体验测试入口，只保留在线演示，方便快速检查 WebGL 包和浏览器运行状态。",
   "platforms.title": "跨平台体验",
-  "platforms.description": "按网页、Windows、Mac 三种方式整理体验入口。网页和通用包可跨系统打开；桌面工具优先提供对应系统包。",
+  "platforms.description": "按网页、Windows、Mac 和 iOS 四种方式整理体验入口。桌面工具优先提供对应系统包，iOS 可安装 Web App 会明确标注移动端能力边界。",
   "maintain.title": "维护控制台",
   "maintain.description": "输入 1 或点击更新，刷新统计、卡片和详情；也可以在右侧编辑主要文案。"
 };
@@ -352,22 +352,23 @@ const defaultApps = [
   },
   {
     id: "codex-thread-workbench",
-    name: "Codex 多会话工作台",
+    name: "Codex 待确认悬浮助手",
     category: "AI 开发桌面工具",
     status: "desktop",
-    brief: "在同一个 Windows 或 macOS 一级界面中同时查看和操作多个真实 Codex 线程，直接输入、停止、审批，并清晰区分进行中与已完成任务。",
-    problem: "并行推进多个 Codex 任务时，频繁切换线程会打断判断，也难以及时发现等待输入、等待审批或已经完成的任务。",
-    aiUse: "工具通过本机 codex app-server 连接真实线程，不读取凭据；AI 参与协议接入、状态投影、多窗口会话交互和 Windows、macOS 双架构发布验证。",
+    brief: "自动扫描等待你确认继续的 Codex 任务；空闲时收进屏幕顶部，有候选时自动弹出，可逐条确认或一键全部确认。",
+    problem: "多个 Codex 任务并行运行时，等待确认的任务容易埋在任务列表里；频繁切换检查既打断工作，也会拖慢后续执行。",
+    aiUse: "桌面端通过本机 codex app-server 和会话日志识别未决确认，不读取凭据；Windows/macOS 负责真实线程操作，iOS 提供可安装的演示伴侣入口。",
     folder: "./projects/codex-thread-workbench/",
     entry: "./projects/codex-thread-workbench/index.html",
     video: "./projects/codex-thread-workbench/video/index.html",
     package: "https://wthpein010-dev.github.io/ai-application-hub/projects/codex-thread-workbench/download/",
     platforms: {
-      web: { href: "./projects/codex-thread-workbench/index.html", label: "交互演示" },
-      windows: { href: "https://wthpein010-dev.github.io/ai-application-hub/projects/codex-thread-workbench/download/", label: "Windows下载" },
-      mac: { href: "https://wthpein010-dev.github.io/ai-application-hub/projects/codex-thread-workbench/download/mac/", label: "Mac下载" }
+      web: { href: "./projects/codex-thread-workbench/index.html", label: "演示" },
+      windows: { href: "https://wthpein010-dev.github.io/ai-application-hub/projects/codex-thread-workbench/download/", label: "Wins下载" },
+      mac: { href: "https://wthpein010-dev.github.io/ai-application-hub/projects/codex-thread-workbench/download/mac/", label: "Mac下载" },
+      ios: { href: "./projects/codex-thread-workbench/ios/index.html", label: "iOS安装" }
     },
-    tags: ["Codex", "多线程", "桌面工作台", "Windows", "macOS"],
+    tags: ["Codex", "待确认提醒", "置顶悬浮", "Windows", "macOS", "iOS"],
     speed: 9,
     impact: 9,
     risk: 9,
@@ -1177,9 +1178,10 @@ function renderPlatformShowcase(filtered) {
   if (!nodes.platformGrid) return;
   const list = filtered.length ? filtered : apps;
   const platformGroups = [
-    { key: "web", label: "网页体验", note: "浏览器直接打开，Windows 和 Mac 都可使用。" },
+    { key: "web", label: "网页体验", note: "浏览器直接打开，电脑和手机都可使用。" },
     { key: "windows", label: "Windows", note: "优先提供 exe、插件包或通用 zip。" },
-    { key: "mac", label: "Mac", note: "优先提供 Mac 包；网页工具使用通用 zip 或源码包。" }
+    { key: "mac", label: "Mac", note: "优先提供 Mac 包；网页工具使用通用 zip 或源码包。" },
+    { key: "ios", label: "iOS", note: "提供可安装 Web App 或经过验证的 Apple 移动端入口。" }
   ];
 
   nodes.platformGrid.innerHTML = platformGroups.map(group => {
@@ -1211,6 +1213,7 @@ function renderActions(app, stopPropagation = false, mode = "default") {
   const videoActionLabel = `${app.name} 视频`;
   const windowsActionLabel = `${app.name} Wins下载`;
   const macActionLabel = `${app.name} Mac下载`;
+  const iosActionLabel = `${app.name} iOS安装`;
   const engineeringVideoLink = app.video ? `<a data-action="video" href="${escapeHtml(projectHref(videoHref(app)))}" aria-label="${escapeHtml(videoActionLabel)}"${stop}>\u89c6\u9891</a>` : "";
   if (mode === "engineering") {
     const webLink = web ? `<a class="primary-link" data-action="web" href="${escapeHtml(projectHref(web))}" aria-label="${escapeHtml(webActionLabel)}"${stop}>演示</a>` : "";
@@ -1223,11 +1226,13 @@ function renderActions(app, stopPropagation = false, mode = "default") {
   }
   const windows = platformValue(app, "windows") || app.package;
   const mac = platformValue(app, "mac");
+  const ios = platformValue(app, "ios");
   const windowsDownload = isDirectPackageHref(windows) ? " download" : "";
   const macDownload = isDirectPackageHref(mac) ? " download" : "";
   const webLink = web ? `<a class="primary-link" data-action="web" href="${escapeHtml(projectHref(web))}" aria-label="${escapeHtml(webActionLabel)}"${stop}>演示</a>` : "";
   const windowsLink = windows ? `<a class="download-link" data-action="download" href="${escapeHtml(projectHref(windows))}" aria-label="${escapeHtml(windowsActionLabel)}"${windowsDownload}${stop}>Wins下载</a>` : "";
   const macLink = mac ? `<a class="mac-link" data-action="mac" href="${escapeHtml(projectHref(mac))}" aria-label="${escapeHtml(macActionLabel)}"${macDownload}${stop}>Mac下载</a>` : "";
+  const iosLink = ios ? `<a class="ios-link" data-action="ios" href="${escapeHtml(projectHref(ios))}" aria-label="${escapeHtml(iosActionLabel)}"${stop}>iOS安装</a>` : "";
   const video = app.video
     ? `<a data-action="video" href="${escapeHtml(projectHref(videoHref(app)))}" aria-label="${escapeHtml(videoActionLabel)}"${stop}>视频</a>`
     : "";
@@ -1237,6 +1242,7 @@ function renderActions(app, stopPropagation = false, mode = "default") {
       ${video}
       ${windowsLink}
       ${macLink}
+      ${iosLink}
     </div>
   `;
 }
@@ -1254,7 +1260,7 @@ function platformLabel(app, key, fallback) {
 }
 
 function platformCount(app) {
-  return ["web", "windows", "mac"].filter(key => platformValue(app, key)).length;
+  return ["web", "windows", "mac", "ios"].filter(key => platformValue(app, key)).length;
 }
 
 function renderEditForm() {
@@ -1572,15 +1578,32 @@ function normalizeApp(app) {
   ) {
     normalized.brief = base.brief;
   }
-  if (normalized.id === "codex-thread-workbench" && app.platforms?.mac === "") {
-    const legacyBrief = "在同一个 Windows 一级界面中同时查看和操作多个真实 Codex 线程，直接输入、停止、审批，并清晰区分进行中与已完成任务。";
-    const legacyAiUse = "工具通过本机 codex app-server 连接真实线程，不读取凭据；AI 参与协议接入、状态投影、多窗口会话交互和 Windows 发布验证。";
-    if (normalized.brief === legacyBrief) normalized.brief = base.brief;
-    if (normalized.aiUse === legacyAiUse) normalized.aiUse = base.aiUse;
-    normalized.tags = [...new Set([...normalized.tags, "macOS"])];
+  if (normalized.id === "codex-thread-workbench") {
+    const legacyNames = ["Codex 多会话工作台"];
+    const legacyBriefs = [
+      "在同一个 Windows 一级界面中同时查看和操作多个真实 Codex 线程，直接输入、停止、审批，并清晰区分进行中与已完成任务。",
+      "在同一个 Windows 或 macOS 一级界面中同时查看和操作多个真实 Codex 线程，直接输入、停止、审批，并清晰区分进行中与已完成任务。"
+    ];
+    const legacyAiUses = [
+      "工具通过本机 codex app-server 连接真实线程，不读取凭据；AI 参与协议接入、状态投影、多窗口会话交互和 Windows 发布验证。",
+      "工具通过本机 codex app-server 连接真实线程，不读取凭据；AI 参与协议接入、状态投影、多窗口会话交互和 Windows、macOS 双架构发布验证。"
+    ];
+    if (legacyNames.includes(normalized.name)) normalized.name = base.name;
+    if (legacyBriefs.includes(normalized.brief)) normalized.brief = base.brief;
+    if (legacyAiUses.includes(normalized.aiUse)) normalized.aiUse = base.aiUse;
+    const legacyTagSets = [
+      ["Codex", "多线程", "桌面工作台", "Windows"],
+      ["Codex", "多线程", "桌面工作台", "Windows", "macOS"]
+    ];
+    const usesLegacyTags = legacyTagSets.some(
+      tags => normalized.tags.length === tags.length
+        && normalized.tags.every((tag, index) => tag === tags[index])
+    );
+    if (usesLegacyTags) normalized.tags = [...base.tags];
     normalized.platforms = {
       ...(normalized.platforms || {}),
-      mac: base.platforms.mac
+      mac: normalized.platforms?.mac || base.platforms.mac,
+      ios: normalized.platforms?.ios || base.platforms.ios
     };
   }
   if (normalized.id === "gamepulse-mini-radar") {

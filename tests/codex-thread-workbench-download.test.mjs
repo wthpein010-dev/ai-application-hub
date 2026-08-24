@@ -11,6 +11,10 @@ const manifestUrl = new URL(
   "../projects/codex-thread-workbench/download/manifest.json",
   import.meta.url
 );
+const pageUrl = new URL(
+  "../projects/codex-thread-workbench/download/index.html",
+  import.meta.url
+);
 
 const sha256 = bytes =>
   createHash("sha256").update(bytes).digest("hex").toUpperCase();
@@ -33,7 +37,7 @@ const makeManifest = (chunks, overrides = {}) => {
 
   return {
     version: 1,
-    fileName: "CodexThreadWorkbench-Windows-x64.zip",
+    fileName: "CodexConfirmationBar-Windows-x64.zip",
     totalSize: archive.byteLength,
     chunkSize: Math.max(...chunks.map(bytes => bytes.byteLength)),
     sha256: sha256(archive),
@@ -42,12 +46,12 @@ const makeManifest = (chunks, overrides = {}) => {
   };
 };
 
-test("published manifest fixes the 1.3.0 archive contract and ordered five-part layout", async () => {
+test("published manifest fixes the 2.0.0 archive contract and ordered five-part layout", async () => {
   const manifest = JSON.parse(await readFile(manifestUrl, "utf8"));
 
   assert.equal(manifest.version, 1);
-  assert.equal(manifest.fileName, "CodexThreadWorkbench-Windows-x64.zip");
-  assert.equal(manifest.totalSize, 40_179_034);
+  assert.equal(manifest.fileName, "CodexConfirmationBar-Windows-x64.zip");
+  assert.equal(manifest.totalSize, 40_210_013);
   assert.equal(manifest.chunkSize, 8_388_608);
   assert.equal(manifest.parts.length, 5);
   assert.deepEqual(
@@ -58,7 +62,7 @@ test("published manifest fixes the 1.3.0 archive contract and ordered five-part 
     manifest.parts.map(part => part.path),
     Array.from(
       { length: 5 },
-      (_, index) => `parts/v1.3.0/part-${String(index).padStart(3, "0")}.bin`
+      (_, index) => `parts/v2.0.0/part-${String(index).padStart(3, "0")}.bin`
     )
   );
   assert.deepEqual(
@@ -68,7 +72,7 @@ test("published manifest fixes the 1.3.0 archive contract and ordered five-part 
       8_388_608,
       8_388_608,
       8_388_608,
-      6_624_602
+      6_655_581
     ]
   );
   assert.equal(
@@ -77,8 +81,19 @@ test("published manifest fixes the 1.3.0 archive contract and ordered five-part 
   );
   assert.equal(
     manifest.sha256,
-    "631AC7D0DBA2EA7CC01F4EB0B1BE77201AA93C0DA81E4F763654B0F4151BDCF4"
+    "318FF3135A284D25A873D09F5342F73C0B1D4B2580CD2EC489FA590F19CF0D04"
   );
+});
+
+test("Windows download page identifies the Confirmation Bar v2 release", async () => {
+  const html = await readFile(pageUrl, "utf8");
+
+  assert.match(html, /Codex 待确认悬浮助手/);
+  assert.match(html, /v2\.0\.0/);
+  assert.match(html, /CodexConfirmationBar-Windows-x64\.zip/);
+  assert.match(html, /40\.2 MB/);
+  assert.match(html, /5 个/);
+  assert.match(html, /318FF3135A284D25A873D09F5342F73C0B1D4B2580CD2EC489FA590F19CF0D04/);
 });
 
 test("validateManifest accepts a complete manifest and rejects broken ordering", async () => {

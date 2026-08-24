@@ -118,10 +118,11 @@ public sealed class CodexAppServerClient : ICodexThreadClient
         var summary = ThreadProjection.FromThread(thread);
         var messages = ThreadProjection.MessagesFromThread(thread);
         var activeTurnId = FindActiveTurnId(thread);
+        var latestTurnStatus = FindLatestTurnStatus(thread);
         var state = activeTurnId is not null
             ? ThreadStatusKind.Running
             : summary.Status == ThreadStatusKind.NotLoaded
-                ? FindLatestTurnStatus(thread)
+                ? latestTurnStatus
                 : summary.Status;
         if (activeTurnId is null &&
             state is not (ThreadStatusKind.NeedsApproval or ThreadStatusKind.Error))
@@ -132,7 +133,12 @@ public sealed class CodexAppServerClient : ICodexThreadClient
                     ?? state;
         }
 
-        return new ThreadCardState(summary, messages, state, activeTurnId);
+        return new ThreadCardState(
+            summary,
+            messages,
+            state,
+            activeTurnId,
+            LatestTurnStatus: latestTurnStatus);
     }
 
     public async Task ResumeThreadAsync(

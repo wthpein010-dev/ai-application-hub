@@ -28,6 +28,8 @@ public partial class MainWindow : Window
         PositionChanged += OnPositionChanged;
     }
 
+    public Func<Task>? ShutdownAsync { get; set; }
+
     public void ApplySavedBounds(MainViewModel viewModel)
     {
         if (!viewModel.IsFullScreen)
@@ -172,7 +174,14 @@ public partial class MainWindow : Window
     {
         try
         {
-            await _viewModel!.DisposeAsync();
+            if (ShutdownAsync is not null)
+            {
+                await ShutdownAsync();
+            }
+            else
+            {
+                await _viewModel!.DisposeAsync();
+            }
         }
         finally
         {

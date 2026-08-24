@@ -1,4 +1,4 @@
-name: Build cross-platform workbench
+name: Build Codex Confirmation Bar
 
 on:
   workflow_dispatch:
@@ -26,8 +26,8 @@ jobs:
         run: ./scripts/Publish-Windows.ps1
       - uses: actions/upload-artifact@v4
         with:
-          name: CodexThreadWorkbench-Windows-x64
-          path: artifacts/release/CodexThreadWorkbench-Windows-x64.zip
+          name: CodexConfirmationBar-Windows-x64
+          path: artifacts/release/CodexConfirmationBar-Windows-x64.zip
 
   macos:
     strategy:
@@ -36,10 +36,10 @@ jobs:
         include:
           - runner: macos-14
             runtime: osx-arm64
-            archive: CodexThreadWorkbench-macOS-arm64.app.zip
+            archive: CodexConfirmationBar-macOS-arm64.app.zip
           - runner: macos-15-intel
             runtime: osx-x64
-            archive: CodexThreadWorkbench-macOS-x64.app.zip
+            archive: CodexConfirmationBar-macOS-x64.app.zip
     runs-on: ${{ matrix.runner }}
     steps:
       - uses: actions/checkout@v4

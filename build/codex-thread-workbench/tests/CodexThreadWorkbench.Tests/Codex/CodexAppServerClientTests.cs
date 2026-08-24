@@ -144,6 +144,7 @@ public sealed class CodexAppServerClientTests
         var state = await pending;
 
         Assert.Equal(ThreadStatusKind.Completed, state.Status);
+        Assert.Equal(ThreadStatusKind.Completed, state.LatestTurnStatus);
         Assert.Null(state.ActiveTurnId);
     }
 

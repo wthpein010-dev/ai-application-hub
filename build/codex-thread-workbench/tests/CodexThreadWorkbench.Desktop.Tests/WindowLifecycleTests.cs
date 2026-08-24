@@ -19,6 +19,32 @@ public sealed class WindowLifecycleTests
         Assert.Equal(WindowState.FullScreen, window.WindowState);
     }
 
+    [AvaloniaFact]
+    public async Task MainWindow_UsesSharedShutdownDelegateExactlyOnce()
+    {
+        var path = Path.Combine(Path.GetTempPath(), $"{Guid.NewGuid():N}.json");
+        await using var viewModel = new MainViewModel(
+            new NoopClient(),
+            new WorkspaceStore(path));
+        var window = new MainWindow { DataContext = viewModel };
+        var shutdownCalls = 0;
+        var shutdownCompleted = new TaskCompletionSource(
+            TaskCreationOptions.RunContinuationsAsynchronously);
+        window.ShutdownAsync = () =>
+        {
+            shutdownCalls++;
+            shutdownCompleted.TrySetResult();
+            return Task.CompletedTask;
+        };
+        window.Show();
+
+        window.Close();
+        await shutdownCompleted.Task.WaitAsync(TimeSpan.FromSeconds(1));
+        window.Close();
+
+        Assert.Equal(1, shutdownCalls);
+    }
+
     private sealed class NoopClient : ICodexThreadClient
     {
         public event Action<CodexNotification>? NotificationReceived

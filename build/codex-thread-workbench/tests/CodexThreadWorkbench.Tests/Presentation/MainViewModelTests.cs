@@ -205,6 +205,21 @@ public sealed class MainViewModelTests : IDisposable
         Assert.Equal(1, client.DisposeCalls);
     }
 
+    [Fact]
+    public async Task DisposeAsync_DoesNotDisposeSharedClient_WhenOwnershipIsFalse()
+    {
+        var client = CreateClient(threadCount: 0);
+        var viewModel = new MainViewModel(
+            client,
+            new WorkspaceStore(Path.Combine(_directory, "shared-workspace.json")),
+            ownsClient: false);
+
+        await viewModel.DisposeAsync();
+
+        Assert.Equal(0, client.DisposeCalls);
+        await client.DisposeAsync();
+    }
+
     private static FakeCodexThreadClient CreateClient(int threadCount)
     {
         var client = new FakeCodexThreadClient();

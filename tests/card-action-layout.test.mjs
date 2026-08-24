@@ -16,14 +16,15 @@ function actionRenderer() {
   );
 }
 
-test("application cards keep demo and video above the two download actions", () => {
+test("application cards keep demo and video before Windows, Mac, and iOS actions", () => {
   const actions = actionRenderer();
 
-  assert.match(actions, /\$\{webLink\}\s*\$\{video\}\s*\$\{windowsLink\}\s*\$\{macLink\}/);
+  assert.match(actions, /\$\{webLink\}\s*\$\{video\}\s*\$\{windowsLink\}\s*\$\{macLink\}\s*\$\{iosLink\}/);
   assert.match(actions, /data-action="web"[^>]*>\u6f14\u793a<\/a>/);
   assert.match(actions, /data-action="video"[^>]*>\u89c6\u9891<\/a>/);
   assert.match(actions, /data-action="download"[^>]*>Wins\u4e0b\u8f7d<\/a>/);
   assert.match(actions, /data-action="mac"[^>]*>Mac\u4e0b\u8f7d<\/a>/);
+  assert.match(actions, /data-action="ios"[^>]*>iOS\u5b89\u88c5<\/a>/);
   assert.doesNotMatch(actions, /platformLabel\(/);
 });
 

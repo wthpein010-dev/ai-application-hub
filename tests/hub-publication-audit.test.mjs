@@ -25,6 +25,28 @@ test("public cards expose only truthful platform actions", async () => {
   );
 });
 
+test("publication audit exposes the Workbench iOS Web App without treating it as a native archive", async () => {
+  const { auditCatalog } = await loadAuditor();
+  const report = await auditCatalog({ root, runtime });
+  const workbench = report.projects.find(
+    (project) => project.id === "codex-thread-workbench",
+  );
+
+  assert.deepEqual(
+    workbench.actions.map((action) => action.type),
+    ["web", "video", "windows", "mac", "ios"],
+  );
+  assert.equal(
+    report.findings.some(
+      (item) =>
+        item.rule === "platform-artifact" &&
+        item.projectId === "codex-thread-workbench" &&
+        item.path === "ios",
+    ),
+    false,
+  );
+});
+
 test("every video returns to the owning catalog section", async () => {
   const { auditCatalog } = await loadAuditor();
   const report = await auditCatalog({ root, runtime });

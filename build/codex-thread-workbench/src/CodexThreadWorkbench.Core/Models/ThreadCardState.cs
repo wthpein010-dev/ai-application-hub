@@ -5,4 +5,5 @@ public sealed record ThreadCardState(
     IReadOnlyList<ChatMessage> Messages,
     ThreadStatusKind Status,
     string? ActiveTurnId = null,
-    string? ErrorMessage = null);
+    string? ErrorMessage = null,
+    ThreadStatusKind LatestTurnStatus = ThreadStatusKind.NotLoaded);

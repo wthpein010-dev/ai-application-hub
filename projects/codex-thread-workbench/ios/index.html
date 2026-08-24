@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="theme-color" content="#071a16" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="Codex 待确认" />
+  <meta name="description" content="Codex 待确认悬浮助手 iOS 可安装伴侣演示。" />
+  <link rel="manifest" href="./app.webmanifest" />
+  <link rel="apple-touch-icon" href="./icon-192.png" />
+  <link rel="icon" type="image/png" href="./icon-192.png" />
+  <link rel="stylesheet" href="./styles.css?v=20260824-v200" />
+  <title>Codex 待确认 · iOS 安装</title>
+</head>
+<body>
+  <main class="app-shell">
+    <header class="app-header">
+      <a href="../index.html" aria-label="返回产品页">‹</a>
+      <div class="brand"><span class="brand-icon" aria-hidden="true"><i></i></span><div><strong>Codex 待确认</strong><small>iOS Companion</small></div></div>
+      <span class="offline-badge"><i></i> 可离线</span>
+    </header>
+
+    <section class="intro" aria-labelledby="introTitle">
+      <p class="eyebrow">添加到主屏幕</p>
+      <h1 id="introTitle">把确认流程，<br /><em>装进口袋。</em></h1>
+      <p>在 iPhone 或 iPad 上安装这个轻量 Web App，随时体验悬浮栏的候选、逐条确认和一键全部确认流程。</p>
+      <div class="install-state" data-role="install-state"><span aria-hidden="true">Safari</span><b>请使用 Safari 打开本页</b></div>
+    </section>
+
+    <section class="install-card" aria-labelledby="installTitle">
+      <div class="card-heading"><span>安装指南</span><b>约 10 秒</b></div>
+      <h2 id="installTitle">无需 App Store</h2>
+      <ol>
+        <li><span class="step-icon share-icon" aria-hidden="true">↑</span><div><b>点击 Safari 的“分享”</b><p>iPhone 在屏幕底部，iPad 通常在地址栏右侧。</p></div></li>
+        <li><span class="step-icon" aria-hidden="true">＋</span><div><b>选择“添加到主屏幕”</b><p>保持默认名称，然后点击右上角“添加”。</p></div></li>
+      </ol>
+      <div class="install-tip"><span aria-hidden="true">✓</span>安装后可全屏启动，离线时也能打开演示。</div>
+    </section>
+
+    <section class="demo-card" aria-labelledby="demoTitle">
+      <div class="card-heading"><span>离线演示</span><b>不会发送消息</b></div>
+      <div class="demo-title-row"><div><h2 id="demoTitle">待确认悬浮栏</h2><p data-role="demo-status">演示待命 · 暂无候选</p></div><span class="candidate-count">待确认 <b data-role="candidate-count">0</b></span></div>
+
+      <div class="candidate-list" data-role="candidate-list" aria-live="polite"></div>
+      <div class="empty-state" data-role="empty-state"><span aria-hidden="true"><i></i></span><p>点击下方按钮，模拟电脑端发现待确认任务。</p></div>
+      <button class="confirm-all" type="button" data-action="confirm-all">一键全部确认</button>
+
+      <div class="demo-actions">
+        <button type="button" data-action="simulate-candidates">模拟待确认出现</button>
+        <button type="button" data-action="reset-demo">清空演示</button>
+      </div>
+      <p class="activity-log" data-role="activity-log" aria-live="polite">所有交互只发生在这台设备的演示页面内。</p>
+    </section>
+
+    <section class="boundary-card" aria-labelledby="boundaryTitle">
+      <p class="eyebrow">能力边界</p>
+      <h2 id="boundaryTitle">iOS 沙箱保护你的设备，也限制了桌面能力。</h2>
+      <ul>
+        <li><span>×</span><b>不能置顶悬浮</b><p>iOS 不允许网页覆盖在其他 App 之上。</p></li>
+        <li><span>×</span><b>不能读取电脑上的 Codex 任务</b><p>手机网页无法访问电脑本机的任务记录。</p></li>
+        <li><span>×</span><b>不能启动 Codex CLI</b><p>真实扫描和回复需要 Windows 与 macOS 原生桌面应用。</p></li>
+      </ul>
+      <a href="../index.html">查看 Windows 与 macOS 桌面版</a>
+    </section>
+
+    <footer><span>Codex 待确认悬浮助手 · v2.0.0</span><a href="../../../index.html#apps">全部应用</a></footer>
+  </main>
+  <script src="./app.js?v=20260824-v200"></script>
+</body>
+</html>

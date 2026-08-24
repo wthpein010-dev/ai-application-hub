@@ -18,7 +18,7 @@ public static class Program
             }
             catch (Exception error)
             {
-                Console.Error.WriteLine($"CodexThreadWorkbench smoke test failed: {error.Message}");
+                Console.Error.WriteLine(FormatSmokeTestFailure(error));
                 return 1;
             }
         }
@@ -31,4 +31,7 @@ public static class Program
             .UsePlatformDetect()
             .WithInterFont()
             .LogToTrace();
+
+    public static string FormatSmokeTestFailure(Exception error) =>
+        $"Codex Confirmation Bar smoke test failed: {error.Message}";
 }

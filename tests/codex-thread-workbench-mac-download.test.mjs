@@ -29,6 +29,8 @@ const execFileAsync = promisify(execFile);
 test("Mac download page offers Apple silicon and Intel packages", () => {
   const html = readFileSync(join(macRoot, "index.html"), "utf8");
 
+  assert.match(html, /Codex 待确认悬浮助手/);
+  assert.match(html, /v2\.0\.0/);
   assert.match(html, /Apple\s*(?:芯片|silicon)/i);
   assert.match(html, /arm64/i);
   assert.match(html, /Intel/i);
@@ -59,6 +61,9 @@ test("Hub workflow builds and verifies both Mac architectures before publishing"
 
   assert.match(workflow, /runtime:\s*osx-arm64\s+runner:\s*macos-14/);
   assert.match(workflow, /runtime:\s*osx-x64\s+runner:\s*macos-15-intel/);
+  assert.match(workflow, /branches:\s*- codex\/workbench-v2-overlay-public/);
+  assert.match(workflow, /CodexConfirmationBar-macOS-arm64\.app\.zip/);
+  assert.match(workflow, /CodexConfirmationBar-macOS-x64\.app\.zip/);
   assert.equal((workflow.match(/scripts\/test-macos-package\.sh/g) || []).length, 2);
   assert.match(workflow, /needs:\s*build-macos/);
   assert.match(workflow, /manifest-arm64\.json/);
@@ -123,7 +128,7 @@ test("Mac artifact splitter creates ordered architecture-specific 8 MiB parts", 
   const temporaryRoot = await mkdtemp(join(tmpdir(), "workbench-mac-split-"));
   const archivePath = join(
     temporaryRoot,
-    "CodexThreadWorkbench-macOS-arm64.app.zip",
+    "CodexConfirmationBar-macOS-arm64.app.zip",
   );
   const outputRoot = join(temporaryRoot, "download");
   const archive = Buffer.alloc(8_388_608 + 17, 0x5a);
@@ -175,7 +180,7 @@ for (const architecture of ["arm64", "x64"]) {
     );
     assert.equal(
       manifest.fileName,
-      `CodexThreadWorkbench-macOS-${architecture}.app.zip`,
+      `CodexConfirmationBar-macOS-${architecture}.app.zip`,
     );
     assert.ok(manifest.chunkSize <= 8_388_608);
     assert.deepEqual(

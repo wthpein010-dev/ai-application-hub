@@ -40,8 +40,12 @@ function parseCues(contents) {
     });
 }
 
-test("Workbench video page lazy-loads MP4 with default Chinese captions", () => {
+test("Confirmation Bar video page lazy-loads MP4 with default Chinese captions", () => {
   const html = readFileSync(join(videoRoot, "index.html"), "utf8");
+  assert.match(html, /Codex 待确认悬浮助手/);
+  assert.match(html, /贴顶收纳/);
+  assert.match(html, /一键全部确认/);
+  assert.match(html, /iOS/);
   assert.match(html, /id="loadVideo"/);
   assert.match(html, /data-src="\.\/codex-thread-workbench-demo\.mp4"/);
   assert.match(html, /poster="\.\/poster\.jpg"/);
@@ -49,7 +53,7 @@ test("Workbench video page lazy-loads MP4 with default Chinese captions", () => 
     html,
     /<track[^>]+kind="captions"[^>]+src="\.\/codex-thread-workbench-demo\.vtt"[^>]+srclang="zh"[^>]+default/,
   );
-  assert.equal((html.match(/data-time="/g) || []).length, 6);
+  assert.equal((html.match(/data-time="/g) || []).length, 7);
   assert.doesNotMatch(html, /<video[^>]+\ssrc=/);
 });
 
@@ -61,7 +65,7 @@ test("Workbench video page returns to the Hub home through the shared player she
   assert.match(html, /hub-video-player\.js/);
 });
 
-test("Workbench script and captions cover six non-overlapping single-line chapters", () => {
+test("Confirmation Bar script and captions cover seven non-overlapping single-line chapters", () => {
   const captions = readFileSync(
     join(videoRoot, "codex-thread-workbench-demo.vtt"),
     "utf8",
@@ -69,7 +73,7 @@ test("Workbench script and captions cover six non-overlapping single-line chapte
   const script = readFileSync(join(videoRoot, "tutorial-script.md"), "utf8");
   const cues = parseCues(captions);
 
-  assert.equal(cues.length, 6);
+  assert.equal(cues.length, 7);
   for (const cue of cues) {
     assert.equal(cue.text.length, 1, `cue at ${cue.start} must use one subtitle line`);
     assert.ok(cue.end > cue.start, `cue at ${cue.start} must have positive duration`);
@@ -83,22 +87,37 @@ test("Workbench script and captions cover six non-overlapping single-line chapte
 
   for (const marker of [
     "00:00",
-    "00:11",
-    "00:23",
+    "00:12",
+    "00:24",
     "00:36",
-    "00:49",
-    "01:02",
+    "00:48",
+    "01:00",
+    "01:12",
   ]) {
     assert.match(script, new RegExp(marker.replace(":", "\\:")));
+  }
+  for (const topic of [
+    "贴顶收纳",
+    "自动弹出",
+    "逐条确认",
+    "一键全部确认",
+    "扫描异常",
+    "Windows",
+    "macOS",
+    "iOS",
+  ]) {
+    assert.match(script, new RegExp(topic));
   }
   assert.equal(existsSync(join(videoRoot, "poster.jpg")), true);
 });
 
-test("Workbench walkthrough is silent 16:9 H.264 and 60 to 90 seconds", () => {
+test("Confirmation Bar walkthrough is silent 720p H.264 and at most 240 seconds", () => {
   const media = inspectMedia(mediaPath);
   assert.equal(media.videoCodec, "h264");
-  assert.equal(media.width / media.height, 16 / 9);
-  assert.ok(media.duration >= 60 && media.duration <= 90);
+  assert.equal(media.width, 1280);
+  assert.equal(media.height, 720);
+  assert.ok(media.duration >= 80 && media.duration <= 95);
+  assert.ok(media.duration <= 240);
   assert.equal(media.audioCodec, "");
   const decode = decodeMedia(mediaPath);
   assert.equal(decode.status, 0, decode.stderr || decode.error?.message);

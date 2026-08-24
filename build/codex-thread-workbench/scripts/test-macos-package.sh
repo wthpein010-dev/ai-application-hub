@@ -50,8 +50,8 @@ cleanup() {
 trap cleanup EXIT
 
 ditto -x -k "${archive_path}" "${temporary_directory}"
-app_directory="${temporary_directory}/CodexThreadWorkbench.app"
-executable="${app_directory}/Contents/MacOS/CodexThreadWorkbench"
+app_directory="${temporary_directory}/CodexConfirmationBar.app"
+executable="${app_directory}/Contents/MacOS/CodexConfirmationBar"
 info_plist="${app_directory}/Contents/Info.plist"
 test -f "${info_plist}"
 test -x "${executable}"
@@ -60,12 +60,22 @@ short_version="$(
   plutil -extract CFBundleShortVersionString raw -o - "${info_plist}"
 )"
 bundle_version="$(plutil -extract CFBundleVersion raw -o - "${info_plist}")"
+bundle_identifier="$(plutil -extract CFBundleIdentifier raw -o - "${info_plist}")"
+display_name="$(plutil -extract CFBundleDisplayName raw -o - "${info_plist}")"
 if [[ "${short_version}" != "${expected_version}" ]]; then
   echo "CFBundleShortVersionString ${short_version} != ${expected_version}." >&2
   exit 65
 fi
 if [[ "${bundle_version}" != "${expected_version}" ]]; then
   echo "CFBundleVersion ${bundle_version} != ${expected_version}." >&2
+  exit 65
+fi
+if [[ "${bundle_identifier}" != "dev.wthpein010.codex-confirmation-bar" ]]; then
+  echo "Unexpected CFBundleIdentifier ${bundle_identifier}." >&2
+  exit 65
+fi
+if [[ "${display_name}" != "Codex 待确认悬浮助手" ]]; then
+  echo "Unexpected CFBundleDisplayName ${display_name}." >&2
   exit 65
 fi
 echo "Verified Info.plist versions: CFBundleShortVersionString=${short_version}, CFBundleVersion=${bundle_version}"

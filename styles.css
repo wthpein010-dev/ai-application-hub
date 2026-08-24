@@ -704,6 +704,12 @@ select option:hover {
   background: linear-gradient(180deg, rgba(85, 214, 194, 0.18), rgba(85, 214, 194, 0.07));
 }
 
+.card-actions a.ios-link {
+  border-color: rgba(110, 231, 183, 0.38);
+  color: #dcfff1;
+  background: linear-gradient(180deg, rgba(110, 231, 183, 0.18), rgba(110, 231, 183, 0.07));
+}
+
 .card-bottom {
   display: grid;
   gap: 12px;
@@ -816,6 +822,10 @@ select option:hover {
 
 .platform-mac {
   border-color: rgba(85, 214, 194, 0.3);
+}
+
+.platform-ios {
+  border-color: rgba(110, 231, 183, 0.3);
 }
 
 .platform-card-head {

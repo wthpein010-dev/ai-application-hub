@@ -260,6 +260,7 @@ export async function auditCatalog({
       ["video", app.video || ""],
       ["windows", platformHref(app.platforms?.windows) || ""],
       ["mac", platformHref(app.platforms?.mac) || ""],
+      ["ios", platformHref(app.platforms?.ios) || ""],
     ].filter(([, href]) => href).map(([type, href]) => ({ type, href }));
     const artifacts = {};
 

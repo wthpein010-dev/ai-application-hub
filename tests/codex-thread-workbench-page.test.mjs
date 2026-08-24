@@ -10,8 +10,6 @@ import { chromium } from "playwright";
 const read = path => readFile(new URL(path, import.meta.url), "utf8");
 const regexEscape = value => value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 const root = dirname(dirname(fileURLToPath(import.meta.url)));
-const orderStorageKey = "codex-thread-workbench-demo-thread-order-v1";
-
 const contentTypes = new Map([
   [".css", "text/css; charset=utf-8"],
   [".html", "text/html; charset=utf-8"],
@@ -60,20 +58,23 @@ async function launchBrowser() {
   throw new Error(`No Chromium-compatible browser is available.\n${failures.join("\n")}`);
 }
 
-test("hub registers the Workbench demo, video, Windows, and Mac actions", async () => {
+test("hub registers the Confirmation Bar demo, video, Windows, Mac, and iOS actions", async () => {
   const source = await read("../app-20260706-restore-games.js");
   const downloadPage =
     "https://wthpein010-dev.github.io/ai-application-hub/projects/codex-thread-workbench/download/";
   const macDownloadPage =
     "https://wthpein010-dev.github.io/ai-application-hub/projects/codex-thread-workbench/download/mac/";
+  const iosInstallPage = "./projects/codex-thread-workbench/ios/index.html";
   const videoPage = "./projects/codex-thread-workbench/video/index.html";
 
   assert.match(source, /id:\s*"codex-thread-workbench"/);
+  assert.match(source, /name:\s*"Codex 待确认悬浮助手"/);
   assert.match(source, /entry:\s*"\.\/projects\/codex-thread-workbench\/index\.html"/);
   assert.match(source, new RegExp(`video:\\s*"${regexEscape(videoPage)}"`));
   assert.match(source, new RegExp(`package:\\s*"${regexEscape(downloadPage)}"`));
   assert.match(source, new RegExp(`windows:\\s*\\{ href: "${regexEscape(downloadPage)}"`));
   assert.match(source, new RegExp(`mac:\\s*\\{ href: "${regexEscape(macDownloadPage)}"`));
+  assert.match(source, new RegExp(`ios:\\s*\\{ href: "${regexEscape(iosInstallPage)}"`));
   assert.equal(
     (source.match(new RegExp(`${regexEscape(downloadPage)}"`, "g")) || []).length,
     2,
@@ -82,6 +83,11 @@ test("hub registers the Workbench demo, video, Windows, and Mac actions", async 
     (source.match(new RegExp(`${regexEscape(macDownloadPage)}"`, "g")) || []).length,
     1,
   );
+  assert.equal(
+    (source.match(new RegExp(`${regexEscape(iosInstallPage)}"`, "g")) || []).length,
+    1,
+  );
+  assert.match(source, /data-action="ios"/);
   assert.match(source, /tags:\s*\[[^\]]*"macOS"/);
   assert.doesNotMatch(source, /releases\/download\/codex-thread-workbench-v1\.0\.0/);
   assert.match(source, /function isDirectPackageHref\(href\)/);
@@ -95,364 +101,171 @@ test("hub registers the Workbench demo, video, Windows, and Mac actions", async 
   );
 });
 
-test("project page presents direct multi-thread conversation controls", async () => {
+test("project page presents the confirmation overlay workflow and every release path", async () => {
   const html = await read("../projects/codex-thread-workbench/index.html");
   const windowsDownloadPage =
     "https://wthpein010-dev.github.io/ai-application-hub/projects/codex-thread-workbench/download/";
   const macDownloadPage =
     "https://wthpein010-dev.github.io/ai-application-hub/projects/codex-thread-workbench/download/mac/";
 
-  assert.match(html, /Codex 多会话工作台/);
-  assert.match(html, /Windows · macOS/);
-  assert.match(html, /data-action="open-picker"/);
-  assert.match(html, /data-action="fullscreen"/);
-  assert.equal((html.match(/class="thread-card/g) || []).length, 4);
-  assert.equal((html.match(/data-role="composer"/g) || []).length, 4);
-  assert.match(html, /进行中/);
-  assert.match(html, /已完成/);
-  assert.match(html, /需要确认/);
-  assert.match(html, /已停止/);
+  assert.match(html, /Codex 待确认悬浮助手/);
+  assert.match(html, /data-overlay-state="retracted"/);
+  assert.match(html, /data-action="reveal-idle"/);
+  assert.match(html, /data-action="simulate-candidates"/);
+  assert.match(html, /data-action="simulate-error"/);
+  assert.match(html, /data-action="confirm-all"/);
+  assert.match(html, /data-action="reset-demo"/);
+  assert.match(html, /Windows 与 macOS/);
+  assert.match(html, /iPhone 与 iPad/);
   assert.equal(
     (html.match(new RegExp(`${regexEscape(windowsDownloadPage)}"`, "g")) || []).length,
-    2,
+    1,
   );
   assert.equal(
     (html.match(new RegExp(`${regexEscape(macDownloadPage)}"`, "g")) || []).length,
-    2,
+    1,
   );
   assert.equal((html.match(/href="\.\/video\/index\.html"/g) || []).length, 1);
+  assert.equal((html.match(/href="\.\/ios\/index\.html"/g) || []).length, 1);
   assert.match(html, />观看视频</);
   assert.match(html, />\s*Windows 下载\s*</);
   assert.match(html, />\s*Mac 下载\s*</);
+  assert.match(html, />\s*iOS 安装\s*</);
   assert.doesNotMatch(html, /releases\/download\/codex-thread-workbench-v1\.0\.0/);
 });
 
-test("project preview uses green user bubbles and non-interactive message text", async () => {
+test("project preview keeps a ten-pixel green handle visible while retracted", async () => {
   const css = await read("../projects/codex-thread-workbench/styles.css");
 
-  assert.match(
-    css,
-    /\.message-list\s*\{[^}]*user-select:\s*none/s,
-  );
-  assert.doesNotMatch(css, /\.message-list\s*\{[^}]*pointer-events:\s*none/s);
-  assert.match(css, /\.message\s*\{[^}]*pointer-events:\s*none/s);
-  assert.match(
-    css,
-    /\.message-user\s*>\s*p\s*\{[^}]*background:\s*#e7f4eb/s,
-  );
-  assert.doesNotMatch(css, /\.message(?:-[\w-]+)?(?::hover|\s*:hover)/);
+  assert.match(css, /\.overlay-handle\s*\{[^}]*height:\s*10px/s);
+  assert.match(css, /data-overlay-state="retracted"/);
+  assert.match(css, /prefers-reduced-motion:\s*reduce/);
 });
 
-test("project and download pages identify the Windows and Mac 1.3.0 update", async () => {
-  const [projectHtml, downloadHtml] = await Promise.all([
-    read("../projects/codex-thread-workbench/index.html"),
-    read("../projects/codex-thread-workbench/download/index.html"),
-  ]);
-
-  assert.match(projectHtml, /Windows v1\.3\.0/);
-  assert.match(projectHtml, /Mac v1\.3\.0/);
-  assert.match(downloadHtml, /v1\.3\.0/);
-  assert.match(downloadHtml, /5 个分片/);
-  assert.match(downloadHtml, /40\.2 MB/);
-  assert.match(
-    downloadHtml,
-    /631AC7D0DBA2EA7CC01F4EB0B1BE77201AA93C0DA81E4F763654B0F4151BDCF4/,
-  );
-});
-
-test("only the first primary pointer owns a card drag gesture", async () => {
+test("confirmation overlay expands for candidates and retracts after confirmations", async () => {
   const server = createStaticServer();
   const baseUrl = await startServer(server);
   const browser = await launchBrowser();
 
   try {
-    const page = await browser.newPage({ viewport: { width: 1440, height: 1100 } });
+    const page = await browser.newPage({ viewport: { width: 1440, height: 1000 } });
     await page.goto(`${baseUrl}/projects/codex-thread-workbench/index.html`);
 
-    const evidence = await page.evaluate(() => {
-      const card = id => document.querySelector(`[data-thread-id="${id}"]`);
-      const surface = id => card(id).querySelector('[data-role="drag-surface"]');
-      const center = node => {
-        const bounds = node.getBoundingClientRect();
-        return {
-          x: bounds.left + 24,
-          y: bounds.top + bounds.height / 2,
-        };
-      };
-      const dispatch = (target, type, pointerId, isPrimary, point, buttons) => {
-        target.dispatchEvent(new PointerEvent(type, {
-          bubbles: true,
-          button: 0,
-          buttons,
-          clientX: point.x,
-          clientY: point.y,
-          isPrimary,
-          pointerId,
-          pointerType: "touch",
-        }));
-      };
-      const snapshot = () => ({
-        releaseDragging: card("release").classList.contains("is-dragging"),
-        quotaDragging: card("quota").classList.contains("is-dragging"),
-        researchTarget: card("research").classList.contains("is-drop-target"),
-        approvalTarget: card("approval").classList.contains("is-drop-target"),
-        visualCount: document.querySelectorAll(".is-dragging, .is-drop-target").length,
-        bodyDragging: document.body.classList.contains("is-dragging-thread-card"),
-      });
-
-      const releasePoint = center(surface("release"));
-      const quotaPoint = center(surface("quota"));
-      const researchPoint = center(surface("research"));
-      const approvalPoint = center(surface("approval"));
-
-      dispatch(surface("release"), "pointerdown", 101, true, releasePoint, 1);
-      dispatch(surface("quota"), "pointerdown", 202, true, quotaPoint, 1);
-      dispatch(document, "pointermove", 101, true, researchPoint, 1);
-      const afterFirstMove = snapshot();
-      dispatch(document, "pointermove", 202, true, approvalPoint, 1);
-      const afterSecondMove = snapshot();
-      dispatch(document, "pointercancel", 202, true, approvalPoint, 0);
-      const afterSecondCancel = snapshot();
-      dispatch(document, "pointercancel", 101, true, researchPoint, 0);
-      const afterFirstCancel = snapshot();
-
-      window.dispatchEvent(new Event("blur"));
-      dispatch(surface("release"), "pointerdown", 303, false, releasePoint, 1);
-      dispatch(document, "pointermove", 303, false, quotaPoint, 1);
-      const afterNonPrimaryMove = snapshot();
-      dispatch(document, "pointercancel", 303, false, quotaPoint, 0);
-      const afterNonPrimaryCancel = snapshot();
-
+    const headerLayout = await page.evaluate(() => {
+      const home = document.querySelector(".hub-home-link");
+      const brand = document.querySelector(".brand-lockup");
+      const action = document.querySelector(".header-demo-link");
+      const homeBounds = home.getBoundingClientRect();
+      const brandBounds = brand.getBoundingClientRect();
+      const actionBounds = action.getBoundingClientRect();
       return {
-        afterFirstMove,
-        afterSecondMove,
-        afterSecondCancel,
-        afterFirstCancel,
-        afterNonPrimaryMove,
-        afterNonPrimaryCancel,
-        order: [...document.querySelectorAll(".thread-card")]
-          .map(node => node.dataset.threadId),
+        homePosition: getComputedStyle(home).position,
+        noHomeBrandOverlap: homeBounds.right <= brandBounds.left,
+        noBrandActionOverlap: brandBounds.right <= actionBounds.left,
       };
     });
-
-    const firstPointerOwnsGesture = {
-      releaseDragging: true,
-      quotaDragging: false,
-      researchTarget: true,
-      approvalTarget: false,
-      visualCount: 2,
-      bodyDragging: true,
-    };
-    assert.deepEqual(evidence.afterFirstMove, firstPointerOwnsGesture);
-    assert.deepEqual(evidence.afterSecondMove, firstPointerOwnsGesture);
-    assert.deepEqual(evidence.afterSecondCancel, firstPointerOwnsGesture);
-    assert.deepEqual(evidence.afterFirstCancel, {
-      releaseDragging: false,
-      quotaDragging: false,
-      researchTarget: false,
-      approvalTarget: false,
-      visualCount: 0,
-      bodyDragging: false,
+    assert.deepEqual(headerLayout, {
+      homePosition: "static",
+      noHomeBrandOverlap: true,
+      noBrandActionOverlap: true,
     });
-    assert.deepEqual(evidence.afterNonPrimaryMove, evidence.afterFirstCancel);
-    assert.deepEqual(evidence.afterNonPrimaryCancel, evidence.afterFirstCancel);
-    assert.deepEqual(evidence.order, ["release", "quota", "approval", "research"]);
+
+    const overlay = page.locator('[data-role="confirmation-overlay"]');
+    const handle = page.locator('[data-role="overlay-handle"]');
+    assert.equal(await overlay.getAttribute("data-overlay-state"), "retracted");
+    assert.equal((await handle.boundingBox()).height, 10);
+
+    await handle.click({ position: { x: 30, y: 5 } });
+    assert.equal(await overlay.getAttribute("data-overlay-state"), "idle");
+    assert.match(await page.locator('[data-role="overlay-status"]').textContent(), /监控中/);
+
+    await page.getByRole("button", { name: "模拟待确认出现" }).click();
+    assert.equal(await overlay.getAttribute("data-overlay-state"), "attention");
+    assert.equal(await page.locator('[data-role="candidate"]').count(), 2);
+    assert.equal(await page.locator('[data-role="candidate-count"]').textContent(), "2");
+    assert.equal(await page.locator('[data-action="confirm-all"]').isVisible(), true);
+
+    await page.locator('[data-action="confirm-one"]').first().click();
+    assert.equal(await page.locator('[data-role="candidate"]').count(), 1);
+    assert.equal(await page.locator('[data-role="candidate-count"]').textContent(), "1");
+    assert.equal(await overlay.getAttribute("data-overlay-state"), "attention");
+
+    await page.locator('[data-action="confirm-all"]').click();
+    assert.equal(await page.locator('[data-role="candidate"]').count(), 0);
+    assert.equal(await overlay.getAttribute("data-overlay-state"), "retracted");
+    assert.match(await page.locator('[data-role="activity-log"]').textContent(), /已向 1 个任务发送/);
   } finally {
     await browser.close();
     await stopServer(server);
   }
 });
 
-test("title-bar drag starts at six pixels, swaps exact card DOM nodes, and persists order", async () => {
+test("error state is fail-closed and keyboard and mobile controls stay usable", async () => {
   const server = createStaticServer();
   const baseUrl = await startServer(server);
   const browser = await launchBrowser();
 
   try {
-    const context = await browser.newContext({ viewport: { width: 1440, height: 1100 } });
-    const page = await context.newPage();
+    const page = await browser.newPage({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true });
     await page.goto(`${baseUrl}/projects/codex-thread-workbench/index.html`);
 
-    assert.equal(await page.locator('[data-role="drag-surface"]').count(), 4);
-    assert.equal(await page.locator('[data-role="drag-grip"] i').count(), 24);
-    await page.evaluate(() => {
-      window.__lastPointerId = null;
-      document.addEventListener("pointerdown", event => {
-        window.__lastPointerId = event.pointerId;
-      }, { capture: true });
-      window.__initialCards = [...document.querySelectorAll(".thread-card")];
-      window.__initialContent = Object.fromEntries(window.__initialCards.map(card => [
-        card.dataset.threadId,
-        {
-          title: card.querySelector("h2").textContent,
-          messages: card.querySelector('[data-role="messages"]').textContent,
-        },
-      ]));
-    });
+    const reveal = page.getByRole("button", { name: "展开悬浮栏" });
+    await reveal.focus();
+    await page.keyboard.press("Enter");
+    assert.equal(await page.locator('[data-role="confirmation-overlay"]').getAttribute("data-overlay-state"), "idle");
 
-    const firstHeader = page.locator('[data-thread-id="release"] [data-role="drag-surface"]');
-    const firstBox = await firstHeader.boundingBox();
-    assert.ok(firstBox);
-    const startX = firstBox.x + 24;
-    const startY = firstBox.y + firstBox.height / 2;
+    const simulateCandidates = page.getByRole("button", { name: "模拟待确认出现" });
+    await simulateCandidates.focus();
+    await page.keyboard.press("Enter");
+    assert.equal(await page.locator('[data-role="candidate"]').count(), 2);
 
-    await page.mouse.move(startX, startY);
-    await page.mouse.down();
-    await page.mouse.move(startX + 5, startY);
-    assert.equal(await page.locator('[data-thread-id="release"]').evaluate(card => card.classList.contains("is-dragging")), false);
-    await page.mouse.up();
-    assert.deepEqual(
-      await page.locator(".thread-card").evaluateAll(cards => cards.map(card => card.dataset.threadId)),
-      ["release", "quota", "approval", "research"],
+    await page.getByRole("button", { name: "模拟扫描异常" }).click();
+    assert.equal(await page.locator('[data-role="confirmation-overlay"]').getAttribute("data-overlay-state"), "error");
+    assert.equal(await page.locator('[data-action="confirm-one"]').count(), 0);
+    assert.equal(await page.locator('[data-action="confirm-all"]').isVisible(), false);
+    assert.equal(await page.locator('[data-role="overlay-error"]').isVisible(), true);
+
+    await page.getByRole("button", { name: "重置演示" }).click();
+    assert.equal(await page.locator('[data-role="confirmation-overlay"]').getAttribute("data-overlay-state"), "retracted");
+    assert.equal(
+      await page.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth),
+      true,
+    );
+  } finally {
+    await browser.close();
+    await stopServer(server);
+  }
+});
+
+test("Mac download page accepts both published Confirmation Bar manifests", async () => {
+  const server = createStaticServer();
+  const baseUrl = await startServer(server);
+  const browser = await launchBrowser();
+
+  try {
+    const page = await browser.newPage({ viewport: { width: 1280, height: 900 } });
+    await page.goto(`${baseUrl}/projects/codex-thread-workbench/download/mac/index.html`);
+
+    const downloadButton = page.locator('[data-role="download-button"]');
+    await page.waitForFunction(() =>
+      document.querySelector('[data-role="download-button"]')?.disabled === false,
+      undefined,
+      { timeout: 1_500 },
+    );
+    assert.equal(await downloadButton.isEnabled(), true);
+    assert.equal(
+      await page.locator('[data-role="file-name"]').textContent(),
+      "CodexConfirmationBar-macOS-arm64.app.zip",
     );
 
-    await page.mouse.move(startX, startY);
-    await page.mouse.down();
-    await page.mouse.move(startX + 6, startY);
-    assert.equal(await page.locator('[data-thread-id="release"]').evaluate(card => card.classList.contains("is-dragging")), true);
-    await page.mouse.up();
-    assert.deepEqual(
-      await page.locator(".thread-card").evaluateAll(cards => cards.map(card => card.dataset.threadId)),
-      ["release", "quota", "approval", "research"],
+    await page.locator('[data-architecture="x64"]').click();
+    await page.waitForFunction(() =>
+      document.querySelector('[data-role="file-name"]')?.textContent ===
+        "CodexConfirmationBar-macOS-x64.app.zip",
+      undefined,
+      { timeout: 1_500 },
     );
-    assert.equal(await page.locator(".is-dragging, .is-drop-target").count(), 0);
-    assert.equal(await page.evaluate(storageKey => localStorage.getItem(storageKey), orderStorageKey), null);
-
-    const secondHeader = page.locator('[data-thread-id="quota"] [data-role="drag-surface"]');
-    const secondBox = await secondHeader.boundingBox();
-    assert.ok(secondBox);
-    await page.mouse.move(startX, startY);
-    await page.mouse.down();
-    await page.mouse.move(secondBox.x + 24, secondBox.y + secondBox.height / 2, { steps: 5 });
-    assert.equal(await page.locator('[data-thread-id="quota"]').evaluate(card => card.classList.contains("is-drop-target")), true);
-    await page.evaluate(() => {
-      document.dispatchEvent(new PointerEvent("pointerup", {
-        bubbles: true,
-        button: 0,
-        buttons: 0,
-        clientX: -20,
-        clientY: -20,
-        pointerId: window.__lastPointerId,
-        pointerType: "mouse",
-      }));
-    });
-    await page.mouse.up();
-    assert.deepEqual(
-      await page.locator(".thread-card").evaluateAll(cards => cards.map(card => card.dataset.threadId)),
-      ["release", "quota", "approval", "research"],
-    );
-    assert.equal(await page.locator(".is-dragging, .is-drop-target").count(), 0);
-    assert.equal(await page.evaluate(storageKey => localStorage.getItem(storageKey), orderStorageKey), null);
-
-    await page.mouse.move(startX, startY);
-    await page.mouse.down();
-    await page.mouse.move(secondBox.x + 24, secondBox.y + secondBox.height / 2, { steps: 5 });
-    await page.evaluate(() => {
-      document.dispatchEvent(new PointerEvent("pointercancel", {
-        bubbles: true,
-        pointerId: window.__lastPointerId,
-        pointerType: "mouse",
-      }));
-    });
-    await page.mouse.up();
-    assert.deepEqual(
-      await page.locator(".thread-card").evaluateAll(cards => cards.map(card => card.dataset.threadId)),
-      ["release", "quota", "approval", "research"],
-    );
-    assert.equal(await page.locator(".is-dragging, .is-drop-target").count(), 0);
-    assert.equal(await page.evaluate(storageKey => localStorage.getItem(storageKey), orderStorageKey), null);
-
-    await page.mouse.move(startX, startY);
-    await page.mouse.down();
-    await page.mouse.move(secondBox.x + 24, secondBox.y + secondBox.height / 2, { steps: 5 });
-    await page.evaluate(() => window.dispatchEvent(new Event("blur")));
-    await page.mouse.up();
-    assert.deepEqual(
-      await page.locator(".thread-card").evaluateAll(cards => cards.map(card => card.dataset.threadId)),
-      ["release", "quota", "approval", "research"],
-    );
-    assert.equal(await page.locator(".is-dragging, .is-drop-target").count(), 0);
-    assert.equal(await page.evaluate(storageKey => localStorage.getItem(storageKey), orderStorageKey), null);
-
-    await page.mouse.move(startX, startY);
-    await page.mouse.down();
-    await page.mouse.move(startX + 6, startY);
-    assert.equal(await page.locator('[data-thread-id="release"]').evaluate(card => card.classList.contains("is-dragging")), true);
-    const sourceStyle = await page.locator('[data-thread-id="release"]').evaluate(card => {
-      const style = getComputedStyle(card);
-      return { opacity: Number(style.opacity), borderColor: style.borderColor, transform: style.transform };
-    });
-    assert.ok(sourceStyle.opacity < 1);
-    assert.match(sourceStyle.borderColor, /43, 170, 118/);
-    assert.notEqual(sourceStyle.transform, "none");
-
-    const targetHeader = page.locator('[data-thread-id="research"] [data-role="drag-surface"]');
-    const targetBox = await targetHeader.boundingBox();
-    assert.ok(targetBox);
-    await page.mouse.move(targetBox.x + 24, targetBox.y + targetBox.height / 2, { steps: 5 });
-    assert.equal(await page.locator('[data-thread-id="research"]').evaluate(card => card.classList.contains("is-drop-target")), true);
-    const targetStyle = await page.locator('[data-thread-id="research"]').evaluate(card => ({
-      outlineColor: getComputedStyle(card).outlineColor,
-      headerBackground: getComputedStyle(card.querySelector(".thread-header")).backgroundColor,
-    }));
-    assert.match(targetStyle.outlineColor, /43, 170, 118/);
-    assert.notEqual(targetStyle.headerBackground, "rgba(0, 0, 0, 0)");
-    await page.mouse.up();
-
-    const swapped = await page.evaluate(storageKey => {
-      const cards = [...document.querySelectorAll(".thread-card")];
-      const contentStayedWithCard = cards.every(card => {
-        const initial = window.__initialContent[card.dataset.threadId];
-        return card.querySelector("h2").textContent === initial.title
-          && card.querySelector('[data-role="messages"]').textContent === initial.messages;
-      });
-      return {
-        order: cards.map(card => card.dataset.threadId),
-        exactDomSwap: cards[0] === window.__initialCards[3]
-          && cards[1] === window.__initialCards[1]
-          && cards[2] === window.__initialCards[2]
-          && cards[3] === window.__initialCards[0],
-        contentStayedWithCard,
-        storedOrder: JSON.parse(localStorage.getItem(storageKey)),
-        draggingCount: document.querySelectorAll(".is-dragging, .is-drop-target").length,
-      };
-    }, orderStorageKey);
-    assert.deepEqual(swapped.order, ["research", "quota", "approval", "release"]);
-    assert.equal(swapped.exactDomSwap, true);
-    assert.equal(swapped.contentStayedWithCard, true);
-    assert.deepEqual(swapped.storedOrder, swapped.order);
-    assert.equal(swapped.draggingCount, 0);
-
-    const cancelSource = page.locator('[data-thread-id="research"] [data-role="drag-surface"]');
-    const cancelTarget = page.locator('[data-thread-id="quota"] [data-role="drag-surface"]');
-    const cancelSourceBox = await cancelSource.boundingBox();
-    const cancelTargetBox = await cancelTarget.boundingBox();
-    await page.mouse.move(cancelSourceBox.x + 24, cancelSourceBox.y + cancelSourceBox.height / 2);
-    await page.mouse.down();
-    await page.mouse.move(cancelTargetBox.x + 24, cancelTargetBox.y + cancelTargetBox.height / 2, { steps: 5 });
-    assert.equal(await page.locator('[data-thread-id="quota"]').evaluate(card => card.classList.contains("is-drop-target")), true);
-    await page.keyboard.press("Escape");
-    await page.mouse.up();
-    assert.equal(await page.locator(".is-dragging, .is-drop-target").count(), 0);
-    assert.deepEqual(
-      await page.locator(".thread-card").evaluateAll(cards => cards.map(card => card.dataset.threadId)),
-      swapped.order,
-    );
-    assert.deepEqual(
-      await page.evaluate(storageKey => JSON.parse(localStorage.getItem(storageKey)), orderStorageKey),
-      swapped.order,
-    );
-
-    await page.reload();
-    assert.deepEqual(
-      await page.locator(".thread-card").evaluateAll(cards => cards.map(card => card.dataset.threadId)),
-      swapped.order,
-    );
-    const approveButton = page.locator('[data-thread-id="approval"] [data-action="approve"]');
-    assert.equal(await approveButton.evaluate(button => getComputedStyle(button).pointerEvents), "auto");
-    await approveButton.click();
-    assert.equal(await page.locator('[data-thread-id="approval"] [data-role="status"]').textContent(), "进行中");
-    await context.close();
+    assert.equal(await downloadButton.isEnabled(), true);
   } finally {
     await browser.close();
     await stopServer(server);
@@ -465,7 +278,8 @@ test("download page exposes progress, verification, failure and retry states", a
     read("../projects/codex-thread-workbench/download/download.js")
   ]);
 
-  assert.match(html, /CodexThreadWorkbench-Windows-x64\.zip/);
+  assert.match(html, /CodexConfirmationBar-Windows-x64\.zip/);
+  assert.match(html, /v2\.0\.0/);
   assert.match(html, /data-role="download-button"/);
   assert.match(html, /data-role="retry-button"/);
   assert.match(html, /data-role="progress"/);
