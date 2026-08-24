@@ -243,7 +243,8 @@ test("download page exposes progress, verification, failure and retry states", a
     read("../projects/codex-thread-workbench/download/download.js")
   ]);
 
-  assert.match(html, /CodexThreadWorkbench-Windows-x64\.zip/);
+  assert.match(html, /CodexConfirmationBar-Windows-x64\.zip/);
+  assert.match(html, /v2\.0\.0/);
   assert.match(html, /data-role="download-button"/);
   assert.match(html, /data-role="retry-button"/);
   assert.match(html, /data-role="progress"/);

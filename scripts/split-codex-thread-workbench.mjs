@@ -7,12 +7,12 @@ import {
 } from "node:fs/promises";
 import { basename, join, resolve } from "node:path";
 
-const FILE_NAME = "CodexThreadWorkbench-Windows-x64.zip";
-const RELEASE_DIRECTORY = "v1.3.0";
-const TOTAL_SIZE = 40_179_034;
+const FILE_NAME = "CodexConfirmationBar-Windows-x64.zip";
+const RELEASE_DIRECTORY = "v2.0.0";
+const TOTAL_SIZE = 40_209_878;
 const CHUNK_SIZE = 8_388_608;
 const ARCHIVE_SHA256 =
-  "631AC7D0DBA2EA7CC01F4EB0B1BE77201AA93C0DA81E4F763654B0F4151BDCF4";
+  "8898370651A13146B9F69246268C669C0C36DE8E7BDD6A605880DC1BF758F9FB";
 
 const sha256 = bytes =>
   createHash("sha256").update(bytes).digest("hex").toUpperCase();
