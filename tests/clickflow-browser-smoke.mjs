@@ -84,7 +84,7 @@ try {
   );
   assert.deepEqual(
     await clickFlowCard.locator(".card-actions a").allTextContents(),
-    ["演示", "视频", "Wins下载", "Mac下载"],
+    ["网页预览", "介绍视频", "Wins下载", "Mac下载"],
   );
   await hub.close();
 
