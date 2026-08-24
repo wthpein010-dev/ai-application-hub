@@ -78,7 +78,8 @@ test("the redesign preserves prior release cache markers and accessible action n
     "20260820-hub-quality-audit",
     "20260820-pureshrink-v105",
     "20260821-tool-taxonomy",
-    "20260824-white-workspace-themes"
+    "20260824-white-workspace-themes",
+    "20260824-card-motion-once"
   ]) {
     assert.match(html, new RegExp(marker, "u"));
   }
