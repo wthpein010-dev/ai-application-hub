@@ -132,6 +132,15 @@ try {
     await desktop.locator('[data-thread-id="tibo-token-reset"] .reply-count strong').textContent(),
     "3",
   );
+  for (const [query, evidence] of [
+    ["hooftly", "Business 账号"],
+    ["Meant 2pm obviously", "显然，我指的是下午 2 点"],
+    ["重置已下发到各账号", "Good Sunday"],
+  ]) {
+    await desktop.fill("#searchInput", query);
+    assert.equal(await desktop.locator("#resultCount").textContent(), "1", `search should find nested X content: ${query}`);
+    assert.match(await desktop.locator("#threadDetail").innerText(), new RegExp(evidence));
+  }
   await desktop.fill("#searchInput", "不存在的测试词");
   assert.equal(await desktop.locator("#emptyState").isVisible(), true);
   await desktop.click("[data-reset-filters]");

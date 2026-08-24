@@ -311,7 +311,25 @@ function matchesFilter(thread) {
 function visibleThreads() {
   const query = nodes.search.value.trim().toLowerCase();
   return threads.filter((thread) => {
-    const haystack = [thread.title, thread.excerpt, thread.original, thread.author, thread.handle, thread.topicLabel].join(" ").toLowerCase();
+    const replyText = thread.replies.flatMap((reply) => [
+      reply.author,
+      reply.handle,
+      reply.text,
+      reply.original,
+      reply.translation,
+      reply.note,
+    ]).filter(Boolean);
+    const haystack = [
+      thread.title,
+      thread.excerpt,
+      thread.original,
+      thread.translation,
+      thread.why,
+      thread.author,
+      thread.handle,
+      thread.topicLabel,
+      ...replyText,
+    ].filter(Boolean).join(" ").toLowerCase();
     return matchesFilter(thread) && (!query || haystack.includes(query));
   });
 }
