@@ -648,6 +648,42 @@ h3 {
   background: var(--visual-surface);
 }
 
+.project-image {
+  position: absolute;
+  z-index: 1;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.image-fallback {
+  position: absolute;
+  z-index: 1;
+  inset: 0;
+  display: grid;
+  overflow: hidden;
+  place-items: center;
+  background: var(--visual-surface);
+}
+
+.image-fallback[hidden] {
+  display: none;
+}
+
+.image-fallback .preview-grid {
+  z-index: 0;
+}
+
+.image-fallback .cover-mark,
+.image-fallback .cover-category {
+  z-index: 2;
+}
+
+.has-image-error .project-image {
+  display: none;
+}
+
 .preview-grid {
   position: absolute;
   inset: 0;
@@ -679,6 +715,11 @@ h3 {
   color: var(--visual-ink);
   font-size: 12px;
   font-weight: 750;
+}
+
+.has-image > .cover-category {
+  z-index: 3;
+  box-shadow: 0 6px 18px rgb(10 28 22 / 12%);
 }
 
 .preview-side-label {

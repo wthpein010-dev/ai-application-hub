@@ -17,6 +17,7 @@ const previewRoot = dirname(dataPath);
 const htmlPath = join(previewRoot, "index.html");
 const cssPath = join(previewRoot, "styles.css");
 const appPath = join(previewRoot, "app.js");
+const visualPath = join(previewRoot, "visual-assets.js");
 const runtime = readFileSync(runtimePath, "utf8");
 
 test("preview data mirrors every production project in order", async () => {
@@ -99,4 +100,26 @@ test("preview runtime synchronizes safe selection without replaying entrance mot
   assert.match(appJs, /localStorage\.setItem\(THEME_STORAGE_KEY/u);
   assert.match(appJs, /prefers-reduced-motion/u);
   assert.doesNotMatch(appJs, /window\.open\(/u);
+});
+
+test("preview maps real imagery and preserves deterministic image fallback", () => {
+  assert.ok(existsSync(visualPath), "visual asset map must exist");
+  const visualJs = readFileSync(visualPath, "utf8");
+  const appJs = readFileSync(appPath, "utf8");
+
+  for (const file of [
+    "atlas-avatar.png",
+    "game-preview.png",
+    "companion-preview.png",
+  ]) {
+    assert.ok(existsSync(join(previewRoot, "assets", file)), `${file} must exist`);
+  }
+  assert.match(visualJs, /function visualForProject\(/u);
+  assert.match(visualJs, /minigame-project-simulator/u);
+  assert.match(visualJs, /codex-quota-bar/u);
+  assert.match(visualJs, /codex-thread-workbench/u);
+  assert.doesNotMatch(visualJs, /clickflow/u);
+  assert.match(appJs, /visualForProject/u);
+  assert.match(appJs, /image-fallback/u);
+  assert.match(appJs, /data-platform/u);
 });

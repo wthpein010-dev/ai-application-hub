@@ -1,4 +1,5 @@
 import { projects as sourceProjects } from "./data.generated.js";
+import { visualForProject } from "./visual-assets.js";
 
 const THEME_STORAGE_KEY = "hub-atlas-preview-theme";
 const SELECTED_STORAGE_KEY = "hub-atlas-preview-selected";
@@ -240,15 +241,54 @@ function actionButtons(project, scope) {
   `).join("");
 }
 
-function coverMarkup(project, context) {
+function fallbackMarkup(project, context, hidden = false) {
   const label = context === "hero" ? "项目动态预览" : project.category;
   return `
-    <div class="${context === "hero" ? "hero-preview" : "card-cover"}" style="${projectVisualStyle(project)}">
+    <div class="image-fallback${hidden ? "" : " is-visible"}"${hidden ? " hidden" : ""}>
       <div class="preview-grid" aria-hidden="true"></div>
       <span class="cover-mark">${escapeHtml(project.visual.mark)}</span>
-      <span class="cover-category">${escapeHtml(label)}</span>
+      ${hidden ? "" : `<span class="cover-category">${escapeHtml(label)}</span>`}
     </div>
   `;
+}
+
+function visualMarkup(project, context) {
+  const visual = visualForProject(project);
+  const className = context === "hero" ? "hero-preview" : "card-cover";
+  if (visual.kind === "image") {
+    return `
+      <div class="${className} has-image" style="${projectVisualStyle(project)}" data-project-visual="${escapeHtml(project.id)}">
+        <img
+          class="project-image"
+          src="${escapeHtml(visual.src)}"
+          alt="${escapeHtml(visual.alt)}"
+          style="object-position:${escapeHtml(visual.position || "center")};"
+          data-project-image
+        />
+        ${fallbackMarkup(project, context, true)}
+        <span class="cover-category">${escapeHtml(project.category)}</span>
+      </div>
+    `;
+  }
+  return `
+    <div class="${className}" style="${projectVisualStyle(project)}" data-project-visual="${escapeHtml(project.id)}">
+      ${fallbackMarkup(project, context)}
+    </div>
+  `;
+}
+
+function hydrateVisualFallbacks(root = document) {
+  root.querySelectorAll("img[data-project-image]").forEach((image) => {
+    image.addEventListener("error", () => {
+      image.hidden = true;
+      const fallback = image.parentElement?.querySelector(".image-fallback");
+      if (fallback) {
+        fallback.hidden = false;
+        fallback.classList.add("is-visible");
+      }
+      image.parentElement?.classList.add("has-image-error");
+    }, { once: true });
+  });
 }
 
 export function renderHero(project) {
@@ -284,7 +324,7 @@ export function renderHero(project) {
         <span></span><span></span><span></span>
         <i>${escapeHtml(project.id)}</i>
       </div>
-      ${coverMarkup(project, "hero")}
+      ${visualMarkup(project, "hero")}
       <div class="preview-side-label">
         <strong>${escapeHtml(project.visual.mark)}</strong>
         <span>${escapeHtml(project.tags.slice(0, 2).join(" · ") || project.category)}</span>
@@ -293,6 +333,7 @@ export function renderHero(project) {
   `;
   nodes.stagePosition.textContent = `${String(position + 1).padStart(2, "0")} / ${String(navigation.length).padStart(2, "0")}`;
   nodes.stageProgress.style.width = `${((position + 1) / Math.max(1, navigation.length)) * 100}%`;
+  hydrateVisualFallbacks(nodes.heroVisual);
   renderPlatformSummary(project);
 }
 
@@ -308,7 +349,7 @@ function cardMarkup(project) {
       style="${kindStyle(project)}${projectVisualStyle(project)}"
     >
       <div class="card-visual" aria-hidden="true">
-        ${coverMarkup(project, "card")}
+        ${visualMarkup(project, "card")}
       </div>
       <div class="card-body">
         <div class="card-meta">
@@ -356,6 +397,7 @@ export function renderCatalog() {
   nodes.gameCount.textContent = `${games.length} 个小游戏`;
   nodes.engineeringCount.textContent = `${engineering.length} 个工程体验`;
   nodes.resultCount.textContent = `${filtered.length} 个匹配项目`;
+  hydrateVisualFallbacks();
   updateSelectedCards();
 }
 
@@ -501,7 +543,11 @@ export function setTheme(theme) {
   nodes.themeMenu.querySelectorAll("[data-theme]").forEach((option) => {
     option.setAttribute("aria-checked", String(option.dataset.theme === normalized));
   });
-  localStorage.setItem(THEME_STORAGE_KEY, normalized);
+  try {
+    localStorage.setItem(THEME_STORAGE_KEY, normalized);
+  } catch {
+    // Theme stays active for the current session when storage is unavailable.
+  }
 }
 
 function handleProjectAction(target) {
