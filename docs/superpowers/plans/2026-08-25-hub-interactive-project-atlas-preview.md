@@ -13,7 +13,7 @@
 ## Global Constraints
 
 - Production `index.html`, `styles.css`, `app-20260706-restore-games.js`, project files, platform packages, and public GitHub Pages must remain unchanged.
-- Preview data must contain exactly the 29 current `defaultApps` records in original order and retain real web, video, Windows, macOS, and iOS URLs.
+- Preview data must contain exactly the 29 current `defaultApps` records in original order and retain real web, video, Windows, macOS, and iOS URLs; the Windows local renderer must exclude `clickflow` before creating DOM and must never request its assets or links.
 - Default theme is clean white; alternate themes are mist, coral, and night.
 - Visible interface text is at least 12px; normal body copy is at least 13px and reaches WCAG AA contrast.
 - Desktop uses four catalog columns, tablet two, and mobile one; `1440x900`, `1024x768`, and `390x844` must not overflow horizontally.
@@ -157,7 +157,7 @@ Expected: FAIL because `app.js` does not exist.
 
 - [ ] **Step 3: Implement state and pure filtering rules**
 
-State fields are `selectedId`, `type`, `query`, `sort`, `theme`, and `hasCompletedIntro`. Filtering preserves production order unless sort is `name` or `category`; type values are `all`, the six app badges, `game`, and `engineering`. Search normalizes case and matches name, category, badge, brief, problem, and tags.
+State fields are `selectedId`, `type`, `query`, `sort`, `theme`, and `hasCompletedIntro`. `createState` first derives `visibleProjects = projects.filter(({ id }) => id !== "clickflow")`; no renderer or interaction receives the excluded item. Filtering preserves production order unless sort is `name` or `category`; type values are `all`, the six app badges, `game`, and `engineering`. Search normalizes case and matches name, category, badge, brief, problem, and tags.
 
 - [ ] **Step 4: Implement synchronized rendering and keyboard behavior**
 
@@ -255,7 +255,7 @@ git commit -m "feat: add atlas project visuals and platform states"
 
 - [ ] **Step 1: Write browser smoke coverage before final polish**
 
-The script must launch installed Chrome/Edge through Playwright, serve the repository root on an ephemeral loopback port, and assert at `1440x900`, `1024x768`, and `390x844`: no horizontal overflow, no console/page/request errors, readable text floor, expected 29 cards before filtering, four/two/one columns, card-to-stage selection sync, no reintroduced `is-intro`, theme persistence, reduced-motion transform suppression, and image fallback stability.
+The script must launch installed Chrome/Edge through Playwright, serve the repository root on an ephemeral loopback port, and assert at `1440x900`, `1024x768`, and `390x844`: no horizontal overflow, no console/page/request errors, readable text floor, exactly 28 rendered cards before filtering, zero `clickflow` nodes or requests, four/two/one columns, card-to-stage selection sync, no reintroduced `is-intro`, theme persistence, reduced-motion transform suppression, and image fallback stability.
 
 - [ ] **Step 2: Run the browser smoke test and record any failures**
 
