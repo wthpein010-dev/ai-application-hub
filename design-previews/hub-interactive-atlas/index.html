@@ -1,0 +1,250 @@
+<!doctype html>
+<html lang="zh-CN" data-theme="clean">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta
+      name="description"
+      content="AI 应用总览交互式项目图鉴改版预览"
+    />
+    <title>AI 应用总览 · 交互式项目图鉴预览</title>
+    <link rel="stylesheet" href="./styles.css" />
+    <script type="module" src="./app.js"></script>
+  </head>
+  <body>
+    <a class="skip-link" href="#apps">跳到项目图鉴</a>
+
+    <header class="site-header" data-header>
+      <a class="brand" href="#overview" aria-label="回到项目总览">
+        <span class="brand-mark" aria-hidden="true">AI</span>
+        <span>
+          <strong>AI 应用总览</strong>
+          <small>交互式项目图鉴预览</small>
+        </span>
+      </a>
+
+      <nav class="primary-nav" aria-label="页面导航">
+        <a href="#overview">总览</a>
+        <a href="#apps">应用</a>
+        <a href="#platforms">平台</a>
+        <a href="#maintain">维护</a>
+      </nav>
+
+      <div class="header-tools">
+        <button
+          class="icon-button search-jump"
+          type="button"
+          aria-label="聚焦项目搜索"
+          title="搜索项目"
+          data-search-jump
+        >
+          <span aria-hidden="true">⌕</span>
+        </button>
+        <div class="theme-control">
+          <button
+            id="themeToggle"
+            class="theme-toggle"
+            type="button"
+            aria-haspopup="menu"
+            aria-expanded="false"
+          >
+            <span class="theme-swatch" aria-hidden="true"></span>
+            <span data-theme-label>清透白</span>
+          </button>
+          <div id="themeMenu" class="theme-menu" role="menu" hidden>
+            <button type="button" role="menuitemradio" aria-checked="true" data-theme="clean">
+              <span class="option-swatch swatch-clean" aria-hidden="true"></span>
+              <span><strong>清透白</strong><small>默认 · 清晰直接</small></span>
+            </button>
+            <button type="button" role="menuitemradio" aria-checked="false" data-theme="mist">
+              <span class="option-swatch swatch-mist" aria-hidden="true"></span>
+              <span><strong>雾蓝</strong><small>冷静 · 专注浏览</small></span>
+            </button>
+            <button type="button" role="menuitemradio" aria-checked="false" data-theme="coral">
+              <span class="option-swatch swatch-coral" aria-hidden="true"></span>
+              <span><strong>珊瑚</strong><small>温暖 · 活力强调</small></span>
+            </button>
+            <button type="button" role="menuitemradio" aria-checked="false" data-theme="night">
+              <span class="option-swatch swatch-night" aria-hidden="true"></span>
+              <span><strong>深夜</strong><small>低光 · 沉浸查看</small></span>
+            </button>
+          </div>
+        </div>
+        <button class="edit-button" type="button" data-edit-preview>
+          <span aria-hidden="true">✎</span>
+          <span>编辑</span>
+        </button>
+      </div>
+    </header>
+
+    <main>
+      <section id="overview" class="overview-band" aria-labelledby="overviewTitle">
+        <div class="section-shell">
+          <div class="overview-heading">
+            <p class="section-kicker">PROJECT ATLAS · 2026</p>
+            <h1 id="overviewTitle">从灵感到可用工具，一屏看清。</h1>
+            <p>
+              汇总应用、小游戏和工程体验。选择任一项目，精选舞台、平台状态与访问入口会同步更新。
+            </p>
+          </div>
+
+          <article id="heroStage" class="hero-stage" aria-live="polite">
+            <div id="heroContent" class="hero-content">
+              <span class="loading-line loading-line-short"></span>
+              <span class="loading-line loading-line-title"></span>
+              <span class="loading-line"></span>
+              <span class="loading-line"></span>
+            </div>
+            <div id="heroVisual" class="hero-visual" aria-hidden="true">
+              <div class="visual-placeholder">
+                <span>正在载入项目图鉴</span>
+              </div>
+            </div>
+            <button
+              class="stage-arrow stage-arrow-prev"
+              type="button"
+              aria-label="上一个项目"
+              data-stage-prev
+            >
+              <span aria-hidden="true">‹</span>
+            </button>
+            <button
+              class="stage-arrow stage-arrow-next"
+              type="button"
+              aria-label="下一个项目"
+              data-stage-next
+            >
+              <span aria-hidden="true">›</span>
+            </button>
+            <div class="stage-status" aria-label="项目浏览进度">
+              <span data-stage-position>01 / 28</span>
+              <span class="stage-progress" aria-hidden="true">
+                <span data-stage-progress></span>
+              </span>
+            </div>
+          </article>
+
+          <div class="stat-strip" aria-label="项目统计">
+            <div><strong data-stat-total>29</strong><span>全部收录</span></div>
+            <div><strong data-stat-apps>0</strong><span>应用工具</span></div>
+            <div><strong data-stat-games>0</strong><span>小游戏</span></div>
+            <div><strong data-stat-platforms>0</strong><span>跨平台项目</span></div>
+          </div>
+        </div>
+      </section>
+
+      <section id="apps" class="catalog-band" aria-labelledby="catalogTitle">
+        <div class="section-shell">
+          <div class="section-heading catalog-heading">
+            <div>
+              <p class="section-kicker">BROWSE THE COLLECTION</p>
+              <h2 id="catalogTitle">项目图鉴</h2>
+              <p>按用途筛选，或直接搜索名称、场景与关键词。</p>
+            </div>
+            <span class="result-count" data-result-count>载入中</span>
+          </div>
+
+          <aside class="filter-rail" aria-label="项目筛选">
+            <div id="typeRail" class="type-rail" role="group" aria-label="按工具类型筛选">
+              <button type="button" class="type-chip is-active" data-type="all" aria-pressed="true">全部</button>
+            </div>
+            <label class="search-field" for="searchInput">
+              <span aria-hidden="true">⌕</span>
+              <input
+                id="searchInput"
+                type="search"
+                autocomplete="off"
+                placeholder="搜索项目、场景或关键词"
+              />
+            </label>
+            <label class="sort-field" for="sortSelect">
+              <span>排序</span>
+              <select id="sortSelect">
+                <option value="default">默认顺序</option>
+                <option value="name">项目名称</option>
+                <option value="category">应用类型</option>
+              </select>
+            </label>
+          </aside>
+
+          <section class="project-section" aria-labelledby="appSectionTitle">
+            <div class="collection-heading">
+              <div>
+                <span class="collection-mark mark-app" aria-hidden="true"></span>
+                <h3 id="appSectionTitle">应用项目集合</h3>
+              </div>
+              <span data-count-app>0 个应用</span>
+            </div>
+            <div id="appGrid" class="project-grid" aria-live="polite"></div>
+          </section>
+
+          <section class="project-section game-section" aria-labelledby="gameSectionTitle">
+            <div class="collection-heading">
+              <div>
+                <span class="collection-mark mark-game" aria-hidden="true"></span>
+                <h3 id="gameSectionTitle">小游戏体验集合</h3>
+              </div>
+              <span data-count-game>0 个小游戏</span>
+            </div>
+            <div id="gameGrid" class="project-grid" aria-live="polite"></div>
+          </section>
+
+          <section class="project-section engineering-section" aria-labelledby="engineeringSectionTitle">
+            <div class="collection-heading">
+              <div>
+                <span class="collection-mark mark-engineering" aria-hidden="true"></span>
+                <h3 id="engineeringSectionTitle">工程体验集合</h3>
+              </div>
+              <span data-count-engineering>0 个工程体验</span>
+            </div>
+            <div id="engineeringGrid" class="project-grid" aria-live="polite"></div>
+          </section>
+        </div>
+      </section>
+
+      <section id="platforms" class="platform-band" aria-labelledby="platformTitle">
+        <div class="section-shell platform-layout">
+          <div class="section-heading">
+            <p class="section-kicker">PLATFORM VIEW</p>
+            <h2 id="platformTitle">跨平台入口</h2>
+            <p>网页体验、介绍视频和桌面端下载状态随当前项目同步呈现。</p>
+          </div>
+          <div class="platform-summary" data-platform-summary>
+            <span>选择项目后查看平台状态</span>
+          </div>
+        </div>
+      </section>
+
+      <section id="maintain" class="maintain-band" aria-labelledby="maintainTitle">
+        <div class="section-shell maintain-layout">
+          <div>
+            <p class="section-kicker">MAINTAIN</p>
+            <h2 id="maintainTitle">内容维护入口</h2>
+            <p>正式改版会继续保留当前文案编辑和本地持久化能力，普通浏览时收纳在顶部编辑入口。</p>
+          </div>
+          <button class="secondary-command" type="button" data-edit-preview>
+            <span aria-hidden="true">✎</span>
+            <span>查看维护方式</span>
+          </button>
+        </div>
+      </section>
+    </main>
+
+    <footer class="site-footer">
+      <span>AI 应用总览 · 交互式项目图鉴预览</span>
+      <a href="#overview">返回顶部</a>
+    </footer>
+
+    <dialog id="linkInspector" class="link-inspector" aria-labelledby="inspectorTitle">
+      <button class="dialog-close" type="button" aria-label="关闭" data-inspector-close>×</button>
+      <span class="dialog-kicker" data-inspector-kind>入口预览</span>
+      <h2 id="inspectorTitle" data-inspector-title>项目入口</h2>
+      <p data-inspector-copy>预览模式不会自动打开下载链接。</p>
+      <div class="link-address" data-inspector-url></div>
+      <div class="dialog-actions">
+        <button type="button" class="secondary-command" data-inspector-close>返回图鉴</button>
+        <a class="primary-command" href="./index.html" target="_blank" rel="noreferrer" data-inspector-open>打开网页</a>
+      </div>
+    </dialog>
+  </body>
+</html>

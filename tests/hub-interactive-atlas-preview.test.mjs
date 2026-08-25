@@ -13,6 +13,9 @@ const dataPath = join(
   "hub-interactive-atlas",
   "data.generated.js",
 );
+const previewRoot = dirname(dataPath);
+const htmlPath = join(previewRoot, "index.html");
+const cssPath = join(previewRoot, "styles.css");
 const runtime = readFileSync(runtimePath, "utf8");
 
 test("preview data mirrors every production project in order", async () => {
@@ -35,4 +38,45 @@ test("preview data mirrors every production project in order", async () => {
       actions.every(({ href }) => href && href !== "#"),
     ),
   );
+});
+
+test("preview shell exposes the approved stage, filter rail, and catalogs", () => {
+  assert.ok(existsSync(htmlPath), "preview HTML must exist");
+  assert.ok(existsSync(cssPath), "preview CSS must exist");
+  const html = readFileSync(htmlPath, "utf8");
+  const css = readFileSync(cssPath, "utf8");
+
+  for (const id of [
+    "themeToggle",
+    "themeMenu",
+    "heroStage",
+    "heroContent",
+    "heroVisual",
+    "typeRail",
+    "searchInput",
+    "sortSelect",
+    "appGrid",
+    "gameGrid",
+    "engineeringGrid",
+    "linkInspector",
+  ]) {
+    assert.match(html, new RegExp(`id=["']${id}["']`, "u"));
+  }
+  assert.match(
+    css,
+    /grid-template-columns:\s*repeat\(4,\s*minmax\(0,\s*1fr\)\)/u,
+  );
+  assert.match(
+    css,
+    /@media\s*\(max-width:\s*1024px\)[\s\S]*grid-template-columns:\s*repeat\(2,\s*minmax\(0,\s*1fr\)\)/u,
+  );
+  assert.match(
+    css,
+    /@media\s*\(max-width:\s*720px\)[\s\S]*grid-template-columns:\s*1fr/u,
+  );
+  assert.match(css, /@media\s*\(prefers-reduced-motion:\s*reduce\)/u);
+  assert.doesNotMatch(css, /font-size:\s*(?:9|10|11)px/u);
+  for (const theme of ["clean", "mist", "coral", "night"]) {
+    assert.match(html + css, new RegExp(`data-theme=["']${theme}["']`, "u"));
+  }
 });
