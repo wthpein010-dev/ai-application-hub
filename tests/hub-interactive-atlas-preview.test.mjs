@@ -16,6 +16,7 @@ const dataPath = join(
 const previewRoot = dirname(dataPath);
 const htmlPath = join(previewRoot, "index.html");
 const cssPath = join(previewRoot, "styles.css");
+const appPath = join(previewRoot, "app.js");
 const runtime = readFileSync(runtimePath, "utf8");
 
 test("preview data mirrors every production project in order", async () => {
@@ -79,4 +80,23 @@ test("preview shell exposes the approved stage, filter rail, and catalogs", () =
   for (const theme of ["clean", "mist", "coral", "night"]) {
     assert.match(html + css, new RegExp(`data-theme=["']${theme}["']`, "u"));
   }
+});
+
+test("preview runtime synchronizes safe selection without replaying entrance motion", () => {
+  assert.ok(existsSync(appPath), "preview runtime must exist");
+  const appJs = readFileSync(appPath, "utf8");
+
+  assert.match(appJs, /function createState\(/u);
+  assert.match(appJs, /function filterProjects\(/u);
+  assert.match(appJs, /function selectProject\(/u);
+  assert.match(appJs, /function renderHero\(/u);
+  assert.match(appJs, /function renderCatalog\(/u);
+  assert.match(appJs, /function openLinkInspector\(/u);
+  assert.match(appJs, /project\.id\s*!==\s*["']clickflow["']/u);
+  assert.match(appJs, /aria-current/u);
+  assert.match(appJs, /history\.replaceState/u);
+  assert.match(appJs, /hasCompletedIntro/u);
+  assert.match(appJs, /localStorage\.setItem\(THEME_STORAGE_KEY/u);
+  assert.match(appJs, /prefers-reduced-motion/u);
+  assert.doesNotMatch(appJs, /window\.open\(/u);
 });
