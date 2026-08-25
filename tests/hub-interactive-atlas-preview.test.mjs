@@ -40,6 +40,7 @@ test("preview data mirrors every production project in order", async () => {
       actions.every(({ href }) => href && href !== "#"),
     ),
   );
+  assert.match(generated.projects.find(({ id }) => id === "hub").brief, /集中汇总全部应用/u);
 });
 
 test("preview shell exposes the approved stage, filter rail, and catalogs", () => {
@@ -81,6 +82,10 @@ test("preview shell exposes the approved stage, filter rail, and catalogs", () =
   for (const theme of ["clean", "mist", "coral", "night"]) {
     assert.match(html + css, new RegExp(`data-theme=["']${theme}["']`, "u"));
   }
+  assert.doesNotMatch(
+    html,
+    /PROJECT ATLAS|BROWSE THE COLLECTION|PLATFORM VIEW|MAINTAIN/u,
+  );
 });
 
 test("preview runtime synchronizes safe selection without replaying entrance motion", () => {

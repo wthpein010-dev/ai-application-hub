@@ -13,15 +13,20 @@ const PROJECT_VISUALS = {
     src: "./assets/atlas-avatar.png",
     alt: "Codex 桌面助手图标",
     position: "center",
-  },
-  "codex-thread-workbench": {
-    src: "./assets/atlas-avatar.png",
-    alt: "Codex 待确认悬浮助手图标",
-    position: "center",
+    fit: "contain",
   },
 };
 
+const FORCE_COVERS = new Set(["codex-thread-workbench"]);
+
 export function visualForProject(project) {
+  if (FORCE_COVERS.has(project.id)) {
+    return {
+      kind: "cover",
+      mark: project.visual.mark,
+      alt: `${project.name} 排版封面`,
+    };
+  }
   const mapped = PROJECT_VISUALS[project.id];
   if (mapped) return { kind: "image", ...mapped };
   return {

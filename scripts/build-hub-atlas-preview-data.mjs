@@ -123,9 +123,18 @@ export function writePreviewData(projects, path = outputPath) {
   writeFileSync(path, contents, "utf8");
 }
 
+export function extractStringConstant(runtime, name) {
+  const escapedName = name.replace(/[.*+?^${}()|[\]\\]/gu, "\\$&");
+  const match = runtime.match(new RegExp(`const\\s+${escapedName}\\s*=\\s*("(?:[^"\\\\]|\\\\.)*");`, "u"));
+  return match ? JSON.parse(match[1]) : "";
+}
+
 if (process.argv[1] === fileURLToPath(import.meta.url)) {
   const runtime = readFileSync(runtimePath, "utf8");
-  const projects = buildPreviewProjects(loadDefaultAppsFromRuntime(runtime));
+  const apps = loadDefaultAppsFromRuntime(runtime);
+  const hub = apps.find((app) => app.id === "hub");
+  if (hub) hub.brief = extractStringConstant(runtime, "HUB_BRIEF") || hub.brief;
+  const projects = buildPreviewProjects(apps);
   writePreviewData(projects);
   process.stdout.write(`Generated ${projects.length} preview projects.\n`);
 }

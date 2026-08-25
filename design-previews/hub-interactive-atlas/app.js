@@ -262,7 +262,7 @@ function visualMarkup(project, context) {
           class="project-image"
           src="${escapeHtml(visual.src)}"
           alt="${escapeHtml(visual.alt)}"
-          style="object-position:${escapeHtml(visual.position || "center")};"
+          style="object-position:${escapeHtml(visual.position || "center")};object-fit:${escapeHtml(visual.fit || "cover")};"
           data-project-image
         />
         ${fallbackMarkup(project, context, true)}
@@ -322,7 +322,7 @@ export function renderHero(project) {
     <div class="hero-preview-shell" style="${projectVisualStyle(project)}">
       <div class="preview-browser-bar" aria-hidden="true">
         <span></span><span></span><span></span>
-        <i>${escapeHtml(project.id)}</i>
+        <i>${escapeHtml(project.name)}</i>
       </div>
       ${visualMarkup(project, "hero")}
       <div class="preview-side-label">

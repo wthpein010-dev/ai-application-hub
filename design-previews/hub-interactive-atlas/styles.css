@@ -406,19 +406,23 @@ h3 {
 
 .overview-band {
   overflow: hidden;
-  padding: 58px 0 42px;
+  padding: 48px 0 36px;
   border-bottom: 1px solid var(--line);
 }
 
 .overview-heading {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(280px, 520px);
+  grid-template-columns: minmax(0, 1.15fr) minmax(300px, 0.85fr);
   align-items: end;
   gap: 40px;
   margin-bottom: 28px;
 }
 
-.overview-heading > p:last-child,
+.overview-title h1 {
+  margin-bottom: 0;
+}
+
+.overview-heading > .overview-summary,
 .section-heading > p:last-child {
   margin-bottom: 4px;
   color: var(--text);
@@ -439,7 +443,7 @@ h3 {
   position: relative;
   display: grid;
   grid-template-columns: minmax(0, 0.92fr) minmax(420px, 1.08fr);
-  min-height: 470px;
+  min-height: 430px;
   overflow: hidden;
   border-top: 1px solid var(--line-strong);
   border-bottom: 1px solid var(--line-strong);
@@ -657,6 +661,11 @@ h3 {
   object-fit: cover;
 }
 
+.project-image[style*="object-fit:contain"] {
+  padding: 18px;
+  background: var(--visual-surface);
+}
+
 .image-fallback {
   position: absolute;
   z-index: 1;
@@ -719,6 +728,9 @@ h3 {
 
 .has-image > .cover-category {
   z-index: 3;
+  border-color: rgb(23 63 123 / 28%);
+  background: #ffffff;
+  color: #173f7b;
   box-shadow: 0 6px 18px rgb(10 28 22 / 12%);
 }
 
@@ -1531,7 +1543,6 @@ button.platform-tile.is-available:hover {
   }
 
   .overview-heading,
-  .hero-stage,
   .platform-layout {
     grid-template-columns: 1fr;
   }
@@ -1540,21 +1551,30 @@ button.platform-tile.is-available:hover {
     gap: 10px;
   }
 
-  .hero-content {
-    padding: 46px 64px 20px;
-  }
-
-  .hero-visual {
-    min-height: 320px;
-    padding: 14px 64px 72px;
-  }
-
   .project-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
   .platform-layout {
     gap: 24px;
+  }
+}
+
+@media (max-width: 900px) and (min-width: 721px) {
+  .hero-stage {
+    grid-template-columns: minmax(0, 0.92fr) minmax(330px, 1.08fr);
+  }
+
+  .hero-content {
+    padding: 38px 36px 64px 48px;
+  }
+
+  .hero-content h2 {
+    font-size: 30px;
+  }
+
+  .hero-visual {
+    padding: 32px 38px 64px 8px;
   }
 }
 
@@ -1603,24 +1623,57 @@ button.platform-tile.is-available:hover {
   }
 
   .overview-band {
-    padding: 34px 0 26px;
+    padding: 26px 0 20px;
   }
 
   .overview-heading {
-    margin-bottom: 20px;
+    margin-bottom: 16px;
+  }
+
+  .overview-heading > .overview-summary {
+    font-size: 14px;
   }
 
   .hero-stage {
-    min-height: 580px;
+    grid-template-columns: 1fr;
+    min-height: 460px;
   }
 
   .hero-content {
-    padding: 46px 28px 10px;
+    padding: 28px 28px 0;
+  }
+
+  .hero-content h2 {
+    margin-bottom: 8px;
+    font-size: 28px;
+  }
+
+  .hero-brief {
+    display: -webkit-box;
+    overflow: hidden;
+    margin-bottom: 14px;
+    font-size: 14px;
+    line-height: 1.55;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+  }
+
+  .hero-detail {
+    padding: 8px 0;
+  }
+
+  .hero-ai-detail {
+    display: none;
   }
 
   .hero-visual {
-    min-height: 250px;
-    padding: 8px 28px 76px;
+    min-height: 170px;
+    padding: 6px 28px 62px;
+  }
+
+  .hero-preview-shell > .preview-browser-bar,
+  .hero-preview-shell > .preview-side-label {
+    display: none;
   }
 
   .stage-arrow {
