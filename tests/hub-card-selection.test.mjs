@@ -45,6 +45,41 @@ function eventFor({ appId = "nang-keng-pai-pai-xiang", interactive = false, key 
   };
 }
 
+function loadSelection(initialHref = "http://127.0.0.1:8000/index.html?theme=night#games") {
+  const start = runtime.indexOf("function selectApp");
+  const end = runtime.indexOf("function ensureSelectedApp", start);
+  assert.notEqual(start, -1);
+  assert.notEqual(end, -1);
+
+  const context = {
+    globalThis: {},
+    apps: [{ id: "selected-app" }, { id: "another-app" }],
+    state: { selectedId: "selected-app" },
+    URL,
+    location: { href: initialHref },
+    history: {
+      state: { retained: true },
+      replaceState(state, unused, url) {
+        this.call = { state, unused, url: String(url) };
+      },
+    },
+    localStorage: {
+      setItem(key, value) {
+        this.call = { key, value };
+      },
+    },
+  };
+  vm.runInNewContext([
+    'const SELECTED_KEY = "selected-key";',
+    "function visibleApps() { return apps; }",
+    "function renderSelectedApp() { globalThis.renderSelectedAppCalls = (globalThis.renderSelectedAppCalls || 0) + 1; }",
+    "function render() { globalThis.renderCalls = (globalThis.renderCalls || 0) + 1; }",
+    runtime.slice(start, end),
+    "globalThis.selectApp = selectApp;",
+  ].join("\n"), context);
+  return context;
+}
+
 test("clicking an application or game card selects that project", () => {
   const page = loadHandler();
   page.handleAppCardClick(eventFor());
@@ -108,4 +143,19 @@ test("selected card state is synchronized for visual and assistive users", () =>
     [true, "true"],
     [false, "false"],
   ]);
+});
+
+test("selection persists stage state and project query without replacing the section hash", () => {
+  const page = loadSelection();
+
+  page.globalThis.selectApp("another-app");
+
+  assert.equal(page.state.selectedId, "another-app");
+  assert.deepEqual(page.localStorage.call, { key: "selected-key", value: "another-app" });
+  assert.equal(page.globalThis.renderSelectedAppCalls, 1);
+  assert.equal(page.globalThis.renderCalls, undefined);
+  const updated = new URL(page.history.call.url);
+  assert.equal(updated.searchParams.get("project"), "another-app");
+  assert.equal(updated.searchParams.get("theme"), "night");
+  assert.equal(updated.hash, "#games");
 });

@@ -67,3 +67,11 @@ test("carousel previous and next navigation still wraps in catalog order", () =>
   page.globalThis.switchApp(1);
   assert.equal(page.state.selectedId, "simuai");
 });
+
+test("selected stage loads eagerly and keeps a single next-image preload hint", () => {
+  assert.match(runtime, /nodes\.showcaseImage\.loading\s*=\s*["']eager["']/u);
+  assert.match(runtime, /function preloadNextMedia\(/u);
+  assert.match(runtime, /querySelector\(["']#showcaseNextPreload["']\)/u);
+  assert.match(runtime, /preload\.rel\s*=\s*["']preload["']/u);
+  assert.match(runtime, /preload\.as\s*=\s*["']image["']/u);
+});

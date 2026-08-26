@@ -64,6 +64,60 @@ test("project media registry covers every production id without loading ClickFlo
   }
 });
 
+test("runtime renders project-owned media and excludes ClickFlow from Windows-local DOM", () => {
+  assert.match(runtime, /function projectMedia\(/u);
+  assert.match(runtime, /function isWindowsLocalPreview\(/u);
+  assert.match(runtime, /function visibleApps\(/u);
+  assert.match(runtime, /app\.id\s*!==\s*["']clickflow["']/u);
+  assert.match(runtime, /loading="lazy"/u);
+  assert.match(runtime, /loading\s*=\s*["']eager["']/u);
+  assert.match(runtime, /aria-current/u);
+  assert.match(runtime, /history\.replaceState/u);
+  assert.match(runtime, /function renderMedia\(app, context\)/u);
+});
+
+test("media lookup prefers a valid edited visual and Windows-local visibility is host scoped", () => {
+  const helpersStart = runtime.indexOf("function isWindowsLocalPreview");
+  const helpersEnd = runtime.indexOf("function renderCategoryOptions", helpersStart);
+  const normalizerStart = runtime.indexOf("function normalizeVisualPath");
+  const normalizerEnd = runtime.indexOf("function projectHref", normalizerStart);
+  assert.notEqual(helpersStart, -1);
+  assert.notEqual(helpersEnd, -1);
+  assert.notEqual(normalizerStart, -1);
+  assert.notEqual(normalizerEnd, -1);
+
+  const productionApps = [
+    { id: "visible", name: "Visible" },
+    { id: "clickflow", name: "ClickFlow" },
+  ];
+  const context = {
+    globalThis: {
+      HUB_PROJECT_MEDIA: {
+        visible: { src: "./registry.webp", alt: "Visible screen", position: "top", layout: "wide", fallback: "Visible fallback" },
+      },
+    },
+    apps: productionApps,
+    navigator: { platform: "Win32", userAgent: "Windows NT 10.0" },
+    location: { protocol: "http:", hostname: "127.0.0.1" },
+  };
+  vm.runInNewContext([
+    runtime.slice(helpersStart, helpersEnd),
+    runtime.slice(normalizerStart, normalizerEnd),
+    "globalThis.isWindowsLocalPreview = isWindowsLocalPreview;",
+    "globalThis.visibleApps = visibleApps;",
+    "globalThis.projectMedia = projectMedia;",
+  ].join("\n"), context);
+
+  assert.equal(context.globalThis.isWindowsLocalPreview(), true);
+  assert.deepEqual(Array.from(context.globalThis.visibleApps(), ({ id }) => id), ["visible"]);
+  assert.equal(context.globalThis.projectMedia({ id: "visible", name: "Visible", visual: "  ./edited.webp  " }).src, "./edited.webp");
+  assert.equal(context.globalThis.projectMedia({ id: "visible", name: "Visible", visual: "javascript:alert(1)" }).src, "./registry.webp");
+
+  context.location.hostname = "example.com";
+  assert.equal(context.globalThis.isWindowsLocalPreview(), false);
+  assert.deepEqual(Array.from(context.globalThis.visibleApps(), ({ id }) => id), ["visible", "clickflow"]);
+});
+
 test("capture sources require an explicit public entry when the local page is absent", () => {
   assert.throws(
     () => resolveSafeCaptureUrl("missing-project", { entry: "./projects/missing-project/index.html" }, "http://127.0.0.1:9000"),

@@ -900,6 +900,9 @@ const nodes = {
   statApps: document.querySelector("#statApps"),
   statGames: document.querySelector("#statGames"),
   spotlight: document.querySelector("#spotlightCard"),
+  showcaseMedia: document.querySelector("#showcaseMedia"),
+  showcaseImage: document.querySelector("#showcaseImage"),
+  showcaseCaption: document.querySelector("#showcaseCaption"),
   dots: document.querySelector("#showcaseProgress"),
   prevApp: document.querySelector("#prevApp"),
   nextApp: document.querySelector("#nextApp"),
@@ -939,6 +942,7 @@ const nodes = {
   editEntry: document.querySelector("#editEntry"),
   editPackage: document.querySelector("#editPackage"),
   editVideo: document.querySelector("#editVideo"),
+  editVisual: document.querySelector("#editVisual"),
   pageTextFields: document.querySelector("#pageTextFields"),
 };
 
@@ -1063,6 +1067,7 @@ function render() {
 }
 
 function applyTheme(theme, persist = true) {
+  if (hasRenderedCatalog) completeListIntroAnimation();
   const normalized = normalizeTheme(theme);
   state.theme = normalized;
   document.documentElement.dataset.theme = normalized;
@@ -1115,7 +1120,7 @@ function finishListIntroAnimation() {
 }
 
 function completeListIntroAnimation() {
-  document.body.classList.add("card-intro-complete");
+  document.body.classList.add("showcase-intro-complete");
 }
 
 function alignHashTarget() {
@@ -1127,8 +1132,104 @@ function alignHashTarget() {
   }, 0);
 }
 
+function isWindowsLocalPreview() {
+  const platform = `${navigator.platform || ""} ${navigator.userAgent || ""}`;
+  if (!/windows|win32|win64/i.test(platform)) return false;
+  const hostname = String(location.hostname || "").toLowerCase();
+  return location.protocol === "file:" || hostname === "localhost" || hostname === "127.0.0.1";
+}
+
+function visibleApps() {
+  return isWindowsLocalPreview() ? apps.filter(app => app.id !== "clickflow") : apps;
+}
+
+function projectMedia(app) {
+  const fallbackMedia = { src: "", fallback: app.name, layout: "standard", position: "center" };
+  const registered = globalThis.HUB_PROJECT_MEDIA?.[app.id];
+  const editedSrc = normalizeVisualPath(app.visual);
+  if (!registered && !editedSrc) return fallbackMedia;
+  const media = registered || fallbackMedia;
+  return {
+    ...media,
+    src: editedSrc || normalizeVisualPath(media.src),
+    fallback: media.fallback || app.name,
+    layout: ["standard", "wide", "tall"].includes(media.layout) ? media.layout : "standard",
+    position: media.position || "center"
+  };
+}
+
+function renderMedia(app, context) {
+  const media = projectMedia(app);
+  const alt = media.alt || `${app.name}功能画面`;
+  if (context === "stage") {
+    nodes.showcaseMedia.classList.toggle("media-fallback", !media.src);
+    nodes.showcaseImage.onerror = handleMediaError;
+    nodes.showcaseImage.loading = "eager";
+    nodes.showcaseImage.fetchPriority = "high";
+    nodes.showcaseImage.alt = alt;
+    nodes.showcaseImage.style.objectPosition = media.position;
+    nodes.showcaseImage.hidden = !media.src;
+    nodes.showcaseCaption.textContent = media.fallback;
+    nodes.showcaseCaption.hidden = false;
+    if (media.src) {
+      nodes.showcaseImage.src = media.src;
+    } else {
+      nodes.showcaseImage.removeAttribute("src");
+    }
+    return media;
+  }
+  const image = media.src
+    ? `<img src="${escapeHtml(media.src)}" alt="${escapeHtml(alt)}" loading="lazy" style="object-position:${escapeHtml(media.position)}" onerror="handleMediaError(event)" />`
+    : "";
+  return `
+    <figure class="card-media">
+      ${image}
+      <figcaption${media.src ? " hidden" : ""}>${escapeHtml(media.fallback)}</figcaption>
+    </figure>
+  `;
+}
+
+function handleMediaError(event) {
+  const image = event.currentTarget;
+  image.hidden = true;
+  image.closest(".app-card, .showcase-media")?.classList.add("media-fallback");
+  const fallback = image.parentElement?.querySelector("figcaption");
+  if (fallback) fallback.hidden = false;
+}
+
+function preloadNextMedia() {
+  const navigationApps = getNavigationApps();
+  const currentIndex = navigationApps.findIndex(app => app.id === state.selectedId);
+  const nextApp = navigationApps[(currentIndex + 1 + navigationApps.length) % navigationApps.length];
+  const nextSrc = nextApp ? projectMedia(nextApp).src : "";
+  let preload = document.querySelector("#showcaseNextPreload");
+  if (!nextSrc) {
+    preload?.remove();
+    return;
+  }
+  if (!preload) {
+    preload = document.createElement("link");
+    preload.id = "showcaseNextPreload";
+    document.head.append(preload);
+  }
+  preload.rel = "preload";
+  preload.as = "image";
+  preload.href = nextSrc;
+}
+
+function renderPlatformBadges(app) {
+  const platforms = [
+    ["web", "网页"],
+    ["windows", "Windows"],
+    ["mac", "Mac"],
+    ["ios", "iOS"]
+  ].filter(([key]) => platformValue(app, key) || (key === "web" && app.entry)).slice(0, 2);
+  if (!platforms.length) return "";
+  return `<div class="tag-row summary-platforms" aria-label="支持平台">${platforms.map(([, label]) => `<span>${label}</span>`).join("")}</div>`;
+}
+
 function renderCategoryOptions() {
-  const categories = [...new Set(apps.map(app => app.category))].sort((a, b) => a.localeCompare(b, "zh-CN"));
+  const categories = [...new Set(visibleApps().map(app => app.category))].sort((a, b) => a.localeCompare(b, "zh-CN"));
   nodes.category.innerHTML = [
     `<option value="all">全部分类</option>`,
     ...categories.map(category => `<option value="${escapeHtml(category)}">${escapeHtml(category)}</option>`)
@@ -1138,7 +1239,7 @@ function renderCategoryOptions() {
 
 function getFilteredApps() {
   const query = state.query;
-  return apps
+  return visibleApps()
     .filter(app => {
       const haystack = [app.name, app.category, app.brief, app.problem, app.aiUse, ...app.tags].join(" ").toLowerCase();
       const matchesQuery = !query || haystack.includes(query);
@@ -1163,23 +1264,28 @@ function getNavigationApps(filtered = getFilteredApps()) {
 }
 
 function renderStats() {
-  nodes.statTotal.textContent = apps.length;
-  nodes.statApps.textContent = apps.filter(app => app.status !== "navigation" && app.status !== "game").length;
-  nodes.statGames.textContent = apps.filter(app => app.status === "game").length;
+  const visible = visibleApps();
+  nodes.statTotal.textContent = visible.length;
+  nodes.statApps.textContent = visible.filter(app => app.status !== "navigation" && app.status !== "game").length;
+  nodes.statGames.textContent = visible.filter(app => app.status === "game").length;
 }
 
 function renderSpotlight() {
   const app = getSelectedApp();
   const introText = spotlightIntro(app);
   const richText = app.problem;
+  renderMedia(app, "stage");
   nodes.spotlight.innerHTML = `
     <div class="summary-copy">
       <span class="summary-type">${escapeHtml(app.category)}</span>
       <strong>${escapeHtml(app.name)}</strong>
+      ${renderPlatformBadges(app)}
       <p class="summary-intro">${escapeHtml(introText)}</p>
       <p class="summary-richtext"><span>使用场景</span><em>${escapeHtml(richText)}</em></p>
+      ${renderActions(app, false, ["engineering", "ai"].includes(app.status) ? "engineering" : "default")}
     </div>
   `;
+  preloadNextMedia();
 }
 
 function spotlightIntro(app) {
@@ -1257,8 +1363,10 @@ function renderEngineeringGrid(filtered) {
 function renderAppCard(app, index = 0, extraClass = "", actionMode = "default") {
   const visibleTags = app.tags.slice(0, 2);
   const overflowTags = app.tags.length - 2;
+  const media = projectMedia(app);
   return `
-    <article class="app-card${extraClass} ${app.id === state.selectedId ? "selected" : ""}" data-app-id="${escapeHtml(app.id)}" tabindex="0" aria-current="${app.id === state.selectedId ? "true" : "false"}" style="--card-order:${index}">
+    <article class="app-card${extraClass} media-${media.layout}${media.src ? "" : " media-fallback"} ${app.id === state.selectedId ? "selected" : ""}" data-app-id="${escapeHtml(app.id)}" tabindex="0" aria-current="${app.id === state.selectedId ? "true" : "false"}" style="--card-order:${index}">
+      ${renderMedia(app, "card")}
       <div class="card-topline">
         <div class="card-meta">
           <span class="status-badge status-${escapeHtml(catalogTypeKey(app))}">${escapeHtml(catalogTypeLabel(app))}</span>
@@ -1324,7 +1432,7 @@ function isDirectPackageHref(href) {
 
 function renderPlatformShowcase(filtered) {
   if (!nodes.platformGrid) return;
-  const list = filtered.length ? filtered : apps;
+  const list = filtered.length ? filtered : visibleApps();
   const platformGroups = [
     { key: "web", label: "网页体验", note: "浏览器直接打开，电脑和手机都可使用。" },
     { key: "windows", label: "Windows", note: "优先提供 exe、插件包或通用 zip。" },
@@ -1415,7 +1523,7 @@ function renderEditForm() {
   const app = getSelectedApp();
   renderPageTextFields();
   markAppFieldLabels();
-  nodes.editAppSelect.innerHTML = apps.map(item => (
+  nodes.editAppSelect.innerHTML = visibleApps().map(item => (
     `<option value="${escapeHtml(item.id)}">${escapeHtml(item.name)}</option>`
   )).join("");
   nodes.editAppSelect.value = app.id;
@@ -1433,6 +1541,7 @@ function renderEditForm() {
   nodes.editEntry.value = app.entry;
   if (nodes.editPackage) nodes.editPackage.value = app.package || "";
   if (nodes.editVideo) nodes.editVideo.value = app.video || "";
+  nodes.editVisual.value = app.visual || projectMedia(app).src;
   highlightEditTarget();
 }
 
@@ -1449,7 +1558,7 @@ function renderPageTextFields() {
 }
 
 function markAppFieldLabels() {
-  const fieldMap = { editName: "name", editCategory: "category", editBrief: "brief", editStatus: "status", editTags: "tags", editProblem: "problem", editAiUse: "aiUse", editFolder: "folder", editEntry: "entry", editPackage: "package", editVideo: "video" };
+  const fieldMap = { editName: "name", editCategory: "category", editBrief: "brief", editStatus: "status", editTags: "tags", editProblem: "problem", editAiUse: "aiUse", editFolder: "folder", editEntry: "entry", editPackage: "package", editVideo: "video", editVisual: "visual" };
   Object.entries(fieldMap).forEach(([id, field]) => {
     document.querySelector("#" + id)?.closest("label")?.setAttribute("data-app-field", field);
   });
@@ -1470,19 +1579,28 @@ function highlightEditTarget() {
 }
 
 function selectApp(id) {
-  if (!apps.some(app => app.id === id)) return;
+  if (!visibleApps().some(app => app.id === id)) return;
   state.selectedId = id;
-  localStorage.setItem(SELECTED_KEY, id);
+  try {
+    localStorage.setItem(SELECTED_KEY, id);
+  } catch {}
+  try {
+    const nextUrl = new URL(location.href);
+    nextUrl.searchParams.set("project", id);
+    history.replaceState(history.state, "", nextUrl);
+  } catch {}
   renderSelectedApp();
 }
 
 function ensureSelectedApp(filtered) {
   if (filtered.some(app => app.id === state.selectedId)) return;
-  state.selectedId = (getNavigationApps(filtered)[0] || apps[0]).id;
+  const fallback = getNavigationApps(filtered)[0] || visibleApps()[0];
+  if (fallback) state.selectedId = fallback.id;
 }
 
 function getSelectedApp() {
-  return apps.find(app => app.id === state.selectedId) || apps[0];
+  const visible = visibleApps();
+  return visible.find(app => app.id === state.selectedId) || visible[0];
 }
 
 function switchApp(direction) {
@@ -1515,7 +1633,8 @@ function runCommand() {
 function runMaintenance() {
   renderCategoryOptions();
   render();
-  log(`维护完成：已刷新 ${apps.length} 个应用，类型 ${new Set(apps.map(app => app.status)).size} 类，网页体验 ${apps.filter(app => platformValue(app, "web") || app.entry).length} 个。`);
+  const visible = visibleApps();
+  log(`维护完成：已刷新 ${visible.length} 个应用，类型 ${new Set(visible.map(app => app.status)).size} 类，网页体验 ${visible.filter(app => platformValue(app, "web") || app.entry).length} 个。`);
 }
 
 function toggleEditMode() {
@@ -1557,7 +1676,8 @@ function saveEditForm() {
       folder: nodes.editFolder.value.trim() || app.folder,
       entry: nodes.editEntry.value.trim() || app.entry,
       package: nodes.editPackage?.value.trim() || app.package,
-      video: nodes.editVideo?.value.trim() || app.video
+      video: nodes.editVideo?.value.trim() || app.video,
+      visual: normalizeVisualPath(nodes.editVisual?.value) || undefined
     }, nodes.editStatus.value);
   });
   localStorage.setItem(PAGE_TEXT_STORAGE_KEY, JSON.stringify(pageText));
@@ -1681,6 +1801,9 @@ function normalizeApp(app) {
     ...app,
     tags: Array.isArray(app.tags) ? app.tags : []
   };
+  const visual = normalizeVisualPath(normalized.visual);
+  if (visual) normalized.visual = visual;
+  else delete normalized.visual;
   if (!normalized.video && base.video) {
     normalized.video = base.video;
   }
@@ -2003,6 +2126,14 @@ function cloneApp(app) {
     tags: [...app.tags],
     platforms: { ...(app.platforms || {}) }
   };
+}
+
+function normalizeVisualPath(value) {
+  const visual = String(value || "").trim();
+  if (!visual) return "";
+  if (/^https:\/\//i.test(visual)) return visual;
+  if (/^(?:[a-z][a-z\d+.-]*:|\/\/)/i.test(visual)) return "";
+  return visual;
 }
 
 function projectHref(value) {

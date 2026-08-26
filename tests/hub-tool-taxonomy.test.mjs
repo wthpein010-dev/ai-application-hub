@@ -180,6 +180,14 @@ test("the maintenance editor uses and persists the same public taxonomy", () => 
   assert.match(runtime, /return setCatalogType\(\{[\s\S]*?\}, nodes\.editStatus\.value\);/);
 });
 
+test("the maintenance editor exposes a validated project visual path after video", () => {
+  assert.match(homepage, /id="editVideo"[\s\S]*?<span>展示图片地址<\/span>[\s\S]*?id="editVisual"/u);
+  assert.match(runtime, /editVisual:\s*document\.querySelector\(["']#editVisual["']\)/u);
+  assert.match(runtime, /nodes\.editVisual\.value\s*=\s*app\.visual\s*\|\|\s*projectMedia\(app\)\.src/u);
+  assert.match(runtime, /visual:\s*normalizeVisualPath\(nodes\.editVisual\?\.value\)/u);
+  assert.match(runtime, /editVisual:\s*["']visual["']/u);
+});
+
 test("filtering, sorting, cards and exports share the public taxonomy", () => {
   assert.match(runtime, /const matchesStatus = state\.status === "all" \|\| catalogTypeKey\(app\) === state\.status;/);
   assert.match(runtime, /catalogTypeLabel\(a\)\.localeCompare\(catalogTypeLabel\(b\)/);

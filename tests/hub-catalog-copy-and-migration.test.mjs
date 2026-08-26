@@ -1,5 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
+import { execFileSync } from "node:child_process";
 import { readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -35,7 +36,15 @@ function loadAppsWithStoredValue(stored) {
 }
 
 function pageTitle(path) {
-  const html = readFileSync(join(root, ...path.split("/")), "utf8");
+  let html;
+  try {
+    html = readFileSync(join(root, ...path.split("/")), "utf8");
+  } catch (error) {
+    if (error?.code !== "ENOENT") throw error;
+    const sparsePaths = execFileSync("git", ["sparse-checkout", "list"], { cwd: root, encoding: "utf8" });
+    if (/^\/?projects\/?$/mu.test(sparsePaths)) throw error;
+    html = execFileSync("git", ["show", `HEAD:${path}`], { cwd: root, encoding: "utf8" });
+  }
   return /<title>([^<]+)<\/title>/i.exec(html)?.[1].trim() || "";
 }
 
@@ -146,4 +155,20 @@ test("stored GameSpec Relay cards migrate to the Chinese 需求接力站 release
   assert.equal(migrated.package, relay.package);
   assert.deepEqual(JSON.parse(JSON.stringify(migrated.platforms)), JSON.parse(JSON.stringify(relay.platforms)));
   assert.deepEqual(JSON.parse(JSON.stringify(migrated.tags)), JSON.parse(JSON.stringify(relay.tags)));
+});
+
+test("stored visual paths preserve trimmed relative or HTTPS values and drop unsafe schemes", () => {
+  const defaults = loadDefaultAppsFromRuntime(runtime);
+  const base = defaults.find((app) => app.id === "travel-generator");
+
+  for (const [visual, expected] of [
+    ["  ./assets/custom.webp  ", "./assets/custom.webp"],
+    [" https://cdn.example.com/custom.webp ", "https://cdn.example.com/custom.webp"],
+    ["javascript:alert(1)", undefined],
+    ["data:image/png;base64,AAAA", undefined],
+    ["", undefined],
+  ]) {
+    const migrated = loadAppsWithStoredValue([{ ...base, visual }]).find((app) => app.id === base.id);
+    assert.equal(migrated.visual, expected);
+  }
 });

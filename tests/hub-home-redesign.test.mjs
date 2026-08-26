@@ -102,7 +102,7 @@ test("each approved theme supplies Bento stage tokens and accessible controlled 
 });
 
 test("card entrance completion supports the current and future body gates", () => {
-  assert.match(runtime, /document\.body\.classList\.add\("card-intro-complete"\)/u);
+  assert.match(runtime, /document\.body\.classList\.add\("showcase-intro-complete"\)/u);
   assert.match(styles, /body\.card-intro-complete\s+\.app-card\s*,\s*body\.showcase-intro-complete\s+\.app-card\s*\{[^}]*animation:\s*none/u);
 });
 
@@ -192,5 +192,5 @@ test("any render after first paint disables the list entrance animation immediat
 
   assert.match(renderer, /if \(hasRenderedCatalog\) completeListIntroAnimation\(\);/u);
   assert.match(renderer, /hasRenderedCatalog = true;/u);
-  assert.match(runtime, /function completeListIntroAnimation\(\)[\s\S]*?card-intro-complete/u);
+  assert.match(runtime, /function completeListIntroAnimation\(\)[\s\S]*?showcase-intro-complete/u);
 });
