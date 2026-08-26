@@ -87,6 +87,19 @@ test("the visual system is white-first and includes four theme token sets", () =
   assert.match(styles, /@media\s*\(prefers-reduced-motion:\s*reduce\)/u);
 });
 
+test("each approved theme supplies Bento stage tokens and accessible controlled motion", () => {
+  for (const selector of [":root", 'html[data-theme="mist"]', 'html[data-theme="coral"]', 'html[data-theme="night"]']) {
+    for (const token of ["showcase-surface", "selection", "game-accent", "engineering-accent"]) {
+      assert.match(rule(selector), new RegExp(`--${token}:\\s*#[0-9a-fA-F]{6}`, "u"));
+    }
+    assert.match(rule(selector), /--showcase-overlay:\s*rgba\(/u);
+  }
+
+  assert.match(rule(":focus-visible"), /outline:\s*3px\s+solid/u);
+  assert.match(rule(".showcase-media:hover"), /rotate[XY]\([1-3]deg\)/u);
+  assert.match(styles, /body\.showcase-intro-complete\s+\.showcase-stage/u);
+});
+
 test("the featured carousel follows each page theme instead of forcing a dark panel", () => {
   for (const selector of [":root", 'html[data-theme="mist"]', 'html[data-theme="coral"]']) {
     assert.ok(contrastRatio(colorToken(selector, "hero-text"), colorToken(selector, "hero-panel")) >= 7);
@@ -144,18 +157,11 @@ test("secondary theme text keeps WCAG AA contrast on card surfaces", () => {
   }
 });
 
-test("the redesign preserves prior release cache markers and accessible action names", () => {
+test("the redesign preserves current homepage cache markers and accessible action names", () => {
   for (const marker of [
-    "20260803-nang-game-catalog-refresh",
-    "20260803-hub-full-audit-v2",
-    "20260811-gamepulse-community-api",
-    "20260812-wanxiang-lab-rename",
-    "20260818-brick-preview-feishu-upload",
     "20260820-hub-quality-audit",
-    "20260820-pureshrink-v105",
     "20260821-tool-taxonomy",
     "20260824-white-workspace-themes",
-    "20260824-card-motion-once",
     "20260824-readable-type",
     "20260824-hero-theme-controls"
   ]) {

@@ -13,6 +13,12 @@ import {
 const root = dirname(dirname(fileURLToPath(import.meta.url)));
 const runtime = readFileSync(join(root, "app-20260706-restore-games.js"), "utf8");
 const mediaRuntime = readFileSync(join(root, "hub-project-media.js"), "utf8");
+const styles = readFileSync(join(root, "styles.css"), "utf8");
+
+function rule(selector) {
+  const escaped = selector.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  return styles.match(new RegExp(`${escaped}\\s*\\{[^}]*\\}`, "u"))?.[0] || "";
+}
 
 test("homepage exposes the approved dynamic showcase shell", () => {
   const html = readFileSync(join(root, "index.html"), "utf8");
@@ -23,6 +29,16 @@ test("homepage exposes the approved dynamic showcase shell", () => {
   assert.match(html, /<section id="games"[^>]*>[\s\S]*id="gameGrid"/u);
   assert.match(html, /<section id="engineering"[^>]*>[\s\S]*id="engineeringGrid"/u);
   assert.match(html, /<aside id="editPanel"[^>]+aria-hidden="true"[^>]+inert/u);
+});
+
+test("approved showcase uses image-led Bento layouts with responsive fallbacks", () => {
+  assert.match(rule(".showcase-stage"), /grid-template-columns:\s*minmax\([^)]*\)\s+minmax\([^)]*\)/u);
+  assert.match(styles, /@media\s*\(max-width:\s*1180px\)[\s\S]*?\.showcase-stage[^{]*\{[^}]*grid-template-columns:\s*minmax\(0,\s*0\.67fr\)\s+minmax\(0,\s*1fr\)/u);
+  assert.match(rule(".app-grid"), /grid-template-columns:\s*repeat\(4,\s*minmax\(0,\s*1fr\)\)/u);
+  assert.match(rule(".app-card.media-wide"), /grid-column:\s*span\s+2/u);
+  assert.match(rule(".app-card.media-tall"), /grid-row:\s*span\s+2/u);
+  assert.match(styles, /@media\s*\(max-width:\s*720px\)[\s\S]*?\.app-card\.media-wide[^{]*\{[^}]*grid-column:\s*auto/u);
+  assert.match(styles, /@media\s*\(prefers-reduced-motion:\s*reduce\)/u);
 });
 
 function loadMediaRegistry(source) {
