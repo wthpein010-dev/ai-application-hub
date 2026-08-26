@@ -1,0 +1,207 @@
+<!doctype html>
+<html lang="zh-CN" data-theme="clean">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="description" content="AI 应用总览主页三种视觉方向对比" />
+    <title>AI 应用总览 · 主页模板方向对比</title>
+    <link rel="stylesheet" href="./styles.css" />
+    <script type="module" src="./app.js"></script>
+  </head>
+  <body>
+    <header class="preview-header">
+      <a class="preview-brand" href="#a" aria-label="查看推荐方向">
+        <span class="brand-mark" aria-hidden="true">AI</span>
+        <span>
+          <strong>AI 应用总览</strong>
+          <small>主页模板方向对比</small>
+        </span>
+      </a>
+
+      <nav class="direction-tabs" aria-label="切换主页模板方向">
+        <button type="button" class="direction-tab is-active" data-direction="a" aria-pressed="true">
+          <span>A</span>动态作品展馆
+        </button>
+        <button type="button" class="direction-tab" data-direction="b" aria-pressed="false">
+          <span>B</span>横向故事画廊
+        </button>
+        <button type="button" class="direction-tab" data-direction="c" aria-pressed="false">
+          <span>C</span>可拖拽应用桌面
+        </button>
+      </nav>
+
+      <div class="theme-switcher" aria-label="预览配色">
+        <button class="theme-button is-active" type="button" data-theme-value="clean" aria-label="清透白" title="清透白"></button>
+        <button class="theme-button theme-button-mist" type="button" data-theme-value="mist" aria-label="雾蓝" title="雾蓝"></button>
+        <button class="theme-button theme-button-night" type="button" data-theme-value="night" aria-label="深夜" title="深夜"></button>
+      </div>
+    </header>
+
+    <main class="direction-main">
+      <section class="direction-view direction-a is-active" data-view="a" aria-labelledby="directionATitle">
+        <div class="museum-stage" data-tilt-stage>
+          <div class="museum-copy">
+            <p class="eyebrow">推荐方向 · 图文并重</p>
+            <h1 id="directionATitle">让每个应用<br />自己登场。</h1>
+            <p class="lead">真实截图成为首页主角。点击下方项目，画面、介绍和平台入口在同一舞台平滑切换。</p>
+            <div class="museum-meta">
+              <span data-stage-category>辅助工具</span>
+              <span data-stage-platform>网页 · Windows</span>
+            </div>
+            <div class="stage-actions">
+              <button type="button" class="primary-action">网页预览 <span aria-hidden="true">↗</span></button>
+              <button type="button" class="secondary-action">介绍视频 <span aria-hidden="true">▶</span></button>
+            </div>
+          </div>
+
+          <figure class="museum-visual">
+            <img data-stage-image src="./assets/ai-workshop.jpg" alt="AI 游戏需求工坊界面" />
+            <figcaption>
+              <span data-stage-index>01 / 06</span>
+              <strong data-stage-name>AI 游戏需求工坊</strong>
+              <span data-stage-brief>把游戏灵感整理成可以直接开工的需求。</span>
+            </figcaption>
+            <div class="visual-progress" aria-hidden="true"><span data-stage-progress></span></div>
+          </figure>
+        </div>
+
+        <div class="museum-toolbar">
+          <div class="filter-chips" aria-label="应用分类预览">
+            <button type="button" class="is-active">全部</button>
+            <button type="button">辅助工具</button>
+            <button type="button">内容工具</button>
+            <button type="button">生活工具</button>
+            <button type="button">桌面工具</button>
+          </div>
+          <p><strong>29</strong> 个项目，按用途与平台浏览</p>
+        </div>
+
+        <div class="museum-grid" aria-label="项目图文集合">
+          <button class="museum-card museum-card-wide is-selected" type="button" data-project="0">
+            <img src="./assets/ai-workshop.jpg" alt="AI 游戏需求工坊界面缩略图" />
+            <span class="card-shade"></span>
+            <span class="card-copy"><small>辅助工具</small><strong>AI 游戏需求工坊</strong><em>网页 · Windows</em></span>
+          </button>
+          <button class="museum-card museum-card-tall" type="button" data-project="3">
+            <img src="./assets/moments-photo.png" alt="朋友圈发图神器旅行图片示例" />
+            <span class="card-shade"></span>
+            <span class="card-copy"><small>生活工具</small><strong>朋友圈发图神器</strong><em>网页体验</em></span>
+          </button>
+          <button class="museum-card" type="button" data-project="1">
+            <img src="./assets/codex-review.png" alt="Codex 对话评分工具界面缩略图" />
+            <span class="card-shade"></span>
+            <span class="card-copy"><small>桌面工具</small><strong>Codex 对话评分工具</strong><em>Windows</em></span>
+          </button>
+          <button class="museum-card" type="button" data-project="2">
+            <img src="./assets/minigame-tool.png" alt="小游戏立项工具界面缩略图" />
+            <span class="card-shade"></span>
+            <span class="card-copy"><small>辅助工具</small><strong>小游戏立项工具</strong><em>网页 · Windows</em></span>
+          </button>
+          <button class="museum-card museum-card-wide" type="button" data-project="4">
+            <img src="./assets/game-brief.png" alt="小游戏需求生成器界面缩略图" />
+            <span class="card-shade"></span>
+            <span class="card-copy"><small>内容工具</small><strong>小游戏需求生成器</strong><em>Windows</em></span>
+          </button>
+          <button class="museum-card" type="button" data-project="5">
+            <img src="./assets/hero-companion.png" alt="AI 应用方案整理器视觉缩略图" />
+            <span class="card-shade"></span>
+            <span class="card-copy"><small>辅助工具</small><strong>AI 应用方案整理器</strong><em>网页 · 视频</em></span>
+          </button>
+        </div>
+      </section>
+
+      <section class="direction-view direction-b" data-view="b" aria-labelledby="directionBTitle" hidden>
+        <header class="story-heading">
+          <div>
+            <p class="eyebrow">方向 B · 沉浸叙事</p>
+            <h1 id="directionBTitle">像翻看一本<br />会动的作品集。</h1>
+          </div>
+          <p>每次只聚焦一个项目，适合重点展示和现场讲解。左右滑动或点击箭头切换下一件作品。</p>
+        </header>
+
+        <div class="story-deck" aria-live="polite">
+          <button class="story-arrow story-prev" type="button" aria-label="上一个项目"><span aria-hidden="true">‹</span></button>
+          <article class="story-slide">
+            <div class="story-image-wrap">
+              <img data-story-image src="./assets/ai-workshop.jpg" alt="AI 游戏需求工坊界面" />
+              <span class="story-count" data-story-count>01 / 06</span>
+            </div>
+            <div class="story-copy">
+              <span class="story-category" data-story-category>辅助工具</span>
+              <h2 data-story-name>AI 游戏需求工坊</h2>
+              <p data-story-brief>组合灵感、玩法和美术方向，生成能够直接交给 AI 或开发团队的需求说明。</p>
+              <dl>
+                <div><dt>体验方式</dt><dd data-story-platform>网页 · Windows</dd></div>
+                <div><dt>适合场景</dt><dd data-story-scene>游戏立项与需求整理</dd></div>
+              </dl>
+              <div class="stage-actions">
+                <button type="button" class="primary-action">打开作品 <span aria-hidden="true">↗</span></button>
+                <button type="button" class="secondary-action">观看介绍</button>
+              </div>
+            </div>
+          </article>
+          <button class="story-arrow story-next" type="button" aria-label="下一个项目"><span aria-hidden="true">›</span></button>
+        </div>
+
+        <div class="story-filmstrip" aria-label="选择故事项目">
+          <button type="button" class="is-active" data-story-project="0"><img src="./assets/ai-workshop.jpg" alt="" /><span>AI 游戏需求工坊</span></button>
+          <button type="button" data-story-project="1"><img src="./assets/codex-review.png" alt="" /><span>Codex 对话评分工具</span></button>
+          <button type="button" data-story-project="2"><img src="./assets/minigame-tool.png" alt="" /><span>小游戏立项工具</span></button>
+          <button type="button" data-story-project="3"><img src="./assets/moments-photo.png" alt="" /><span>朋友圈发图神器</span></button>
+          <button type="button" data-story-project="4"><img src="./assets/game-brief.png" alt="" /><span>小游戏需求生成器</span></button>
+          <button type="button" data-story-project="5"><img src="./assets/hero-companion.png" alt="" /><span>应用方案整理器</span></button>
+        </div>
+      </section>
+
+      <section class="direction-view direction-c" data-view="c" aria-labelledby="directionCTitle" hidden>
+        <header class="desktop-heading">
+          <div>
+            <p class="eyebrow">方向 C · 自由探索</p>
+            <h1 id="directionCTitle">把应用铺成一张<br />可以探索的桌面。</h1>
+          </div>
+          <div class="desktop-note">
+            <strong>可直接拖动卡片</strong>
+            <p>点击卡片会提到最前，拖动则重新组织视野。适合强调实验感与互动性。</p>
+          </div>
+        </header>
+
+        <div class="app-desktop" data-desktop>
+          <div class="desktop-grid" aria-hidden="true"></div>
+          <article class="desktop-window window-one" data-window tabindex="0">
+            <div class="window-bar"><span>AI 游戏需求工坊</span><i aria-hidden="true"></i></div>
+            <img src="./assets/ai-workshop.jpg" alt="AI 游戏需求工坊界面" />
+            <div class="window-info"><strong>把灵感变成开发任务</strong><span>辅助工具 · 网页</span></div>
+          </article>
+          <article class="desktop-window window-two" data-window tabindex="0">
+            <div class="window-bar"><span>Codex 对话评分工具</span><i aria-hidden="true"></i></div>
+            <img src="./assets/codex-review.png" alt="Codex 对话评分工具界面" />
+            <div class="window-info"><strong>对话质量一眼看清</strong><span>桌面工具 · Windows</span></div>
+          </article>
+          <article class="desktop-window window-three" data-window tabindex="0">
+            <div class="window-bar"><span>朋友圈发图神器</span><i aria-hidden="true"></i></div>
+            <img src="./assets/moments-photo.png" alt="朋友圈发图神器旅行图片示例" />
+            <div class="window-info"><strong>从图片到发布文案</strong><span>生活工具 · 网页</span></div>
+          </article>
+          <article class="desktop-window window-four" data-window tabindex="0">
+            <div class="window-bar"><span>小游戏立项工具</span><i aria-hidden="true"></i></div>
+            <img src="./assets/minigame-tool.png" alt="小游戏立项工具界面" />
+            <div class="window-info"><strong>快速整理小游戏方案</strong><span>辅助工具 · 网页</span></div>
+          </article>
+          <div class="desktop-dock" aria-label="桌面分类">
+            <button type="button" class="is-active">全部</button>
+            <button type="button">工具</button>
+            <button type="button">内容</button>
+            <button type="button">生活</button>
+            <button type="button">小游戏</button>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <aside class="preview-note" aria-live="polite">
+      <span data-note-letter>A</span>
+      <p><strong data-note-title>动态作品展馆</strong><small data-note-text>推荐：图片丰富，同时仍能快速浏览大量项目。</small></p>
+      <button type="button" data-select-direction>选择这个方向</button>
+    </aside>
+  </body>
+</html>
