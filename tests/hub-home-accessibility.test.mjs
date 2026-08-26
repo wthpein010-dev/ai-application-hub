@@ -49,6 +49,13 @@ test("hidden editor starts inert and toggles inert with its visible state", () =
   assert.equal(page.nodes.editPanel["aria-hidden"], "true");
 });
 
+test("showcase controls keep accessible labels inside the semantic media region", () => {
+  assert.match(html, /<section id="showcaseMedia"[^>]+aria-label="当前应用"/u);
+  assert.match(html, /<button id="prevApp"[^>]+aria-label="上一个应用"/u);
+  assert.match(html, /<button id="nextApp"[^>]+aria-label="下一个应用"/u);
+  assert.match(html, /<div id="showcaseProgress"[^>]+aria-live="polite"/u);
+});
+
 test("home metadata describes the full cross-platform catalog", () => {
   const description = html.match(/<meta name="description" content="([^"]+)"/u)?.[1] || "";
   assert.doesNotMatch(description, /HyperFrames/u);

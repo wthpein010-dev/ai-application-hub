@@ -14,6 +14,17 @@ const root = dirname(dirname(fileURLToPath(import.meta.url)));
 const runtime = readFileSync(join(root, "app-20260706-restore-games.js"), "utf8");
 const mediaRuntime = readFileSync(join(root, "hub-project-media.js"), "utf8");
 
+test("homepage exposes the approved dynamic showcase shell", () => {
+  const html = readFileSync(join(root, "index.html"), "utf8");
+  for (const id of ["showcaseStage", "showcaseCopy", "showcaseMedia", "showcaseImage", "showcaseCaption", "showcaseProgress"]) {
+    assert.match(html, new RegExp(`id=["']${id}["']`, "u"));
+  }
+  assert.match(html, /<section id="apps"[^>]*>[\s\S]*id="appGrid"/u);
+  assert.match(html, /<section id="games"[^>]*>[\s\S]*id="gameGrid"/u);
+  assert.match(html, /<section id="engineering"[^>]*>[\s\S]*id="engineeringGrid"/u);
+  assert.match(html, /<aside id="editPanel"[^>]+aria-hidden="true"[^>]+inert/u);
+});
+
 function loadMediaRegistry(source) {
   const context = { globalThis: {} };
   vm.runInNewContext(source, context);

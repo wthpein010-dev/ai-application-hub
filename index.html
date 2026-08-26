@@ -55,47 +55,54 @@
       </header>
 
       <main>
-        <section id="overview" class="hero">
-          <div class="hero-copy">
-            <button class="region-edit-button section-edit-button" type="button" aria-label="编辑总览文案" title="编辑总览文案" data-edit-kind="page" data-edit-key="hero.title"></button>
-            <h1>AI 应用总览</h1>
-            <p class="hero-lead">
-              汇总所有应用入口、说明、网页体验与跨平台下载内容。
-            </p>
-            <div class="hero-actions">
-              <a class="primary-action" href="#apps">查看应用集合</a>
-              <a class="ghost-action" href="#platforms">查看平台入口</a>
-            </div>
-            <div class="metric-strip" aria-label="项目统计">
-              <div class="metric">
-                <span>总数</span>
-                <small class="metric-note">全部收录项目</small>
-                <strong id="statTotal">0</strong>
-              </div>
-              <div class="metric accent-green">
-                <span>应用</span>
-                <small class="metric-note">工具与内容类</small>
-                <strong id="statApps">0</strong>
-              </div>
-              <div class="metric accent-blue">
-                <span>小游戏</span>
-                <small class="metric-note">可体验游戏原型</small>
-                <strong id="statGames">0</strong>
+        <section id="overview" class="showcase-overview">
+          <div id="showcaseStage" class="showcase-stage hero">
+            <div id="showcaseCopy" class="showcase-copy hero-copy">
+              <button class="region-edit-button section-edit-button" type="button" aria-label="编辑总览文案" title="编辑总览文案" data-edit-kind="page" data-edit-key="hero.title"></button>
+              <h1>AI 应用总览</h1>
+              <p class="showcase-lead hero-lead">
+                汇总所有应用入口、说明、网页体验与跨平台下载内容。
+              </p>
+              <div class="hero-actions">
+                <a class="primary-action" href="#apps">查看应用集合</a>
+                <a class="ghost-action" href="#platforms">查看平台入口</a>
               </div>
             </div>
+
+            <section id="showcaseMedia" class="showcase-media hero-board" aria-label="当前应用">
+              <div class="board-glow"></div>
+              <figure class="showcase-visual">
+                <img id="showcaseImage" alt="" hidden />
+                <figcaption id="showcaseCaption" hidden></figcaption>
+              </figure>
+              <div id="spotlightCard" class="selected-summary"></div>
+              <div class="showcase-controls" aria-label="切换应用介绍">
+                <div class="showcase-arrows">
+                  <button id="prevApp" type="button" aria-label="上一个应用"><span class="carousel-arrow-icon" aria-hidden="true">&#8249;</span></button>
+                  <button id="nextApp" type="button" aria-label="下一个应用"><span class="carousel-arrow-icon" aria-hidden="true">&#8250;</span></button>
+                </div>
+                <div id="showcaseProgress" class="showcase-status-host" aria-live="polite"></div>
+              </div>
+            </section>
           </div>
 
-          <aside class="hero-board" aria-label="当前应用">
-            <div class="board-glow"></div>
-            <div id="spotlightCard" class="selected-summary"></div>
-            <div class="showcase-controls" aria-label="切换应用介绍">
-              <div class="showcase-arrows">
-                <button id="prevApp" type="button" aria-label="上一个应用"><span class="carousel-arrow-icon" aria-hidden="true">&#8249;</span></button>
-                <button id="nextApp" type="button" aria-label="下一个应用"><span class="carousel-arrow-icon" aria-hidden="true">&#8250;</span></button>
-              </div>
-              <div id="showcaseDots" class="showcase-status-host" aria-live="polite"></div>
+          <div class="metric-strip" aria-label="项目统计">
+            <div class="metric">
+              <span>总数</span>
+              <small class="metric-note">全部收录项目</small>
+              <strong id="statTotal">0</strong>
             </div>
-          </aside>
+            <div class="metric accent-green">
+              <span>应用</span>
+              <small class="metric-note">工具与内容类</small>
+              <strong id="statApps">0</strong>
+            </div>
+            <div class="metric accent-blue">
+              <span>小游戏</span>
+              <small class="metric-note">可体验游戏原型</small>
+              <strong id="statGames">0</strong>
+            </div>
+          </div>
         </section>
 
         <section id="apps" class="workspace">
@@ -279,6 +286,7 @@
       <p class="edit-note">保存内容写入当前浏览器本地存储。需要固化到文件时，可让我继续处理。</p>
     </aside>
 
-    <script src="./app-20260706-restore-games.js?v=20260730-pureshrink-auxiliary-20260803-nang-game-catalog-refresh-20260803-hub-full-audit-v2-20260807-gamepulse-knowledge-hub-20260811-gamepulse-community-api-20260812-planmap-v2-20260812-simuai-30-experiments-20260812-app-group-carousel-20260812-wanxiang-lab-rename-20260818-brick-preview-feishu-upload-20260820-web-media-labels-20260820-hub-quality-audit-20260820-pureshrink-v105-20260821-tool-taxonomy-20260824-white-workspace-themes-20260824-card-motion-once"></script>
+    <script src="./hub-project-media.js?v=20260826-dynamic-showcase"></script>
+    <script src="./app-20260706-restore-games.js?v=20260826-dynamic-showcase"></script>
 </body>
 </html>
