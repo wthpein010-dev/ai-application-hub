@@ -6,7 +6,8 @@ import { fileURLToPath } from "node:url";
 
 const root = dirname(dirname(fileURLToPath(import.meta.url)));
 const hub = readFileSync(join(root, "index.html"), "utf8");
-const runtimeScript = hub.match(/<script\s+src="\.\/([^"?]+)(?:\?[^"]*)?"><\/script>/)?.[1] || "app-20260706-restore-games.js";
+const runtimeScript = hub.match(/<script\s+src="\.\/(app-20260706-restore-games\.js)(?:\?[^"]*)?"><\/script>/)?.[1];
+assert.equal(runtimeScript, "app-20260706-restore-games.js");
 const app = readFileSync(join(root, runtimeScript), "utf8");
 
 function sliceFor(marker, length = 1400) {

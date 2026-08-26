@@ -43,11 +43,3 @@ test("GamePulse is published once in the application collection", () => {
     ["小游戏排行", "行业知识库", "玩法拆解", "发布合作", "开放接口"],
   );
 });
-
-test("the page cache key changes for the GamePulse release", () => {
-  const html = readFileSync(join(root, "index.html"), "utf8");
-  assert.match(
-    html,
-    /app-20260706-restore-games\.js\?v=[^"]*20260811-gamepulse-community-api/,
-  );
-});

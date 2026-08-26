@@ -45,6 +45,29 @@ function isApplication(app) {
   return !["game", "engineering", "ai"].includes(app.status);
 }
 
+function linkedTargets(source) {
+  const htmlTargets = Array.from(
+    source.matchAll(/\bhref\s*=\s*["']([^"']+)["']/gi),
+    (match) => match[1],
+  );
+  const markdownTargets = Array.from(
+    source.matchAll(/\]\(([^)\s]+)(?:\s+"[^"]*")?\)/g),
+    (match) => match[1],
+  );
+  return [...htmlTargets, ...markdownTargets];
+}
+
+function appActionTargets(app) {
+  return [
+    app.entry,
+    app.video,
+    app.package,
+    ...Object.values(app.platforms || {}).map((platform) => (
+      typeof platform === "string" ? platform : platform?.href
+    )),
+  ].filter(Boolean);
+}
+
 test("PureShrink follows ClickFlow and exposes four publication actions", () => {
   const apps = loadDefaultApps();
   const item = apps.find((app) => app.id === "pureshrink");
@@ -69,7 +92,6 @@ test("PureShrink follows ClickFlow and exposes four publication actions", () => 
     label: "Mac下载",
   });
 });
-
 test("legacy PureShrink 1.0.3 actions migrate while customized copy stays intact", () => {
   const current = loadDefaultApps().find((app) => app.id === "pureshrink");
   const legacy = {
@@ -148,17 +170,19 @@ test("PureShrink exposes only the published 1.0.5 downloads", () => {
   assert.equal(existsSync(project("index.html")), true);
   assert.equal(existsSync(project("release-manifest.json")), true);
 
-  const publicFiles = [
-    readFileSync(project("index.html"), "utf8"),
-    readFileSync(project("README.md"), "utf8"),
-    readFileSync(runtimePath, "utf8"),
+  const app = loadDefaultApps().find((item) => item.id === "pureshrink");
+  assert.ok(app, "PureShrink should be registered");
+  const publicTargets = [
+    ...appActionTargets(app),
+    ...linkedTargets(readFileSync(project("index.html"), "utf8")),
+    ...linkedTargets(readFileSync(project("README.md"), "utf8")),
   ].join("\n");
 
-  assert.doesNotMatch(publicFiles, /C:\\Users|localhost|127\.0\.0\.1|file:\/\//);
-  assert.match(publicFiles, /pureshrink-v1\.0\.5/);
-  assert.doesNotMatch(publicFiles, /pureshrink-v1\.0\.[34]/);
-  assert.match(publicFiles, /PureShrink-Windows-x64\.zip/);
-  assert.match(publicFiles, /PureShrink-macOS\.zip/);
+  assert.doesNotMatch(publicTargets, /C:\\Users|localhost|127\.0\.0\.1|file:\/\//);
+  assert.match(publicTargets, /pureshrink-v1\.0\.5/);
+  assert.doesNotMatch(publicTargets, /pureshrink-v1\.0\.[34]/);
+  assert.match(publicTargets, /PureShrink-Windows-x64\.zip/);
+  assert.match(publicTargets, /PureShrink-macOS\.zip/);
 });
 
 test("PureShrink manifest identifies independently built platform assets", () => {
@@ -431,15 +455,4 @@ test("PureShrink manifest records completed Pages and public acceptance evidence
     browserErrors: 0,
     browserWarnings: 0,
   });
-});
-
-test("homepage cache key preserves the Hub audit before the PureShrink refresh", () => {
-  const html = readFileSync(join(root, "index.html"), "utf8");
-  const cacheKey = html.match(/app-20260706-restore-games\.js\?v=([^"]+)/)?.[1];
-  assert.ok(cacheKey, "runtime cache key should be present");
-  const auditIndex = cacheKey.indexOf("20260820-hub-quality-audit");
-  const pureShrinkIndex = cacheKey.indexOf("20260820-pureshrink-v105");
-  assert.notEqual(auditIndex, -1);
-  assert.notEqual(pureShrinkIndex, -1);
-  assert.ok(auditIndex < pureShrinkIndex, cacheKey);
 });

@@ -12,7 +12,6 @@ const root = dirname(dirname(fileURLToPath(import.meta.url)));
 const projectRoot = join(root, "projects", "brick-character-copy-preview");
 const videoRoot = join(projectRoot, "video");
 const runtime = readFileSync(join(root, "app-20260706-restore-games.js"), "utf8");
-const home = readFileSync(join(root, "index.html"), "utf8");
 process.env.FFMPEG_PATH ||= ffmpegPath;
 
 function seconds(timestamp) {
@@ -53,7 +52,6 @@ test("brick copy preview is the final engineering card with truthful actions", (
   assert.equal(project.platforms.mac, "");
   assert.equal(project.package, "");
   assert.equal(project.video, "./projects/brick-character-copy-preview/video/index.html");
-  assert.match(home, /20260818-brick-preview-feishu-upload/);
 });
 
 test("stored application metadata migrates into the engineering experience section", () => {

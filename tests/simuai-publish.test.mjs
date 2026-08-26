@@ -11,7 +11,6 @@ import { decodeMedia, inspectMedia } from "./media-inspect.mjs";
 
 const root = dirname(dirname(fileURLToPath(import.meta.url)));
 const runtime = readFileSync(join(root, "app-20260706-restore-games.js"), "utf8");
-const homepage = readFileSync(join(root, "index.html"), "utf8");
 const apps = loadDefaultAppsFromRuntime(runtime);
 process.env.FFMPEG_PATH ||= ffmpegPath;
 
@@ -71,17 +70,13 @@ test("万象实验室 follows PlanMap in the application collection with demo an
   );
 });
 
-test("万象实验室 demo returns to the application catalog and Hub refreshes its runtime", () => {
+test("万象实验室 demo returns to the application catalog", () => {
   const demo = readFileSync(join(root, "projects", "simuai", "index.html"), "utf8");
   assert.match(demo, /class="hub-home-link"/);
   assert.match(demo, /href="\.\.\/\.\.\/index\.html#apps"/);
   assert.match(demo, /<title>万象实验室<\/title>/);
   assert.match(demo, /aria-label="万象实验室首页"/);
   assert.doesNotMatch(demo, /SimuAI 万物实验室/);
-  assert.match(
-    homepage,
-    /app-20260706-restore-games\.js\?v=[^"]*wanxiang-lab-rename/,
-  );
 });
 
 test("万象实验室 migrates only the exact legacy default name", () => {

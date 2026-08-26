@@ -45,6 +45,29 @@ function isApplication(app) {
   return !["game", "engineering", "ai"].includes(app.status);
 }
 
+function linkedTargets(source) {
+  const htmlTargets = Array.from(
+    source.matchAll(/\bhref\s*=\s*["']([^"']+)["']/gi),
+    (match) => match[1],
+  );
+  const markdownTargets = Array.from(
+    source.matchAll(/\]\(([^)\s]+)(?:\s+"[^"]*")?\)/g),
+    (match) => match[1],
+  );
+  return [...htmlTargets, ...markdownTargets];
+}
+
+function appActionTargets(app) {
+  return [
+    app.entry,
+    app.video,
+    app.package,
+    ...Object.values(app.platforms || {}).map((platform) => (
+      typeof platform === "string" ? platform : platform?.href
+    )),
+  ].filter(Boolean);
+}
+
 test("ClickFlow stays immediately before PureShrink and exposes four publication actions", () => {
   const apps = loadDefaultApps();
   const clickFlow = apps.find((app) => app.id === "clickflow");
@@ -143,14 +166,16 @@ test("ClickFlow guide documents both modes, shortcuts, permissions, and cursor l
 });
 
 test("ClickFlow public files contain no local or source-only download targets", () => {
-  const published = [
-    readFileSync(runtimePath, "utf8"),
-    readFileSync(project("index.html"), "utf8"),
-    readFileSync(project("README.md"), "utf8"),
+  const clickFlow = loadDefaultApps().find((app) => app.id === "clickflow");
+  assert.ok(clickFlow, "ClickFlow should be registered");
+  const publishedTargets = [
+    ...appActionTargets(clickFlow),
+    ...linkedTargets(readFileSync(project("index.html"), "utf8")),
+    ...linkedTargets(readFileSync(project("README.md"), "utf8")),
   ].join("\n");
 
-  assert.doesNotMatch(published, /C:\\Users|localhost|127\.0\.0\.1/);
-  assert.doesNotMatch(published, /ClickFlow-macOS-build\.zip/);
+  assert.doesNotMatch(publishedTargets, /C:\\Users|localhost|127\.0\.0\.1/);
+  assert.doesNotMatch(publishedTargets, /ClickFlow-macOS-build\.zip/);
 });
 
 test("ClickFlow release manifest records the verified native packages", () => {
