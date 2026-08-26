@@ -1,11 +1,10 @@
 import assert from "node:assert/strict";
-import { createReadStream, existsSync, mkdirSync, readFileSync, statSync } from "node:fs";
+import { createReadStream, existsSync, mkdirSync, statSync } from "node:fs";
 import { createServer } from "node:http";
 import { createRequire } from "node:module";
 import { homedir } from "node:os";
 import { dirname, extname, join, normalize, resolve, sep } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
-import { loadDefaultAppsFromRuntime } from "./helpers/default-apps.mjs";
 
 const require = createRequire(import.meta.url);
 const playwrightEntry = require.resolve("playwright", {
@@ -26,16 +25,35 @@ const playwrightModule = await import(pathToFileURL(playwrightEntry).href);
 const { chromium } = playwrightModule.default || playwrightModule;
 
 const root = dirname(dirname(fileURLToPath(import.meta.url)));
-const defaultApps = loadDefaultAppsFromRuntime(readFileSync(join(root, "app-20260706-restore-games.js"), "utf8"));
-const expectedVisibleApps = Array.from(defaultApps).filter(({ id }) => id !== "clickflow");
 const expectedCollectionIds = {
-  apps: Array.from(expectedVisibleApps
-    .filter(({ status }) => !["game", "engineering", "ai"].includes(status))
-    .map(({ id }) => id)),
+  apps: [
+    "hub",
+    "gamepulse-mini-radar",
+    "codex-quota-bar",
+    "codex-thread-workbench",
+    "web-media-collector",
+    "minigame-project-simulator",
+    "ai-game-requirements-workshop",
+    "planner-daily-quiz",
+    "travel-generator",
+    "feishu-downloader",
+    "codex-reviewer",
+    "codex-habit-tool",
+    "wanhuatong",
+    "pureshrink",
+    "planmap",
+    "simuai",
+    "gamespec-relay",
+    "x-ai-codex-radar",
+  ],
   games: ["zhuanglege-sha", "xiang-le-ge-xiang", "fill-what", "nang-keng-pai-pai-xiang", "icecream"],
-  engineering: Array.from(expectedVisibleApps
-    .filter(({ status }) => ["engineering", "ai"].includes(status))
-    .map(({ id }) => id)),
+  engineering: [
+    "vita-mahjong",
+    "paws-home-client",
+    "paws-level-editor",
+    "brick-light-motion-lab",
+    "brick-character-copy-preview",
+  ],
 };
 const expectedNavigationIds = [
   ...expectedCollectionIds.apps,

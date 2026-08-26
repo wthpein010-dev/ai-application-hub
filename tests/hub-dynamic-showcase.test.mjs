@@ -14,6 +14,7 @@ const root = dirname(dirname(fileURLToPath(import.meta.url)));
 const runtime = readFileSync(join(root, "app-20260706-restore-games.js"), "utf8");
 const mediaRuntime = readFileSync(join(root, "hub-project-media.js"), "utf8");
 const styles = readFileSync(join(root, "styles.css"), "utf8");
+const browserSmoke = readFileSync(join(root, "tests", "hub-dynamic-showcase-browser-smoke.mjs"), "utf8");
 
 function rule(selector) {
   const escaped = selector.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
@@ -95,6 +96,21 @@ test("stage fallback is hidden after successful media load and restored on image
   assert.match(runtime, /nodes\.showcaseImage\.onload\s*=\s*handleMediaLoad/u);
   assert.match(runtime, /function handleMediaLoad\(event\)[\s\S]*?showcaseCaption\.hidden\s*=\s*true/u);
   assert.match(runtime, /function handleMediaError\(event\)[\s\S]*?fallback\.hidden\s*=\s*false/u);
+});
+
+test("browser smoke owns an independent literal catalog order oracle", () => {
+  const expected = {
+    apps: ["hub", "gamepulse-mini-radar", "codex-quota-bar", "codex-thread-workbench", "web-media-collector", "minigame-project-simulator", "ai-game-requirements-workshop", "planner-daily-quiz", "travel-generator", "feishu-downloader", "codex-reviewer", "codex-habit-tool", "wanhuatong", "pureshrink", "planmap", "simuai", "gamespec-relay", "x-ai-codex-radar"],
+    games: ["zhuanglege-sha", "xiang-le-ge-xiang", "fill-what", "nang-keng-pai-pai-xiang", "icecream"],
+    engineering: ["vita-mahjong", "paws-home-client", "paws-level-editor", "brick-light-motion-lab", "brick-character-copy-preview"],
+  };
+  const oracle = /const expectedCollectionIds = \{([\s\S]*?)\n\};/u.exec(browserSmoke)?.[1] || "";
+  for (const [collection, ids] of Object.entries(expected)) {
+    const literal = new RegExp(`${collection}:\\s*\\[([\\s\\S]*?)\\]`, "u").exec(oracle)?.[1] || "";
+    assert.deepEqual(Array.from(literal.matchAll(/"([a-z0-9-]+)"/gu), ([, id]) => id), ids);
+  }
+  assert.match(browserSmoke, /const expectedNavigationIds = \[\s*\.\.\.expectedCollectionIds\.apps,\s*\.\.\.expectedCollectionIds\.games,\s*\.\.\.expectedCollectionIds\.engineering,\s*\];/u);
+  assert.doesNotMatch(browserSmoke, /loadDefaultAppsFromRuntime|readFileSync\(join\(root, "app-20260706-restore-games\.js"\)/u);
 });
 
 test("media lookup prefers a valid edited visual and Windows-local visibility is host scoped", () => {
