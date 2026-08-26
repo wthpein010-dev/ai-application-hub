@@ -76,6 +76,12 @@ test("runtime renders project-owned media and excludes ClickFlow from Windows-lo
   assert.match(runtime, /function renderMedia\(app, context\)/u);
 });
 
+test("runtime treats unavailable browser storage as an optional enhancement", () => {
+  assert.match(runtime, /function storageGet\(key\)[\s\S]*?try[\s\S]*?localStorage\.getItem\(key\)[\s\S]*?catch/u);
+  assert.match(runtime, /selectedId:\s*storageGet\(SELECTED_KEY\)\s*\|\|\s*["']travel-generator["']/u);
+  assert.doesNotMatch(runtime, /selectedId:\s*localStorage\.getItem/u);
+});
+
 test("media lookup prefers a valid edited visual and Windows-local visibility is host scoped", () => {
   const helpersStart = runtime.indexOf("function isWindowsLocalPreview");
   const helpersEnd = runtime.indexOf("function renderCategoryOptions", helpersStart);

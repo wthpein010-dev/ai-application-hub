@@ -75,6 +75,14 @@ function normalizeTheme(theme) {
   return Object.prototype.hasOwnProperty.call(THEMES, theme) ? theme : "clean";
 }
 
+function storageGet(key) {
+  try {
+    return localStorage.getItem(key);
+  } catch {
+    return null;
+  }
+}
+
 function loadTheme() {
   try {
     return normalizeTheme(localStorage.getItem(THEME_STORAGE_KEY));
@@ -890,7 +898,7 @@ const state = {
   category: "all",
   status: "all",
   sort: "default",
-  selectedId: localStorage.getItem(SELECTED_KEY) || "travel-generator",
+  selectedId: storageGet(SELECTED_KEY) || "travel-generator",
   theme: loadTheme(),
   editing: false
 };
