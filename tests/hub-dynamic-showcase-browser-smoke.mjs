@@ -65,6 +65,7 @@ const expectedSearch = {
   games: ["zhuanglege-sha", "xiang-le-ge-xiang", "fill-what", "nang-keng-pai-pai-xiang", "icecream"],
   engineering: [],
 };
+const selectedStorageKey = "ai-competition-hub-v2-selected";
 const screenshotDirectory = process.env.HUB_SHOWCASE_SCREENSHOT_DIR || "";
 const windowsUserAgent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36";
 const failures = [];
@@ -252,6 +253,46 @@ async function assertSelected(page, id, label, expectedHash = "#apps") {
   return id;
 }
 
+async function assertSynchronizedFallback(page, {
+  id,
+  label,
+  name,
+  navigationIds,
+  stored = id,
+}) {
+  await waitForStageImage(page);
+  const state = await page.evaluate(({ selectedId, storageKey }) => {
+    const selected = document.querySelector(`.app-card[data-app-id="${CSS.escape(selectedId)}"]`);
+    const progress = document.querySelector('[role="progressbar"]');
+    let storedSelection = "unavailable";
+    try {
+      storedSelection = localStorage.getItem(storageKey);
+    } catch {}
+    return {
+      hash: location.hash,
+      preservedQuery: new URL(location.href).searchParams.get("qa"),
+      project: new URL(location.href).searchParams.get("project"),
+      stageName: document.querySelector("#spotlightCard .summary-copy > strong")?.textContent.trim(),
+      selectedId: selected?.dataset.appId,
+      ariaCurrent: selected?.getAttribute("aria-current"),
+      selectedCount: document.querySelectorAll(".app-card.selected").length,
+      progressNow: Number(progress?.getAttribute("aria-valuenow")),
+      progressMax: Number(progress?.getAttribute("aria-valuemax")),
+      storedSelection,
+    };
+  }, { selectedId: id, storageKey: selectedStorageKey });
+  check(state.hash, "#apps", `${label} preserves the section hash`);
+  check(state.preservedQuery, "keep", `${label} preserves the unrelated query`);
+  check(state.project, id, `${label} synchronizes the project query`);
+  check(state.stageName, name, `${label} synchronizes the stage`);
+  check(state.selectedId, id, `${label} synchronizes the selected card`);
+  check(state.ariaCurrent, "true", `${label} synchronizes aria-current`);
+  check(state.selectedCount, 1, `${label} keeps one selected card`);
+  check(state.progressNow, navigationIds.indexOf(id) + 1, `${label} synchronizes the progress position`);
+  check(state.progressMax, navigationIds.length, `${label} synchronizes the progress total`);
+  check(state.storedSelection, stored, `${label} synchronizes selection storage`);
+}
+
 async function takeScreenshot(page, name, fullPage = false) {
   if (!screenshotDirectory) return;
   check(!/clickflow/iu.test(name), `screenshot name excludes ClickFlow: ${name}`);
@@ -299,6 +340,13 @@ try {
 
     const baseline = await page.evaluate(() => {
       const ids = (selector) => Array.from(document.querySelectorAll(selector), (card) => card.dataset.appId);
+      const visualIds = (selector) => Array.from(document.querySelectorAll(selector), (card) => {
+        const rect = card.getBoundingClientRect();
+        return { id: card.dataset.appId, left: rect.left, top: rect.top };
+      }).sort((a, b) => {
+        const topDifference = a.top - b.top;
+        return Math.abs(topDifference) <= 2 ? a.left - b.left : topDifference;
+      }).map(({ id }) => id);
       const visible = (element) => {
         const style = getComputedStyle(element);
         const rect = element.getBoundingClientRect();
@@ -368,6 +416,9 @@ try {
         apps: ids("#appGrid .app-card[data-app-id]"),
         games: ids("#gameGrid .app-card[data-app-id]"),
         engineering: ids("#engineeringGrid .app-card[data-app-id]"),
+        visualApps: visualIds("#appGrid .app-card[data-app-id]"),
+        visualGames: visualIds("#gameGrid .app-card[data-app-id]"),
+        visualEngineering: visualIds("#engineeringGrid .app-card[data-app-id]"),
         bodyFont: Number.parseFloat(getComputedStyle(document.body).fontSize),
         cardCount: document.querySelectorAll(".app-card").length,
         clickflowCount: document.querySelectorAll('[data-app-id="clickflow"]').length,
@@ -396,6 +447,9 @@ try {
     check(baseline.apps, expectedCollectionIds.apps, `${viewport.name} preserves production application order`);
     check(baseline.games, expectedCollectionIds.games, `${viewport.name} preserves production game order`);
     check(baseline.engineering, expectedCollectionIds.engineering, `${viewport.name} preserves production engineering order`);
+    check(baseline.visualApps, expectedCollectionIds.apps, `${viewport.name} application visual order matches literal production order`);
+    check(baseline.visualGames, expectedCollectionIds.games, `${viewport.name} game visual order matches literal production order`);
+    check(baseline.visualEngineering, expectedCollectionIds.engineering, `${viewport.name} engineering visual order matches literal production order`);
     check(baseline.clickflowCount, 0, `${viewport.name} has zero ClickFlow nodes`);
     check(requests.some((url) => /clickflow/iu.test(url)), false, `${viewport.name} has zero ClickFlow requests`);
     check(baseline.noHorizontalOverflow, `${viewport.name} has no horizontal overflow`);
@@ -500,24 +554,55 @@ try {
     await page.locator(".app-card .card-actions a").first().click();
     check(new URL(page.url()).searchParams.get("project"), selectionBeforeAction, `${viewport.name} action click does not select its card`);
 
-    const filterChip = page.locator('[data-filter-type]:not([data-filter-type="all"])').first();
-    await filterChip.click();
+    await assertSelected(page, "travel-generator", `${viewport.name}/category fallback setup`);
+    await page.locator("#categoryFilter").selectOption("浏览器插件");
     const filtered = await page.evaluate(() => ({
-      ids: Array.from(document.querySelectorAll(".app-card[data-app-id]"), (card) => card.dataset.appId),
-      selected: document.querySelector(".app-card.selected")?.dataset.appId,
+      apps: Array.from(document.querySelectorAll("#appGrid .app-card[data-app-id]"), (card) => card.dataset.appId),
+      games: Array.from(document.querySelectorAll("#gameGrid .app-card[data-app-id]"), (card) => card.dataset.appId),
+      engineering: Array.from(document.querySelectorAll("#engineeringGrid .app-card[data-app-id]"), (card) => card.dataset.appId),
     }));
-    check(filtered.ids.length > 0 && filtered.ids.length < 28, `${viewport.name} category chip filters the catalog`);
-    check(filtered.selected, filtered.ids[0], `${viewport.name} category chip selects the first visible fallback`);
-    check(filtered.ids, expectedNavigationIds.filter((id) => filtered.ids.includes(id)), `${viewport.name} category chip preserves production order`);
+    check(filtered.apps, ["feishu-downloader"], `${viewport.name} category filter affects only matching applications`);
+    check(filtered.games, expectedCollectionIds.games, `${viewport.name} category filter retains all five games`);
+    check(filtered.engineering, expectedCollectionIds.engineering, `${viewport.name} category filter retains all five engineering records`);
+    const categoryNavigationIds = [
+      "feishu-downloader",
+      ...expectedCollectionIds.games,
+      ...expectedCollectionIds.engineering,
+    ];
+    await assertSynchronizedFallback(page, {
+      id: "feishu-downloader",
+      label: `${viewport.name}/category fallback`,
+      name: "飞书文件批量下载插件",
+      navigationIds: categoryNavigationIds,
+    });
     await assertNoEntranceReplay(page, `${viewport.name}/category filter`);
 
+    await page.locator("#categoryFilter").selectOption("all");
+    await page.locator('[data-filter-type="plugin"]').click();
+    const typeFiltered = await page.evaluate(() => ({
+      apps: Array.from(document.querySelectorAll("#appGrid .app-card[data-app-id]"), (card) => card.dataset.appId),
+      games: Array.from(document.querySelectorAll("#gameGrid .app-card[data-app-id]"), (card) => card.dataset.appId),
+      engineering: Array.from(document.querySelectorAll("#engineeringGrid .app-card[data-app-id]"), (card) => card.dataset.appId),
+    }));
+    check(typeFiltered.apps, ["feishu-downloader"], `${viewport.name} type chip affects only matching applications`);
+    check(typeFiltered.games, expectedCollectionIds.games, `${viewport.name} type chip retains all five games`);
+    check(typeFiltered.engineering, expectedCollectionIds.engineering, `${viewport.name} type chip retains all five engineering records`);
+    await assertNoEntranceReplay(page, `${viewport.name}/type filter`);
+
     await page.locator('[data-filter-type="all"]').click();
+    await assertSelected(page, "travel-generator", `${viewport.name}/search fallback setup`);
     await page.locator("#searchInput").fill("小游戏");
     const searchResults = await page.evaluate(() => Object.fromEntries(
       [["apps", "#appGrid"], ["games", "#gameGrid"], ["engineering", "#engineeringGrid"]]
         .map(([collection, selector]) => [collection, Array.from(document.querySelectorAll(`${selector} .app-card[data-app-id]`), (card) => card.dataset.appId)]),
     ));
     check(searchResults, expectedSearch, `${viewport.name} search returns the exact expected ids in each collection`);
+    await assertSynchronizedFallback(page, {
+      id: "hub",
+      label: `${viewport.name}/search fallback`,
+      name: "AI 应用方案整理器",
+      navigationIds: [...expectedSearch.apps, ...expectedSearch.games, ...expectedSearch.engineering],
+    });
     await page.locator("#searchInput").fill("");
     check(await page.locator(".app-card[data-app-id]").count(), 28, `${viewport.name} reset restores all cards`);
     const resetOrder = await page.locator(".app-card[data-app-id]").evaluateAll((cards) => cards.map((card) => card.dataset.appId));
@@ -643,7 +728,7 @@ try {
     Storage.prototype.setItem = () => { throw new Error("storage set blocked"); };
   });
   collectBrowserErrors(storagePage, "storage-throwing");
-  await storagePage.goto(`${baseUrl}/index.html#apps`, { waitUntil: "networkidle" });
+  await storagePage.goto(`${baseUrl}/index.html?qa=keep#apps`, { waitUntil: "networkidle" });
   const storageBooted = await storagePage.locator(".app-card[data-app-id]").count() === 28;
   check(storageBooted, "storage-throwing context renders default catalog");
   if (storageBooted) {
@@ -651,9 +736,15 @@ try {
     const firstVisible = await storagePage.locator(".app-card[data-app-id]").first().getAttribute("data-app-id");
     check(firstVisible, "hub", "storage-throwing context renders the first production project");
     check(await storagePage.locator(".app-card.selected").getAttribute("data-app-id"), "travel-generator", "storage-throwing context keeps the approved default selection");
-    await storagePage.locator('[data-filter-type]:not([data-filter-type="all"])').first().click();
-    check(await storagePage.locator(".app-card[data-app-id]").count() < 28, "storage-throwing context filters catalog");
-    await storagePage.locator('[data-filter-type="all"]').click();
+    await storagePage.locator("#categoryFilter").selectOption("浏览器插件");
+    await assertSynchronizedFallback(storagePage, {
+      id: "feishu-downloader",
+      label: "storage-throwing/category fallback",
+      name: "飞书文件批量下载插件",
+      navigationIds: ["feishu-downloader", ...expectedCollectionIds.games, ...expectedCollectionIds.engineering],
+      stored: "unavailable",
+    });
+    await storagePage.locator("#categoryFilter").selectOption("all");
     const storageSelectedId = await storagePage.locator("#appGrid .app-card[data-app-id]").nth(1).getAttribute("data-app-id");
     await storagePage.locator(`#appGrid .app-card[data-app-id="${storageSelectedId}"]`).click();
     check(new URL(storagePage.url()).searchParams.get("project"), storageSelectedId, "storage-throwing context keeps selection functional when persistence throws");

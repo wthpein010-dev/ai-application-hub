@@ -45,7 +45,8 @@ test("Bento cards pin equal action cells to their lower edge", () => {
   assert.match(rule(".card-actions a"), /min-height:\s*38px/u);
 });
 
-test("homepage refreshes both card assets after the button layout update", () => {
-  assert.match(page, /styles\.css\?v=20260716-button-order/);
-  assert.match(page, /app-20260706-restore-games\.js\?v=[^"]+/);
+test("homepage loads all showcase assets with the exact release cache marker", () => {
+  assert.match(page, /href="\.\/styles\.css\?v=20260826-dynamic-showcase"/);
+  assert.match(page, /src="\.\/hub-project-media\.js\?v=20260826-dynamic-showcase"/);
+  assert.match(page, /src="\.\/app-20260706-restore-games\.js\?v=20260826-dynamic-showcase"/);
 });

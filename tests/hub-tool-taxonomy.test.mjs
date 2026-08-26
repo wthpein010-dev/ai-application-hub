@@ -38,6 +38,7 @@ function loadNormalizer() {
 
   const context = {
     globalThis: {},
+    URL,
     defaultApps: apps,
     statusLabel: {
       navigation: "项目导航",
@@ -60,6 +61,28 @@ function loadNormalizer() {
     context,
   );
   return context.globalThis.normalizeApp;
+}
+
+function loadFilteringContract() {
+  const start = runtime.indexOf("function renderCategoryOptions");
+  const end = runtime.indexOf("function getNavigationApps", start);
+  assert.notEqual(start, -1);
+  assert.notEqual(end, -1);
+  const taxonomy = loadCatalogTypeContract();
+  const state = { query: "", category: "all", status: "all", sort: "default" };
+  const context = {
+    globalThis: {},
+    state,
+    defaultApps: apps,
+    visibleApps: () => apps,
+    catalogTypeKey: taxonomy.catalogTypeKey,
+    catalogTypeLabel: taxonomy.catalogTypeLabel,
+  };
+  vm.runInNewContext([
+    runtime.slice(start, end),
+    "globalThis.getFilteredApps = getFilteredApps;",
+  ].join("\n"), context);
+  return { getFilteredApps: context.globalThis.getFilteredApps, state, catalogTypeKey: taxonomy.catalogTypeKey };
 }
 
 test("application cards use six concise public tool types", () => {
@@ -133,7 +156,7 @@ test("the type filter exposes only the six tool types plus games and engineering
     ["engineering", "工程体验"],
   ]);
   assert.doesNotMatch(filter, /AI版|训练工具|创意工具|项目导航/);
-  assert.match(homepage, /20260821-tool-taxonomy/);
+  assert.match(homepage, /styles\.css\?v=20260826-dynamic-showcase/u);
 });
 
 test("the maintenance editor uses and persists the same public taxonomy", () => {
@@ -188,8 +211,42 @@ test("the maintenance editor exposes a validated project visual path after video
   assert.match(runtime, /editVisual:\s*["']visual["']/u);
 });
 
-test("filtering, sorting, cards and exports share the public taxonomy", () => {
-  assert.match(runtime, /const matchesStatus = state\.status === "all" \|\| catalogTypeKey\(app\) === state\.status;/);
+test("application taxonomy filters leave games and engineering intact while search stays global", () => {
+  const { getFilteredApps, state, catalogTypeKey } = loadFilteringContract();
+  const groupedIds = () => {
+    const filtered = Array.from(getFilteredApps());
+    return {
+      apps: filtered.filter((app) => !["game", "engineering"].includes(catalogTypeKey(app))).map(({ id }) => id),
+      games: filtered.filter((app) => catalogTypeKey(app) === "game").map(({ id }) => id),
+      engineering: filtered.filter((app) => catalogTypeKey(app) === "engineering").map(({ id }) => id),
+    };
+  };
+
+  state.status = "plugin";
+  assert.deepEqual(groupedIds(), {
+    apps: ["feishu-downloader"],
+    games: ["icecream", "zhuanglege-sha", "fill-what", "xiang-le-ge-xiang", "nang-keng-pai-pai-xiang"],
+    engineering: ["vita-mahjong", "paws-home-client", "paws-level-editor", "brick-light-motion-lab", "brick-character-copy-preview"],
+  });
+
+  state.status = "all";
+  state.category = "AI 内容生成";
+  assert.deepEqual(groupedIds(), {
+    apps: ["travel-generator"],
+    games: ["icecream", "zhuanglege-sha", "fill-what", "xiang-le-ge-xiang", "nang-keng-pai-pai-xiang"],
+    engineering: ["vita-mahjong", "paws-home-client", "paws-level-editor", "brick-light-motion-lab", "brick-character-copy-preview"],
+  });
+
+  state.category = "all";
+  state.query = "小游戏";
+  assert.deepEqual(groupedIds(), {
+    apps: ["hub", "gamepulse-mini-radar", "minigame-project-simulator"],
+    games: ["icecream", "zhuanglege-sha", "fill-what", "xiang-le-ge-xiang", "nang-keng-pai-pai-xiang"],
+    engineering: [],
+  });
+});
+
+test("sorting, cards and exports share the public taxonomy", () => {
   assert.match(runtime, /catalogTypeLabel\(a\)\.localeCompare\(catalogTypeLabel\(b\)/);
   assert.match(runtime, /status-\$\{escapeHtml\(catalogTypeKey\(app\)\)\}/);
   assert.match(runtime, /\$\{escapeHtml\(catalogTypeLabel\(app\)\)\}<\/span>/);

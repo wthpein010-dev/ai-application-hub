@@ -1253,12 +1253,16 @@ function renderPlatformBadges(app) {
 }
 
 function renderCategoryOptions() {
-  const categories = [...new Set(visibleApps().map(app => app.category))].sort((a, b) => a.localeCompare(b, "zh-CN"));
+  const categories = [...new Set(visibleApps().filter(isApplicationRecord).map(app => app.category))].sort((a, b) => a.localeCompare(b, "zh-CN"));
   nodes.category.innerHTML = [
     `<option value="all">全部分类</option>`,
     ...categories.map(category => `<option value="${escapeHtml(category)}">${escapeHtml(category)}</option>`)
   ].join("");
   nodes.category.value = state.category;
+}
+
+function isApplicationRecord(app) {
+  return !["game", "engineering", "ai"].includes(app.status);
 }
 
 function getFilteredApps() {
@@ -1267,8 +1271,8 @@ function getFilteredApps() {
     .filter(app => {
       const haystack = [app.name, app.category, app.brief, app.problem, app.aiUse, ...app.tags].join(" ").toLowerCase();
       const matchesQuery = !query || haystack.includes(query);
-      const matchesCategory = state.category === "all" || app.category === state.category;
-      const matchesStatus = state.status === "all" || catalogTypeKey(app) === state.status;
+      const matchesCategory = !isApplicationRecord(app) || state.category === "all" || app.category === state.category;
+      const matchesStatus = !isApplicationRecord(app) || state.status === "all" || catalogTypeKey(app) === state.status;
       return matchesQuery && matchesCategory && matchesStatus;
     })
     .sort((a, b) => {
@@ -1281,7 +1285,7 @@ function getFilteredApps() {
 
 function getNavigationApps(filtered = getFilteredApps()) {
   return [
-    ...filtered.filter(app => !["game", "engineering", "ai"].includes(app.status)),
+    ...filtered.filter(isApplicationRecord),
     ...filtered.filter(app => app.status === "game").sort((a, b) => gameDisplayRank(a) - gameDisplayRank(b)),
     ...filtered.filter(app => ["engineering", "ai"].includes(app.status))
   ];
@@ -1344,7 +1348,7 @@ function renderDots(filtered = getFilteredApps()) {
 }
 
 function renderGrid(filtered) {
-  const applicationList = filtered.filter(app => !["game", "engineering", "ai"].includes(app.status));
+  const applicationList = filtered.filter(isApplicationRecord);
   nodes.resultCount.textContent = `${applicationList.length} 个应用`;
   if (!applicationList.length) {
     nodes.grid.innerHTML = `<article class="app-card"><h3>没有匹配结果</h3><p>换个关键词或重置筛选条件再试。</p></article>`;
@@ -1602,7 +1606,7 @@ function highlightEditTarget() {
   });
 }
 
-function selectApp(id) {
+function synchronizeSelectedApp(id) {
   if (!visibleApps().some(app => app.id === id)) return;
   state.selectedId = id;
   storageSet(SELECTED_KEY, id);
@@ -1611,13 +1615,18 @@ function selectApp(id) {
     nextUrl.searchParams.set("project", id);
     history.replaceState(history.state, "", nextUrl);
   } catch {}
+  return true;
+}
+
+function selectApp(id) {
+  if (!synchronizeSelectedApp(id)) return;
   renderSelectedApp();
 }
 
 function ensureSelectedApp(filtered) {
   if (filtered.some(app => app.id === state.selectedId)) return;
   const fallback = getNavigationApps(filtered)[0] || visibleApps()[0];
-  if (fallback) state.selectedId = fallback.id;
+  if (fallback) synchronizeSelectedApp(fallback.id);
 }
 
 function getSelectedApp() {
@@ -2151,11 +2160,19 @@ function cloneApp(app) {
 }
 
 function normalizeVisualPath(value) {
-  const visual = String(value || "").trim();
+  const rawVisual = String(value || "");
+  if (/[\u0000-\u001f\u007f]/u.test(rawVisual)) return "";
+  const visual = rawVisual.trim();
   if (!visual) return "";
   if (visual.includes("\\")) return "";
-  if (/^https:\/\//i.test(visual)) return visual;
-  if (/^(?:[a-z][a-z\d+.-]*:|\/\/)/i.test(visual)) return "";
+  if (/^[a-z][a-z\d+.-]*:/i.test(visual)) {
+    try {
+      return new URL(visual).protocol === "https:" ? visual : "";
+    } catch {
+      return "";
+    }
+  }
+  if (visual.startsWith("//")) return "";
   return visual;
 }
 

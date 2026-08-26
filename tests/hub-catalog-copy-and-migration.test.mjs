@@ -17,6 +17,7 @@ function loadAppsWithStoredValue(stored) {
   const storage = new Map([["test-storage", JSON.stringify(stored)]]);
   const context = {
     globalThis: { defaultApps: defaults },
+    URL,
     localStorage: {
       getItem: (key) => storage.get(key) ?? null,
       removeItem: (key) => storage.delete(key),
@@ -157,21 +158,36 @@ test("stored GameSpec Relay cards migrate to the Chinese 需求接力站 release
   assert.deepEqual(JSON.parse(JSON.stringify(migrated.tags)), JSON.parse(JSON.stringify(relay.tags)));
 });
 
-test("stored visual paths preserve trimmed relative or HTTPS values and drop unsafe schemes", () => {
+test("stored visual paths preserve valid relative or HTTPS values and reject request-normalization bypasses", () => {
   const defaults = loadDefaultAppsFromRuntime(runtime);
   const base = defaults.find((app) => app.id === "travel-generator");
 
   for (const [visual, expected] of [
     ["  ./assets/custom.webp  ", "./assets/custom.webp"],
+    ["/assets/custom.webp", "/assets/custom.webp"],
+    ["assets/custom.webp", "assets/custom.webp"],
+    ["../assets/custom.webp", "../assets/custom.webp"],
     [" https://cdn.example.com/custom.webp ", "https://cdn.example.com/custom.webp"],
+    ["https://cdn.example.com:8443/custom.webp?size=2#preview", "https://cdn.example.com:8443/custom.webp?size=2#preview"],
     ["javascript:alert(1)", undefined],
     ["data:image/png;base64,AAAA", undefined],
+    ["http://cdn.example.com/custom.webp", undefined],
+    ["https://", undefined],
     [String.raw`\\host\path`, undefined],
     [String.raw`\\host/path`, undefined],
     [String.raw`//host\path`, undefined],
     [String.raw`/\host/path`, undefined],
     [String.raw`assets\custom.webp`, undefined],
     [String.raw`https://cdn.example.com\custom.webp`, undefined],
+    ["/\n/host/path", undefined],
+    ["http\n://host/path", undefined],
+    ["https\r://cdn.example.com/custom.webp", undefined],
+    ["//\thost/path", undefined],
+    ["\thttps://cdn.example.com/custom.webp", undefined],
+    ["./assets/custom\n.webp", undefined],
+    ["./assets/custom\r.webp", undefined],
+    ["./assets/custom\0.webp", undefined],
+    ["./assets/custom\u007f.webp", undefined],
     ["", undefined],
   ]) {
     const migrated = loadAppsWithStoredValue([{ ...base, visual }]).find((app) => app.id === base.id);

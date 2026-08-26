@@ -30,12 +30,16 @@ test("homepage exposes the approved dynamic showcase shell", () => {
   assert.match(html, /<section id="games"[^>]*>[\s\S]*id="gameGrid"/u);
   assert.match(html, /<section id="engineering"[^>]*>[\s\S]*id="engineeringGrid"/u);
   assert.match(html, /<aside id="editPanel"[^>]+aria-hidden="true"[^>]+inert/u);
+  assert.match(html, /href="\.\/styles\.css\?v=20260826-dynamic-showcase"/u);
+  assert.match(html, /src="\.\/hub-project-media\.js\?v=20260826-dynamic-showcase"/u);
+  assert.match(html, /src="\.\/app-20260706-restore-games\.js\?v=20260826-dynamic-showcase"/u);
 });
 
 test("approved showcase uses image-led Bento layouts with responsive fallbacks", () => {
   assert.match(rule(".showcase-stage"), /grid-template-columns:\s*minmax\([^)]*\)\s+minmax\([^)]*\)/u);
   assert.match(styles, /@media\s*\(max-width:\s*1180px\)[\s\S]*?\.showcase-stage[^{]*\{[^}]*grid-template-columns:\s*minmax\(0,\s*0\.67fr\)\s+minmax\(0,\s*1fr\)/u);
   assert.match(rule(".app-grid"), /grid-template-columns:\s*repeat\(4,\s*minmax\(0,\s*1fr\)\)/u);
+  assert.doesNotMatch(rule(".app-grid"), /grid-auto-flow:\s*dense/u);
   assert.match(rule(".app-card.media-wide"), /grid-column:\s*span\s+2/u);
   assert.match(rule(".app-card.media-tall"), /grid-row:\s*span\s+2/u);
   assert.match(styles, /@media\s*\(max-width:\s*720px\)[\s\S]*?\.showcase-stage[^{]*\{[^}]*grid-template-columns:\s*1fr/u);
@@ -113,7 +117,7 @@ test("browser smoke owns an independent literal catalog order oracle", () => {
   assert.doesNotMatch(browserSmoke, /loadDefaultAppsFromRuntime|readFileSync\(join\(root, "app-20260706-restore-games\.js"\)/u);
 });
 
-test("media lookup prefers a valid edited visual and Windows-local visibility is host scoped", () => {
+test("media lookup prefers a valid edited visual and Windows-local visibility is host and platform scoped", () => {
   const helpersStart = runtime.indexOf("function isWindowsLocalPreview");
   const helpersEnd = runtime.indexOf("function renderCategoryOptions", helpersStart);
   const normalizerStart = runtime.indexOf("function normalizeVisualPath");
@@ -133,6 +137,7 @@ test("media lookup prefers a valid edited visual and Windows-local visibility is
         visible: { src: "./registry.webp", alt: "Visible screen", position: "top", layout: "wide", fallback: "Visible fallback" },
       },
     },
+    URL,
     apps: productionApps,
     navigator: { platform: "Win32", userAgent: "Windows NT 10.0" },
     location: { protocol: "http:", hostname: "127.0.0.1" },
@@ -145,14 +150,30 @@ test("media lookup prefers a valid edited visual and Windows-local visibility is
     "globalThis.projectMedia = projectMedia;",
   ].join("\n"), context);
 
-  assert.equal(context.globalThis.isWindowsLocalPreview(), true);
-  assert.deepEqual(Array.from(context.globalThis.visibleApps(), ({ id }) => id), ["visible"]);
   assert.equal(context.globalThis.projectMedia({ id: "visible", name: "Visible", visual: "  ./edited.webp  " }).src, "./edited.webp");
   assert.equal(context.globalThis.projectMedia({ id: "visible", name: "Visible", visual: "javascript:alert(1)" }).src, "./registry.webp");
 
-  context.location.hostname = "example.com";
-  assert.equal(context.globalThis.isWindowsLocalPreview(), false);
-  assert.deepEqual(Array.from(context.globalThis.visibleApps(), ({ id }) => id), ["visible", "clickflow"]);
+  const cases = [
+    { label: "Windows localhost", platform: "Win32", userAgent: "Windows NT 10.0", protocol: "http:", hostname: "localhost", local: true },
+    { label: "Windows loopback", platform: "Win32", userAgent: "Windows NT 10.0", protocol: "http:", hostname: "127.0.0.1", local: true },
+    { label: "Windows file", platform: "Win32", userAgent: "Windows NT 10.0", protocol: "file:", hostname: "", local: true },
+    { label: "Windows public", platform: "Win32", userAgent: "Windows NT 10.0", protocol: "https:", hostname: "example.com", local: false },
+    { label: "non-Windows localhost", platform: "MacIntel", userAgent: "Macintosh", protocol: "http:", hostname: "localhost", local: false },
+    { label: "non-Windows loopback", platform: "Linux x86_64", userAgent: "X11; Linux x86_64", protocol: "http:", hostname: "127.0.0.1", local: false },
+    { label: "non-Windows file", platform: "MacIntel", userAgent: "Macintosh", protocol: "file:", hostname: "", local: false },
+  ];
+  for (const scenario of cases) {
+    context.navigator.platform = scenario.platform;
+    context.navigator.userAgent = scenario.userAgent;
+    context.location.protocol = scenario.protocol;
+    context.location.hostname = scenario.hostname;
+    assert.equal(context.globalThis.isWindowsLocalPreview(), scenario.local, scenario.label);
+    assert.deepEqual(
+      Array.from(context.globalThis.visibleApps(), ({ id }) => id),
+      scenario.local ? ["visible"] : ["visible", "clickflow"],
+      `${scenario.label} visibility`,
+    );
+  }
 });
 
 test("capture sources require an explicit public entry when the local page is absent", () => {
