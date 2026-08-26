@@ -12,7 +12,6 @@ const outputDirectory = join(root, "assets", "hub-showcase");
 const registryPath = join(root, "hub-project-media.js");
 const sourcesPath = join(root, "scripts", "hub-showcase-media-sources.json");
 const runtimePath = join(root, "app-20260706-restore-games.js");
-const publicHubBase = process.env.HUB_PUBLIC_BASE || "https://wthpein010-dev.github.io/ai-application-hub/";
 const bundledNodeModules = join(
   homedir(),
   ".cache",
@@ -98,10 +97,22 @@ function sourcePath(path) {
   return resolved;
 }
 
+export function assertSafeConfiguredPublicBase(publicBase = process.env.HUB_PUBLIC_BASE || "") {
+  if (publicBase && publicBase.toLowerCase().includes("clickflow")) {
+    throw new Error("ClickFlow public base is prohibited");
+  }
+}
+
+export function assertSafeCaptureUrl(url) {
+  if (String(url).toLowerCase().includes("clickflow")) {
+    throw new Error(`ClickFlow capture URL is prohibited: ${url}`);
+  }
+}
+
 function assertSafeSources(sources) {
   if (process.platform !== "win32") return;
   for (const [id, source] of Object.entries(sources)) {
-    const inspected = `${id}\n${source.entry || ""}\n${source.source || ""}`.toLowerCase();
+    const inspected = `${id}\n${source.entry || ""}\n${source.publicEntry || ""}\n${source.source || ""}`.toLowerCase();
     if (inspected.includes("clickflow")) {
       throw new Error(`ClickFlow sources are prohibited on Windows: ${id}`);
     }
@@ -118,7 +129,14 @@ function validateSources(apps, sources) {
     if (!["file", "capture"].includes(source.mode)) throw new Error(`Unsupported source mode for ${id}`);
     if (!["standard", "wide", "tall"].includes(source.layout)) throw new Error(`Unsupported layout for ${id}`);
     if (source.mode === "file" && typeof source.source !== "string") throw new Error(`Missing file source for ${id}`);
-    if (source.mode === "capture" && typeof source.entry !== "string") throw new Error(`Missing capture entry for ${id}`);
+    if (source.mode === "capture" && typeof source.entry !== "string" && typeof source.publicEntry !== "string") {
+      throw new Error(`Missing capture entry for ${id}`);
+    }
+    if (source.publicEntry && typeof source.publicEntry !== "string") throw new Error(`Invalid public capture entry for ${id}`);
+    if (source.readySelector && typeof source.readySelector !== "string") throw new Error(`Invalid ready selector for ${id}`);
+    if (source.captureTime !== undefined && (!Number.isFinite(source.captureTime) || source.captureTime < 0)) {
+      throw new Error(`Invalid capture time for ${id}`);
+    }
   }
 }
 
@@ -129,16 +147,23 @@ async function convertToWebp(sharp, input, output) {
     .toFile(output);
 }
 
-function captureUrl(entry, baseUrl) {
-  if (/^https?:\/\//iu.test(entry)) return entry;
-  const relativeEntry = entry.replace(/^\.\//u, "");
-  return existsSync(sourcePath(relativeEntry))
-    ? new URL(relativeEntry, `${baseUrl}/`).href
-    : new URL(relativeEntry, publicHubBase).href;
+export function resolveSafeCaptureUrl(id, source, baseUrl) {
+  let url = "";
+  if (typeof source.entry === "string" && /^https?:\/\//iu.test(source.entry)) {
+    url = source.entry;
+  } else if (typeof source.entry === "string") {
+    const relativeEntry = source.entry.replace(/^\.\//u, "");
+    if (existsSync(sourcePath(relativeEntry))) url = new URL(relativeEntry, `${baseUrl}/`).href;
+  }
+  if (!url && typeof source.publicEntry === "string") url = source.publicEntry;
+  if (!url) throw new Error(`Missing capture source for ${id}`);
+  assertSafeCaptureUrl(url);
+  return url;
 }
 
-async function captureToWebp(page, sharp, entry, baseUrl, tempDirectory, output) {
-  await page.goto(captureUrl(entry, baseUrl), { waitUntil: "commit" });
+async function captureToWebp(page, sharp, id, source, baseUrl, tempDirectory, output) {
+  const url = resolveSafeCaptureUrl(id, source, baseUrl);
+  await page.goto(url, { waitUntil: "commit" });
   await page.waitForFunction(() => document.head && document.body);
   await page.evaluate(async () => {
     await document.fonts.ready;
@@ -146,6 +171,31 @@ async function captureToWebp(page, sharp, entry, baseUrl, tempDirectory, output)
   await page.addStyleTag({
     content: "*, *::before, *::after { animation: none !important; transition: none !important; caret-color: transparent !important; }",
   });
+  if (source.readySelector) await page.waitForSelector(source.readySelector, { state: "attached" });
+  if (source.captureTime !== undefined) {
+    await page.evaluate(async ({ selector, captureTime }) => {
+      const video = document.querySelector(selector);
+      if (!(video instanceof HTMLVideoElement)) throw new Error(`Expected video selector: ${selector}`);
+      if (!video.getAttribute("src") && video.dataset.src) {
+        video.src = video.dataset.src;
+        video.load();
+      }
+      if (video.readyState < HTMLMediaElement.HAVE_CURRENT_DATA) {
+        await new Promise((resolve, reject) => {
+          video.addEventListener("loadeddata", resolve, { once: true });
+          video.addEventListener("error", () => reject(new Error("Video frame failed to load")), { once: true });
+        });
+      }
+      video.hidden = false;
+      document.querySelector("#loadCard")?.setAttribute("hidden", "");
+      video.currentTime = captureTime;
+      await new Promise((resolve, reject) => {
+        video.addEventListener("seeked", resolve, { once: true });
+        video.addEventListener("error", () => reject(new Error("Video frame failed to seek")), { once: true });
+      });
+      video.pause();
+    }, { selector: source.readySelector, captureTime: source.captureTime });
+  }
   const temporaryPng = join(tempDirectory, `${Date.now()}-${Math.random().toString(16).slice(2)}.png`);
   await page.screenshot({ path: temporaryPng, type: "png", fullPage: false });
   await convertToWebp(sharp, temporaryPng, output);
@@ -174,20 +224,28 @@ function registrySource(apps, sources) {
   return lines.join("\n");
 }
 
-const sources = JSON.parse(readFileSync(sourcesPath, "utf8"));
-const apps = loadDefaultAppsFromRuntime(readFileSync(runtimePath, "utf8"));
-assertSafeSources(sources);
-validateSources(apps, sources);
-mkdirSync(outputDirectory, { recursive: true });
+export async function buildHubShowcaseMedia() {
+  const sources = JSON.parse(readFileSync(sourcesPath, "utf8"));
+  const apps = loadDefaultAppsFromRuntime(readFileSync(runtimePath, "utf8"));
+  assertSafeConfiguredPublicBase();
+  assertSafeSources(sources);
+  validateSources(apps, sources);
+  const requestedIds = (process.env.HUB_SHOWCASE_IDS || "").split(",").map((id) => id.trim()).filter(Boolean);
+  const unknownIds = requestedIds.filter((id) => !(id in sources));
+  if (unknownIds.length) throw new Error(`Unknown showcase media ids: ${unknownIds.join(", ")}`);
+  const selectedSources = requestedIds.length
+    ? Object.entries(sources).filter(([id]) => requestedIds.includes(id))
+    : Object.entries(sources);
+  mkdirSync(outputDirectory, { recursive: true });
 
-const sharpModule = require(resolveDependency("sharp"));
-const sharp = sharpModule.default || sharpModule;
-const captureSources = Object.entries(sources).filter(([, source]) => source.mode === "capture");
-const temporaryDirectory = mkdtempSync(join(tmpdir(), "hub-showcase-"));
-let server;
-let browser;
+  const sharpModule = require(resolveDependency("sharp"));
+  const sharp = sharpModule.default || sharpModule;
+  const captureSources = selectedSources.filter(([, source]) => source.mode === "capture");
+  const temporaryDirectory = mkdtempSync(join(tmpdir(), "hub-showcase-"));
+  let server;
+  let browser;
 
-try {
+  try {
   if (captureSources.length) {
     const playwrightEntry = resolveDependency("playwright");
     const playwrightModule = await import(pathToFileURL(playwrightEntry).href);
@@ -203,23 +261,26 @@ try {
       bypassCSP: true,
     });
     const page = await context.newPage();
-    for (const [id, source] of Object.entries(sources)) {
+    for (const [id, source] of selectedSources) {
       const output = join(outputDirectory, `${id}.webp`);
       if (source.mode === "file") {
         const input = sourcePath(source.source);
         if (!existsSync(input)) throw new Error(`Missing file source for ${id}: ${relative(sourceRoot, input)}`);
         await convertToWebp(sharp, input, output);
       } else {
-        await captureToWebp(page, sharp, source.entry, baseUrl, temporaryDirectory, output);
+        await captureToWebp(page, sharp, id, source, baseUrl, temporaryDirectory, output);
       }
     }
     await context.close();
   }
-  writeFileSync(registryPath, registrySource(apps, sources), "utf8");
-} finally {
-  if (browser) await browser.close();
-  if (server) await stopServer(server);
-  rmSync(temporaryDirectory, { recursive: true, force: true });
+    writeFileSync(registryPath, registrySource(apps, sources), "utf8");
+  } finally {
+    if (browser) await browser.close();
+    if (server) await stopServer(server);
+    rmSync(temporaryDirectory, { recursive: true, force: true });
+  }
+
+  process.stdout.write(`Generated ${selectedSources.length} showcase images and hub-project-media.js.\n`);
 }
 
-process.stdout.write(`Generated ${Object.keys(sources).length} showcase images and hub-project-media.js.\n`);
+if (process.argv[1] === fileURLToPath(import.meta.url)) await buildHubShowcaseMedia();
