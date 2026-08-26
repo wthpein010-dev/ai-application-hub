@@ -37,6 +37,7 @@ test("approved showcase uses image-led Bento layouts with responsive fallbacks",
   assert.match(rule(".app-grid"), /grid-template-columns:\s*repeat\(4,\s*minmax\(0,\s*1fr\)\)/u);
   assert.match(rule(".app-card.media-wide"), /grid-column:\s*span\s+2/u);
   assert.match(rule(".app-card.media-tall"), /grid-row:\s*span\s+2/u);
+  assert.match(styles, /@media\s*\(max-width:\s*720px\)[\s\S]*?\.showcase-stage[^{]*\{[^}]*grid-template-columns:\s*1fr/u);
   assert.match(styles, /@media\s*\(max-width:\s*720px\)[\s\S]*?\.app-card\.media-wide[^{]*\{[^}]*grid-column:\s*auto/u);
   assert.match(styles, /@media\s*\(prefers-reduced-motion:\s*reduce\)/u);
 });

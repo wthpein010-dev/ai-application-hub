@@ -92,12 +92,25 @@ test("each approved theme supplies Bento stage tokens and accessible controlled 
     for (const token of ["showcase-surface", "selection", "game-accent", "engineering-accent"]) {
       assert.match(rule(selector), new RegExp(`--${token}:\\s*#[0-9a-fA-F]{6}`, "u"));
     }
+    assert.ok(contrastRatio("#ffffff", colorToken(selector, "showcase-badge-bg")) >= 4.5, `${selector} showcase badge is below AA`);
     assert.match(rule(selector), /--showcase-overlay:\s*rgba\(/u);
   }
 
   assert.match(rule(":focus-visible"), /outline:\s*3px\s+solid/u);
   assert.match(rule(".showcase-media:hover"), /rotate[XY]\([1-3]deg\)/u);
   assert.match(styles, /body\.showcase-intro-complete\s+\.showcase-stage/u);
+});
+
+test("card entrance completion supports the current and future body gates", () => {
+  assert.match(runtime, /document\.body\.classList\.add\("card-intro-complete"\)/u);
+  assert.match(styles, /body\.card-intro-complete\s+\.app-card\s*,\s*body\.showcase-intro-complete\s+\.app-card\s*\{[^}]*animation:\s*none/u);
+});
+
+test("image-backed showcase badges use opaque AA theme surfaces", () => {
+  const imageBadge = rule(".showcase-media:has(#showcaseImage:not([hidden])) .summary-type");
+
+  assert.match(imageBadge, /background:\s*var\(--showcase-badge-bg\)/u);
+  assert.match(imageBadge, /color:\s*#ffffff/u);
 });
 
 test("the featured carousel follows each page theme instead of forcing a dark panel", () => {

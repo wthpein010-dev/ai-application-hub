@@ -19,6 +19,7 @@
   --selected-soft: #fff1e9;
   --showcase-surface: #f7fbfa;
   --showcase-overlay: rgba(8, 30, 28, 0.68);
+  --showcase-badge-bg: #0f4b42;
   --selection: #d7602b;
   --game-accent: #c65332;
   --engineering-accent: #2563b8;
@@ -58,6 +59,7 @@ html[data-theme="mist"] {
   --selected-soft: #fff2dd;
   --showcase-surface: #f4fbfa;
   --showcase-overlay: rgba(10, 43, 41, 0.68);
+  --showcase-badge-bg: #0a514d;
   --selection: #c37324;
   --game-accent: #b86a23;
   --engineering-accent: #176f8b;
@@ -92,6 +94,7 @@ html[data-theme="coral"] {
   --selected-soft: #fde3d8;
   --showcase-surface: #fffaf7;
   --showcase-overlay: rgba(63, 28, 20, 0.68);
+  --showcase-badge-bg: #7a321f;
   --selection: #b84e31;
   --game-accent: #c65b27;
   --engineering-accent: #2d7a72;
@@ -128,6 +131,7 @@ html[data-theme="night"] {
   --selected-soft: #4a3026;
   --showcase-surface: #1e262a;
   --showcase-overlay: rgba(0, 0, 0, 0.66);
+  --showcase-badge-bg: #164941;
   --selection: #f19569;
   --game-accent: #ef9b74;
   --engineering-accent: #73a8ee;
@@ -819,8 +823,8 @@ section[id] {
 }
 
 .showcase-media:has(#showcaseImage:not([hidden])) .summary-type {
-  border-color: rgba(255, 255, 255, 0.48);
-  background: rgba(255, 255, 255, 0.14);
+  border-color: var(--showcase-badge-bg);
+  background: var(--showcase-badge-bg);
   color: #ffffff;
 }
 
@@ -852,7 +856,11 @@ section[id] {
 }
 
 body.showcase-intro-complete .showcase-stage,
-body.showcase-intro-complete .top-nav,
+body.showcase-intro-complete .top-nav {
+  animation: none;
+}
+
+body.card-intro-complete .app-card,
 body.showcase-intro-complete .app-card {
   animation: none;
 }
@@ -1089,10 +1097,6 @@ body.showcase-intro-complete .app-card {
   animation: card-enter 420ms both;
   animation-delay: calc(min(var(--card-order, 0), 7) * 35ms);
   transition: border-color 160ms ease, box-shadow 160ms ease, transform 160ms ease;
-}
-
-body.showcase-intro-complete .app-card {
-  animation: none;
 }
 
 .app-card:hover {
@@ -1811,6 +1815,10 @@ body.editing .app-shell {
     min-height: 0;
     gap: 28px;
     padding: 34px 0;
+  }
+
+  .showcase-stage {
+    grid-template-columns: 1fr;
   }
 
   .hero h1 {
