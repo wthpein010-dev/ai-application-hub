@@ -166,6 +166,12 @@ test("stored visual paths preserve trimmed relative or HTTPS values and drop uns
     [" https://cdn.example.com/custom.webp ", "https://cdn.example.com/custom.webp"],
     ["javascript:alert(1)", undefined],
     ["data:image/png;base64,AAAA", undefined],
+    [String.raw`\\host\path`, undefined],
+    [String.raw`\\host/path`, undefined],
+    [String.raw`//host\path`, undefined],
+    [String.raw`/\host/path`, undefined],
+    [String.raw`assets\custom.webp`, undefined],
+    [String.raw`https://cdn.example.com\custom.webp`, undefined],
     ["", undefined],
   ]) {
     const migrated = loadAppsWithStoredValue([{ ...base, visual }]).find((app) => app.id === base.id);

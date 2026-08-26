@@ -2131,6 +2131,7 @@ function cloneApp(app) {
 function normalizeVisualPath(value) {
   const visual = String(value || "").trim();
   if (!visual) return "";
+  if (visual.includes("\\")) return "";
   if (/^https:\/\//i.test(visual)) return visual;
   if (/^(?:[a-z][a-z\d+.-]*:|\/\/)/i.test(visual)) return "";
   return visual;
