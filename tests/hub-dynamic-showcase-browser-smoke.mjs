@@ -1,10 +1,11 @@
 import assert from "node:assert/strict";
-import { createReadStream, existsSync, mkdirSync, statSync } from "node:fs";
+import { createReadStream, existsSync, mkdirSync, readFileSync, statSync } from "node:fs";
 import { createServer } from "node:http";
 import { createRequire } from "node:module";
 import { homedir } from "node:os";
 import { dirname, extname, join, normalize, resolve, sep } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
+import { loadDefaultAppsFromRuntime } from "./helpers/default-apps.mjs";
 
 const require = createRequire(import.meta.url);
 const playwrightEntry = require.resolve("playwright", {
@@ -25,6 +26,27 @@ const playwrightModule = await import(pathToFileURL(playwrightEntry).href);
 const { chromium } = playwrightModule.default || playwrightModule;
 
 const root = dirname(dirname(fileURLToPath(import.meta.url)));
+const defaultApps = loadDefaultAppsFromRuntime(readFileSync(join(root, "app-20260706-restore-games.js"), "utf8"));
+const expectedVisibleApps = Array.from(defaultApps).filter(({ id }) => id !== "clickflow");
+const expectedCollectionIds = {
+  apps: Array.from(expectedVisibleApps
+    .filter(({ status }) => !["game", "engineering", "ai"].includes(status))
+    .map(({ id }) => id)),
+  games: ["zhuanglege-sha", "xiang-le-ge-xiang", "fill-what", "nang-keng-pai-pai-xiang", "icecream"],
+  engineering: Array.from(expectedVisibleApps
+    .filter(({ status }) => ["engineering", "ai"].includes(status))
+    .map(({ id }) => id)),
+};
+const expectedNavigationIds = [
+  ...expectedCollectionIds.apps,
+  ...expectedCollectionIds.games,
+  ...expectedCollectionIds.engineering,
+];
+const expectedSearch = {
+  apps: ["hub", "gamepulse-mini-radar", "minigame-project-simulator"],
+  games: ["zhuanglege-sha", "xiang-le-ge-xiang", "fill-what", "nang-keng-pai-pai-xiang", "icecream"],
+  engineering: [],
+};
 const screenshotDirectory = process.env.HUB_SHOWCASE_SCREENSHOT_DIR || "";
 const windowsUserAgent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36";
 const failures = [];
@@ -129,9 +151,14 @@ async function configureWindowsPage(context, label) {
   const page = await context.newPage();
   await page.addInitScript(() => {
     Object.defineProperty(navigator, "platform", { configurable: true, get: () => "Win32" });
-    globalThis.__showcaseAnimations = [];
+    globalThis.__showcaseEntranceEvents = [];
     document.addEventListener("animationstart", (event) => {
-      globalThis.__showcaseAnimations.push(event.animationName);
+      const target = event.target;
+      if (target.matches?.(".showcase-stage")) {
+        globalThis.__showcaseEntranceEvents.push({ element: "stage", name: event.animationName });
+      } else if (target.matches?.(".app-card[data-app-id]")) {
+        globalThis.__showcaseEntranceEvents.push({ element: target.dataset.appId, name: event.animationName });
+      }
     });
   });
   collectBrowserErrors(page, label);
@@ -149,11 +176,39 @@ async function waitForImages(page) {
   await page.evaluate(() => window.scrollTo(0, 0));
 }
 
-async function assertSelected(page, selector, label, expectedHash = "#apps") {
-  const card = page.locator(selector);
-  const id = await card.getAttribute("data-app-id");
+async function waitForStageImage(page) {
+  await page.waitForFunction(() => {
+    const image = document.querySelector("#showcaseImage");
+    const caption = document.querySelector("#showcaseCaption");
+    return image?.complete && image.naturalWidth > 0 && !image.hidden && caption?.hidden;
+  });
+}
+
+function normalizedEntranceEvents(events) {
+  return events.map(({ element, name }) => ({ element, name })).sort((a, b) => (
+    a.element.localeCompare(b.element) || a.name.localeCompare(b.name)
+  ));
+}
+
+async function assertInitialEntranceEvents(page, label) {
+  const events = normalizedEntranceEvents(await page.evaluate(() => globalThis.__showcaseEntranceEvents));
+  const expected = normalizedEntranceEvents([
+    { element: "stage", name: "showcase-stage-enter" },
+    ...expectedNavigationIds.map((id) => ({ element: id, name: "card-enter" })),
+  ]);
+  check(events, expected, `${label} starts each stage and card entrance exactly once`);
+  await page.evaluate(() => { globalThis.__showcaseEntranceEvents.length = 0; });
+}
+
+async function assertNoEntranceReplay(page, label) {
+  check(await page.evaluate(() => globalThis.__showcaseEntranceEvents), [], `${label} starts no new stage or card entrance animation`);
+}
+
+async function assertSelected(page, id, label, expectedHash = "#apps") {
+  const card = page.locator(`.app-card[data-app-id="${id}"]`);
   const name = (await card.locator("h3").innerText()).trim();
   await card.click();
+  await waitForStageImage(page);
   const state = await page.evaluate((selectedId) => {
     const selected = document.querySelector(`.app-card[data-app-id="${CSS.escape(selectedId)}"]`);
     const progress = document.querySelector('[role="progressbar"]');
@@ -174,27 +229,17 @@ async function assertSelected(page, selector, label, expectedHash = "#apps") {
   check(state.stageName, name, `${label} synchronizes stage name`);
   check(state.ariaCurrent, "true", `${label} synchronizes aria-current`);
   check(state.selectedCount, 1, `${label} keeps one selection`);
-  check(state.progressNow > 0 && state.progressNow <= state.progressMax, `${label} synchronizes progress`);
+  check(state.progressNow, expectedNavigationIds.indexOf(id) + 1, `${label} synchronizes exact progress index`);
+  check(state.progressMax, expectedNavigationIds.length, `${label} synchronizes exact progress total`);
   return id;
 }
 
-async function assertNoIntroReplay(page, label) {
-  const animation = await page.evaluate(() => ({
-    bodyComplete: document.body.classList.contains("showcase-intro-complete"),
-    card: getComputedStyle(document.querySelector(".app-card[data-app-id]")).animationName,
-    stage: getComputedStyle(document.querySelector(".showcase-stage")).animationName,
-  }));
-  check(animation.bodyComplete, `${label} keeps intro completion gate`);
-  check(animation.card, "none", `${label} does not replay card entrance`);
-  check(animation.stage, "none", `${label} does not replay stage entrance`);
-}
-
-async function takeScreenshot(page, name) {
+async function takeScreenshot(page, name, fullPage = false) {
   if (!screenshotDirectory) return;
   check(!/clickflow/iu.test(name), `screenshot name excludes ClickFlow: ${name}`);
   check(await page.locator('[data-app-id="clickflow"]').count(), 0, `${name} has zero ClickFlow nodes before capture`);
   mkdirSync(screenshotDirectory, { recursive: true });
-  await page.screenshot({ path: join(screenshotDirectory, `${name}.png`), fullPage: false });
+  await page.screenshot({ path: join(screenshotDirectory, `${name}.png`), fullPage });
   screenshotCount += 1;
 }
 
@@ -217,12 +262,22 @@ try {
     page.on("request", (request) => requests.push(request.url()));
     await page.goto(`${baseUrl}/index.html?qa=keep#apps`, { waitUntil: "networkidle" });
     await page.waitForSelector(".app-card[data-app-id]");
+    const initialBaseline = await page.evaluate(() => ({
+      cardCount: document.querySelectorAll(".app-card[data-app-id]").length,
+      clickflowCount: document.querySelectorAll('[data-app-id="clickflow"]').length,
+      noHorizontalOverflow: document.documentElement.scrollWidth <= document.documentElement.clientWidth,
+      resources: performance.getEntriesByType("resource").map((entry) => entry.name),
+    }));
+    check(initialBaseline.cardCount, 28, `${viewport.name} initial DOM renders exactly 28 cards before catalog scrolling`);
+    check(initialBaseline.clickflowCount, 0, `${viewport.name} initial DOM has zero ClickFlow nodes`);
+    check(initialBaseline.noHorizontalOverflow, `${viewport.name} initial DOM has no horizontal overflow`);
+    check(initialBaseline.resources.some((url) => /clickflow/iu.test(url)), false, `${viewport.name} initial resources exclude ClickFlow`);
+    check(requests.some((url) => /clickflow/iu.test(url)), false, `${viewport.name} initial requests exclude ClickFlow`);
 
     await page.waitForSelector("body.showcase-intro-complete");
-    const initialAnimations = await page.evaluate(() => globalThis.__showcaseAnimations);
-    check(initialAnimations.includes("card-enter"), `${viewport.name} first card entrance runs`);
-    check(initialAnimations.includes("showcase-stage-enter"), `${viewport.name} first stage entrance runs`);
+    await assertInitialEntranceEvents(page, viewport.name);
     await waitForImages(page);
+    await waitForStageImage(page);
 
     const baseline = await page.evaluate(() => {
       const ids = (selector) => Array.from(document.querySelectorAll(selector), (card) => card.dataset.appId);
@@ -265,6 +320,31 @@ try {
             && imageRect.width > 0 && imageRect.height > 0,
         };
       });
+      const imagePixels = Array.from(document.querySelectorAll(".card-media img")).map((image) => {
+        const id = image.closest(".app-card")?.dataset.appId;
+        try {
+          const canvas = document.createElement("canvas");
+          canvas.width = 24;
+          canvas.height = 24;
+          const context = canvas.getContext("2d", { willReadFrequently: true });
+          context.drawImage(image, 0, 0, canvas.width, canvas.height);
+          const pixels = context.getImageData(0, 0, canvas.width, canvas.height).data;
+          let opaque = 0;
+          let sum = 0;
+          let squareSum = 0;
+          for (let index = 0; index < pixels.length; index += 4) {
+            if (pixels[index + 3] === 0) continue;
+            const luma = (0.2126 * pixels[index]) + (0.7152 * pixels[index + 1]) + (0.0722 * pixels[index + 2]);
+            opaque += 1;
+            sum += luma;
+            squareSum += luma * luma;
+          }
+          const variance = opaque ? (squareSum / opaque) - ((sum / opaque) ** 2) : 0;
+          return { id, opaque, variance };
+        } catch (error) {
+          return { id, error: String(error) };
+        }
+      });
       return {
         allIds: ids(".app-card[data-app-id]"),
         apps: ids("#appGrid .app-card[data-app-id]"),
@@ -276,12 +356,15 @@ try {
         columns: getComputedStyle(document.querySelector("#appGrid")).gridTemplateColumns.split(/\s+/u).filter(Boolean).length,
         imagesReady: Array.from(document.querySelectorAll(".card-media img")).every((image) => image.complete && image.naturalWidth > 0),
         imageCount: document.querySelectorAll(".card-media img").length,
+        blankImages: imagePixels.filter(({ opaque, variance, error }) => error || opaque < 24 || variance < 3)
+          .map(({ id, opaque, variance, error }) => `${id}: opaque=${opaque || 0}, variance=${variance || 0}, error=${error || ""}`),
         unfittedImages: imageGeometry.filter(({ fitted }) => !fitted)
           .map(({ id, frame, image }) => `${id}:${image} in ${frame}`),
         imagesVisible: imageGeometry.every(({ visible: imageVisible }) => imageVisible),
         imageFramesReady: imageFrames.every(Boolean),
         mediaFallbackCount: document.querySelectorAll(".app-card.media-fallback").length,
         visibleFallbackCaptionCount: Array.from(document.querySelectorAll(".card-media figcaption")).filter(visible).length,
+        stageCaptionHidden: document.querySelector("#showcaseCaption")?.hidden,
         noHorizontalOverflow: document.documentElement.scrollWidth <= document.documentElement.clientWidth,
         selectedCount: document.querySelectorAll(".app-card.selected").length,
         smallText,
@@ -291,16 +374,22 @@ try {
       };
     });
     check(baseline.cardCount, 28, `${viewport.name} renders 28 cards`);
+    check(baseline.allIds, expectedNavigationIds, `${viewport.name} preserves the independent production navigation order`);
+    check(baseline.apps, expectedCollectionIds.apps, `${viewport.name} preserves production application order`);
+    check(baseline.games, expectedCollectionIds.games, `${viewport.name} preserves production game order`);
+    check(baseline.engineering, expectedCollectionIds.engineering, `${viewport.name} preserves production engineering order`);
     check(baseline.clickflowCount, 0, `${viewport.name} has zero ClickFlow nodes`);
     check(requests.some((url) => /clickflow/iu.test(url)), false, `${viewport.name} has zero ClickFlow requests`);
     check(baseline.noHorizontalOverflow, `${viewport.name} has no horizontal overflow`);
     check(baseline.imagesReady, `${viewport.name} loads every card image`);
     check(baseline.imageCount, 28, `${viewport.name} renders 28 card images`);
+    check(baseline.blankImages, [], `${viewport.name} renders 28 nonblank, nontransparent catalog images`);
     check(baseline.imagesVisible, `${viewport.name} displays all 28 loaded card images`);
     check(baseline.unfittedImages, [], `${viewport.name} fits every loaded card image to its media frame`);
     check(baseline.imageFramesReady, `${viewport.name} keeps stable media framing`);
     check(baseline.mediaFallbackCount, 0, `${viewport.name} has zero catalog fallback states`);
     check(baseline.visibleFallbackCaptionCount, 0, `${viewport.name} hides every catalog fallback caption`);
+    check(baseline.stageCaptionHidden, true, `${viewport.name} hides the stage fallback caption after a successful image load`);
     check(baseline.selectedCount, 1, `${viewport.name} starts with one selected card`);
     check(baseline.columns, viewport.columns, `${viewport.name} uses expected responsive columns`);
     check(baseline.bodyFont >= 13, `${viewport.name} body text is at least 13px`);
@@ -325,7 +414,7 @@ try {
       await page.locator("#themeToggle").click();
       await page.locator(`[data-theme-option="${theme}"]`).click();
       check(await page.getAttribute("html", "data-theme"), theme, `${viewport.name} applies ${theme} theme`);
-      await assertNoIntroReplay(page, `${viewport.name}/${theme} theme`);
+      await assertNoEntranceReplay(page, `${viewport.name}/${theme} theme`);
       await page.waitForTimeout(220);
       const themeContrast = await page.evaluate(() => {
         const channels = (value) => (value.match(/[\d.]+/gu) || []).slice(0, 3).map(Number);
@@ -353,21 +442,38 @@ try {
     await page.waitForSelector(".app-card[data-app-id]");
     check(await page.getAttribute("html", "data-theme"), "night", `${viewport.name} persists theme on reload`);
     await page.waitForSelector("body.showcase-intro-complete");
+    await assertInitialEntranceEvents(page, `${viewport.name} reload`);
 
-    await assertSelected(page, "#appGrid .app-card[data-app-id]:nth-of-type(2)", `${viewport.name}/application`);
-    await assertSelected(page, "#gameGrid .app-card[data-app-id]:first-of-type", `${viewport.name}/game`);
-    await assertSelected(page, "#engineeringGrid .app-card[data-app-id]:first-of-type", `${viewport.name}/engineering`);
+    await assertSelected(page, expectedCollectionIds.apps[1], `${viewport.name}/application`);
+    await assertSelected(page, expectedCollectionIds.games[0], `${viewport.name}/game`);
+    await assertSelected(page, expectedCollectionIds.engineering[0], `${viewport.name}/engineering`);
+
+    await assertSelected(page, expectedNavigationIds[0], `${viewport.name}/navigation starts at first app`);
+    const navigationSequence = [expectedNavigationIds[0]];
+    for (let index = 1; index <= expectedNavigationIds.length; index += 1) {
+      await page.locator("#nextApp").click();
+      await waitForStageImage(page);
+      navigationSequence.push(new URL(page.url()).searchParams.get("project"));
+    }
+    check(
+      navigationSequence,
+      [...expectedNavigationIds, expectedNavigationIds[0]],
+      `${viewport.name} next navigation follows applications, games, engineering, then wraps to the first app`,
+    );
+    await assertNoEntranceReplay(page, `${viewport.name}/navigation`);
 
     const keyboardCards = page.locator("#appGrid .app-card[data-app-id]");
     const enterId = await keyboardCards.nth(2).getAttribute("data-app-id");
     await keyboardCards.nth(2).focus();
     await page.keyboard.press("Enter");
+    await waitForStageImage(page);
     check(new URL(page.url()).searchParams.get("project"), enterId, `${viewport.name} Enter selects a card`);
     const spaceId = await keyboardCards.nth(3).getAttribute("data-app-id");
     await keyboardCards.nth(3).focus();
     await page.keyboard.press("Space");
+    await waitForStageImage(page);
     check(new URL(page.url()).searchParams.get("project"), spaceId, `${viewport.name} Space selects a card`);
-    await assertNoIntroReplay(page, `${viewport.name}/keyboard selection`);
+    await assertNoEntranceReplay(page, `${viewport.name}/keyboard selection`);
 
     const selectionBeforeAction = new URL(page.url()).searchParams.get("project");
     await page.evaluate(() => document.addEventListener("click", (event) => {
@@ -384,19 +490,21 @@ try {
     }));
     check(filtered.ids.length > 0 && filtered.ids.length < 28, `${viewport.name} category chip filters the catalog`);
     check(filtered.selected, filtered.ids[0], `${viewport.name} category chip selects the first visible fallback`);
-    check(filtered.ids, baseline.allIds.filter((id) => filtered.ids.includes(id)), `${viewport.name} category chip preserves production order`);
-    await assertNoIntroReplay(page, `${viewport.name}/category filter`);
+    check(filtered.ids, expectedNavigationIds.filter((id) => filtered.ids.includes(id)), `${viewport.name} category chip preserves production order`);
+    await assertNoEntranceReplay(page, `${viewport.name}/category filter`);
 
     await page.locator('[data-filter-type="all"]').click();
-    await page.locator("#searchInput").fill("AI");
-    const searchCollections = await page.evaluate(() => ["#appGrid", "#gameGrid", "#engineeringGrid"]
-      .filter((selector) => document.querySelector(`${selector} .app-card[data-app-id]`)).length);
-    check(searchCollections >= 2, `${viewport.name} search crosses project collections`);
+    await page.locator("#searchInput").fill("小游戏");
+    const searchResults = await page.evaluate(() => Object.fromEntries(
+      [["apps", "#appGrid"], ["games", "#gameGrid"], ["engineering", "#engineeringGrid"]]
+        .map(([collection, selector]) => [collection, Array.from(document.querySelectorAll(`${selector} .app-card[data-app-id]`), (card) => card.dataset.appId)]),
+    ));
+    check(searchResults, expectedSearch, `${viewport.name} search returns the exact expected ids in each collection`);
     await page.locator("#searchInput").fill("");
     check(await page.locator(".app-card[data-app-id]").count(), 28, `${viewport.name} reset restores all cards`);
     const resetOrder = await page.locator(".app-card[data-app-id]").evaluateAll((cards) => cards.map((card) => card.dataset.appId));
-    check(resetOrder, baseline.allIds, `${viewport.name} reset restores production order`);
-    await assertNoIntroReplay(page, `${viewport.name}/search reset`);
+    check(resetOrder, expectedNavigationIds, `${viewport.name} reset restores production order`);
+    await assertNoEntranceReplay(page, `${viewport.name}/search reset`);
 
     const editorClosed = await page.evaluate(() => {
       const panel = document.querySelector("#editPanel");
@@ -406,19 +514,39 @@ try {
     });
     check(editorClosed, { hidden: "true", inert: true, focusBlocked: true }, `${viewport.name} closed editor is inert`);
     await page.locator("#exportButton").click();
+    await page.waitForFunction(() => {
+      const rect = document.querySelector("#editPanel").getBoundingClientRect();
+      return rect.left >= -1 && rect.right <= innerWidth + 1;
+    });
     check(await page.locator("#editPanel").getAttribute("aria-hidden"), "false", `${viewport.name} editor opens`);
     check(await page.locator("#editPanel").evaluate((panel) => panel.inert), false, `${viewport.name} open editor is interactive`);
+    const editorOpen = await page.locator("#editPanel").evaluate((panel) => {
+      const panelRect = panel.getBoundingClientRect();
+      const textNodes = Array.from(panel.querySelectorAll("h2, h3, label > span, button, p")).filter((element) => {
+        const style = getComputedStyle(element);
+        const rect = element.getBoundingClientRect();
+        return style.display !== "none" && style.visibility !== "hidden" && rect.width > 0 && rect.height > 0;
+      });
+      return {
+        accessibleName: panel.getAttribute("aria-label"),
+        contained: panelRect.left >= -1 && panelRect.right <= innerWidth + 1,
+        noOverflow: panel.scrollWidth <= panel.clientWidth,
+        textFits: textNodes.every((element) => element.scrollWidth <= element.clientWidth),
+      };
+    });
+    check(editorOpen, { accessibleName: "编辑面板", contained: true, noOverflow: true, textFits: true }, `${viewport.name} open editor is an accessible unclipped drawer`);
+    await takeScreenshot(page, `${viewport.name}-editor`);
     await page.locator("#editClose").click();
     check(await page.locator("#editPanel").getAttribute("aria-hidden"), "true", `${viewport.name} editor closes`);
     check(await page.locator("#editPanel").evaluate((panel) => panel.inert), true, `${viewport.name} closed editor becomes inert`);
     await page.waitForFunction(() => document.querySelector("#editPanel").getBoundingClientRect().left >= innerWidth);
     check(await page.locator("#editPanel").evaluate((panel) => panel.getBoundingClientRect().left >= innerWidth), true, `${viewport.name} closed editor leaves the viewport`);
-    await assertNoIntroReplay(page, `${viewport.name}/editor`);
+    await assertNoEntranceReplay(page, `${viewport.name}/editor`);
 
     await page.locator("#themeToggle").click();
     await page.locator('[data-theme-option="clean"]').click();
     await page.waitForTimeout(220);
-    await assertNoIntroReplay(page, `${viewport.name}/catalog theme`);
+    await assertNoEntranceReplay(page, `${viewport.name}/catalog theme`);
     await page.evaluate(() => {
       const html = document.documentElement;
       const previousBehavior = html.style.scrollBehavior;
@@ -427,6 +555,7 @@ try {
       html.style.scrollBehavior = previousBehavior;
     });
     await takeScreenshot(page, `${viewport.name}-catalog`);
+    await takeScreenshot(page, `${viewport.name}-catalog-full`, true);
     const fallback = await page.locator(".app-card .card-media img").first().evaluate(async (image) => {
       const frame = image.parentElement;
       const before = frame.getBoundingClientRect();
@@ -442,7 +571,23 @@ try {
       };
     });
     check(fallback, { captionVisible: true, imageHidden: true, stable: true }, `${viewport.name} failed image uses stable fallback`);
-    await assertNoIntroReplay(page, `${viewport.name}/image fallback`);
+    await assertNoEntranceReplay(page, `${viewport.name}/image fallback`);
+
+    const stageFallback = await page.locator("#showcaseImage").evaluate(async (image) => {
+      const media = image.closest(".showcase-media");
+      const before = media.getBoundingClientRect();
+      const failed = new Promise((resolveFailure) => image.addEventListener("error", resolveFailure, { once: true }));
+      image.src = "data:image/webp;base64,AAAA";
+      await failed;
+      const after = media.getBoundingClientRect();
+      const caption = document.querySelector("#showcaseCaption");
+      return {
+        captionVisible: Boolean(caption && !caption.hidden),
+        imageHidden: image.hidden,
+        stable: Math.abs(before.width - after.width) < 1 && Math.abs(before.height - after.height) < 1,
+      };
+    });
+    check(stageFallback, { captionVisible: true, imageHidden: true, stable: true }, `${viewport.name} failed stage image exposes a stable semantic fallback caption`);
 
     const resources = await page.evaluate(() => performance.getEntriesByType("resource").map((entry) => entry.name));
     check(resources.some((url) => /clickflow/iu.test(url)), false, `${viewport.name} has zero ClickFlow resources`);
@@ -490,8 +635,19 @@ try {
     check(await storagePage.locator(".app-card.selected").getAttribute("data-app-id"), "travel-generator", "storage-throwing context keeps the approved default selection");
     await storagePage.locator('[data-filter-type]:not([data-filter-type="all"])').first().click();
     check(await storagePage.locator(".app-card[data-app-id]").count() < 28, "storage-throwing context filters catalog");
+    await storagePage.locator('[data-filter-type="all"]').click();
+    const storageSelectedId = await storagePage.locator("#appGrid .app-card[data-app-id]").nth(1).getAttribute("data-app-id");
+    await storagePage.locator(`#appGrid .app-card[data-app-id="${storageSelectedId}"]`).click();
+    check(new URL(storagePage.url()).searchParams.get("project"), storageSelectedId, "storage-throwing context keeps selection functional when persistence throws");
+    await storagePage.locator("#themeToggle").click();
+    await storagePage.locator('[data-theme-option="coral"]').click();
+    check(await storagePage.getAttribute("html", "data-theme"), "coral", "storage-throwing context keeps theme changes functional when persistence throws");
     await storagePage.locator("#exportButton").click();
     check(await storagePage.locator("#editPanel").getAttribute("aria-hidden"), "false", "storage-throwing context opens editor");
+    const originalName = await storagePage.locator("#editName").inputValue();
+    await storagePage.locator("#editName").fill(`${originalName} 临时保存`);
+    await storagePage.locator("#editSave").click();
+    check(await storagePage.locator("#spotlightCard .summary-copy > strong").innerText(), `${originalName} 临时保存`, "storage-throwing context keeps editor save data in the live UI when persistence throws");
     await storagePage.locator("#editClose").click();
     check(await storagePage.locator("#editPanel").getAttribute("aria-hidden"), "true", "storage-throwing context closes editor");
   }

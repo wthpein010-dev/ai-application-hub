@@ -48,7 +48,7 @@ test("runtime defines and persists the four approved themes", () => {
   }
   assert.match(runtime, /function normalizeTheme\(/u);
   assert.match(runtime, /document\.documentElement\.dataset\.theme = normalized/u);
-  assert.match(runtime, /localStorage\.setItem\(THEME_STORAGE_KEY, normalized\)/u);
+  assert.match(runtime, /storageSet\(THEME_STORAGE_KEY, normalized\)/u);
   assert.match(runtime, /role="menuitemradio"/u);
   assert.match(runtime, /aria-checked=/u);
 });

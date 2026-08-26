@@ -78,8 +78,23 @@ test("runtime renders project-owned media and excludes ClickFlow from Windows-lo
 
 test("runtime treats unavailable browser storage as an optional enhancement", () => {
   assert.match(runtime, /function storageGet\(key\)[\s\S]*?try[\s\S]*?localStorage\.getItem\(key\)[\s\S]*?catch/u);
+  assert.match(runtime, /function storageSet\(key, value\)[\s\S]*?try[\s\S]*?localStorage\.setItem\(key, value\)[\s\S]*?catch/u);
+  assert.match(runtime, /function storageRemove\(key\)[\s\S]*?try[\s\S]*?localStorage\.removeItem\(key\)[\s\S]*?catch/u);
   assert.match(runtime, /selectedId:\s*storageGet\(SELECTED_KEY\)\s*\|\|\s*["']travel-generator["']/u);
   assert.doesNotMatch(runtime, /selectedId:\s*localStorage\.getItem/u);
+  for (const functionName of ["applyTheme", "selectApp", "saveEditForm", "resetEdits"]) {
+    const start = runtime.indexOf(`function ${functionName}`);
+    const end = runtime.indexOf("\nfunction ", start + 1);
+    const source = runtime.slice(start, end === -1 ? runtime.length : end);
+    assert.ok(start >= 0, `${functionName} should be present`);
+    assert.doesNotMatch(source, /localStorage\.(?:setItem|removeItem)/u);
+  }
+});
+
+test("stage fallback is hidden after successful media load and restored on image errors", () => {
+  assert.match(runtime, /nodes\.showcaseImage\.onload\s*=\s*handleMediaLoad/u);
+  assert.match(runtime, /function handleMediaLoad\(event\)[\s\S]*?showcaseCaption\.hidden\s*=\s*true/u);
+  assert.match(runtime, /function handleMediaError\(event\)[\s\S]*?fallback\.hidden\s*=\s*false/u);
 });
 
 test("media lookup prefers a valid edited visual and Windows-local visibility is host scoped", () => {

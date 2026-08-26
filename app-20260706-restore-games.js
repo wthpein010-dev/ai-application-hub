@@ -83,12 +83,20 @@ function storageGet(key) {
   }
 }
 
-function loadTheme() {
+function storageSet(key, value) {
   try {
-    return normalizeTheme(localStorage.getItem(THEME_STORAGE_KEY));
-  } catch {
-    return "clean";
-  }
+    localStorage.setItem(key, value);
+  } catch {}
+}
+
+function storageRemove(key) {
+  try {
+    localStorage.removeItem(key);
+  } catch {}
+}
+
+function loadTheme() {
+  return normalizeTheme(storageGet(THEME_STORAGE_KEY));
 }
 
 function catalogTypeKey(app) {
@@ -1080,9 +1088,7 @@ function applyTheme(theme, persist = true) {
   state.theme = normalized;
   document.documentElement.dataset.theme = normalized;
   if (persist) {
-    try {
-      localStorage.setItem(THEME_STORAGE_KEY, normalized);
-    } catch {}
+    storageSet(THEME_STORAGE_KEY, normalized);
   }
   renderThemeOptions();
   return normalized;
@@ -1171,6 +1177,7 @@ function renderMedia(app, context) {
   const alt = media.alt || `${app.name}功能画面`;
   if (context === "stage") {
     nodes.showcaseMedia.classList.toggle("media-fallback", !media.src);
+    nodes.showcaseImage.onload = handleMediaLoad;
     nodes.showcaseImage.onerror = handleMediaError;
     nodes.showcaseImage.loading = "eager";
     nodes.showcaseImage.fetchPriority = "high";
@@ -1178,7 +1185,7 @@ function renderMedia(app, context) {
     nodes.showcaseImage.style.objectPosition = media.position;
     nodes.showcaseImage.hidden = !media.src;
     nodes.showcaseCaption.textContent = media.fallback;
-    nodes.showcaseCaption.hidden = false;
+    nodes.showcaseCaption.hidden = Boolean(media.src);
     if (media.src) {
       nodes.showcaseImage.src = media.src;
     } else {
@@ -1195,6 +1202,15 @@ function renderMedia(app, context) {
       <figcaption${media.src ? " hidden" : ""}>${escapeHtml(media.fallback)}</figcaption>
     </figure>
   `;
+}
+
+function handleMediaLoad(event) {
+  const image = event.currentTarget;
+  image.hidden = false;
+  image.closest(".app-card, .showcase-media")?.classList.remove("media-fallback");
+  if (image === nodes.showcaseImage) {
+    nodes.showcaseCaption.hidden = true;
+  }
 }
 
 function handleMediaError(event) {
@@ -1589,9 +1605,7 @@ function highlightEditTarget() {
 function selectApp(id) {
   if (!visibleApps().some(app => app.id === id)) return;
   state.selectedId = id;
-  try {
-    localStorage.setItem(SELECTED_KEY, id);
-  } catch {}
+  storageSet(SELECTED_KEY, id);
   try {
     const nextUrl = new URL(location.href);
     nextUrl.searchParams.set("project", id);
@@ -1688,16 +1702,16 @@ function saveEditForm() {
       visual: normalizeVisualPath(nodes.editVisual?.value) || undefined
     }, nodes.editStatus.value);
   });
-  localStorage.setItem(PAGE_TEXT_STORAGE_KEY, JSON.stringify(pageText));
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(apps));
+  storageSet(PAGE_TEXT_STORAGE_KEY, JSON.stringify(pageText));
+  storageSet(STORAGE_KEY, JSON.stringify(apps));
   renderCategoryOptions();
   render();
   log("已保存到当前浏览器本地存储。");
 }
 
 function resetEdits() {
-  localStorage.removeItem(STORAGE_KEY);
-  localStorage.removeItem(PAGE_TEXT_STORAGE_KEY);
+  storageRemove(STORAGE_KEY);
+  storageRemove(PAGE_TEXT_STORAGE_KEY);
   apps = defaultApps.map(cloneApp);
   pageText = normalizePageText();
   renderCategoryOptions();
@@ -1761,7 +1775,7 @@ function loadPageText() {
     const stored = JSON.parse(localStorage.getItem(PAGE_TEXT_STORAGE_KEY) || "null");
     if (stored && typeof stored === "object" && !Array.isArray(stored)) return normalizePageText(stored);
   } catch {
-    localStorage.removeItem(PAGE_TEXT_STORAGE_KEY);
+    storageRemove(PAGE_TEXT_STORAGE_KEY);
   }
   return normalizePageText();
 }
@@ -1797,7 +1811,7 @@ function loadApps() {
       return defaultApps.map(app => normalizeApp(storedById.get(app.id) || app));
     }
   } catch {
-    localStorage.removeItem(STORAGE_KEY);
+    storageRemove(STORAGE_KEY);
   }
   return defaultApps.map(cloneApp);
 }

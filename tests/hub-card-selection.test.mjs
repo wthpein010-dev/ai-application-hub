@@ -46,8 +46,12 @@ function eventFor({ appId = "nang-keng-pai-pai-xiang", interactive = false, key 
 }
 
 function loadSelection(initialHref = "http://127.0.0.1:8000/index.html?theme=night#games") {
+  const storageSetStart = runtime.indexOf("function storageSet");
+  const storageSetEnd = runtime.indexOf("function storageRemove", storageSetStart);
   const start = runtime.indexOf("function selectApp");
   const end = runtime.indexOf("function ensureSelectedApp", start);
+  assert.notEqual(storageSetStart, -1);
+  assert.notEqual(storageSetEnd, -1);
   assert.notEqual(start, -1);
   assert.notEqual(end, -1);
 
@@ -71,6 +75,7 @@ function loadSelection(initialHref = "http://127.0.0.1:8000/index.html?theme=nig
   };
   vm.runInNewContext([
     'const SELECTED_KEY = "selected-key";',
+    runtime.slice(storageSetStart, storageSetEnd),
     "function visibleApps() { return apps; }",
     "function renderSelectedApp() { globalThis.renderSelectedAppCalls = (globalThis.renderSelectedAppCalls || 0) + 1; }",
     "function render() { globalThis.renderCalls = (globalThis.renderCalls || 0) + 1; }",
