@@ -15,6 +15,8 @@ const runtime = readFileSync(join(root, "app-20260706-restore-games.js"), "utf8"
 const mediaRuntime = readFileSync(join(root, "hub-project-media.js"), "utf8");
 const styles = readFileSync(join(root, "styles.css"), "utf8");
 const browserSmoke = readFileSync(join(root, "tests", "hub-dynamic-showcase-browser-smoke.mjs"), "utf8");
+const mediaBuilder = readFileSync(join(root, "scripts", "build-hub-showcase-media.mjs"), "utf8");
+const mediaSources = JSON.parse(readFileSync(join(root, "scripts", "hub-showcase-media-sources.json"), "utf8"));
 
 function rule(selector) {
   const escaped = selector.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
@@ -66,6 +68,39 @@ test("project media registry covers every production id without loading ClickFlo
     assert.ok(statSync(assetPath).size <= 750 * 1024);
     assert.ok(media[app.id].alt.includes(app.name));
     assert.ok(["standard", "wide", "tall"].includes(media[app.id].layout));
+    assert.match(media[app.id].feature, /\S{4,}/u);
+    assert.match(media[app.id].accent, /^#[0-9a-f]{6}$/u);
+    assert.ok(["product", "data", "game", "media"].includes(media[app.id].visualKind));
+  }
+});
+
+test("every project media source defines a focused visual story", () => {
+  const expectedIds = Array.from(loadDefaultAppsFromRuntime(runtime))
+    .filter(({ id }) => id !== "clickflow")
+    .map(({ id }) => id);
+  assert.deepEqual(Object.keys(mediaSources), expectedIds);
+  for (const [id, source] of Object.entries(mediaSources)) {
+    assert.match(source.feature, /\S{4,}/u, `${id} should name its core visual feature`);
+    assert.match(source.accent, /^#[0-9a-f]{6}$/u, `${id} should define a stable project accent`);
+    assert.ok(["product", "data", "game", "media"].includes(source.visualKind), `${id} should define a visual kind`);
+    if (source.mode === "capture" && source.captureTime === undefined) {
+      assert.ok(source.focusSelector || source.focusMode === "auto", `${id} should target a real functional region`);
+    }
+  }
+});
+
+test("media builder composes authentic context and focal detail into fixed product frames", () => {
+  assert.match(mediaBuilder, /function composeProductFrame\(/u);
+  assert.match(mediaBuilder, /function captureFocusRegion\(/u);
+  assert.match(mediaBuilder, /source\.focusSelector/u);
+  assert.match(mediaBuilder, /width:\s*1440[\s\S]*height:\s*900/u);
+  assert.match(mediaBuilder, /sharp\([\s\S]*?\.composite\(/u);
+  assert.match(mediaBuilder, /source\.clickSelector/u);
+  assert.match(mediaBuilder, /source\.afterClickText/u);
+  for (const id of ["paws-home-client", "zhuanglege-sha"]) {
+    assert.equal(mediaSources[id].clickSelector, "#startButton");
+    assert.match(mediaSources[id].afterClickText, /游戏已启动/u);
+    assert.match(mediaSources[id].focusSelector, /canvas/u);
   }
 });
 

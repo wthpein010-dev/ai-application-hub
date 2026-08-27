@@ -5,6 +5,9 @@ globalThis.HUB_PROJECT_MEDIA = Object.freeze({
     position: "center",
     layout: "wide",
     fallback: "AI 应用方案整理器",
+    feature: "统一管理演示、视频与多端入口",
+    accent: "#156b5c",
+    visualKind: "product",
   }),
   "gamepulse-mini-radar": Object.freeze({
     src: "./assets/hub-showcase/gamepulse-mini-radar.webp",
@@ -12,6 +15,9 @@ globalThis.HUB_PROJECT_MEDIA = Object.freeze({
     position: "center",
     layout: "wide",
     fallback: "小游戏每日排行",
+    feature: "聚合榜单、热度与趋势变化",
+    accent: "#2563eb",
+    visualKind: "data",
   }),
   "icecream": Object.freeze({
     src: "./assets/hub-showcase/icecream.webp",
@@ -19,6 +25,9 @@ globalThis.HUB_PROJECT_MEDIA = Object.freeze({
     position: "center",
     layout: "standard",
     fallback: "吃了个冰",
+    feature: "合成升级与限时消除挑战",
+    accent: "#f97316",
+    visualKind: "game",
   }),
   "vita-mahjong": Object.freeze({
     src: "./assets/hub-showcase/vita-mahjong.webp",
@@ -26,6 +35,9 @@ globalThis.HUB_PROJECT_MEDIA = Object.freeze({
     position: "center",
     layout: "standard",
     fallback: "羊了个羊：对对碰",
+    feature: "碰一碰配对与关卡节奏",
+    accent: "#8b5cf6",
+    visualKind: "game",
   }),
   "zhuanglege-sha": Object.freeze({
     src: "./assets/hub-showcase/zhuanglege-sha.webp",
@@ -33,6 +45,9 @@ globalThis.HUB_PROJECT_MEDIA = Object.freeze({
     position: "center",
     layout: "standard",
     fallback: "装了个啥",
+    feature: "趣味收纳与物件消除",
+    accent: "#0f766e",
+    visualKind: "game",
   }),
   "paws-home-client": Object.freeze({
     src: "./assets/hub-showcase/paws-home-client.webp",
@@ -40,6 +55,9 @@ globalThis.HUB_PROJECT_MEDIA = Object.freeze({
     position: "center",
     layout: "wide",
     fallback: "羊了个羊：碰碰消",
+    feature: "叠层碰撞消除与连锁反馈",
+    accent: "#22c55e",
+    visualKind: "game",
   }),
   "paws-level-editor": Object.freeze({
     src: "./assets/hub-showcase/paws-level-editor.webp",
@@ -47,6 +65,9 @@ globalThis.HUB_PROJECT_MEDIA = Object.freeze({
     position: "center",
     layout: "wide",
     fallback: "关卡3D编辑器",
+    feature: "3D摆牌、试玩与AI关卡生成",
+    accent: "#16a34a",
+    visualKind: "product",
   }),
   "fill-what": Object.freeze({
     src: "./assets/hub-showcase/fill-what.webp",
@@ -54,6 +75,9 @@ globalThis.HUB_PROJECT_MEDIA = Object.freeze({
     position: "center",
     layout: "standard",
     fallback: "填了个啥",
+    feature: "问答闯关与即时结果反馈",
+    accent: "#d97706",
+    visualKind: "game",
   }),
   "codex-quota-bar": Object.freeze({
     src: "./assets/hub-showcase/codex-quota-bar.webp",
@@ -61,6 +85,9 @@ globalThis.HUB_PROJECT_MEDIA = Object.freeze({
     position: "center",
     layout: "standard",
     fallback: "Codex 用量悬浮条",
+    feature: "实时查看额度与重置时间",
+    accent: "#0891b2",
+    visualKind: "data",
   }),
   "codex-thread-workbench": Object.freeze({
     src: "./assets/hub-showcase/codex-thread-workbench.webp",
@@ -68,6 +95,9 @@ globalThis.HUB_PROJECT_MEDIA = Object.freeze({
     position: "center",
     layout: "wide",
     fallback: "Codex 待确认悬浮助手",
+    feature: "悬浮收纳待确认任务并批量处理",
+    accent: "#0d9488",
+    visualKind: "product",
   }),
   "web-media-collector": Object.freeze({
     src: "./assets/hub-showcase/web-media-collector.webp",
@@ -75,6 +105,9 @@ globalThis.HUB_PROJECT_MEDIA = Object.freeze({
     position: "center",
     layout: "standard",
     fallback: "网页素材一键收桌面版",
+    feature: "识别网页素材并一键分类保存",
+    accent: "#0284c7",
+    visualKind: "media",
   }),
   "xiang-le-ge-xiang": Object.freeze({
     src: "./assets/hub-showcase/xiang-le-ge-xiang.webp",
@@ -82,6 +115,9 @@ globalThis.HUB_PROJECT_MEDIA = Object.freeze({
     position: "center",
     layout: "standard",
     fallback: "箱了个箱",
+    feature: "箱体堆叠与配对消除",
+    accent: "#7c3aed",
+    visualKind: "game",
   }),
   "minigame-project-simulator": Object.freeze({
     src: "./assets/hub-showcase/minigame-project-simulator.webp",
@@ -89,6 +125,9 @@ globalThis.HUB_PROJECT_MEDIA = Object.freeze({
     position: "center",
     layout: "wide",
     fallback: "小游戏立项工具",
+    feature: "从灵感到立项方案的结构化推演",
+    accent: "#7c3aed",
+    visualKind: "product",
   }),
   "ai-game-requirements-workshop": Object.freeze({
     src: "./assets/hub-showcase/ai-game-requirements-workshop.webp",
@@ -96,6 +135,9 @@ globalThis.HUB_PROJECT_MEDIA = Object.freeze({
     position: "center",
     layout: "wide",
     fallback: "AI游戏需求工坊",
+    feature: "需求澄清、拆解与交付规格生成",
+    accent: "#059669",
+    visualKind: "product",
   }),
   "planner-daily-quiz": Object.freeze({
     src: "./assets/hub-showcase/planner-daily-quiz.webp",
@@ -103,6 +145,9 @@ globalThis.HUB_PROJECT_MEDIA = Object.freeze({
     position: "center",
     layout: "standard",
     fallback: "每日策划知识考核",
+    feature: "每日题目、作答与知识复盘",
+    accent: "#ea580c",
+    visualKind: "data",
   }),
   "travel-generator": Object.freeze({
     src: "./assets/hub-showcase/travel-generator.webp",
@@ -110,6 +155,9 @@ globalThis.HUB_PROJECT_MEDIA = Object.freeze({
     position: "center",
     layout: "tall",
     fallback: "朋友圈发图神器",
+    feature: "旅行照片、九宫格与朋友圈文案",
+    accent: "#db2777",
+    visualKind: "media",
   }),
   "feishu-downloader": Object.freeze({
     src: "./assets/hub-showcase/feishu-downloader.webp",
@@ -117,6 +165,9 @@ globalThis.HUB_PROJECT_MEDIA = Object.freeze({
     position: "center",
     layout: "standard",
     fallback: "飞书文件批量下载插件",
+    feature: "批量识别飞书文件并稳定下载",
+    accent: "#2563eb",
+    visualKind: "product",
   }),
   "codex-reviewer": Object.freeze({
     src: "./assets/hub-showcase/codex-reviewer.webp",
@@ -124,6 +175,9 @@ globalThis.HUB_PROJECT_MEDIA = Object.freeze({
     position: "center",
     layout: "wide",
     fallback: "Codex 对话评分工具",
+    feature: "对话评分、维度分析与改进建议",
+    accent: "#0f766e",
+    visualKind: "data",
   }),
   "codex-habit-tool": Object.freeze({
     src: "./assets/hub-showcase/codex-habit-tool.webp",
@@ -131,6 +185,9 @@ globalThis.HUB_PROJECT_MEDIA = Object.freeze({
     position: "center",
     layout: "standard",
     fallback: "Codex 习惯设置工具",
+    feature: "把固定偏好写入Codex工作规则",
+    accent: "#475569",
+    visualKind: "product",
   }),
   "wanhuatong": Object.freeze({
     src: "./assets/hub-showcase/wanhuatong.webp",
@@ -138,6 +195,9 @@ globalThis.HUB_PROJECT_MEDIA = Object.freeze({
     position: "center",
     layout: "standard",
     fallback: "万话筒",
+    feature: "多语言、古文、情书与暗语改写",
+    accent: "#e11d48",
+    visualKind: "media",
   }),
   "brick-light-motion-lab": Object.freeze({
     src: "./assets/hub-showcase/brick-light-motion-lab.webp",
@@ -145,6 +205,9 @@ globalThis.HUB_PROJECT_MEDIA = Object.freeze({
     position: "center",
     layout: "wide",
     fallback: "砖块点亮动效实验台",
+    feature: "砖块触发、光效与节奏联动",
+    accent: "#eab308",
+    visualKind: "game",
   }),
   "nang-keng-pai-pai-xiang": Object.freeze({
     src: "./assets/hub-showcase/nang-keng-pai-pai-xiang.webp",
@@ -152,6 +215,9 @@ globalThis.HUB_PROJECT_MEDIA = Object.freeze({
     position: "center",
     layout: "standard",
     fallback: "馕了个馕",
+    feature: "馕饼主题配对与轻量闯关",
+    accent: "#ca8a04",
+    visualKind: "game",
   }),
   "clickflow": Object.freeze({
     src: "",
@@ -159,6 +225,9 @@ globalThis.HUB_PROJECT_MEDIA = Object.freeze({
     position: "center",
     layout: "standard",
     fallback: "ClickFlow 鼠标自动化",
+    feature: "自动化任务编排与执行",
+    accent: "#6b7280",
+    visualKind: "product",
   }),
   "pureshrink": Object.freeze({
     src: "./assets/hub-showcase/pureshrink.webp",
@@ -166,6 +235,9 @@ globalThis.HUB_PROJECT_MEDIA = Object.freeze({
     position: "center",
     layout: "standard",
     fallback: "无损压缩工坊",
+    feature: "图片视频批量压缩与体积对比",
+    accent: "#4f46e5",
+    visualKind: "media",
   }),
   "planmap": Object.freeze({
     src: "./assets/hub-showcase/planmap.webp",
@@ -173,6 +245,9 @@ globalThis.HUB_PROJECT_MEDIA = Object.freeze({
     position: "center",
     layout: "wide",
     fallback: "思维导图快捷工具",
+    feature: "对话生成脑图并持续整理计划",
+    accent: "#10b981",
+    visualKind: "data",
   }),
   "simuai": Object.freeze({
     src: "./assets/hub-showcase/simuai.webp",
@@ -180,6 +255,9 @@ globalThis.HUB_PROJECT_MEDIA = Object.freeze({
     position: "center",
     layout: "wide",
     fallback: "万象实验室",
+    feature: "文本、图片和布局的多模态创作",
+    accent: "#9333ea",
+    visualKind: "media",
   }),
   "brick-character-copy-preview": Object.freeze({
     src: "./assets/hub-showcase/brick-character-copy-preview.webp",
@@ -187,6 +265,9 @@ globalThis.HUB_PROJECT_MEDIA = Object.freeze({
     position: "center",
     layout: "standard",
     fallback: "砖块角色文案预览",
+    feature: "角色文案在砖块界面中实时预览",
+    accent: "#84cc16",
+    visualKind: "game",
   }),
   "gamespec-relay": Object.freeze({
     src: "./assets/hub-showcase/gamespec-relay.webp",
@@ -194,6 +275,9 @@ globalThis.HUB_PROJECT_MEDIA = Object.freeze({
     position: "center",
     layout: "wide",
     fallback: "需求接力站",
+    feature: "多人需求接力与AI规格收敛",
+    accent: "#0891b2",
+    visualKind: "product",
   }),
   "x-ai-codex-radar": Object.freeze({
     src: "./assets/hub-showcase/x-ai-codex-radar.webp",
@@ -201,5 +285,8 @@ globalThis.HUB_PROJECT_MEDIA = Object.freeze({
     position: "center",
     layout: "wide",
     fallback: "X 情报吧｜AI / Codex 雷达",
+    feature: "聚合AI动态、中英翻译与重点预警",
+    accent: "#f59e0b",
+    visualKind: "data",
   }),
 });

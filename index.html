@@ -19,6 +19,13 @@
     <link rel="stylesheet" href="./styles.css?v=20260827-showcase-complete-copy" />
   </head>
   <body>
+    <div class="ambient-backdrop" aria-hidden="true">
+      <span class="ambient-grid"></span>
+      <span class="ambient-scan"></span>
+    </div>
+    <div id="scrollProgress" class="scroll-progress" role="progressbar" aria-label="页面阅读进度" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
+      <span></span>
+    </div>
     <div class="app-shell">
       <header class="top-nav">
         <a class="brand" href="#overview" aria-label="回到总览">

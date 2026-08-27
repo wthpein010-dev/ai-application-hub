@@ -128,22 +128,81 @@ function validateSources(apps, sources) {
   for (const [id, source] of Object.entries(sources)) {
     if (!["file", "capture"].includes(source.mode)) throw new Error(`Unsupported source mode for ${id}`);
     if (!["standard", "wide", "tall"].includes(source.layout)) throw new Error(`Unsupported layout for ${id}`);
+    if (typeof source.feature !== "string" || source.feature.trim().length < 4) throw new Error(`Missing feature story for ${id}`);
+    if (!/^#[0-9a-f]{6}$/u.test(source.accent)) throw new Error(`Invalid project accent for ${id}`);
+    if (!["product", "data", "game", "media"].includes(source.visualKind)) throw new Error(`Invalid visual kind for ${id}`);
     if (source.mode === "file" && typeof source.source !== "string") throw new Error(`Missing file source for ${id}`);
     if (source.mode === "capture" && typeof source.entry !== "string" && typeof source.publicEntry !== "string") {
       throw new Error(`Missing capture entry for ${id}`);
     }
     if (source.publicEntry && typeof source.publicEntry !== "string") throw new Error(`Invalid public capture entry for ${id}`);
     if (source.readySelector && typeof source.readySelector !== "string") throw new Error(`Invalid ready selector for ${id}`);
+    if (source.focusSelector && typeof source.focusSelector !== "string") throw new Error(`Invalid focus selector for ${id}`);
+    if (source.clickSelector && typeof source.clickSelector !== "string") throw new Error(`Invalid click selector for ${id}`);
+    if (source.afterClickText && typeof source.afterClickText !== "string") throw new Error(`Invalid post-click text for ${id}`);
+    if (source.captureDelay !== undefined && (!Number.isFinite(source.captureDelay) || source.captureDelay < 0 || source.captureDelay > 10000)) {
+      throw new Error(`Invalid capture delay for ${id}`);
+    }
+    if (source.mode === "capture" && source.captureTime === undefined && !source.focusSelector && source.focusMode !== "auto") {
+      throw new Error(`Missing focus strategy for ${id}`);
+    }
     if (source.captureTime !== undefined && (!Number.isFinite(source.captureTime) || source.captureTime < 0)) {
       throw new Error(`Invalid capture time for ${id}`);
     }
   }
 }
 
-async function convertToWebp(sharp, input, output) {
-  await sharp(input)
-    .resize({ width: 1440, height: 900, fit: "inside", withoutEnlargement: true })
-    .webp({ quality: 82 })
+function visualBackground(kind) {
+  return {
+    data: "#eaf1f7",
+    game: "#fff1df",
+    media: "#f5edf6",
+    product: "#edf4f1",
+  }[kind] || "#edf4f1";
+}
+
+async function roundedImage(sharp, input, width, height, position = "attention", radius = 28) {
+  const image = await sharp(input)
+    .resize({ width, height, fit: "cover", position })
+    .png()
+    .toBuffer();
+  const mask = Buffer.from(`<svg width="${width}" height="${height}" xmlns="http://www.w3.org/2000/svg"><rect width="${width}" height="${height}" rx="${radius}" fill="#fff"/></svg>`);
+  return sharp(image).composite([{ input: mask, blend: "dest-in" }]).png().toBuffer();
+}
+
+function solidBuffer(sharp, width, height, background) {
+  return sharp({ create: { width, height, channels: 4, background } }).png().toBuffer();
+}
+
+async function composeProductFrame(sharp, contextInput, focusInput, output, source) {
+  const width = 1440;
+  const height = 900;
+  const context = await roundedImage(sharp, contextInput, 1060, 716, "attention", 30);
+  const focus = await roundedImage(sharp, focusInput || contextInput, 440, 516, "attention", 24);
+  const shadow = await sharp({ create: { width: 472, height: 548, channels: 4, background: "rgba(9, 24, 22, 0.22)" } })
+    .blur(18)
+    .png()
+    .toBuffer();
+  const focusBorder = await solidBuffer(sharp, 460, 536, "rgba(255,255,255,0.96)");
+  const accentRail = await solidBuffer(sharp, 14, 900, source.accent);
+  const accentMark = await solidBuffer(sharp, 150, 12, source.accent);
+  const dotOne = await roundedImage(sharp, await solidBuffer(sharp, 18, 18, source.accent), 18, 18, "center", 9);
+  const dotTwo = await roundedImage(sharp, await solidBuffer(sharp, 18, 18, "#f5b449"), 18, 18, "center", 9);
+  const dotThree = await roundedImage(sharp, await solidBuffer(sharp, 18, 18, "#ffffff"), 18, 18, "center", 9);
+
+  await sharp({ create: { width, height, channels: 4, background: visualBackground(source.visualKind) } })
+    .composite([
+      { input: accentRail, left: 0, top: 0 },
+      { input: context, left: 58, top: 92 },
+      { input: shadow, left: 930, top: 190 },
+      { input: focusBorder, left: 926, top: 174 },
+      { input: focus, left: 936, top: 184 },
+      { input: accentMark, left: 58, top: 60 },
+      { input: dotOne, left: 1192, top: 62 },
+      { input: dotTwo, left: 1226, top: 62 },
+      { input: dotThree, left: 1260, top: 62 },
+    ])
+    .webp({ quality: 84, effort: 5 })
     .toFile(output);
 }
 
@@ -161,6 +220,66 @@ export function resolveSafeCaptureUrl(id, source, baseUrl) {
   return url;
 }
 
+async function captureFocusRegion(page, source, output) {
+  const explicitSelector = source.focusSelector || (source.captureTime !== undefined ? source.readySelector : "");
+  if (explicitSelector) {
+    const explicit = page.locator(explicitSelector).first();
+    if (await explicit.count() && await explicit.isVisible()) {
+      await explicit.scrollIntoViewIfNeeded();
+      await explicit.screenshot({ path: output, type: "png" });
+      return;
+    }
+  }
+
+  const marked = await page.evaluate(() => {
+    document.querySelectorAll("[data-hub-showcase-focus]").forEach((element) => element.removeAttribute("data-hub-showcase-focus"));
+    const selectors = [
+      "[data-showcase-focus]",
+      "canvas",
+      "video",
+      "main > section",
+      "main section",
+      "[role='main'] > section",
+      ".workspace",
+      ".dashboard",
+      ".editor-shell",
+      ".editor-main",
+      ".game-board",
+      ".preview-stage",
+      ".content-panel",
+      ".result-panel",
+      ".panel",
+    ];
+    const candidates = Array.from(new Set(selectors.flatMap((selector) => Array.from(document.querySelectorAll(selector)))));
+    const viewportArea = innerWidth * innerHeight;
+    const scored = candidates.map((element) => {
+      const rect = element.getBoundingClientRect();
+      const style = getComputedStyle(element);
+      if (style.display === "none" || style.visibility === "hidden" || Number(style.opacity) === 0) return null;
+      if (rect.width < 280 || rect.height < 160 || rect.width > innerWidth * 1.35 || rect.height > innerHeight * 1.6) return null;
+      const area = rect.width * rect.height;
+      if (area < viewportArea * 0.09) return null;
+      const ratio = area / viewportArea;
+      const media = element.querySelectorAll("canvas, video, img, svg").length + (element.matches("canvas, video, img, svg") ? 2 : 0);
+      const controls = element.querySelectorAll("button, input, select, textarea, [role='button']").length;
+      const text = (element.textContent || "").trim().length;
+      const preferredArea = 1 - Math.min(0.85, Math.abs(0.48 - Math.min(1, ratio)));
+      return { element, score: area * preferredArea + media * 180000 + controls * 15000 + Math.min(text, 800) * 120 };
+    }).filter(Boolean).sort((a, b) => b.score - a.score);
+    if (!scored.length) return false;
+    scored[0].element.setAttribute("data-hub-showcase-focus", "true");
+    return true;
+  });
+
+  if (marked) {
+    const focus = page.locator('[data-hub-showcase-focus="true"]').first();
+    await focus.scrollIntoViewIfNeeded();
+    await focus.screenshot({ path: output, type: "png" });
+    return;
+  }
+  await page.screenshot({ path: output, type: "png", fullPage: false });
+}
+
 async function captureToWebp(page, sharp, id, source, baseUrl, tempDirectory, output) {
   const url = resolveSafeCaptureUrl(id, source, baseUrl);
   await page.goto(url, { waitUntil: "commit" });
@@ -172,6 +291,17 @@ async function captureToWebp(page, sharp, id, source, baseUrl, tempDirectory, ou
     content: "*, *::before, *::after { animation: none !important; transition: none !important; caret-color: transparent !important; }",
   });
   if (source.readySelector) await page.waitForSelector(source.readySelector, { state: "attached" });
+  if (source.clickSelector) {
+    await page.locator(source.clickSelector).first().click();
+    if (source.afterClickText) {
+      await page.waitForFunction(
+        ({ selector, text }) => document.querySelector(selector)?.textContent?.includes(text),
+        { selector: source.clickSelector, text: source.afterClickText },
+        { timeout: source.afterClickTimeout || 120000 },
+      );
+    }
+    if (source.captureDelay) await page.waitForTimeout(source.captureDelay);
+  }
   if (source.captureTime !== undefined) {
     await page.evaluate(async ({ selector, captureTime }) => {
       const video = document.querySelector(selector);
@@ -196,15 +326,28 @@ async function captureToWebp(page, sharp, id, source, baseUrl, tempDirectory, ou
       video.pause();
     }, { selector: source.readySelector, captureTime: source.captureTime });
   }
-  const temporaryPng = join(tempDirectory, `${Date.now()}-${Math.random().toString(16).slice(2)}.png`);
-  await page.screenshot({ path: temporaryPng, type: "png", fullPage: false });
-  await convertToWebp(sharp, temporaryPng, output);
+  const token = `${Date.now()}-${Math.random().toString(16).slice(2)}`;
+  const contextPng = join(tempDirectory, `${token}-context.png`);
+  const focusPng = join(tempDirectory, `${token}-focus.png`);
+  await page.evaluate(() => window.scrollTo(0, 0));
+  await page.screenshot({ path: contextPng, type: "png", fullPage: false });
+  await captureFocusRegion(page, source, focusPng);
+  await composeProductFrame(sharp, contextPng, focusPng, output, source);
 }
 
 function registrySource(apps, sources) {
   const entries = apps.map((app) => {
     if (app.id === "clickflow") {
-      return [app.id, { src: "", alt: "", position: "center", layout: "standard", fallback: app.name }];
+      return [app.id, {
+        src: "",
+        alt: "",
+        position: "center",
+        layout: "standard",
+        fallback: app.name,
+        feature: "自动化任务编排与执行",
+        accent: "#6b7280",
+        visualKind: "product",
+      }];
     }
     return [app.id, {
       src: `./assets/hub-showcase/${app.id}.webp`,
@@ -212,6 +355,9 @@ function registrySource(apps, sources) {
       position: "center",
       layout: sources[app.id].layout,
       fallback: app.name,
+      feature: sources[app.id].feature,
+      accent: sources[app.id].accent,
+      visualKind: sources[app.id].visualKind,
     }];
   });
   const lines = ["globalThis.HUB_PROJECT_MEDIA = Object.freeze({"];
@@ -266,7 +412,7 @@ export async function buildHubShowcaseMedia() {
       if (source.mode === "file") {
         const input = sourcePath(source.source);
         if (!existsSync(input)) throw new Error(`Missing file source for ${id}: ${relative(sourceRoot, input)}`);
-        await convertToWebp(sharp, input, output);
+        await composeProductFrame(sharp, input, input, output, source);
       } else {
         await captureToWebp(page, sharp, id, source, baseUrl, temporaryDirectory, output);
       }
