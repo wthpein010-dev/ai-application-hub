@@ -82,22 +82,27 @@ try {
   assert.match(await desktop.locator(".boundary").innerText(), /演示快照|示例数据/);
   assert.match(await desktop.locator(".secondary-button").innerText(), /需 ChatGPT 登录/);
   assert.equal(await desktop.locator("#priorityGrid .priority-card").count(), 3);
-  assert.match(await desktop.locator("#priorityGrid").innerText(), /Tibo/);
-  assert.match(await desktop.locator('[data-token-alert="true"]').innerText(), /Tibo 确认：额度已重置/);
-  assert.match(await desktop.locator('[data-token-alert="true"]').innerText(), /图片长会话多次压缩/);
+  assert.match(await desktop.locator("#priorityGrid .priority-card").first().innerText(), /Tibo 暗示：可能再次按下重置按钮/);
+  assert.match(await desktop.locator('[data-token-alert="true"]').innerText(), /提前信号，不是正式重置承诺/);
   const disclosure = desktop.locator('[data-token-alert="true"] .token-disclosure');
   assert.equal(await disclosure.evaluate((element) => element.open), false);
   await disclosure.locator("summary").click();
   assert.equal(await disclosure.evaluate((element) => element.open), true);
   assert.match(await disclosure.innerText(), /英文原帖/);
-  assert.match(await disclosure.innerText(), /Good Sunday\. Reset has been propagated to accounts and we landed some fixes to usage for things mentioned yesterday as issues we found\. You should feel a positive difference\. More to come tomorrow and will keep communicating\./);
+  assert.match(await disclosure.innerText(), /A good thing about having aged is that I feel that it’s been 20 years since I’ve pressed the reset button\. Intrigued to see if I can find it tomorrow and dust it up/);
   assert.match(await disclosure.innerText(), /中文翻译/);
-  assert.match(await disclosure.innerText(), /重置已下发到各账号/);
+  assert.match(await disclosure.innerText(), /上了年纪的一个好处是，我感觉自己已经有 20 年没按过重置按钮了。挺好奇明天能不能把它找出来，掸掸灰再用起来。/);
   assert.match(await disclosure.innerText(), /编辑整理/);
-  assert.match(await disclosure.innerText(), /精选评论 · 3 条/);
+  assert.match(await disclosure.innerText(), /没有说明重置原因、具体时间或覆盖账号/);
+  assert.match(await disclosure.innerText(), /上一轮重置历史评论 · 3 条/);
+  assert.match(await disclosure.innerText(), /不是当前暗示的回复/);
   assert.equal(await disclosure.locator(".token-comment").count(), 3);
   assert.match(await disclosure.innerText(), /Business 账号/);
-  assert.match(await disclosure.innerText(), /每两小时检查/);
+  assert.match(await disclosure.innerText(), /每天北京时间 08:00 检查/);
+  assert.equal(
+    await disclosure.locator('a[href="https://x.com/thsottiaux/status/2092862554632826968"]').count(),
+    1,
+  );
   await disclosure.locator("summary").click();
   assert.match(await desktop.locator(".token-status").innerText(), /Tibo 重点信号/);
   assert.equal(await desktop.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 1), true);
@@ -116,14 +121,15 @@ try {
   assert.equal(await desktop.locator("#resultCount").textContent(), "3");
   await desktop.click('[data-thread-id="tibo-token-reset"]');
   assert.match(await desktop.locator("#threadDetail").innerText(), /楼主/);
-  assert.equal(await desktop.locator("#threadDetail .floor").count(), 8);
-  assert.equal(await desktop.locator("#threadDetail .floor--timeline").count(), 4);
+  assert.equal(await desktop.locator("#threadDetail .floor").count(), 9);
+  assert.equal(await desktop.locator("#threadDetail .floor--timeline").count(), 5);
   assert.equal(await desktop.locator("#threadDetail .floor--comment").count(), 3);
+  assert.equal(await desktop.locator("#threadDetail .floor--comment").filter({ hasText: "上一轮重置历史评论" }).count(), 3);
   assert.match(await desktop.locator("#threadDetail").innerText(), /2pm PST/);
   assert.match(await desktop.locator("#threadDetail").innerText(), /时间线 · Tibo 此前原帖/);
   assert.match(await desktop.locator("#threadDetail").innerText(), /英文原帖/);
   assert.match(await desktop.locator("#threadDetail").innerText(), /中文翻译/);
-  assert.match(await desktop.locator("#threadDetail").innerText(), /精选评论/);
+  assert.match(await desktop.locator("#threadDetail").innerText(), /上一轮重置历史评论/);
   assert.equal(
     await desktop.locator('[data-thread-id="tibo-token-reset"] .reply-count small').textContent(),
     "评论",
@@ -135,7 +141,7 @@ try {
   for (const [query, evidence] of [
     ["hooftly", "Business 账号"],
     ["Meant 2pm obviously", "显然，我指的是下午 2 点"],
-    ["重置已下发到各账号", "Good Sunday"],
+    ["Good Sunday", "重置已下发到各账号"],
   ]) {
     await desktop.fill("#searchInput", query);
     assert.equal(await desktop.locator("#resultCount").textContent(), "1", `search should find nested X content: ${query}`);
@@ -186,6 +192,8 @@ try {
   await tablet.close();
 
   const video = await openPage({ width: 1280, height: 720 }, "/projects/x-ai-codex-radar/video/index.html");
+  assert.match(await video.locator(".hub-video-description").innerText(), /每天北京时间 08:00/);
+  assert.match(await video.locator(".hub-video-description").innerText(), /本视频记录的是上一轮重置流程/);
   await video.click("#loadVideo");
   await video.waitForFunction(() => {
     const player = document.querySelector("#introVideo");

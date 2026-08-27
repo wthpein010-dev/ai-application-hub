@@ -9,14 +9,25 @@ const threads = [
     verified: true,
     author: "Tibo",
     handle: "@thsottiaux",
-    title: "Tibo 已确认：Codex 全部付费账号额度重置已下发",
-    excerpt: "Tibo 8 月 24 日确认重置已经下发。此前说明覆盖全部付费订阅，修复针对图片长会话多次压缩、Computer History 高尾部用量、标题生成功能额外消耗和缓存命中率下降。",
-    original: "Good Sunday. Reset has been propagated to accounts and we landed some fixes to usage for things mentioned yesterday as issues we found. You should feel a positive difference. More to come tomorrow and will keep communicating.",
-    translation: "周日好。重置已下发到各账号，我们也已经上线了一些修复，处理昨天提到的用量问题。你应该会感受到明显改善。明天还会有更多进展，我们会继续同步。",
-    why: "这是可核验的 Tibo 重点信号，不是普通用户猜测；当前状态是“已重置”。此前的“即将重置”预告、时间和原因保留在来源时间线中。",
-    age: "8 月 24 日 08:46 · 已核验",
-    url: "https://x.com/thsottiaux/status/2091688655828246890",
+    title: "Tibo 暗示：可能再次按下重置按钮",
+    excerpt: "Tibo 提到明天可能找出并“掸去灰尘”的重置按钮。这是提前信号，不是正式重置承诺；具体时间、重置原因和覆盖账号待确认。",
+    original: "A good thing about having aged is that I feel that it’s been 20 years since I’ve pressed the reset button. Intrigued to see if I can find it tomorrow and dust it up",
+    translation: "上了年纪的一个好处是，我感觉自己已经有 20 年没按过重置按钮了。挺好奇明天能不能把它找出来，掸掸灰再用起来。",
+    why: "这条 Tibo 个人发言可能预告新一轮 Codex 用量重置，值得提前关注；但它不是 Codex / OpenAI 官方规则，也没有说明重置原因、具体时间或覆盖账号。",
+    age: "8 月 27 日 · 已核验 · 时间待确认",
+    url: "https://x.com/thsottiaux/status/2092862554632826968",
     replies: [
+      {
+        author: "Tibo",
+        handle: "@thsottiaux",
+        text: "上一轮重置完成确认：额度已下发到账号，并同步上线了部分用量修复。",
+        original: "Good Sunday. Reset has been propagated to accounts and we landed some fixes to usage for things mentioned yesterday as issues we found. You should feel a positive difference. More to come tomorrow and will keep communicating.",
+        translation: "周日好。重置已下发到各账号，我们也已经上线了一些修复，处理昨天提到的用量问题。你应该会感受到明显改善。明天还会有更多进展，我们会继续同步。",
+        note: "这是上一轮完成确认，用于理解当前新暗示的历史背景；它不代表这一次重置已经发生。",
+        age: "8 月 24 日 08:46",
+        url: "https://x.com/thsottiaux/status/2091688655828246890",
+        kind: "timeline",
+      },
       {
         author: "Tibo",
         handle: "@thsottiaux",
@@ -71,6 +82,7 @@ const threads = [
         age: "8 月 24 日 08:49",
         url: "https://x.com/vxbe_dev/status/2091689270499217416",
         kind: "comment",
+        context: "previous-reset",
       },
       {
         author: "hooftly",
@@ -82,6 +94,7 @@ const threads = [
         age: "8 月 24 日 08:59",
         url: "https://x.com/hooftly/status/2091691767267774755",
         kind: "comment",
+        context: "previous-reset",
       },
       {
         author: "Mark Magyar",
@@ -93,6 +106,7 @@ const threads = [
         age: "8 月 24 日 08:48",
         url: "https://x.com/notpsychxpath/status/2091689003221188680",
         kind: "comment",
+        context: "previous-reset",
       },
     ],
   },
@@ -389,8 +403,14 @@ function renderDetail(thread) {
     </article>
     ${thread.replies.map((reply, index) => {
       const isTimeline = reply.kind === "timeline";
+      const isPreviousResetComment = reply.context === "previous-reset";
       const isVerifiedReply = Boolean(reply.url);
-      return `<article class="floor ${isTimeline ? "floor--timeline" : "floor--comment"}"><div class="floor-author"><span class="reply-avatar">${escapeHtml(reply.author.slice(0, 1))}</span><strong>${escapeHtml(reply.author)}</strong><small>${escapeHtml(reply.handle)}</small></div><div class="floor-content"><div class="floor-meta"><span>${isTimeline ? "时间线 · Tibo 此前原帖" : `精选评论 · ${index + 2} 楼`}</span><time>${escapeHtml(reply.age || (isVerifiedReply ? "可核验 X 内容" : "示例留言"))}</time></div>${reply.original ? bilingualMessage(reply.original, reply.translation, reply.text, reply.note, true) : `<p>${escapeHtml(reply.text)}</p>`}${isVerifiedReply ? `<a href="${escapeHtml(reply.url)}" target="_blank" rel="noreferrer">${isTimeline ? "查看 X 原帖" : "查看 X 回复"} ↗</a>` : '<small class="example-label">示例留言 · 不可作为真实 X 引用</small>'}</div></article>`;
+      const floorLabel = isTimeline
+        ? "时间线 · Tibo 此前原帖"
+        : isPreviousResetComment
+          ? `上一轮重置历史评论 · ${index + 2} 楼`
+          : `精选评论 · ${index + 2} 楼`;
+      return `<article class="floor ${isTimeline ? "floor--timeline" : "floor--comment"}"><div class="floor-author"><span class="reply-avatar">${escapeHtml(reply.author.slice(0, 1))}</span><strong>${escapeHtml(reply.author)}</strong><small>${escapeHtml(reply.handle)}</small></div><div class="floor-content"><div class="floor-meta"><span>${floorLabel}</span><time>${escapeHtml(reply.age || (isVerifiedReply ? "可核验 X 内容" : "示例留言"))}</time></div>${reply.original ? bilingualMessage(reply.original, reply.translation, reply.text, reply.note, true) : `<p>${escapeHtml(reply.text)}</p>`}${isVerifiedReply ? `<a href="${escapeHtml(reply.url)}" target="_blank" rel="noreferrer">${isTimeline ? "查看 X 原帖" : "查看 X 回复"} ↗</a>` : '<small class="example-label">示例留言 · 不可作为真实 X 引用</small>'}</div></article>`;
     }).join("")}
     ${thread.replies.length === 0 ? '<div class="reply-empty"><strong>暂未找到可展示的示例回复</strong><p>真实站点只收录能回到 X 原链接的留言。</p></div>' : ""}`;
 }
