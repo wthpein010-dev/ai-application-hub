@@ -4,6 +4,7 @@ namespace CodexThreadWorkbench.Presentation;
 
 public sealed class ConfirmationItemViewModel : ObservableObject
 {
+    private bool _isInteractionArmed = true;
     private bool _isSending;
     private string _errorText = string.Empty;
 
@@ -15,10 +16,10 @@ public sealed class ConfirmationItemViewModel : ObservableObject
         Candidate = candidate;
         ConfirmCommand = new AsyncRelayCommand(
             () => confirmRequested(this),
-            () => !IsSending);
+            () => IsInteractionArmed && !IsSending);
         IgnoreCommand = new RelayCommand(
             () => ignoreRequested(this),
-            () => !IsSending);
+            () => IsInteractionArmed && !IsSending);
     }
 
     public ConfirmationCandidate Candidate { get; private set; }
@@ -26,6 +27,10 @@ public sealed class ConfirmationItemViewModel : ObservableObject
     public string Title => Candidate.Title;
 
     public string RequestPreview => Candidate.RequestPreview;
+
+    public bool IsInteractionArmed => _isInteractionArmed;
+
+    public bool IsActionEnabled => IsInteractionArmed && !IsSending;
 
     public bool IsSending
     {
@@ -37,6 +42,7 @@ public sealed class ConfirmationItemViewModel : ObservableObject
                 ConfirmCommand.RaiseCanExecuteChanged();
                 IgnoreCommand.RaiseCanExecuteChanged();
                 OnPropertyChanged(nameof(ActionText));
+                OnPropertyChanged(nameof(IsActionEnabled));
             }
         }
     }
@@ -77,5 +83,17 @@ public sealed class ConfirmationItemViewModel : ObservableObject
         OnPropertyChanged(nameof(Candidate));
         OnPropertyChanged(nameof(Title));
         OnPropertyChanged(nameof(RequestPreview));
+    }
+
+    internal void SetInteractionArmed(bool value)
+    {
+        if (!SetProperty(ref _isInteractionArmed, value))
+        {
+            return;
+        }
+
+        ConfirmCommand.RaiseCanExecuteChanged();
+        IgnoreCommand.RaiseCanExecuteChanged();
+        OnPropertyChanged(nameof(IsActionEnabled));
     }
 }

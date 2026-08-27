@@ -279,7 +279,7 @@ a { color: inherit; }
 
 .workflow { padding: 86px 0; border-top: 1px solid var(--line); }
 .compact-heading { margin-bottom: 30px; }
-.workflow-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; }
+.workflow-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; }
 .workflow-grid article { min-height: 220px; padding: 27px; border: 1px solid #dce6e1; border-radius: 16px; background: #fff; }
 .workflow-grid span { color: var(--green); font-size: 11px; font-weight: 950; }
 .workflow-grid h3 { margin: 48px 0 12px; font-size: 20px; }

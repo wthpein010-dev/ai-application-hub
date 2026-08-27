@@ -105,6 +105,8 @@ public sealed class WorkspaceStore
         WindowTop = settings.WindowTop,
         WindowWidth = settings.WindowWidth,
         WindowHeight = settings.WindowHeight,
+        LauncherLeft = settings.LauncherLeft,
+        LauncherTop = settings.LauncherTop,
         IsFullScreen = settings.IsFullScreen
     };
 }

@@ -69,6 +69,57 @@ public sealed class CodexAppServerClientTests
     }
 
     [Fact]
+    public async Task ListThreadsAsync_FollowsNextCursorUntilRequestedTotal()
+    {
+        await using var transport = new FakeJsonLineTransport();
+        await using var connection = new JsonRpcConnection(transport);
+        await using var client = new CodexAppServerClient(connection);
+
+        var pending = client.ListThreadsAsync(limit: 3);
+        using var firstRequest = JsonDocument.Parse(await transport.ReadWrittenAsync());
+        var firstId = firstRequest.RootElement.GetProperty("id").GetInt64();
+        transport.EnqueueIncoming(
+            $$"""
+            {
+              "id":{{firstId}},
+              "result":{
+                "data":[
+                  {"id":"thread-1","name":"任务 1","preview":"","cwd":"C:\\work","updatedAt":1784510002,"status":{"type":"idle"},"turns":[]},
+                  {"id":"thread-2","name":"任务 2","preview":"","cwd":"C:\\work","updatedAt":1784510001,"status":{"type":"idle"},"turns":[]}
+                ],
+                "nextCursor":"page-2"
+              }
+            }
+            """);
+
+        using var secondRequest = JsonDocument.Parse(
+            await transport.ReadWrittenAsync().AsTask().WaitAsync(TimeSpan.FromSeconds(1)));
+        Assert.Equal(
+            "page-2",
+            secondRequest.RootElement.GetProperty("params").GetProperty("cursor").GetString());
+        Assert.Equal(
+            1,
+            secondRequest.RootElement.GetProperty("params").GetProperty("limit").GetInt32());
+        var secondId = secondRequest.RootElement.GetProperty("id").GetInt64();
+        transport.EnqueueIncoming(
+            $$"""
+            {
+              "id":{{secondId}},
+              "result":{
+                "data":[
+                  {"id":"thread-3","name":"任务 3","preview":"","cwd":"C:\\work","updatedAt":1784510000,"status":{"type":"idle"},"turns":[]}
+                ],
+                "nextCursor":null
+              }
+            }
+            """);
+
+        var threads = await pending;
+
+        Assert.Equal(["thread-1", "thread-2", "thread-3"], threads.Select(x => x.Id));
+    }
+
+    [Fact]
     public async Task SteerTurnAsync_SendsExpectedActiveTurn()
     {
         await using var transport = new FakeJsonLineTransport();

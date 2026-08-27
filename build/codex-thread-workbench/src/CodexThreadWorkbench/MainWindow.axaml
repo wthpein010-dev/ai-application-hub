@@ -3,7 +3,7 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:primitives="using:Avalonia.Controls.Primitives"
         xmlns:views="using:CodexThreadWorkbench.Views"
-        Title="Codex 多会话工作台"
+        Title="Codex 多线程工作台"
         Width="1280"
         Height="800"
         MinWidth="900"
@@ -34,7 +34,7 @@
           <StackPanel Margin="11,0,0,0" VerticalAlignment="Center">
             <TextBlock FontSize="16"
                        FontWeight="SemiBold"
-                       Text="Codex 多会话" />
+                       Text="Codex 多线程" />
             <StackPanel Orientation="Horizontal">
               <Ellipse Width="6"
                        Height="6"
@@ -59,6 +59,11 @@
         <StackPanel Grid.Column="2"
                     VerticalAlignment="Center"
                     Orientation="Horizontal">
+          <Button x:Name="CollapseButton"
+                  Classes="toolbar"
+                  Click="CollapseButton_OnClick"
+                  Content="收起"
+                  IsVisible="False" />
           <Button Classes="toolbar"
                   Command="{Binding ToggleFullScreenCommand}"
                   Content="{Binding WindowModeText}" />

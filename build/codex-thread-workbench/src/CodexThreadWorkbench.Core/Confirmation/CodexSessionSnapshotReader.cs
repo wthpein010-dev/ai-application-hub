@@ -143,11 +143,16 @@ public sealed class CodexSessionSnapshotReader : IConfirmationThreadReader
 
         var messages = new List<ChatMessage>();
         var latestTurnStatus = ThreadStatusKind.NotLoaded;
+        string? activeTurnId = null;
         foreach (var line in content.Split(
                      '\n',
                      StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries))
         {
-            ApplyLine(line, messages, ref latestTurnStatus);
+            ApplyLine(
+                line,
+                messages,
+                ref latestTurnStatus,
+                ref activeTurnId);
         }
 
         var status = latestTurnStatus == ThreadStatusKind.NotLoaded
@@ -157,13 +162,15 @@ public sealed class CodexSessionSnapshotReader : IConfirmationThreadReader
             summary,
             messages,
             status,
+            ActiveTurnId: activeTurnId,
             LatestTurnStatus: latestTurnStatus);
     }
 
     private static void ApplyLine(
         string line,
         List<ChatMessage> messages,
-        ref ThreadStatusKind latestTurnStatus)
+        ref ThreadStatusKind latestTurnStatus,
+        ref string? activeTurnId)
     {
         try
         {
@@ -178,13 +185,27 @@ public sealed class CodexSessionSnapshotReader : IConfirmationThreadReader
             var payloadType = GetString(payload, "type");
             if (rootType == "event_msg")
             {
-                latestTurnStatus = payloadType switch
+                switch (payloadType)
                 {
-                    "task_started" => ThreadStatusKind.Running,
-                    "task_complete" => ThreadStatusKind.Completed,
-                    "turn_aborted" => ThreadStatusKind.Interrupted,
-                    _ => latestTurnStatus
-                };
+                    case "task_started":
+                        latestTurnStatus = ThreadStatusKind.Running;
+                        activeTurnId = GetString(payload, "turn_id");
+                        if (string.IsNullOrWhiteSpace(activeTurnId))
+                        {
+                            activeTurnId = null;
+                        }
+
+                        break;
+                    case "task_complete":
+                        latestTurnStatus = ThreadStatusKind.Completed;
+                        activeTurnId = null;
+                        break;
+                    case "turn_aborted":
+                        latestTurnStatus = ThreadStatusKind.Interrupted;
+                        activeTurnId = null;
+                        break;
+                }
+
                 return;
             }
 

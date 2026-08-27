@@ -8,6 +8,19 @@ namespace CodexThreadWorkbench.Desktop.Tests;
 public sealed class WindowLifecycleTests
 {
     [AvaloniaFact]
+    public void MainWindow_ShowsCollapseControlOnlyInFloatingMode()
+    {
+        var window = new MainWindow();
+        var collapseButton = window.FindControl<Button>("CollapseButton");
+        Assert.NotNull(collapseButton);
+        Assert.False(collapseButton.IsVisible);
+
+        window.CollapseToLauncherOnClose = true;
+
+        Assert.True(collapseButton.IsVisible);
+    }
+
+    [AvaloniaFact]
     public void MainWindow_FollowsViewModelFullScreenState()
     {
         var path = Path.Combine(Path.GetTempPath(), $"{Guid.NewGuid():N}.json");
@@ -43,6 +56,37 @@ public sealed class WindowLifecycleTests
         window.Close();
 
         Assert.Equal(1, shutdownCalls);
+    }
+
+    [AvaloniaFact]
+    public async Task MainWindow_InFloatingMode_CloseOnlyCollapsesToLauncher()
+    {
+        var path = Path.Combine(Path.GetTempPath(), $"{Guid.NewGuid():N}.json");
+        await using var viewModel = new MainViewModel(
+            new NoopClient(),
+            new WorkspaceStore(path));
+        var window = new MainWindow
+        {
+            DataContext = viewModel,
+            CollapseToLauncherOnClose = true
+        };
+        var shutdownCalls = 0;
+        var collapsedCalls = 0;
+        window.ShutdownAsync = () =>
+        {
+            shutdownCalls++;
+            return Task.CompletedTask;
+        };
+        window.CollapsedToLauncher += () => collapsedCalls++;
+        window.Show();
+
+        window.Close();
+        await Task.Delay(50);
+
+        Assert.False(window.IsVisible);
+        Assert.Equal(1, collapsedCalls);
+        Assert.Equal(0, shutdownCalls);
+        window.CloseForShutdown();
     }
 
     private sealed class NoopClient : ICodexThreadClient

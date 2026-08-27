@@ -43,8 +43,11 @@ function parseCues(contents) {
 test("Confirmation Bar video page lazy-loads MP4 with default Chinese captions", () => {
   const html = readFileSync(join(videoRoot, "index.html"), "utf8");
   assert.match(html, /Codex 待确认悬浮助手/);
+  assert.match(html, /v2\.1\.8/);
   assert.match(html, /贴顶收纳/);
   assert.match(html, /一键全部确认/);
+  assert.match(html, /关闭保护/);
+  assert.match(html, /一分钟自恢复/);
   assert.match(html, /iOS/);
   assert.match(html, /id="loadVideo"/);
   assert.match(html, /data-src="\.\/codex-thread-workbench-demo\.mp4"/);
@@ -101,7 +104,8 @@ test("Confirmation Bar script and captions cover seven non-overlapping single-li
     "自动弹出",
     "逐条确认",
     "一键全部确认",
-    "扫描异常",
+    "关闭保护",
+    "自动恢复",
     "Windows",
     "macOS",
     "iOS",

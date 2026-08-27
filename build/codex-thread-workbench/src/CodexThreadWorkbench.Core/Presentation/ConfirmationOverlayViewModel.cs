@@ -2,7 +2,6 @@ using System.Collections.ObjectModel;
 using System.Diagnostics;
 using CodexThreadWorkbench.Codex;
 using CodexThreadWorkbench.Confirmation;
-using CodexThreadWorkbench.Infrastructure;
 
 namespace CodexThreadWorkbench.Presentation;
 
@@ -12,14 +11,15 @@ public sealed class ConfirmationOverlayViewModel : ObservableObject, IAsyncDispo
 
     private readonly ICodexThreadClient _client;
     private readonly IConfirmationMonitor _monitor;
-    private readonly ConfirmationDetector _detector;
     private readonly IConfirmationMessageFallback? _messageFallback;
+    private readonly SemaphoreSlim _desktopDeliveryGate = new(1, 1);
     private readonly IConfirmationThreadReader _threadReader;
     private readonly TimeSpan _verificationTimeout;
     private readonly TimeSpan _verificationPollInterval;
     private readonly Dictionary<string, Task<bool>> _preloadTasks =
         new(StringComparer.Ordinal);
     private readonly SynchronizationContext? _synchronizationContext;
+    private bool _isInteractionArmed = true;
     private bool _isConfirmingAll;
     private string _confirmAllText = "一键全部确认";
     private string _monitorErrorText;
@@ -42,12 +42,11 @@ public sealed class ConfirmationOverlayViewModel : ObservableObject, IAsyncDispo
         _verificationPollInterval = verificationPollInterval ??
                                     TimeSpan.FromMilliseconds(200);
         ArgumentNullException.ThrowIfNull(detector);
-        _detector = detector;
         _synchronizationContext = SynchronizationContext.Current;
         _monitorErrorText = monitor.ErrorText;
         ConfirmAllCommand = new AsyncRelayCommand(
             ConfirmAllAsync,
-            () => HasItems && !IsConfirmingAll);
+            () => IsInteractionArmed && HasItems && !IsConfirmingAll);
         _monitor.CandidatesChanged += OnCandidatesChanged;
         _monitor.ErrorChanged += OnErrorChanged;
         ApplyCandidates(_monitor.Candidates);
@@ -55,9 +54,22 @@ public sealed class ConfirmationOverlayViewModel : ObservableObject, IAsyncDispo
 
     public ObservableCollection<ConfirmationItemViewModel> Items { get; } = [];
 
+    public event Action<string>? ActionAttempted;
+
     public bool HasItems => Items.Count > 0;
 
     public bool RequiresAttention => HasItems || HasMonitorError;
+
+    public string BadgeText => Items.Count switch
+    {
+        0 => string.Empty,
+        > 99 => "99+",
+        _ => Items.Count.ToString(System.Globalization.CultureInfo.InvariantCulture)
+    };
+
+    public bool IsInteractionArmed => _isInteractionArmed;
+
+    public bool CanConfirmAll => IsInteractionArmed && HasItems && !IsConfirmingAll;
 
     public string CountText => HasItems
         ? $"待确认 · {Items.Count}"
@@ -73,6 +85,7 @@ public sealed class ConfirmationOverlayViewModel : ObservableObject, IAsyncDispo
             if (SetProperty(ref _isConfirmingAll, value))
             {
                 ConfirmAllCommand.RaiseCanExecuteChanged();
+                OnPropertyChanged(nameof(CanConfirmAll));
             }
         }
     }
@@ -101,24 +114,42 @@ public sealed class ConfirmationOverlayViewModel : ObservableObject, IAsyncDispo
 
     public AsyncRelayCommand ConfirmAllCommand { get; }
 
+    public void SetInteractionArmed(bool value)
+    {
+        if (!SetProperty(ref _isInteractionArmed, value))
+        {
+            return;
+        }
+
+        foreach (var item in Items)
+        {
+            item.SetInteractionArmed(value);
+        }
+
+        ConfirmAllCommand.RaiseCanExecuteChanged();
+        OnPropertyChanged(nameof(CanConfirmAll));
+    }
+
     public async Task ConfirmAsync(ConfirmationItemViewModel item)
     {
+        if (!IsInteractionArmed)
+        {
+            ActionAttempted?.Invoke($"confirm-blocked:{item.Candidate.ThreadId}");
+            return;
+        }
+
+        ActionAttempted?.Invoke($"confirm-start:{item.Candidate.ThreadId}");
+
         item.IsSending = true;
         item.ErrorText = string.Empty;
         try
         {
             var threadId = item.Candidate.ThreadId;
-            var current = _detector.Detect(
-                await ReadCandidateStateAsync(item.Candidate));
-            if (current?.MessageId != item.Candidate.MessageId)
+            if (_messageFallback is not null)
             {
-                _monitor.MarkHandled(
-                    item.Candidate.ThreadId,
-                    item.Candidate.MessageId);
-                return;
+                await SendThroughDesktopAsync(threadId);
             }
-
-            try
+            else
             {
                 if (!await EnsureThreadPreloadedAsync(threadId))
                 {
@@ -129,11 +160,6 @@ public sealed class ConfirmationOverlayViewModel : ObservableObject, IAsyncDispo
                 await _client.StartTurnAsync(
                     threadId,
                     ConfirmationMessage);
-            }
-            catch (JsonRpcException error) when (
-                _messageFallback is not null && IsActiveWriterConflict(error))
-            {
-                await _messageFallback.SendAsync(threadId, ConfirmationMessage);
             }
 
             await VerifyDeliveryAsync(item.Candidate);
@@ -151,15 +177,25 @@ public sealed class ConfirmationOverlayViewModel : ObservableObject, IAsyncDispo
         }
     }
 
-    public void Ignore(ConfirmationItemViewModel item) =>
+    public void Ignore(ConfirmationItemViewModel item)
+    {
+        if (!IsInteractionArmed)
+        {
+            ActionAttempted?.Invoke($"ignore-blocked:{item.Candidate.ThreadId}");
+            return;
+        }
+
+        ActionAttempted?.Invoke($"ignore-start:{item.Candidate.ThreadId}");
         _monitor.MarkHandled(
             item.Candidate.ThreadId,
             item.Candidate.MessageId);
+    }
 
     public async Task ConfirmAllAsync()
     {
-        if (IsConfirmingAll)
+        if (!IsInteractionArmed || IsConfirmingAll)
         {
+            ActionAttempted?.Invoke("confirm-all-blocked");
             return;
         }
 
@@ -169,6 +205,7 @@ public sealed class ConfirmationOverlayViewModel : ObservableObject, IAsyncDispo
             return;
         }
 
+        ActionAttempted?.Invoke($"confirm-all-start:{pending.Length}");
         IsConfirmingAll = true;
         try
         {
@@ -224,7 +261,11 @@ public sealed class ConfirmationOverlayViewModel : ObservableObject, IAsyncDispo
         for (var targetIndex = 0; targetIndex < ordered.Length; targetIndex++)
         {
             var candidate = ordered[targetIndex];
-            _ = EnsureThreadPreloadedAsync(candidate.ThreadId);
+            if (_messageFallback is null)
+            {
+                _ = EnsureThreadPreloadedAsync(candidate.ThreadId);
+            }
+
             var existing = Items.FirstOrDefault(item =>
                 item.Candidate.ThreadId == candidate.ThreadId &&
                 item.Candidate.MessageId == candidate.MessageId);
@@ -234,6 +275,7 @@ public sealed class ConfirmationOverlayViewModel : ObservableObject, IAsyncDispo
                     candidate,
                     ConfirmAsync,
                     Ignore);
+                existing.SetInteractionArmed(IsInteractionArmed);
                 Items.Insert(targetIndex, existing);
             }
             else
@@ -250,6 +292,8 @@ public sealed class ConfirmationOverlayViewModel : ObservableObject, IAsyncDispo
         OnPropertyChanged(nameof(HasItems));
         OnPropertyChanged(nameof(RequiresAttention));
         OnPropertyChanged(nameof(CountText));
+        OnPropertyChanged(nameof(BadgeText));
+        OnPropertyChanged(nameof(CanConfirmAll));
         ConfirmAllCommand.RaiseCanExecuteChanged();
     }
 
@@ -286,7 +330,14 @@ public sealed class ConfirmationOverlayViewModel : ObservableObject, IAsyncDispo
         {
             try
             {
-                var state = await ReadCandidateStateAsync(candidate);
+                var state = await _threadReader.ReadThreadAsync(
+                    new Models.ThreadSummary(
+                        candidate.ThreadId,
+                        candidate.Title,
+                        candidate.RequestPreview,
+                        string.Empty,
+                        candidate.UpdatedAt,
+                        Models.ThreadStatusKind.NotLoaded));
                 lastReadError = null;
                 if (HasConfirmationAfterCandidate(state, candidate.MessageId))
                 {
@@ -318,17 +369,6 @@ public sealed class ConfirmationOverlayViewModel : ObservableObject, IAsyncDispo
             $"未确认消息已发送到对应任务{detail}，请重试。");
     }
 
-    private Task<Models.ThreadCardState> ReadCandidateStateAsync(
-        ConfirmationCandidate candidate) =>
-        _threadReader.ReadThreadAsync(
-            new Models.ThreadSummary(
-                candidate.ThreadId,
-                candidate.Title,
-                candidate.RequestPreview,
-                string.Empty,
-                candidate.UpdatedAt,
-                Models.ThreadStatusKind.NotLoaded));
-
     private static bool HasConfirmationAfterCandidate(
         Models.ThreadCardState state,
         string candidateMessageId)
@@ -358,11 +398,18 @@ public sealed class ConfirmationOverlayViewModel : ObservableObject, IAsyncDispo
                     StringComparison.Ordinal));
     }
 
-    private static bool IsActiveWriterConflict(JsonRpcException error) =>
-        error.Code == -32600 &&
-        error.Message.Contains(
-            "active writer",
-            StringComparison.OrdinalIgnoreCase);
+    private async Task SendThroughDesktopAsync(string threadId)
+    {
+        await _desktopDeliveryGate.WaitAsync();
+        try
+        {
+            await _messageFallback!.SendAsync(threadId, ConfirmationMessage);
+        }
+        finally
+        {
+            _desktopDeliveryGate.Release();
+        }
+    }
 
     private void Dispatch(Action action)
     {

@@ -15,6 +15,7 @@ public partial class MainWindow : Window
     private Task? _shutdownTask;
     private bool _isClosingAfterShutdown;
     private bool _isApplyingFullScreen;
+    private bool _collapseToLauncherOnClose;
 
     public MainWindow()
     {
@@ -29,6 +30,22 @@ public partial class MainWindow : Window
     }
 
     public Func<Task>? ShutdownAsync { get; set; }
+
+    public bool CollapseToLauncherOnClose
+    {
+        get => _collapseToLauncherOnClose;
+        set
+        {
+            _collapseToLauncherOnClose = value;
+            var button = this.FindControl<Button>("CollapseButton");
+            if (button is not null)
+            {
+                button.IsVisible = value;
+            }
+        }
+    }
+
+    public event Action? CollapsedToLauncher;
 
     public void ApplySavedBounds(MainViewModel viewModel)
     {
@@ -57,6 +74,14 @@ public partial class MainWindow : Window
 
     protected override void OnClosing(WindowClosingEventArgs e)
     {
+        if (!_isClosingAfterShutdown && CollapseToLauncherOnClose)
+        {
+            e.Cancel = true;
+            CollapseToLauncher();
+            base.OnClosing(e);
+            return;
+        }
+
         if (_isClosingAfterShutdown || _viewModel is null)
         {
             base.OnClosing(e);
@@ -68,6 +93,13 @@ public partial class MainWindow : Window
         _boundsTimer.Stop();
         _shutdownTask ??= ShutdownAndCloseAsync();
         base.OnClosing(e);
+    }
+
+    public void CloseForShutdown()
+    {
+        _isClosingAfterShutdown = true;
+        _boundsTimer.Stop();
+        Close();
     }
 
     private void InitializeComponent() => AvaloniaXamlLoader.Load(this);
@@ -168,6 +200,22 @@ public partial class MainWindow : Window
         {
             await _viewModel.SwapOpenThreadsAsync(e.SourceThreadId, e.TargetThreadId);
         }
+    }
+
+    private void CollapseButton_OnClick(
+        object? sender,
+        Avalonia.Interactivity.RoutedEventArgs e) =>
+        CollapseToLauncher();
+
+    private void CollapseToLauncher()
+    {
+        if (!IsVisible)
+        {
+            return;
+        }
+
+        Hide();
+        CollapsedToLauncher?.Invoke();
     }
 
     private async Task ShutdownAndCloseAsync()

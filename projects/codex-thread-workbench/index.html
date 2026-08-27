@@ -3,12 +3,12 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <meta name="description" content="Codex 待确认悬浮助手：有待确认任务时自动弹出，一键把继续消息发送到对应 Codex 任务。" />
+  <meta name="description" content="Codex 待确认悬浮助手 v2.1.8：有待确认任务时自动弹出，支持关闭保护、单实例和 Windows 一分钟自恢复。" />
   <meta name="theme-color" content="#071a16" />
   <link rel="icon" href="data:," />
   <title>Codex 待确认悬浮助手</title>
   <link rel="stylesheet" href="../../assets/subpage-shell.css" />
-  <link rel="stylesheet" href="./styles.css?v=20260824-v200" />
+  <link rel="stylesheet" href="./styles.css?v=20260827-v218" />
 </head>
 <body class="hub-subpage">
   <header class="site-header">
@@ -22,9 +22,9 @@
   <main>
     <section class="hero" aria-labelledby="heroTitle">
       <div class="hero-copy">
-        <p class="eyebrow"><span>v2.0.0</span> 常驻桌面，不漏掉下一步</p>
+        <p class="eyebrow"><span>v2.1.8</span> 常驻桌面，不漏掉下一步</p>
         <h1 id="heroTitle">任务跑完了，<br /><em>确认不用再找。</em></h1>
-        <p class="hero-lede">它在没有待确认时收进屏幕上边缘，只留一条 10 像素绿色把手；发现可继续的 Codex 任务后自动弹出，直接逐条确认或一键全部确认。</p>
+        <p class="hero-lede">它在没有待确认时收进屏幕上边缘，只留一条 10 像素绿色把手；发现可继续的 Codex 任务后自动弹出。v2.1.8 还加入关闭保护、单实例和 Windows 一分钟自恢复。</p>
         <div class="hero-actions" aria-label="发布入口">
           <a class="action-primary" href="./video/index.html">观看视频</a>
           <a href="https://wthpein010-dev.github.io/ai-application-hub/projects/codex-thread-workbench/download/">Windows 下载</a>
@@ -33,6 +33,7 @@
         </div>
         <ul class="hero-points" aria-label="产品特性">
           <li><span aria-hidden="true">✓</span> 2 秒常驻扫描</li>
+          <li><span aria-hidden="true">✓</span> 关闭保护与自恢复</li>
           <li><span aria-hidden="true">✓</span> 发送后落盘核验</li>
           <li><span aria-hidden="true">✓</span> 不保存聊天正文</li>
         </ul>
@@ -44,7 +45,7 @@
           <div class="hero-window-bar"><i></i><i></i><i></i><span>桌面顶部</span></div>
           <div class="mini-overlay">
             <div class="mini-head"><span><i></i> 待确认 · 2</span><b>始终置顶</b></div>
-            <div class="mini-task"><span>发布 v2.0.0</span><button type="button" tabindex="-1">确认继续</button></div>
+            <div class="mini-task"><span>发布 v2.1.8</span><button type="button" tabindex="-1">确认继续</button></div>
             <div class="mini-task"><span>完善演示站</span><button type="button" tabindex="-1">确认继续</button></div>
             <div class="mini-all">一键全部确认</div>
           </div>
@@ -104,8 +105,9 @@
           <div class="scenario-buttons">
             <button type="button" data-action="reveal-idle"><span>01</span><b>展开空闲状态</b><small>查看常驻扫描状态</small></button>
             <button type="button" data-action="simulate-candidates"><span>02</span><b>模拟待确认出现</b><small>自动弹出两条候选</small></button>
-            <button type="button" data-action="simulate-error"><span>03</span><b>模拟扫描异常</b><small>错误时禁止误确认</small></button>
-            <button type="button" data-action="reset-demo"><span>04</span><b>重置演示</b><small>清空并收进屏幕顶部</small></button>
+            <button type="button" data-action="simulate-close"><span>03</span><b>模拟窗口关闭</b><small>验证关闭保护与恢复监控</small></button>
+            <button type="button" data-action="simulate-error"><span>04</span><b>模拟扫描异常</b><small>错误时禁止误确认</small></button>
+            <button type="button" data-action="reset-demo"><span>05</span><b>重置演示</b><small>清空并收进屏幕顶部</small></button>
           </div>
           <div class="activity-card"><span>最近动作</span><p data-role="activity-log" aria-live="polite">演示已就绪，悬浮栏当前处于收纳状态。</p></div>
         </aside>
@@ -118,19 +120,20 @@
         <article><span>01</span><h3>常驻扫描</h3><p>后台定期刷新最近任务；无候选时收进屏幕边缘，不占桌面空间。</p></article>
         <article><span>02</span><h3>自动弹出</h3><p>发现已结束、被中断或明确等待下一条指令的任务后，悬浮栏自动展开。</p></article>
         <article><span>03</span><h3>立即续做</h3><p>点击后直接向对应任务发送继续消息，并通过本机记录核验是否真正写入。</p></article>
+        <article><span>04</span><h3>保持常驻</h3><p>普通关闭请求会被拦截；Windows 恢复任务登录时启动，并每分钟检查恢复异常退出的进程。</p></article>
       </div>
     </section>
 
     <section class="platform-note" aria-labelledby="platformTitle">
       <div><p class="eyebrow">跨平台边界</p><h2 id="platformTitle">桌面负责真实任务，iOS 负责随手体验</h2></div>
       <div class="platform-grid">
-        <article class="platform-native"><span>Windows 与 macOS</span><strong>原生桌面应用</strong><p>可连接电脑本机 Codex、常驻扫描、贴顶悬浮，并把确认继续消息发送回对应任务。</p></article>
+        <article class="platform-native"><span>Windows 与 macOS</span><strong>原生桌面应用</strong><p>可连接电脑本机 Codex、常驻扫描、贴顶悬浮，并把确认继续消息发送回对应任务。Windows 包另附登录启动与每分钟恢复安装脚本。</p></article>
         <article><span>iPhone 与 iPad</span><strong>可安装 Web App</strong><p>可添加到主屏幕并离线体验流程；受 iOS 沙箱限制，不能置顶悬浮、读取电脑任务或启动 Codex CLI。</p></article>
       </div>
     </section>
   </main>
 
-  <footer class="site-footer"><span>Codex 待确认悬浮助手 · v2.0.0</span><a href="../../index.html#apps">返回应用列表</a></footer>
-  <script src="./app.js?v=20260824-v200"></script>
+  <footer class="site-footer"><span>Codex 待确认悬浮助手 · v2.1.8</span><a href="../../index.html#apps">返回应用列表</a></footer>
+  <script src="./app.js?v=20260827-v218"></script>
 </body>
 </html>

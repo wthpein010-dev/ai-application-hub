@@ -1,0 +1,109 @@
+<Window x:Class="CodexThreadWorkbench.FloatingLauncherWindow"
+        xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Codex 多线程工具"
+        Width="72"
+        Height="72"
+        MinWidth="72"
+        MinHeight="72"
+        MaxWidth="72"
+        MaxHeight="72"
+        CanResize="False"
+        ShowInTaskbar="False"
+        ShowActivated="False"
+        Topmost="True"
+        SystemDecorations="None"
+        TransparencyLevelHint="Transparent"
+        Background="Transparent">
+  <Window.Styles>
+    <Style Selector="Border.launcher:pointerover">
+      <Setter Property="Background" Value="#ECF9F4" />
+      <Setter Property="BorderBrush" Value="#36B982" />
+      <Setter Property="BoxShadow" Value="0 10 28 0 #5C173E31" />
+    </Style>
+  </Window.Styles>
+  <Border x:Name="LauncherSurface"
+          Classes="launcher"
+          Width="60"
+          Height="60"
+          Margin="6"
+          Background="#F7FCFA"
+          BorderBrush="#78D5AE"
+          BorderThickness="1"
+          BoxShadow="0 8 24 0 #4D1D4536"
+          CornerRadius="22"
+          Cursor="Hand"
+          PointerPressed="LauncherSurface_OnPointerPressed"
+          PointerReleased="LauncherSurface_OnPointerReleased"
+          PointerCaptureLost="LauncherSurface_OnPointerCaptureLost"
+          ToolTip.Tip="打开 Codex 多线程工作台">
+    <Border.ContextMenu>
+      <ContextMenu>
+        <MenuItem x:Name="OpenWorkbenchMenuItem"
+                  Header="打开工作台"
+                  Click="OpenWorkbenchMenuItem_OnClick" />
+        <MenuItem x:Name="FullScreenMenuItem"
+                  Header="全屏打开"
+                  Click="FullScreenMenuItem_OnClick" />
+        <MenuItem x:Name="RefreshMenuItem"
+                  Header="刷新任务"
+                  Click="RefreshMenuItem_OnClick" />
+        <Separator />
+        <MenuItem x:Name="ExitMenuItem"
+                  Header="退出多线程工具"
+                  Click="ExitMenuItem_OnClick" />
+      </ContextMenu>
+    </Border.ContextMenu>
+
+    <Grid>
+      <Border x:Name="AttentionHalo"
+              Margin="3"
+              Background="#E3F6ED"
+              CornerRadius="18"
+              IsVisible="{Binding RequiresAttention}" />
+      <Border Margin="8"
+              Background="#249D6C"
+              CornerRadius="16">
+        <Grid>
+          <TextBlock x:Name="LauncherGlyph"
+                     HorizontalAlignment="Center"
+                     VerticalAlignment="Center"
+                     FontFamily="{StaticResource AppFontFamily}"
+                     FontSize="21"
+                     FontWeight="Bold"
+                     Foreground="White"
+                     Text="C" />
+          <Ellipse Width="7"
+                   Height="7"
+                   Margin="0,0,6,6"
+                   HorizontalAlignment="Right"
+                   VerticalAlignment="Bottom"
+                   Fill="#A7F3D0"
+                   Stroke="#FFFFFF"
+                   StrokeThickness="1" />
+        </Grid>
+      </Border>
+
+      <Border x:Name="AttentionBadge"
+              MinWidth="21"
+              Height="21"
+              Padding="5,0"
+              Margin="0,-5,-5,0"
+              HorizontalAlignment="Right"
+              VerticalAlignment="Top"
+              Background="#E86E45"
+              BorderBrush="White"
+              BorderThickness="2"
+              CornerRadius="11"
+              IsVisible="{Binding HasItems}">
+        <TextBlock HorizontalAlignment="Center"
+                   VerticalAlignment="Center"
+                   FontFamily="{StaticResource AppFontFamily}"
+                   FontSize="10"
+                   FontWeight="Bold"
+                   Foreground="White"
+                   Text="{Binding BadgeText}" />
+      </Border>
+    </Grid>
+  </Border>
+</Window>

@@ -30,7 +30,7 @@ test("Mac download page offers Apple silicon and Intel packages", () => {
   const html = readFileSync(join(macRoot, "index.html"), "utf8");
 
   assert.match(html, /Codex 待确认悬浮助手/);
-  assert.match(html, /v2\.0\.0/);
+  assert.match(html, /v2\.1\.8/);
   assert.match(html, /Apple\s*(?:芯片|silicon)/i);
   assert.match(html, /arm64/i);
   assert.match(html, /Intel/i);

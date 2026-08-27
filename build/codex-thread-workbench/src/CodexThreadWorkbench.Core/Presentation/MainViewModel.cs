@@ -1,5 +1,6 @@
 using System.Collections.ObjectModel;
 using CodexThreadWorkbench.Codex;
+using CodexThreadWorkbench.Confirmation;
 using CodexThreadWorkbench.Models;
 using CodexThreadWorkbench.Persistence;
 
@@ -11,9 +12,11 @@ public sealed class MainViewModel : ObservableObject, IAsyncDisposable
     private static readonly TimeSpan StatusRefreshInterval = TimeSpan.FromSeconds(2);
     private readonly ICodexThreadClient _client;
     private readonly WorkspaceStore _workspaceStore;
+    private readonly IConfirmationThreadReader _statusReader;
     private readonly bool _ownsClient;
     private readonly SynchronizationContext? _synchronizationContext;
     private readonly object _disposeGate = new();
+    private readonly SemaphoreSlim _settingsLoadGate = new(1, 1);
     private readonly SemaphoreSlim _workspaceSaveGate = new(1, 1);
     private readonly CancellationTokenSource _statusRefreshCancellation = new();
     private Task? _disposeTask;
@@ -22,6 +25,7 @@ public sealed class MainViewModel : ObservableObject, IAsyncDisposable
     private bool _isPickerOpen;
     private bool _isConnecting;
     private bool _isFullScreen;
+    private bool _settingsLoaded;
     private string _globalError = string.Empty;
     private int _gridRows = 1;
     private int _gridColumns = 1;
@@ -29,10 +33,12 @@ public sealed class MainViewModel : ObservableObject, IAsyncDisposable
     public MainViewModel(
         ICodexThreadClient client,
         WorkspaceStore workspaceStore,
-        bool ownsClient = true)
+        bool ownsClient = true,
+        IConfirmationThreadReader? statusReader = null)
     {
         _client = client;
         _workspaceStore = workspaceStore;
+        _statusReader = statusReader ?? new ClientConfirmationThreadReader(client);
         _ownsClient = ownsClient;
         _synchronizationContext = SynchronizationContext.Current;
         Picker = new ThreadPickerViewModel(client);
@@ -129,6 +135,10 @@ public sealed class MainViewModel : ObservableObject, IAsyncDisposable
 
     public double WindowHeight => _settings.WindowHeight;
 
+    public double? LauncherLeft => _settings.LauncherLeft;
+
+    public double? LauncherTop => _settings.LauncherTop;
+
     public AsyncRelayCommand OpenPickerCommand { get; }
 
     public RelayCommand ClosePickerCommand { get; }
@@ -138,6 +148,34 @@ public sealed class MainViewModel : ObservableObject, IAsyncDisposable
     public AsyncRelayCommand RefreshCommand { get; }
 
     public RelayCommand ToggleFullScreenCommand { get; }
+
+    public async Task LoadSettingsAsync(
+        CancellationToken cancellationToken = default)
+    {
+        if (_settingsLoaded)
+        {
+            return;
+        }
+
+        await _settingsLoadGate.WaitAsync(cancellationToken);
+        try
+        {
+            if (_settingsLoaded)
+            {
+                return;
+            }
+
+            _settings = await _workspaceStore.LoadAsync(cancellationToken);
+            _isFullScreen = _settings.IsFullScreen;
+            _settingsLoaded = true;
+            OnPropertyChanged(nameof(IsFullScreen));
+            OnPropertyChanged(nameof(WindowModeText));
+        }
+        finally
+        {
+            _settingsLoadGate.Release();
+        }
+    }
 
     public async Task InitializeAsync(CancellationToken cancellationToken = default)
     {
@@ -150,10 +188,7 @@ public sealed class MainViewModel : ObservableObject, IAsyncDisposable
                 await _client.InitializeAsync(cancellationToken);
             }
 
-            _settings = await _workspaceStore.LoadAsync(cancellationToken);
-            _isFullScreen = _settings.IsFullScreen;
-            OnPropertyChanged(nameof(IsFullScreen));
-            OnPropertyChanged(nameof(WindowModeText));
+            await LoadSettingsAsync(cancellationToken);
             var threads = await _client.ListThreadsAsync(
                 limit: 200,
                 cancellationToken: cancellationToken);
@@ -207,6 +242,18 @@ public sealed class MainViewModel : ObservableObject, IAsyncDisposable
         _settings.WindowTop = top;
         _settings.WindowWidth = width;
         _settings.WindowHeight = height;
+        _ = SaveWorkspaceInBackgroundAsync();
+    }
+
+    public void UpdateLauncherPosition(double left, double top)
+    {
+        if (!double.IsFinite(left) || !double.IsFinite(top))
+        {
+            return;
+        }
+
+        _settings.LauncherLeft = left;
+        _settings.LauncherTop = top;
         _ = SaveWorkspaceInBackgroundAsync();
     }
 
@@ -320,8 +367,15 @@ public sealed class MainViewModel : ObservableObject, IAsyncDisposable
 
         try
         {
+            var summaries = await _client.ListThreadsAsync(
+                limit: 200,
+                cancellationToken: cancellationToken);
+            var openThreadIds = threadIds.ToHashSet(StringComparer.Ordinal);
             var states = await Task.WhenAll(
-                threadIds.Select(id => _client.ReadThreadAsync(id, cancellationToken)));
+                summaries
+                    .Where(summary => openThreadIds.Contains(summary.Id))
+                    .Select(summary =>
+                        _statusReader.ReadThreadAsync(summary, cancellationToken)));
             Dispatch(() =>
             {
                 foreach (var state in states)
@@ -354,12 +408,19 @@ public sealed class MainViewModel : ObservableObject, IAsyncDisposable
         var ids = OpenThreads.Select(thread => thread.ThreadId).ToArray();
         try
         {
+            var summaries = await _client.ListThreadsAsync(limit: 200);
+            var byId = summaries.ToDictionary(
+                summary => summary.Id,
+                StringComparer.Ordinal);
             var states = await Task.WhenAll(
-                ids.Select(id => _client.ReadThreadAsync(id)));
-            for (var index = 0; index < states.Length; index++)
+                ids
+                    .Where(byId.ContainsKey)
+                    .Select(id => _statusReader.ReadThreadAsync(byId[id])));
+            foreach (var state in states)
             {
-                var current = OpenThreads.First(thread => thread.ThreadId == states[index].Summary.Id);
-                var replacement = CreateCard(states[index]);
+                var current = OpenThreads.First(
+                    thread => thread.ThreadId == state.Summary.Id);
+                var replacement = CreateCard(state);
                 var targetIndex = OpenThreads.IndexOf(current);
                 OpenThreads[targetIndex] = replacement;
             }
@@ -390,7 +451,7 @@ public sealed class MainViewModel : ObservableObject, IAsyncDisposable
         ThreadSummary summary,
         CancellationToken cancellationToken = default)
     {
-        var state = await _client.ReadThreadAsync(summary.Id, cancellationToken);
+        var state = await _statusReader.ReadThreadAsync(summary, cancellationToken);
         var card = CreateCard(state);
         card.IsMinimized = _settings.MinimizedThreadIds.Contains(
             summary.Id,
@@ -435,6 +496,8 @@ public sealed class MainViewModel : ObservableObject, IAsyncDisposable
             WindowTop = _settings.WindowTop,
             WindowWidth = _settings.WindowWidth,
             WindowHeight = _settings.WindowHeight,
+            LauncherLeft = _settings.LauncherLeft,
+            LauncherTop = _settings.LauncherTop,
             IsFullScreen = _settings.IsFullScreen
         };
         await _workspaceSaveGate.WaitAsync(cancellationToken);

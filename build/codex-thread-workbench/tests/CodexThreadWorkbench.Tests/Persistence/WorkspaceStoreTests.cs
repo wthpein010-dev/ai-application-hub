@@ -27,6 +27,8 @@ public sealed class WorkspaceStoreTests : IDisposable
             WindowTop = 80,
             WindowWidth = 1420,
             WindowHeight = 920,
+            LauncherLeft = 1640,
+            LauncherTop = 220,
             IsFullScreen = true
         };
 
@@ -39,6 +41,8 @@ public sealed class WorkspaceStoreTests : IDisposable
         Assert.Equal(expected.WindowTop, actual.WindowTop);
         Assert.Equal(expected.WindowWidth, actual.WindowWidth);
         Assert.Equal(expected.WindowHeight, actual.WindowHeight);
+        Assert.Equal(expected.LauncherLeft, actual.LauncherLeft);
+        Assert.Equal(expected.LauncherTop, actual.LauncherTop);
         Assert.True(actual.IsFullScreen);
     }
 

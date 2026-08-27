@@ -5,7 +5,6 @@ namespace CodexThreadWorkbench.Confirmation;
 
 public sealed class ConfirmationMonitor : IConfirmationMonitor
 {
-    private static readonly TimeSpan InitialScanWindow = TimeSpan.FromHours(24);
     private static readonly TimeSpan DefaultThreadReadTimeout =
         TimeSpan.FromSeconds(5);
     private const int DefaultMaximumConcurrentThreadReads = 2;
@@ -16,13 +15,12 @@ public sealed class ConfirmationMonitor : IConfirmationMonitor
     private readonly int _maxConcurrentThreadReads;
     private readonly CancellationTokenSource _cancellation = new();
     private readonly object _lifetimeGate = new();
-    private readonly Dictionary<string, DateTimeOffset> _lastEvaluated =
+    private readonly Dictionary<string, ThreadRevision> _lastEvaluated =
         new(StringComparer.Ordinal);
     private readonly Dictionary<string, ConfirmationCandidate> _candidatesByThread =
         new(StringComparer.Ordinal);
     private readonly HashSet<(string ThreadId, string MessageId)> _handled = [];
     private IReadOnlyList<ConfirmationCandidate> _candidates = [];
-    private bool _hasScanned;
     private string _errorText = string.Empty;
     private Task? _runTask;
     private Task? _disposeTask;
@@ -67,7 +65,7 @@ public sealed class ConfirmationMonitor : IConfirmationMonitor
         try
         {
             summaries = await _client.ListThreadsAsync(
-                limit: 200,
+                limit: int.MaxValue,
                 cancellationToken: cancellationToken);
             SetError(string.Empty);
         }
@@ -84,24 +82,18 @@ public sealed class ConfirmationMonitor : IConfirmationMonitor
         var summariesToRead = new List<ThreadSummary>();
         foreach (var summary in summaries)
         {
-            if (_lastEvaluated.GetValueOrDefault(summary.Id) == summary.UpdatedAt)
+            var revision = new ThreadRevision(summary.UpdatedAt, summary.Status);
+            if (_lastEvaluated.GetValueOrDefault(summary.Id) == revision)
             {
                 continue;
             }
 
-            if (!_hasScanned && summary.UpdatedAt < now - InitialScanWindow)
+            if (summary.Status is (
+                    ThreadStatusKind.NeedsApproval or
+                    ThreadStatusKind.Error or
+                    ThreadStatusKind.Offline))
             {
-                _lastEvaluated[summary.Id] = summary.UpdatedAt;
-                continue;
-            }
-
-            if (summary.Status is not (
-                    ThreadStatusKind.Idle or
-                    ThreadStatusKind.Completed or
-                    ThreadStatusKind.Interrupted or
-                    ThreadStatusKind.NotLoaded))
-            {
-                _lastEvaluated[summary.Id] = summary.UpdatedAt;
+                _lastEvaluated[summary.Id] = revision;
                 _candidatesByThread.Remove(summary.Id);
                 continue;
             }
@@ -128,7 +120,9 @@ public sealed class ConfirmationMonitor : IConfirmationMonitor
                 continue;
             }
 
-            _lastEvaluated[result.Summary.Id] = result.Summary.UpdatedAt;
+            _lastEvaluated[result.Summary.Id] = new ThreadRevision(
+                result.Summary.UpdatedAt,
+                result.Summary.Status);
             var candidate = _detector.Detect(result.State);
             if (candidate is null ||
                 _handled.Contains((candidate.ThreadId, candidate.MessageId)))
@@ -143,7 +137,6 @@ public sealed class ConfirmationMonitor : IConfirmationMonitor
             PublishCandidatesIfChanged();
         }
 
-        _hasScanned = true;
         PublishCandidatesIfChanged();
     }
 
@@ -257,4 +250,8 @@ public sealed class ConfirmationMonitor : IConfirmationMonitor
     private sealed record ThreadReadResult(
         ThreadSummary Summary,
         ThreadCardState? State);
+
+    private readonly record struct ThreadRevision(
+        DateTimeOffset UpdatedAt,
+        ThreadStatusKind Status);
 }

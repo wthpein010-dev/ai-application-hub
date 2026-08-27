@@ -1,13 +1,17 @@
-# Codex 待确认悬浮助手
+# Codex 多线程悬浮工作台
 
-Codex Confirmation Bar 是一个面向 Windows 和 macOS 的常驻桌面工具。它持续扫描本机近期 Codex 任务，把仍在等待确认、选择、补充信息或继续指令的任务集中显示在桌面最上层，并支持单条确认和一键全部确认。
+Codex 多线程悬浮工作台是一个面向 Windows 和 macOS 的常驻桌面工具。默认运行待确认悬浮栏：没有待确认任务时收入屏幕顶部，有任务时自动弹出并允许直接确认继续。完整多线程悬浮工作台作为显式可选模式保留。
 
 ## 主要能力
 
-- 常驻桌面最上层；没有候选时显示“暂无待确认 · 常驻扫描”
+- 72×72 轻量悬浮按钮常驻桌面，可拖动并自动吸附左右边缘
+- 单击展开或收起完整多线程工作台，窗口关闭时回到悬浮按钮而不退出后台
+- 右键可直接打开、全屏、刷新任务或退出
+- 橙色角标提示待确认数量，无待处理任务时保持安静
+- 每张任务卡可直接继续对话，支持拖拽交换布局并保存位置
 - 每两秒重新扫描近期普通任务，自动排除自动化任务和纯完成报告
-- 支持拖动悬浮栏改变位置
-- 支持“确认继续”“忽略”和“一键全部确认”
+- 多显示器环境中，默认固定在最左侧显示器顶部水平居中
+- 兼容模式继续提供“确认继续”“忽略”和“一键全部确认”悬浮栏
 - 固定发送：`确认，继续开始做，完成前不要停。`
 - 只有从对应任务记录中确认消息确实写入后才移除候选
 - 发送失败时保留候选并显示重试，不会把失败误报成成功
@@ -25,13 +29,17 @@ Codex Confirmation Bar 是一个面向 Windows 和 macOS 的常驻桌面工具�
 
 1. 解压 `CodexConfirmationBar-Windows-x64.zip`。
 2. 双击 `CodexConfirmationBar.exe`。
-3. 应用默认只启动待确认悬浮栏，不打开多会话主窗口。
+3. 应用默认运行待确认悬浮栏；没有候选时只在屏幕顶部保留收纳把手，有候选时自动展开。
 
-如需当前 Windows 用户登录后自动启动，可把 `CodexConfirmationBar.exe` 的快捷方式放入：
+推荐安装当前 Windows 用户的常驻恢复任务：
 
-```text
-%APPDATA%\Microsoft\Windows\Start Menu\Programs\Startup
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass `
+  -File .\Install-WindowsRecoveryTask.ps1 `
+  -ExecutablePath .\CodexConfirmationBar.exe
 ```
+
+恢复任务会在登录时启动应用，并每分钟检查一次；应用被正常关闭或外部结束后，最迟一分钟自动恢复。任务使用 `IgnoreNew` 策略，应用本身也有单实例保护，不会因重复触发出现多个悬浮栏。
 
 ## macOS 使用
 
@@ -48,6 +56,8 @@ Codex Confirmation Bar 是一个面向 Windows 和 macOS 的常驻桌面工具�
 
 ## 工作方式
 
+默认模式连接本机 Codex App Server 后运行待确认悬浮栏。显式传入 `--floating-launcher` 时，应用才显示多线程悬浮按钮；完整工作台只在第一次展开时按需初始化，任务卡和后续状态刷新都使用本地会话最后 4 MiB 的有界内容，不会周期性载入整段超长历史。拖动按钮会自动吸附到最近的左右边缘并保存位置；关闭工作台只会收起，右键悬浮按钮选择“退出多线程工具”才会结束后台进程。
+
 启动时补扫最近 24 小时的普通任务，随后持续扫描。被中断的任务会保留；正常结束的任务只有在最后回复仍明确要求确认、选择、补充信息、回复或询问是否继续时才显示。纯“已完成、已发布、验收通过”以及礼貌性的后续优化邀请不会显示。
 
 点击确认后，工具先通过官方 Codex App Server 恢复对应任务并开始新回合。若任务已有活动写入者，工具会打开精确任务深链并在确认前台应用属于 OpenAI 后提交。Windows 和 macOS 都会在任务日志中回读固定消息；没有核验到消息时，项目不会从列表消失。
@@ -56,13 +66,31 @@ Codex Confirmation Bar 是一个面向 Windows 和 macOS 的常驻桌面工具�
 
 工具不会自动同意命令执行、文件修改、连接器或其他 Codex 安全审批；这些仍需在原任务中明确处理。
 
+Windows 待确认悬浮栏会拦截普通窗口关闭请求；系统关机和明确维护退出仍正常放行。生命周期、关闭请求和未处理异常默认记录在：
+
+```text
+%LOCALAPPDATA%\CodexThreadWorkbench\logs\confirmation-overlay-lifecycle.log
+```
+
 ## 隐私
 
 应用只连接本机 `codex app-server` 并读取本地会话日志，不读取或保存 `auth.json`、密码、Token、Cookie 或私钥，不上传聊天内容，也不另建云端账户。
 
-## 兼容模式
+## 启动模式
 
-`--confirmation-overlay` 继续等价于默认启动方式。若确实需要旧版多会话主界面，可显式运行：
+默认启动即为待确认悬浮栏；旧快捷方式中的同名参数继续兼容：
+
+```powershell
+.\CodexConfirmationBar.exe --confirmation-overlay
+```
+
+若需要悬浮按钮与多线程工作台，可显式运行：
+
+```powershell
+.\CodexConfirmationBar.exe --floating-launcher
+```
+
+若需要跳过悬浮按钮并直接打开多线程工作台，可运行：
 
 ```powershell
 .\CodexConfirmationBar.exe --workbench

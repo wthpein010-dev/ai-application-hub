@@ -51,6 +51,27 @@ public sealed class CodexSessionSnapshotReaderTests : IDisposable
     }
 
     [Fact]
+    public async Task ReadThreadAsync_RunningBoundaryReturnsActiveTurnId()
+    {
+        const string threadId = "019f7444-4d4d-7771-9864-0043606d7f80";
+        var directory = Path.Combine(_sessionsRoot, "2026", "08", "25");
+        Directory.CreateDirectory(directory);
+        var path = Path.Combine(
+            directory,
+            $"rollout-2026-08-25T08-00-00-{threadId}.jsonl");
+        await File.WriteAllLinesAsync(path,
+        [
+            """{"timestamp":"2026-08-25T08:00:00Z","type":"event_msg","payload":{"type":"task_started","turn_id":"turn-running"}}"""
+        ]);
+        var reader = new CodexSessionSnapshotReader(_sessionsRoot);
+
+        var state = await reader.ReadThreadAsync(Summary(threadId));
+
+        Assert.Equal(ThreadStatusKind.Running, state.Status);
+        Assert.Equal("turn-running", state.ActiveTurnId);
+    }
+
+    [Fact]
     public async Task ReadThreadAsync_ReturnsEmptySafeStateWhenSessionIsMissing()
     {
         var summary = Summary("019f7444-4d4d-7771-9864-0043606d7f79");

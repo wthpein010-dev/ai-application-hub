@@ -99,6 +99,95 @@ public sealed class ThreadCardViewModelTests
     }
 
     [Fact]
+    public void ApplyStatusSnapshot_NonAuthoritativeRunningStatePreservesKnownTurnId()
+    {
+        var client = new FakeCodexThreadClient();
+        var viewModel = CreateViewModel(
+            client,
+            ThreadStatusKind.Running,
+            activeTurnId: "known-turn");
+        var summary = new ThreadSummary(
+            "thread-1",
+            "测试线程",
+            "预览",
+            "C:\\work",
+            DateTimeOffset.UtcNow,
+            ThreadStatusKind.Running);
+
+        viewModel.ApplyStatusSnapshot(new ThreadCardState(
+            summary,
+            [],
+            ThreadStatusKind.Running,
+            ActiveTurnId: null,
+            LatestTurnStatus: ThreadStatusKind.NotLoaded));
+
+        Assert.Equal("known-turn", viewModel.ActiveTurnId);
+        Assert.True(viewModel.IsRunning);
+    }
+
+    [Fact]
+    public void ApplyStatusSnapshot_ExplicitCompletedStateClearsKnownTurnId()
+    {
+        var client = new FakeCodexThreadClient();
+        var viewModel = CreateViewModel(
+            client,
+            ThreadStatusKind.Running,
+            activeTurnId: "known-turn");
+        var summary = new ThreadSummary(
+            "thread-1",
+            "测试线程",
+            "预览",
+            "C:\\work",
+            DateTimeOffset.UtcNow,
+            ThreadStatusKind.Completed);
+
+        viewModel.ApplyStatusSnapshot(new ThreadCardState(
+            summary,
+            [],
+            ThreadStatusKind.Completed,
+            ActiveTurnId: null,
+            LatestTurnStatus: ThreadStatusKind.Completed));
+
+        Assert.Null(viewModel.ActiveTurnId);
+        Assert.False(viewModel.IsRunning);
+    }
+
+    [Fact]
+    public async Task ApplyStatusSnapshot_PartialApprovalStateReturnsToRunningAfterApproval()
+    {
+        var client = new FakeCodexThreadClient();
+        var viewModel = CreateViewModel(
+            client,
+            ThreadStatusKind.Running,
+            activeTurnId: "known-turn");
+        using var requestId = JsonDocument.Parse("77");
+        viewModel.SetApproval(new CodexApprovalRequest(
+            requestId.RootElement.Clone(),
+            "thread-1",
+            "item/fileChange/requestApproval",
+            "允许写入文件"));
+        var summary = new ThreadSummary(
+            "thread-1",
+            "测试线程",
+            "预览",
+            "C:\\work",
+            DateTimeOffset.UtcNow,
+            ThreadStatusKind.NeedsApproval);
+
+        viewModel.ApplyStatusSnapshot(new ThreadCardState(
+            summary,
+            [],
+            ThreadStatusKind.NeedsApproval,
+            ActiveTurnId: null,
+            LatestTurnStatus: ThreadStatusKind.NotLoaded));
+        await viewModel.RespondToApprovalAsync(accept: true);
+
+        Assert.Equal("known-turn", viewModel.ActiveTurnId);
+        Assert.Equal(ThreadStatusKind.Running, viewModel.Status);
+        Assert.True(viewModel.IsRunning);
+    }
+
+    [Fact]
     public void ApplyNotification_AgentDeltaBuildsStreamingMessage()
     {
         var viewModel = CreateViewModel(

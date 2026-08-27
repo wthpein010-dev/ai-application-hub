@@ -10,25 +10,30 @@ public sealed class ConfirmationMonitorTests
         new(2026, 8, 20, 8, 0, 0, TimeSpan.Zero);
 
     [Fact]
-    public async Task FirstScan_ReadsOnlyRecentIdleThreads()
+    public async Task FirstScan_ReadsAllPotentialThreadsAndSkipsUnsupportedStatuses()
     {
         var client = new FakeCodexThreadClient();
         client.Threads.AddRange(
         [
             Summary("recent", Now.AddHours(-2), ThreadStatusKind.Idle),
             Summary("old", Now.AddHours(-25), ThreadStatusKind.Idle),
-            Summary("running", Now, ThreadStatusKind.Running)
+            Summary("running", Now, ThreadStatusKind.Running),
+            Summary("approval", Now, ThreadStatusKind.NeedsApproval)
         ]);
         client.ThreadStates["recent"] = WaitingState("recent", Now.AddHours(-2));
+        client.ThreadStates["old"] = WaitingState("old", Now.AddHours(-25));
+        client.ThreadStates["running"] = RunningState("running", Now);
         var monitor = new ConfirmationMonitor(client, new ConfirmationDetector());
 
         await monitor.ScanOnceAsync(Now);
 
-        var candidate = Assert.Single(monitor.Candidates);
-        Assert.Equal("recent", candidate.ThreadId);
+        Assert.Equal(
+            ["recent", "old"],
+            monitor.Candidates.Select(candidate => candidate.ThreadId));
         Assert.Equal(1, client.ReadCalls["recent"]);
-        Assert.False(client.ReadCalls.ContainsKey("old"));
-        Assert.False(client.ReadCalls.ContainsKey("running"));
+        Assert.Equal(1, client.ReadCalls["old"]);
+        Assert.Equal(1, client.ReadCalls["running"]);
+        Assert.False(client.ReadCalls.ContainsKey("approval"));
     }
 
     [Fact]
@@ -365,7 +370,7 @@ public sealed class ConfirmationMonitorTests
     }
 
     [Fact]
-    public async Task InitialCutoff_DoesNotReadOldThreadOnNextUnchangedScan()
+    public async Task InitialScan_ReadsOldThreadOnceThenSkipsUnchangedThread()
     {
         var oldUpdatedAt = Now.AddHours(-25);
         var client = new FakeCodexThreadClient();
@@ -376,7 +381,62 @@ public sealed class ConfirmationMonitorTests
         await monitor.ScanOnceAsync(Now);
         await monitor.ScanOnceAsync(Now.AddSeconds(2));
 
-        Assert.False(client.ReadCalls.ContainsKey("old"));
+        Assert.Equal(1, client.ReadCalls["old"]);
+        Assert.Equal("old", Assert.Single(monitor.Candidates).ThreadId);
+    }
+
+    [Fact]
+    public async Task InitialScan_RequestsThreadsBeyondFirstTwoHundred()
+    {
+        var client = new FakeCodexThreadClient();
+        for (var index = 0; index < 200; index++)
+        {
+            client.Threads.Add(
+                Summary($"approval-{index}", Now, ThreadStatusKind.NeedsApproval));
+        }
+
+        client.Threads.Add(Summary("waiting-201", Now, ThreadStatusKind.Idle));
+        client.ThreadStates["waiting-201"] = WaitingState("waiting-201", Now);
+        var monitor = new ConfirmationMonitor(client, new ConfirmationDetector());
+
+        await monitor.ScanOnceAsync(Now);
+
+        Assert.Equal("waiting-201", Assert.Single(monitor.Candidates).ThreadId);
+    }
+
+    [Fact]
+    public async Task Scan_ReevaluatesStatusChangeWhenUpdatedAtIsUnchanged()
+    {
+        var client = new FakeCodexThreadClient();
+        client.Threads.Add(Summary("thread-1", Now, ThreadStatusKind.Running));
+        client.ThreadStates["thread-1"] = RunningState("thread-1", Now);
+        var monitor = new ConfirmationMonitor(client, new ConfirmationDetector());
+
+        await monitor.ScanOnceAsync(Now);
+        client.Threads[0] = Summary("thread-1", Now, ThreadStatusKind.Idle);
+        client.ThreadStates["thread-1"] = WaitingState("thread-1", Now);
+        await monitor.ScanOnceAsync(Now.AddSeconds(2));
+
+        Assert.Equal(2, client.ReadCalls["thread-1"]);
+        Assert.Equal("thread-1", Assert.Single(monitor.Candidates).ThreadId);
+    }
+
+    [Fact]
+    public async Task Scan_ReadsRunningSummarySoSnapshotCanCorrectStaleStatus()
+    {
+        var client = new FakeCodexThreadClient();
+        var summary = Summary("stale-running", Now, ThreadStatusKind.Running);
+        client.Threads.Add(summary);
+        var reader = new RecordingThreadReader(WaitingState("stale-running", Now));
+        var monitor = new ConfirmationMonitor(
+            client,
+            new ConfirmationDetector(),
+            threadReader: reader);
+
+        await monitor.ScanOnceAsync(Now);
+
+        Assert.Equal(["stale-running"], reader.ThreadIds);
+        Assert.Equal("stale-running", Assert.Single(monitor.Candidates).ThreadId);
     }
 
     [Fact]
@@ -391,6 +451,9 @@ public sealed class ConfirmationMonitorTests
             "thread-1",
             Now.AddSeconds(3),
             ThreadStatusKind.Running);
+        client.ThreadStates["thread-1"] = RunningState(
+            "thread-1",
+            Now.AddSeconds(3));
 
         await monitor.ScanOnceAsync(Now.AddSeconds(4));
 
@@ -415,6 +478,18 @@ public sealed class ConfirmationMonitorTests
                 "请确认这个方案，确认后我会开始实施。")],
             ThreadStatusKind.Idle,
             LatestTurnStatus: ThreadStatusKind.Completed);
+
+    private static ThreadCardState RunningState(
+        string id,
+        DateTimeOffset updatedAt) =>
+        new(
+            Summary(id, updatedAt, ThreadStatusKind.Running),
+            [new ChatMessage(
+                $"message-{id}",
+                ChatRole.Assistant,
+                "仍在处理中。")],
+            ThreadStatusKind.Running,
+            LatestTurnStatus: ThreadStatusKind.Running);
 
     private sealed class RecordingThreadReader(
         ThreadCardState state) : IConfirmationThreadReader

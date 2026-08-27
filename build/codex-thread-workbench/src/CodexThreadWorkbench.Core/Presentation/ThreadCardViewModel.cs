@@ -299,7 +299,15 @@ public sealed class ThreadCardViewModel : ObservableObject
             return;
         }
 
-        ActiveTurnId = state.ActiveTurnId;
+        if (state.ActiveTurnId is not null ||
+            state.Status is ThreadStatusKind.Idle or
+                ThreadStatusKind.Completed or
+                ThreadStatusKind.Interrupted or
+                ThreadStatusKind.Error)
+        {
+            ActiveTurnId = state.ActiveTurnId;
+        }
+
         Status = state.Status;
     }
 

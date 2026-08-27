@@ -2,11 +2,32 @@ using CodexThreadWorkbench.Codex;
 using CodexThreadWorkbench.Confirmation;
 using CodexThreadWorkbench.Models;
 using CodexThreadWorkbench.Presentation;
+using Avalonia.Input;
+using Avalonia.Interactivity;
+using Avalonia.VisualTree;
 
 namespace CodexThreadWorkbench.Desktop.Tests;
 
 public sealed class ConfirmationOverlayWindowTests
 {
+    [Fact]
+    public void PointerActionGate_RequiresOnePointerPressPerAction()
+    {
+        var gate = new ConfirmationPointerActionGate();
+        var action = new object();
+
+        Assert.False(gate.TryConsume(action));
+        gate.Arm(action);
+        Assert.True(gate.TryConsume(action));
+        Assert.False(gate.TryConsume(action));
+        gate.Arm(action);
+        gate.Disarm(action);
+        Assert.False(gate.TryConsume(action));
+        gate.Arm(action);
+        gate.Clear();
+        Assert.False(gate.TryConsume(action));
+    }
+
     [AvaloniaFact]
     public void Overlay_HasRequiredWindowChromeAndTopmostSettings()
     {
@@ -73,15 +94,29 @@ public sealed class ConfirmationOverlayWindowTests
     }
 
     [Fact]
-    public void Placement_ConvertsLogicalBoundsToPhysicalPixelsAtHighDpi()
+    public void ScreenSelection_WhenAttentionRequired_DefaultsToLeftmostDisplay()
     {
-        var placement = new ConfirmationOverlayPlacement();
+        var primary = new PixelRect(0, 0, 3840, 2088);
+        var secondary = new PixelRect(3840, 0, 3840, 2088);
 
-        var size = placement.ResolvePixelSize(
-            new Size(560, 64),
-            renderScaling: 2);
+        var selected = ConfirmationOverlayScreenSelection.ResolveWorkingArea(
+            secondary,
+            [secondary, primary]);
 
-        Assert.Equal(new PixelSize(1120, 128), size);
+        Assert.Equal(primary, selected);
+    }
+
+    [Fact]
+    public void ScreenSelection_WhenIdle_DefaultsToLeftmostDisplay()
+    {
+        var primary = new PixelRect(0, 0, 3840, 2088);
+        var secondary = new PixelRect(3840, 0, 3840, 2088);
+
+        var selected = ConfirmationOverlayScreenSelection.ResolveWorkingArea(
+            secondary,
+            [secondary, primary]);
+
+        Assert.Equal(primary, selected);
     }
 
     [AvaloniaFact]
@@ -133,9 +168,13 @@ public sealed class ConfirmationOverlayWindowTests
             "message-1",
             "请确认方案，确认后开始实施。",
             DateTimeOffset.UtcNow));
+        await WaitForAsync(() => !viewModel.IsInteractionArmed);
         await WaitForAsync(() => window.Position.Y == workingArea.Y + 8);
+        await WaitForAsync(() => viewModel.IsInteractionArmed);
 
-        Assert.NotNull(window.FindControl<Button>("ConfirmAllButton"));
+        var confirmAllButton = window.FindControl<Button>("ConfirmAllButton");
+        Assert.NotNull(confirmAllButton);
+        Assert.Null(confirmAllButton.Command);
         Assert.NotNull(window.FindControl<ItemsControl>("ConfirmationList"));
         Assert.True(window.IsVisible);
 
@@ -150,43 +189,40 @@ public sealed class ConfirmationOverlayWindowTests
     }
 
     [AvaloniaFact]
-    public async Task Attach_AfterNativeManualMove_RetractsAndExpandsAtDraggedPosition()
+    public async Task ConfirmButton_RejectsProgrammaticClick_ButAcceptsOnePointerClick()
     {
         var monitor = new PushMonitor();
+        var client = new ClickRecordingClient();
         await using var viewModel = new ConfirmationOverlayViewModel(
-            new NoopClient(),
+            client,
             monitor,
             new ConfirmationDetector());
         var window = new ConfirmationOverlayWindow();
         window.Attach(viewModel);
         await WaitForAsync(() => window.IsVisible);
-        var primaryScreen = window.Screens.Primary;
-        Assert.NotNull(primaryScreen);
-        var workingArea = primaryScreen.WorkingArea;
-        var candidate = new ConfirmationCandidate(
+        monitor.Push(new ConfirmationCandidate(
             "thread-1",
             "待确认任务",
             "message-1",
-            "请确认方案，确认后开始实施。",
-            DateTimeOffset.UtcNow);
+            "确认执行吗？",
+            DateTimeOffset.UtcNow));
+        await WaitForAsync(() => viewModel.IsInteractionArmed);
+        var button = window.GetVisualDescendants()
+            .OfType<Button>()
+            .Single(candidate => Equals(candidate.Content, "确认继续"));
 
-        monitor.Push(candidate);
-        await WaitForAsync(() => window.Position.Y == workingArea.Y + 8);
+        button.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+        await Task.Delay(20);
+        Assert.Equal(0, client.StartCalls);
 
-        var draggedPosition = new PixelPoint(280, 340);
-        window.Position = draggedPosition;
-        window.MarkManuallyPositioned();
+        var point = button.TranslatePoint(
+            new Point(button.Bounds.Width / 2, button.Bounds.Height / 2),
+            window)!.Value;
+        window.MouseDown(point, MouseButton.Left, RawInputModifiers.None);
+        window.MouseUp(point, MouseButton.Left, RawInputModifiers.None);
 
-        monitor.Push();
-        await WaitForAsync(() =>
-            window.Position.Y + (int)Math.Ceiling(window.Bounds.Height) ==
-            workingArea.Y + ConfirmationOverlayWindow.IdlePeekHeight);
-
-        monitor.Push(candidate);
-        await WaitForAsync(() => viewModel.RequiresAttention);
-        await Task.Delay(250);
-
-        Assert.Equal(draggedPosition, window.Position);
+        await WaitForAsync(() => client.StartCalls == 1);
+        Assert.Equal(ConfirmationOverlayViewModel.ConfirmationMessage, client.LastText);
         window.CloseForShutdown();
     }
 
@@ -212,6 +248,25 @@ public sealed class ConfirmationOverlayWindowTests
         await WaitForAsync(() => window.Position.Y == workingArea.Y + 8);
         Assert.True(viewModel.RequiresAttention);
         Assert.Equal("扫描异常 · 请检查", viewModel.CountText);
+        window.CloseForShutdown();
+    }
+
+    [AvaloniaFact]
+    public async Task Close_WithoutExplicitShutdown_KeepsOverlayVisible()
+    {
+        var monitor = new PushMonitor();
+        await using var viewModel = new ConfirmationOverlayViewModel(
+            new NoopClient(),
+            monitor,
+            new ConfirmationDetector());
+        var window = new ConfirmationOverlayWindow();
+        window.Attach(viewModel);
+        await WaitForAsync(() => window.IsVisible);
+
+        window.Close();
+        await Task.Delay(20);
+
+        Assert.True(window.IsVisible);
         window.CloseForShutdown();
     }
 
@@ -327,6 +382,95 @@ public sealed class ConfirmationOverlayWindowTests
             bool accept,
             CancellationToken cancellationToken = default) =>
             throw new NotSupportedException();
+
+        public ValueTask DisposeAsync() => ValueTask.CompletedTask;
+    }
+
+    private sealed class ClickRecordingClient : ICodexThreadClient
+    {
+        private ThreadCardState _state = new(
+            new ThreadSummary(
+                "thread-1",
+                "待确认任务",
+                "预览",
+                @"C:\work",
+                DateTimeOffset.UtcNow,
+                ThreadStatusKind.Idle),
+            [new ChatMessage("message-1", ChatRole.Assistant, "确认执行吗？")],
+            ThreadStatusKind.Idle,
+            LatestTurnStatus: ThreadStatusKind.Completed);
+
+        public event Action<CodexNotification>? NotificationReceived
+        {
+            add { }
+            remove { }
+        }
+
+        public event Action<CodexApprovalRequest>? ApprovalRequested
+        {
+            add { }
+            remove { }
+        }
+
+        public bool IsConnected => true;
+
+        public int StartCalls { get; private set; }
+
+        public string LastText { get; private set; } = string.Empty;
+
+        public Task InitializeAsync(CancellationToken cancellationToken = default) =>
+            Task.CompletedTask;
+
+        public Task<IReadOnlyList<ThreadSummary>> ListThreadsAsync(
+            int limit = 100,
+            string? searchTerm = null,
+            CancellationToken cancellationToken = default) =>
+            Task.FromResult<IReadOnlyList<ThreadSummary>>([]);
+
+        public Task<ThreadCardState> ReadThreadAsync(
+            string threadId,
+            CancellationToken cancellationToken = default) =>
+            Task.FromResult(_state);
+
+        public Task ResumeThreadAsync(
+            string threadId,
+            CancellationToken cancellationToken = default) =>
+            Task.CompletedTask;
+
+        public Task<string> StartTurnAsync(
+            string threadId,
+            string text,
+            CancellationToken cancellationToken = default)
+        {
+            StartCalls++;
+            LastText = text;
+            _state = _state with
+            {
+                Messages = _state.Messages
+                    .Append(new ChatMessage("user-confirmation", ChatRole.User, text))
+                    .ToArray()
+            };
+            return Task.FromResult("turn-1");
+        }
+
+        public Task SteerTurnAsync(
+            string threadId,
+            string expectedTurnId,
+            string text,
+            CancellationToken cancellationToken = default) =>
+            Task.CompletedTask;
+
+        public Task InterruptTurnAsync(
+            string threadId,
+            string turnId,
+            CancellationToken cancellationToken = default) =>
+            Task.CompletedTask;
+
+        public Task RespondToApprovalAsync(
+            CodexApprovalRequest request,
+            bool accept,
+            CancellationToken cancellationToken = default) =>
+            Task.CompletedTask;
 
         public ValueTask DisposeAsync() => ValueTask.CompletedTask;
     }

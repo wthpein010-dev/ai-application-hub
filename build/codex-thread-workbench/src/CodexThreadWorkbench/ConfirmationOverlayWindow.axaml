@@ -52,9 +52,11 @@
         <Button x:Name="ConfirmAllButton"
                 Grid.Column="1"
                 Classes="primary"
-                Command="{Binding ConfirmAllCommand}"
+                Click="ConfirmAllButton_OnClick"
                 Content="{Binding ConfirmAllText}"
-                IsVisible="{Binding HasItems}" />
+                IsEnabled="{Binding CanConfirmAll}"
+                IsVisible="{Binding HasItems}"
+                PointerExited="ActionButton_OnPointerExited" />
       </Grid>
 
       <Border Grid.Row="1"
@@ -113,13 +115,17 @@
                   <Button Grid.Row="2"
                           Grid.Column="1"
                           Classes="toolbar"
-                          Command="{Binding IgnoreCommand}"
-                          Content="忽略" />
+                          Click="IgnoreButton_OnClick"
+                          Content="忽略"
+                          IsEnabled="{Binding IsActionEnabled}"
+                          PointerExited="ActionButton_OnPointerExited" />
                   <Button Grid.Row="2"
                           Grid.Column="2"
                           Classes="primary"
-                          Command="{Binding ConfirmCommand}"
-                          Content="{Binding ActionText}" />
+                          Click="ConfirmButton_OnClick"
+                          Content="{Binding ActionText}"
+                          IsEnabled="{Binding IsActionEnabled}"
+                          PointerExited="ActionButton_OnPointerExited" />
                 </Grid>
               </Border>
             </DataTemplate>
