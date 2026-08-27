@@ -1405,7 +1405,7 @@ html[data-theme="night"] .status-badge {
 }
 
 .card-feature strong {
-  color: var(--project-accent);
+  color: var(--text);
   font-size: 13px;
   font-weight: 800;
   white-space: nowrap;

@@ -964,6 +964,10 @@ const nodes = {
   pageTextFields: document.querySelector("#pageTextFields"),
 };
 
+let viewportEffectsFrame = 0;
+let showcaseDepthFrame = 0;
+let pendingShowcasePointer = null;
+
 applyTheme(state.theme, false);
 renderTypeChips();
 bindEvents();
@@ -1107,17 +1111,25 @@ function startThemeTransition() {
 }
 
 function setupPageEffects() {
-  updateScrollProgress();
-  updateActiveNavigation();
-  window.addEventListener("scroll", updateScrollProgress, { passive: true });
-  window.addEventListener("resize", updateScrollProgress, { passive: true });
-  window.addEventListener("scroll", updateActiveNavigation, { passive: true });
-  window.addEventListener("resize", updateActiveNavigation, { passive: true });
+  runViewportEffects();
+  window.addEventListener("scroll", scheduleViewportEffects, { passive: true });
+  window.addEventListener("resize", scheduleViewportEffects, { passive: true });
 
   if (!window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
-    nodes.showcaseMedia?.addEventListener("pointermove", updateShowcaseDepth);
+    nodes.showcaseMedia?.addEventListener("pointermove", scheduleShowcaseDepth);
     nodes.showcaseMedia?.addEventListener("pointerleave", resetShowcaseDepth);
   }
+}
+
+function scheduleViewportEffects() {
+  if (viewportEffectsFrame) return;
+  viewportEffectsFrame = window.requestAnimationFrame(runViewportEffects);
+}
+
+function runViewportEffects() {
+  viewportEffectsFrame = 0;
+  updateScrollProgress();
+  updateActiveNavigation();
 }
 
 function updateScrollProgress() {
@@ -1151,7 +1163,23 @@ function updateShowcaseDepth(event) {
   nodes.showcaseMedia.style.transform = `perspective(1200px) rotateX(${(-vertical * 2.4).toFixed(2)}deg) rotateY(${(horizontal * 2.4).toFixed(2)}deg)`;
 }
 
+function scheduleShowcaseDepth(event) {
+  pendingShowcasePointer = { clientX: event.clientX, clientY: event.clientY };
+  if (showcaseDepthFrame) return;
+  showcaseDepthFrame = window.requestAnimationFrame(runShowcaseDepth);
+}
+
+function runShowcaseDepth() {
+  showcaseDepthFrame = 0;
+  const pointer = pendingShowcasePointer;
+  pendingShowcasePointer = null;
+  if (pointer) updateShowcaseDepth(pointer);
+}
+
 function resetShowcaseDepth() {
+  if (showcaseDepthFrame) window.cancelAnimationFrame(showcaseDepthFrame);
+  showcaseDepthFrame = 0;
+  pendingShowcasePointer = null;
   nodes.showcaseMedia?.style.removeProperty("transform");
 }
 

@@ -30,10 +30,26 @@ test("runtime updates progress, active navigation, and short theme feedback", ()
   assert.match(runtime, /scrollProgress:\s*document\.querySelector\("#scrollProgress"\)/u);
   assert.match(runtime, /function setupPageEffects\(/u);
   assert.match(runtime, /function updateScrollProgress\(/u);
-  assert.match(runtime, /addEventListener\("scroll",\s*updateScrollProgress,\s*\{\s*passive:\s*true\s*\}\)/u);
+  assert.match(runtime, /function scheduleViewportEffects\(/u);
+  assert.match(runtime, /requestAnimationFrame\(runViewportEffects\)/u);
+  assert.match(runtime, /addEventListener\("scroll",\s*scheduleViewportEffects,\s*\{\s*passive:\s*true\s*\}\)/u);
+  assert.match(runtime, /addEventListener\("resize",\s*scheduleViewportEffects,\s*\{\s*passive:\s*true\s*\}\)/u);
+  assert.doesNotMatch(runtime, /addEventListener\("scroll",\s*update(?:ScrollProgress|ActiveNavigation)/u);
   assert.match(runtime, /current\s*\?\s*link\.setAttribute\("aria-current",\s*"page"\)\s*:\s*link\.removeAttribute\("aria-current"\)/u);
   assert.match(runtime, /classList\.add\("theme-transitioning"\)/u);
   assert.match(runtime, /classList\.remove\("theme-transitioning"\)/u);
+  assert.ok(
+    runtime.indexOf("let viewportEffectsFrame") < runtime.indexOf("setupPageEffects();"),
+    "animation-frame state must initialize before setupPageEffects runs",
+  );
+});
+
+test("showcase pointer depth is coalesced to one animation frame", () => {
+  assert.match(runtime, /function scheduleShowcaseDepth\(/u);
+  assert.match(runtime, /requestAnimationFrame\(runShowcaseDepth\)/u);
+  assert.match(runtime, /addEventListener\("pointermove",\s*scheduleShowcaseDepth\)/u);
+  assert.doesNotMatch(runtime, /addEventListener\("pointermove",\s*updateShowcaseDepth\)/u);
+  assert.match(runtime, /cancelAnimationFrame\(showcaseDepthFrame\)/u);
 });
 
 test("project interactions remain readable, focused, and motion-safe", () => {

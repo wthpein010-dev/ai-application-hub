@@ -12,6 +12,7 @@ const outputDirectory = join(root, "assets", "hub-showcase");
 const registryPath = join(root, "hub-project-media.js");
 const sourcesPath = join(root, "scripts", "hub-showcase-media-sources.json");
 const runtimePath = join(root, "app-20260706-restore-games.js");
+const SHOWCASE_CACHE_VERSION = "20260827-hub-visual-polish";
 const bundledNodeModules = join(
   homedir(),
   ".cache",
@@ -36,6 +37,7 @@ function contentType(path) {
     ".jpeg": "image/jpeg",
     ".jpg": "image/jpeg",
     ".js": "text/javascript; charset=utf-8",
+    ".mjs": "text/javascript; charset=utf-8",
     ".json": "application/json; charset=utf-8",
     ".png": "image/png",
     ".svg": "image/svg+xml",
@@ -43,7 +45,22 @@ function contentType(path) {
   }[extname(path).toLowerCase()] || "application/octet-stream";
 }
 
-function createStaticServer() {
+function parseByteRange(header, size) {
+  const match = /^bytes=(\d*)-(\d*)$/u.exec(String(header || "").trim());
+  if (!match || (!match[1] && !match[2])) return null;
+  if (!match[1]) {
+    const requestedLength = Number(match[2]);
+    if (!Number.isSafeInteger(requestedLength) || requestedLength <= 0) return null;
+    const suffixLength = Math.min(requestedLength, size);
+    return { start: size - suffixLength, end: size - 1 };
+  }
+  const start = Number(match[1]);
+  const end = match[2] ? Math.min(Number(match[2]), size - 1) : size - 1;
+  if (!Number.isSafeInteger(start) || !Number.isSafeInteger(end) || start < 0 || start > end || start >= size) return null;
+  return { start, end };
+}
+
+export function createStaticServer() {
   return createServer((request, response) => {
     const pathname = decodeURIComponent(new URL(request.url, "http://127.0.0.1").pathname);
     const target = resolve(sourceRoot, `.${normalize(pathname)}`);
@@ -57,12 +74,32 @@ function createStaticServer() {
       return;
     }
     const stats = statSync(path);
+    const range = request.headers.range ? parseByteRange(request.headers.range, stats.size) : null;
+    if (request.headers.range && !range) {
+      response.writeHead(416, { "Content-Range": `bytes */${stats.size}` }).end();
+      return;
+    }
+    if (range) {
+      const length = range.end - range.start + 1;
+      response.writeHead(206, {
+        "Accept-Ranges": "bytes",
+        "Cache-Control": "no-store",
+        "Content-Length": length,
+        "Content-Range": `bytes ${range.start}-${range.end}/${stats.size}`,
+        "Content-Type": contentType(path),
+      });
+      if (request.method === "HEAD") response.end();
+      else createReadStream(path, range).pipe(response);
+      return;
+    }
     response.writeHead(200, {
+      "Accept-Ranges": "bytes",
       "Cache-Control": "no-store",
       "Content-Length": stats.size,
       "Content-Type": contentType(path),
     });
-    createReadStream(path).pipe(response);
+    if (request.method === "HEAD") response.end();
+    else createReadStream(path).pipe(response);
   });
 }
 
@@ -138,8 +175,12 @@ function validateSources(apps, sources) {
     if (source.publicEntry && typeof source.publicEntry !== "string") throw new Error(`Invalid public capture entry for ${id}`);
     if (source.readySelector && typeof source.readySelector !== "string") throw new Error(`Invalid ready selector for ${id}`);
     if (source.focusSelector && typeof source.focusSelector !== "string") throw new Error(`Invalid focus selector for ${id}`);
+    if (source.focusFile && typeof source.focusFile !== "string") throw new Error(`Invalid focus file for ${id}`);
     if (source.clickSelector && typeof source.clickSelector !== "string") throw new Error(`Invalid click selector for ${id}`);
     if (source.afterClickText && typeof source.afterClickText !== "string") throw new Error(`Invalid post-click text for ${id}`);
+    if (source.waitForCanvasVariance !== undefined && typeof source.waitForCanvasVariance !== "boolean") {
+      throw new Error(`Invalid canvas variance flag for ${id}`);
+    }
     if (source.captureDelay !== undefined && (!Number.isFinite(source.captureDelay) || source.captureDelay < 0 || source.captureDelay > 10000)) {
       throw new Error(`Invalid capture delay for ${id}`);
     }
@@ -302,6 +343,25 @@ async function captureToWebp(page, sharp, id, source, baseUrl, tempDirectory, ou
     }
     if (source.captureDelay) await page.waitForTimeout(source.captureDelay);
   }
+  if (source.waitForCanvasVariance) {
+    await page.waitForFunction((selector) => {
+      const root = document.querySelector(selector);
+      const canvas = root?.matches("canvas") ? root : root?.querySelector("canvas");
+      if (!(canvas instanceof HTMLCanvasElement)) return false;
+      const context = canvas.getContext("2d", { willReadFrequently: true });
+      if (!context || canvas.width < 2 || canvas.height < 2) return false;
+      const pixels = context.getImageData(0, 0, canvas.width, canvas.height).data;
+      const stride = Math.max(4, Math.floor(pixels.length / 12000 / 4) * 4);
+      let darkest = 255;
+      let lightest = 0;
+      for (let index = 0; index < pixels.length; index += stride) {
+        const value = Math.round((pixels[index] + pixels[index + 1] + pixels[index + 2]) / 3);
+        darkest = Math.min(darkest, value);
+        lightest = Math.max(lightest, value);
+      }
+      return lightest - darkest >= 28;
+    }, source.focusSelector || "canvas", { timeout: source.canvasVarianceTimeout || 10000 });
+  }
   if (source.captureTime !== undefined) {
     await page.evaluate(async ({ selector, captureTime }) => {
       const video = document.querySelector(selector);
@@ -317,6 +377,7 @@ async function captureToWebp(page, sharp, id, source, baseUrl, tempDirectory, ou
         });
       }
       video.hidden = false;
+      video.controls = false;
       document.querySelector("#loadCard")?.setAttribute("hidden", "");
       video.currentTime = captureTime;
       await new Promise((resolve, reject) => {
@@ -331,8 +392,14 @@ async function captureToWebp(page, sharp, id, source, baseUrl, tempDirectory, ou
   const focusPng = join(tempDirectory, `${token}-focus.png`);
   await page.evaluate(() => window.scrollTo(0, 0));
   await page.screenshot({ path: contextPng, type: "png", fullPage: false });
-  await captureFocusRegion(page, source, focusPng);
-  await composeProductFrame(sharp, contextPng, focusPng, output, source);
+  let focusInput = focusPng;
+  if (source.focusFile) {
+    focusInput = sourcePath(source.focusFile);
+    if (!existsSync(focusInput)) throw new Error(`Missing focus file for ${id}: ${source.focusFile}`);
+  } else {
+    await captureFocusRegion(page, source, focusPng);
+  }
+  await composeProductFrame(sharp, contextPng, focusInput, output, source);
 }
 
 function registrySource(apps, sources) {
@@ -350,7 +417,7 @@ function registrySource(apps, sources) {
       }];
     }
     return [app.id, {
-      src: `./assets/hub-showcase/${app.id}.webp`,
+      src: `./assets/hub-showcase/${app.id}.webp?v=${SHOWCASE_CACHE_VERSION}`,
       alt: app.id === "hub" ? "AI 应用方案整理器功能画面" : `${app.name}功能画面`,
       position: "center",
       layout: sources[app.id].layout,

@@ -555,13 +555,19 @@ try {
           / (Math.min(luminance(foreground), luminance(background)) + 0.05)
         );
         const background = getComputedStyle(document.body).backgroundColor;
+        const featureRatios = Array.from(document.querySelectorAll(".card-feature strong"), (feature) => {
+          const card = feature.closest(".app-card");
+          return contrast(getComputedStyle(feature).color, getComputedStyle(card).backgroundColor);
+        });
         return {
           heading: contrast(getComputedStyle(document.querySelector(".showcase-copy h1")).color, background),
           lead: contrast(getComputedStyle(document.querySelector(".showcase-lead")).color, background),
+          feature: Math.min(...featureRatios),
         };
       });
       check(themeContrast.heading >= 4.5, `${viewport.name}/${theme} hero heading has AA contrast`);
       check(themeContrast.lead >= 4.5, `${viewport.name}/${theme} hero copy has AA contrast`);
+      check(themeContrast.feature >= 4.5, `${viewport.name}/${theme} feature labels have AA contrast`);
       await takeScreenshot(page, `${viewport.name}-${theme}`);
     }
     await page.reload({ waitUntil: "networkidle" });
