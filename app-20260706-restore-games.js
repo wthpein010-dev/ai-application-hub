@@ -900,6 +900,7 @@ const defaultApps = [
 let apps = loadApps();
 let pageText = loadPageText();
 let hasRenderedCatalog = false;
+let themeTransitionTimer = 0;
 
 const state = {
   query: "",
@@ -930,6 +931,7 @@ const nodes = {
   themeToggle: document.querySelector("#themeToggle"),
   themeMenu: document.querySelector("#themeMenu"),
   themeOptions: document.querySelector("#themeOptions"),
+  scrollProgress: document.querySelector("#scrollProgress"),
   grid: document.querySelector("#appGrid"),
   resultCount: document.querySelector("#resultCount"),
   gameGrid: document.querySelector("#gameGrid"),
@@ -962,9 +964,14 @@ const nodes = {
   pageTextFields: document.querySelector("#pageTextFields"),
 };
 
+let viewportEffectsFrame = 0;
+let showcaseDepthFrame = 0;
+let pendingShowcasePointer = null;
+
 applyTheme(state.theme, false);
 renderTypeChips();
 bindEvents();
+setupPageEffects();
 renderCategoryOptions();
 render();
 alignHashTarget();
@@ -1085,6 +1092,7 @@ function render() {
 function applyTheme(theme, persist = true) {
   if (hasRenderedCatalog) completeListIntroAnimation();
   const normalized = normalizeTheme(theme);
+  if (persist && normalized !== state.theme) startThemeTransition();
   state.theme = normalized;
   document.documentElement.dataset.theme = normalized;
   if (persist) {
@@ -1092,6 +1100,87 @@ function applyTheme(theme, persist = true) {
   }
   renderThemeOptions();
   return normalized;
+}
+
+function startThemeTransition() {
+  window.clearTimeout(themeTransitionTimer);
+  document.documentElement.classList.add("theme-transitioning");
+  themeTransitionTimer = window.setTimeout(() => {
+    document.documentElement.classList.remove("theme-transitioning");
+  }, 320);
+}
+
+function setupPageEffects() {
+  runViewportEffects();
+  window.addEventListener("scroll", scheduleViewportEffects, { passive: true });
+  window.addEventListener("resize", scheduleViewportEffects, { passive: true });
+
+  if (!window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+    nodes.showcaseMedia?.addEventListener("pointermove", scheduleShowcaseDepth);
+    nodes.showcaseMedia?.addEventListener("pointerleave", resetShowcaseDepth);
+  }
+}
+
+function scheduleViewportEffects() {
+  if (viewportEffectsFrame) return;
+  viewportEffectsFrame = window.requestAnimationFrame(runViewportEffects);
+}
+
+function runViewportEffects() {
+  viewportEffectsFrame = 0;
+  updateScrollProgress();
+  updateActiveNavigation();
+}
+
+function updateScrollProgress() {
+  if (!nodes.scrollProgress) return;
+  const scrollable = Math.max(0, document.documentElement.scrollHeight - window.innerHeight);
+  const progress = scrollable ? Math.min(1, Math.max(0, window.scrollY / scrollable)) : 0;
+  nodes.scrollProgress.style.setProperty("--scroll-progress", String(progress));
+  nodes.scrollProgress.setAttribute("aria-valuenow", String(Math.round(progress * 100)));
+}
+
+function updateActiveNavigation() {
+  const links = [...document.querySelectorAll('.top-nav nav a[href^="#"]')];
+  const sections = links.map(link => ({ link, section: document.querySelector(link.hash) }))
+    .filter(item => item.section);
+  const threshold = Math.min(window.innerHeight * 0.34, 240);
+  let active = sections[0];
+  sections.forEach(item => {
+    if (item.section.getBoundingClientRect().top <= threshold) active = item;
+  });
+  links.forEach(link => {
+    const current = link === active?.link;
+    current ? link.setAttribute("aria-current", "page") : link.removeAttribute("aria-current");
+  });
+}
+
+function updateShowcaseDepth(event) {
+  const rect = nodes.showcaseMedia?.getBoundingClientRect();
+  if (!rect?.width || !rect.height) return;
+  const horizontal = ((event.clientX - rect.left) / rect.width) - 0.5;
+  const vertical = ((event.clientY - rect.top) / rect.height) - 0.5;
+  nodes.showcaseMedia.style.transform = `perspective(1200px) rotateX(${(-vertical * 2.4).toFixed(2)}deg) rotateY(${(horizontal * 2.4).toFixed(2)}deg)`;
+}
+
+function scheduleShowcaseDepth(event) {
+  pendingShowcasePointer = { clientX: event.clientX, clientY: event.clientY };
+  if (showcaseDepthFrame) return;
+  showcaseDepthFrame = window.requestAnimationFrame(runShowcaseDepth);
+}
+
+function runShowcaseDepth() {
+  showcaseDepthFrame = 0;
+  const pointer = pendingShowcasePointer;
+  pendingShowcasePointer = null;
+  if (pointer) updateShowcaseDepth(pointer);
+}
+
+function resetShowcaseDepth() {
+  if (showcaseDepthFrame) window.cancelAnimationFrame(showcaseDepthFrame);
+  showcaseDepthFrame = 0;
+  pendingShowcasePointer = null;
+  nodes.showcaseMedia?.style.removeProperty("transform");
 }
 
 function renderThemeOptions() {
@@ -1158,7 +1247,15 @@ function visibleApps() {
 }
 
 function projectMedia(app) {
-  const fallbackMedia = { src: "", fallback: app.name, layout: "standard", position: "center" };
+  const fallbackMedia = {
+    src: "",
+    fallback: app.name,
+    layout: "standard",
+    position: "center",
+    feature: app.tags?.[0] || "聚焦关键流程与真实使用体验",
+    accent: "#156b5c",
+    visualKind: "product"
+  };
   const registered = globalThis.HUB_PROJECT_MEDIA?.[app.id];
   const editedSrc = normalizeVisualPath(app.visual);
   if (!registered && !editedSrc) return fallbackMedia;
@@ -1168,7 +1265,10 @@ function projectMedia(app) {
     src: editedSrc || normalizeVisualPath(media.src),
     fallback: media.fallback || app.name,
     layout: ["standard", "wide", "tall"].includes(media.layout) ? media.layout : "standard",
-    position: media.position || "center"
+    position: media.position || "center",
+    feature: media.feature || fallbackMedia.feature,
+    accent: media.accent || fallbackMedia.accent,
+    visualKind: media.visualKind || fallbackMedia.visualKind
   };
 }
 
@@ -1393,7 +1493,7 @@ function renderAppCard(app, index = 0, extraClass = "", actionMode = "default") 
   const overflowTags = app.tags.length - 2;
   const media = projectMedia(app);
   return `
-    <article class="app-card${extraClass} media-${media.layout}${media.src ? "" : " media-fallback"} ${app.id === state.selectedId ? "selected" : ""}" data-app-id="${escapeHtml(app.id)}" tabindex="0" aria-current="${app.id === state.selectedId ? "true" : "false"}" style="--card-order:${index}">
+    <article class="app-card${extraClass} media-${media.layout}${media.src ? "" : " media-fallback"} ${app.id === state.selectedId ? "selected" : ""}" data-app-id="${escapeHtml(app.id)}" tabindex="0" aria-current="${app.id === state.selectedId ? "true" : "false"}" style="--card-order:${index};--project-accent:${escapeHtml(media.accent)}">
       ${renderMedia(app, "card")}
       <div class="card-topline">
         <div class="card-meta">
@@ -1404,6 +1504,11 @@ function renderAppCard(app, index = 0, extraClass = "", actionMode = "default") 
       </div>
       <h3>${renderEditableText("app", "name", app.name, app.id)}</h3>
       <p>${renderEditableText("app", "brief", app.brief, app.id)}</p>
+      <div class="card-feature">
+        <span aria-hidden="true"></span>
+        <strong>核心亮点</strong>
+        <em>${escapeHtml(media.feature)}</em>
+      </div>
       <div class="tag-row">
         ${visibleTags.map(tag => `<span>${escapeHtml(tag)}</span>`).join("")}
         ${overflowTags > 0 ? `<span class="tag-overflow" aria-label="另有 ${overflowTags} 个关键词">+${overflowTags}</span>` : ""}
@@ -1498,9 +1603,9 @@ function renderActions(app, stopPropagation = false, mode = "default") {
   const windowsActionLabel = `${app.name} Wins下载`;
   const macActionLabel = `${app.name} Mac下载`;
   const iosActionLabel = `${app.name} iOS安装`;
-  const engineeringVideoLink = app.video ? `<a data-action="video" href="${escapeHtml(projectHref(videoHref(app)))}" aria-label="${escapeHtml(videoActionLabel)}"${stop}>介绍视频</a>` : "";
+  const engineeringVideoLink = app.video ? `<a data-action="video" data-icon="&#9654;" href="${escapeHtml(projectHref(videoHref(app)))}" aria-label="${escapeHtml(videoActionLabel)}"${stop}>介绍视频</a>` : "";
   if (mode === "engineering") {
-    const webLink = web ? `<a class="primary-link" data-action="web" href="${escapeHtml(projectHref(web))}" aria-label="${escapeHtml(webActionLabel)}"${stop}>网页预览</a>` : "";
+    const webLink = web ? `<a class="primary-link" data-action="web" data-icon="&#8599;" href="${escapeHtml(projectHref(web))}" aria-label="${escapeHtml(webActionLabel)}"${stop}>网页预览</a>` : "";
     return `
       <div class="card-actions actions-engineering">
         ${webLink}
@@ -1513,12 +1618,12 @@ function renderActions(app, stopPropagation = false, mode = "default") {
   const ios = platformValue(app, "ios");
   const windowsDownload = isDirectPackageHref(windows) ? " download" : "";
   const macDownload = isDirectPackageHref(mac) ? " download" : "";
-  const webLink = web ? `<a class="primary-link" data-action="web" href="${escapeHtml(projectHref(web))}" aria-label="${escapeHtml(webActionLabel)}"${stop}>网页预览</a>` : "";
-  const windowsLink = windows ? `<a class="download-link" data-action="download" href="${escapeHtml(projectHref(windows))}" aria-label="${escapeHtml(windowsActionLabel)}"${windowsDownload}${stop}>Wins下载</a>` : "";
-  const macLink = mac ? `<a class="mac-link" data-action="mac" href="${escapeHtml(projectHref(mac))}" aria-label="${escapeHtml(macActionLabel)}"${macDownload}${stop}>Mac下载</a>` : "";
-  const iosLink = ios ? `<a class="ios-link" data-action="ios" href="${escapeHtml(projectHref(ios))}" aria-label="${escapeHtml(iosActionLabel)}"${stop}>iOS安装</a>` : "";
+  const webLink = web ? `<a class="primary-link" data-action="web" data-icon="&#8599;" href="${escapeHtml(projectHref(web))}" aria-label="${escapeHtml(webActionLabel)}"${stop}>网页预览</a>` : "";
+  const windowsLink = windows ? `<a class="download-link" data-action="download" data-icon="&#8595;" href="${escapeHtml(projectHref(windows))}" aria-label="${escapeHtml(windowsActionLabel)}"${windowsDownload}${stop}>Wins下载</a>` : "";
+  const macLink = mac ? `<a class="mac-link" data-action="mac" data-icon="&#8595;" href="${escapeHtml(projectHref(mac))}" aria-label="${escapeHtml(macActionLabel)}"${macDownload}${stop}>Mac下载</a>` : "";
+  const iosLink = ios ? `<a class="ios-link" data-action="ios" data-icon="&#43;" href="${escapeHtml(projectHref(ios))}" aria-label="${escapeHtml(iosActionLabel)}"${stop}>iOS安装</a>` : "";
   const video = app.video
-    ? `<a data-action="video" href="${escapeHtml(projectHref(videoHref(app)))}" aria-label="${escapeHtml(videoActionLabel)}"${stop}>介绍视频</a>`
+    ? `<a data-action="video" data-icon="&#9654;" href="${escapeHtml(projectHref(videoHref(app)))}" aria-label="${escapeHtml(videoActionLabel)}"${stop}>介绍视频</a>`
     : "";
   return `
     <div class="card-actions">

@@ -5,16 +5,21 @@ import test from "node:test";
 import { fileURLToPath } from "node:url";
 import vm from "node:vm";
 import { loadDefaultAppsFromRuntime } from "./helpers/default-apps.mjs";
-import {
+import * as mediaBuilderModule from "../scripts/build-hub-showcase-media.mjs";
+
+const {
   assertSafeConfiguredPublicBase,
+  createStaticServer,
   resolveSafeCaptureUrl,
-} from "../scripts/build-hub-showcase-media.mjs";
+} = mediaBuilderModule;
 
 const root = dirname(dirname(fileURLToPath(import.meta.url)));
 const runtime = readFileSync(join(root, "app-20260706-restore-games.js"), "utf8");
 const mediaRuntime = readFileSync(join(root, "hub-project-media.js"), "utf8");
 const styles = readFileSync(join(root, "styles.css"), "utf8");
 const browserSmoke = readFileSync(join(root, "tests", "hub-dynamic-showcase-browser-smoke.mjs"), "utf8");
+const mediaBuilder = readFileSync(join(root, "scripts", "build-hub-showcase-media.mjs"), "utf8");
+const mediaSources = JSON.parse(readFileSync(join(root, "scripts", "hub-showcase-media-sources.json"), "utf8"));
 
 function rule(selector) {
   const escaped = selector.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
@@ -30,9 +35,9 @@ test("homepage exposes the approved dynamic showcase shell", () => {
   assert.match(html, /<section id="games"[^>]*>[\s\S]*id="gameGrid"/u);
   assert.match(html, /<section id="engineering"[^>]*>[\s\S]*id="engineeringGrid"/u);
   assert.match(html, /<aside id="editPanel"[^>]+aria-hidden="true"[^>]+inert/u);
-  assert.match(html, /href="\.\/styles\.css\?v=20260827-showcase-complete-copy"/u);
-  assert.match(html, /src="\.\/hub-project-media\.js\?v=20260826-dynamic-showcase"/u);
-  assert.match(html, /src="\.\/app-20260706-restore-games\.js\?v=20260826-dynamic-showcase"/u);
+  assert.match(html, /href="\.\/styles\.css\?v=20260827-hub-visual-polish"/u);
+  assert.match(html, /src="\.\/hub-project-media\.js\?v=20260827-hub-visual-polish"/u);
+  assert.match(html, /src="\.\/app-20260706-restore-games\.js\?v=20260827-hub-visual-polish"/u);
 });
 
 test("approved showcase uses image-led Bento layouts with responsive fallbacks", () => {
@@ -60,12 +65,111 @@ test("project media registry covers every production id without loading ClickFlo
   assert.equal(media.clickflow.src, "");
   assert.equal(media.clickflow.fallback, "ClickFlow 鼠标自动化");
   for (const app of apps.filter(({ id }) => id !== "clickflow")) {
-    assert.match(media[app.id].src, /^\.\/assets\/hub-showcase\/[a-z0-9-]+\.(?:webp|jpg|png)$/u);
-    const assetPath = join(root, media[app.id].src);
+    assert.match(media[app.id].src, /^\.\/assets\/hub-showcase\/[a-z0-9-]+\.(?:webp|jpg|png)\?v=20260827-hub-visual-polish$/u);
+    const assetPath = join(root, media[app.id].src.split("?")[0]);
     assert.ok(existsSync(assetPath));
     assert.ok(statSync(assetPath).size <= 750 * 1024);
     assert.ok(media[app.id].alt.includes(app.name));
     assert.ok(["standard", "wide", "tall"].includes(media[app.id].layout));
+    assert.match(media[app.id].feature, /\S{4,}/u);
+    assert.match(media[app.id].accent, /^#[0-9a-f]{6}$/u);
+    assert.ok(["product", "data", "game", "media"].includes(media[app.id].visualKind));
+  }
+});
+
+test("current Bento metadata fills complete rows without visual-order reflow", () => {
+  const expectedLayouts = {
+    "travel-generator": "standard",
+    "codex-reviewer": "standard",
+    planmap: "standard",
+    simuai: "standard",
+    "gamespec-relay": "standard",
+    "paws-home-client": "standard",
+    "brick-character-copy-preview": "wide",
+  };
+  for (const [id, layout] of Object.entries(expectedLayouts)) {
+    assert.equal(mediaSources[id].layout, layout, `${id} should use the reviewed ${layout} span`);
+  }
+  assert.equal(Object.values(mediaSources).filter(({ layout }) => layout === "tall").length, 0);
+
+  const collections = [
+    ["hub", "gamepulse-mini-radar", "codex-quota-bar", "codex-thread-workbench", "web-media-collector", "minigame-project-simulator", "ai-game-requirements-workshop", "planner-daily-quiz", "travel-generator", "feishu-downloader", "codex-reviewer", "codex-habit-tool", "wanhuatong", "pureshrink", "planmap", "simuai", "gamespec-relay", "x-ai-codex-radar"],
+    ["vita-mahjong", "paws-home-client", "paws-level-editor", "brick-light-motion-lab", "brick-character-copy-preview"],
+  ];
+  for (const ids of collections) {
+    let used = 0;
+    for (const id of ids) {
+      const span = mediaSources[id].layout === "wide" ? 2 : 1;
+      if (used + span > 4) {
+        assert.equal(used, 4, `${id} must not start after an incomplete Bento row`);
+        used = 0;
+      }
+      used += span;
+      if (used === 4) used = 0;
+    }
+    assert.equal(used, 0, "reviewed application and engineering collections should end on complete rows");
+  }
+});
+
+test("every project media source defines a focused visual story", () => {
+  const expectedIds = Array.from(loadDefaultAppsFromRuntime(runtime))
+    .filter(({ id }) => id !== "clickflow")
+    .map(({ id }) => id);
+  assert.deepEqual(Object.keys(mediaSources), expectedIds);
+  for (const [id, source] of Object.entries(mediaSources)) {
+    assert.match(source.feature, /\S{4,}/u, `${id} should name its core visual feature`);
+    assert.match(source.accent, /^#[0-9a-f]{6}$/u, `${id} should define a stable project accent`);
+    assert.ok(["product", "data", "game", "media"].includes(source.visualKind), `${id} should define a visual kind`);
+    if (source.mode === "capture" && source.captureTime === undefined) {
+      assert.ok(source.focusSelector || source.focusMode === "auto", `${id} should target a real functional region`);
+    }
+  }
+});
+
+test("media builder composes authentic context and focal detail into fixed product frames", () => {
+  assert.match(mediaBuilder, /function composeProductFrame\(/u);
+  assert.match(mediaBuilder, /function captureFocusRegion\(/u);
+  assert.match(mediaBuilder, /source\.focusSelector/u);
+  assert.match(mediaBuilder, /width:\s*1440[\s\S]*height:\s*900/u);
+  assert.match(mediaBuilder, /sharp\([\s\S]*?\.composite\(/u);
+  assert.match(mediaBuilder, /source\.clickSelector/u);
+  assert.match(mediaBuilder, /source\.afterClickText/u);
+  assert.match(mediaBuilder, /source\.focusFile/u);
+  assert.match(mediaBuilder, /source\.waitForCanvasVariance/u);
+  assert.match(mediaBuilder, /getImageData\(0,\s*0,\s*canvas\.width,\s*canvas\.height\)/u);
+  assert.match(mediaBuilder, /"\.mjs":\s*"text\/javascript; charset=utf-8"/u);
+  for (const id of ["paws-home-client", "zhuanglege-sha"]) {
+    assert.equal(mediaSources[id].clickSelector, "#startButton");
+    assert.match(mediaSources[id].afterClickText, /游戏已启动/u);
+    assert.match(mediaSources[id].focusSelector, /canvas/u);
+  }
+  assert.equal(mediaSources["paws-home-client"].focusFile, "tests/artifacts/paws-ai-real-template-play-2d.png");
+  assert.ok(existsSync(join(root, mediaSources["paws-home-client"].focusFile)));
+  assert.equal(mediaSources["xiang-le-ge-xiang"].waitForCanvasVariance, true);
+  assert.equal(mediaSources["nang-keng-pai-pai-xiang"].captureTime, 20);
+  assert.match(mediaBuilder, /video\.controls\s*=\s*false/u);
+});
+
+test("capture server supports valid byte ranges and rejects empty suffix ranges", async () => {
+  assert.equal(typeof createStaticServer, "function");
+  const server = createStaticServer();
+  await new Promise((resolve) => server.listen(0, "127.0.0.1", resolve));
+  try {
+    const url = `http://127.0.0.1:${server.address().port}/index.html`;
+    const invalidResponse = await fetch(url, {
+      headers: { Range: "bytes=-0" },
+    });
+    assert.equal(invalidResponse.status, 416);
+
+    const response = await fetch(url, {
+      headers: { Range: "bytes=0-15" },
+    });
+    assert.equal(response.status, 206);
+    assert.equal(response.headers.get("accept-ranges"), "bytes");
+    assert.match(response.headers.get("content-range") || "", /^bytes 0-15\/\d+$/u);
+    assert.equal((await response.arrayBuffer()).byteLength, 16);
+  } finally {
+    await new Promise((resolve) => server.close(resolve));
   }
 });
 

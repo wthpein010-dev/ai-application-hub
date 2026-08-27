@@ -244,7 +244,7 @@ async function assertSelected(page, id, label, expectedHash = "#apps") {
   await waitForStageImage(page);
   const state = await page.evaluate((selectedId) => {
     const selected = document.querySelector(`.app-card[data-app-id="${CSS.escape(selectedId)}"]`);
-    const progress = document.querySelector('[role="progressbar"]');
+    const progress = document.querySelector('.showcase-status__track[role="progressbar"]');
     return {
       hash: location.hash,
       preservedQuery: new URL(location.href).searchParams.get("qa"),
@@ -277,7 +277,7 @@ async function assertSynchronizedFallback(page, {
   await waitForStageImage(page);
   const state = await page.evaluate(({ selectedId, storageKey }) => {
     const selected = document.querySelector(`.app-card[data-app-id="${CSS.escape(selectedId)}"]`);
-    const progress = document.querySelector('[role="progressbar"]');
+    const progress = document.querySelector('.showcase-status__track[role="progressbar"]');
     let storedSelection = "unavailable";
     try {
       storedSelection = localStorage.getItem(storageKey);
@@ -459,11 +459,17 @@ try {
         selectedCount: document.querySelectorAll(".app-card.selected").length,
         smallText,
         actionsContained: actionGeometry.every(({ contained }) => contained),
-        actionsTallEnough: actionGeometry.every(({ height }) => height >= 38),
+        actionsTallEnough: actionGeometry.every(({ height }) => height >= 44),
         actionsFit: actionGeometry.every(({ widthFits }) => widthFits),
         clippedShowcaseText: showcaseTextGeometry
           .filter(({ heightFits, widthFits }) => !heightFits || !widthFits)
           .map(({ selector, heightFits, widthFits }) => `${selector}:height=${heightFits},width=${widthFits}`),
+        ambientLayerCount: document.querySelectorAll(".ambient-grid, .ambient-scan").length,
+        readingProgressMax: Number(document.querySelector("#scrollProgress")?.getAttribute("aria-valuemax")),
+        readingProgressNow: Number(document.querySelector("#scrollProgress")?.getAttribute("aria-valuenow")),
+        activeNavigation: document.querySelector('.top-nav nav a[aria-current="page"]')?.getAttribute("href"),
+        featureCount: document.querySelectorAll(".app-card .card-feature").length,
+        featureTextReadable: Array.from(document.querySelectorAll(".card-feature")).every((feature) => Number.parseFloat(getComputedStyle(feature).fontSize) >= 14),
       };
     });
     check(baseline.cardCount, 28, `${viewport.name} renders 28 cards`);
@@ -494,6 +500,12 @@ try {
     check(baseline.actionsTallEnough, `${viewport.name} card actions are comfortably sized`);
     check(baseline.actionsFit, `${viewport.name} card action labels fit`);
     check(baseline.clippedShowcaseText, [], `${viewport.name} shows the complete selected-project description and use case`);
+    check(baseline.ambientLayerCount, 2, `${viewport.name} renders both ambient motion layers`);
+    check(baseline.readingProgressMax, 100, `${viewport.name} exposes a bounded page reading progress`);
+    check(baseline.readingProgressNow, 0, `${viewport.name} reading progress starts at the reset top position`);
+    check(baseline.activeNavigation, "#overview", `${viewport.name} highlights overview at the reset top position`);
+    check(baseline.featureCount, 28, `${viewport.name} renders one project feature per card`);
+    check(baseline.featureTextReadable, `${viewport.name} project features use readable text`);
     const performance = await page.evaluate(() => {
       const navigation = performance.getEntriesByType("navigation")[0];
       return {
@@ -508,11 +520,28 @@ try {
     check(performance.preloadCount, 1, `${viewport.name} preloads only the next showcase image`);
 
     for (const theme of ["clean", "mist", "coral", "night"]) {
+      if (theme !== "clean") {
+        await page.evaluate(() => {
+          globalThis.__themeTransitionObserved = false;
+          globalThis.__themeTransitionObserver?.disconnect();
+          globalThis.__themeTransitionObserver = new MutationObserver(() => {
+            if (document.documentElement.classList.contains("theme-transitioning")) {
+              globalThis.__themeTransitionObserved = true;
+            }
+          });
+          globalThis.__themeTransitionObserver.observe(document.documentElement, { attributes: true, attributeFilter: ["class"] });
+        });
+      }
       await page.locator("#themeToggle").click();
       await page.locator(`[data-theme-option="${theme}"]`).click();
       check(await page.getAttribute("html", "data-theme"), theme, `${viewport.name} applies ${theme} theme`);
+      if (theme !== "clean") {
+        check(await page.evaluate(() => globalThis.__themeTransitionObserved), `${viewport.name}/${theme} exposes short theme feedback`);
+      }
       await assertNoEntranceReplay(page, `${viewport.name}/${theme} theme`);
-      await page.waitForTimeout(220);
+      await page.waitForTimeout(340);
+      check(await page.locator("html").evaluate((element) => element.classList.contains("theme-transitioning")), false, `${viewport.name}/${theme} theme feedback settles`);
+      await page.evaluate(() => globalThis.__themeTransitionObserver?.disconnect());
       const themeContrast = await page.evaluate(() => {
         const channels = (value) => (value.match(/[\d.]+/gu) || []).slice(0, 3).map(Number);
         const luminance = (value) => {
@@ -526,13 +555,19 @@ try {
           / (Math.min(luminance(foreground), luminance(background)) + 0.05)
         );
         const background = getComputedStyle(document.body).backgroundColor;
+        const featureRatios = Array.from(document.querySelectorAll(".card-feature strong"), (feature) => {
+          const card = feature.closest(".app-card");
+          return contrast(getComputedStyle(feature).color, getComputedStyle(card).backgroundColor);
+        });
         return {
           heading: contrast(getComputedStyle(document.querySelector(".showcase-copy h1")).color, background),
           lead: contrast(getComputedStyle(document.querySelector(".showcase-lead")).color, background),
+          feature: Math.min(...featureRatios),
         };
       });
       check(themeContrast.heading >= 4.5, `${viewport.name}/${theme} hero heading has AA contrast`);
       check(themeContrast.lead >= 4.5, `${viewport.name}/${theme} hero copy has AA contrast`);
+      check(themeContrast.feature >= 4.5, `${viewport.name}/${theme} feature labels have AA contrast`);
       await takeScreenshot(page, `${viewport.name}-${theme}`);
     }
     await page.reload({ waitUntil: "networkidle" });
@@ -684,6 +719,13 @@ try {
       window.scrollTo(0, Math.max(0, document.querySelector("#apps").offsetTop - 116));
       html.style.scrollBehavior = previousBehavior;
     });
+    await page.waitForFunction(() => Number(document.querySelector("#scrollProgress")?.getAttribute("aria-valuenow")) > 0);
+    const catalogNavigation = await page.evaluate(() => ({
+      progress: Number(document.querySelector("#scrollProgress")?.getAttribute("aria-valuenow")),
+      current: document.querySelector('.top-nav nav a[aria-current="page"]')?.getAttribute("href"),
+    }));
+    check(catalogNavigation.progress > 0, `${viewport.name} reading progress follows catalog scrolling`);
+    check(catalogNavigation.current, "#apps", `${viewport.name} navigation follows catalog scrolling`);
     await takeScreenshot(page, `${viewport.name}-catalog`);
     await takeScreenshot(page, `${viewport.name}-catalog-full`, true);
     const fallback = await page.locator(".app-card .card-media img").first().evaluate(async (image) => {
@@ -738,10 +780,14 @@ try {
     cardTransform: getComputedStyle(document.querySelector(".app-card[data-app-id]")).transform,
     stageTransform: getComputedStyle(document.querySelector(".showcase-media")).transform,
     cardDuration: getComputedStyle(document.querySelector(".app-card[data-app-id]")).animationDuration,
+    ambientGridAnimation: getComputedStyle(document.querySelector(".ambient-grid")).animationName,
+    ambientScanDisplay: getComputedStyle(document.querySelector(".ambient-scan")).display,
   }));
   check(reduced.cardTransform, "none", "reduced motion removes card transform");
   check(reduced.stageTransform, "none", "reduced motion removes stage transform");
   check(Number.parseFloat(reduced.cardDuration) <= 0.001, "reduced motion minimizes entrance duration");
+  check(reduced.ambientGridAnimation, "none", "reduced motion stops ambient grid movement");
+  check(reduced.ambientScanDisplay, "none", "reduced motion hides the ambient scan");
   await reducedContext.close();
 
   const storageContext = await browser.newContext({

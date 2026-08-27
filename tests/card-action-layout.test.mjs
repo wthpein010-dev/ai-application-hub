@@ -42,11 +42,27 @@ test("engineering cards use the same two-column action grid", () => {
 test("Bento cards pin equal action cells to their lower edge", () => {
   assert.match(rule(".card-bottom"), /margin-top:\s*auto/u);
   assert.match(rule(".card-actions"), /grid-template-columns:\s*repeat\(2,\s*minmax\(0,\s*1fr\)\)/u);
-  assert.match(rule(".card-actions a"), /min-height:\s*38px/u);
+  assert.match(rule(".card-actions a"), /min-height:\s*44px/u);
+  assert.match(rule(".card-actions a"), /font-size:\s*13px/u);
+  assert.match(rule(".card-actions a::before"), /content:\s*attr\(data-icon\)/u);
+  assert.match(actionRenderer(), /data-icon="&#8599;"/u);
+  assert.match(actionRenderer(), /data-icon="&#9654;"/u);
+  assert.match(actionRenderer(), /data-icon="&#8595;"/u);
+});
+
+test("cards expose one readable project-owned feature without repeating the summary", () => {
+  assert.match(runtime, /media\.feature/u);
+  assert.match(runtime, /class="card-feature"/u);
+  assert.match(runtime, /--project-accent:\$\{escapeHtml\(media\.accent\)\}/u);
+  assert.match(rule(".card-feature"), /min-height:\s*48px/u);
+  assert.match(rule(".card-feature"), /font-size:\s*14px/u);
+  assert.match(rule(".card-feature strong"), /color:\s*var\(--text\)/u);
+  assert.match(rule(".card-feature strong"), /font-size:\s*13px/u);
+  assert.match(rule(".app-card > p"), /font-size:\s*14px/u);
 });
 
 test("homepage loads all showcase assets with the exact release cache marker", () => {
-  assert.match(page, /href="\.\/styles\.css\?v=20260827-showcase-complete-copy"/);
-  assert.match(page, /src="\.\/hub-project-media\.js\?v=20260826-dynamic-showcase"/);
-  assert.match(page, /src="\.\/app-20260706-restore-games\.js\?v=20260826-dynamic-showcase"/);
+  assert.match(page, /href="\.\/styles\.css\?v=20260827-hub-visual-polish"/);
+  assert.match(page, /src="\.\/hub-project-media\.js\?v=20260827-hub-visual-polish"/);
+  assert.match(page, /src="\.\/app-20260706-restore-games\.js\?v=20260827-hub-visual-polish"/);
 });
