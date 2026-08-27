@@ -32,7 +32,8 @@ test("X intelligence forum is the final Hub tool with demo and video only", () =
   assert.match(radar.brief, /中英文/);
   assert.match(radar.brief, /完整原帖/);
   assert.match(radar.brief, /精选评论/);
-  assert.match(radar.brief, /两小时/);
+  assert.match(radar.brief, /每天|每日/);
+  assert.match(radar.brief, /08:00/);
 });
 
 test("the public demo clearly separates sample data from the private live site", () => {
@@ -59,20 +60,22 @@ test("the public demo clearly separates sample data from the private live site",
   assert.match(html, /Tibo/);
   assert.match(html, /@thsottiaux/);
   assert.match(html, /data-token-alert="true"/);
-  assert.match(html, /Tibo 确认：额度已重置/);
-  assert.match(html, /图片长会话多次压缩/);
+  assert.match(html, /Tibo 暗示：可能再次按下重置按钮/);
+  assert.match(html, /提前信号，不是正式重置承诺/);
   assert.match(html, /<details class="token-disclosure"/);
   assert.match(html, /展开 Tibo 原帖中英对照与精选评论/);
   assert.match(html, /英文原帖/);
   assert.match(html, /中文翻译/);
   assert.match(html, /编辑整理/);
   assert.match(html, /精选评论 · 3 条/);
-  assert.match(html, /Good Sunday\. Reset has been propagated to accounts/);
-  assert.match(html, /重置已下发到各账号/);
-  assert.match(html, /每两小时检查/);
+  assert.match(html, /A good thing about having aged is that I feel that it’s been 20 years since I’ve pressed the reset button\./);
+  assert.match(html, /上了年纪的一个好处是，我感觉自己已经有 20 年没按过重置按钮了/);
+  assert.match(html, /不是 Codex \/ OpenAI 官方规则/);
+  assert.match(html, /没有说明重置原因、具体时间或覆盖账号/);
+  assert.match(html, /每天北京时间 08:00 检查/);
   assert.match(html, /最新可信事件/);
   assert.match(html, /时间待确认/);
-  assert.match(html, /https:\/\/x\.com\/thsottiaux\/status\/2091688655828246890/);
+  assert.match(html, /https:\/\/x\.com\/thsottiaux\/status\/2092862554632826968/);
   assert.match(html, /<script type="module" src="\.\/app\.js"><\/script>/);
   assert.equal(existsSync(join(projectRoot, "styles.css")), true);
   assert.equal(existsSync(join(projectRoot, "app.js")), true);
@@ -96,6 +99,9 @@ test("the demo script provides local filtering, detail inspection and reset", ()
   assert.match(script, /resetFilters/);
   assert.match(script, /ChatGPT Sites/);
   assert.match(script, /thsottiaux/);
+  assert.match(script, /2092862554632826968/);
+  assert.match(script, /Intrigued to see if I can find it tomorrow and dust it up/);
+  assert.match(script, /不是正式重置承诺/);
   assert.match(script, /2091407991736332689/);
   assert.match(script, /2091412393368945027/);
   assert.match(script, /2091413240337326588/);
