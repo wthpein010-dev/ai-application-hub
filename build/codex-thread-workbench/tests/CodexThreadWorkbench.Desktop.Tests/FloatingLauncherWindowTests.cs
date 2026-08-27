@@ -101,6 +101,24 @@ public sealed class FloatingLauncherWindowTests
     }
 
     [AvaloniaFact]
+    public void Launcher_AllowsLifetimeShutdownButBlocksOrdinaryClose()
+    {
+        var applicationWindow = new FloatingLauncherWindow();
+        var osWindow = new FloatingLauncherWindow();
+        var ordinaryWindow = new FloatingLauncherWindow();
+
+        Assert.False(HandleClosing(
+            applicationWindow,
+            WindowCloseReason.ApplicationShutdown));
+        Assert.False(HandleClosing(osWindow, WindowCloseReason.OSShutdown));
+        Assert.True(HandleClosing(ordinaryWindow, WindowCloseReason.WindowClosing));
+
+        applicationWindow.CloseForShutdown();
+        osWindow.CloseForShutdown();
+        ordinaryWindow.CloseForShutdown();
+    }
+
+    [AvaloniaFact]
     public async Task Launcher_CaptureLossEndsDragWithoutOpeningAndStillSnaps()
     {
         var window = new FloatingLauncherWindow();
@@ -284,5 +302,15 @@ public sealed class FloatingLauncherWindowTests
             new Point(36, 36),
             MouseButton.Left,
             RawInputModifiers.None);
+    }
+
+    private static bool HandleClosing(Window window, WindowCloseReason reason)
+    {
+        var method = typeof(Window).GetMethod(
+            "HandleClosing",
+            System.Reflection.BindingFlags.Instance |
+            System.Reflection.BindingFlags.NonPublic);
+        Assert.NotNull(method);
+        return Assert.IsType<bool>(method.Invoke(window, [reason]));
     }
 }

@@ -64,7 +64,7 @@ public sealed class ConfirmationOverlayViewModelTests
     }
 
     [Fact]
-    public async Task ConfirmAsync_StartsPreloadedThreadWithoutReadingAgain()
+    public async Task ConfirmAsync_ChecksFreshnessAndVerifiesPreloadedThread()
     {
         var candidate = Candidate("thread-1", "message-1");
         var monitor = new FakeConfirmationMonitor(candidate);
@@ -78,7 +78,7 @@ public sealed class ConfirmationOverlayViewModelTests
         await viewModel.ConfirmAsync(Assert.Single(viewModel.Items));
 
         Assert.Equal(["start:thread-1"], client.OperationLog);
-        Assert.Equal(1, client.ReadCalls["thread-1"]);
+        Assert.Equal(2, client.ReadCalls["thread-1"]);
         Assert.Equal(
             "确认，继续开始做，完成前不要停。",
             client.LastStart?.Text);
@@ -162,6 +162,68 @@ public sealed class ConfirmationOverlayViewModelTests
     }
 
     [Fact]
+    public async Task ConfirmAsync_DoesNotSendWhenUserAlreadyRepliedAfterCandidate()
+    {
+        var candidate = Candidate("thread-1", "message-1");
+        var monitor = new FakeConfirmationMonitor(candidate);
+        var client = ClientWith(WaitingState("thread-1", "message-1"));
+        var fallback = new RecordingFallback();
+        await using var viewModel = new ConfirmationOverlayViewModel(
+            client,
+            monitor,
+            new ConfirmationDetector(),
+            fallback);
+        var waitingState = client.ThreadStates["thread-1"];
+        client.ThreadStates["thread-1"] = waitingState with
+        {
+            Messages = waitingState.Messages
+                .Append(new ChatMessage(
+                    "manual-user",
+                    ChatRole.User,
+                    "我已经在原任务里回复了。"))
+                .ToArray()
+        };
+
+        await viewModel.ConfirmAsync(Assert.Single(viewModel.Items));
+
+        Assert.Empty(fallback.Calls);
+        Assert.Empty(client.OperationLog);
+        Assert.Empty(viewModel.Items);
+        Assert.Equal([("thread-1", "message-1")], monitor.Handled);
+    }
+
+    [Fact]
+    public async Task ConfirmAsync_DoesNotSendWhenNewAssistantMessageReplacesCandidate()
+    {
+        var candidate = Candidate("thread-1", "message-1");
+        var monitor = new FakeConfirmationMonitor(candidate);
+        var client = ClientWith(WaitingState("thread-1", "message-1"));
+        var fallback = new RecordingFallback();
+        await using var viewModel = new ConfirmationOverlayViewModel(
+            client,
+            monitor,
+            new ConfirmationDetector(),
+            fallback);
+        var waitingState = client.ThreadStates["thread-1"];
+        client.ThreadStates["thread-1"] = waitingState with
+        {
+            Messages = waitingState.Messages
+                .Append(new ChatMessage(
+                    "message-2",
+                    ChatRole.Assistant,
+                    "请确认新的方案，确认后我会开始实施。"))
+                .ToArray()
+        };
+
+        await viewModel.ConfirmAsync(Assert.Single(viewModel.Items));
+
+        Assert.Empty(fallback.Calls);
+        Assert.Empty(client.OperationLog);
+        Assert.Empty(viewModel.Items);
+        Assert.Equal([("thread-1", "message-1")], monitor.Handled);
+    }
+
+    [Fact]
     public async Task ConfirmAsync_KeepsCandidateWhenMessageCannotBeVerified()
     {
         var candidate = Candidate("thread-1", "message-1");
@@ -199,7 +261,7 @@ public sealed class ConfirmationOverlayViewModelTests
 
         await viewModel.ConfirmAsync(Assert.Single(viewModel.Items));
 
-        Assert.Equal(["thread-1"], reader.ThreadIds);
+        Assert.Equal(["thread-1", "thread-1"], reader.ThreadIds);
         Assert.Empty(client.ReadCalls);
         Assert.Empty(viewModel.Items);
     }

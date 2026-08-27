@@ -8,6 +8,7 @@ public sealed class ConfirmationMonitor : IConfirmationMonitor
     private static readonly TimeSpan DefaultThreadReadTimeout =
         TimeSpan.FromSeconds(5);
     private const int DefaultMaximumConcurrentThreadReads = 2;
+    private const int IncrementalThreadListLimit = 200;
     private readonly ICodexThreadClient _client;
     private readonly ConfirmationDetector _detector;
     private readonly IConfirmationThreadReader _threadReader;
@@ -19,8 +20,11 @@ public sealed class ConfirmationMonitor : IConfirmationMonitor
         new(StringComparer.Ordinal);
     private readonly Dictionary<string, ConfirmationCandidate> _candidatesByThread =
         new(StringComparer.Ordinal);
+    private readonly Dictionary<string, ThreadSummary> _pendingReadsByThread =
+        new(StringComparer.Ordinal);
     private readonly HashSet<(string ThreadId, string MessageId)> _handled = [];
     private IReadOnlyList<ConfirmationCandidate> _candidates = [];
+    private bool _hasCompletedInitialScan;
     private string _errorText = string.Empty;
     private Task? _runTask;
     private Task? _disposeTask;
@@ -65,7 +69,9 @@ public sealed class ConfirmationMonitor : IConfirmationMonitor
         try
         {
             summaries = await _client.ListThreadsAsync(
-                limit: int.MaxValue,
+                limit: _hasCompletedInitialScan
+                    ? IncrementalThreadListLimit
+                    : int.MaxValue,
                 cancellationToken: cancellationToken);
             SetError(string.Empty);
         }
@@ -79,12 +85,21 @@ public sealed class ConfirmationMonitor : IConfirmationMonitor
             return;
         }
 
+        var summariesByThread = summaries.ToDictionary(
+            summary => summary.Id,
+            StringComparer.Ordinal);
+        foreach (var pending in _pendingReadsByThread.Values)
+        {
+            summariesByThread.TryAdd(pending.Id, pending);
+        }
+
         var summariesToRead = new List<ThreadSummary>();
-        foreach (var summary in summaries)
+        foreach (var summary in summariesByThread.Values)
         {
             var revision = new ThreadRevision(summary.UpdatedAt, summary.Status);
             if (_lastEvaluated.GetValueOrDefault(summary.Id) == revision)
             {
+                _pendingReadsByThread.Remove(summary.Id);
                 continue;
             }
 
@@ -95,6 +110,7 @@ public sealed class ConfirmationMonitor : IConfirmationMonitor
             {
                 _lastEvaluated[summary.Id] = revision;
                 _candidatesByThread.Remove(summary.Id);
+                _pendingReadsByThread.Remove(summary.Id);
                 continue;
             }
 
@@ -117,9 +133,11 @@ public sealed class ConfirmationMonitor : IConfirmationMonitor
             var result = await completedRead;
             if (result.State is null)
             {
+                _pendingReadsByThread[result.Summary.Id] = result.Summary;
                 continue;
             }
 
+            _pendingReadsByThread.Remove(result.Summary.Id);
             _lastEvaluated[result.Summary.Id] = new ThreadRevision(
                 result.Summary.UpdatedAt,
                 result.Summary.Status);
@@ -137,6 +155,7 @@ public sealed class ConfirmationMonitor : IConfirmationMonitor
             PublishCandidatesIfChanged();
         }
 
+        _hasCompletedInitialScan = true;
         PublishCandidatesIfChanged();
     }
 

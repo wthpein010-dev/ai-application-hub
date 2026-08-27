@@ -11,6 +11,7 @@ public sealed class ConfirmationOverlayViewModel : ObservableObject, IAsyncDispo
 
     private readonly ICodexThreadClient _client;
     private readonly IConfirmationMonitor _monitor;
+    private readonly ConfirmationDetector _detector;
     private readonly IConfirmationMessageFallback? _messageFallback;
     private readonly SemaphoreSlim _desktopDeliveryGate = new(1, 1);
     private readonly IConfirmationThreadReader _threadReader;
@@ -34,14 +35,15 @@ public sealed class ConfirmationOverlayViewModel : ObservableObject, IAsyncDispo
         TimeSpan? verificationPollInterval = null,
         IConfirmationThreadReader? threadReader = null)
     {
+        ArgumentNullException.ThrowIfNull(detector);
         _client = client;
         _monitor = monitor;
+        _detector = detector;
         _messageFallback = messageFallback;
         _threadReader = threadReader ?? new ClientConfirmationThreadReader(client);
         _verificationTimeout = verificationTimeout ?? TimeSpan.FromSeconds(12);
         _verificationPollInterval = verificationPollInterval ??
                                     TimeSpan.FromMilliseconds(200);
-        ArgumentNullException.ThrowIfNull(detector);
         _synchronizationContext = SynchronizationContext.Current;
         _monitorErrorText = monitor.ErrorText;
         ConfirmAllCommand = new AsyncRelayCommand(
@@ -144,6 +146,14 @@ public sealed class ConfirmationOverlayViewModel : ObservableObject, IAsyncDispo
         item.ErrorText = string.Empty;
         try
         {
+            if (!await IsCurrentCandidateAsync(item.Candidate))
+            {
+                _monitor.MarkHandled(
+                    item.Candidate.ThreadId,
+                    item.Candidate.MessageId);
+                return;
+            }
+
             var threadId = item.Candidate.ThreadId;
             if (_messageFallback is not null)
             {
@@ -367,6 +377,29 @@ public sealed class ConfirmationOverlayViewModel : ObservableObject, IAsyncDispo
             : $"：{lastReadError.Message}";
         throw new InvalidOperationException(
             $"未确认消息已发送到对应任务{detail}，请重试。");
+    }
+
+    private async Task<bool> IsCurrentCandidateAsync(
+        ConfirmationCandidate candidate)
+    {
+        var state = await _threadReader.ReadThreadAsync(
+            new Models.ThreadSummary(
+                candidate.ThreadId,
+                candidate.Title,
+                candidate.RequestPreview,
+                string.Empty,
+                candidate.UpdatedAt,
+                Models.ThreadStatusKind.NotLoaded));
+        var current = _detector.Detect(state);
+        return current is not null &&
+               string.Equals(
+                   current.ThreadId,
+                   candidate.ThreadId,
+                   StringComparison.Ordinal) &&
+               string.Equals(
+                   current.MessageId,
+                   candidate.MessageId,
+                   StringComparison.Ordinal);
     }
 
     private static bool HasConfirmationAfterCandidate(

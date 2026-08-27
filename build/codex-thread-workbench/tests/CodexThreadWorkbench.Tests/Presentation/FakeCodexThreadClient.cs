@@ -17,6 +17,8 @@ internal sealed class FakeCodexThreadClient : ICodexThreadClient
 
     public int ListCalls { get; private set; }
 
+    public List<int> RequestedListLimits { get; } = [];
+
     public Dictionary<string, int> ReadCalls { get; } = [];
 
     public Exception? ListException { get; set; }
@@ -105,6 +107,7 @@ internal sealed class FakeCodexThreadClient : ICodexThreadClient
         CancellationToken cancellationToken = default)
     {
         ListCalls++;
+        RequestedListLimits.Add(limit);
         ListStarted.TrySetResult();
         if (DelayList)
         {

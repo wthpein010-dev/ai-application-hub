@@ -405,6 +405,70 @@ public sealed class ConfirmationMonitorTests
     }
 
     [Fact]
+    public async Task SubsequentScan_RequestsOnlyMostRecentThreadPage()
+    {
+        var client = new FakeCodexThreadClient();
+        client.Threads.Add(Summary("thread-1", Now, ThreadStatusKind.Idle));
+        client.ThreadStates["thread-1"] = WaitingState("thread-1", Now);
+        var monitor = new ConfirmationMonitor(client, new ConfirmationDetector());
+
+        await monitor.ScanOnceAsync(Now);
+        await monitor.ScanOnceAsync(Now.AddSeconds(2));
+
+        Assert.Equal([int.MaxValue, 200], client.RequestedListLimits);
+    }
+
+    [Fact]
+    public async Task SubsequentScan_RetriesFailedInitialThreadBeyondRecentPage()
+    {
+        var client = new FakeCodexThreadClient();
+        for (var index = 0; index < 200; index++)
+        {
+            client.Threads.Add(
+                Summary($"approval-{index}", Now, ThreadStatusKind.NeedsApproval));
+        }
+
+        client.Threads.Add(Summary("waiting-201", Now, ThreadStatusKind.Idle));
+        client.ThreadStates["waiting-201"] = WaitingState("waiting-201", Now);
+        client.ReadExceptions["waiting-201"] = new IOException("temporarily locked");
+        var monitor = new ConfirmationMonitor(client, new ConfirmationDetector());
+
+        await monitor.ScanOnceAsync(Now);
+        client.ReadExceptions.Remove("waiting-201");
+        await monitor.ScanOnceAsync(Now.AddSeconds(2));
+
+        Assert.Equal(2, client.ReadCalls["waiting-201"]);
+        Assert.Equal("waiting-201", Assert.Single(monitor.Candidates).ThreadId);
+    }
+
+    [Fact]
+    public async Task CancelledInitialScan_RetriesFullHistoryOnNextScan()
+    {
+        var client = new FakeCodexThreadClient();
+        for (var index = 0; index < 200; index++)
+        {
+            client.Threads.Add(
+                Summary($"approval-{index}", Now, ThreadStatusKind.NeedsApproval));
+        }
+
+        client.Threads.Add(Summary("waiting-201", Now, ThreadStatusKind.Idle));
+        client.ThreadStates["waiting-201"] = WaitingState("waiting-201", Now);
+        client.DelayedReadThreadIds.Add("waiting-201");
+        var monitor = new ConfirmationMonitor(client, new ConfirmationDetector());
+        using var cancellation = new CancellationTokenSource();
+
+        var cancelledScan = monitor.ScanOnceAsync(Now, cancellation.Token);
+        await client.ReadStarted.Task.WaitAsync(TimeSpan.FromSeconds(1));
+        cancellation.Cancel();
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(() => cancelledScan);
+        client.DelayedReadThreadIds.Remove("waiting-201");
+        await monitor.ScanOnceAsync(Now.AddSeconds(2));
+
+        Assert.Equal([int.MaxValue, int.MaxValue], client.RequestedListLimits);
+        Assert.Equal("waiting-201", Assert.Single(monitor.Candidates).ThreadId);
+    }
+
+    [Fact]
     public async Task Scan_ReevaluatesStatusChangeWhenUpdatedAtIsUnchanged()
     {
         var client = new FakeCodexThreadClient();

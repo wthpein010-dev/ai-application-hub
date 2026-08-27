@@ -74,7 +74,12 @@ public partial class MainWindow : Window
 
     protected override void OnClosing(WindowClosingEventArgs e)
     {
-        if (!_isClosingAfterShutdown && CollapseToLauncherOnClose)
+        var isLifetimeShutdown = e.CloseReason is
+            WindowCloseReason.ApplicationShutdown or
+            WindowCloseReason.OSShutdown;
+        if (!_isClosingAfterShutdown &&
+            !isLifetimeShutdown &&
+            CollapseToLauncherOnClose)
         {
             e.Cancel = true;
             CollapseToLauncher();
@@ -82,7 +87,7 @@ public partial class MainWindow : Window
             return;
         }
 
-        if (_isClosingAfterShutdown || _viewModel is null)
+        if (_isClosingAfterShutdown || isLifetimeShutdown || _viewModel is null)
         {
             base.OnClosing(e);
             return;

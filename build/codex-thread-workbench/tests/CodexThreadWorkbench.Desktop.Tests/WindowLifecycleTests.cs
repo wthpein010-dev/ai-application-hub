@@ -89,6 +89,31 @@ public sealed class WindowLifecycleTests
         window.CloseForShutdown();
     }
 
+    [AvaloniaFact]
+    public void MainWindow_InFloatingMode_AllowsApplicationAndOsShutdown()
+    {
+        var applicationWindow = new MainWindow { CollapseToLauncherOnClose = true };
+        var osWindow = new MainWindow { CollapseToLauncherOnClose = true };
+
+        Assert.False(HandleClosing(
+            applicationWindow,
+            WindowCloseReason.ApplicationShutdown));
+        Assert.False(HandleClosing(osWindow, WindowCloseReason.OSShutdown));
+
+        applicationWindow.CloseForShutdown();
+        osWindow.CloseForShutdown();
+    }
+
+    private static bool HandleClosing(Window window, WindowCloseReason reason)
+    {
+        var method = typeof(Window).GetMethod(
+            "HandleClosing",
+            System.Reflection.BindingFlags.Instance |
+            System.Reflection.BindingFlags.NonPublic);
+        Assert.NotNull(method);
+        return Assert.IsType<bool>(method.Invoke(window, [reason]));
+    }
+
     private sealed class NoopClient : ICodexThreadClient
     {
         public event Action<CodexNotification>? NotificationReceived

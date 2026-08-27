@@ -82,7 +82,9 @@ public partial class FloatingLauncherWindow : Window
 
     protected override void OnClosing(WindowClosingEventArgs e)
     {
-        if (!_isClosingForShutdown)
+        if (!_isClosingForShutdown &&
+            e.CloseReason is not WindowCloseReason.ApplicationShutdown and
+            not WindowCloseReason.OSShutdown)
         {
             e.Cancel = true;
         }
