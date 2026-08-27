@@ -8,11 +8,11 @@ import {
 import { basename, join, resolve } from "node:path";
 
 const FILE_NAME = "CodexConfirmationBar-Windows-x64.zip";
-const RELEASE_DIRECTORY = "v2.1.8";
-const TOTAL_SIZE = 41_562_641;
+const RELEASE_DIRECTORY = "v2.1.8-d81ed53";
+const TOTAL_SIZE = 40_229_819;
 const CHUNK_SIZE = 8_388_608;
 const ARCHIVE_SHA256 =
-  "D8D04D978B262B55845604E99B48031AEE00BD6420E7794B51624B8B0BB87BCB";
+  "9CC62053A7E5991C200BBB49D6C64B57DDB8F7702D3423B8342B2C2CCE501962";
 
 const sha256 = bytes =>
   createHash("sha256").update(bytes).digest("hex").toUpperCase();
