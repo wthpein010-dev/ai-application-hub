@@ -334,6 +334,54 @@ public sealed class ConfirmationMonitorTests
     }
 
     [Fact]
+    public async Task MissingProductionSnapshot_IsRetriedUntilTheSessionAppears()
+    {
+        const string threadId = "019f7444-4d4d-7771-9864-0043606d7f99";
+        var sessionsRoot = Path.Combine(
+            Path.GetTempPath(),
+            "CodexThreadWorkbench.Monitor.Tests",
+            Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(sessionsRoot);
+        try
+        {
+            var client = new FakeCodexThreadClient();
+            client.Threads.Add(
+                Summary(threadId, Now.AddDays(-2), ThreadStatusKind.NotLoaded));
+            var monitor = new ConfirmationMonitor(
+                client,
+                new ConfirmationDetector(),
+                threadReader: new CodexSessionSnapshotReader(
+                    sessionsRoot,
+                    throwWhenUnavailable: true));
+
+            await monitor.ScanOnceAsync(Now);
+
+            Assert.Empty(monitor.Candidates);
+            var directory = Path.Combine(sessionsRoot, "2026", "08", "20");
+            Directory.CreateDirectory(directory);
+            await File.WriteAllLinesAsync(
+                Path.Combine(
+                    directory,
+                    $"rollout-2026-08-20T08-00-00-{threadId}.jsonl"),
+                [
+                    """{"timestamp":"2026-08-20T08:00:00Z","type":"response_item","payload":{"type":"message","id":"message-retried","role":"assistant","content":[{"type":"output_text","text":"请确认这个方案，确认后我会开始实施。"}]}}""",
+                    """{"timestamp":"2026-08-20T08:00:01Z","type":"event_msg","payload":{"type":"task_complete"}}"""
+                ]);
+            await Task.Delay(TimeSpan.FromMilliseconds(2100));
+
+            await monitor.ScanOnceAsync(Now.AddSeconds(3));
+
+            Assert.Equal(
+                "message-retried",
+                Assert.Single(monitor.Candidates).MessageId);
+        }
+        finally
+        {
+            Directory.Delete(sessionsRoot, recursive: true);
+        }
+    }
+
+    [Fact]
     public async Task ListFailure_RetainsCandidates_AndPublishesThenClearsError()
     {
         var client = new FakeCodexThreadClient();

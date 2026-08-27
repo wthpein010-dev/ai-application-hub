@@ -72,9 +72,23 @@ public sealed class CodexSessionSnapshotReaderTests : IDisposable
     }
 
     [Fact]
-    public async Task ReadThreadAsync_ReturnsEmptySafeStateWhenSessionIsMissing()
+    public async Task ReadThreadAsync_StrictModeThrowsWhenSessionIsMissing()
     {
         var summary = Summary("019f7444-4d4d-7771-9864-0043606d7f79");
+        var reader = new CodexSessionSnapshotReader(
+            _sessionsRoot,
+            throwWhenUnavailable: true);
+
+        var error = await Assert.ThrowsAsync<FileNotFoundException>(
+            () => reader.ReadThreadAsync(summary));
+
+        Assert.Contains(summary.Id, error.Message, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task ReadThreadAsync_DefaultModeReturnsEmptyStateWhenSessionIsMissing()
+    {
+        var summary = Summary("019f7444-4d4d-7771-9864-0043606d7f97");
         var reader = new CodexSessionSnapshotReader(_sessionsRoot);
 
         var state = await reader.ReadThreadAsync(summary);

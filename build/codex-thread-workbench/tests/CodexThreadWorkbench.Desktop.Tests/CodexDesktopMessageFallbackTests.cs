@@ -71,6 +71,31 @@ public sealed class CodexDesktopMessageFallbackTests
         Assert.Equal(1, automation.SubmitCount);
     }
 
+    [Fact]
+    public async Task WindowsSubmitter_RevalidatesAfterFocusSettlesBeforeEnter()
+    {
+        if (!OperatingSystem.IsWindows())
+        {
+            return;
+        }
+
+        var isCurrent = true;
+        var timeProvider = new ManualTimeProvider(_ => isCurrent = false);
+        var automation = new RecordingWindowsCodexAutomation(
+            readyAfterDiscoveries: int.MaxValue,
+            initialForegroundWindow: 42);
+        ICodexForegroundSubmitter submitter = new WindowsCodexForegroundSubmitter(
+            automation,
+            timeProvider,
+            timeProvider.DelayAsync);
+
+        var submitted = await submitter.SubmitIfCurrentAsync(
+            _ => Task.FromResult(isCurrent));
+
+        Assert.False(submitted);
+        Assert.Equal(0, automation.SubmitCount);
+    }
+
     private sealed class RecordingLauncher(List<string> order) : ICodexDeepLinkLauncher
     {
         public Task OpenAsync(
@@ -127,7 +152,8 @@ public sealed class CodexDesktopMessageFallbackTests
         }
     }
 
-    private sealed class ManualTimeProvider : TimeProvider
+    private sealed class ManualTimeProvider(
+        Action<TimeSpan>? onDelay = null) : TimeProvider
     {
         private long _timestamp;
 
@@ -148,6 +174,7 @@ public sealed class CodexDesktopMessageFallbackTests
         {
             cancellationToken.ThrowIfCancellationRequested();
             Advance(duration);
+            onDelay?.Invoke(duration);
             return Task.CompletedTask;
         }
     }

@@ -47,7 +47,9 @@ public partial class App : Application
             client = await CodexAppServerClient.ConnectAsync();
             ConfirmationOverlayDiagnostics.Write("connect:complete");
             var detector = new ConfirmationDetector();
-            var threadReader = new CodexSessionSnapshotReader();
+            var threadReader = new CodexSessionSnapshotReader(
+                throwWhenUnavailable: true);
+            var statusReader = new CodexSessionSnapshotReader();
             var monitor = new ConfirmationMonitor(
                 client,
                 detector,
@@ -86,7 +88,7 @@ public partial class App : Application
                 client,
                 new WorkspaceStore(),
                 ownsClient: false,
-                statusReader: threadReader);
+                statusReader: statusReader);
             session = new WorkbenchSession(
                 overlayViewModel,
                 monitor,

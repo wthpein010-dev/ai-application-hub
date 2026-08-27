@@ -157,7 +157,13 @@ public sealed class ConfirmationOverlayViewModel : ObservableObject, IAsyncDispo
             var threadId = item.Candidate.ThreadId;
             if (_messageFallback is not null)
             {
-                await SendThroughDesktopAsync(threadId);
+                if (!await SendThroughDesktopAsync(item.Candidate))
+                {
+                    _monitor.MarkHandled(
+                        item.Candidate.ThreadId,
+                        item.Candidate.MessageId);
+                    return;
+                }
             }
             else
             {
@@ -165,6 +171,14 @@ public sealed class ConfirmationOverlayViewModel : ObservableObject, IAsyncDispo
                 {
                     await _client.ResumeThreadAsync(threadId);
                     _preloadTasks[threadId] = Task.FromResult(true);
+                }
+
+                if (!await IsCurrentCandidateAsync(item.Candidate))
+                {
+                    _monitor.MarkHandled(
+                        item.Candidate.ThreadId,
+                        item.Candidate.MessageId);
+                    return;
                 }
 
                 await _client.StartTurnAsync(
@@ -431,12 +445,21 @@ public sealed class ConfirmationOverlayViewModel : ObservableObject, IAsyncDispo
                     StringComparison.Ordinal));
     }
 
-    private async Task SendThroughDesktopAsync(string threadId)
+    private async Task<bool> SendThroughDesktopAsync(
+        ConfirmationCandidate candidate)
     {
         await _desktopDeliveryGate.WaitAsync();
         try
         {
-            await _messageFallback!.SendAsync(threadId, ConfirmationMessage);
+            if (!await IsCurrentCandidateAsync(candidate))
+            {
+                return false;
+            }
+
+            return await _messageFallback!.SendIfCurrentAsync(
+                candidate.ThreadId,
+                ConfirmationMessage,
+                _ => IsCurrentCandidateAsync(candidate));
         }
         finally
         {

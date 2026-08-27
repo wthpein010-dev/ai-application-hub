@@ -11,6 +11,7 @@ public sealed class CodexSessionSnapshotReader : IConfirmationThreadReader
         TimeSpan.FromSeconds(2);
     private readonly string _sessionsRoot;
     private readonly int _tailByteLimit;
+    private readonly bool _throwWhenUnavailable;
     private readonly SemaphoreSlim _indexGate = new(1, 1);
     private Dictionary<string, string> _sessionPaths =
         new(StringComparer.Ordinal);
@@ -19,11 +20,13 @@ public sealed class CodexSessionSnapshotReader : IConfirmationThreadReader
 
     public CodexSessionSnapshotReader(
         string? sessionsRoot = null,
-        int tailByteLimit = DefaultTailByteLimit)
+        int tailByteLimit = DefaultTailByteLimit,
+        bool throwWhenUnavailable = false)
     {
         ArgumentOutOfRangeException.ThrowIfLessThan(tailByteLimit, 1024);
         _sessionsRoot = sessionsRoot ?? GetDefaultSessionsRoot();
         _tailByteLimit = tailByteLimit;
+        _throwWhenUnavailable = throwWhenUnavailable;
     }
 
     public async Task<ThreadCardState> ReadThreadAsync(
@@ -33,24 +36,28 @@ public sealed class CodexSessionSnapshotReader : IConfirmationThreadReader
         var path = await GetSessionPathAsync(summary.Id, cancellationToken);
         if (path is null)
         {
-            return EmptyState(summary);
+            return UnavailableState(
+                summary,
+                new FileNotFoundException(
+                    $"未找到任务 {summary.Id} 的本机会话快照。",
+                    summary.Id));
         }
 
         try
         {
             return await ReadTailAsync(summary, path, cancellationToken);
         }
-        catch (IOException)
+        catch (IOException error)
         {
-            return EmptyState(summary);
+            return UnavailableState(summary, error);
         }
-        catch (UnauthorizedAccessException)
+        catch (UnauthorizedAccessException error)
         {
-            return EmptyState(summary);
+            return UnavailableState(summary, error);
         }
-        catch (JsonException)
+        catch (JsonException error)
         {
-            return EmptyState(summary);
+            return UnavailableState(summary, error);
         }
     }
 
@@ -285,6 +292,18 @@ public sealed class CodexSessionSnapshotReader : IConfirmationThreadReader
             [],
             summary.Status,
             LatestTurnStatus: ThreadStatusKind.NotLoaded);
+
+    private ThreadCardState UnavailableState(
+        ThreadSummary summary,
+        Exception error)
+    {
+        if (_throwWhenUnavailable)
+        {
+            throw error;
+        }
+
+        return EmptyState(summary);
+    }
 
     private static string GetString(JsonElement element, string propertyName) =>
         element.TryGetProperty(propertyName, out var value) &&

@@ -15,6 +15,14 @@ public interface ICodexDeepLinkLauncher
 public interface ICodexForegroundSubmitter
 {
     Task SubmitAsync(CancellationToken cancellationToken = default);
+
+    async Task<bool> SubmitIfCurrentAsync(
+        Func<CancellationToken, Task<bool>> isCurrentAsync,
+        CancellationToken cancellationToken = default)
+    {
+        await SubmitAsync(cancellationToken);
+        return true;
+    }
 }
 
 public interface IWindowsCodexDesktopAutomation
@@ -50,6 +58,23 @@ public sealed class CodexDesktopMessageFallback(
                        $"?prompt={Uri.EscapeDataString(text)}";
         await _launcher.OpenAsync(deepLink, cancellationToken);
         await _submitter.SubmitAsync(cancellationToken);
+    }
+
+    public async Task<bool> SendIfCurrentAsync(
+        string threadId,
+        string text,
+        Func<CancellationToken, Task<bool>> isCurrentAsync,
+        CancellationToken cancellationToken = default)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(threadId);
+        ArgumentException.ThrowIfNullOrWhiteSpace(text);
+        ArgumentNullException.ThrowIfNull(isCurrentAsync);
+        var deepLink = $"codex://threads/{Uri.EscapeDataString(threadId)}" +
+                       $"?prompt={Uri.EscapeDataString(text)}";
+        await _launcher.OpenAsync(deepLink, cancellationToken);
+        return await _submitter.SubmitIfCurrentAsync(
+            isCurrentAsync,
+            cancellationToken);
     }
 }
 
@@ -144,6 +169,16 @@ public sealed class WindowsCodexForegroundSubmitter : ICodexForegroundSubmitter
 
     public async Task SubmitAsync(CancellationToken cancellationToken = default)
     {
+        await SubmitIfCurrentAsync(
+            _ => Task.FromResult(true),
+            cancellationToken);
+    }
+
+    public async Task<bool> SubmitIfCurrentAsync(
+        Func<CancellationToken, Task<bool>> isCurrentAsync,
+        CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(isCurrentAsync);
         if (!OperatingSystem.IsWindows())
         {
             throw new PlatformNotSupportedException("Codex 桌面提交兜底仅支持 Windows。");
@@ -167,8 +202,17 @@ public sealed class WindowsCodexForegroundSubmitter : ICodexForegroundSubmitter
                 if (codexWindow == _automation.GetForegroundWindow() &&
                     _automation.IsCodexDesktopWindow(codexWindow))
                 {
-                    _automation.SendEnter();
-                    return;
+                    if (!await isCurrentAsync(cancellationToken))
+                    {
+                        return false;
+                    }
+
+                    if (codexWindow == _automation.GetForegroundWindow() &&
+                        _automation.IsCodexDesktopWindow(codexWindow))
+                    {
+                        _automation.SendEnter();
+                        return true;
+                    }
                 }
             }
             else
