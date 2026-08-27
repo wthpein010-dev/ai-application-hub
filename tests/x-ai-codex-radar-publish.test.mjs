@@ -63,13 +63,14 @@ test("the public demo clearly separates sample data from the private live site",
   assert.match(html, /Tibo 暗示：可能再次按下重置按钮/);
   assert.match(html, /提前信号，不是正式重置承诺/);
   assert.match(html, /<details class="token-disclosure"/);
-  assert.match(html, /展开 Tibo 原帖中英对照与精选评论/);
+  assert.match(html, /展开 Tibo 原帖中英对照与上一轮历史评论/);
   assert.match(html, /英文原帖/);
   assert.match(html, /中文翻译/);
   assert.match(html, /编辑整理/);
-  assert.match(html, /精选评论 · 3 条/);
+  assert.match(html, /上一轮重置历史评论 · 3 条/);
+  assert.match(html, /不是当前暗示的回复/);
   assert.match(html, /A good thing about having aged is that I feel that it’s been 20 years since I’ve pressed the reset button\./);
-  assert.match(html, /上了年纪的一个好处是，我感觉自己已经有 20 年没按过重置按钮了/);
+  assert.match(html, /上了年纪的一个好处是，我感觉自己已经有 20 年没按过重置按钮了。挺好奇明天能不能把它找出来，掸掸灰再用起来。/);
   assert.match(html, /不是 Codex \/ OpenAI 官方规则/);
   assert.match(html, /没有说明重置原因、具体时间或覆盖账号/);
   assert.match(html, /每天北京时间 08:00 检查/);
@@ -102,6 +103,7 @@ test("the demo script provides local filtering, detail inspection and reset", ()
   assert.match(script, /2092862554632826968/);
   assert.match(script, /Intrigued to see if I can find it tomorrow and dust it up/);
   assert.match(script, /不是正式重置承诺/);
+  assert.match(script, /context: "previous-reset"/);
   assert.match(script, /2091407991736332689/);
   assert.match(script, /2091412393368945027/);
   assert.match(script, /2091413240337326588/);
@@ -155,7 +157,11 @@ test("the Radar video bundle follows the shared Hub player contract", () => {
   assert.match(tutorial, /精选评论/);
   assert.match(recorder, /locator\("\.token-comments"\)\.scrollIntoViewIfNeeded/);
   assert.match(recorder, /locator\("#threadDetail \.floor--comment"\)\.last\(\)\.scrollIntoViewIfNeeded/);
-  assert.match(captions, /每两小时/);
+  assert.match(html, /本视频记录的是上一轮重置流程/);
+  assert.match(captions, /每天北京时间 08:00/);
+  assert.match(tutorial, /每天北京时间 08:00/);
+  assert.doesNotMatch(captions, /每两小时|两小时预警/);
+  assert.doesNotMatch(tutorial, /每两小时|两小时预警/);
   assert.match(html, /data-time="11"[^>]*><time>00:11<\/time><span>完整原帖与中文翻译/);
   assert.match(html, /data-time="16"[^>]*><time>00:16<\/time><span>精选评论/);
   assert.match(html, /data-time="44"[^>]*><time>00:44<\/time><span>官方帖子与来源分层/);

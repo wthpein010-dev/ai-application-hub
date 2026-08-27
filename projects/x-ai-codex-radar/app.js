@@ -82,6 +82,7 @@ const threads = [
         age: "8 月 24 日 08:49",
         url: "https://x.com/vxbe_dev/status/2091689270499217416",
         kind: "comment",
+        context: "previous-reset",
       },
       {
         author: "hooftly",
@@ -93,6 +94,7 @@ const threads = [
         age: "8 月 24 日 08:59",
         url: "https://x.com/hooftly/status/2091691767267774755",
         kind: "comment",
+        context: "previous-reset",
       },
       {
         author: "Mark Magyar",
@@ -104,6 +106,7 @@ const threads = [
         age: "8 月 24 日 08:48",
         url: "https://x.com/notpsychxpath/status/2091689003221188680",
         kind: "comment",
+        context: "previous-reset",
       },
     ],
   },
@@ -400,8 +403,14 @@ function renderDetail(thread) {
     </article>
     ${thread.replies.map((reply, index) => {
       const isTimeline = reply.kind === "timeline";
+      const isPreviousResetComment = reply.context === "previous-reset";
       const isVerifiedReply = Boolean(reply.url);
-      return `<article class="floor ${isTimeline ? "floor--timeline" : "floor--comment"}"><div class="floor-author"><span class="reply-avatar">${escapeHtml(reply.author.slice(0, 1))}</span><strong>${escapeHtml(reply.author)}</strong><small>${escapeHtml(reply.handle)}</small></div><div class="floor-content"><div class="floor-meta"><span>${isTimeline ? "时间线 · Tibo 此前原帖" : `精选评论 · ${index + 2} 楼`}</span><time>${escapeHtml(reply.age || (isVerifiedReply ? "可核验 X 内容" : "示例留言"))}</time></div>${reply.original ? bilingualMessage(reply.original, reply.translation, reply.text, reply.note, true) : `<p>${escapeHtml(reply.text)}</p>`}${isVerifiedReply ? `<a href="${escapeHtml(reply.url)}" target="_blank" rel="noreferrer">${isTimeline ? "查看 X 原帖" : "查看 X 回复"} ↗</a>` : '<small class="example-label">示例留言 · 不可作为真实 X 引用</small>'}</div></article>`;
+      const floorLabel = isTimeline
+        ? "时间线 · Tibo 此前原帖"
+        : isPreviousResetComment
+          ? `上一轮重置历史评论 · ${index + 2} 楼`
+          : `精选评论 · ${index + 2} 楼`;
+      return `<article class="floor ${isTimeline ? "floor--timeline" : "floor--comment"}"><div class="floor-author"><span class="reply-avatar">${escapeHtml(reply.author.slice(0, 1))}</span><strong>${escapeHtml(reply.author)}</strong><small>${escapeHtml(reply.handle)}</small></div><div class="floor-content"><div class="floor-meta"><span>${floorLabel}</span><time>${escapeHtml(reply.age || (isVerifiedReply ? "可核验 X 内容" : "示例留言"))}</time></div>${reply.original ? bilingualMessage(reply.original, reply.translation, reply.text, reply.note, true) : `<p>${escapeHtml(reply.text)}</p>`}${isVerifiedReply ? `<a href="${escapeHtml(reply.url)}" target="_blank" rel="noreferrer">${isTimeline ? "查看 X 原帖" : "查看 X 回复"} ↗</a>` : '<small class="example-label">示例留言 · 不可作为真实 X 引用</small>'}</div></article>`;
     }).join("")}
     ${thread.replies.length === 0 ? '<div class="reply-empty"><strong>暂未找到可展示的示例回复</strong><p>真实站点只收录能回到 X 原链接的留言。</p></div>' : ""}`;
 }
