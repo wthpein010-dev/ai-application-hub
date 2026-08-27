@@ -2,31 +2,34 @@ namespace CodexThreadWorkbench;
 
 internal sealed class DesktopInstanceLock : IDisposable
 {
-    private readonly Semaphore _semaphore;
+    private readonly Mutex _mutex;
     private bool _isHeld = true;
 
-    private DesktopInstanceLock(Semaphore semaphore)
+    private DesktopInstanceLock(Mutex mutex)
     {
-        _semaphore = semaphore;
+        _mutex = mutex;
     }
 
     public static IDisposable? TryAcquire(string name)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(name);
-        var semaphore = new Semaphore(1, 1, name);
+        var mutex = new Mutex(
+            initiallyOwned: true,
+            name,
+            out var createdNew);
         try
         {
-            if (!semaphore.WaitOne(0))
+            if (!createdNew)
             {
-                semaphore.Dispose();
+                mutex.Dispose();
                 return null;
             }
 
-            return new DesktopInstanceLock(semaphore);
+            return new DesktopInstanceLock(mutex);
         }
         catch
         {
-            semaphore.Dispose();
+            mutex.Dispose();
             throw;
         }
     }
@@ -39,7 +42,7 @@ internal sealed class DesktopInstanceLock : IDisposable
         }
 
         _isHeld = false;
-        _semaphore.Release();
-        _semaphore.Dispose();
+        _mutex.ReleaseMutex();
+        _mutex.Dispose();
     }
 }

@@ -165,7 +165,7 @@ public sealed class LifecycleReliabilityTests
                 FileAccess.ReadWrite,
                 FileShare.None);
             var writeTask = Task.Run(() => write.Invoke(null, [token]));
-            await Task.Delay(100);
+            await Task.Delay(300);
             lockedStream.Dispose();
             await writeTask;
 

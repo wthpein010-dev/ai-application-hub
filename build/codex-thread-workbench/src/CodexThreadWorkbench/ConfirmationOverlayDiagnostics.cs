@@ -8,7 +8,7 @@ internal static class ConfirmationOverlayDiagnostics
         "CODEX_CONFIRMATION_DIAGNOSTICS_ROOT";
     private const string DefaultLogName =
         "confirmation-overlay-lifecycle.log";
-    private const int MaximumWriteAttempts = 8;
+    private const int MaximumWriteAttempts = 41;
     private static readonly TimeSpan WriteRetryDelay =
         TimeSpan.FromMilliseconds(25);
     private static readonly object WriteSync = new();

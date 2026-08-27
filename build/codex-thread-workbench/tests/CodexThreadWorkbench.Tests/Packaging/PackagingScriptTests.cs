@@ -101,6 +101,11 @@ public sealed class PackagingScriptTests
     [Fact]
     public async Task WindowsRecoveryInstaller_DescribesOneMinuteSelfHealingTask()
     {
+        if (!OperatingSystem.IsWindows())
+        {
+            return;
+        }
+
         var scriptPath = Path.Combine(
             RepositoryRoot,
             "scripts",
