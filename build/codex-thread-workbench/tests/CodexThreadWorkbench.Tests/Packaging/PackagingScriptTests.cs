@@ -1,3 +1,6 @@
+using System.Diagnostics;
+using System.Text.Json;
+
 namespace CodexThreadWorkbench.Tests.Packaging;
 
 public sealed class PackagingScriptTests
@@ -93,6 +96,75 @@ public sealed class PackagingScriptTests
         Assert.Contains("CodexConfirmationBar-Windows-x64.zip", script);
         Assert.Contains("CodexConfirmationBar.exe", script);
         Assert.DoesNotContain("CodexThreadWorkbench-Windows-x64.zip", script);
+    }
+
+    [Fact]
+    public async Task WindowsRecoveryInstaller_DescribesOneMinuteSelfHealingTask()
+    {
+        if (!OperatingSystem.IsWindows())
+        {
+            return;
+        }
+
+        var scriptPath = Path.Combine(
+            RepositoryRoot,
+            "scripts",
+            "Install-WindowsRecoveryTask.ps1");
+        var executablePath = @"C:\Program Files\Codex Bar\CodexConfirmationBar.exe";
+        var taskName = $"Codex recovery test {Guid.NewGuid():N}";
+        var startInfo = new ProcessStartInfo
+        {
+            FileName = "powershell.exe",
+            RedirectStandardOutput = true,
+            RedirectStandardError = true,
+            UseShellExecute = false,
+            CreateNoWindow = true
+        };
+        startInfo.ArgumentList.Add("-NoProfile");
+        startInfo.ArgumentList.Add("-ExecutionPolicy");
+        startInfo.ArgumentList.Add("Bypass");
+        startInfo.ArgumentList.Add("-File");
+        startInfo.ArgumentList.Add(scriptPath);
+        startInfo.ArgumentList.Add("-ExecutablePath");
+        startInfo.ArgumentList.Add(executablePath);
+        startInfo.ArgumentList.Add("-TaskName");
+        startInfo.ArgumentList.Add(taskName);
+        startInfo.ArgumentList.Add("-Describe");
+
+        using var process = Process.Start(startInfo);
+        Assert.NotNull(process);
+        var output = await process.StandardOutput.ReadToEndAsync();
+        var error = await process.StandardError.ReadToEndAsync();
+        await process.WaitForExitAsync();
+
+        Assert.True(
+            process.ExitCode == 0,
+            $"Recovery installer exited {process.ExitCode}: {error}");
+        using var document = JsonDocument.Parse(output);
+        var root = document.RootElement;
+        Assert.Equal(taskName, root.GetProperty("TaskName").GetString());
+        Assert.Equal(
+            executablePath,
+            root.GetProperty("ExecutablePath").GetString());
+        Assert.Equal(
+            "--confirmation-overlay",
+            root.GetProperty("Arguments").GetString());
+        Assert.Equal(1, root.GetProperty("RepetitionMinutes").GetInt32());
+        Assert.Equal(1, root.GetProperty("RestartMinutes").GetInt32());
+        Assert.Equal(999, root.GetProperty("RestartCount").GetInt32());
+        Assert.Equal(
+            "IgnoreNew",
+            root.GetProperty("MultipleInstances").GetString());
+        Assert.Equal(
+            @"C:\Program Files\Codex Bar\CodexConfirmationBar-lifecycle.log",
+            root.GetProperty("DiagnosticsPath").GetString());
+        Assert.EndsWith(
+            @"WindowsPowerShell\v1.0\powershell.exe",
+            root.GetProperty("TaskActionExecutable").GetString(),
+            StringComparison.OrdinalIgnoreCase);
+        Assert.Contains(
+            "-EncodedCommand",
+            root.GetProperty("TaskActionArguments").GetString());
     }
 
     private static string Read(params string[] segments) =>

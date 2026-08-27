@@ -19,6 +19,12 @@ public partial class App : Application
         if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
         {
             desktop.ShutdownMode = ShutdownMode.OnExplicitShutdown;
+            desktop.ShutdownRequested += (_, _) =>
+                ConfirmationOverlayDiagnostics.Write(
+                    "lifetime:shutdown-requested");
+            desktop.Exit += (_, eventArgs) =>
+                ConfirmationOverlayDiagnostics.Write(
+                    $"lifetime:exit:code={eventArgs.ApplicationExitCode}");
             _ = StartDesktopAsync(desktop);
         }
 
@@ -32,13 +38,18 @@ public partial class App : Application
         ICodexThreadClient? client = null;
         WorkbenchSession? session = null;
         ConfirmationOverlayWindow? overlayWindow = null;
+        FloatingLauncherWindow? launcherWindow = null;
+        MainWindow? workbenchWindow = null;
+        FloatingWorkbenchController? floatingController = null;
         try
         {
             ConfirmationOverlayDiagnostics.Write("connect:start");
             client = await CodexAppServerClient.ConnectAsync();
             ConfirmationOverlayDiagnostics.Write("connect:complete");
             var detector = new ConfirmationDetector();
-            var threadReader = new CodexSessionSnapshotReader();
+            var threadReader = new CodexSessionSnapshotReader(
+                throwWhenUnavailable: true);
+            var statusReader = new CodexSessionSnapshotReader();
             var monitor = new ConfirmationMonitor(
                 client,
                 detector,
@@ -49,11 +60,12 @@ public partial class App : Application
                 detector,
                 CodexDesktopMessageFallbackFactory.CreateCurrent(),
                 threadReader: threadReader);
-            overlayWindow = new ConfirmationOverlayWindow();
-            ConfirmationOverlayDiagnostics.Write("overlay:created");
-
-            if (!launchOptions.ShowWorkbenchWindow)
+            overlayViewModel.ActionAttempted += message =>
+                ConfirmationOverlayDiagnostics.Write($"action:{message}");
+            if (launchOptions.Mode == DesktopLaunchMode.ConfirmationOverlay)
             {
+                overlayWindow = new ConfirmationOverlayWindow();
+                ConfirmationOverlayDiagnostics.Write("overlay:created");
                 session = new WorkbenchSession(
                     overlayViewModel,
                     monitor,
@@ -75,34 +87,77 @@ public partial class App : Application
             var viewModel = new MainViewModel(
                 client,
                 new WorkspaceStore(),
-                ownsClient: false);
+                ownsClient: false,
+                statusReader: statusReader);
             session = new WorkbenchSession(
                 overlayViewModel,
                 monitor,
                 viewModel,
                 client);
-            var window = new MainWindow
+            workbenchWindow = new MainWindow
             {
                 DataContext = viewModel
             };
-            window.ShutdownAsync = async () =>
+
+            if (launchOptions.Mode == DesktopLaunchMode.Workbench)
             {
-                overlayWindow.CloseForShutdown();
-                await session.DisposeAsync();
+                overlayWindow = new ConfirmationOverlayWindow();
+                ConfirmationOverlayDiagnostics.Write("overlay:created");
+                workbenchWindow.ShutdownAsync = async () =>
+                {
+                    overlayWindow.CloseForShutdown();
+                    await session.DisposeAsync();
+                };
+                desktop.MainWindow = workbenchWindow;
+                overlayWindow.Attach(overlayViewModel);
+                workbenchWindow.Show();
+                await viewModel.InitializeAsync();
+                workbenchWindow.ApplySavedBounds(viewModel);
+                monitor.Start();
+                desktop.ShutdownMode = ShutdownMode.OnLastWindowClose;
+                return;
+            }
+
+            workbenchWindow.CollapseToLauncherOnClose = true;
+            launcherWindow = new FloatingLauncherWindow();
+            launcherWindow.Attach(overlayViewModel);
+            launcherWindow.PositionCommitted += position =>
+                viewModel.UpdateLauncherPosition(position.X, position.Y);
+            floatingController = new FloatingWorkbenchController(
+                launcherWindow,
+                workbenchWindow,
+                fullScreenRequested: () => viewModel.IsFullScreen = true,
+                refreshRequested: () => viewModel.RefreshCommand.Execute(null),
+                exitRequested: () => desktop.Shutdown(),
+                initializeWorkbenchAsync: () => viewModel.InitializeAsync());
+            desktop.MainWindow = launcherWindow;
+            desktop.Exit += (_, _) =>
+            {
+                floatingController.Dispose();
+                launcherWindow.CloseForShutdown();
+                workbenchWindow.CloseForShutdown();
+                session.DisposeAsync().AsTask().GetAwaiter().GetResult();
             };
-            desktop.MainWindow = window;
-            overlayWindow.Attach(overlayViewModel);
-            window.Show();
-            await viewModel.InitializeAsync();
-            window.ApplySavedBounds(viewModel);
-            monitor.Start();
-            desktop.ShutdownMode = ShutdownMode.OnLastWindowClose;
+            await FloatingWorkbenchStartup.StartAsync(
+                () => viewModel.LoadSettingsAsync(),
+                monitor.Start,
+                () =>
+                {
+                    workbenchWindow.ApplySavedBounds(viewModel);
+                    launcherWindow.PositionForShow(
+                        viewModel.LauncherLeft,
+                        viewModel.LauncherTop);
+                },
+                floatingController.Start);
         }
         catch (Exception error)
         {
             ConfirmationOverlayDiagnostics.Write(
                 $"startup:error:{error.GetType().Name}:{error.Message}");
             overlayWindow?.CloseForShutdown();
+            launcherWindow?.CloseForShutdown();
+            workbenchWindow?.CloseForShutdown();
+            floatingController?.Dispose();
             if (session is not null)
             {
                 await session.DisposeAsync();
@@ -141,7 +196,7 @@ public partial class App : Application
                 {
                     new TextBlock
                     {
-                        Text = "Codex 待确认悬浮助手无法启动",
+                        Text = "Codex 多线程悬浮工作台无法启动",
                         FontSize = 20,
                         FontWeight = Avalonia.Media.FontWeight.SemiBold
                     },

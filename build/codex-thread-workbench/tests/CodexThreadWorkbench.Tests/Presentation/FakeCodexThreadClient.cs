@@ -17,6 +17,8 @@ internal sealed class FakeCodexThreadClient : ICodexThreadClient
 
     public int ListCalls { get; private set; }
 
+    public List<int> RequestedListLimits { get; } = [];
+
     public Dictionary<string, int> ReadCalls { get; } = [];
 
     public Exception? ListException { get; set; }
@@ -37,6 +39,15 @@ internal sealed class FakeCodexThreadClient : ICodexThreadClient
     public int MaxConcurrentReadCount;
 
     public Dictionary<string, Exception> ResumeExceptions { get; } = [];
+
+    public HashSet<string> DelayedResumeThreadIds { get; } =
+        new(StringComparer.Ordinal);
+
+    public TaskCompletionSource<string> ResumeStarted { get; } =
+        new(TaskCreationOptions.RunContinuationsAsynchronously);
+
+    public TaskCompletionSource ResumeCompletion { get; } =
+        new(TaskCreationOptions.RunContinuationsAsynchronously);
 
     public Dictionary<string, Exception> StartExceptions { get; } = [];
 
@@ -105,6 +116,7 @@ internal sealed class FakeCodexThreadClient : ICodexThreadClient
         CancellationToken cancellationToken = default)
     {
         ListCalls++;
+        RequestedListLimits.Add(limit);
         ListStarted.TrySetResult();
         if (DelayList)
         {
@@ -167,18 +179,23 @@ internal sealed class FakeCodexThreadClient : ICodexThreadClient
         }
     }
 
-    public Task ResumeThreadAsync(
+    public async Task ResumeThreadAsync(
         string threadId,
         CancellationToken cancellationToken = default)
     {
         OperationLog.Add($"resume:{threadId}");
+        if (DelayedResumeThreadIds.Contains(threadId))
+        {
+            ResumeStarted.TrySetResult(threadId);
+            await ResumeCompletion.Task.WaitAsync(cancellationToken);
+        }
+
         if (ResumeExceptions.TryGetValue(threadId, out var error))
         {
             throw error;
         }
 
         Resumed = true;
-        return Task.CompletedTask;
     }
 
     public async Task<string> StartTurnAsync(

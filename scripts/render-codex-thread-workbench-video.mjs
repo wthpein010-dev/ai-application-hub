@@ -104,7 +104,7 @@ async function recordWalkthrough() {
   await page.locator('[data-action="confirm-all"]').click();
 
   await waitUntil(startedAt, 29.5);
-  await page.getByRole("button", { name: "模拟扫描异常" }).click();
+  await page.getByRole("button", { name: "模拟窗口关闭" }).click();
 
   await waitUntil(startedAt, 35.5);
   await page.locator(".platform-note").scrollIntoViewIfNeeded();

@@ -14,5 +14,9 @@ public sealed class WorkspaceSettings
 
     public double WindowHeight { get; set; } = 800;
 
+    public double? LauncherLeft { get; set; }
+
+    public double? LauncherTop { get; set; }
+
     public bool IsFullScreen { get; set; }
 }

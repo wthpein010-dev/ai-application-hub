@@ -1,4 +1,5 @@
 using CodexThreadWorkbench.Models;
+using CodexThreadWorkbench.Confirmation;
 using CodexThreadWorkbench.Persistence;
 using CodexThreadWorkbench.Presentation;
 
@@ -42,6 +43,31 @@ public sealed class MainViewModelTests : IDisposable
     }
 
     [Fact]
+    public async Task LoadSettingsAsync_RestoresLauncherPositionWithoutListingThreads()
+    {
+        var client = CreateClient(threadCount: 1);
+        client.DelayList = true;
+        var store = new WorkspaceStore(Path.Combine(_directory, "workspace.json"));
+        await store.SaveAsync(new WorkspaceSettings
+        {
+            LauncherLeft = 4350,
+            LauncherTop = 280,
+            WindowLeft = 120,
+            WindowTop = 90
+        });
+        await using var viewModel = new MainViewModel(client, store);
+
+        await viewModel.LoadSettingsAsync();
+
+        Assert.Equal(4350, viewModel.LauncherLeft);
+        Assert.Equal(280, viewModel.LauncherTop);
+        Assert.Equal(120, viewModel.WindowLeft);
+        Assert.Equal(90, viewModel.WindowTop);
+        Assert.False(client.ListStarted.Task.IsCompleted);
+        Assert.Empty(viewModel.OpenThreads);
+    }
+
+    [Fact]
     public async Task InitializeAsync_AutoRefreshesOpenThreadStatusWithoutReplacingCard()
     {
         var client = CreateClient(threadCount: 1);
@@ -72,6 +98,93 @@ public sealed class MainViewModelTests : IDisposable
         Assert.Equal("external-turn", card.ActiveTurnId);
         Assert.Same(card, Assert.Single(viewModel.OpenThreads));
         Assert.Equal("不要丢失输入", card.Draft);
+    }
+
+    [Fact]
+    public async Task InitializeAsync_StatusRefreshDoesNotWaitForFullConversationReload()
+    {
+        var client = CreateClient(threadCount: 1);
+        var store = new WorkspaceStore(Path.Combine(_directory, "workspace.json"));
+        await using var viewModel = new MainViewModel(
+            client,
+            store,
+            statusReader: new CodexSessionSnapshotReader(
+                Path.Combine(_directory, "sessions")));
+        await viewModel.InitializeAsync();
+        var card = Assert.Single(viewModel.OpenThreads);
+        client.DelayedReadThreadIds.Add(card.ThreadId);
+        client.Threads[0] = client.Threads[0] with
+        {
+            Status = ThreadStatusKind.Running
+        };
+
+        var deadline = DateTimeOffset.UtcNow.AddSeconds(4);
+        while (card.Status != ThreadStatusKind.Running &&
+               DateTimeOffset.UtcNow < deadline)
+        {
+            await Task.Delay(50);
+        }
+
+        Assert.Equal(ThreadStatusKind.Running, card.Status);
+    }
+
+    [Fact]
+    public async Task InitializeAsync_UsesBoundedReaderForInitialConversationCards()
+    {
+        var client = CreateClient(threadCount: 1);
+        var summary = client.Threads[0];
+        client.ReadExceptions[summary.Id] = new InvalidOperationException(
+            "完整对话读取不应发生");
+        var boundedState = new ThreadCardState(
+            summary,
+            [new ChatMessage("recent", ChatRole.Assistant, "最近一条回复")],
+            ThreadStatusKind.Completed);
+        var reader = new MutableThreadReader(boundedState);
+        var store = new WorkspaceStore(Path.Combine(_directory, "workspace.json"));
+        await using var viewModel = new MainViewModel(
+            client,
+            store,
+            statusReader: reader);
+
+        await viewModel.InitializeAsync();
+
+        var card = Assert.Single(viewModel.OpenThreads);
+        Assert.Equal("最近一条回复", Assert.Single(card.Messages).Text);
+        Assert.False(viewModel.HasGlobalError);
+    }
+
+    [Fact]
+    public async Task RefreshCommand_UsesBoundedReaderForConversationCards()
+    {
+        var client = CreateClient(threadCount: 1);
+        var summary = client.Threads[0];
+        client.ReadExceptions[summary.Id] = new InvalidOperationException(
+            "完整对话读取不应发生");
+        var reader = new MutableThreadReader(new ThreadCardState(
+            summary,
+            [new ChatMessage("initial", ChatRole.Assistant, "刷新前")],
+            ThreadStatusKind.Completed));
+        var store = new WorkspaceStore(Path.Combine(_directory, "workspace.json"));
+        await using var viewModel = new MainViewModel(
+            client,
+            store,
+            statusReader: reader);
+        await viewModel.InitializeAsync();
+        reader.State = reader.State with
+        {
+            Messages = [new ChatMessage("updated", ChatRole.Assistant, "刷新后")]
+        };
+
+        viewModel.RefreshCommand.Execute(null);
+        var deadline = DateTimeOffset.UtcNow.AddSeconds(3);
+        while (viewModel.OpenThreads[0].Messages[0].Text != "刷新后" &&
+               DateTimeOffset.UtcNow < deadline)
+        {
+            await Task.Delay(25);
+        }
+
+        Assert.Equal("刷新后", viewModel.OpenThreads[0].Messages[0].Text);
+        Assert.False(viewModel.HasGlobalError);
     }
 
     [Fact]
@@ -240,6 +353,17 @@ public sealed class MainViewModelTests : IDisposable
         }
 
         return client;
+    }
+
+    private sealed class MutableThreadReader(ThreadCardState state)
+        : IConfirmationThreadReader
+    {
+        public ThreadCardState State { get; set; } = state;
+
+        public Task<ThreadCardState> ReadThreadAsync(
+            ThreadSummary summary,
+            CancellationToken cancellationToken = default) =>
+            Task.FromResult(State with { Summary = summary });
     }
 
     public void Dispose()

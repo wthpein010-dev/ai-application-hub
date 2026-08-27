@@ -47,6 +47,7 @@ test("iOS page gives Safari install steps and states the desktop capability boun
   assert.match(html, /不能读取电脑上的 Codex 任务/);
   assert.match(html, /不能启动 Codex CLI/);
   assert.match(html, /Windows 与 macOS/);
+  assert.match(html, /v2\.1\.8/);
   assert.match(html, /data-action="simulate-candidates"/);
   assert.match(html, /data-action="confirm-all"/);
 });
@@ -85,8 +86,8 @@ test("service worker precaches only the iOS static shell", async () => {
   assert.deepEqual(cachedUrls, [
     "./",
     "./index.html",
-    "./styles.css?v=20260824-v200",
-    "./app.js?v=20260824-v200",
+    "./styles.css?v=20260827-v218",
+    "./app.js?v=20260827-v218",
     "./app.webmanifest",
     "./icon-192.png",
     "./icon-512.png",
@@ -110,6 +111,7 @@ test("service worker activation deletes only obsolete caches owned by this iOS a
         return [
           "codex-confirmation-ios-v1",
           "codex-confirmation-ios-v2",
+          "codex-confirmation-ios-v218",
           "another-hub-pwa-v7",
         ];
       },
@@ -127,7 +129,7 @@ test("service worker activation deletes only obsolete caches owned by this iOS a
   listeners.get("activate")({ waitUntil(promise) { activatePromise = promise; } });
   await activatePromise;
 
-  assert.deepEqual(deleted, ["codex-confirmation-ios-v1"]);
+  assert.deepEqual(deleted, ["codex-confirmation-ios-v1", "codex-confirmation-ios-v2"]);
 });
 
 test("offline fallback serves cached HTML only for navigation requests", async () => {

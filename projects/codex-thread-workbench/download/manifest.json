@@ -1,39 +1,39 @@
 {
   "version": 1,
   "fileName": "CodexConfirmationBar-Windows-x64.zip",
-  "totalSize": 40210013,
+  "totalSize": 41559148,
   "chunkSize": 8388608,
-  "sha256": "318FF3135A284D25A873D09F5342F73C0B1D4B2580CD2EC489FA590F19CF0D04",
+  "sha256": "DDEE6CBA2EB68A78114C40EAD8F0D299825CCEC7F0689F45EA29577B526CCB2E",
   "parts": [
     {
       "index": 0,
-      "path": "parts/v2.0.0/part-000.bin",
+      "path": "parts/v2.1.8-8d3b26b/part-000.bin",
       "size": 8388608,
-      "sha256": "1DF8EB5CAF6443FDADABED71037EE18C3ED66014674A766F636AE3C37FBC678D"
+      "sha256": "B7977380E7C8B07A0B17739AF190E22705E43CB7C3FF56F7171ACA29B2D671B9"
     },
     {
       "index": 1,
-      "path": "parts/v2.0.0/part-001.bin",
+      "path": "parts/v2.1.8-8d3b26b/part-001.bin",
       "size": 8388608,
-      "sha256": "53FBADBDBD092AF14380BB2195C007FD4B1236AE5DD2E6C0699980540751B73D"
+      "sha256": "2A1DD543BFE5E3A09590A7C2B27AB76C22ECB6DDB3AAFB6220665D8917A5C020"
     },
     {
       "index": 2,
-      "path": "parts/v2.0.0/part-002.bin",
+      "path": "parts/v2.1.8-8d3b26b/part-002.bin",
       "size": 8388608,
-      "sha256": "5216C667AD56475732C7237ED5875CAF5D0981EBE3EE72230B6527A702983EF7"
+      "sha256": "5E5D469E64E9005C41836C549A6C014DF3A17E4CB7EE25B0FC3A91D67AB39635"
     },
     {
       "index": 3,
-      "path": "parts/v2.0.0/part-003.bin",
+      "path": "parts/v2.1.8-8d3b26b/part-003.bin",
       "size": 8388608,
-      "sha256": "8A5293ADB7633FD66311F4D27E8A0AFD1121E83227F7FC9CFB4366F07343AD9F"
+      "sha256": "793AF15409E405CAAA5648E3231689C2064D984293A8B36AE56F4CA80C3CFC8C"
     },
     {
       "index": 4,
-      "path": "parts/v2.0.0/part-004.bin",
-      "size": 6655581,
-      "sha256": "759B528F331FA19E5788A0FF0EAB9E55981654C22776946AAC86ECB38C1C8310"
+      "path": "parts/v2.1.8-8d3b26b/part-004.bin",
+      "size": 8004716,
+      "sha256": "3CC1D87264DEB6E3830186B0A012B593C5140F99B265B0BD5888185E1593B85E"
     }
   ]
 }

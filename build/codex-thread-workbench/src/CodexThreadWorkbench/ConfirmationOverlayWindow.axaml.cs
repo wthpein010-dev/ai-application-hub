@@ -1,8 +1,10 @@
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Input;
+using Avalonia.Interactivity;
 using Avalonia.Markup.Xaml;
 using Avalonia.Threading;
+using Avalonia.VisualTree;
 using CodexThreadWorkbench.Presentation;
 
 namespace CodexThreadWorkbench;
@@ -15,9 +17,13 @@ public partial class ConfirmationOverlayWindow : Window
         TimeSpan.FromMilliseconds(760);
     private static readonly TimeSpan PositionAnimationDuration =
         TimeSpan.FromMilliseconds(170);
+    private static readonly TimeSpan InteractionArmDelay =
+        TimeSpan.FromMilliseconds(650);
     private ConfirmationOverlayViewModel? _viewModel;
     private readonly ConfirmationOverlayPlacement _placement = new();
+    private readonly ConfirmationPointerActionGate _pointerActionGate = new();
     private CancellationTokenSource? _idleCollapseCancellation;
+    private CancellationTokenSource? _interactionArmCancellation;
     private CancellationTokenSource? _positionAnimationCancellation;
     private PixelPoint? _expandedPosition;
     private bool _isIdlePreviewExpanded;
@@ -28,6 +34,11 @@ public partial class ConfirmationOverlayWindow : Window
     public ConfirmationOverlayWindow()
     {
         InitializeComponent();
+        AddHandler(
+            PointerPressedEvent,
+            Window_OnPointerPressed,
+            RoutingStrategies.Tunnel,
+            handledEventsToo: true);
         Screens.Changed += OnScreensChanged;
     }
 
@@ -43,6 +54,11 @@ public partial class ConfirmationOverlayWindow : Window
         _viewModel = viewModel;
         DataContext = viewModel;
         _viewModel.PropertyChanged += ViewModelOnPropertyChanged;
+        if (_viewModel.HasItems)
+        {
+            BeginInteractionGuard();
+        }
+
         _ = UpdatePresentationAsync(animate: false);
         ConfirmationOverlayDiagnostics.Write("attach:update-requested");
     }
@@ -73,7 +89,9 @@ public partial class ConfirmationOverlayWindow : Window
 
         _isClosingForShutdown = true;
         CancelIdleCollapse();
+        CancelInteractionArm();
         CancelPositionAnimation();
+        _pointerActionGate.Clear();
         if (_viewModel is not null)
         {
             _viewModel.PropertyChanged -= ViewModelOnPropertyChanged;
@@ -83,10 +101,26 @@ public partial class ConfirmationOverlayWindow : Window
         Close();
     }
 
+    protected override void OnClosing(WindowClosingEventArgs e)
+    {
+        if (!_isClosingForShutdown &&
+            e.CloseReason is not WindowCloseReason.ApplicationShutdown and
+            not WindowCloseReason.OSShutdown)
+        {
+            e.Cancel = true;
+            ConfirmationOverlayDiagnostics.Write(
+                $"window:close-blocked:reason={e.CloseReason}:programmatic={e.IsProgrammatic}");
+        }
+
+        base.OnClosing(e);
+    }
+
     protected override void OnClosed(EventArgs e)
     {
         CancelIdleCollapse();
+        CancelInteractionArm();
         CancelPositionAnimation();
+        _pointerActionGate.Clear();
         Screens.Changed -= OnScreensChanged;
         base.OnClosed(e);
     }
@@ -101,6 +135,16 @@ public partial class ConfirmationOverlayWindow : Window
             {
                 CancelIdleCollapse();
                 _isIdlePreviewExpanded = false;
+            }
+
+            if (_viewModel?.HasItems == true)
+            {
+                BeginInteractionGuard();
+            }
+            else
+            {
+                CancelInteractionArm();
+                _viewModel?.SetInteractionArmed(true);
             }
 
             _ = UpdatePresentationAsync();
@@ -148,7 +192,7 @@ public partial class ConfirmationOverlayWindow : Window
             {
                 _expandedPosition = _placement.ResolveForShow(
                     area,
-                    Position,
+                    _expandedPosition ?? Position,
                     windowSize);
             }
 
@@ -227,6 +271,78 @@ public partial class ConfirmationOverlayWindow : Window
         MarkManuallyPositioned();
         BeginMoveDrag(e);
         e.Handled = true;
+    }
+
+    private void Window_OnPointerPressed(
+        object? sender,
+        PointerPressedEventArgs e)
+    {
+        var source = e.Source as Control;
+        var button = source as Button ??
+                     source?.GetVisualAncestors().OfType<Button>().FirstOrDefault();
+        if (button is null ||
+            _viewModel?.IsInteractionArmed != true ||
+            !button.IsEnabled ||
+            !e.GetCurrentPoint(button).Properties.IsLeftButtonPressed)
+        {
+            return;
+        }
+
+        _pointerActionGate.Arm(button);
+    }
+
+    private void ActionButton_OnPointerExited(
+        object? sender,
+        PointerEventArgs e)
+    {
+        if (sender is Button button)
+        {
+            _pointerActionGate.Disarm(button);
+        }
+    }
+
+    private void ConfirmAllButton_OnClick(object? sender, RoutedEventArgs e)
+    {
+        if (sender is not Button button || !TryConsumePointerAction(button))
+        {
+            return;
+        }
+
+        _viewModel?.ConfirmAllCommand.Execute(null);
+    }
+
+    private void IgnoreButton_OnClick(object? sender, RoutedEventArgs e)
+    {
+        if (sender is not Button button ||
+            button.DataContext is not ConfirmationItemViewModel item ||
+            !TryConsumePointerAction(button))
+        {
+            return;
+        }
+
+        item.IgnoreCommand.Execute(null);
+    }
+
+    private void ConfirmButton_OnClick(object? sender, RoutedEventArgs e)
+    {
+        if (sender is not Button button ||
+            button.DataContext is not ConfirmationItemViewModel item ||
+            !TryConsumePointerAction(button))
+        {
+            return;
+        }
+
+        item.ConfirmCommand.Execute(null);
+    }
+
+    private bool TryConsumePointerAction(Button button)
+    {
+        var allowed = _viewModel?.IsInteractionArmed == true &&
+                      button.IsEnabled &&
+                      _pointerActionGate.TryConsume(button);
+        ConfirmationOverlayDiagnostics.Write(
+            allowed ? "input:pointer-action" : "input:blocked-non-pointer-action");
+        return allowed;
     }
 
     private void ScheduleIdleCollapse()
@@ -311,6 +427,46 @@ public partial class ConfirmationOverlayWindow : Window
         _idleCollapseCancellation = null;
     }
 
+    private void BeginInteractionGuard()
+    {
+        CancelInteractionArm();
+        _pointerActionGate.Clear();
+        _viewModel?.SetInteractionArmed(false);
+        ConfirmationOverlayDiagnostics.Write("input:guarded");
+        var cancellation = new CancellationTokenSource();
+        _interactionArmCancellation = cancellation;
+        _ = ArmInteractionAfterDelayAsync(cancellation.Token);
+    }
+
+    private async Task ArmInteractionAfterDelayAsync(
+        CancellationToken cancellationToken)
+    {
+        try
+        {
+            await Task.Delay(InteractionArmDelay, cancellationToken);
+            await Dispatcher.UIThread.InvokeAsync(() =>
+            {
+                if (_isClosingForShutdown || _viewModel?.HasItems != true)
+                {
+                    return;
+                }
+
+                _viewModel.SetInteractionArmed(true);
+                ConfirmationOverlayDiagnostics.Write("input:armed");
+            });
+        }
+        catch (OperationCanceledException)
+        {
+        }
+    }
+
+    private void CancelInteractionArm()
+    {
+        _interactionArmCancellation?.Cancel();
+        _interactionArmCancellation?.Dispose();
+        _interactionArmCancellation = null;
+    }
+
     private void CancelPositionAnimation()
     {
         _positionAnimationCancellation?.Cancel();
@@ -318,17 +474,23 @@ public partial class ConfirmationOverlayWindow : Window
         _positionAnimationCancellation = null;
     }
 
-    private PixelRect GetCurrentWorkingArea() =>
-        (Screens.ScreenFromWindow(this) ?? Screens.Primary)?.WorkingArea ??
-        new PixelRect(0, 0, 1920, 1080);
+    private PixelRect GetCurrentWorkingArea()
+    {
+        var currentWorkingArea =
+            (Screens.ScreenFromWindow(this) ?? Screens.Primary)?.WorkingArea ??
+            new PixelRect(0, 0, 1920, 1080);
+        return ConfirmationOverlayScreenSelection.ResolveWorkingArea(
+            currentWorkingArea,
+            Screens.All.Select(screen => screen.WorkingArea));
+    }
 
     private PixelSize GetCurrentPixelSize()
     {
         var width = Bounds.Width > 0 ? Bounds.Width : Width;
         var height = Bounds.Height > 0 ? Bounds.Height : 1;
-        return _placement.ResolvePixelSize(
-            new Size(width, height),
-            RenderScaling);
+        return new PixelSize(
+            Math.Max(1, (int)Math.Ceiling(width)),
+            Math.Max(1, (int)Math.Ceiling(height)));
     }
 
     private void InitializeComponent() => AvaloniaXamlLoader.Load(this);

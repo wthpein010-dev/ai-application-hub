@@ -109,10 +109,14 @@ test("project page presents the confirmation overlay workflow and every release 
     "https://wthpein010-dev.github.io/ai-application-hub/projects/codex-thread-workbench/download/mac/";
 
   assert.match(html, /Codex 待确认悬浮助手/);
+  assert.match(html, /v2\.1\.8/);
+  assert.match(html, /普通关闭请求会被拦截/);
+  assert.match(html, /每分钟检查恢复/);
   assert.match(html, /data-overlay-state="retracted"/);
   assert.match(html, /data-action="reveal-idle"/);
   assert.match(html, /data-action="simulate-candidates"/);
   assert.match(html, /data-action="simulate-error"/);
+  assert.match(html, /data-action="simulate-close"/);
   assert.match(html, /data-action="confirm-all"/);
   assert.match(html, /data-action="reset-demo"/);
   assert.match(html, /Windows 与 macOS/);
@@ -142,7 +146,7 @@ test("project preview keeps a ten-pixel green handle visible while retracted", a
   assert.match(css, /prefers-reduced-motion:\s*reduce/);
 });
 
-test("confirmation overlay expands for candidates and retracts after confirmations", async () => {
+test("confirmation overlay expands for candidates, retracts, and reports protected close", async () => {
   const server = createStaticServer();
   const baseUrl = await startServer(server);
   const browser = await launchBrowser();
@@ -194,6 +198,11 @@ test("confirmation overlay expands for candidates and retracts after confirmatio
     assert.equal(await page.locator('[data-role="candidate"]').count(), 0);
     assert.equal(await overlay.getAttribute("data-overlay-state"), "retracted");
     assert.match(await page.locator('[data-role="activity-log"]').textContent(), /已向 1 个任务发送/);
+
+    await page.getByRole("button", { name: "模拟窗口关闭" }).click();
+    assert.equal(await page.locator('[data-role="candidate"]').count(), 0);
+    assert.equal(await overlay.getAttribute("data-overlay-state"), "retracted");
+    assert.match(await page.locator('[data-role="activity-log"]').textContent(), /关闭请求已拦截/);
   } finally {
     await browser.close();
     await stopServer(server);
@@ -279,7 +288,7 @@ test("download page exposes progress, verification, failure and retry states", a
   ]);
 
   assert.match(html, /CodexConfirmationBar-Windows-x64\.zip/);
-  assert.match(html, /v2\.0\.0/);
+  assert.match(html, /v2\.1\.8/);
   assert.match(html, /data-role="download-button"/);
   assert.match(html, /data-role="retry-button"/);
   assert.match(html, /data-role="progress"/);

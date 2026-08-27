@@ -25,36 +25,59 @@ public sealed class MacCodexForegroundSubmitterTests
     public async Task SubmitAsync_AllowsReturnOnlyAfterTheOpenAiAppIsVerified()
     {
         var runner = new RecordingProcessRunner(
+            new PlatformProcessResult(0, "OK:com.openai.chat\n", string.Empty),
             new PlatformProcessResult(0, "OK:com.openai.chat\n", string.Empty));
         var submitter = new MacCodexForegroundSubmitter(runner);
 
         await submitter.SubmitAsync();
 
-        var request = Assert.Single(runner.Requests);
-        Assert.Equal("/usr/bin/osascript", request.FileName);
-        Assert.Contains(request.Arguments, argument => argument.Contains("com.openai"));
-        Assert.Contains(request.Arguments, argument => argument.Contains("key code 36"));
-        Assert.Contains(request.Arguments, argument => argument.Contains("ChatGPT"));
-        Assert.Contains(request.Arguments, argument => argument.Contains("Codex"));
+        Assert.Equal(2, runner.Requests.Count);
+        Assert.DoesNotContain(
+            runner.Requests[0].Arguments,
+            argument => argument.Contains("key code 36"));
+        Assert.Contains(
+            runner.Requests[1].Arguments,
+            argument => argument.Contains("key code 36"));
     }
 
     [Fact]
     public async Task SubmitAsync_RequiresTheSameOpenAiAppToRemainForegroundAfterPrefillSettles()
     {
         var runner = new RecordingProcessRunner(
+            new PlatformProcessResult(0, "OK:com.openai.chat\n", string.Empty),
             new PlatformProcessResult(0, "OK:com.openai.chat\n", string.Empty));
         var submitter = new MacCodexForegroundSubmitter(runner);
 
         await submitter.SubmitAsync();
 
+        Assert.Equal(2, runner.Requests.Count);
+        var preparationScript = Assert.Single(
+            runner.Requests[0].Arguments,
+            argument => argument.Contains("set initialBundleId"));
+        var submissionScript = Assert.Single(
+            runner.Requests[1].Arguments,
+            argument => argument.Contains("key code 36"));
+        Assert.Contains("delay 0.75", preparationScript);
+        Assert.Contains("settledBundleId is initialBundleId", preparationScript);
+        Assert.DoesNotContain("key code 36", preparationScript);
+        Assert.Contains("expectedBundleId", submissionScript);
+    }
+
+    [Fact]
+    public async Task SubmitIfCurrentAsync_RevalidatesAfterFocusSettlesBeforeEnter()
+    {
+        var runner = new RecordingProcessRunner(
+            new PlatformProcessResult(0, "OK:com.openai.chat\n", string.Empty));
+        ICodexForegroundSubmitter submitter = new MacCodexForegroundSubmitter(runner);
+
+        var submitted = await submitter.SubmitIfCurrentAsync(
+            _ => Task.FromResult(false));
+
+        Assert.False(submitted);
         var request = Assert.Single(runner.Requests);
-        var script = Assert.Single(request.Arguments, argument => argument.Contains("key code 36"));
-        Assert.Contains("set initialBundleId to frontBundleId", script);
-        Assert.Contains("delay 0.75", script);
-        Assert.Contains("settledBundleId is initialBundleId", script);
-        Assert.True(
-            script.IndexOf("delay 0.75", StringComparison.Ordinal) <
-            script.IndexOf("key code 36", StringComparison.Ordinal));
+        Assert.DoesNotContain(
+            "key code 36",
+            Assert.Single(request.Arguments, argument => argument.Contains("com.openai")));
     }
 
     [Fact]
@@ -107,6 +130,7 @@ public sealed class MacCodexForegroundSubmitterTests
     {
         var runner = new RecordingProcessRunner(
             new PlatformProcessResult(0, string.Empty, string.Empty),
+            new PlatformProcessResult(0, "OK:com.openai.chat\n", string.Empty),
             new PlatformProcessResult(0, "OK:com.openai.chat\n", string.Empty));
         var fallback = Assert.IsAssignableFrom<IConfirmationMessageFallback>(
             CodexDesktopMessageFallbackFactory.Create(
@@ -120,6 +144,7 @@ public sealed class MacCodexForegroundSubmitterTests
         Assert.Collection(
             runner.Requests,
             request => Assert.Equal("/usr/bin/open", request.FileName),
+            request => Assert.Equal("/usr/bin/osascript", request.FileName),
             request => Assert.Equal("/usr/bin/osascript", request.FileName));
     }
 

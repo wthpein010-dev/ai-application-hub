@@ -15,6 +15,27 @@ public interface ICodexDeepLinkLauncher
 public interface ICodexForegroundSubmitter
 {
     Task SubmitAsync(CancellationToken cancellationToken = default);
+
+    async Task<bool> SubmitIfCurrentAsync(
+        Func<CancellationToken, Task<bool>> isCurrentAsync,
+        CancellationToken cancellationToken = default)
+    {
+        await SubmitAsync(cancellationToken);
+        return true;
+    }
+}
+
+public interface IWindowsCodexDesktopAutomation
+{
+    nint GetForegroundWindow();
+
+    nint FindCodexDesktopWindow();
+
+    bool IsCodexDesktopWindow(nint window);
+
+    bool SetForegroundWindow(nint window);
+
+    void SendEnter();
 }
 
 public sealed class CodexDesktopMessageFallback(
@@ -37,6 +58,23 @@ public sealed class CodexDesktopMessageFallback(
                        $"?prompt={Uri.EscapeDataString(text)}";
         await _launcher.OpenAsync(deepLink, cancellationToken);
         await _submitter.SubmitAsync(cancellationToken);
+    }
+
+    public async Task<bool> SendIfCurrentAsync(
+        string threadId,
+        string text,
+        Func<CancellationToken, Task<bool>> isCurrentAsync,
+        CancellationToken cancellationToken = default)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(threadId);
+        ArgumentException.ThrowIfNullOrWhiteSpace(text);
+        ArgumentNullException.ThrowIfNull(isCurrentAsync);
+        var deepLink = $"codex://threads/{Uri.EscapeDataString(threadId)}" +
+                       $"?prompt={Uri.EscapeDataString(text)}";
+        await _launcher.OpenAsync(deepLink, cancellationToken);
+        return await _submitter.SubmitIfCurrentAsync(
+            isCurrentAsync,
+            cancellationToken);
     }
 }
 
@@ -109,46 +147,107 @@ public sealed class WindowsCodexForegroundSubmitter : ICodexForegroundSubmitter
     private const ushort EnterKey = 0x0D;
     private const uint InputKeyboard = 1;
     private const uint KeyEventKeyUp = 0x0002;
-    private static readonly TimeSpan FocusTimeout = TimeSpan.FromSeconds(5);
-    private static readonly TimeSpan PrefillSettleDelay = TimeSpan.FromMilliseconds(350);
+    private static readonly TimeSpan FocusTimeout = TimeSpan.FromSeconds(30);
+    private static readonly TimeSpan WarmPrefillSettleDelay =
+        TimeSpan.FromMilliseconds(350);
+    private static readonly TimeSpan ColdPrefillSettleDelay =
+        TimeSpan.FromMilliseconds(750);
+    private static readonly TimeSpan PollInterval = TimeSpan.FromMilliseconds(100);
+    private readonly IWindowsCodexDesktopAutomation _automation;
+    private readonly TimeProvider _timeProvider;
+    private readonly Func<TimeSpan, CancellationToken, Task> _delay;
+
+    public WindowsCodexForegroundSubmitter(
+        IWindowsCodexDesktopAutomation? automation = null,
+        TimeProvider? timeProvider = null,
+        Func<TimeSpan, CancellationToken, Task>? delay = null)
+    {
+        _automation = automation ?? new NativeWindowsCodexDesktopAutomation();
+        _timeProvider = timeProvider ?? TimeProvider.System;
+        _delay = delay ?? Task.Delay;
+    }
 
     public async Task SubmitAsync(CancellationToken cancellationToken = default)
     {
+        await SubmitIfCurrentAsync(
+            _ => Task.FromResult(true),
+            cancellationToken);
+    }
+
+    public async Task<bool> SubmitIfCurrentAsync(
+        Func<CancellationToken, Task<bool>> isCurrentAsync,
+        CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(isCurrentAsync);
         if (!OperatingSystem.IsWindows())
         {
             throw new PlatformNotSupportedException("Codex 桌面提交兜底仅支持 Windows。");
         }
 
-        var startedAt = Stopwatch.GetTimestamp();
+        var startedAt = _timeProvider.GetTimestamp();
+        var requiresColdSettle = !_automation.IsCodexDesktopWindow(
+            _automation.GetForegroundWindow());
         nint codexWindow = 0;
-        while (Stopwatch.GetElapsedTime(startedAt) < FocusTimeout)
+        while (_timeProvider.GetElapsedTime(startedAt) < FocusTimeout)
         {
             cancellationToken.ThrowIfCancellationRequested();
-            codexWindow = GetForegroundWindow();
-            if (IsCodexDesktopWindow(codexWindow))
+            codexWindow = _automation.GetForegroundWindow();
+            if (_automation.IsCodexDesktopWindow(codexWindow))
             {
-                await Task.Delay(PrefillSettleDelay, cancellationToken);
-                if (codexWindow == GetForegroundWindow() &&
-                    IsCodexDesktopWindow(codexWindow))
+                await _delay(
+                    requiresColdSettle
+                        ? ColdPrefillSettleDelay
+                        : WarmPrefillSettleDelay,
+                    cancellationToken);
+                if (codexWindow == _automation.GetForegroundWindow() &&
+                    _automation.IsCodexDesktopWindow(codexWindow))
                 {
-                    SendEnter();
-                    return;
+                    if (!await isCurrentAsync(cancellationToken))
+                    {
+                        return false;
+                    }
+
+                    if (codexWindow == _automation.GetForegroundWindow() &&
+                        _automation.IsCodexDesktopWindow(codexWindow))
+                    {
+                        _automation.SendEnter();
+                        return true;
+                    }
                 }
             }
             else
             {
-                var discovered = FindCodexDesktopWindow();
+                var discovered = _automation.FindCodexDesktopWindow();
                 if (discovered != 0)
                 {
-                    SetForegroundWindow(discovered);
+                    _automation.SetForegroundWindow(discovered);
                 }
             }
 
-            await Task.Delay(50, cancellationToken);
+            await _delay(PollInterval, cancellationToken);
         }
 
         throw new InvalidOperationException(
             "未能确认 Codex 桌面窗口已打开，消息没有提交。");
+    }
+
+    private sealed class NativeWindowsCodexDesktopAutomation :
+        IWindowsCodexDesktopAutomation
+    {
+        public nint GetForegroundWindow() =>
+            WindowsCodexForegroundSubmitter.GetForegroundWindow();
+
+        public nint FindCodexDesktopWindow() =>
+            WindowsCodexForegroundSubmitter.FindCodexDesktopWindow();
+
+        public bool IsCodexDesktopWindow(nint window) =>
+            WindowsCodexForegroundSubmitter.IsCodexDesktopWindow(window);
+
+        public bool SetForegroundWindow(nint window) =>
+            WindowsCodexForegroundSubmitter.SetForegroundWindow(window);
+
+        public void SendEnter() =>
+            WindowsCodexForegroundSubmitter.SendEnter();
     }
 
     private static nint FindCodexDesktopWindow()

@@ -6,6 +6,7 @@ namespace CodexThreadWorkbench.Codex;
 
 public sealed class CodexAppServerClient : ICodexThreadClient
 {
+    private const int MaximumThreadListPageSize = 100;
     private static readonly string[] AllSourceKinds =
     [
         "cli",
@@ -83,27 +84,52 @@ public sealed class CodexAppServerClient : ICodexThreadClient
         string? searchTerm = null,
         CancellationToken cancellationToken = default)
     {
-        var result = await _rpc.RequestAsync(
-            "thread/list",
-            new
-            {
-                limit,
-                sortKey = "updated_at",
-                sortDirection = "desc",
-                sourceKinds = AllSourceKinds,
-                archived = false,
-                searchTerm
-            },
-            cancellationToken);
-        if (!result.TryGetProperty("data", out var data) ||
-            data.ValueKind != JsonValueKind.Array)
+        ArgumentOutOfRangeException.ThrowIfNegativeOrZero(limit);
+        var threads = new List<ThreadSummary>();
+        var seenCursors = new HashSet<string>(StringComparer.Ordinal);
+        string? cursor = null;
+        while (threads.Count < limit)
         {
-            return [];
+            var pageLimit = Math.Min(
+                MaximumThreadListPageSize,
+                limit - threads.Count);
+            var result = await _rpc.RequestAsync(
+                "thread/list",
+                new
+                {
+                    limit = pageLimit,
+                    cursor,
+                    sortKey = "updated_at",
+                    sortDirection = "desc",
+                    sourceKinds = AllSourceKinds,
+                    archived = false,
+                    searchTerm
+                },
+                cancellationToken);
+            if (!result.TryGetProperty("data", out var data) ||
+                data.ValueKind != JsonValueKind.Array)
+            {
+                break;
+            }
+
+            threads.AddRange(
+                data.EnumerateArray()
+                    .Take(limit - threads.Count)
+                    .Select(ThreadProjection.FromThread));
+            var nextCursor = result.TryGetProperty("nextCursor", out var next) &&
+                             next.ValueKind == JsonValueKind.String
+                ? next.GetString()
+                : null;
+            if (string.IsNullOrWhiteSpace(nextCursor) ||
+                !seenCursors.Add(nextCursor))
+            {
+                break;
+            }
+
+            cursor = nextCursor;
         }
 
-        return data.EnumerateArray()
-            .Select(ThreadProjection.FromThread)
-            .ToArray();
+        return threads;
     }
 
     public async Task<ThreadCardState> ReadThreadAsync(

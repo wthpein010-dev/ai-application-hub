@@ -10,16 +10,6 @@ public sealed class ConfirmationOverlayPlacement
 
     public void MarkManuallyPositioned() => IsManuallyPositioned = true;
 
-    public PixelSize ResolvePixelSize(Size logicalSize, double renderScaling)
-    {
-        var scale = double.IsFinite(renderScaling) && renderScaling > 0
-            ? renderScaling
-            : 1;
-        return new PixelSize(
-            Math.Max(1, (int)Math.Ceiling(logicalSize.Width * scale)),
-            Math.Max(1, (int)Math.Ceiling(logicalSize.Height * scale)));
-    }
-
     public PixelPoint ResolveForShow(
         PixelRect workingArea,
         PixelPoint currentPosition,

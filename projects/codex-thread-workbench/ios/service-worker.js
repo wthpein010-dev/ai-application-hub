@@ -1,10 +1,10 @@
 const CACHE_PREFIX = "codex-confirmation-ios-";
-const CACHE_NAME = `${CACHE_PREFIX}v2`;
+const CACHE_NAME = `${CACHE_PREFIX}v218`;
 const APP_SHELL = [
   "./",
   "./index.html",
-  "./styles.css?v=20260824-v200",
-  "./app.js?v=20260824-v200",
+  "./styles.css?v=20260827-v218",
+  "./app.js?v=20260827-v218",
   "./app.webmanifest",
   "./icon-192.png",
   "./icon-512.png",

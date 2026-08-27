@@ -11,6 +11,7 @@ public sealed class CodexSessionSnapshotReader : IConfirmationThreadReader
         TimeSpan.FromSeconds(2);
     private readonly string _sessionsRoot;
     private readonly int _tailByteLimit;
+    private readonly bool _throwWhenUnavailable;
     private readonly SemaphoreSlim _indexGate = new(1, 1);
     private Dictionary<string, string> _sessionPaths =
         new(StringComparer.Ordinal);
@@ -19,11 +20,13 @@ public sealed class CodexSessionSnapshotReader : IConfirmationThreadReader
 
     public CodexSessionSnapshotReader(
         string? sessionsRoot = null,
-        int tailByteLimit = DefaultTailByteLimit)
+        int tailByteLimit = DefaultTailByteLimit,
+        bool throwWhenUnavailable = false)
     {
         ArgumentOutOfRangeException.ThrowIfLessThan(tailByteLimit, 1024);
         _sessionsRoot = sessionsRoot ?? GetDefaultSessionsRoot();
         _tailByteLimit = tailByteLimit;
+        _throwWhenUnavailable = throwWhenUnavailable;
     }
 
     public async Task<ThreadCardState> ReadThreadAsync(
@@ -33,24 +36,28 @@ public sealed class CodexSessionSnapshotReader : IConfirmationThreadReader
         var path = await GetSessionPathAsync(summary.Id, cancellationToken);
         if (path is null)
         {
-            return EmptyState(summary);
+            return UnavailableState(
+                summary,
+                new FileNotFoundException(
+                    $"未找到任务 {summary.Id} 的本机会话快照。",
+                    summary.Id));
         }
 
         try
         {
             return await ReadTailAsync(summary, path, cancellationToken);
         }
-        catch (IOException)
+        catch (IOException error)
         {
-            return EmptyState(summary);
+            return UnavailableState(summary, error);
         }
-        catch (UnauthorizedAccessException)
+        catch (UnauthorizedAccessException error)
         {
-            return EmptyState(summary);
+            return UnavailableState(summary, error);
         }
-        catch (JsonException)
+        catch (JsonException error)
         {
-            return EmptyState(summary);
+            return UnavailableState(summary, error);
         }
     }
 
@@ -143,11 +150,16 @@ public sealed class CodexSessionSnapshotReader : IConfirmationThreadReader
 
         var messages = new List<ChatMessage>();
         var latestTurnStatus = ThreadStatusKind.NotLoaded;
+        string? activeTurnId = null;
         foreach (var line in content.Split(
                      '\n',
                      StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries))
         {
-            ApplyLine(line, messages, ref latestTurnStatus);
+            ApplyLine(
+                line,
+                messages,
+                ref latestTurnStatus,
+                ref activeTurnId);
         }
 
         var status = latestTurnStatus == ThreadStatusKind.NotLoaded
@@ -157,13 +169,15 @@ public sealed class CodexSessionSnapshotReader : IConfirmationThreadReader
             summary,
             messages,
             status,
+            ActiveTurnId: activeTurnId,
             LatestTurnStatus: latestTurnStatus);
     }
 
     private static void ApplyLine(
         string line,
         List<ChatMessage> messages,
-        ref ThreadStatusKind latestTurnStatus)
+        ref ThreadStatusKind latestTurnStatus,
+        ref string? activeTurnId)
     {
         try
         {
@@ -178,13 +192,27 @@ public sealed class CodexSessionSnapshotReader : IConfirmationThreadReader
             var payloadType = GetString(payload, "type");
             if (rootType == "event_msg")
             {
-                latestTurnStatus = payloadType switch
+                switch (payloadType)
                 {
-                    "task_started" => ThreadStatusKind.Running,
-                    "task_complete" => ThreadStatusKind.Completed,
-                    "turn_aborted" => ThreadStatusKind.Interrupted,
-                    _ => latestTurnStatus
-                };
+                    case "task_started":
+                        latestTurnStatus = ThreadStatusKind.Running;
+                        activeTurnId = GetString(payload, "turn_id");
+                        if (string.IsNullOrWhiteSpace(activeTurnId))
+                        {
+                            activeTurnId = null;
+                        }
+
+                        break;
+                    case "task_complete":
+                        latestTurnStatus = ThreadStatusKind.Completed;
+                        activeTurnId = null;
+                        break;
+                    case "turn_aborted":
+                        latestTurnStatus = ThreadStatusKind.Interrupted;
+                        activeTurnId = null;
+                        break;
+                }
+
                 return;
             }
 
@@ -264,6 +292,18 @@ public sealed class CodexSessionSnapshotReader : IConfirmationThreadReader
             [],
             summary.Status,
             LatestTurnStatus: ThreadStatusKind.NotLoaded);
+
+    private ThreadCardState UnavailableState(
+        ThreadSummary summary,
+        Exception error)
+    {
+        if (_throwWhenUnavailable)
+        {
+            throw error;
+        }
+
+        return EmptyState(summary);
+    }
 
     private static string GetString(JsonElement element, string propertyName) =>
         element.TryGetProperty(propertyName, out var value) &&

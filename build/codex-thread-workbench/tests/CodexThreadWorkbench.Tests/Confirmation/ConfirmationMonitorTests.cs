@@ -10,25 +10,30 @@ public sealed class ConfirmationMonitorTests
         new(2026, 8, 20, 8, 0, 0, TimeSpan.Zero);
 
     [Fact]
-    public async Task FirstScan_ReadsOnlyRecentIdleThreads()
+    public async Task FirstScan_ReadsAllPotentialThreadsAndSkipsUnsupportedStatuses()
     {
         var client = new FakeCodexThreadClient();
         client.Threads.AddRange(
         [
             Summary("recent", Now.AddHours(-2), ThreadStatusKind.Idle),
             Summary("old", Now.AddHours(-25), ThreadStatusKind.Idle),
-            Summary("running", Now, ThreadStatusKind.Running)
+            Summary("running", Now, ThreadStatusKind.Running),
+            Summary("approval", Now, ThreadStatusKind.NeedsApproval)
         ]);
         client.ThreadStates["recent"] = WaitingState("recent", Now.AddHours(-2));
+        client.ThreadStates["old"] = WaitingState("old", Now.AddHours(-25));
+        client.ThreadStates["running"] = RunningState("running", Now);
         var monitor = new ConfirmationMonitor(client, new ConfirmationDetector());
 
         await monitor.ScanOnceAsync(Now);
 
-        var candidate = Assert.Single(monitor.Candidates);
-        Assert.Equal("recent", candidate.ThreadId);
+        Assert.Equal(
+            ["recent", "old"],
+            monitor.Candidates.Select(candidate => candidate.ThreadId));
         Assert.Equal(1, client.ReadCalls["recent"]);
-        Assert.False(client.ReadCalls.ContainsKey("old"));
-        Assert.False(client.ReadCalls.ContainsKey("running"));
+        Assert.Equal(1, client.ReadCalls["old"]);
+        Assert.Equal(1, client.ReadCalls["running"]);
+        Assert.False(client.ReadCalls.ContainsKey("approval"));
     }
 
     [Fact]
@@ -329,6 +334,54 @@ public sealed class ConfirmationMonitorTests
     }
 
     [Fact]
+    public async Task MissingProductionSnapshot_IsRetriedUntilTheSessionAppears()
+    {
+        const string threadId = "019f7444-4d4d-7771-9864-0043606d7f99";
+        var sessionsRoot = Path.Combine(
+            Path.GetTempPath(),
+            "CodexThreadWorkbench.Monitor.Tests",
+            Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(sessionsRoot);
+        try
+        {
+            var client = new FakeCodexThreadClient();
+            client.Threads.Add(
+                Summary(threadId, Now.AddDays(-2), ThreadStatusKind.NotLoaded));
+            var monitor = new ConfirmationMonitor(
+                client,
+                new ConfirmationDetector(),
+                threadReader: new CodexSessionSnapshotReader(
+                    sessionsRoot,
+                    throwWhenUnavailable: true));
+
+            await monitor.ScanOnceAsync(Now);
+
+            Assert.Empty(monitor.Candidates);
+            var directory = Path.Combine(sessionsRoot, "2026", "08", "20");
+            Directory.CreateDirectory(directory);
+            await File.WriteAllLinesAsync(
+                Path.Combine(
+                    directory,
+                    $"rollout-2026-08-20T08-00-00-{threadId}.jsonl"),
+                [
+                    """{"timestamp":"2026-08-20T08:00:00Z","type":"response_item","payload":{"type":"message","id":"message-retried","role":"assistant","content":[{"type":"output_text","text":"请确认这个方案，确认后我会开始实施。"}]}}""",
+                    """{"timestamp":"2026-08-20T08:00:01Z","type":"event_msg","payload":{"type":"task_complete"}}"""
+                ]);
+            await Task.Delay(TimeSpan.FromMilliseconds(2100));
+
+            await monitor.ScanOnceAsync(Now.AddSeconds(3));
+
+            Assert.Equal(
+                "message-retried",
+                Assert.Single(monitor.Candidates).MessageId);
+        }
+        finally
+        {
+            Directory.Delete(sessionsRoot, recursive: true);
+        }
+    }
+
+    [Fact]
     public async Task ListFailure_RetainsCandidates_AndPublishesThenClearsError()
     {
         var client = new FakeCodexThreadClient();
@@ -365,7 +418,7 @@ public sealed class ConfirmationMonitorTests
     }
 
     [Fact]
-    public async Task InitialCutoff_DoesNotReadOldThreadOnNextUnchangedScan()
+    public async Task InitialScan_ReadsOldThreadOnceThenSkipsUnchangedThread()
     {
         var oldUpdatedAt = Now.AddHours(-25);
         var client = new FakeCodexThreadClient();
@@ -376,7 +429,126 @@ public sealed class ConfirmationMonitorTests
         await monitor.ScanOnceAsync(Now);
         await monitor.ScanOnceAsync(Now.AddSeconds(2));
 
-        Assert.False(client.ReadCalls.ContainsKey("old"));
+        Assert.Equal(1, client.ReadCalls["old"]);
+        Assert.Equal("old", Assert.Single(monitor.Candidates).ThreadId);
+    }
+
+    [Fact]
+    public async Task InitialScan_RequestsThreadsBeyondFirstTwoHundred()
+    {
+        var client = new FakeCodexThreadClient();
+        for (var index = 0; index < 200; index++)
+        {
+            client.Threads.Add(
+                Summary($"approval-{index}", Now, ThreadStatusKind.NeedsApproval));
+        }
+
+        client.Threads.Add(Summary("waiting-201", Now, ThreadStatusKind.Idle));
+        client.ThreadStates["waiting-201"] = WaitingState("waiting-201", Now);
+        var monitor = new ConfirmationMonitor(client, new ConfirmationDetector());
+
+        await monitor.ScanOnceAsync(Now);
+
+        Assert.Equal("waiting-201", Assert.Single(monitor.Candidates).ThreadId);
+    }
+
+    [Fact]
+    public async Task SubsequentScan_RequestsOnlyMostRecentThreadPage()
+    {
+        var client = new FakeCodexThreadClient();
+        client.Threads.Add(Summary("thread-1", Now, ThreadStatusKind.Idle));
+        client.ThreadStates["thread-1"] = WaitingState("thread-1", Now);
+        var monitor = new ConfirmationMonitor(client, new ConfirmationDetector());
+
+        await monitor.ScanOnceAsync(Now);
+        await monitor.ScanOnceAsync(Now.AddSeconds(2));
+
+        Assert.Equal([int.MaxValue, 200], client.RequestedListLimits);
+    }
+
+    [Fact]
+    public async Task SubsequentScan_RetriesFailedInitialThreadBeyondRecentPage()
+    {
+        var client = new FakeCodexThreadClient();
+        for (var index = 0; index < 200; index++)
+        {
+            client.Threads.Add(
+                Summary($"approval-{index}", Now, ThreadStatusKind.NeedsApproval));
+        }
+
+        client.Threads.Add(Summary("waiting-201", Now, ThreadStatusKind.Idle));
+        client.ThreadStates["waiting-201"] = WaitingState("waiting-201", Now);
+        client.ReadExceptions["waiting-201"] = new IOException("temporarily locked");
+        var monitor = new ConfirmationMonitor(client, new ConfirmationDetector());
+
+        await monitor.ScanOnceAsync(Now);
+        client.ReadExceptions.Remove("waiting-201");
+        await monitor.ScanOnceAsync(Now.AddSeconds(2));
+
+        Assert.Equal(2, client.ReadCalls["waiting-201"]);
+        Assert.Equal("waiting-201", Assert.Single(monitor.Candidates).ThreadId);
+    }
+
+    [Fact]
+    public async Task CancelledInitialScan_RetriesFullHistoryOnNextScan()
+    {
+        var client = new FakeCodexThreadClient();
+        for (var index = 0; index < 200; index++)
+        {
+            client.Threads.Add(
+                Summary($"approval-{index}", Now, ThreadStatusKind.NeedsApproval));
+        }
+
+        client.Threads.Add(Summary("waiting-201", Now, ThreadStatusKind.Idle));
+        client.ThreadStates["waiting-201"] = WaitingState("waiting-201", Now);
+        client.DelayedReadThreadIds.Add("waiting-201");
+        var monitor = new ConfirmationMonitor(client, new ConfirmationDetector());
+        using var cancellation = new CancellationTokenSource();
+
+        var cancelledScan = monitor.ScanOnceAsync(Now, cancellation.Token);
+        await client.ReadStarted.Task.WaitAsync(TimeSpan.FromSeconds(1));
+        cancellation.Cancel();
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(() => cancelledScan);
+        client.DelayedReadThreadIds.Remove("waiting-201");
+        await monitor.ScanOnceAsync(Now.AddSeconds(2));
+
+        Assert.Equal([int.MaxValue, int.MaxValue], client.RequestedListLimits);
+        Assert.Equal("waiting-201", Assert.Single(monitor.Candidates).ThreadId);
+    }
+
+    [Fact]
+    public async Task Scan_ReevaluatesStatusChangeWhenUpdatedAtIsUnchanged()
+    {
+        var client = new FakeCodexThreadClient();
+        client.Threads.Add(Summary("thread-1", Now, ThreadStatusKind.Running));
+        client.ThreadStates["thread-1"] = RunningState("thread-1", Now);
+        var monitor = new ConfirmationMonitor(client, new ConfirmationDetector());
+
+        await monitor.ScanOnceAsync(Now);
+        client.Threads[0] = Summary("thread-1", Now, ThreadStatusKind.Idle);
+        client.ThreadStates["thread-1"] = WaitingState("thread-1", Now);
+        await monitor.ScanOnceAsync(Now.AddSeconds(2));
+
+        Assert.Equal(2, client.ReadCalls["thread-1"]);
+        Assert.Equal("thread-1", Assert.Single(monitor.Candidates).ThreadId);
+    }
+
+    [Fact]
+    public async Task Scan_ReadsRunningSummarySoSnapshotCanCorrectStaleStatus()
+    {
+        var client = new FakeCodexThreadClient();
+        var summary = Summary("stale-running", Now, ThreadStatusKind.Running);
+        client.Threads.Add(summary);
+        var reader = new RecordingThreadReader(WaitingState("stale-running", Now));
+        var monitor = new ConfirmationMonitor(
+            client,
+            new ConfirmationDetector(),
+            threadReader: reader);
+
+        await monitor.ScanOnceAsync(Now);
+
+        Assert.Equal(["stale-running"], reader.ThreadIds);
+        Assert.Equal("stale-running", Assert.Single(monitor.Candidates).ThreadId);
     }
 
     [Fact]
@@ -391,6 +563,9 @@ public sealed class ConfirmationMonitorTests
             "thread-1",
             Now.AddSeconds(3),
             ThreadStatusKind.Running);
+        client.ThreadStates["thread-1"] = RunningState(
+            "thread-1",
+            Now.AddSeconds(3));
 
         await monitor.ScanOnceAsync(Now.AddSeconds(4));
 
@@ -415,6 +590,18 @@ public sealed class ConfirmationMonitorTests
                 "请确认这个方案，确认后我会开始实施。")],
             ThreadStatusKind.Idle,
             LatestTurnStatus: ThreadStatusKind.Completed);
+
+    private static ThreadCardState RunningState(
+        string id,
+        DateTimeOffset updatedAt) =>
+        new(
+            Summary(id, updatedAt, ThreadStatusKind.Running),
+            [new ChatMessage(
+                $"message-{id}",
+                ChatRole.Assistant,
+                "仍在处理中。")],
+            ThreadStatusKind.Running,
+            LatestTurnStatus: ThreadStatusKind.Running);
 
     private sealed class RecordingThreadReader(
         ThreadCardState state) : IConfirmationThreadReader

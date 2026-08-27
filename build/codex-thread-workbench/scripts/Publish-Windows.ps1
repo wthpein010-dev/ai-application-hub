@@ -79,6 +79,8 @@ if (-not (Test-Path -LiteralPath $executablePath -PathType Leaf) -or
 
 Copy-Item -LiteralPath (Join-Path $repositoryRoot "README.md") `
     -Destination (Join-Path $publishDirectory "README.md")
+Copy-Item -LiteralPath (Join-Path $repositoryRoot "scripts\Install-WindowsRecoveryTask.ps1") `
+    -Destination (Join-Path $publishDirectory "Install-WindowsRecoveryTask.ps1")
 
 $compressionError = $null
 for ($attempt = 1; $attempt -le 3; $attempt++) {
@@ -111,8 +113,9 @@ $archive = [System.IO.Compression.ZipFile]::OpenRead($archivePath)
 try {
     $archiveEntries = @($archive.Entries | ForEach-Object FullName)
     if ($archiveEntries -notcontains "CodexConfirmationBar.exe" -or
-        $archiveEntries -notcontains "README.md") {
-        throw "Windows package is missing the executable or README."
+        $archiveEntries -notcontains "README.md" -or
+        $archiveEntries -notcontains "Install-WindowsRecoveryTask.ps1") {
+        throw "Windows package is missing the executable, recovery installer, or README."
     }
 }
 finally {

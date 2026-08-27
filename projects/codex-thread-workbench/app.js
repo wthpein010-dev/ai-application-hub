@@ -42,6 +42,11 @@ document.addEventListener("click", event => {
     renderCandidates();
     setState("error");
     activityLog.textContent = "已模拟扫描异常；所有确认入口均已安全停用。";
+  } else if (action === "simulate-close") {
+    candidates = [];
+    renderCandidates();
+    setState("retracted");
+    activityLog.textContent = "关闭请求已拦截；悬浮栏继续运行，Windows 恢复任务仍会每分钟检查恢复。";
   } else if (action === "confirm-one") {
     confirmOne(button.dataset.candidateId);
   } else if (action === "confirm-all") {

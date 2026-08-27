@@ -24,6 +24,78 @@ public sealed class CodexDesktopMessageFallbackTests
             order);
     }
 
+    [Fact]
+    public async Task WindowsSubmitter_WaitsThroughColdStartBeforeSubmitting()
+    {
+        if (!OperatingSystem.IsWindows())
+        {
+            return;
+        }
+
+        var timeProvider = new ManualTimeProvider();
+        var automation = new RecordingWindowsCodexAutomation(
+            readyAfterDiscoveries: 80);
+        var submitter = new WindowsCodexForegroundSubmitter(
+            automation,
+            timeProvider,
+            timeProvider.DelayAsync);
+
+        await submitter.SubmitAsync();
+
+        Assert.Equal(80, automation.DiscoveryCount);
+        Assert.Equal([42], automation.ForegroundRequests);
+        Assert.Equal(1, automation.SubmitCount);
+    }
+
+    [Fact]
+    public async Task WindowsSubmitter_KeepsWarmSubmissionFast()
+    {
+        if (!OperatingSystem.IsWindows())
+        {
+            return;
+        }
+
+        var timeProvider = new ManualTimeProvider();
+        var automation = new RecordingWindowsCodexAutomation(
+            readyAfterDiscoveries: int.MaxValue,
+            initialForegroundWindow: 42);
+        var submitter = new WindowsCodexForegroundSubmitter(
+            automation,
+            timeProvider,
+            timeProvider.DelayAsync);
+
+        await submitter.SubmitAsync();
+
+        Assert.Equal(TimeSpan.FromMilliseconds(350), timeProvider.Elapsed);
+        Assert.Equal(0, automation.DiscoveryCount);
+        Assert.Equal(1, automation.SubmitCount);
+    }
+
+    [Fact]
+    public async Task WindowsSubmitter_RevalidatesAfterFocusSettlesBeforeEnter()
+    {
+        if (!OperatingSystem.IsWindows())
+        {
+            return;
+        }
+
+        var isCurrent = true;
+        var timeProvider = new ManualTimeProvider(_ => isCurrent = false);
+        var automation = new RecordingWindowsCodexAutomation(
+            readyAfterDiscoveries: int.MaxValue,
+            initialForegroundWindow: 42);
+        ICodexForegroundSubmitter submitter = new WindowsCodexForegroundSubmitter(
+            automation,
+            timeProvider,
+            timeProvider.DelayAsync);
+
+        var submitted = await submitter.SubmitIfCurrentAsync(
+            _ => Task.FromResult(isCurrent));
+
+        Assert.False(submitted);
+        Assert.Equal(0, automation.SubmitCount);
+    }
+
     private sealed class RecordingLauncher(List<string> order) : ICodexDeepLinkLauncher
     {
         public Task OpenAsync(
@@ -40,6 +112,69 @@ public sealed class CodexDesktopMessageFallbackTests
         public Task SubmitAsync(CancellationToken cancellationToken = default)
         {
             order.Add("submit");
+            return Task.CompletedTask;
+        }
+    }
+
+    private sealed class RecordingWindowsCodexAutomation(
+        int readyAfterDiscoveries,
+        nint initialForegroundWindow = 0) :
+        IWindowsCodexDesktopAutomation
+    {
+        private nint _foregroundWindow = initialForegroundWindow;
+
+        public int DiscoveryCount { get; private set; }
+
+        public List<nint> ForegroundRequests { get; } = [];
+
+        public int SubmitCount { get; private set; }
+
+        public nint GetForegroundWindow() => _foregroundWindow;
+
+        public nint FindCodexDesktopWindow()
+        {
+            DiscoveryCount++;
+            return DiscoveryCount >= readyAfterDiscoveries ? 42 : 0;
+        }
+
+        public bool IsCodexDesktopWindow(nint window) => window == 42;
+
+        public bool SetForegroundWindow(nint window)
+        {
+            ForegroundRequests.Add(window);
+            _foregroundWindow = window;
+            return true;
+        }
+
+        public void SendEnter()
+        {
+            SubmitCount++;
+        }
+    }
+
+    private sealed class ManualTimeProvider(
+        Action<TimeSpan>? onDelay = null) : TimeProvider
+    {
+        private long _timestamp;
+
+        public override long TimestampFrequency => TimeSpan.TicksPerSecond;
+
+        public override long GetTimestamp() => _timestamp;
+
+        public TimeSpan Elapsed => TimeSpan.FromTicks(_timestamp);
+
+        public void Advance(TimeSpan duration)
+        {
+            _timestamp += duration.Ticks;
+        }
+
+        public Task DelayAsync(
+            TimeSpan duration,
+            CancellationToken cancellationToken)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            Advance(duration);
+            onDelay?.Invoke(duration);
             return Task.CompletedTask;
         }
     }
