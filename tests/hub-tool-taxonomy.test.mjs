@@ -156,7 +156,7 @@ test("the type filter exposes only the six tool types plus games and engineering
     ["engineering", "工程体验"],
   ]);
   assert.doesNotMatch(filter, /AI版|训练工具|创意工具|项目导航/);
-  assert.match(homepage, /styles\.css\?v=20260826-dynamic-showcase/u);
+  assert.match(homepage, /styles\.css\?v=20260827-showcase-complete-copy/u);
 });
 
 test("the maintenance editor uses and persists the same public taxonomy", () => {
