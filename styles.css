@@ -623,15 +623,12 @@ section[id] {
 }
 
 .summary-intro {
-  display: -webkit-box;
   max-width: 620px;
   margin: 14px 0 0;
-  overflow: hidden;
   color: var(--hero-muted);
   font-size: 14px;
   line-height: 1.7;
-  -webkit-box-orient: vertical;
-  -webkit-line-clamp: 3;
+  overflow-wrap: anywhere;
 }
 
 .summary-richtext {
@@ -650,14 +647,12 @@ section[id] {
 }
 
 .summary-richtext em {
-  display: -webkit-box;
-  overflow: hidden;
+  display: block;
   color: var(--hero-text);
   font-size: 13px;
   font-style: normal;
   line-height: 1.6;
-  -webkit-box-orient: vertical;
-  -webkit-line-clamp: 2;
+  overflow-wrap: anywhere;
 }
 
 .showcase-controls {
@@ -1866,10 +1861,6 @@ body.editing .app-shell {
   .summary-copy > strong {
     margin-top: 16px;
     font-size: 23px;
-  }
-
-  .summary-intro {
-    -webkit-line-clamp: 3;
   }
 
   .summary-richtext {

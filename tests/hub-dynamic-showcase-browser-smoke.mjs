@@ -203,6 +203,20 @@ async function waitForStageImage(page) {
   });
 }
 
+async function assertCompleteShowcaseText(page, label) {
+  const clipped = await page.evaluate(() => Array.from(document.querySelectorAll(
+    "#spotlightCard .summary-intro, #spotlightCard .summary-richtext em",
+  )).filter((element) => (
+    element.scrollHeight > element.clientHeight + 1
+    || element.scrollWidth > element.clientWidth + 1
+  )).map((element) => ({
+    selector: element.className || element.tagName.toLowerCase(),
+    heightFits: element.scrollHeight <= element.clientHeight + 1,
+    widthFits: element.scrollWidth <= element.clientWidth + 1,
+  })));
+  check(clipped, [], `${label} shows the complete selected-project description and use case`);
+}
+
 function normalizedEntranceEvents(events) {
   return events.map(({ element, name }) => ({ element, name })).sort((a, b) => (
     a.element.localeCompare(b.element) || a.name.localeCompare(b.name)
@@ -411,6 +425,13 @@ try {
           return { id, error: String(error) };
         }
       });
+      const showcaseTextGeometry = Array.from(document.querySelectorAll(
+        "#spotlightCard .summary-intro, #spotlightCard .summary-richtext em",
+      )).map((element) => ({
+        selector: element.className || element.tagName.toLowerCase(),
+        heightFits: element.scrollHeight <= element.clientHeight + 1,
+        widthFits: element.scrollWidth <= element.clientWidth + 1,
+      }));
       return {
         allIds: ids(".app-card[data-app-id]"),
         apps: ids("#appGrid .app-card[data-app-id]"),
@@ -440,6 +461,9 @@ try {
         actionsContained: actionGeometry.every(({ contained }) => contained),
         actionsTallEnough: actionGeometry.every(({ height }) => height >= 38),
         actionsFit: actionGeometry.every(({ widthFits }) => widthFits),
+        clippedShowcaseText: showcaseTextGeometry
+          .filter(({ heightFits, widthFits }) => !heightFits || !widthFits)
+          .map(({ selector, heightFits, widthFits }) => `${selector}:height=${heightFits},width=${widthFits}`),
       };
     });
     check(baseline.cardCount, 28, `${viewport.name} renders 28 cards`);
@@ -469,6 +493,7 @@ try {
     check(baseline.actionsContained, `${viewport.name} card actions stay inside cards`);
     check(baseline.actionsTallEnough, `${viewport.name} card actions are comfortably sized`);
     check(baseline.actionsFit, `${viewport.name} card action labels fit`);
+    check(baseline.clippedShowcaseText, [], `${viewport.name} shows the complete selected-project description and use case`);
     const performance = await page.evaluate(() => {
       const navigation = performance.getEntriesByType("navigation")[0];
       return {
@@ -525,7 +550,9 @@ try {
     for (let index = 1; index <= expectedNavigationIds.length; index += 1) {
       await page.locator("#nextApp").click();
       await waitForStageImage(page);
-      navigationSequence.push(new URL(page.url()).searchParams.get("project"));
+      const projectId = new URL(page.url()).searchParams.get("project");
+      navigationSequence.push(projectId);
+      await assertCompleteShowcaseText(page, `${viewport.name}/${projectId}`);
     }
     check(
       navigationSequence,
