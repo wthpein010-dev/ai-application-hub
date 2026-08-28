@@ -591,9 +591,14 @@ audit_workbench() {
   if [[ "${fixture_mode}" == "true" ]]; then
     die "Workbench fixture audits are not supported"
   fi
-  chmod +x "${repository_root}/build/codex-thread-workbench/scripts/test-macos-package.sh"
-  "${repository_root}/build/codex-thread-workbench/scripts/test-macos-package.sh" \
-    "${archive}" "${workbench_runtime}"
+  local verifier
+  if [[ "${id}" == "codex-thread-workbench" ]]; then
+    verifier="${repository_root}/scripts/test-codex-confirmation-bar-macos-package.sh"
+  else
+    verifier="${repository_root}/build/codex-thread-workbench/scripts/test-macos-package.sh"
+  fi
+  chmod +x "${verifier}"
+  "${verifier}" "${archive}" "${workbench_runtime}"
 
   record_result \
     "${id}" "native" "${manifest_url}" "${actual_bytes}" "${actual_sha256}" \
@@ -617,6 +622,7 @@ if (!fixtureMode) {
     ["clickflow", "native"],
     ["pureshrink", "native"],
     ["gamespec-relay", "native"],
+    ["codex-multi-thread-workbench", "native"],
   ]);
   if (manifest.downloads.length !== expected.size) {
     throw new Error(`Expected exactly ${expected.size} public Mac downloads`);
@@ -639,7 +645,7 @@ for (const item of manifest.downloads) {
     sourceUrl = item.archiveUrl;
     bytes = item.bytes;
     sha256 = item.sha256;
-  } else if (item.id === "codex-thread-workbench") {
+  } else if (["codex-thread-workbench", "codex-multi-thread-workbench"].includes(item.id)) {
     const artifact = item.artifacts && item.artifacts[architecture];
     if (!artifact) throw new Error(`Workbench has no ${architecture} artifact`);
     sourceUrl = artifact.manifestUrl;
@@ -679,7 +685,7 @@ while IFS=$'\t' read -r id kind source_url expected_bytes expected_sha256 public
       audit_extension "${id}" "${source_url}" "${expected_bytes}" "${expected_sha256}"
       ;;
     native)
-      if [[ "${id}" == "codex-thread-workbench" ]]; then
+      if [[ "${id}" == "codex-thread-workbench" || "${id}" == "codex-multi-thread-workbench" ]]; then
         audit_workbench "${id}" "${public_manifest_url}" "${expected_bytes}" "${expected_sha256}"
       else
         audit_combined_native "${id}" "${source_url}" "${expected_bytes}" "${expected_sha256}"

@@ -1,100 +1,74 @@
-# Codex 多线程悬浮工作台
+# Codex 多线程工作台
 
-Codex 多线程悬浮工作台是一个面向 Windows 和 macOS 的常驻桌面工具。默认运行待确认悬浮栏：没有待确认任务时收入屏幕顶部，有任务时自动弹出并允许直接确认继续。完整多线程悬浮工作台作为显式可选模式保留。
+一个面向 Windows 和 macOS 的 Codex 多线程桌面工作台。它把多个真实 Codex 任务放在同一个一级界面中：直接查看标题和对话、输入消息、停止回合、处理审批，并通过拖拽交换各任务卡片的位置。
 
 ## 主要能力
 
-- 72×72 轻量悬浮按钮常驻桌面，可拖动并自动吸附左右边缘
-- 单击展开或收起完整多线程工作台，窗口关闭时回到悬浮按钮而不退出后台
-- 右键可直接打开、全屏、刷新任务或退出
-- 橙色角标提示待确认数量，无待处理任务时保持安静
-- 每张任务卡可直接继续对话，支持拖拽交换布局并保存位置
-- 启动时完整扫描一次普通任务，之后每两秒只扫描最新 200 个任务并重试首次失败项
-- 多显示器环境中，默认固定在最左侧显示器顶部水平居中
-- 兼容模式继续提供“确认继续”“忽略”和“一键全部确认”悬浮栏
-- 固定发送：`确认，继续开始做，完成前不要停。`
-- 发送前重新确认候选仍是任务的最新待确认回复，发送后回读确认消息确实写入
-- 发送失败时保留候选并显示重试，不会把失败误报成成功
-- 只读取每个本地会话日志最后 4 MiB，避免把超长任务完整载入内存
+- 同屏打开 1–6 个 Codex 任务，自动排列为清晰的等分网格
+- 每张任务卡直接显示标题、项目路径、最近对话和实时状态
+- 在一级界面直接输入；空闲任务开始新回合，进行中的任务继续追加指令
+- 清晰区分进行中、已完成、已停止、需确认、出错和离线状态
+- 支持打开、关闭、最小化、搜索、刷新和停止任务
+- 支持普通桌面窗口与无边框全屏模式切换
+- 拖动任务卡标题栏即可交换位置，顺序自动保存
+- 记住上次打开的任务、卡片顺序和窗口位置
+- 用户消息使用轻量气泡；Codex 回复采用无整块底框的正文排版
+- 对超长会话只读取本地日志末尾 4 MiB，避免周期性加载完整历史
 
 ## 系统要求
 
 - Windows 10/11 x64，或 macOS 13 及以上
-- 已安装并登录 Codex CLI
+- 已安装并登录 Codex 桌面应用或 Codex CLI
 - Windows：`PATH` 中存在 `codex.exe`，或存在 `%USERPROFILE%\.codex\.sandbox-bin\codex.exe`
 - macOS：`PATH`、`~/.local/bin`、`/opt/homebrew/bin` 或 `/usr/local/bin` 中存在可执行的 `codex`
 - 本机存在 `CODEX_HOME\sessions` 或 `~/.codex/sessions` 会话记录
 
 ## Windows 使用
 
-1. 解压 `CodexConfirmationBar-Windows-x64.zip`。
-2. 双击 `CodexConfirmationBar.exe`。
-3. 应用默认运行待确认悬浮栏；没有候选时只在屏幕顶部保留收纳把手，有候选时自动展开。
+1. 解压 `CodexThreadWorkbench-Windows-x64.zip`。
+2. 双击 `CodexThreadWorkbench.exe`。
+3. 程序会直接打开完整多线程桌面工作台，无需安装。
 
-推荐安装当前 Windows 用户的常驻恢复任务：
-
-```powershell
-powershell -NoProfile -ExecutionPolicy Bypass `
-  -File .\Install-WindowsRecoveryTask.ps1 `
-  -ExecutablePath .\CodexConfirmationBar.exe
-```
-
-恢复任务会在登录时启动应用，并每分钟检查一次；应用被正常关闭或外部结束后，最迟一分钟自动恢复。任务使用 `IgnoreNew` 策略，应用本身也有单实例保护，不会因重复触发出现多个悬浮栏。
+首次启动会恢复上次打开的任务；没有保存记录时会载入最近更新的任务。点击“打开线程”可搜索并加入其他任务，在任一卡片底部输入文字后按 `Enter` 发送，按 `Shift+Enter` 换行。
 
 ## macOS 使用
 
 根据处理器下载并解压：
 
-- Apple Silicon：`CodexConfirmationBar-macOS-arm64.app.zip`
-- Intel：`CodexConfirmationBar-macOS-x64.app.zip`
+- Apple Silicon：`CodexThreadWorkbench-macOS-arm64.app.zip`
+- Intel：`CodexThreadWorkbench-macOS-x64.app.zip`
 
-首次使用请右键 `CodexConfirmationBar.app`，选择“打开”。当前公开包使用 ad-hoc 签名，没有经过 Apple 公证。
+首次使用请右键 `CodexThreadWorkbench.app` 并选择“打开”。当前公开包使用 ad-hoc 签名，尚未经过 Apple 公证。
 
-如需登录后自动启动，可在“系统设置 → 通用 → 登录项”中添加 `CodexConfirmationBar.app`。
+## 可选启动模式
 
-Windows 和 macOS 点击确认后优先通过精确任务深链直接提交，缩短从点击到对应任务收到消息的等待。macOS 需要在“系统设置 → 隐私与安全性 → 辅助功能”中允许“Codex 待确认悬浮助手”；没有权限时工具不会发送键盘输入，候选会保留并提示重试。无法使用桌面提交的平台仍保留本机 `codex app-server` 路径。
-
-## 工作方式
-
-默认模式连接本机 Codex App Server 后运行待确认悬浮栏。显式传入 `--floating-launcher` 时，应用才显示多线程悬浮按钮；完整工作台只在第一次展开时按需初始化，任务卡和后续状态刷新都使用本地会话最后 4 MiB 的有界内容，不会周期性载入整段超长历史。拖动按钮会自动吸附到最近的左右边缘并保存位置；关闭工作台只会收起，右键悬浮按钮选择“退出多线程工具”才会结束后台进程。
-
-启动时分页补扫全部普通任务一次，随后每两秒只拉取最新 200 个任务；首次读取失败的旧任务会保留在重试队列，不会因增量窗口而漏掉。被中断的任务会保留；正常结束的任务只有在最后回复仍明确要求确认、选择、补充信息、回复或询问是否继续时才显示。纯“已完成、已发布、验收通过”以及礼貌性的后续优化邀请不会显示。
-
-点击确认后，工具先回读任务尾部并确认屏幕上的候选仍是最新待确认回复；如果你已手动回复或 Codex 已产生新回复，旧按钮会直接失效且不会发送。候选仍新鲜时，Windows 和 macOS 会打开精确任务深链，并在确认前台应用属于 OpenAI 后提交；其他平台使用官方 Codex App Server 恢复任务并开始新回合。发送后都会在任务日志中回读固定消息；没有核验到消息时，项目不会从列表消失。
-
-“忽略”只隐藏当前回复对应的候选，不发送消息；同一任务出现新的 Codex 回复后会重新评估。“一键全部确认”按列表顺序处理，单条失败不会阻止其他任务。
-
-工具不会自动同意命令执行、文件修改、连接器或其他 Codex 安全审批；这些仍需在原任务中明确处理。
-
-Windows 待确认悬浮栏会拦截普通窗口关闭请求；系统关机和明确维护退出仍正常放行。生命周期、关闭请求和未处理异常默认记录在：
-
-```text
-%LOCALAPPDATA%\CodexThreadWorkbench\logs\confirmation-overlay-lifecycle.log
-```
-
-## 隐私
-
-应用只连接本机 `codex app-server` 并读取本地会话日志，不读取或保存 `auth.json`、密码、Token、Cookie 或私钥，不上传聊天内容，也不另建云端账户。
-
-## 启动模式
-
-默认启动即为待确认悬浮栏；旧快捷方式中的同名参数继续兼容：
+不带参数时默认打开完整桌面工作台；也可显式使用：
 
 ```powershell
-.\CodexConfirmationBar.exe --confirmation-overlay
+.\CodexThreadWorkbench.exe --workbench
 ```
 
-若需要悬浮按钮与多线程工作台，可显式运行：
+如需顶部待确认助手，可显式运行：
 
 ```powershell
-.\CodexConfirmationBar.exe --floating-launcher
+.\CodexThreadWorkbench.exe --confirmation-overlay
 ```
 
-若需要跳过悬浮按钮并直接打开多线程工作台，可运行：
+如需圆形悬浮按钮，可显式运行：
 
 ```powershell
-.\CodexConfirmationBar.exe --workbench
+.\CodexThreadWorkbench.exe --floating-launcher
 ```
+
+`Install-WindowsRecoveryTask.ps1` 只适用于希望让顶部待确认助手登录后常驻并自动恢复的用户，不是完整桌面工作台的默认安装步骤。
+
+## 工作方式与隐私
+
+应用通过本机 `codex app-server` 操作任务，并从本地会话日志读取状态和最近对话。它不读取或保存 `auth.json`、密码、Token、Cookie 或私钥，不上传聊天内容，也不另建云端账户。工作台只保存任务 ID、卡片顺序、最小化状态和窗口设置，不另存对话正文。
+
+关闭某张卡片只会从工作台移除，不会删除或归档对应 Codex 任务。关闭完整桌面窗口会先保存布局并释放本机连接，然后正常退出应用。
+
+顶部待确认助手和圆形悬浮按钮属于可选模式。待确认助手支持手动或用户主动开启后的自动确认，但不会自动同意命令执行、文件修改、连接器或其他 Codex 安全审批。
 
 ## 从源码构建
 
@@ -108,6 +82,6 @@ Windows 产物生成在 `artifacts\release`。macOS 包必须在对应架构的 
 ```bash
 scripts/publish-macos.sh osx-arm64
 scripts/test-macos-package.sh \
-  artifacts/release/CodexConfirmationBar-macOS-arm64.app.zip \
+  artifacts/release/CodexThreadWorkbench-macOS-arm64.app.zip \
   osx-arm64
 ```

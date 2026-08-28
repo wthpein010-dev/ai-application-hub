@@ -110,6 +110,64 @@ public sealed class ConfirmationDetectorTests
         Assert.NotNull(candidate);
     }
 
+    [Theory]
+    [InlineData("这部分更适合直接看效果。我可以做一个浏览器里的三套主页设计对比，用真实应用图片、不同排版和交互方式呈现，方便你直接选择。要现在打开吗？")]
+    [InlineData("我可以先生成三套对比稿。要不要现在打开？")]
+    [InlineData("预览环境已经准备好。是否要立即开始生成？")]
+    [InlineData("预览已经准备好，要现在打开吗？")]
+    [InlineData("预览已经准备好：要不要现在打开？")]
+    [InlineData("预览已经准备好。要不要打开？")]
+    [InlineData("测试报告已生成。要现在打开吗？")]
+    [InlineData("自动化报告已经完成，要现在打开吗？")]
+    [InlineData("回归报告已准备好：是否要立即打开？")]
+    [InlineData("要不要现在直接打开？")]
+    [InlineData("要不要现在把预览打开？")]
+    [InlineData("要不要我现在就打开？")]
+    [InlineData("要不要到浏览器里打开？")]
+    [InlineData("报告内容已生成。要不要打开？")]
+    public void Detect_ReturnsCandidate_ForImmediateActionQuestionAtMessageEnd(
+        string text)
+    {
+        var state = CreateState(
+            text,
+            ChatRole.Assistant,
+            ThreadStatusKind.Completed,
+            ThreadStatusKind.Completed);
+
+        var candidate = new ConfirmationDetector().Detect(state);
+
+        Assert.NotNull(candidate);
+    }
+
+    [Theory]
+    [InlineData("测试覆盖示例：‘要现在打开吗？’已写入自动化报告。")]
+    [InlineData("演示文案里会显示要不要现在打开，但页面已经发布完成。")]
+    [InlineData("预览已经打开，三套主页对比也已生成完成。")]
+    [InlineData("测试报告如下：\n要不要现在打开？")]
+    [InlineData("自动化报告示例：要现在打开吗？")]
+    [InlineData("文案引用：\n“要不要现在打开？”")]
+    [InlineData("测试用例：\n'是否要立即开始生成？'")]
+    [InlineData("要吗？")]
+    [InlineData("是否要解释这个测试？")]
+    [InlineData("报告原文：是否要立即打开？")]
+    [InlineData("以下是原始回复：要不要现在打开？")]
+    [InlineData("是否要说明如何打开预览？")]
+    [InlineData("报告内容：是否要立即打开？")]
+    [InlineData("日志输出：要不要现在打开？")]
+    public void Detect_RejectsImmediateActionPhrase_WhenItIsNotTheFinalRequest(
+        string text)
+    {
+        var state = CreateState(
+            text,
+            ChatRole.Assistant,
+            ThreadStatusKind.Completed,
+            ThreadStatusKind.Completed);
+
+        var candidate = new ConfirmationDetector().Detect(state);
+
+        Assert.Null(candidate);
+    }
+
     [Fact]
     public void Detect_RejectsUserLastMessage()
     {

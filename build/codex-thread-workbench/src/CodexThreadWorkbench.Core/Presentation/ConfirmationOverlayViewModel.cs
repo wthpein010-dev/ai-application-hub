@@ -2,6 +2,7 @@ using System.Collections.ObjectModel;
 using System.Diagnostics;
 using CodexThreadWorkbench.Codex;
 using CodexThreadWorkbench.Confirmation;
+using CodexThreadWorkbench.Persistence;
 
 namespace CodexThreadWorkbench.Presentation;
 
@@ -13,17 +14,29 @@ public sealed class ConfirmationOverlayViewModel : ObservableObject, IAsyncDispo
     private readonly IConfirmationMonitor _monitor;
     private readonly ConfirmationDetector _detector;
     private readonly IConfirmationMessageFallback? _messageFallback;
+    private readonly IConfirmationAutomationSettingsStore? _automationSettingsStore;
+    private readonly CancellationTokenSource _autoConfirmLifetime = new();
+    private readonly object _autoConfirmTaskGate = new();
+    private readonly object _disposeGate = new();
     private readonly SemaphoreSlim _desktopDeliveryGate = new(1, 1);
     private readonly IConfirmationThreadReader _threadReader;
     private readonly TimeSpan _verificationTimeout;
     private readonly TimeSpan _verificationPollInterval;
     private readonly Dictionary<string, Task<bool>> _preloadTasks =
         new(StringComparer.Ordinal);
+    private readonly HashSet<(string ThreadId, string MessageId)> _autoAttempts = [];
+    private readonly HashSet<(string ThreadId, string MessageId)> _attentionCuedKeys = [];
     private readonly SynchronizationContext? _synchronizationContext;
     private bool _isInteractionArmed = true;
+    private bool _isAutoConfirmEnabled;
+    private bool _isAutoConfirmSaving;
     private bool _isConfirmingAll;
+    private int _attentionPulseRevision;
     private string _confirmAllText = "一键全部确认";
+    private string _autoConfirmErrorText = string.Empty;
     private string _monitorErrorText;
+    private Task _autoConfirmTask = Task.CompletedTask;
+    private Task? _disposeTask;
     private bool _disposed;
 
     public ConfirmationOverlayViewModel(
@@ -33,13 +46,15 @@ public sealed class ConfirmationOverlayViewModel : ObservableObject, IAsyncDispo
         IConfirmationMessageFallback? messageFallback = null,
         TimeSpan? verificationTimeout = null,
         TimeSpan? verificationPollInterval = null,
-        IConfirmationThreadReader? threadReader = null)
+        IConfirmationThreadReader? threadReader = null,
+        IConfirmationAutomationSettingsStore? automationSettingsStore = null)
     {
         ArgumentNullException.ThrowIfNull(detector);
         _client = client;
         _monitor = monitor;
         _detector = detector;
         _messageFallback = messageFallback;
+        _automationSettingsStore = automationSettingsStore;
         _threadReader = threadReader ?? new ClientConfirmationThreadReader(client);
         _verificationTimeout = verificationTimeout ?? TimeSpan.FromSeconds(12);
         _verificationPollInterval = verificationPollInterval ??
@@ -49,6 +64,9 @@ public sealed class ConfirmationOverlayViewModel : ObservableObject, IAsyncDispo
         ConfirmAllCommand = new AsyncRelayCommand(
             ConfirmAllAsync,
             () => IsInteractionArmed && HasItems && !IsConfirmingAll);
+        ToggleAutoConfirmCommand = new AsyncRelayCommand(
+            () => SetAutoConfirmEnabledAsync(!IsAutoConfirmEnabled),
+            () => CanToggleAutoConfirm);
         _monitor.CandidatesChanged += OnCandidatesChanged;
         _monitor.ErrorChanged += OnErrorChanged;
         ApplyCandidates(_monitor.Candidates);
@@ -60,7 +78,10 @@ public sealed class ConfirmationOverlayViewModel : ObservableObject, IAsyncDispo
 
     public bool HasItems => Items.Count > 0;
 
-    public bool RequiresAttention => HasItems || HasMonitorError;
+    public bool RequiresAttention =>
+        HasItems || HasMonitorError || HasAutoConfirmError;
+
+    public int AttentionPulseRevision => _attentionPulseRevision;
 
     public string BadgeText => Items.Count switch
     {
@@ -71,13 +92,53 @@ public sealed class ConfirmationOverlayViewModel : ObservableObject, IAsyncDispo
 
     public bool IsInteractionArmed => _isInteractionArmed;
 
+    public bool IsAutoConfirmEnabled => _isAutoConfirmEnabled;
+
+    public bool CanToggleAutoConfirm => IsInteractionArmed && !IsAutoConfirmSaving;
+
+    public string AutoConfirmText => IsAutoConfirmEnabled
+        ? "自动确认已开启"
+        : "自动确认已关闭";
+
+    public string AutoConfirmErrorText
+    {
+        get => _autoConfirmErrorText;
+        private set
+        {
+            if (SetProperty(ref _autoConfirmErrorText, value))
+            {
+                OnPropertyChanged(nameof(HasAutoConfirmError));
+                OnPropertyChanged(nameof(RequiresAttention));
+                OnPropertyChanged(nameof(CountText));
+            }
+        }
+    }
+
+    public bool HasAutoConfirmError =>
+        !string.IsNullOrWhiteSpace(AutoConfirmErrorText);
+
+    public bool IsAutoConfirmSaving
+    {
+        get => _isAutoConfirmSaving;
+        private set
+        {
+            if (SetProperty(ref _isAutoConfirmSaving, value))
+            {
+                OnPropertyChanged(nameof(CanToggleAutoConfirm));
+                ToggleAutoConfirmCommand.RaiseCanExecuteChanged();
+            }
+        }
+    }
+
     public bool CanConfirmAll => IsInteractionArmed && HasItems && !IsConfirmingAll;
 
     public string CountText => HasItems
         ? $"待确认 · {Items.Count}"
         : HasMonitorError
             ? "扫描异常 · 请检查"
-            : "暂无待确认 · 常驻扫描";
+            : HasAutoConfirmError
+                ? "自动确认设置异常 · 请检查"
+                : "暂无待确认 · 常驻扫描";
 
     public bool IsConfirmingAll
     {
@@ -116,6 +177,74 @@ public sealed class ConfirmationOverlayViewModel : ObservableObject, IAsyncDispo
 
     public AsyncRelayCommand ConfirmAllCommand { get; }
 
+    public AsyncRelayCommand ToggleAutoConfirmCommand { get; }
+
+    public async Task InitializeAsync(CancellationToken cancellationToken = default)
+    {
+        if (_automationSettingsStore is null)
+        {
+            return;
+        }
+
+        try
+        {
+            ApplyAutoConfirmEnabled(
+                await _automationSettingsStore.LoadEnabledAsync(cancellationToken));
+        }
+        catch (Exception error)
+        {
+            AutoConfirmErrorText = $"自动确认设置读取失败：{error.Message}";
+            ApplyAutoConfirmEnabled(false);
+        }
+    }
+
+    public async Task SetAutoConfirmEnabledAsync(
+        bool value,
+        CancellationToken cancellationToken = default)
+    {
+        if (IsAutoConfirmEnabled == value || IsAutoConfirmSaving)
+        {
+            return;
+        }
+
+        IsAutoConfirmSaving = true;
+        AutoConfirmErrorText = string.Empty;
+        if (!value)
+        {
+            ApplyAutoConfirmEnabled(false);
+        }
+
+        try
+        {
+            if (_automationSettingsStore is not null)
+            {
+                await _automationSettingsStore.SaveEnabledAsync(
+                    value,
+                    cancellationToken);
+            }
+
+            if (value)
+            {
+                ApplyAutoConfirmEnabled(true);
+            }
+        }
+        catch (Exception error)
+        {
+            AutoConfirmErrorText = $"自动确认设置保存失败：{error.Message}";
+            if (value)
+            {
+                ApplyAutoConfirmEnabled(false);
+            }
+
+            OnPropertyChanged(nameof(IsAutoConfirmEnabled));
+            OnPropertyChanged(nameof(AutoConfirmText));
+        }
+        finally
+        {
+            IsAutoConfirmSaving = false;
+        }
+    }
+
     public void SetInteractionArmed(bool value)
     {
         if (!SetProperty(ref _isInteractionArmed, value))
@@ -130,23 +259,34 @@ public sealed class ConfirmationOverlayViewModel : ObservableObject, IAsyncDispo
 
         ConfirmAllCommand.RaiseCanExecuteChanged();
         OnPropertyChanged(nameof(CanConfirmAll));
+        OnPropertyChanged(nameof(CanToggleAutoConfirm));
+        ToggleAutoConfirmCommand.RaiseCanExecuteChanged();
     }
 
-    public async Task ConfirmAsync(ConfirmationItemViewModel item)
+    public Task ConfirmAsync(ConfirmationItemViewModel item)
     {
         if (!IsInteractionArmed)
         {
             ActionAttempted?.Invoke($"confirm-blocked:{item.Candidate.ThreadId}");
-            return;
+            return Task.CompletedTask;
         }
 
-        ActionAttempted?.Invoke($"confirm-start:{item.Candidate.ThreadId}");
+        return ConfirmCoreAsync(item, "confirm-start", CancellationToken.None);
+    }
+
+    private async Task ConfirmCoreAsync(
+        ConfirmationItemViewModel item,
+        string actionName,
+        CancellationToken cancellationToken)
+    {
+        ActionAttempted?.Invoke($"{actionName}:{item.Candidate.ThreadId}");
 
         item.IsSending = true;
         item.ErrorText = string.Empty;
         try
         {
-            if (!await IsCurrentCandidateAsync(item.Candidate))
+            if (!await IsCurrentCandidateAsync(item.Candidate, cancellationToken)
+                    .ConfigureAwait(false))
             {
                 _monitor.MarkHandled(
                     item.Candidate.ThreadId,
@@ -157,7 +297,9 @@ public sealed class ConfirmationOverlayViewModel : ObservableObject, IAsyncDispo
             var threadId = item.Candidate.ThreadId;
             if (_messageFallback is not null)
             {
-                if (!await SendThroughDesktopAsync(item.Candidate))
+                if (!await SendThroughDesktopAsync(
+                        item.Candidate,
+                        cancellationToken).ConfigureAwait(false))
                 {
                     _monitor.MarkHandled(
                         item.Candidate.ThreadId,
@@ -167,13 +309,17 @@ public sealed class ConfirmationOverlayViewModel : ObservableObject, IAsyncDispo
             }
             else
             {
-                if (!await EnsureThreadPreloadedAsync(threadId))
+                if (!await EnsureThreadPreloadedAsync(threadId)
+                        .WaitAsync(cancellationToken).ConfigureAwait(false))
                 {
-                    await _client.ResumeThreadAsync(threadId);
+                    await _client.ResumeThreadAsync(threadId, cancellationToken)
+                        .ConfigureAwait(false);
                     _preloadTasks[threadId] = Task.FromResult(true);
                 }
 
-                if (!await IsCurrentCandidateAsync(item.Candidate))
+                if (!await IsCurrentCandidateAsync(
+                        item.Candidate,
+                        cancellationToken).ConfigureAwait(false))
                 {
                     _monitor.MarkHandled(
                         item.Candidate.ThreadId,
@@ -183,21 +329,27 @@ public sealed class ConfirmationOverlayViewModel : ObservableObject, IAsyncDispo
 
                 await _client.StartTurnAsync(
                     threadId,
-                    ConfirmationMessage);
+                    ConfirmationMessage,
+                    cancellationToken).ConfigureAwait(false);
             }
 
-            await VerifyDeliveryAsync(item.Candidate);
+            await VerifyDeliveryAsync(item.Candidate, cancellationToken)
+                .ConfigureAwait(false);
             _monitor.MarkHandled(
                 item.Candidate.ThreadId,
                 item.Candidate.MessageId);
         }
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+        {
+            throw;
+        }
         catch (Exception error)
         {
-            item.ErrorText = error.Message;
+            Dispatch(() => item.ErrorText = error.Message);
         }
         finally
         {
-            item.IsSending = false;
+            Dispatch(() => item.IsSending = false);
         }
     }
 
@@ -248,14 +400,34 @@ public sealed class ConfirmationOverlayViewModel : ObservableObject, IAsyncDispo
 
     public ValueTask DisposeAsync()
     {
-        if (!_disposed)
+        lock (_disposeGate)
+        {
+            _disposeTask ??= DisposeCoreAsync();
+            return new ValueTask(_disposeTask);
+        }
+    }
+
+    private async Task DisposeCoreAsync()
+    {
+        Task autoConfirmTask;
+        lock (_autoConfirmTaskGate)
         {
             _disposed = true;
-            _monitor.CandidatesChanged -= OnCandidatesChanged;
-            _monitor.ErrorChanged -= OnErrorChanged;
+            _autoConfirmLifetime.Cancel();
+            autoConfirmTask = _autoConfirmTask;
         }
 
-        return ValueTask.CompletedTask;
+        _monitor.CandidatesChanged -= OnCandidatesChanged;
+        _monitor.ErrorChanged -= OnErrorChanged;
+        try
+        {
+            await autoConfirmTask.ConfigureAwait(false);
+        }
+        catch (OperationCanceledException)
+        {
+        }
+
+        _autoConfirmLifetime.Dispose();
     }
 
     private void OnCandidatesChanged(
@@ -270,6 +442,12 @@ public sealed class ConfirmationOverlayViewModel : ObservableObject, IAsyncDispo
         var ordered = candidates
             .OrderByDescending(candidate => candidate.UpdatedAt)
             .ToArray();
+        var hasNewCandidate = false;
+        foreach (var candidate in ordered)
+        {
+            hasNewCandidate |= _attentionCuedKeys.Add(
+                (candidate.ThreadId, candidate.MessageId));
+        }
         var keys = ordered
             .Select(candidate => (candidate.ThreadId, candidate.MessageId))
             .ToHashSet();
@@ -318,7 +496,111 @@ public sealed class ConfirmationOverlayViewModel : ObservableObject, IAsyncDispo
         OnPropertyChanged(nameof(CountText));
         OnPropertyChanged(nameof(BadgeText));
         OnPropertyChanged(nameof(CanConfirmAll));
+        if (hasNewCandidate)
+        {
+            _attentionPulseRevision++;
+            OnPropertyChanged(nameof(AttentionPulseRevision));
+        }
+
         ConfirmAllCommand.RaiseCanExecuteChanged();
+        QueueAutoConfirm();
+    }
+
+    private void ApplyAutoConfirmEnabled(bool value)
+    {
+        if (!SetProperty(ref _isAutoConfirmEnabled, value,
+                nameof(IsAutoConfirmEnabled)))
+        {
+            return;
+        }
+
+        OnPropertyChanged(nameof(AutoConfirmText));
+        QueueAutoConfirm();
+    }
+
+    private void QueueAutoConfirm()
+    {
+        lock (_autoConfirmTaskGate)
+        {
+            if (!IsAutoConfirmEnabled ||
+                _disposed ||
+                !_autoConfirmTask.IsCompleted)
+            {
+                return;
+            }
+
+            _autoConfirmTask = ProcessAutoConfirmQueueAsync(
+                _autoConfirmLifetime.Token);
+            _ = ObserveAutoConfirmTaskAsync(_autoConfirmTask);
+        }
+    }
+
+    private async Task ObserveAutoConfirmTaskAsync(Task task)
+    {
+        try
+        {
+            await task.ConfigureAwait(false);
+        }
+        catch (OperationCanceledException)
+        {
+        }
+        finally
+        {
+            lock (_autoConfirmTaskGate)
+            {
+                if (ReferenceEquals(_autoConfirmTask, task))
+                {
+                    _autoConfirmTask = Task.CompletedTask;
+                }
+            }
+
+            if (!_disposed)
+            {
+                Dispatch(() =>
+                {
+                    if (HasPendingAutoConfirmCandidate())
+                    {
+                        QueueAutoConfirm();
+                    }
+                });
+            }
+        }
+    }
+
+    private bool HasPendingAutoConfirmCandidate() =>
+        Items.Any(candidate =>
+            !candidate.IsSending &&
+            !_autoAttempts.Contains((
+                candidate.Candidate.ThreadId,
+                candidate.Candidate.MessageId)));
+
+    private async Task ProcessAutoConfirmQueueAsync(
+        CancellationToken cancellationToken)
+    {
+        var pending = Items
+            .Where(candidate =>
+                !candidate.IsSending &&
+                !_autoAttempts.Contains((
+                    candidate.Candidate.ThreadId,
+                    candidate.Candidate.MessageId)))
+            .ToArray();
+        foreach (var item in pending)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            if (!IsAutoConfirmEnabled || _disposed)
+            {
+                return;
+            }
+
+            _autoAttempts.Add((
+                item.Candidate.ThreadId,
+                item.Candidate.MessageId));
+            await ConfirmCoreAsync(
+                    item,
+                    "auto-confirm-start",
+                    cancellationToken)
+                .ConfigureAwait(false);
+        }
     }
 
     private Task<bool> EnsureThreadPreloadedAsync(string threadId)
@@ -346,7 +628,9 @@ public sealed class ConfirmationOverlayViewModel : ObservableObject, IAsyncDispo
         }
     }
 
-    private async Task VerifyDeliveryAsync(ConfirmationCandidate candidate)
+    private async Task VerifyDeliveryAsync(
+        ConfirmationCandidate candidate,
+        CancellationToken cancellationToken)
     {
         var startedAt = Stopwatch.GetTimestamp();
         Exception? lastReadError = null;
@@ -361,7 +645,8 @@ public sealed class ConfirmationOverlayViewModel : ObservableObject, IAsyncDispo
                         candidate.RequestPreview,
                         string.Empty,
                         candidate.UpdatedAt,
-                        Models.ThreadStatusKind.NotLoaded));
+                        Models.ThreadStatusKind.NotLoaded),
+                    cancellationToken).ConfigureAwait(false);
                 lastReadError = null;
                 if (HasConfirmationAfterCandidate(state, candidate.MessageId))
                 {
@@ -383,7 +668,8 @@ public sealed class ConfirmationOverlayViewModel : ObservableObject, IAsyncDispo
             await Task.Delay(
                 remaining < _verificationPollInterval
                     ? remaining
-                    : _verificationPollInterval);
+                    : _verificationPollInterval,
+                cancellationToken).ConfigureAwait(false);
         }
 
         var detail = lastReadError is null
@@ -394,7 +680,8 @@ public sealed class ConfirmationOverlayViewModel : ObservableObject, IAsyncDispo
     }
 
     private async Task<bool> IsCurrentCandidateAsync(
-        ConfirmationCandidate candidate)
+        ConfirmationCandidate candidate,
+        CancellationToken cancellationToken = default)
     {
         var state = await _threadReader.ReadThreadAsync(
             new Models.ThreadSummary(
@@ -403,7 +690,8 @@ public sealed class ConfirmationOverlayViewModel : ObservableObject, IAsyncDispo
                 candidate.RequestPreview,
                 string.Empty,
                 candidate.UpdatedAt,
-                Models.ThreadStatusKind.NotLoaded));
+                Models.ThreadStatusKind.NotLoaded),
+            cancellationToken).ConfigureAwait(false);
         var current = _detector.Detect(state);
         return current is not null &&
                string.Equals(
@@ -446,12 +734,15 @@ public sealed class ConfirmationOverlayViewModel : ObservableObject, IAsyncDispo
     }
 
     private async Task<bool> SendThroughDesktopAsync(
-        ConfirmationCandidate candidate)
+        ConfirmationCandidate candidate,
+        CancellationToken cancellationToken)
     {
-        await _desktopDeliveryGate.WaitAsync();
+        await _desktopDeliveryGate.WaitAsync(cancellationToken)
+            .ConfigureAwait(false);
         try
         {
-            if (!await IsCurrentCandidateAsync(candidate))
+            if (!await IsCurrentCandidateAsync(candidate, cancellationToken)
+                    .ConfigureAwait(false))
             {
                 return false;
             }
@@ -459,7 +750,8 @@ public sealed class ConfirmationOverlayViewModel : ObservableObject, IAsyncDispo
             return await _messageFallback!.SendIfCurrentAsync(
                 candidate.ThreadId,
                 ConfirmationMessage,
-                _ => IsCurrentCandidateAsync(candidate));
+                token => IsCurrentCandidateAsync(candidate, token),
+                cancellationToken).ConfigureAwait(false);
         }
         finally
         {

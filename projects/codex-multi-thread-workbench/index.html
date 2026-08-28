@@ -1,0 +1,128 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="description" content="Codex 多线程工作台 v2.3.0：在一个桌面窗口中同时查看、回复和维护多个真实 Codex 任务。" />
+  <meta name="theme-color" content="#071815" />
+  <link rel="icon" href="data:," />
+  <title>Codex 多线程工作台</title>
+  <link rel="stylesheet" href="../../assets/subpage-shell.css" />
+  <link rel="stylesheet" href="./styles.css?v=20260828-v230" />
+</head>
+<body class="hub-subpage" data-demo-fullscreen="false">
+  <header class="site-header">
+    <a class="hub-home-link" href="../../index.html#apps" aria-label="返回 AI Application Hub"><span aria-hidden="true">←</span><span>AI Application Hub</span></a>
+    <div class="brand-lockup"><span class="brand-mark" aria-hidden="true"><i></i><i></i><i></i></span><span>Codex 多线程工作台</span></div>
+    <a class="header-demo-link" href="#demo">在线演示</a>
+  </header>
+
+  <main>
+    <section class="hero" aria-labelledby="heroTitle">
+      <div class="hero-copy">
+        <p class="eyebrow"><span>v2.3.0</span> Windows · macOS</p>
+        <h1 id="heroTitle">多个任务，<br /><em>一个桌面直接操作。</em></h1>
+        <p class="hero-lede">标题、具体对话、输入框和运行状态都在一级界面。无需反复跳转任务，就能同时推进多个 Codex 工作。</p>
+        <div class="hero-actions" aria-label="发布入口">
+          <a class="action-primary" href="#demo">立即演示</a>
+          <a href="./video/index.html">观看视频</a>
+          <a href="./download/">Windows 下载</a>
+          <a href="./download/mac/">Mac 下载</a>
+        </div>
+        <ul class="hero-points" aria-label="产品特性">
+          <li><span>✓</span> 一级界面直接对话</li>
+          <li><span>✓</span> 拖拽标题栏交换位置</li>
+          <li><span>✓</span> 状态两秒内刷新</li>
+          <li><span>✓</span> 本机数据不上传</li>
+        </ul>
+      </div>
+
+      <div class="hero-board" aria-hidden="true">
+        <div class="hero-board-bar"><span><i></i>Codex 多线程工作台</span><b>3 个任务</b></div>
+        <div class="hero-board-grid">
+          <article><header><span>发布 Windows 包</span><i class="status-running">进行中</i></header><p class="user-line">完整测试通过后打包。</p><p class="codex-line"><b>Codex</b>正在执行 Release 构建与冒烟验证。</p></article>
+          <article><header><span>完善演示网站</span><i class="status-done">已完成</i></header><p class="user-line">补充视频和下载入口。</p><p class="codex-line"><b>Codex</b>介绍页和响应式布局已经完成。</p></article>
+          <article><header><span>验证 macOS 构建</span><i class="status-waiting">等待中</i></header><p class="user-line">同时支持 Apple 和 Intel。</p><p class="codex-line"><b>Codex</b>双架构任务等待云端构建。</p></article>
+        </div>
+      </div>
+    </section>
+
+    <section class="demo-section" id="demo" aria-labelledby="demoTitle">
+      <div class="section-heading">
+        <div><p class="eyebrow">安全网页演示</p><h2 id="demoTitle">就在这里操作三个线程</h2></div>
+        <p>输入、拖拽和全屏只改变本页演示，不读取你的 Codex，也不会发送真实消息。</p>
+      </div>
+
+      <div class="workbench-shell" data-role="workbench-shell">
+        <div class="workbench-toolbar">
+          <div class="workbench-identity"><span class="toolbar-logo" aria-hidden="true"><i></i></span><div><strong>Codex 多线程工作台</strong><small>3 个任务 · 自动保存布局</small></div></div>
+          <div class="toolbar-actions"><button type="button" data-action="refresh-demo">刷新状态</button><button type="button" data-action="toggle-fullscreen" aria-pressed="false">切换全屏</button></div>
+        </div>
+
+        <div class="workbench-board" data-role="workbench-board">
+          <article class="thread-card" data-role="thread-card" data-thread-id="release">
+            <header class="thread-titlebar" data-role="drag-handle" draggable="true">
+              <div><span class="drag-dots" aria-hidden="true">⋮⋮</span><strong>发布 Windows 包</strong><small>E:\AI-Workspace\CodexThreadWorkbench</small></div>
+              <span class="thread-status status-running" data-role="thread-status"><i></i>进行中</span>
+            </header>
+            <div class="conversation" data-role="conversation">
+              <div class="message user"><p>恢复完整桌面版，默认直接打开多线程工作台。</p></div>
+              <div class="message assistant"><span>Codex</span><p>默认启动、产品命名与跨平台打包门禁已更新，正在执行 Release 验证。</p></div>
+              <div class="message assistant"><span>Codex</span><p>Windows x64 免安装包会在冒烟通过后写入固定交付目录。</p></div>
+            </div>
+            <form class="composer"><textarea data-role="thread-composer" rows="2" aria-label="向发布 Windows 包发送消息" placeholder="继续这个任务…"></textarea><button type="submit">发送</button></form>
+          </article>
+
+          <article class="thread-card" data-role="thread-card" data-thread-id="site">
+            <header class="thread-titlebar" data-role="drag-handle" draggable="true">
+              <div><span class="drag-dots" aria-hidden="true">⋮⋮</span><strong>完善演示网站</strong><small>AI Application Hub</small></div>
+              <span class="thread-status status-done" data-role="thread-status"><i></i>已完成</span>
+            </header>
+            <div class="conversation" data-role="conversation">
+              <div class="message user"><p>做成独立工具，补充介绍页和操作视频。</p></div>
+              <div class="message assistant"><span>Codex</span><p>已保留悬浮助手，并新增完整桌面工作台的独立卡片与演示入口。</p></div>
+              <div class="message assistant"><span>Codex</span><p>页面对齐桌面应用：用户消息保留轻量气泡，Codex 回复不使用整块底框。</p></div>
+            </div>
+            <form class="composer"><textarea data-role="thread-composer" rows="2" aria-label="向完善演示网站发送消息" placeholder="继续这个任务…"></textarea><button type="submit">发送</button></form>
+          </article>
+
+          <article class="thread-card" data-role="thread-card" data-thread-id="mac">
+            <header class="thread-titlebar" data-role="drag-handle" draggable="true">
+              <div><span class="drag-dots" aria-hidden="true">⋮⋮</span><strong>验证 macOS 构建</strong><small>GitHub Actions · 双架构</small></div>
+              <span class="thread-status status-waiting" data-role="thread-status"><i></i>等待中</span>
+            </header>
+            <div class="conversation" data-role="conversation">
+              <div class="message user"><p>Mac 版也要能下载，Apple 芯片和 Intel 都支持。</p></div>
+              <div class="message assistant"><span>Codex</span><p>将分别使用 arm64 与 x64 实机 Runner 构建、签名、启动并校验应用包。</p></div>
+              <div class="message assistant"><span>Codex</span><p>验证完成后网页会按处理器提供对应下载，并显示文件校验信息。</p></div>
+            </div>
+            <form class="composer"><textarea data-role="thread-composer" rows="2" aria-label="向验证 macOS 构建发送消息" placeholder="继续这个任务…"></textarea><button type="submit">发送</button></form>
+          </article>
+        </div>
+        <div class="workbench-hint"><span>拖动任意标题栏可交换位置</span><b data-role="activity-log" aria-live="polite">所有演示任务已同步</b></div>
+      </div>
+    </section>
+
+    <section class="workflow" aria-labelledby="workflowTitle">
+      <div class="section-heading compact"><div><p class="eyebrow">舒适的多任务节奏</p><h2 id="workflowTitle">看见、判断、回复，不离开看板</h2></div></div>
+      <div class="workflow-grid">
+        <article><span>01</span><h3>同时看上下文</h3><p>每张卡片都保留标题、路径和最近对话，信息密度高但不堆全局统计。</p></article>
+        <article><span>02</span><h3>直接继续任务</h3><p>卡片底部就是输入框；空闲任务开始新回合，运行中的任务追加指令。</p></article>
+        <article><span>03</span><h3>拖拽整理顺序</h3><p>按当前优先级交换卡片位置，布局会随窗口和全屏模式一起保存。</p></article>
+        <article><span>04</span><h3>状态及时刷新</h3><p>进行中、已完成、已停止、需确认、出错和离线状态一眼区分。</p></article>
+      </div>
+    </section>
+
+    <section class="platform-note" aria-labelledby="platformTitle">
+      <div><p class="eyebrow">跨平台原生交付</p><h2 id="platformTitle">解压即用，不另建账户</h2></div>
+      <div class="platform-grid">
+        <article><span>Windows 10 / 11 x64</span><strong>免安装 ZIP</strong><p>双击 `CodexThreadWorkbench.exe` 直接打开完整工作台，默认不启动悬浮按钮或顶部助手。</p><a href="./download/">下载 Windows 版</a></article>
+        <article><span>macOS 13+</span><strong>Apple Silicon 与 Intel</strong><p>两个架构分别构建和验证；首次打开按页面指引右键选择“打开”。</p><a href="./download/mac/">选择 Mac 版本</a></article>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer"><span>Codex 多线程工作台 · v2.3.0</span><a href="../../index.html#apps">返回应用列表</a></footer>
+  <script src="./app.js?v=20260828-v230"></script>
+</body>
+</html>

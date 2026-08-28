@@ -9,14 +9,14 @@ public sealed class AppResourcesTests
     {
         var assembly = typeof(App).Assembly;
 
-        Assert.Equal("CodexConfirmationBar", assembly.GetName().Name);
+        Assert.Equal("CodexThreadWorkbench", assembly.GetName().Name);
         Assert.Equal(
-            "Codex 待确认悬浮助手",
+            "Codex 多线程工作台",
             assembly.GetCustomAttribute<AssemblyTitleAttribute>()?.Title);
         Assert.Equal(
-            "Codex Confirmation Bar",
+            "Codex Thread Workbench",
             assembly.GetCustomAttribute<AssemblyProductAttribute>()?.Product);
-        Assert.Equal("2.1.8.0", assembly.GetName().Version?.ToString());
+        Assert.Equal("2.3.0.0", assembly.GetName().Version?.ToString());
     }
 
     [AvaloniaFact]

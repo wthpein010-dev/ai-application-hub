@@ -5,10 +5,10 @@
     <TargetFramework>net8.0</TargetFramework>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
-    <Version>2.1.8</Version>
-    <AssemblyName>CodexConfirmationBar</AssemblyName>
-    <AssemblyTitle>Codex 待确认悬浮助手</AssemblyTitle>
-    <Product>Codex Confirmation Bar</Product>
+    <Version>2.3.0</Version>
+    <AssemblyName>CodexThreadWorkbench</AssemblyName>
+    <AssemblyTitle>Codex 多线程工作台</AssemblyTitle>
+    <Product>Codex Thread Workbench</Product>
     <AvaloniaUseCompiledBindingsByDefault>false</AvaloniaUseCompiledBindingsByDefault>
   </PropertyGroup>
 
