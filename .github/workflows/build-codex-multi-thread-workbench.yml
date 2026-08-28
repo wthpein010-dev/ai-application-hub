@@ -101,7 +101,9 @@ jobs:
         with:
           fetch-depth: 0
           sparse-checkout: |
+            .github/workflows/audit-macos-downloads.yml
             .github/workflows/build-codex-multi-thread-workbench.yml
+            .github/workflows/build-codex-thread-workbench.yml
             app-20260706-restore-games.js
             build/codex-thread-workbench
             docs/audits/2026-08-03-platform-compatibility.md

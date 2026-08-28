@@ -387,6 +387,18 @@ test("independent workflow verifies real apps before safely publishing both arch
     "generated manifests and parts must not retrigger their own publishing workflow",
   );
 
+  const publicationJob = workflow.slice(workflow.indexOf("  publish-pages-parts:"));
+  for (const requiredWorkflow of [
+    ".github/workflows/audit-macos-downloads.yml",
+    ".github/workflows/build-codex-thread-workbench.yml",
+  ]) {
+    assert.match(
+      publicationJob,
+      new RegExp(requiredWorkflow.replaceAll(".", "\\.").replaceAll("/", "\\/")),
+      `${requiredWorkflow} must be present in the publishing sparse checkout because the Mac contract tests read it`,
+    );
+  }
+
   assert.match(packageVerifier, /codesign --verify --deep --strict/);
   assert.match(packageVerifier, /"\$\{executable\}" --smoke-test/);
   assert.match(packageVerifier, /"\$\{executable\}"[^\n]*launch\.log[^\n]*&/);
