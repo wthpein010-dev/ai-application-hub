@@ -63,9 +63,10 @@ board.addEventListener("drop", event => {
   event.preventDefault();
   const sourceTitle = draggedCard.querySelector(".thread-titlebar strong").textContent;
   const targetTitle = target.querySelector(".thread-titlebar strong").textContent;
-  const sourceBeforeTarget = Boolean(draggedCard.compareDocumentPosition(target) & Node.DOCUMENT_POSITION_FOLLOWING);
-  if (sourceBeforeTarget) target.after(draggedCard);
-  else target.before(draggedCard);
+  const marker = document.createComment("thread-card-swap");
+  draggedCard.replaceWith(marker);
+  target.replaceWith(draggedCard);
+  marker.replaceWith(target);
   activity.textContent = `已交换「${sourceTitle}」与「${targetTitle}」的位置`;
 });
 

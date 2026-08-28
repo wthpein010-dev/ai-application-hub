@@ -56,6 +56,7 @@ test("desktop Workbench captions are seven non-overlapping single-line chapters"
     assert.ok(cue.end > cue.start);
   }
   for (let index = 1; index < cues.length; index += 1) assert.ok(cues[index].start >= cues[index - 1].end);
+  assert.ok(cues.at(-1).end <= inspectMedia(mediaPath).duration * 1_000);
   for (const topic of ["多线程", "对话", "拖拽", "全屏", "状态", "Windows", "macOS"]) {
     assert.match(script, new RegExp(topic));
   }

@@ -87,7 +87,7 @@ test("Workbench page presents the direct multi-thread operating surface", async 
   assert.doesNotMatch(html, /待确认悬浮助手/);
 });
 
-test("Workbench demo sends text, toggles full screen, and reorders cards", async () => {
+test("Workbench demo sends text, toggles full screen, and swaps adjacent and non-adjacent cards", async () => {
   const server = createStaticServer();
   const baseUrl = await listen(server);
   const browser = await launchBrowser();
@@ -120,6 +120,11 @@ test("Workbench demo sends text, toggles full screen, and reorders cards", async
       page.locator('[data-thread-id="site"] [data-role="drag-handle"]'),
     );
     assert.deepEqual(await order(), ["site", "release", "mac"]);
+
+    await page.locator('[data-thread-id="site"] [data-role="drag-handle"]').dragTo(
+      page.locator('[data-thread-id="mac"] [data-role="drag-handle"]'),
+    );
+    assert.deepEqual(await order(), ["mac", "release", "site"]);
 
     const geometry = await page.evaluate(() => ({
       bodyWidth: document.body.scrollWidth,
