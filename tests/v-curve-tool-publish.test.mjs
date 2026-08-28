@@ -12,7 +12,7 @@ const runtime = readFileSync(join(root, "app-20260706-restore-games.js"), "utf8"
 const apps = loadDefaultAppsFromRuntime(runtime);
 const projectRoot = join(root, "projects", "v-curve-tool");
 const releaseTag = "v-curve-tool-v1.2.0";
-const windowsAsset = "V曲线对比工具-1.2.0-开箱即用-Windows-x64.zip";
+const windowsAsset = "V-Curve-Comparison-Tool-1.2.0-Windows-x64.zip";
 const macAsset = "V-Curve-Comparison-Tool-1.2.0-macOS.zip";
 const releaseBase = `https://github.com/wthpein010-dev/ai-application-hub/releases/download/${releaseTag}`;
 

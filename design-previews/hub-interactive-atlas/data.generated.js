@@ -1103,7 +1103,7 @@ export const projects = [
       {
         "type": "windows",
         "label": "Wins下载",
-        "href": "https://github.com/wthpein010-dev/ai-application-hub/releases/download/v-curve-tool-v1.2.0/V曲线对比工具-1.2.0-开箱即用-Windows-x64.zip",
+        "href": "https://github.com/wthpein010-dev/ai-application-hub/releases/download/v-curve-tool-v1.2.0/V-Curve-Comparison-Tool-1.2.0-Windows-x64.zip",
         "sourceLabel": "Wins下载"
       },
       {

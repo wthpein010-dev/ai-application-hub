@@ -850,10 +850,10 @@ const defaultApps = [
     folder: "./projects/v-curve-tool/",
     entry: "./projects/v-curve-tool/index.html",
     video: "./projects/v-curve-tool/video/index.html",
-    package: "https://github.com/wthpein010-dev/ai-application-hub/releases/download/v-curve-tool-v1.2.0/V曲线对比工具-1.2.0-开箱即用-Windows-x64.zip",
+    package: "https://github.com/wthpein010-dev/ai-application-hub/releases/download/v-curve-tool-v1.2.0/V-Curve-Comparison-Tool-1.2.0-Windows-x64.zip",
     platforms: {
       web: { href: "./projects/v-curve-tool/index.html", label: "演示" },
-      windows: { href: "https://github.com/wthpein010-dev/ai-application-hub/releases/download/v-curve-tool-v1.2.0/V曲线对比工具-1.2.0-开箱即用-Windows-x64.zip", label: "Wins下载" },
+      windows: { href: "https://github.com/wthpein010-dev/ai-application-hub/releases/download/v-curve-tool-v1.2.0/V-Curve-Comparison-Tool-1.2.0-Windows-x64.zip", label: "Wins下载" },
       mac: { href: "https://github.com/wthpein010-dev/ai-application-hub/releases/download/v-curve-tool-v1.2.0/V-Curve-Comparison-Tool-1.2.0-macOS.zip", label: "Mac下载" }
     },
     tags: ["V曲线", "关卡分析", "羊了个羊", "Windows", "macOS"],
