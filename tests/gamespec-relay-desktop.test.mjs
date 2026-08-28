@@ -56,15 +56,15 @@ test("desktop policy removes path traversal and never exposes model credentials"
 test("desktop package embeds the shared app and defines native Windows and macOS builds", () => {
   const packageJson = JSON.parse(readFileSync(desktop("package.json"), "utf8"));
 
-  assert.equal(packageJson.version, "1.1.0");
-  assert.equal(packageJson.build.productName, "需求接力站");
+  assert.equal(packageJson.version, "1.2.0");
+  assert.equal(packageJson.build.productName, "游戏需求开工台");
   assert.match(packageJson.scripts["dist:win"], /--win.*portable.*--x64/);
   assert.match(packageJson.scripts["dist:mac:x64"], /--mac.*zip.*--x64/);
   assert.match(packageJson.scripts["dist:mac:arm64"], /--mac.*zip.*--arm64/);
   assert.equal(packageJson.build.extraResources[0].from, "../../projects/gamespec-relay");
   assert.equal(packageJson.build.extraResources[0].to, "app/projects/gamespec-relay");
-  assert.equal(packageJson.build.win.artifactName, "需求接力站-微软系统.${ext}");
-  assert.equal(packageJson.build.mac.artifactName, "需求接力站-苹果电脑-${arch}.${ext}");
+  assert.equal(packageJson.build.win.artifactName, "游戏需求开工台-微软系统.${ext}");
+  assert.equal(packageJson.build.mac.artifactName, "游戏需求开工台-苹果电脑-${arch}.${ext}");
   assert.equal(packageJson.devDependencies.playwright, "1.61.1");
 });
 
@@ -79,8 +79,8 @@ test("desktop package ships a square high-resolution product icon", () => {
 test("desktop icon uses the Chinese product mark", () => {
   const generator = readFileSync(desktop("scripts", "build-icon.mjs"), "utf8");
 
-  assert.match(generator, /class="letters">接</);
-  assert.match(generator, /class="label">需求接力站</);
+  assert.match(generator, /class="letters">开</);
+  assert.match(generator, /class="label">游戏需求开工台</);
   assert.doesNotMatch(generator, />GR<|>RELAY</);
 });
 

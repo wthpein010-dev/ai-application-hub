@@ -467,8 +467,8 @@ audit_combined_native() {
       executable="${app}/Contents/MacOS/PureShrink"
       ;;
     gamespec-relay)
-      app="${extracted}/${archive_architecture}/需求接力站.app"
-      executable="${app}/Contents/MacOS/需求接力站"
+      app="${extracted}/${archive_architecture}/游戏需求开工台.app"
+      executable="${app}/Contents/MacOS/游戏需求开工台"
       ;;
     *)
       die "unsupported native product ${id}"

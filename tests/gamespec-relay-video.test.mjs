@@ -17,6 +17,7 @@ const videoPath = join(videoRoot, "gamespec-relay-demo.mp4");
 const captionsPath = join(videoRoot, "gamespec-relay-demo.vtt");
 const posterPath = join(videoRoot, "poster.jpg");
 const manifestPath = join(videoRoot, "recording-manifest.json");
+const recordingScriptPath = join(root, "scripts", "record-gamespec-relay-demo.mjs");
 process.env.FFMPEG_PATH ||= ffmpegPath;
 
 function timestampSeconds(value) {
@@ -114,8 +115,9 @@ test("tutorial page uses the shared player and complete workflow chapters", asyn
   assert.match(html, /id="loadVideo"/);
   assert.match(html, /preload="none" data-src="\.\/gamespec-relay-demo\.mp4"/);
   assert.match(html, /kind="captions"[^>]+default/);
-  assert.match(html, /<title>需求接力站教学视频<\/title>/);
-  assert.match(html, /把游戏讨论变成能开工、能验收的任务/);
+  assert.match(html, /<title>游戏需求开工台教学视频<\/title>/);
+  assert.match(html, /把游戏讨论和文档拆成能开工、能验收的任务/);
+  assert.doesNotMatch(html, /需求接力站/);
   assert.doesNotMatch(html, />\s*(?:GameSpec Relay|Agent|Boss|V2|MP4)\s*</);
   assert.deepEqual(
     Array.from(html.matchAll(/data-time="(\d+)"/g), (match) => Number(match[1])),
@@ -124,6 +126,12 @@ test("tutorial page uses the shared player and complete workflow chapters", asyn
   const manifest = JSON.parse(await readFile(manifestPath, "utf8"));
   assert.equal(manifest.durationSeconds, 168);
   assert.deepEqual(manifest.chapters.map((chapter) => chapter.start), [0, 15, 40, 75, 120, 150, 168]);
+});
+
+test("recording waits for generated task data before switching to the hidden task pane", async () => {
+  const source = await readFile(recordingScriptPath, "utf8");
+
+  assert.match(source, /#taskLanes \[data-role-lane\][\s\S]*waitFor\(\{\s*state:\s*"attached"/);
 });
 
 test("tutorial captions stay one line and teach the entire relay workflow", async () => {
@@ -135,7 +143,7 @@ test("tutorial captions stay one line and teach the entire relay workflow", asyn
   assert.ok(cues.length >= 10);
   assert.equal(cues.every((cue) => cue.text.length === 1), true);
   assert.equal(cues.every((cue, index) => cue.start < cue.end && (!index || cue.start >= cues[index - 1].end)), true);
-  for (const phrase of ["首领示例", "决定", "待确认", "跨职能", "验收标准", "健康度", "第二版", "变更影响", "文档版", "数据备份", "任务表格", "开发助手包"]) {
+  for (const phrase of ["游戏需求开工台", "首领示例", "决定", "待确认", "跨职能", "验收标准", "健康度", "第二版", "变更影响", "文档版", "数据备份", "任务表格", "开发助手包"]) {
     assert.match(text, new RegExp(phrase));
   }
   assert.equal(/[A-Za-z]/.test(text), false, "captions should not expose English copy");

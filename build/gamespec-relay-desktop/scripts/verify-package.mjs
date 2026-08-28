@@ -16,17 +16,17 @@ function walk(directory) {
 const files = walk(dist);
 const names = files.map((file) => file.replaceAll("\\", "/"));
 if (platform === "windows") {
-  assert.equal(names.some((name) => /需求接力站-微软系统\.exe$/i.test(name)), true, "Windows portable executable is missing");
-  assert.equal(names.some((name) => /win-unpacked\/需求接力站\.exe$/i.test(name)), true, "Unpacked Windows executable is missing");
+  assert.equal(names.some((name) => /游戏需求开工台-微软系统\.exe$/i.test(name)), true, "Windows portable executable is missing");
+  assert.equal(names.some((name) => /win-unpacked\/游戏需求开工台\.exe$/i.test(name)), true, "Unpacked Windows executable is missing");
 } else {
-  assert.equal(names.some((name) => /需求接力站-苹果电脑-(arm64|x64)\.zip$/i.test(name)), true, "macOS ZIP is missing");
-  assert.equal(names.some((name) => /需求接力站\.app\/Contents\/MacOS\/需求接力站$/i.test(name)), true, "macOS app executable is missing");
+  assert.equal(names.some((name) => /游戏需求开工台-苹果电脑-(arm64|x64)\.zip$/i.test(name)), true, "macOS ZIP is missing");
+  assert.equal(names.some((name) => /游戏需求开工台\.app\/Contents\/MacOS\/游戏需求开工台$/i.test(name)), true, "macOS app executable is missing");
 }
 
 assert.equal(
   names.some((name) => /resources\/app\/projects\/gamespec-relay\/app\/index\.html$/i.test(name)),
   true,
-  "Shared 需求接力站 web app is missing",
+  "Shared 游戏需求开工台 web app is missing",
 );
 for (const file of files) assert.ok(statSync(file).size > 0, `Distribution contains an empty file: ${file}`);
-console.log(`需求接力站 ${platform} package verified: ${files.length} files`);
+console.log(`游戏需求开工台 ${platform} package verified: ${files.length} files`);

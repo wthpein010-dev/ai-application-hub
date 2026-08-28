@@ -271,12 +271,12 @@ globalThis.HUB_PROJECT_MEDIA = Object.freeze({
   }),
   "gamespec-relay": Object.freeze({
     src: "./assets/hub-showcase/gamespec-relay.webp?v=20260827-hub-visual-polish",
-    alt: "需求接力站功能画面",
+    alt: "游戏需求开工台功能画面",
     position: "center",
     layout: "standard",
-    fallback: "需求接力站",
-    feature: "多人需求接力与AI规格收敛",
-    accent: "#0891b2",
+    fallback: "游戏需求开工台",
+    feature: "游戏讨论拆成六职能开工任务与验收",
+    accent: "#087e5b",
     visualKind: "product",
   }),
   "x-ai-codex-radar": Object.freeze({

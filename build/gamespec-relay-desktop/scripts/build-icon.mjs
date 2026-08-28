@@ -27,10 +27,10 @@ try {
     .relay:after{content:"";position:absolute;right:24px;top:15px;width:27px;height:27px;border-top:7px solid #07110f;border-right:7px solid #07110f;transform:rotate(45deg)}
     .letters{position:absolute;left:54px;bottom:66px;color:#eff8f4;font-size:176px;font-weight:900;line-height:.86;text-shadow:0 12px 30px rgba(0,0,0,.35)}
     .label{position:absolute;right:38px;bottom:54px;color:#5de2b3;font-size:28px;font-weight:800;letter-spacing:3px}
-  </style><body><div class="icon"><div class="grid"></div><div class="relay"></div><div class="letters">接</div><div class="label">需求接力站</div></div></body></html>`);
+  </style><body><div class="icon"><div class="grid"></div><div class="relay"></div><div class="letters">开</div><div class="label">游戏需求开工台</div></div></body></html>`);
   await page.screenshot({ path: output, type: "png" });
 } finally {
   await browser.close();
 }
 
-console.log(`需求接力站 icon generated: ${output}`);
+console.log(`游戏需求开工台 icon generated: ${output}`);

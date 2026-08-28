@@ -14,7 +14,7 @@ function fileNameOnly(value) {
   return String(value || "")
     .split(/[\\/]/)
     .filter(Boolean)
-    .at(-1) || "需求接力站-导出文件.txt";
+    .at(-1) || "游戏需求开工台-导出文件.txt";
 }
 
 function normalizeExportRequest(value) {

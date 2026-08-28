@@ -9,13 +9,13 @@ import { loadDefaultAppsFromRuntime } from "./helpers/default-apps.mjs";
 const root = dirname(dirname(fileURLToPath(import.meta.url)));
 const runtime = await readFile(join(root, "app-20260706-restore-games.js"), "utf8");
 
-test("需求接力站 keeps four real actions immediately before the newer Radar card", () => {
+test("游戏需求开工台 keeps four real actions immediately before the newer Radar card", () => {
   const apps = loadDefaultAppsFromRuntime(runtime);
   const matches = apps.filter((app) => app.id === "gamespec-relay");
 
-  assert.equal(matches.length, 1, "the catalog should contain one 需求接力站 card");
+  assert.equal(matches.length, 1, "the catalog should contain one 游戏需求开工台 card");
   const relay = matches[0];
-  assert.equal(relay.name, "需求接力站");
+  assert.equal(relay.name, "游戏需求开工台");
   assert.equal(relay.badge, "辅助工具");
   assert.match(relay.brief, /能开工、能验收/);
   assert.equal([relay.name, relay.badge, relay.brief, relay.problem, relay.aiUse, ...relay.tags].some((value) => /[A-Za-z]/.test(value)), false);
@@ -25,7 +25,7 @@ test("需求接力站 keeps four real actions immediately before the newer Radar
   assert.equal(relay.video, "./projects/gamespec-relay/video/index.html");
   assert.equal(
     relay.package,
-    "https://github.com/wthpein010-dev/ai-application-hub/releases/tag/gamespec-relay-v1.1.0",
+    "https://github.com/wthpein010-dev/ai-application-hub/releases/tag/gamespec-relay-v1.2.0",
   );
   assert.deepEqual(
     JSON.parse(JSON.stringify(relay.platforms)),
@@ -35,11 +35,11 @@ test("需求接力站 keeps four real actions immediately before the newer Radar
         label: "演示",
       },
       windows: {
-        href: "https://github.com/wthpein010-dev/ai-application-hub/releases/download/gamespec-relay-v1.1.0/xuqiu-jielizhan-windows-x64.zip",
+        href: "https://github.com/wthpein010-dev/ai-application-hub/releases/download/gamespec-relay-v1.2.0/youxi-xuqiu-kaigongtai-windows-x64.zip",
         label: "微软版下载",
       },
       mac: {
-        href: "https://github.com/wthpein010-dev/ai-application-hub/releases/download/gamespec-relay-v1.1.0/xuqiu-jielizhan-macos.zip",
+        href: "https://github.com/wthpein010-dev/ai-application-hub/releases/download/gamespec-relay-v1.2.0/youxi-xuqiu-kaigongtai-macos.zip",
         label: "苹果电脑版下载",
       },
     },
