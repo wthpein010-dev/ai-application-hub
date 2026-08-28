@@ -839,57 +839,33 @@ const defaultApps = [
     polish: 9
   },
   {
-    id: "v-curve-tool",
-    name: "V曲线对比工具",
-    category: "项目开发",
-    status: "engineering",
-    badge: "工程体验",
-    brief: "导入 Paws JSON 关卡，即可与固定的《羊了个羊》900121 结构并排生成连续 V 曲线、河道上下界与关键诊断。",
-    problem: "关卡层数和砖量只能说明规模，难以直接判断开局宽度、中盘断崖与后段窄口，也缺少与成熟样本一致口径的对照。",
-    aiUse: "工具完全离线，按 Paws 两两配对与暂存槽规则执行确定性河道搜索和 Monte Carlo 仿真；Windows 与 macOS 包均内置已确认的 31 个关卡。",
-    folder: "./projects/v-curve-tool/",
-    entry: "./projects/v-curve-tool/index.html",
-    video: "./projects/v-curve-tool/video/index.html",
-    package: "https://github.com/wthpein010-dev/ai-application-hub/releases/download/v-curve-tool-v1.2.0/V-Curve-Comparison-Tool-1.2.0-Windows-x64.zip",
-    platforms: {
-      web: { href: "./projects/v-curve-tool/index.html", label: "演示" },
-      windows: { href: "https://github.com/wthpein010-dev/ai-application-hub/releases/download/v-curve-tool-v1.2.0/V-Curve-Comparison-Tool-1.2.0-Windows-x64.zip", label: "Wins下载" },
-      mac: { href: "https://github.com/wthpein010-dev/ai-application-hub/releases/download/v-curve-tool-v1.2.0/V-Curve-Comparison-Tool-1.2.0-macOS.zip", label: "Mac下载" }
-    },
-    tags: ["V曲线", "关卡分析", "羊了个羊", "Windows", "macOS"],
-    speed: 9,
-    impact: 9,
-    risk: 8,
-    polish: 9
-  },
-  {
     id: "gamespec-relay",
-    name: "需求接力站",
+    name: "游戏需求开工台",
     category: "游戏研发效率工具",
     status: "assistant",
     badge: "辅助工具",
-    brief: "把群聊、会议纪要和策划文档变成能开工、能验收的任务，并说清变更会影响哪里。",
-    problem: "游戏需求讨论后仍要人工整理、拆分和补验收口径，信息遗漏容易造成跨职能返工。",
-    aiUse: "智能助手负责语义分析、证据追溯、任务拆分、质量检查和变更影响；完整示例可离线运行。",
+    brief: "把群聊、会议纪要和策划文档拆成能开工、能验收的六职能任务，并标出决定、疑问和改动影响。",
+    problem: "游戏需求聊完后还要人工整理、拆单和补验收口径，关键信息遗漏会让策划、开发与测试反复返工。",
+    aiUse: "智能助手负责理解材料、追溯证据、按职能拆单、检查验收和计算改动影响；完整示例可离线运行。",
     folder: "./projects/gamespec-relay/",
     entry: "./projects/gamespec-relay/index.html",
     video: "./projects/gamespec-relay/video/index.html",
-    package: "https://github.com/wthpein010-dev/ai-application-hub/releases/tag/gamespec-relay-v1.1.0",
+    package: "https://github.com/wthpein010-dev/ai-application-hub/releases/tag/gamespec-relay-v1.2.0",
     platforms: {
       web: {
         href: "./projects/gamespec-relay/index.html",
         label: "演示"
       },
       windows: {
-        href: "https://github.com/wthpein010-dev/ai-application-hub/releases/download/gamespec-relay-v1.1.0/xuqiu-jielizhan-windows-x64.zip",
+        href: "https://github.com/wthpein010-dev/ai-application-hub/releases/download/gamespec-relay-v1.2.0/youxi-xuqiu-kaigongtai-windows-x64.zip",
         label: "微软版下载"
       },
       mac: {
-        href: "https://github.com/wthpein010-dev/ai-application-hub/releases/download/gamespec-relay-v1.1.0/xuqiu-jielizhan-macos.zip",
+        href: "https://github.com/wthpein010-dev/ai-application-hub/releases/download/gamespec-relay-v1.2.0/youxi-xuqiu-kaigongtai-macos.zip",
         label: "苹果电脑版下载"
       }
     },
-    tags: ["游戏需求", "跨职能交付", "验收标准", "版本影响"],
+    tags: ["需求拆解", "开工任务", "验收标准", "改动影响"],
     speed: 10,
     impact: 10,
     risk: 9,
@@ -917,6 +893,78 @@ const defaultApps = [
     speed: 10,
     impact: 9,
     risk: 9,
+    polish: 9
+  },
+  {
+    id: "codex-multi-thread-workbench",
+    name: "Codex 多线程工作台",
+    category: "AI 开发桌面工具",
+    status: "desktop",
+    badge: "桌面工作台",
+    brief: "把多个真实 Codex 任务放进同一个一级界面：并排看标题与对话、直接输入消息、辨认运行状态，并拖拽交换卡片位置。",
+    problem: "多任务并行时，反复进入单个任务查看上下文、回复和确认状态会打断操作节奏，也很难同时维护多个正在推进的工作。",
+    aiUse: "桌面端只连接本机 codex app-server 与会话日志，不读取凭据；Windows 与 macOS 双平台默认直接打开完整工作台，悬浮模式保留为显式可选功能。",
+    folder: "./projects/codex-multi-thread-workbench/",
+    entry: "./projects/codex-multi-thread-workbench/index.html",
+    video: "./projects/codex-multi-thread-workbench/video/index.html",
+    package: "https://wthpein010-dev.github.io/ai-application-hub/projects/codex-multi-thread-workbench/download/",
+    platforms: {
+      web: { href: "./projects/codex-multi-thread-workbench/index.html", label: "演示" },
+      windows: { href: "https://wthpein010-dev.github.io/ai-application-hub/projects/codex-multi-thread-workbench/download/", label: "Wins下载" },
+      mac: { href: "https://wthpein010-dev.github.io/ai-application-hub/projects/codex-multi-thread-workbench/download/mac/", label: "Mac下载" }
+    },
+    tags: ["Codex", "多线程操作", "拖拽布局", "Windows", "macOS"],
+    speed: 9,
+    impact: 10,
+    risk: 9,
+    polish: 9
+  },
+  {
+    id: "trinket-market",
+    name: "随身小物交易市场",
+    category: "游戏物品展示",
+    status: "engineering",
+    badge: "工程体验",
+    brief: "集中浏览砖块角色的随身小物，按数量、物品 ID 或中文名排序，并用苹果桌面式拖拽整理陈列顺序。",
+    problem: "持续增加的小物素材缺少统一目录、稳定物品 ID 和直观的获得数量对比，策划与美术难以快速查看热度和维护展示数据。",
+    aiUse: "AI 参与小物素材整理、透明像素视觉居中、密集响应式陈列、拖拽动效、可导入导出的本地编辑能力与自动化验证。",
+    folder: "./projects/trinket-market/",
+    entry: "./projects/trinket-market/index.html",
+    video: "./projects/trinket-market/video/index.html",
+    package: "",
+    platforms: {
+      web: { href: "./projects/trinket-market/index.html", label: "演示" },
+      windows: "",
+      mac: ""
+    },
+    tags: ["小物仓库", "获得数量", "拖拽排序", "公开编辑"],
+    speed: 10,
+    impact: 9,
+    risk: 9,
+    polish: 10
+  },
+  {
+    id: "v-curve-tool",
+    name: "V曲线对比工具",
+    category: "项目开发",
+    status: "engineering",
+    badge: "工程体验",
+    brief: "导入 Paws JSON 关卡，即可与固定的《羊了个羊》900121 结构并排生成连续 V 曲线、河道上下界与关键诊断。",
+    problem: "关卡层数和砖量只能说明规模，难以直接判断开局宽度、中盘断崖与后段窄口，也缺少与成熟样本一致口径的对照。",
+    aiUse: "工具完全离线，按 Paws 两两配对与暂存槽规则执行确定性河道搜索和 Monte Carlo 仿真；Windows 与 macOS 包均内置已确认的 31 个关卡。",
+    folder: "./projects/v-curve-tool/",
+    entry: "./projects/v-curve-tool/index.html",
+    video: "./projects/v-curve-tool/video/index.html",
+    package: "https://github.com/wthpein010-dev/ai-application-hub/releases/download/v-curve-tool-v1.2.0/V-Curve-Comparison-Tool-1.2.0-Windows-x64.zip",
+    platforms: {
+      web: { href: "./projects/v-curve-tool/index.html", label: "演示" },
+      windows: { href: "https://github.com/wthpein010-dev/ai-application-hub/releases/download/v-curve-tool-v1.2.0/V-Curve-Comparison-Tool-1.2.0-Windows-x64.zip", label: "Wins下载" },
+      mac: { href: "https://github.com/wthpein010-dev/ai-application-hub/releases/download/v-curve-tool-v1.2.0/V-Curve-Comparison-Tool-1.2.0-macOS.zip", label: "Mac下载" }
+    },
+    tags: ["V曲线", "关卡分析", "羊了个羊", "Windows", "macOS"],
+    speed: 9,
+    impact: 9,
+    risk: 8,
     polish: 9
   },
 ];

@@ -130,7 +130,7 @@ test("legacy engineering classification migrates without replacing custom projec
   assert.equal(migratedSimuai.video, storedSimuai.video);
 });
 
-test("stored GameSpec Relay cards migrate to the Chinese 需求接力站 release", () => {
+test("stored GameSpec Relay cards migrate to the Chinese 游戏需求开工台 release", () => {
   const defaults = loadDefaultAppsFromRuntime(runtime);
   const relay = defaults.find((app) => app.id === "gamespec-relay");
   const stored = {

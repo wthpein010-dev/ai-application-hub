@@ -1,4 +1,4 @@
-name: Build 需求接力站 desktop release
+name: Build 游戏需求开工台 desktop release
 
 on:
   push:
@@ -7,7 +7,7 @@ on:
   workflow_dispatch:
     inputs:
       tag:
-        description: "要补发的需求接力站版本标签"
+        description: "要补发的游戏需求开工台版本标签"
         required: true
         type: string
 
@@ -35,7 +35,7 @@ jobs:
           cache-dependency-path: build/gamespec-relay-desktop/package-lock.json
       - name: Install locked dependencies
         run: npm ci
-      - name: Run 需求接力站 tests
+      - name: Run 游戏需求开工台 tests
         run: npm test
       - name: Build Windows portable application
         run: npm run dist:win
@@ -44,24 +44,24 @@ jobs:
       - name: Launch packaged smoke mode
         shell: pwsh
         run: |
-          $process = Start-Process -FilePath ".\dist\需求接力站-微软系统.exe" -ArgumentList "--smoke-test" -WindowStyle Hidden -PassThru -Wait
+          $process = Start-Process -FilePath ".\dist\游戏需求开工台-微软系统.exe" -ArgumentList "--smoke-test" -WindowStyle Hidden -PassThru -Wait
           if ($process.ExitCode -ne 0) {
-            throw "需求接力站 Windows smoke failed with exit code $($process.ExitCode)"
+            throw "游戏需求开工台 Windows smoke failed with exit code $($process.ExitCode)"
           }
       - name: Package Windows download
         shell: pwsh
         run: |
-          $stage = Join-Path $env:RUNNER_TEMP "需求接力站-微软系统"
+          $stage = Join-Path $env:RUNNER_TEMP "游戏需求开工台-微软系统"
           New-Item -ItemType Directory -Path $stage -Force | Out-Null
-          Copy-Item ".\dist\需求接力站-微软系统.exe" (Join-Path $stage "需求接力站.exe")
+          Copy-Item ".\dist\游戏需求开工台-微软系统.exe" (Join-Path $stage "游戏需求开工台.exe")
           Copy-Item ".\README.md" (Join-Path $stage "README.md")
-          $archive = Join-Path $env:RUNNER_TEMP "需求接力站-微软系统.zip"
+          $archive = Join-Path $env:RUNNER_TEMP "游戏需求开工台-微软系统.zip"
           Compress-Archive -Path $stage -DestinationPath $archive -CompressionLevel Optimal -Force
           Get-FileHash -Algorithm SHA256 $archive
       - uses: actions/upload-artifact@v4
         with:
           name: gamespec-relay-windows
-          path: ${{ runner.temp }}/需求接力站-微软系统.zip
+          path: ${{ runner.temp }}/游戏需求开工台-微软系统.zip
           if-no-files-found: error
           retention-days: 14
 
@@ -84,14 +84,14 @@ jobs:
           cache-dependency-path: build/gamespec-relay-desktop/package-lock.json
       - name: Install locked dependencies
         run: npm ci
-      - name: Run 需求接力站 tests
+      - name: Run 游戏需求开工台 tests
         run: npm test
       - name: Build Intel application
         run: npm run dist:mac:x64
       - name: Verify Intel binary and apply ad-hoc signature
         run: |
           set -euo pipefail
-          APP_BIN="$(find dist -path '*/需求接力站.app/Contents/MacOS/需求接力站' -type f | head -n 1)"
+          APP_BIN="$(find dist -path '*/游戏需求开工台.app/Contents/MacOS/游戏需求开工台' -type f | head -n 1)"
           test -n "$APP_BIN"
           file "$APP_BIN" | grep -q "x86_64"
           APP_DIR="$(dirname "$(dirname "$(dirname "$APP_BIN")")")"
@@ -102,13 +102,13 @@ jobs:
       - name: Launch Intel smoke mode
         run: |
           set -euo pipefail
-          APP_BIN="$(find dist -path '*/需求接力站.app/Contents/MacOS/需求接力站' -type f | head -n 1)"
+          APP_BIN="$(find dist -path '*/游戏需求开工台.app/Contents/MacOS/游戏需求开工台' -type f | head -n 1)"
           test -n "$APP_BIN"
           "$APP_BIN" --smoke-test
       - name: Archive Intel app without losing executable bits
         run: |
           set -euo pipefail
-          APP_DIR="$(dirname "$(dirname "$(dirname "$(find dist -path '*/需求接力站.app/Contents/MacOS/需求接力站' -type f | head -n 1)")")")"
+          APP_DIR="$(dirname "$(dirname "$(dirname "$(find dist -path '*/游戏需求开工台.app/Contents/MacOS/游戏需求开工台' -type f | head -n 1)")")")"
           tar -czf "$RUNNER_TEMP/GameSpec-Relay-macOS-x64-app.tar.gz" -C "$(dirname "$APP_DIR")" "$(basename "$APP_DIR")"
       - uses: actions/upload-artifact@v4
         with:
@@ -136,14 +136,14 @@ jobs:
           cache-dependency-path: build/gamespec-relay-desktop/package-lock.json
       - name: Install locked dependencies
         run: npm ci
-      - name: Run 需求接力站 tests
+      - name: Run 游戏需求开工台 tests
         run: npm test
       - name: Build Apple Silicon application
         run: npm run dist:mac:arm64
       - name: Verify Apple Silicon binary and apply ad-hoc signature
         run: |
           set -euo pipefail
-          APP_BIN="$(find dist -path '*/需求接力站.app/Contents/MacOS/需求接力站' -type f | head -n 1)"
+          APP_BIN="$(find dist -path '*/游戏需求开工台.app/Contents/MacOS/游戏需求开工台' -type f | head -n 1)"
           test -n "$APP_BIN"
           file "$APP_BIN" | grep -q "arm64"
           APP_DIR="$(dirname "$(dirname "$(dirname "$APP_BIN")")")"
@@ -154,13 +154,13 @@ jobs:
       - name: Launch Apple Silicon smoke mode
         run: |
           set -euo pipefail
-          APP_BIN="$(find dist -path '*/需求接力站.app/Contents/MacOS/需求接力站' -type f | head -n 1)"
+          APP_BIN="$(find dist -path '*/游戏需求开工台.app/Contents/MacOS/游戏需求开工台' -type f | head -n 1)"
           test -n "$APP_BIN"
           "$APP_BIN" --smoke-test
       - name: Archive Apple Silicon app without losing executable bits
         run: |
           set -euo pipefail
-          APP_DIR="$(dirname "$(dirname "$(dirname "$(find dist -path '*/需求接力站.app/Contents/MacOS/需求接力站' -type f | head -n 1)")")")"
+          APP_DIR="$(dirname "$(dirname "$(dirname "$(find dist -path '*/游戏需求开工台.app/Contents/MacOS/游戏需求开工台' -type f | head -n 1)")")")"
           tar -czf "$RUNNER_TEMP/GameSpec-Relay-macOS-arm64-app.tar.gz" -C "$(dirname "$APP_DIR")" "$(basename "$APP_DIR")"
       - uses: actions/upload-artifact@v4
         with:
@@ -184,17 +184,17 @@ jobs:
         run: |
           set -euo pipefail
           mkdir -p release mac-combined/x64 mac-combined/arm64
-          cp artifacts/gamespec-relay-windows/需求接力站-微软系统.zip release/xuqiu-jielizhan-windows-x64.zip
+          cp artifacts/gamespec-relay-windows/游戏需求开工台-微软系统.zip release/youxi-xuqiu-kaigongtai-windows-x64.zip
           tar -xzf artifacts/gamespec-relay-mac-x64/GameSpec-Relay-macOS-x64-app.tar.gz -C mac-combined/x64
           tar -xzf artifacts/gamespec-relay-mac-arm64/GameSpec-Relay-macOS-arm64-app.tar.gz -C mac-combined/arm64
           cp build/gamespec-relay-desktop/README.md mac-combined/README.md
           (
             cd mac-combined
-            zip -qry ../release/xuqiu-jielizhan-macos.zip arm64 x64 README.md
+            zip -qry ../release/youxi-xuqiu-kaigongtai-macos.zip arm64 x64 README.md
           )
-          sha256sum release/xuqiu-jielizhan-windows-x64.zip release/xuqiu-jielizhan-macos.zip | tee release/sha256sum.txt
-          test -s release/xuqiu-jielizhan-windows-x64.zip
-          test -s release/xuqiu-jielizhan-macos.zip
+          sha256sum release/youxi-xuqiu-kaigongtai-windows-x64.zip release/youxi-xuqiu-kaigongtai-macos.zip | tee release/sha256sum.txt
+          test -s release/youxi-xuqiu-kaigongtai-windows-x64.zip
+          test -s release/youxi-xuqiu-kaigongtai-macos.zip
       - name: Create immutable GitHub Release
         env:
           GH_TOKEN: ${{ github.token }}
@@ -210,7 +210,7 @@ jobs:
             echo "Release $TAG already exists; refusing to replace immutable assets." >&2
             exit 1
           fi
-          gh release create "$TAG" release/xuqiu-jielizhan-windows-x64.zip release/xuqiu-jielizhan-macos.zip release/sha256sum.txt \
+          gh release create "$TAG" release/youxi-xuqiu-kaigongtai-windows-x64.zip release/youxi-xuqiu-kaigongtai-macos.zip release/sha256sum.txt \
             --verify-tag \
-            --title "需求接力站 $VERSION" \
+            --title "游戏需求开工台 $VERSION" \
             --notes-file projects/gamespec-relay/release-notes.md

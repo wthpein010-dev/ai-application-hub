@@ -19,8 +19,8 @@ test("release workflow builds and launches every native target", async () => {
 test("release assembly emits immutable competition download assets", async () => {
   const workflow = await readFile(workflowUrl, "utf8");
 
-  assert.match(workflow, /xuqiu-jielizhan-windows-x64\.zip/);
-  assert.match(workflow, /xuqiu-jielizhan-macos\.zip/);
+  assert.match(workflow, /youxi-xuqiu-kaigongtai-windows-x64\.zip/);
+  assert.match(workflow, /youxi-xuqiu-kaigongtai-macos\.zip/);
   assert.match(workflow, /sha256sum\.txt/);
   assert.match(workflow, /mac-combined\/x64/);
   assert.match(workflow, /mac-combined\/arm64/);
@@ -40,7 +40,7 @@ test("release workflow supports a safe retry without moving the immutable tag", 
   assert.match(workflow, /--verify-tag/);
   assert.doesNotMatch(workflow, /--target "\$GITHUB_SHA"/);
   assert.doesNotMatch(workflow, /branches:\s*\n\s*-\s*main/);
-  assert.match(workflow, /--title "需求接力站 \$VERSION"/);
+  assert.match(workflow, /--title "游戏需求开工台 \$VERSION"/);
   assert.match(workflow, /permissions:\s*\n\s*contents:\s*read/);
   assert.match(workflow, /release:[\s\S]*permissions:\s*\n\s*contents:\s*write/);
 });

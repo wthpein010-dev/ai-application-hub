@@ -25,6 +25,32 @@ public sealed class CodexDesktopMessageFallbackTests
     }
 
     [Fact]
+    public async Task SendAsync_CompletesWithoutPumpingTheCallingSynchronizationContext()
+    {
+        var launcher = new BlockingLauncher();
+        var fallback = new CodexDesktopMessageFallback(
+            launcher,
+            new RecordingSubmitter([]));
+        var context = new NonPumpingSynchronizationContext();
+        var previousContext = SynchronizationContext.Current;
+        Task delivery;
+        try
+        {
+            SynchronizationContext.SetSynchronizationContext(context);
+            delivery = fallback.SendAsync("thread-1", "继续");
+        }
+        finally
+        {
+            SynchronizationContext.SetSynchronizationContext(previousContext);
+        }
+
+        launcher.Completion.TrySetResult();
+        await delivery.WaitAsync(TimeSpan.FromSeconds(1));
+
+        Assert.Equal(0, context.PostCount);
+    }
+
+    [Fact]
     public async Task WindowsSubmitter_WaitsThroughColdStartBeforeSubmitting()
     {
         if (!OperatingSystem.IsWindows())
@@ -96,6 +122,44 @@ public sealed class CodexDesktopMessageFallbackTests
         Assert.Equal(0, automation.SubmitCount);
     }
 
+    [Fact]
+    public async Task WindowsSubmitter_CompletesWithoutPumpingTheCallingSynchronizationContext()
+    {
+        if (!OperatingSystem.IsWindows())
+        {
+            return;
+        }
+
+        var delayCompletion = new TaskCompletionSource(
+            TaskCreationOptions.RunContinuationsAsynchronously);
+        var automation = new RecordingWindowsCodexAutomation(
+            readyAfterDiscoveries: int.MaxValue,
+            initialForegroundWindow: 42);
+        var submitter = new WindowsCodexForegroundSubmitter(
+            automation,
+            TimeProvider.System,
+            (_, cancellationToken) =>
+                delayCompletion.Task.WaitAsync(cancellationToken));
+        var context = new NonPumpingSynchronizationContext();
+        var previousContext = SynchronizationContext.Current;
+        Task submission;
+        try
+        {
+            SynchronizationContext.SetSynchronizationContext(context);
+            submission = submitter.SubmitAsync();
+        }
+        finally
+        {
+            SynchronizationContext.SetSynchronizationContext(previousContext);
+        }
+
+        delayCompletion.TrySetResult();
+        await submission.WaitAsync(TimeSpan.FromSeconds(1));
+
+        Assert.Equal(1, automation.SubmitCount);
+        Assert.Equal(0, context.PostCount);
+    }
+
     private sealed class RecordingLauncher(List<string> order) : ICodexDeepLinkLauncher
     {
         public Task OpenAsync(
@@ -114,6 +178,17 @@ public sealed class CodexDesktopMessageFallbackTests
             order.Add("submit");
             return Task.CompletedTask;
         }
+    }
+
+    private sealed class BlockingLauncher : ICodexDeepLinkLauncher
+    {
+        public TaskCompletionSource Completion { get; } =
+            new(TaskCreationOptions.RunContinuationsAsynchronously);
+
+        public Task OpenAsync(
+            string deepLink,
+            CancellationToken cancellationToken = default) =>
+            Completion.Task.WaitAsync(cancellationToken);
     }
 
     private sealed class RecordingWindowsCodexAutomation(
@@ -176,6 +251,16 @@ public sealed class CodexDesktopMessageFallbackTests
             Advance(duration);
             onDelay?.Invoke(duration);
             return Task.CompletedTask;
+        }
+    }
+
+    private sealed class NonPumpingSynchronizationContext : SynchronizationContext
+    {
+        public int PostCount { get; private set; }
+
+        public override void Post(SendOrPostCallback d, object? state)
+        {
+            PostCount++;
         }
     }
 }

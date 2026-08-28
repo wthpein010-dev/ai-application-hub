@@ -15,7 +15,7 @@ public sealed class MacCodexDeepLinkLauncher(
                 "/usr/bin/open",
                 [deepLink],
                 OpenTimeout),
-            cancellationToken);
+            cancellationToken).ConfigureAwait(false);
         if (result.ExitCode != 0)
         {
             throw new InvalidOperationException(
@@ -93,7 +93,7 @@ public sealed class MacCodexForegroundSubmitter(
     {
         await SubmitIfCurrentAsync(
             _ => Task.FromResult(true),
-            cancellationToken);
+            cancellationToken).ConfigureAwait(false);
     }
 
     public async Task<bool> SubmitIfCurrentAsync(
@@ -106,7 +106,7 @@ public sealed class MacCodexForegroundSubmitter(
                 "/usr/bin/osascript",
                 ["-e", PrepareSubmissionScript],
                 SubmissionTimeout),
-            cancellationToken);
+            cancellationToken).ConfigureAwait(false);
         ValidateProcessResult(prepared);
         var marker = prepared.StandardOutput.Trim();
         if (string.Equals(marker, TimeoutMarker, StringComparison.Ordinal))
@@ -121,7 +121,7 @@ public sealed class MacCodexForegroundSubmitter(
                 "未能验证 OpenAI 桌面应用，消息没有提交。请重试。");
         }
 
-        if (!await isCurrentAsync(cancellationToken))
+        if (!await isCurrentAsync(cancellationToken).ConfigureAwait(false))
         {
             return false;
         }
@@ -132,7 +132,7 @@ public sealed class MacCodexForegroundSubmitter(
                 "/usr/bin/osascript",
                 ["-e", SubmitPreparedMessageScript, bundleId],
                 SubmissionTimeout),
-            cancellationToken);
+            cancellationToken).ConfigureAwait(false);
         ValidateProcessResult(submitted);
         var submissionMarker = submitted.StandardOutput.Trim();
         if (string.Equals(
@@ -162,7 +162,7 @@ public sealed class MacCodexForegroundSubmitter(
 
         throw new InvalidOperationException(
             "无法提交消息；请在系统设置 → 隐私与安全性 → 辅助功能中允许" +
-            "“Codex 待确认悬浮助手”后重试。消息没有提交。" +
+            "“Codex 多线程工作台”后重试。消息没有提交。" +
             FormatDetail(result.StandardError));
     }
 

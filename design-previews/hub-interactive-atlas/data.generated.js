@@ -1071,8 +1071,181 @@ export const projects = [
     }
   },
   {
-    "id": "v-curve-tool",
+    "id": "gamespec-relay",
     "index": 27,
+    "name": "游戏需求开工台",
+    "category": "游戏研发效率工具",
+    "kind": "app",
+    "badge": "辅助工具",
+    "brief": "把群聊、会议纪要和策划文档拆成能开工、能验收的六职能任务，并标出决定、疑问和改动影响。",
+    "problem": "游戏需求聊完后还要人工整理、拆单和补验收口径，关键信息遗漏会让策划、开发与测试反复返工。",
+    "aiUse": "智能助手负责理解材料、追溯证据、按职能拆单、检查验收和计算改动影响；完整示例可离线运行。",
+    "tags": [
+      "需求拆解",
+      "开工任务",
+      "验收标准",
+      "改动影响"
+    ],
+    "actions": [
+      {
+        "type": "web",
+        "label": "网页预览",
+        "href": "./projects/gamespec-relay/index.html",
+        "sourceLabel": "演示"
+      },
+      {
+        "type": "video",
+        "label": "介绍视频",
+        "href": "./projects/gamespec-relay/video/index.html",
+        "sourceLabel": "介绍视频"
+      },
+      {
+        "type": "windows",
+        "label": "Wins下载",
+        "href": "https://github.com/wthpein010-dev/ai-application-hub/releases/download/gamespec-relay-v1.2.0/youxi-xuqiu-kaigongtai-windows-x64.zip",
+        "sourceLabel": "微软版下载"
+      },
+      {
+        "type": "mac",
+        "label": "Mac下载",
+        "href": "https://github.com/wthpein010-dev/ai-application-hub/releases/download/gamespec-relay-v1.2.0/youxi-xuqiu-kaigongtai-macos.zip",
+        "sourceLabel": "苹果电脑版下载"
+      }
+    ],
+    "visual": {
+      "accent": "#2868c7",
+      "surface": "#e7f0ff",
+      "ink": "#173f7b",
+      "mark": "游戏"
+    }
+  },
+  {
+    "id": "x-ai-codex-radar",
+    "index": 28,
+    "name": "X 情报吧｜AI / Codex 雷达",
+    "category": "AI 情报工具",
+    "kind": "app",
+    "badge": "网页情报",
+    "brief": "贴吧式整理 X 上 Tibo、马斯克、Codex 与 OpenAI 官方发言，每天北京时间 08:00 检查 Token／额度重置预告；首屏可展开中英文对照的完整原帖、中文翻译、编辑整理与精选评论。",
+    "problem": "Token 重置预告、完成确认和消耗异常原因散落在 Tibo 与用户帖子里，逐条刷 X 很容易错过直接影响工作安排的信号。",
+    "aiUse": "AI 参与公开来源聚合、Tibo 专项监测、身份与主题分层和中文整理；公开演示保留完整英文原帖、中文翻译、重要评论及可核验链接，私有站点每天北京时间 08:00 检查真实帖子。",
+    "tags": [
+      "Tibo",
+      "Codex Token",
+      "X 公开来源",
+      "重置提醒"
+    ],
+    "actions": [
+      {
+        "type": "web",
+        "label": "网页预览",
+        "href": "./projects/x-ai-codex-radar/index.html",
+        "sourceLabel": "演示"
+      },
+      {
+        "type": "video",
+        "label": "介绍视频",
+        "href": "./projects/x-ai-codex-radar/video/index.html",
+        "sourceLabel": "介绍视频"
+      }
+    ],
+    "visual": {
+      "accent": "#dc6a2e",
+      "surface": "#fff0e7",
+      "ink": "#6f2b0d",
+      "mark": "X情"
+    }
+  },
+  {
+    "id": "codex-multi-thread-workbench",
+    "index": 29,
+    "name": "Codex 多线程工作台",
+    "category": "AI 开发桌面工具",
+    "kind": "app",
+    "badge": "桌面工作台",
+    "brief": "把多个真实 Codex 任务放进同一个一级界面：并排看标题与对话、直接输入消息、辨认运行状态，并拖拽交换卡片位置。",
+    "problem": "多任务并行时，反复进入单个任务查看上下文、回复和确认状态会打断操作节奏，也很难同时维护多个正在推进的工作。",
+    "aiUse": "桌面端只连接本机 codex app-server 与会话日志，不读取凭据；Windows 与 macOS 双平台默认直接打开完整工作台，悬浮模式保留为显式可选功能。",
+    "tags": [
+      "Codex",
+      "多线程操作",
+      "拖拽布局",
+      "Windows",
+      "macOS"
+    ],
+    "actions": [
+      {
+        "type": "web",
+        "label": "网页预览",
+        "href": "./projects/codex-multi-thread-workbench/index.html",
+        "sourceLabel": "演示"
+      },
+      {
+        "type": "video",
+        "label": "介绍视频",
+        "href": "./projects/codex-multi-thread-workbench/video/index.html",
+        "sourceLabel": "介绍视频"
+      },
+      {
+        "type": "windows",
+        "label": "Wins下载",
+        "href": "https://wthpein010-dev.github.io/ai-application-hub/projects/codex-multi-thread-workbench/download/",
+        "sourceLabel": "Wins下载"
+      },
+      {
+        "type": "mac",
+        "label": "Mac下载",
+        "href": "https://wthpein010-dev.github.io/ai-application-hub/projects/codex-multi-thread-workbench/download/mac/",
+        "sourceLabel": "Mac下载"
+      }
+    ],
+    "visual": {
+      "accent": "#9d4a78",
+      "surface": "#faeaf3",
+      "ink": "#642645",
+      "mark": "CO"
+    }
+  },
+  {
+    "id": "trinket-market",
+    "index": 30,
+    "name": "随身小物交易市场",
+    "category": "游戏物品展示",
+    "kind": "engineering",
+    "badge": "工程体验",
+    "brief": "集中浏览砖块角色的随身小物，按数量、物品 ID 或中文名排序，并用苹果桌面式拖拽整理陈列顺序。",
+    "problem": "持续增加的小物素材缺少统一目录、稳定物品 ID 和直观的获得数量对比，策划与美术难以快速查看热度和维护展示数据。",
+    "aiUse": "AI 参与小物素材整理、透明像素视觉居中、密集响应式陈列、拖拽动效、可导入导出的本地编辑能力与自动化验证。",
+    "tags": [
+      "小物仓库",
+      "获得数量",
+      "拖拽排序",
+      "公开编辑"
+    ],
+    "actions": [
+      {
+        "type": "web",
+        "label": "网页预览",
+        "href": "./projects/trinket-market/index.html",
+        "sourceLabel": "演示"
+      },
+      {
+        "type": "video",
+        "label": "介绍视频",
+        "href": "./projects/trinket-market/video/index.html",
+        "sourceLabel": "介绍视频"
+      }
+    ],
+    "visual": {
+      "accent": "#dc6a2e",
+      "surface": "#fff0e7",
+      "ink": "#6f2b0d",
+      "mark": "随身"
+    }
+  },
+  {
+    "id": "v-curve-tool",
+    "index": 31,
     "name": "V曲线对比工具",
     "category": "项目开发",
     "kind": "engineering",
@@ -1118,92 +1291,6 @@ export const projects = [
       "surface": "#dff5ee",
       "ink": "#093f37",
       "mark": "V曲"
-    }
-  },
-  {
-    "id": "gamespec-relay",
-    "index": 28,
-    "name": "需求接力站",
-    "category": "游戏研发效率工具",
-    "kind": "app",
-    "badge": "辅助工具",
-    "brief": "把群聊、会议纪要和策划文档变成能开工、能验收的任务，并说清变更会影响哪里。",
-    "problem": "游戏需求讨论后仍要人工整理、拆分和补验收口径，信息遗漏容易造成跨职能返工。",
-    "aiUse": "智能助手负责语义分析、证据追溯、任务拆分、质量检查和变更影响；完整示例可离线运行。",
-    "tags": [
-      "游戏需求",
-      "跨职能交付",
-      "验收标准",
-      "版本影响"
-    ],
-    "actions": [
-      {
-        "type": "web",
-        "label": "网页预览",
-        "href": "./projects/gamespec-relay/index.html",
-        "sourceLabel": "演示"
-      },
-      {
-        "type": "video",
-        "label": "介绍视频",
-        "href": "./projects/gamespec-relay/video/index.html",
-        "sourceLabel": "介绍视频"
-      },
-      {
-        "type": "windows",
-        "label": "Wins下载",
-        "href": "https://github.com/wthpein010-dev/ai-application-hub/releases/download/gamespec-relay-v1.1.0/xuqiu-jielizhan-windows-x64.zip",
-        "sourceLabel": "微软版下载"
-      },
-      {
-        "type": "mac",
-        "label": "Mac下载",
-        "href": "https://github.com/wthpein010-dev/ai-application-hub/releases/download/gamespec-relay-v1.1.0/xuqiu-jielizhan-macos.zip",
-        "sourceLabel": "苹果电脑版下载"
-      }
-    ],
-    "visual": {
-      "accent": "#2868c7",
-      "surface": "#e7f0ff",
-      "ink": "#173f7b",
-      "mark": "需求"
-    }
-  },
-  {
-    "id": "x-ai-codex-radar",
-    "index": 29,
-    "name": "X 情报吧｜AI / Codex 雷达",
-    "category": "AI 情报工具",
-    "kind": "app",
-    "badge": "网页情报",
-    "brief": "贴吧式整理 X 上 Tibo、马斯克、Codex 与 OpenAI 官方发言，每天北京时间 08:00 检查 Token／额度重置预告；首屏可展开中英文对照的完整原帖、中文翻译、编辑整理与精选评论。",
-    "problem": "Token 重置预告、完成确认和消耗异常原因散落在 Tibo 与用户帖子里，逐条刷 X 很容易错过直接影响工作安排的信号。",
-    "aiUse": "AI 参与公开来源聚合、Tibo 专项监测、身份与主题分层和中文整理；公开演示保留完整英文原帖、中文翻译、重要评论及可核验链接，私有站点每天北京时间 08:00 检查真实帖子。",
-    "tags": [
-      "Tibo",
-      "Codex Token",
-      "X 公开来源",
-      "重置提醒"
-    ],
-    "actions": [
-      {
-        "type": "web",
-        "label": "网页预览",
-        "href": "./projects/x-ai-codex-radar/index.html",
-        "sourceLabel": "演示"
-      },
-      {
-        "type": "video",
-        "label": "介绍视频",
-        "href": "./projects/x-ai-codex-radar/video/index.html",
-        "sourceLabel": "介绍视频"
-      }
-    ],
-    "visual": {
-      "accent": "#dc6a2e",
-      "surface": "#fff0e7",
-      "ink": "#6f2b0d",
-      "mark": "X情"
     }
   }
 ];

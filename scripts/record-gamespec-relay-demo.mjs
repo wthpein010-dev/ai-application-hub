@@ -64,7 +64,7 @@ page.on("pageerror", (error) => errors.push(`page: ${error.message}`));
 page.on("requestfailed", (request) => errors.push(`request: ${request.url()} ${request.failure()?.errorText}`));
 await page.addInitScript(() => localStorage.clear());
 await page.goto(`${origin}/projects/gamespec-relay/app/index.html`, { waitUntil: "networkidle" });
-await page.getByRole("heading", { name: "首领二阶段压迫感增强" }).waitFor();
+await page.getByRole("heading", { name: "首领二阶段表现优化" }).waitFor();
 const recording = page.video();
 const startedAt = Date.now();
 
@@ -75,9 +75,9 @@ async function at(second, action) {
 }
 
 await at(8, () => page.locator("#loadSample").click());
-await at(15, () => page.locator(".source-pane").evaluate((pane) => { pane.scrollTop = 170; }));
+await at(15, () => page.locator(".source-pane").evaluate((pane) => { pane.scrollTop = 190; }));
 await at(22, () => page.locator("#analyzeButton").click());
-await page.locator("#taskLanes [data-role-lane]").first().waitFor();
+await page.locator("#taskLanes [data-role-lane]").first().waitFor({ state: "attached" });
 await at(30, () => page.screenshot({ path: join(videoRoot, "poster.jpg"), type: "jpeg", quality: 91 }));
 await at(40, () => page.locator(".decision-pane").evaluate((pane) => { pane.scrollTop = 0; }));
 await at(48, async () => {
@@ -85,7 +85,7 @@ await at(48, async () => {
   await question.locator("[data-question-answer]").fill("保持短前摇，低端机同样不跳帧");
   await question.locator("[data-confirm-question]").click();
 });
-await at(60, () => page.locator(".delivery-pane").evaluate((pane) => { pane.scrollTop = 0; }));
+await at(60, () => page.locator('[data-step-target="delivery"]').click());
 await at(75, () => page.locator(".delivery-pane").evaluate((pane) => { pane.scrollTop = 260; }));
 await at(88, () => page.locator(".delivery-pane").evaluate((pane) => { pane.scrollTop = pane.scrollHeight; }));
 await at(100, async () => {
@@ -98,7 +98,7 @@ await at(120, () => page.locator("#saveVersion").click());
 await at(125, () => page.locator("#loadChangeSample").click());
 await at(130, () => page.locator("#analyzeButton").click());
 await page.locator("#versionPill", { hasText: "第二版" }).waitFor();
-await at(143, () => page.locator("#openDiff").click());
+await at(143, () => page.locator('[data-step-target="versions"]').click());
 await page.locator("#diffPanel[data-visible='true']").waitFor();
 for (const [second, selector] of [
   [150, "#exportMarkdown"],

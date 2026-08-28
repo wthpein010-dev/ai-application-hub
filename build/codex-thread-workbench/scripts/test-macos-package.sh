@@ -50,8 +50,8 @@ cleanup() {
 trap cleanup EXIT
 
 ditto -x -k "${archive_path}" "${temporary_directory}"
-app_directory="${temporary_directory}/CodexConfirmationBar.app"
-executable="${app_directory}/Contents/MacOS/CodexConfirmationBar"
+app_directory="${temporary_directory}/CodexThreadWorkbench.app"
+executable="${app_directory}/Contents/MacOS/CodexThreadWorkbench"
 info_plist="${app_directory}/Contents/Info.plist"
 test -f "${info_plist}"
 test -x "${executable}"
@@ -70,11 +70,11 @@ if [[ "${bundle_version}" != "${expected_version}" ]]; then
   echo "CFBundleVersion ${bundle_version} != ${expected_version}." >&2
   exit 65
 fi
-if [[ "${bundle_identifier}" != "dev.wthpein010.codex-confirmation-bar" ]]; then
+if [[ "${bundle_identifier}" != "dev.wthpein010.codex-thread-workbench" ]]; then
   echo "Unexpected CFBundleIdentifier ${bundle_identifier}." >&2
   exit 65
 fi
-if [[ "${display_name}" != "Codex 待确认悬浮助手" ]]; then
+if [[ "${display_name}" != "Codex 多线程工作台" ]]; then
   echo "Unexpected CFBundleDisplayName ${display_name}." >&2
   exit 65
 fi

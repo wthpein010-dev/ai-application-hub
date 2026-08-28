@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="description" content="下载 Codex 多线程工作台 v2.3.0 macOS arm64 或 x64 版。" />
+    <meta name="theme-color" content="#edf1f2" />
+    <title>下载 Mac 版｜Codex 多线程工作台</title>
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <header class="topbar">
+      <a href="../../index.html">← 返回产品介绍</a>
+      <span>Codex 多线程工作台 · v2.3.0</span>
+    </header>
+    <main>
+      <section class="download-card" aria-labelledby="download-title">
+        <div class="product-mark" aria-hidden="true">C</div>
+        <p class="eyebrow">v2.3.0 · macOS 13+ · 双架构安全下载</p>
+        <h1 id="download-title">选择你的 Mac</h1>
+        <p class="lead">浏览器会校验每个分片的字节数与 SHA-256，并在重组后再次校验完整 App ZIP。</p>
+        <div class="architecture-grid" aria-label="选择 Mac 处理器架构">
+          <button class="architecture is-selected" type="button" data-role="architecture" data-architecture="arm64" data-manifest="./manifest-arm64.json" aria-pressed="true">
+            <span class="architecture-heading"><strong>Apple 芯片</strong><em>推荐</em></span>
+            <span>M1、M2、M3、M4 及更新机型</span><code>arm64</code>
+          </button>
+          <button class="architecture" type="button" data-role="architecture" data-architecture="x64" data-manifest="./manifest-x64.json" aria-pressed="false">
+            <span class="architecture-heading"><strong>Intel</strong></span>
+            <span>配备 Intel 处理器的 Mac</span><code>x64</code>
+          </button>
+        </div>
+        <aside class="notice" aria-label="安装说明">
+          <strong>兼容 macOS 13+</strong>
+          <p>应用已进行 ad-hoc 临时签名但尚未公证。首次打开如被系统拦截，请在 Finder 中右键应用并选择“打开”。</p>
+        </aside>
+        <dl class="file-details">
+          <div><dt>架构</dt><dd data-role="selected-architecture">Apple 芯片 · arm64</dd></div>
+          <div><dt>文件</dt><dd data-role="file-name">正在读取清单…</dd></div>
+          <div><dt>大小</dt><dd data-role="file-size">—</dd></div>
+          <div><dt>分片</dt><dd data-role="part-count">—</dd></div>
+          <div class="hash-row"><dt>SHA-256</dt><dd data-role="sha256">—</dd></div>
+        </dl>
+        <div class="status-panel" aria-live="polite">
+          <div class="status-heading"><strong data-role="status">正在读取 Apple 芯片下载清单…</strong><span data-role="progress-text">0%</span></div>
+          <progress data-role="progress" max="100" value="0">0%</progress>
+          <p class="error" data-role="error" hidden></p>
+        </div>
+        <div class="actions">
+          <button class="primary-action" type="button" data-role="download-button" disabled>开始下载 Apple 芯片版</button>
+          <button class="retry-action" type="button" data-role="retry-button" hidden>重试</button>
+        </div>
+        <p class="privacy-note">下载、重组与校验全部在浏览器中完成。</p>
+      </section>
+    </main>
+    <script type="module" src="./download.js"></script>
+  </body>
+</html>

@@ -164,9 +164,39 @@ test("the Mac audit manifest covers every public Mac action exactly once", () =>
     "clickflow",
     "pureshrink",
     "gamespec-relay",
+    "codex-multi-thread-workbench",
     "v-curve-tool",
   ]);
   assert.deepEqual(result.extension.map((item) => item.id), ["feishu-downloader"]);
+});
+
+test("the multi-thread Workbench Mac audit record matches both real runner manifests", async () => {
+  const macRoot = join(
+    root,
+    "projects",
+    "codex-multi-thread-workbench",
+    "download",
+    "mac",
+  );
+  const [arm64, x64] = await Promise.all([
+    readFile(join(macRoot, "manifest-arm64.json"), "utf8").then(JSON.parse),
+    readFile(join(macRoot, "manifest-x64.json"), "utf8").then(JSON.parse),
+  ]);
+  const record = manifest.downloads.find(
+    (item) => item.id === "codex-multi-thread-workbench",
+  );
+
+  assert.ok(record, "multi-thread Workbench should have a Mac audit record");
+  assert.deepEqual(
+    {
+      arm64: { bytes: record.artifacts.arm64.bytes, sha256: record.artifacts.arm64.sha256 },
+      x64: { bytes: record.artifacts.x64.bytes, sha256: record.artifacts.x64.sha256 },
+    },
+    {
+      arm64: { bytes: arm64.totalSize, sha256: arm64.sha256 },
+      x64: { bytes: x64.totalSize, sha256: x64.sha256 },
+    },
+  );
 });
 
 test("the Workbench Mac audit record matches the catalog and architecture manifests", () => {
@@ -295,6 +325,8 @@ test("the native audit script enforces product checks and refreshes stale downlo
   assert.match(script, /node --check/);
   assert.match(script, /open -n/);
   assert.match(script, /sleep 5/);
+  assert.match(script, /codex-multi-thread-workbench/);
+  assert.match(script, /test-codex-confirmation-bar-macos-package\.sh/);
 });
 
 test("the native audit preserves actionable diagnostics when an app bundle cannot launch", async () => {
@@ -422,16 +454,16 @@ test("the audit script rejects a Chromium extension without manifest.json", asyn
   assert.match(result.stderr, /missing manifest\.json/i);
 });
 
-test("the audit script accepts a 需求接力站 combined native fixture", async (t) => {
+test("the audit script accepts a 游戏需求开工台 combined native fixture", async (t) => {
   const directory = await withFixture(t);
   const archive = await createFixtureZip(directory, "gamespec-relay", {
-    "arm64/需求接力站.app/Contents/Info.plist": "fixture",
-    "arm64/需求接力站.app/Contents/MacOS/需求接力站": "fixture",
+    "arm64/游戏需求开工台.app/Contents/Info.plist": "fixture",
+    "arm64/游戏需求开工台.app/Contents/MacOS/游戏需求开工台": "fixture",
   });
   const artifact = await fixtureArtifact(archive);
   const manifestPath = await writeFixtureManifest(directory, {
     id: "gamespec-relay",
-    name: "需求接力站",
+    name: "游戏需求开工台",
     kind: "native",
     catalogUrl: artifact.archiveUrl,
     ...artifact,

@@ -10,6 +10,7 @@ const NATIVE_PROJECTS = new Set([
   "clickflow",
   "pureshrink",
   "gamespec-relay",
+  "codex-multi-thread-workbench",
   "v-curve-tool",
 ]);
 const EXTENSION_PROJECTS = new Set(["feishu-downloader"]);

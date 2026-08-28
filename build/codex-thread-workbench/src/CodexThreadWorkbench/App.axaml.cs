@@ -41,25 +41,51 @@ public partial class App : Application
         FloatingLauncherWindow? launcherWindow = null;
         MainWindow? workbenchWindow = null;
         FloatingWorkbenchController? floatingController = null;
+        MainViewModel? standaloneWorkbenchViewModel = null;
         try
         {
             ConfirmationOverlayDiagnostics.Write("connect:start");
             client = await CodexAppServerClient.ConnectAsync();
             ConfirmationOverlayDiagnostics.Write("connect:complete");
+            var statusReader = new CodexSessionSnapshotReader();
+            if (launchOptions.ShowWorkbenchWindow)
+            {
+                standaloneWorkbenchViewModel = new MainViewModel(
+                    client,
+                    new WorkspaceStore(),
+                    statusReader: statusReader);
+                client = null;
+                workbenchWindow = new MainWindow
+                {
+                    DataContext = standaloneWorkbenchViewModel
+                };
+                desktop.MainWindow = workbenchWindow;
+                workbenchWindow.Show();
+                await standaloneWorkbenchViewModel.InitializeAsync();
+                workbenchWindow.ApplySavedBounds(standaloneWorkbenchViewModel);
+                desktop.ShutdownMode = ShutdownMode.OnLastWindowClose;
+                return;
+            }
+
             var detector = new ConfirmationDetector();
             var threadReader = new CodexSessionSnapshotReader(
                 throwWhenUnavailable: true);
-            var statusReader = new CodexSessionSnapshotReader();
             var monitor = new ConfirmationMonitor(
                 client,
                 detector,
                 threadReader: threadReader);
+            IConfirmationAutomationSettingsStore? automationSettingsStore =
+                launchOptions.SupportsConfirmationAutomation
+                    ? new ConfirmationAutomationSettingsStore()
+                    : null;
             var overlayViewModel = new ConfirmationOverlayViewModel(
                 client,
                 monitor,
                 detector,
                 CodexDesktopMessageFallbackFactory.CreateCurrent(),
-                threadReader: threadReader);
+                threadReader: threadReader,
+                automationSettingsStore: automationSettingsStore);
+            await overlayViewModel.InitializeAsync();
             overlayViewModel.ActionAttempted += message =>
                 ConfirmationOverlayDiagnostics.Write($"action:{message}");
             if (launchOptions.Mode == DesktopLaunchMode.ConfirmationOverlay)
@@ -98,25 +124,6 @@ public partial class App : Application
             {
                 DataContext = viewModel
             };
-
-            if (launchOptions.Mode == DesktopLaunchMode.Workbench)
-            {
-                overlayWindow = new ConfirmationOverlayWindow();
-                ConfirmationOverlayDiagnostics.Write("overlay:created");
-                workbenchWindow.ShutdownAsync = async () =>
-                {
-                    overlayWindow.CloseForShutdown();
-                    await session.DisposeAsync();
-                };
-                desktop.MainWindow = workbenchWindow;
-                overlayWindow.Attach(overlayViewModel);
-                workbenchWindow.Show();
-                await viewModel.InitializeAsync();
-                workbenchWindow.ApplySavedBounds(viewModel);
-                monitor.Start();
-                desktop.ShutdownMode = ShutdownMode.OnLastWindowClose;
-                return;
-            }
 
             workbenchWindow.CollapseToLauncherOnClose = true;
             launcherWindow = new FloatingLauncherWindow();
@@ -162,6 +169,10 @@ public partial class App : Application
             {
                 await session.DisposeAsync();
             }
+            else if (standaloneWorkbenchViewModel is not null)
+            {
+                await standaloneWorkbenchViewModel.DisposeAsync();
+            }
             else if (client is not null)
             {
                 await client.DisposeAsync();
@@ -196,7 +207,7 @@ public partial class App : Application
                 {
                     new TextBlock
                     {
-                        Text = "Codex 多线程悬浮工作台无法启动",
+                        Text = "Codex 多线程工作台无法启动",
                         FontSize = 20,
                         FontWeight = Avalonia.Media.FontWeight.SemiBold
                     },

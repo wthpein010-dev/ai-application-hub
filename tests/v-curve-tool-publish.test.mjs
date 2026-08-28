@@ -35,7 +35,7 @@ function parseCues(source) {
 }
 
 test("V curve is the final project-development card with four truthful actions", () => {
-  assert.equal(apps.length, 30);
+  assert.equal(apps.length, 32);
   const project = apps.find((app) => app.id === "v-curve-tool");
   assert.ok(project, "V curve catalog entry is missing");
   assert.equal(project.name, "V曲线对比工具");
@@ -79,6 +79,10 @@ test("the immutable release manifest records the verified Windows and macOS pack
 
   assert.equal(manifest.schemaVersion, "v-curve-tool-release/1");
   assert.equal(manifest.version, "1.2.0");
+  assert.deepEqual(manifest.releaseWorkflow, {
+    runId: 33163156365,
+    sourceCommit: "54b0c8765dc079979617bf51670c37dfb1eb3ac0",
+  });
   assert.deepEqual(manifest.assets.windows, {
     file: windowsAsset,
     url: `${releaseBase}/${windowsAsset}`,
@@ -89,8 +93,8 @@ test("the immutable release manifest records the verified Windows and macOS pack
   });
   assert.equal(manifest.assets.mac.file, macAsset);
   assert.equal(manifest.assets.mac.url, `${releaseBase}/${macAsset}`);
-  assert.ok(Number.isSafeInteger(manifest.assets.mac.bytes) && manifest.assets.mac.bytes > 0);
-  assert.match(manifest.assets.mac.sha256, /^[A-F0-9]{64}$/u);
+  assert.equal(manifest.assets.mac.bytes, 261_380_371);
+  assert.equal(manifest.assets.mac.sha256, "A355EEA4BBB98D66E6C976363C970F2ADBAFB4A99D95E5AE72166C8341A793B7");
   assert.deepEqual(manifest.assets.mac.architectures, ["arm64", "x64"]);
   assert.equal(manifest.bundledLevels.files, 62);
   assert.equal(manifest.bundledLevels.playable, 31);

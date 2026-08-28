@@ -17,7 +17,7 @@ function buildMessages(sources) {
     {
       role: "system",
       content: [
-        "你是需求接力站。只返回一个符合约定结构的数据对象，不要解释。",
+        "你是游戏需求开工台。只返回一个符合约定结构的数据对象，不要解释。",
         "对象必须包含 project、sources、decisions、questions、scope、tasks、tests、risks、health。",
         "每个决定、问题和任务必须保留至少一条含 sourceId 与 quote 的 evidence。",
         "不得把未确认信息写成决定，也不得虚构来源。",

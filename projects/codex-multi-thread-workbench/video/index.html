@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="color-scheme" content="dark" />
+    <link rel="icon" href="data:," />
+    <title>Codex 多线程工作台 v2.3.0 演示视频</title>
+    <link rel="stylesheet" href="../../../assets/hub-video-player.css" />
+  </head>
+  <body data-hub-video-page>
+    <a class="hub-video-home" href="../../../index.html#apps">返回主页</a>
+    <main class="hub-video-page">
+      <p class="hub-video-kicker">v2.3.0 教程视频</p>
+      <h1>Codex 多线程工作台</h1>
+      <p class="hub-video-description">84 秒看懂一级界面同时查看多个任务、直接对话、拖拽换位、切换全屏和刷新状态，并了解 Windows 与 macOS 原生版的下载选择。</p>
+      <section class="hub-video-player" aria-label="Codex 多线程工作台演示视频">
+        <div class="hub-video-stage">
+          <div class="hub-video-load-card" id="loadCard" role="status">
+            <strong>准备播放演示视频</strong>
+            <p data-hub-video-message>点击后再加载视频，避免打开页面时等待。</p>
+            <button id="loadVideo" type="button">加载并播放视频</button>
+          </div>
+          <video id="introVideo" controls playsinline preload="none" data-src="./codex-multi-thread-workbench-demo.mp4" poster="./poster.jpg" hidden><track
+            kind="captions"
+            src="./codex-multi-thread-workbench-demo.vtt"
+            srclang="zh"
+            label="简体中文字幕"
+            default
+          /></video>
+        </div>
+      </section>
+      <nav class="hub-video-actions" aria-label="视频相关入口">
+        <a href="./codex-multi-thread-workbench-demo.mp4">打开 MP4</a>
+        <a href="../index.html">打开项目</a>
+      </nav>
+      <section class="hub-video-chapters" aria-label="视频章节">
+        <button class="hub-video-chapter" type="button" data-time="0"><time>00:00</time><span>认识多线程工作台</span></button>
+        <button class="hub-video-chapter" type="button" data-time="12"><time>00:12</time><span>同屏查看标题与对话</span></button>
+        <button class="hub-video-chapter" type="button" data-time="24"><time>00:24</time><span>一级界面直接发送</span></button>
+        <button class="hub-video-chapter" type="button" data-time="36"><time>00:36</time><span>拖拽卡片交换位置</span></button>
+        <button class="hub-video-chapter" type="button" data-time="48"><time>00:48</time><span>桌面与全屏切换</span></button>
+        <button class="hub-video-chapter" type="button" data-time="60"><time>01:00</time><span>状态刷新清晰可见</span></button>
+        <button class="hub-video-chapter" type="button" data-time="72"><time>01:12</time><span>Windows 与 macOS 下载</span></button>
+      </section>
+    </main>
+    <script type="module" src="../../../assets/hub-video-player.js"></script>
+  </body>
+</html>

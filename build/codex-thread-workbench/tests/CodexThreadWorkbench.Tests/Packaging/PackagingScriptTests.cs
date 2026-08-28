@@ -9,8 +9,8 @@ public sealed class PackagingScriptTests
         Path.Combine(AppContext.BaseDirectory, "..", "..", "..", "..", ".."));
 
     [Theory]
-    [InlineData("osx-arm64", "CodexConfirmationBar-macOS-arm64.app.zip")]
-    [InlineData("osx-x64", "CodexConfirmationBar-macOS-x64.app.zip")]
+    [InlineData("osx-arm64", "CodexThreadWorkbench-macOS-arm64.app.zip")]
+    [InlineData("osx-x64", "CodexThreadWorkbench-macOS-x64.app.zip")]
     public void MacScript_MapsRuntimeToExactArchiveName(
         string runtime,
         string archiveName)
@@ -22,8 +22,8 @@ public sealed class PackagingScriptTests
         Assert.Contains("codesign --force --deep --sign -", script);
         Assert.Contains("LSMinimumSystemVersion", script);
         Assert.Contains("<string>13.0</string>", script);
-        Assert.Contains("dev.wthpein010.codex-confirmation-bar", script);
-        Assert.Contains("Codex 待确认悬浮助手", script);
+        Assert.Contains("dev.wthpein010.codex-thread-workbench", script);
+        Assert.Contains("Codex 多线程工作台", script);
     }
 
     [Fact]
@@ -35,8 +35,9 @@ public sealed class PackagingScriptTests
         Assert.Contains("--smoke-test", script);
         Assert.Contains("file \"${executable}\"", script);
         Assert.Contains("kill \"${app_pid}\"", script);
-        Assert.Contains("CodexConfirmationBar.app", script);
-        Assert.Contains("CodexConfirmationBar", script);
+        Assert.Contains("CodexThreadWorkbench.app", script);
+        Assert.Contains("CodexThreadWorkbench", script);
+        Assert.Contains("dev.wthpein010.codex-thread-workbench", script);
     }
 
     [Fact]
@@ -83,19 +84,19 @@ public sealed class PackagingScriptTests
         Assert.Contains("runner: macos-15-intel", workflow);
         Assert.Contains("runtime: osx-x64", workflow);
         Assert.Contains("scripts/test-macos-package.sh", workflow);
-        Assert.Contains("CodexConfirmationBar-macOS-arm64.app.zip", workflow);
-        Assert.Contains("CodexConfirmationBar-macOS-x64.app.zip", workflow);
+        Assert.Contains("CodexThreadWorkbench-macOS-arm64.app.zip", workflow);
+        Assert.Contains("CodexThreadWorkbench-macOS-x64.app.zip", workflow);
     }
 
     [Fact]
-    public void WindowsScript_UsesTheBrandedExecutableAndArchive()
+    public void WindowsScript_UsesTheDesktopWorkbenchExecutableAndArchive()
     {
         var script = Read("scripts", "Publish-Windows.ps1");
 
-        Assert.Contains("CodexConfirmationBar-Windows-x64", script);
-        Assert.Contains("CodexConfirmationBar-Windows-x64.zip", script);
-        Assert.Contains("CodexConfirmationBar.exe", script);
-        Assert.DoesNotContain("CodexThreadWorkbench-Windows-x64.zip", script);
+        Assert.Contains("CodexThreadWorkbench-Windows-x64", script);
+        Assert.Contains("CodexThreadWorkbench-Windows-x64.zip", script);
+        Assert.Contains("CodexThreadWorkbench.exe", script);
+        Assert.DoesNotContain("CodexConfirmationBar-Windows-x64.zip", script);
     }
 
     [Fact]
