@@ -65,7 +65,7 @@ jobs:
         run: echo "FFMPEG_PATH=$(node -p "require('ffmpeg-static')")" >> "$GITHUB_ENV"
 
       - name: Run the full Hub test suite
-        run: xvfb-run -a node --test
+        run: xvfb-run -a npm test
 
       - name: Run the publication audit
         run: npm run audit:hub -- --check-external

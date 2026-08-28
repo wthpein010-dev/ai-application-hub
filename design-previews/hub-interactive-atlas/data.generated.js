@@ -1071,8 +1071,58 @@ export const projects = [
     }
   },
   {
-    "id": "gamespec-relay",
+    "id": "v-curve-tool",
     "index": 27,
+    "name": "V曲线对比工具",
+    "category": "项目开发",
+    "kind": "engineering",
+    "badge": "工程体验",
+    "brief": "导入 Paws JSON 关卡，即可与固定的《羊了个羊》900121 结构并排生成连续 V 曲线、河道上下界与关键诊断。",
+    "problem": "关卡层数和砖量只能说明规模，难以直接判断开局宽度、中盘断崖与后段窄口，也缺少与成熟样本一致口径的对照。",
+    "aiUse": "工具完全离线，按 Paws 两两配对与暂存槽规则执行确定性河道搜索和 Monte Carlo 仿真；Windows 与 macOS 包均内置已确认的 31 个关卡。",
+    "tags": [
+      "V曲线",
+      "关卡分析",
+      "羊了个羊",
+      "Windows",
+      "macOS"
+    ],
+    "actions": [
+      {
+        "type": "web",
+        "label": "网页预览",
+        "href": "./projects/v-curve-tool/index.html",
+        "sourceLabel": "演示"
+      },
+      {
+        "type": "video",
+        "label": "介绍视频",
+        "href": "./projects/v-curve-tool/video/index.html",
+        "sourceLabel": "介绍视频"
+      },
+      {
+        "type": "windows",
+        "label": "Wins下载",
+        "href": "https://github.com/wthpein010-dev/ai-application-hub/releases/download/v-curve-tool-v1.2.0/V曲线对比工具-1.2.0-开箱即用-Windows-x64.zip",
+        "sourceLabel": "Wins下载"
+      },
+      {
+        "type": "mac",
+        "label": "Mac下载",
+        "href": "https://github.com/wthpein010-dev/ai-application-hub/releases/download/v-curve-tool-v1.2.0/V-Curve-Comparison-Tool-1.2.0-macOS.zip",
+        "sourceLabel": "Mac下载"
+      }
+    ],
+    "visual": {
+      "accent": "#0e7a68",
+      "surface": "#dff5ee",
+      "ink": "#093f37",
+      "mark": "V曲"
+    }
+  },
+  {
+    "id": "gamespec-relay",
+    "index": 28,
     "name": "需求接力站",
     "category": "游戏研发效率工具",
     "kind": "app",
@@ -1121,14 +1171,14 @@ export const projects = [
   },
   {
     "id": "x-ai-codex-radar",
-    "index": 28,
+    "index": 29,
     "name": "X 情报吧｜AI / Codex 雷达",
     "category": "AI 情报工具",
     "kind": "app",
     "badge": "网页情报",
-    "brief": "贴吧式整理 X 上 Tibo、马斯克、Codex 与 OpenAI 官方发言，每两小时检查 Token／额度重置预告；首屏可展开中英文对照的完整原帖、中文翻译、编辑整理与精选评论。",
+    "brief": "贴吧式整理 X 上 Tibo、马斯克、Codex 与 OpenAI 官方发言，每天北京时间 08:00 检查 Token／额度重置预告；首屏可展开中英文对照的完整原帖、中文翻译、编辑整理与精选评论。",
     "problem": "Token 重置预告、完成确认和消耗异常原因散落在 Tibo 与用户帖子里，逐条刷 X 很容易错过直接影响工作安排的信号。",
-    "aiUse": "AI 参与公开来源聚合、Tibo 专项监测、身份与主题分层和中文整理；公开演示保留完整英文原帖、中文翻译、重要评论及可核验链接，私有站点每两小时检查一次真实帖子。",
+    "aiUse": "AI 参与公开来源聚合、Tibo 专项监测、身份与主题分层和中文整理；公开演示保留完整英文原帖、中文翻译、重要评论及可核验链接，私有站点每天北京时间 08:00 检查真实帖子。",
     "tags": [
       "Tibo",
       "Codex Token",

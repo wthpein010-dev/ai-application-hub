@@ -1,0 +1,130 @@
+:root {
+  color-scheme: light;
+  --vcurve-ink: #293633;
+  --vcurve-muted: #66736f;
+  --vcurve-paper: #fffdf7;
+  --vcurve-line: #d9d5c8;
+  --vcurve-green: #547b6e;
+  --vcurve-warm: #e6ad62;
+}
+
+* { box-sizing: border-box; }
+
+body.vcurve-demo-page {
+  margin: 0;
+  min-width: 320px;
+  min-height: 100vh;
+  color: var(--vcurve-ink);
+  background:
+    radial-gradient(circle at 12% 4%, rgb(230 173 98 / 18%), transparent 34rem),
+    radial-gradient(circle at 88% 18%, rgb(84 123 110 / 16%), transparent 38rem),
+    #f4f1e8;
+  font-family: "Microsoft YaHei", "PingFang SC", system-ui, sans-serif;
+}
+
+.vcurve-hero {
+  width: min(1540px, calc(100% - 40px));
+  margin: 0 auto;
+  padding: 92px 0 24px;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: end;
+  gap: 32px;
+}
+
+.vcurve-kicker {
+  margin: 0 0 8px;
+  color: var(--vcurve-green);
+  font-size: 13px;
+  font-weight: 800;
+  letter-spacing: .12em;
+}
+
+.vcurve-hero h1 {
+  margin: 0;
+  font-size: clamp(32px, 5vw, 58px);
+  line-height: 1.04;
+  letter-spacing: -.045em;
+}
+
+.vcurve-hero > div > p:last-child {
+  max-width: 880px;
+  margin: 14px 0 0;
+  color: var(--vcurve-muted);
+  font-size: 15px;
+  line-height: 1.8;
+}
+
+.vcurve-hero ul {
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(132px, 1fr));
+  gap: 10px;
+  list-style: none;
+}
+
+.vcurve-hero li {
+  min-height: 82px;
+  padding: 14px 16px;
+  border: 1px solid rgb(84 123 110 / 24%);
+  border-radius: 14px;
+  background: rgb(255 253 247 / 78%);
+  box-shadow: 0 14px 36px rgb(58 70 65 / 7%);
+}
+
+.vcurve-hero li strong,
+.vcurve-hero li span { display: block; }
+.vcurve-hero li strong { color: var(--vcurve-green); font-size: 16px; }
+.vcurve-hero li span { margin-top: 6px; color: var(--vcurve-muted); font-size: 12px; line-height: 1.45; }
+
+.vcurve-shell {
+  width: min(1540px, calc(100% - 40px));
+  margin: 0 auto 40px;
+  overflow: hidden;
+  border: 1px solid var(--vcurve-line);
+  border-radius: 20px;
+  background: var(--vcurve-paper);
+  box-shadow: 0 28px 80px rgb(57 68 63 / 14%);
+}
+
+.vcurve-frame-head {
+  min-height: 58px;
+  padding: 10px 18px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  border-bottom: 1px solid var(--vcurve-line);
+}
+
+.vcurve-frame-head > div { display: flex; align-items: center; gap: 9px; min-width: 0; }
+.vcurve-frame-head small { overflow: hidden; color: var(--vcurve-muted); text-overflow: ellipsis; white-space: nowrap; }
+.vcurve-dot { width: 9px; height: 9px; flex: 0 0 auto; border-radius: 50%; background: var(--vcurve-warm); box-shadow: 0 0 0 5px rgb(230 173 98 / 16%); }
+.vcurve-frame-head a { flex: 0 0 auto; color: #315f52; font-size: 13px; font-weight: 750; }
+
+.vcurve-frame-wrap { position: relative; min-height: 820px; background: #f7f4ec; }
+.vcurve-frame-wrap iframe { display: block; width: 100%; height: 820px; border: 0; background: #f7f4ec; }
+.vcurve-loading { position: absolute; inset: 0; z-index: 1; display: grid; place-items: center; color: var(--vcurve-muted); background: #f7f4ec; transition: opacity .2s ease, visibility .2s ease; }
+.vcurve-loading.is-ready { visibility: hidden; opacity: 0; }
+
+@media (max-width: 1040px) {
+  .vcurve-hero { grid-template-columns: 1fr; }
+  .vcurve-hero ul { width: 100%; }
+}
+
+@media (max-width: 680px) {
+  .vcurve-hero,
+  .vcurve-shell { width: min(100% - 24px, 1540px); }
+  .vcurve-hero { padding-top: 78px; }
+  .vcurve-hero ul { grid-template-columns: 1fr; }
+  .vcurve-hero li { min-height: 0; }
+  .vcurve-frame-head { align-items: flex-start; flex-direction: column; }
+  .vcurve-frame-head small { display: block; margin-top: 3px; white-space: normal; }
+  .vcurve-frame-wrap,
+  .vcurve-frame-wrap iframe { min-height: 760px; height: 760px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .vcurve-loading { transition: none; }
+}

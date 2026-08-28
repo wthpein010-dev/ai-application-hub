@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="导入 Paws JSON 关卡，与固定羊 900121 结构生成连续 V 曲线、河道上下界和结构诊断。">
+    <meta name="theme-color" content="#f4f1e8">
+    <link rel="icon" href="data:,">
+    <title>V曲线对比工具</title>
+    <link rel="stylesheet" href="../../assets/subpage-shell.css">
+    <link rel="stylesheet" href="./shell.css">
+  </head>
+  <body class="hub-subpage vcurve-demo-page">
+    <a class="hub-home-link" href="../../index.html#engineering" aria-label="返回 AI Application Hub 工程体验集合">
+      <span class="hub-home-link__icon" aria-hidden="true">←</span>
+      <span>返回主页</span>
+    </a>
+
+    <header class="vcurve-hero">
+      <div>
+        <p class="vcurve-kicker">项目开发 · 关卡结构分析</p>
+        <h1>V曲线对比工具</h1>
+        <p>左侧固定《羊了个羊》900121，右侧导入 Paws JSON；使用同一套两两配对与暂存槽规则比较实际 V、河道上界、河道下界与期望曲线。</p>
+      </div>
+      <ul aria-label="公开版本能力">
+        <li><strong>31 个关卡</strong><span>桌面包开箱自动载入</span></li>
+        <li><strong>300 seeds</strong><span>默认 Monte Carlo 仿真</span></li>
+        <li><strong>完全离线</strong><span>只读本地关卡，不回写工程</span></li>
+      </ul>
+    </header>
+
+    <main class="vcurve-shell">
+      <div class="vcurve-frame-head">
+        <div>
+          <span class="vcurve-dot" aria-hidden="true"></span>
+          <strong>网页演示</strong>
+          <small>浏览器版需主动选择关卡文件夹；Windows 与 macOS 包会自动加载内置 Editorlevel。</small>
+        </div>
+        <a href="./video/index.html">观看 55 秒介绍</a>
+      </div>
+      <div class="vcurve-frame-wrap">
+        <div class="vcurve-loading" id="vcurveLoading" role="status">正在装载离线分析器…</div>
+        <iframe id="vcurveFrame" src="./app/index.html" title="V曲线对比工具交互演示" loading="eager" fetchpriority="high"></iframe>
+      </div>
+    </main>
+
+    <script>
+      const frame = document.querySelector("#vcurveFrame");
+      const loading = document.querySelector("#vcurveLoading");
+      frame.addEventListener("load", () => loading.classList.add("is-ready"), { once: true });
+    </script>
+  </body>
+</html>

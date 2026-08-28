@@ -31,6 +31,9 @@ const manifest = JSON.parse(
 const pureshrinkReleaseManifest = JSON.parse(
   await readFile(join(root, "projects", "pureshrink", "release-manifest.json"), "utf8"),
 );
+const vCurveReleaseManifest = JSON.parse(
+  await readFile(join(root, "projects", "v-curve-tool", "release-manifest.json"), "utf8"),
+);
 const workbenchArm64Manifest = JSON.parse(
   await readFile(
     join(
@@ -161,6 +164,7 @@ test("the Mac audit manifest covers every public Mac action exactly once", () =>
     "clickflow",
     "pureshrink",
     "gamespec-relay",
+    "v-curve-tool",
   ]);
   assert.deepEqual(result.extension.map((item) => item.id), ["feishu-downloader"]);
 });
@@ -327,6 +331,7 @@ test("the native audit workflow covers both Mac architectures and emits evidence
   assert.match(workflow, /^\s+- main$/m);
   assert.match(workflow, /audit\/mac-downloads-20260807/);
   assert.match(workflow, /docs\/audits\/evidence\/2026-08-07-macos-download-manifest\.json/);
+  assert.match(workflow, /projects\/v-curve-tool\/release-manifest\.json/);
   assert.match(workflow, /downloads\/CodexQuotaBar-macOS\.zip/);
   assert.match(workflow, /actions\/upload-artifact@v4/);
   assert.match(workflow, /macos-download-audit-\$\{\{ matrix\.arch \}\}/);
@@ -442,6 +447,43 @@ test("the audit script accepts a 需求接力站 combined native fixture", async
   );
   assert.equal(evidence.status, "passed");
   assert.deepEqual(evidence.downloads.map((item) => item.id), ["gamespec-relay"]);
+});
+
+test("the V curve Mac audit record matches its immutable release manifest", () => {
+  const auditRecord = manifest.downloads.find((item) => item.id === "v-curve-tool");
+
+  assert.ok(auditRecord, "V curve should have a Mac audit record");
+  assert.deepEqual(
+    {
+      bytes: auditRecord.bytes,
+      sha256: auditRecord.sha256,
+    },
+    {
+      bytes: vCurveReleaseManifest.assets.mac.bytes,
+      sha256: vCurveReleaseManifest.assets.mac.sha256,
+    },
+  );
+});
+
+test("the audit script accepts a V curve combined native fixture", async (t) => {
+  const directory = await withFixture(t);
+  const archive = await createFixtureZip(directory, "v-curve-tool", {
+    "arm64/V曲线对比工具.app/Contents/Info.plist": "fixture",
+    "arm64/V曲线对比工具.app/Contents/MacOS/V曲线对比工具": "fixture",
+  });
+  const artifact = await fixtureArtifact(archive);
+  const manifestPath = await writeFixtureManifest(directory, {
+    id: "v-curve-tool",
+    name: "V曲线对比工具",
+    kind: "native",
+    catalogUrl: artifact.archiveUrl,
+    ...artifact,
+    architectures: ["arm64", "x64"],
+  });
+
+  const result = await runFixtureAudit({ directory, manifestPath });
+  assert.equal(result.code, 0, result.stderr);
+  assert.match(result.stdout, /Verified v-curve-tool/);
 });
 
 test("the audit script accepts a valid extension fixture without native Mac tools", async (t) => {

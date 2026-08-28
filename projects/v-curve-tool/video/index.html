@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="color-scheme" content="dark">
+    <link rel="icon" href="data:,">
+    <title>V曲线对比工具介绍视频</title>
+    <link rel="stylesheet" href="../../../assets/hub-video-player.css">
+  </head>
+  <body data-hub-video-page>
+    <a class="hub-video-home" href="../../../index.html#engineering">返回主页</a>
+    <main class="hub-video-page">
+      <p class="hub-video-kicker">55 秒功能演示</p>
+      <h1>V曲线对比工具 · 让关卡结构风险直接可见</h1>
+      <p class="hub-video-description">从开箱自动载入 31 个 Paws 关卡，到固定羊 900121 双图对比、河道上下界、300 seeds 仿真、悬停读数与报告导出。</p>
+      <section class="hub-video-player" aria-label="V曲线对比工具介绍视频">
+        <div class="hub-video-stage">
+          <div class="hub-video-load-card" id="loadCard" role="status">
+            <strong>准备播放功能演示</strong>
+            <p data-hub-video-message>点击后再加载视频，避免打开页面时等待。</p>
+            <button id="loadVideo" type="button">加载并播放视频</button>
+          </div>
+          <video id="introVideo" controls playsinline preload="none" data-src="./v-curve-tool-demo.mp4" poster="./poster.jpg" hidden>
+            <track kind="captions" src="./v-curve-tool-demo.vtt" srclang="zh-CN" label="简体中文字幕" default>
+          </video>
+        </div>
+      </section>
+      <nav class="hub-video-actions" aria-label="视频相关入口">
+        <a href="./v-curve-tool-demo.mp4">打开视频文件</a>
+        <a href="../index.html">打开项目</a>
+      </nav>
+      <section class="hub-video-chapters" aria-label="视频章节">
+        <button class="hub-video-chapter" type="button" data-time="0"><time>00:00</time><span>固定参考与关卡双图</span></button>
+        <button class="hub-video-chapter" type="button" data-time="9"><time>00:09</time><span>自动载入真实关卡</span></button>
+        <button class="hub-video-chapter" type="button" data-time="18"><time>00:18</time><span>300 seeds 仿真</span></button>
+        <button class="hub-video-chapter" type="button" data-time="27"><time>00:27</time><span>河道与期望曲线</span></button>
+        <button class="hub-video-chapter" type="button" data-time="36"><time>00:36</time><span>悬停指标与诊断</span></button>
+        <button class="hub-video-chapter" type="button" data-time="45"><time>00:45</time><span>导出完整分析报告</span></button>
+      </section>
+    </main>
+    <script type="module" src="../../../assets/hub-video-player.js"></script>
+  </body>
+</html>

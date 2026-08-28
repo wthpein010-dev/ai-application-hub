@@ -8,6 +8,19 @@ import test from "node:test";
 const root = dirname(dirname(fileURLToPath(import.meta.url)));
 const sourceRoot = join(root, "build", "v-curve-tool");
 const workflowPath = join(root, ".github", "workflows", "build-v-curve-tool-release.yml");
+const hubPackagePath = join(root, "package.json");
+const hubVerificationWorkflowPath = join(
+  root,
+  ".github",
+  "workflows",
+  "verify-clickflow-publish.yml",
+);
+const publisherWorkflowPath = join(
+  root,
+  ".github",
+  "workflows",
+  "publish-v-curve-tool-release.yml",
+);
 
 test("the tracked V curve source builds both native macOS architectures", async () => {
   assert.ok(existsSync(join(sourceRoot, "package.json")), "missing tracked V curve source snapshot");
@@ -59,4 +72,30 @@ test("the release workflow uploads the ad-hoc signed macOS applications", async 
   assert.ok(workflow.includes(rearchive), "the signed app must replace the unsigned builder archive");
   assert.ok(workflow.indexOf(sign) < workflow.indexOf(verify));
   assert.ok(workflow.indexOf(verify) < workflow.indexOf(rearchive));
+});
+
+test("the publisher promotes the exact verified Mac artifact without overwriting assets", async () => {
+  assert.ok(existsSync(publisherWorkflowPath), "missing immutable V curve release publisher");
+  const workflow = await readFile(publisherWorkflowPath, "utf8");
+
+  assert.match(workflow, /actions:\s*read/u);
+  assert.match(workflow, /contents:\s*write/u);
+  assert.match(workflow, /ARTIFACT_RUN_ID:\s*"33152604613"/u);
+  assert.match(workflow, /ARTIFACT_NAME:\s*v-curve-tool-macos-release/u);
+  assert.match(workflow, /RELEASE_TAG:\s*v-curve-tool-v1\.2\.0/u);
+  assert.match(workflow, /1700462f5f12c5aff874862e74da02d38ffea4a8/u);
+  assert.match(workflow, /F992C85AFAFC207D5C2B76220D2297C6AF4829C58DC6A3794414E1208A9D22C4/u);
+  assert.match(workflow, /gh run download/u);
+  assert.match(workflow, /gh release view/u);
+  assert.match(workflow, /gh release upload/u);
+  assert.doesNotMatch(workflow, /--clobber/u);
+});
+
+test("the Hub suite excludes nested Vitest source tests from Node discovery", async () => {
+  const packageJson = JSON.parse(await readFile(hubPackagePath, "utf8"));
+  const workflow = await readFile(hubVerificationWorkflowPath, "utf8");
+
+  assert.equal(packageJson.scripts.test, 'node --test "tests/**/*.test.mjs"');
+  assert.match(workflow, /xvfb-run -a npm test/u);
+  assert.doesNotMatch(workflow, /xvfb-run -a node --test(?:\s|$)/u);
 });

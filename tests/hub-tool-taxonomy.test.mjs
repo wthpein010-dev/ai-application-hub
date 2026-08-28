@@ -136,7 +136,7 @@ test("application cards use six concise public tool types", () => {
   }
 
   assert.equal(apps.filter((app) => catalogTypeKey(app) === "game").length, 5);
-  assert.equal(apps.filter((app) => catalogTypeKey(app) === "engineering").length, 5);
+  assert.equal(apps.filter((app) => catalogTypeKey(app) === "engineering").length, 6);
 });
 
 test("the type filter exposes only the six tool types plus games and engineering", () => {
@@ -226,7 +226,7 @@ test("application taxonomy filters leave games and engineering intact while sear
   assert.deepEqual(groupedIds(), {
     apps: ["feishu-downloader"],
     games: ["icecream", "zhuanglege-sha", "fill-what", "xiang-le-ge-xiang", "nang-keng-pai-pai-xiang"],
-    engineering: ["vita-mahjong", "paws-home-client", "paws-level-editor", "brick-light-motion-lab", "brick-character-copy-preview"],
+    engineering: ["vita-mahjong", "paws-home-client", "paws-level-editor", "brick-light-motion-lab", "brick-character-copy-preview", "v-curve-tool"],
   });
 
   state.status = "all";
@@ -234,7 +234,7 @@ test("application taxonomy filters leave games and engineering intact while sear
   assert.deepEqual(groupedIds(), {
     apps: ["travel-generator"],
     games: ["icecream", "zhuanglege-sha", "fill-what", "xiang-le-ge-xiang", "nang-keng-pai-pai-xiang"],
-    engineering: ["vita-mahjong", "paws-home-client", "paws-level-editor", "brick-light-motion-lab", "brick-character-copy-preview"],
+    engineering: ["vita-mahjong", "paws-home-client", "paws-level-editor", "brick-light-motion-lab", "brick-character-copy-preview", "v-curve-tool"],
   });
 
   state.category = "all";

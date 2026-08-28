@@ -15,6 +15,7 @@ on:
       - "build/codex-thread-workbench/scripts/test-macos-package.sh"
       - "build/codex-thread-workbench/src/CodexThreadWorkbench/CodexThreadWorkbench.csproj"
       - "docs/audits/evidence/2026-08-07-macos-download-manifest.json"
+      - "projects/v-curve-tool/release-manifest.json"
       - "downloads/CodexQuotaBar-macOS.zip"
 
 permissions:
@@ -52,6 +53,7 @@ jobs:
             build/codex-thread-workbench/scripts/test-macos-package.sh
             build/codex-thread-workbench/src/CodexThreadWorkbench/CodexThreadWorkbench.csproj
             docs/audits/evidence/2026-08-07-macos-download-manifest.json
+            projects/v-curve-tool/release-manifest.json
           sparse-checkout-cone-mode: false
 
       - name: Set up Node.js

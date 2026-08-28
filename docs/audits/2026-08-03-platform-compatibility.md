@@ -1,7 +1,7 @@
 # AI Application Hub 平台兼容矩阵
 
-- 日期：2026-08-21
-- 范围：主页当前 29 张公开项目卡片
+- 日期：2026-08-28
+- 范围：主页当前 30 张公开项目卡片
 - 规则：网页、小游戏和工程体验通过现代浏览器覆盖 Windows 与 macOS；只有经过原生构建、架构检查和产物校验的项目显示系统下载。
 - 通用门禁：`tests/hub-entry-pages-browser-smoke.mjs`、`tests/hub-video-pages-browser-smoke.mjs`、`tests/hub-platform-artifacts.test.mjs`。
 
@@ -35,10 +35,11 @@
 | `simuai` | 万象实验室 | 网页跨平台 | Windows：现代浏览器 | macOS：现代浏览器 | [网页体验](https://wthpein010-dev.github.io/ai-application-hub/projects/simuai/index.html)；公开版从 30 个受控实验中本地匹配，不调用远程模型 |
 | `brick-character-copy-preview` | 砖块角色文案预览 | 工程在线体验 | Windows：现代浏览器 | macOS：现代浏览器 | [网页体验](https://wthpein010-dev.github.io/ai-application-hub/projects/brick-character-copy-preview/index.html)；提供表格审阅、角色形象与游戏内详情同步预览 |
 | `gamespec-relay` | 需求接力站 | 原生双平台 | Windows： [微软版下载](https://github.com/wthpein010-dev/ai-application-hub/releases/download/gamespec-relay-v1.1.0/xuqiu-jielizhan-windows-x64.zip)，x64，96,045,541 字节，SHA-256 `CB68B16071C6218540DA7DCABEF43CA83060B8C6A1A74142119A78068228D424` | macOS： [苹果电脑版下载](https://github.com/wthpein010-dev/ai-application-hub/releases/download/gamespec-relay-v1.1.0/xuqiu-jielizhan-macos.zip)，arm64/x64，256,143,029 字节，SHA-256 `A9CC65AF32F17DA61DA0E8350F744C9D2AE6A6735BE066CC01591C20D711F861` | [项目页](https://wthpein010-dev.github.io/ai-application-hub/projects/gamespec-relay/index.html)；`.github/workflows/build-gamespec-relay-release.yml` 的 Release Run `32442113814` 完成三平台构建、架构核对、临时签名、包校验和真实启动；Mac 公网清单见 `docs/audits/evidence/2026-08-07-macos-download-manifest.json`。 |
+| `v-curve-tool` | V曲线对比工具 | 原生双平台 | Windows： [Wins下载](https://github.com/wthpein010-dev/ai-application-hub/releases/download/v-curve-tool-v1.2.0/V曲线对比工具-1.2.0-开箱即用-Windows-x64.zip)，x64，99,701,539 字节，SHA-256 `443855838911F4DB9C97514550630FBC77730B77EF1A6E366B02F3098953B0DE`，未代码签名 | macOS： [Mac下载](https://github.com/wthpein010-dev/ai-application-hub/releases/download/v-curve-tool-v1.2.0/V-Curve-Comparison-Tool-1.2.0-macOS.zip)，arm64/x64，261,378,127 字节，SHA-256 `F992C85AFAFC207D5C2B76220D2297C6AF4829C58DC6A3794414E1208A9D22C4` | [项目页](https://wthpein010-dev.github.io/ai-application-hub/projects/v-curve-tool/index.html)；Release Run [`33152604613`](https://github.com/wthpein010-dev/ai-application-hub/actions/runs/33152604613) 完成 93 项测试、双架构构建、ad-hoc 深度签名与严格校验、62 个随包关卡文件检查及 5 秒真实启动；不可变元数据见 `projects/v-curve-tool/release-manifest.json`。 |
 | `x-ai-codex-radar` | AI / Codex 雷达 | 网页跨平台 | Windows：现代浏览器 | macOS：现代浏览器 | [公开演示](https://wthpein010-dev.github.io/ai-application-hub/projects/x-ai-codex-radar/index.html)；无需登录的交互页明确使用示例数据，私有实时采集入口需 ChatGPT 登录；不提供虚假桌面安装包 |
 
 ## 结论
 
-- 29 个项目都可在 Windows 与 macOS 上通过网页查看或体验。
-- 5 个项目提供经过验证的原生 Windows/macOS 成品；飞书插件提供同一份跨平台浏览器扩展。
+- 30 个项目都可在 Windows 与 macOS 上通过网页查看或体验。
+- 6 个项目提供经过验证的原生 Windows/macOS 成品；飞书插件提供同一份跨平台浏览器扩展。
 - 其余项目不再显示来源码、Unity 工程、WebGL 压缩包或占位 ZIP 形式的伪系统下载。

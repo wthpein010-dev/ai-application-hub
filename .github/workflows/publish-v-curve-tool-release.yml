@@ -1,0 +1,137 @@
+name: Publish the verified V Curve macOS release
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - feat/v-curve-tool-20260828
+      - main
+    paths:
+      - ".github/workflows/publish-v-curve-tool-release.yml"
+      - "tests/v-curve-tool-release-workflow.test.mjs"
+
+permissions:
+  actions: read
+  contents: write
+
+concurrency:
+  group: publish-v-curve-tool-v1.2.0
+  cancel-in-progress: false
+
+env:
+  ARTIFACT_RUN_ID: "33152604613"
+  ARTIFACT_NAME: v-curve-tool-macos-release
+  RELEASE_TAG: v-curve-tool-v1.2.0
+  EXPECTED_SOURCE_SHA: 1700462f5f12c5aff874862e74da02d38ffea4a8
+  EXPECTED_ARCHIVE: V-Curve-Comparison-Tool-1.2.0-macOS.zip
+  EXPECTED_ARCHIVE_BYTES: "261378127"
+  EXPECTED_ARCHIVE_SHA256: F992C85AFAFC207D5C2B76220D2297C6AF4829C58DC6A3794414E1208A9D22C4
+
+jobs:
+  publish:
+    name: Promote the immutable Mac artifact
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download the previously verified artifact
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          run_json="$(gh run view "$ARTIFACT_RUN_ID" --repo "$GITHUB_REPOSITORY" --json conclusion,headSha,status)"
+          RUN_JSON="$run_json" node - <<'NODE'
+          const run = JSON.parse(process.env.RUN_JSON);
+          if (run.status !== "completed" || run.conclusion !== "success") {
+            throw new Error(`artifact run is not a completed success: ${JSON.stringify(run)}`);
+          }
+          if (run.headSha !== process.env.EXPECTED_SOURCE_SHA) {
+            throw new Error(`artifact run source drift: ${run.headSha}`);
+          }
+          NODE
+          mkdir release-assets
+          gh run download "$ARTIFACT_RUN_ID" \
+            --repo "$GITHUB_REPOSITORY" \
+            --name "$ARTIFACT_NAME" \
+            --dir release-assets
+
+      - name: Verify provenance, bytes and digest
+        shell: bash
+        run: |
+          set -euo pipefail
+          node - <<'NODE'
+          const { createHash } = require("node:crypto");
+          const { readFileSync, statSync } = require("node:fs");
+          const { join } = require("node:path");
+          const root = "release-assets";
+          const archive = join(root, process.env.EXPECTED_ARCHIVE);
+          const metadata = JSON.parse(readFileSync(join(root, "v-curve-tool-macos-release.json"), "utf8"));
+          const expected = {
+            version: "1.2.0",
+            sourceCommit: process.env.EXPECTED_SOURCE_SHA,
+            asset: process.env.EXPECTED_ARCHIVE,
+            bytes: Number(process.env.EXPECTED_ARCHIVE_BYTES),
+            sha256: process.env.EXPECTED_ARCHIVE_SHA256,
+            architectures: ["arm64", "x64"],
+            bundledFiles: 62,
+          };
+          if (JSON.stringify(metadata) !== JSON.stringify(expected)) {
+            throw new Error(`artifact metadata drift: ${JSON.stringify(metadata)}`);
+          }
+          if (statSync(archive).size !== expected.bytes) {
+            throw new Error(`archive byte drift: ${statSync(archive).size}`);
+          }
+          const digest = createHash("sha256").update(readFileSync(archive)).digest("hex").toUpperCase();
+          if (digest !== expected.sha256) throw new Error(`archive digest drift: ${digest}`);
+          const recordedDigest = readFileSync(`${archive}.sha256.txt`, "utf8").trim().split(/\s+/u)[0].toUpperCase();
+          if (recordedDigest !== expected.sha256) {
+            throw new Error(`recorded digest drift: ${recordedDigest}`);
+          }
+          NODE
+
+      - name: Upload only when the immutable assets are absent
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          gh release view "$RELEASE_TAG" --repo "$GITHUB_REPOSITORY" >/dev/null
+          tag_sha="$(gh api "repos/$GITHUB_REPOSITORY/git/ref/tags/$RELEASE_TAG" --jq '.object.sha')"
+          test "$tag_sha" = "$EXPECTED_SOURCE_SHA"
+
+          mapfile -t expected_assets <<EOF
+          $EXPECTED_ARCHIVE
+          $EXPECTED_ARCHIVE.sha256.txt
+          v-curve-tool-macos-release.json
+          EOF
+          assets_json="$(gh release view "$RELEASE_TAG" --repo "$GITHUB_REPOSITORY" --json assets)"
+          existing_count="$(ASSETS_JSON="$assets_json" node - <<'NODE'
+          const expected = new Set([
+            process.env.EXPECTED_ARCHIVE,
+            `${process.env.EXPECTED_ARCHIVE}.sha256.txt`,
+            "v-curve-tool-macos-release.json",
+          ]);
+          const release = JSON.parse(process.env.ASSETS_JSON);
+          process.stdout.write(String(release.assets.filter((asset) => expected.has(asset.name)).length));
+          NODE
+          )"
+
+          if [[ "$existing_count" = "0" ]]; then
+            gh release upload "$RELEASE_TAG" \
+              "release-assets/$EXPECTED_ARCHIVE" \
+              "release-assets/$EXPECTED_ARCHIVE.sha256.txt" \
+              "release-assets/v-curve-tool-macos-release.json" \
+              --repo "$GITHUB_REPOSITORY"
+          elif [[ "$existing_count" = "3" ]]; then
+            mkdir existing-assets
+            for asset in "${expected_assets[@]}"; do
+              gh release download "$RELEASE_TAG" \
+                --repo "$GITHUB_REPOSITORY" \
+                --pattern "$asset" \
+                --dir existing-assets
+              cmp --silent "release-assets/$asset" "existing-assets/$asset"
+            done
+            echo "The immutable Mac release assets already match; no upload was required."
+          else
+            echo "The Release contains a partial V curve Mac asset set; refusing to overwrite it." >&2
+            exit 1
+          fi

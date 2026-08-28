@@ -839,6 +839,30 @@ const defaultApps = [
     polish: 9
   },
   {
+    id: "v-curve-tool",
+    name: "V曲线对比工具",
+    category: "项目开发",
+    status: "engineering",
+    badge: "工程体验",
+    brief: "导入 Paws JSON 关卡，即可与固定的《羊了个羊》900121 结构并排生成连续 V 曲线、河道上下界与关键诊断。",
+    problem: "关卡层数和砖量只能说明规模，难以直接判断开局宽度、中盘断崖与后段窄口，也缺少与成熟样本一致口径的对照。",
+    aiUse: "工具完全离线，按 Paws 两两配对与暂存槽规则执行确定性河道搜索和 Monte Carlo 仿真；Windows 与 macOS 包均内置已确认的 31 个关卡。",
+    folder: "./projects/v-curve-tool/",
+    entry: "./projects/v-curve-tool/index.html",
+    video: "./projects/v-curve-tool/video/index.html",
+    package: "https://github.com/wthpein010-dev/ai-application-hub/releases/download/v-curve-tool-v1.2.0/V曲线对比工具-1.2.0-开箱即用-Windows-x64.zip",
+    platforms: {
+      web: { href: "./projects/v-curve-tool/index.html", label: "演示" },
+      windows: { href: "https://github.com/wthpein010-dev/ai-application-hub/releases/download/v-curve-tool-v1.2.0/V曲线对比工具-1.2.0-开箱即用-Windows-x64.zip", label: "Wins下载" },
+      mac: { href: "https://github.com/wthpein010-dev/ai-application-hub/releases/download/v-curve-tool-v1.2.0/V-Curve-Comparison-Tool-1.2.0-macOS.zip", label: "Mac下载" }
+    },
+    tags: ["V曲线", "关卡分析", "羊了个羊", "Windows", "macOS"],
+    speed: 9,
+    impact: 9,
+    risk: 8,
+    polish: 9
+  },
+  {
     id: "gamespec-relay",
     name: "需求接力站",
     category: "游戏研发效率工具",
@@ -1603,8 +1627,11 @@ function renderActions(app, stopPropagation = false, mode = "default") {
   const windowsActionLabel = `${app.name} Wins下载`;
   const macActionLabel = `${app.name} Mac下载`;
   const iosActionLabel = `${app.name} iOS安装`;
+  const windows = platformValue(app, "windows") || app.package;
+  const mac = platformValue(app, "mac");
+  const ios = platformValue(app, "ios");
   const engineeringVideoLink = app.video ? `<a data-action="video" data-icon="&#9654;" href="${escapeHtml(projectHref(videoHref(app)))}" aria-label="${escapeHtml(videoActionLabel)}"${stop}>介绍视频</a>` : "";
-  if (mode === "engineering") {
+  if (mode === "engineering" && !windows && !mac && !ios) {
     const webLink = web ? `<a class="primary-link" data-action="web" data-icon="&#8599;" href="${escapeHtml(projectHref(web))}" aria-label="${escapeHtml(webActionLabel)}"${stop}>网页预览</a>` : "";
     return `
       <div class="card-actions actions-engineering">
@@ -1613,9 +1640,6 @@ function renderActions(app, stopPropagation = false, mode = "default") {
       </div>
     `;
   }
-  const windows = platformValue(app, "windows") || app.package;
-  const mac = platformValue(app, "mac");
-  const ios = platformValue(app, "ios");
   const windowsDownload = isDirectPackageHref(windows) ? " download" : "";
   const macDownload = isDirectPackageHref(mac) ? " download" : "";
   const webLink = web ? `<a class="primary-link" data-action="web" data-icon="&#8599;" href="${escapeHtml(projectHref(web))}" aria-label="${escapeHtml(webActionLabel)}"${stop}>网页预览</a>` : "";
