@@ -85,6 +85,26 @@
         "arm64",
         "x64"
       ]
+    },
+    {
+      "id": "codex-multi-thread-workbench",
+      "name": "Codex 多线程工作台",
+      "kind": "native",
+      "catalogUrl": "https://wthpein010-dev.github.io/ai-application-hub/projects/codex-multi-thread-workbench/download/mac/",
+      "artifacts": {
+        "arm64": {
+          "url": "https://wthpein010-dev.github.io/ai-application-hub/projects/codex-multi-thread-workbench/download/mac/",
+          "bytes": 40728015,
+          "sha256": "78236D324655D80AC391CF34C51167605732732CDA6A3FCE8DA7024550FC3112",
+          "manifestUrl": "https://wthpein010-dev.github.io/ai-application-hub/projects/codex-multi-thread-workbench/download/mac/manifest-arm64.json"
+        },
+        "x64": {
+          "url": "https://wthpein010-dev.github.io/ai-application-hub/projects/codex-multi-thread-workbench/download/mac/",
+          "bytes": 42095878,
+          "sha256": "465A7A5203635869ACEB0CB0D0B27CA5E4B83EEEFDDE1475D2722068ACD0C8D4",
+          "manifestUrl": "https://wthpein010-dev.github.io/ai-application-hub/projects/codex-multi-thread-workbench/download/mac/manifest-x64.json"
+        }
+      }
     }
   ]
 }
