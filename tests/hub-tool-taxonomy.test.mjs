@@ -120,6 +120,7 @@ test("application cards use six concise public tool types", () => {
       "codex-habit-tool",
       "clickflow",
       "pureshrink",
+      "codex-multi-thread-workbench",
     ],
     content: ["travel-generator"],
   };

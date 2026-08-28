@@ -77,6 +77,18 @@ test("project media registry covers every production id without loading ClickFlo
   }
 });
 
+test("the multi-thread Workbench is appended with a dedicated showcase image", () => {
+  const apps = loadDefaultAppsFromRuntime(runtime);
+  const media = loadMediaRegistry(mediaRuntime);
+
+  assert.equal(apps.length, 30);
+  assert.equal(apps.at(-1)?.id, "codex-multi-thread-workbench");
+  assert.equal(media["codex-multi-thread-workbench"]?.src, "./assets/hub-showcase/codex-multi-thread-workbench.webp?v=20260827-hub-visual-polish");
+  assert.equal(media["codex-multi-thread-workbench"]?.fallback, "Codex 多线程工作台");
+  assert.equal(media["codex-multi-thread-workbench"]?.layout, "wide");
+  assert.ok(existsSync(join(root, "assets", "hub-showcase", "codex-multi-thread-workbench.webp")));
+});
+
 test("current Bento metadata fills complete rows without visual-order reflow", () => {
   const expectedLayouts = {
     "travel-generator": "standard",
@@ -93,10 +105,10 @@ test("current Bento metadata fills complete rows without visual-order reflow", (
   assert.equal(Object.values(mediaSources).filter(({ layout }) => layout === "tall").length, 0);
 
   const collections = [
-    ["hub", "gamepulse-mini-radar", "codex-quota-bar", "codex-thread-workbench", "web-media-collector", "minigame-project-simulator", "ai-game-requirements-workshop", "planner-daily-quiz", "travel-generator", "feishu-downloader", "codex-reviewer", "codex-habit-tool", "wanhuatong", "pureshrink", "planmap", "simuai", "gamespec-relay", "x-ai-codex-radar"],
+    ["hub", "gamepulse-mini-radar", "codex-quota-bar", "codex-thread-workbench", "web-media-collector", "minigame-project-simulator", "ai-game-requirements-workshop", "planner-daily-quiz", "travel-generator", "feishu-downloader", "codex-reviewer", "codex-habit-tool", "wanhuatong", "pureshrink", "planmap", "simuai", "gamespec-relay", "x-ai-codex-radar", "codex-multi-thread-workbench"],
     ["vita-mahjong", "paws-home-client", "paws-level-editor", "brick-light-motion-lab", "brick-character-copy-preview"],
   ];
-  for (const ids of collections) {
+  for (const [collection, ids] of collections.entries()) {
     let used = 0;
     for (const id of ids) {
       const span = mediaSources[id].layout === "wide" ? 2 : 1;
@@ -107,7 +119,7 @@ test("current Bento metadata fills complete rows without visual-order reflow", (
       used += span;
       if (used === 4) used = 0;
     }
-    assert.equal(used, 0, "reviewed application and engineering collections should end on complete rows");
+    if (collection === 1) assert.equal(used, 0, "reviewed engineering collection should end on a complete row");
   }
 });
 

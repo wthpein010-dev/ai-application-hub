@@ -289,4 +289,14 @@ globalThis.HUB_PROJECT_MEDIA = Object.freeze({
     accent: "#f59e0b",
     visualKind: "data",
   }),
+  "codex-multi-thread-workbench": Object.freeze({
+    src: "./assets/hub-showcase/codex-multi-thread-workbench.webp?v=20260827-hub-visual-polish",
+    alt: "Codex 多线程工作台功能画面",
+    position: "center",
+    layout: "wide",
+    fallback: "Codex 多线程工作台",
+    feature: "多线程会话、消息直发与拖拽布局",
+    accent: "#0f766e",
+    visualKind: "product",
+  }),
 });
