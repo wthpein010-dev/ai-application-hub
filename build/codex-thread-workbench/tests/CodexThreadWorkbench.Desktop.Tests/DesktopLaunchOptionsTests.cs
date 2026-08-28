@@ -12,12 +12,12 @@ public sealed class DesktopLaunchOptionsTests
     }
 
     [Fact]
-    public void FromArgs_DefaultLaunch_UsesConfirmationOverlay()
+    public void FromArgs_DefaultLaunch_UsesDesktopWorkbench()
     {
         var options = DesktopLaunchOptions.FromArgs([]);
 
-        Assert.Equal(DesktopLaunchMode.ConfirmationOverlay, options.Mode);
-        Assert.False(options.ShowWorkbenchWindow);
+        Assert.Equal(DesktopLaunchMode.Workbench, options.Mode);
+        Assert.True(options.ShowWorkbenchWindow);
     }
 
     [Fact]
@@ -36,5 +36,16 @@ public sealed class DesktopLaunchOptionsTests
 
         Assert.Equal(DesktopLaunchMode.Workbench, options.Mode);
         Assert.True(options.ShowWorkbenchWindow);
+    }
+
+    [Fact]
+    public void ConfirmationAutomation_IsAvailableOnlyInOverlayMode()
+    {
+        Assert.True(new DesktopLaunchOptions(
+            DesktopLaunchMode.ConfirmationOverlay).SupportsConfirmationAutomation);
+        Assert.False(new DesktopLaunchOptions(
+            DesktopLaunchMode.Workbench).SupportsConfirmationAutomation);
+        Assert.False(new DesktopLaunchOptions(
+            DesktopLaunchMode.FloatingLauncher).SupportsConfirmationAutomation);
     }
 }

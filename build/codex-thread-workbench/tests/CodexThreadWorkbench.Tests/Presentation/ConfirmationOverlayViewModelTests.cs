@@ -1,6 +1,7 @@
 using CodexThreadWorkbench.Confirmation;
 using CodexThreadWorkbench.Infrastructure;
 using CodexThreadWorkbench.Models;
+using CodexThreadWorkbench.Persistence;
 using CodexThreadWorkbench.Presentation;
 
 namespace CodexThreadWorkbench.Tests.Presentation;
@@ -28,6 +29,262 @@ public sealed class ConfirmationOverlayViewModelTests
             .Select(index => Candidate($"thread-{index}", $"message-{index}"))
             .ToArray());
         Assert.Equal("99+", viewModel.BadgeText);
+    }
+
+    [Fact]
+    public async Task InitializeAsync_PersistedAutoConfirm_ConfirmsExistingCandidate()
+    {
+        var candidate = Candidate("thread-1", "message-1");
+        var monitor = new FakeConfirmationMonitor(candidate);
+        var client = ClientWith(WaitingState("thread-1", "message-1"));
+        var fallback = new RecordingFallback((threadId, text) =>
+        {
+            var state = client.ThreadStates[threadId];
+            client.ThreadStates[threadId] = state with
+            {
+                Messages = state.Messages
+                    .Append(new ChatMessage("auto-user", ChatRole.User, text))
+                    .ToArray()
+            };
+        });
+        var settings = new RecordingAutomationSettingsStore(enabled: true);
+        await using var viewModel = new ConfirmationOverlayViewModel(
+            client,
+            monitor,
+            new ConfirmationDetector(),
+            fallback,
+            automationSettingsStore: settings);
+
+        await viewModel.InitializeAsync();
+        await WaitForAsync(() => fallback.Calls.Count == 1);
+
+        Assert.True(viewModel.IsAutoConfirmEnabled);
+        Assert.Equal("自动确认已开启", viewModel.AutoConfirmText);
+        Assert.Empty(viewModel.Items);
+        Assert.Equal([("thread-1", "message-1")], monitor.Handled);
+    }
+
+    [Fact]
+    public async Task SetAutoConfirmEnabledAsync_PersistsBeforeConfirmingWhileInputIsGuarded()
+    {
+        var candidate = Candidate("thread-1", "message-1");
+        var monitor = new FakeConfirmationMonitor(candidate);
+        var client = ClientWith(WaitingState("thread-1", "message-1"));
+        var fallback = new RecordingFallback((threadId, text) =>
+        {
+            var state = client.ThreadStates[threadId];
+            client.ThreadStates[threadId] = state with
+            {
+                Messages = state.Messages
+                    .Append(new ChatMessage("auto-user", ChatRole.User, text))
+                    .ToArray()
+            };
+        });
+        var settings = new RecordingAutomationSettingsStore(enabled: false);
+        await using var viewModel = new ConfirmationOverlayViewModel(
+            client,
+            monitor,
+            new ConfirmationDetector(),
+            fallback,
+            automationSettingsStore: settings);
+        await viewModel.InitializeAsync();
+        viewModel.SetInteractionArmed(false);
+
+        await viewModel.SetAutoConfirmEnabledAsync(true);
+        await WaitForAsync(() => fallback.Calls.Count == 1);
+
+        Assert.Equal([true], settings.SavedValues);
+        Assert.True(viewModel.IsAutoConfirmEnabled);
+        Assert.Empty(viewModel.Items);
+    }
+
+    [Fact]
+    public async Task EnabledAutoConfirm_ConfirmsCandidateThatAppearsLater()
+    {
+        var monitor = new FakeConfirmationMonitor();
+        var client = ClientWith();
+        var fallback = new RecordingFallback((threadId, text) =>
+        {
+            var state = client.ThreadStates[threadId];
+            client.ThreadStates[threadId] = state with
+            {
+                Messages = state.Messages
+                    .Append(new ChatMessage("auto-user", ChatRole.User, text))
+                    .ToArray()
+            };
+        });
+        await using var viewModel = new ConfirmationOverlayViewModel(
+            client,
+            monitor,
+            new ConfirmationDetector(),
+            fallback,
+            automationSettingsStore: new RecordingAutomationSettingsStore(true));
+        await viewModel.InitializeAsync();
+        client.ThreadStates["thread-1"] = WaitingState("thread-1", "message-1");
+
+        monitor.Push(Candidate("thread-1", "message-1"));
+        await WaitForAsync(() => fallback.Calls.Count == 1);
+
+        Assert.Empty(viewModel.Items);
+        Assert.Equal([("thread-1", "message-1")], monitor.Handled);
+    }
+
+    [Fact]
+    public async Task FailedAutoConfirm_DoesNotLoopOrRetrySameCandidateOnRefresh()
+    {
+        var candidate = Candidate("thread-1", "message-1");
+        var monitor = new FakeConfirmationMonitor(candidate);
+        var client = ClientWith(WaitingState("thread-1", "message-1"));
+        var fallback = new FailingRecordingFallback();
+        await using var viewModel = new ConfirmationOverlayViewModel(
+            client,
+            monitor,
+            new ConfirmationDetector(),
+            fallback,
+            automationSettingsStore: new RecordingAutomationSettingsStore(true));
+
+        await viewModel.InitializeAsync();
+        await WaitForAsync(() => Assert.Single(viewModel.Items).HasError);
+        monitor.Push(candidate);
+        await Task.Delay(80);
+
+        Assert.Equal(1, fallback.Calls);
+        Assert.True(Assert.Single(viewModel.Items).HasError);
+        Assert.Equal("自动确认失败", Assert.Single(viewModel.Items).ErrorText);
+    }
+
+    [Fact]
+    public async Task SettingsFailure_LeavesAutomationOffAndRequestsVisibleAttention()
+    {
+        var monitor = new FakeConfirmationMonitor();
+        await using var viewModel = new ConfirmationOverlayViewModel(
+            ClientWith(),
+            monitor,
+            new ConfirmationDetector(),
+            automationSettingsStore: new FailingAutomationSettingsStore());
+
+        await viewModel.SetAutoConfirmEnabledAsync(true);
+
+        Assert.False(viewModel.IsAutoConfirmEnabled);
+        Assert.True(viewModel.HasAutoConfirmError);
+        Assert.True(viewModel.RequiresAttention);
+        Assert.Equal("自动确认设置异常 · 请检查", viewModel.CountText);
+        Assert.Contains("设置保存失败", viewModel.AutoConfirmErrorText);
+    }
+
+    [Fact]
+    public async Task DisableAutoConfirm_TakesEffectBeforePersistenceCompletes()
+    {
+        var candidates = new[]
+        {
+            Candidate("thread-1", "message-1"),
+            Candidate("thread-2", "message-2")
+        };
+        var monitor = new FakeConfirmationMonitor(candidates);
+        var client = ClientWith(
+            WaitingState("thread-1", "message-1"),
+            WaitingState("thread-2", "message-2"));
+        var fallback = new BlockingRecordingFallback(client);
+        var settings = new BlockingDisableAutomationSettingsStore();
+        await using var viewModel = new ConfirmationOverlayViewModel(
+            client,
+            monitor,
+            new ConfirmationDetector(),
+            fallback,
+            automationSettingsStore: settings);
+
+        await viewModel.InitializeAsync();
+        await fallback.FirstSendStarted.Task.WaitAsync(TimeSpan.FromSeconds(1));
+        var disabling = viewModel.SetAutoConfirmEnabledAsync(false);
+        await settings.SaveStarted.Task.WaitAsync(TimeSpan.FromSeconds(1));
+
+        try
+        {
+            Assert.False(viewModel.IsAutoConfirmEnabled);
+            fallback.FirstSendCompletion.TrySetResult();
+            await WaitForAsync(() => monitor.Handled.Count == 1);
+            await Task.Delay(50);
+            Assert.Single(fallback.Calls);
+        }
+        finally
+        {
+            fallback.FirstSendCompletion.TrySetResult();
+            settings.SaveCompletion.TrySetResult();
+            await disabling;
+        }
+    }
+
+    [Fact]
+    public async Task FailedDisable_KeepsAutomationOffAndDoesNotStartTheNextCandidate()
+    {
+        var candidates = new[]
+        {
+            Candidate("thread-1", "message-1"),
+            Candidate("thread-2", "message-2")
+        };
+        var monitor = new FakeConfirmationMonitor(candidates);
+        var client = ClientWith(
+            WaitingState("thread-1", "message-1"),
+            WaitingState("thread-2", "message-2"));
+        var fallback = new BlockingRecordingFallback(client);
+        var settings = new FailingDisableAutomationSettingsStore();
+        await using var viewModel = new ConfirmationOverlayViewModel(
+            client,
+            monitor,
+            new ConfirmationDetector(),
+            fallback,
+            automationSettingsStore: settings);
+
+        await viewModel.InitializeAsync();
+        await fallback.FirstSendStarted.Task.WaitAsync(TimeSpan.FromSeconds(1));
+        try
+        {
+            await viewModel.SetAutoConfirmEnabledAsync(false);
+
+            Assert.False(viewModel.IsAutoConfirmEnabled);
+            Assert.True(viewModel.HasAutoConfirmError);
+            fallback.FirstSendCompletion.TrySetResult();
+            await WaitForAsync(() => monitor.Handled.Count == 1);
+            await Task.Delay(50);
+            Assert.Single(fallback.Calls);
+        }
+        finally
+        {
+            fallback.FirstSendCompletion.TrySetResult();
+        }
+    }
+
+    [Fact]
+    public async Task DisposeAsync_CancelsAndWaitsForAnInFlightAutomaticDelivery()
+    {
+        var candidate = Candidate("thread-1", "message-1");
+        var monitor = new FakeConfirmationMonitor(candidate);
+        var client = ClientWith(WaitingState("thread-1", "message-1"));
+        var fallback = new BlockingRecordingFallback(client);
+        var viewModel = new ConfirmationOverlayViewModel(
+            client,
+            monitor,
+            new ConfirmationDetector(),
+            fallback,
+            automationSettingsStore: new RecordingAutomationSettingsStore(true));
+
+        await viewModel.InitializeAsync();
+        await fallback.FirstSendStarted.Task.WaitAsync(TimeSpan.FromSeconds(1));
+        try
+        {
+            var disposal = viewModel.DisposeAsync().AsTask();
+
+            await fallback.CancellationObserved.Task.WaitAsync(TimeSpan.FromSeconds(1));
+            await disposal.WaitAsync(TimeSpan.FromSeconds(1));
+
+            Assert.Single(fallback.Calls);
+            Assert.False(Assert.Single(viewModel.Items).HasError);
+        }
+        finally
+        {
+            fallback.FirstSendCompletion.TrySetResult();
+            await viewModel.DisposeAsync();
+        }
     }
 
     private static readonly DateTimeOffset UpdatedAt =
@@ -601,6 +858,17 @@ public sealed class ConfirmationOverlayViewModelTests
         Assert.True(client.ReadCalls.GetValueOrDefault(threadId) >= expected);
     }
 
+    private static async Task WaitForAsync(Func<bool> condition)
+    {
+        var deadline = DateTimeOffset.UtcNow.AddSeconds(2);
+        while (!condition() && DateTimeOffset.UtcNow < deadline)
+        {
+            await Task.Delay(10);
+        }
+
+        Assert.True(condition());
+    }
+
     private sealed class RecordingFallback(
         Action<string, string>? onSend = null) : IConfirmationMessageFallback
     {
@@ -628,6 +896,9 @@ public sealed class ConfirmationOverlayViewModelTests
         public TaskCompletionSource FirstSendCompletion { get; } =
             new(TaskCreationOptions.RunContinuationsAsynchronously);
 
+        public TaskCompletionSource CancellationObserved { get; } =
+            new(TaskCreationOptions.RunContinuationsAsynchronously);
+
         public async Task SendAsync(
             string threadId,
             string text,
@@ -637,7 +908,15 @@ public sealed class ConfirmationOverlayViewModelTests
             if (Calls.Count == 1)
             {
                 FirstSendStarted.TrySetResult();
-                await FirstSendCompletion.Task.WaitAsync(cancellationToken);
+                try
+                {
+                    await FirstSendCompletion.Task.WaitAsync(cancellationToken);
+                }
+                catch (OperationCanceledException)
+                {
+                    CancellationObserved.TrySetResult();
+                    throw;
+                }
             }
 
             var state = client.ThreadStates[threadId];
@@ -650,6 +929,91 @@ public sealed class ConfirmationOverlayViewModelTests
                         text))
                     .ToArray()
             };
+        }
+    }
+
+    private sealed class FailingRecordingFallback : IConfirmationMessageFallback
+    {
+        public int Calls { get; private set; }
+
+        public Task SendAsync(
+            string threadId,
+            string text,
+            CancellationToken cancellationToken = default)
+        {
+            Calls++;
+            throw new IOException("自动确认失败");
+        }
+    }
+
+    private sealed class RecordingAutomationSettingsStore(bool enabled) :
+        IConfirmationAutomationSettingsStore
+    {
+        public List<bool> SavedValues { get; } = [];
+
+        public Task<bool> LoadEnabledAsync(
+            CancellationToken cancellationToken = default) =>
+            Task.FromResult(enabled);
+
+        public Task SaveEnabledAsync(
+            bool value,
+            CancellationToken cancellationToken = default)
+        {
+            SavedValues.Add(value);
+            enabled = value;
+            return Task.CompletedTask;
+        }
+    }
+
+    private sealed class FailingAutomationSettingsStore :
+        IConfirmationAutomationSettingsStore
+    {
+        public Task<bool> LoadEnabledAsync(
+            CancellationToken cancellationToken = default) =>
+            Task.FromResult(false);
+
+        public Task SaveEnabledAsync(
+            bool value,
+            CancellationToken cancellationToken = default) =>
+            throw new IOException("settings locked");
+    }
+
+    private sealed class BlockingDisableAutomationSettingsStore :
+        IConfirmationAutomationSettingsStore
+    {
+        public TaskCompletionSource SaveStarted { get; } =
+            new(TaskCreationOptions.RunContinuationsAsynchronously);
+
+        public TaskCompletionSource SaveCompletion { get; } =
+            new(TaskCreationOptions.RunContinuationsAsynchronously);
+
+        public Task<bool> LoadEnabledAsync(
+            CancellationToken cancellationToken = default) =>
+            Task.FromResult(true);
+
+        public async Task SaveEnabledAsync(
+            bool value,
+            CancellationToken cancellationToken = default)
+        {
+            Assert.False(value);
+            SaveStarted.TrySetResult();
+            await SaveCompletion.Task.WaitAsync(cancellationToken);
+        }
+    }
+
+    private sealed class FailingDisableAutomationSettingsStore :
+        IConfirmationAutomationSettingsStore
+    {
+        public Task<bool> LoadEnabledAsync(
+            CancellationToken cancellationToken = default) =>
+            Task.FromResult(true);
+
+        public Task SaveEnabledAsync(
+            bool value,
+            CancellationToken cancellationToken = default)
+        {
+            Assert.False(value);
+            throw new IOException("settings locked while disabling");
         }
     }
 

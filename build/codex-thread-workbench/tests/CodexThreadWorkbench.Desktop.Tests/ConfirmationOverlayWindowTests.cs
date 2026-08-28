@@ -1,6 +1,7 @@
 using CodexThreadWorkbench.Codex;
 using CodexThreadWorkbench.Confirmation;
 using CodexThreadWorkbench.Models;
+using CodexThreadWorkbench.Persistence;
 using CodexThreadWorkbench.Presentation;
 using Avalonia.Input;
 using Avalonia.Interactivity;
@@ -252,6 +253,66 @@ public sealed class ConfirmationOverlayWindowTests
     }
 
     [AvaloniaFact]
+    public async Task AutoConfirmToggle_RejectsProgrammaticClick_ButAcceptsOnePointerClick()
+    {
+        var monitor = new PushMonitor();
+        await using var viewModel = new ConfirmationOverlayViewModel(
+            new NoopClient(),
+            monitor,
+            new ConfirmationDetector());
+        var window = new ConfirmationOverlayWindow();
+        window.Attach(viewModel);
+        await WaitForAsync(() => window.IsVisible);
+        var toggle = window.FindControl<ToggleSwitch>("AutoConfirmToggle");
+        Assert.NotNull(toggle);
+
+        toggle.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+        await Task.Delay(20);
+        Assert.False(viewModel.IsAutoConfirmEnabled);
+        Assert.False(toggle.IsChecked);
+
+        var point = toggle.TranslatePoint(
+            new Point(toggle.Bounds.Width / 2, toggle.Bounds.Height / 2),
+            window)!.Value;
+        window.MouseDown(point, MouseButton.Left, RawInputModifiers.None);
+        window.MouseUp(point, MouseButton.Left, RawInputModifiers.None);
+
+        await WaitForAsync(() => viewModel.IsAutoConfirmEnabled);
+        Assert.True(toggle.IsChecked);
+        Assert.Equal("自动确认已开启", viewModel.AutoConfirmText);
+        window.CloseForShutdown();
+    }
+
+    [AvaloniaFact]
+    public async Task AutoConfirmToggle_SaveFailureRestoresTheOffState()
+    {
+        var monitor = new PushMonitor();
+        await using var viewModel = new ConfirmationOverlayViewModel(
+            new NoopClient(),
+            monitor,
+            new ConfirmationDetector(),
+            automationSettingsStore: new FailingAutomationSettingsStore());
+        var window = new ConfirmationOverlayWindow();
+        window.Attach(viewModel);
+        await WaitForAsync(() => window.IsVisible);
+        var toggle = window.FindControl<ToggleSwitch>("AutoConfirmToggle");
+        Assert.NotNull(toggle);
+        var point = toggle.TranslatePoint(
+            new Point(toggle.Bounds.Width / 2, toggle.Bounds.Height / 2),
+            window)!.Value;
+
+        window.MouseDown(point, MouseButton.Left, RawInputModifiers.None);
+        window.MouseUp(point, MouseButton.Left, RawInputModifiers.None);
+
+        await WaitForAsync(() => viewModel.HasAutoConfirmError);
+        await WaitForAsync(() => toggle.IsChecked == false);
+        Assert.False(viewModel.IsAutoConfirmEnabled);
+        Assert.False(toggle.IsChecked);
+        Assert.True(viewModel.RequiresAttention);
+        window.CloseForShutdown();
+    }
+
+    [AvaloniaFact]
     public async Task Close_WithoutExplicitShutdown_KeepsOverlayVisible()
     {
         var monitor = new PushMonitor();
@@ -384,6 +445,19 @@ public sealed class ConfirmationOverlayWindowTests
             throw new NotSupportedException();
 
         public ValueTask DisposeAsync() => ValueTask.CompletedTask;
+    }
+
+    private sealed class FailingAutomationSettingsStore :
+        IConfirmationAutomationSettingsStore
+    {
+        public Task<bool> LoadEnabledAsync(
+            CancellationToken cancellationToken = default) =>
+            Task.FromResult(false);
+
+        public Task SaveEnabledAsync(
+            bool value,
+            CancellationToken cancellationToken = default) =>
+            throw new IOException("settings locked");
     }
 
     private sealed class ClickRecordingClient : ICodexThreadClient

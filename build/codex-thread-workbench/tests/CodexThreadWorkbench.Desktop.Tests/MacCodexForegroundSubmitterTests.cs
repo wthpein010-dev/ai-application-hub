@@ -81,6 +81,33 @@ public sealed class MacCodexForegroundSubmitterTests
     }
 
     [Fact]
+    public async Task SubmitAsync_CompletesWithoutPumpingTheCallingSynchronizationContext()
+    {
+        var runner = new BlockingFirstProcessRunner(
+            new PlatformProcessResult(0, "OK:com.openai.chat\n", string.Empty));
+        var submitter = new MacCodexForegroundSubmitter(runner);
+        var context = new NonPumpingSynchronizationContext();
+        var previousContext = SynchronizationContext.Current;
+        Task submission;
+        try
+        {
+            SynchronizationContext.SetSynchronizationContext(context);
+            submission = submitter.SubmitAsync();
+        }
+        finally
+        {
+            SynchronizationContext.SetSynchronizationContext(previousContext);
+        }
+
+        runner.FirstCompletion.TrySetResult(
+            new PlatformProcessResult(0, "OK:com.openai.chat\n", string.Empty));
+        await submission.WaitAsync(TimeSpan.FromSeconds(1));
+
+        Assert.Equal(2, runner.Requests.Count);
+        Assert.Equal(0, context.PostCount);
+    }
+
+    [Fact]
     public async Task SubmitAsync_PreservesTheTaskWhenAccessibilityIsDenied()
     {
         var runner = new RecordingProcessRunner(
@@ -94,6 +121,7 @@ public sealed class MacCodexForegroundSubmitterTests
             () => submitter.SubmitAsync());
 
         Assert.Contains("辅助功能", error.Message);
+        Assert.Contains("Codex 多线程工作台", error.Message);
         Assert.Contains("消息没有提交", error.Message);
     }
 
@@ -162,6 +190,39 @@ public sealed class MacCodexForegroundSubmitterTests
             cancellationToken.ThrowIfCancellationRequested();
             Requests.Add(request);
             return Task.FromResult(_results.Dequeue());
+        }
+    }
+
+    private sealed class BlockingFirstProcessRunner(
+        params PlatformProcessResult[] remainingResults) : IPlatformProcessRunner
+    {
+        private readonly Queue<PlatformProcessResult> _remainingResults =
+            new(remainingResults);
+
+        public TaskCompletionSource<PlatformProcessResult> FirstCompletion { get; } =
+            new(TaskCreationOptions.RunContinuationsAsynchronously);
+
+        public List<PlatformProcessRequest> Requests { get; } = [];
+
+        public Task<PlatformProcessResult> RunAsync(
+            PlatformProcessRequest request,
+            CancellationToken cancellationToken = default)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            Requests.Add(request);
+            return Requests.Count == 1
+                ? FirstCompletion.Task.WaitAsync(cancellationToken)
+                : Task.FromResult(_remainingResults.Dequeue());
+        }
+    }
+
+    private sealed class NonPumpingSynchronizationContext : SynchronizationContext
+    {
+        public int PostCount { get; private set; }
+
+        public override void Post(SendOrPostCallback d, object? state)
+        {
+            PostCount++;
         }
     }
 }

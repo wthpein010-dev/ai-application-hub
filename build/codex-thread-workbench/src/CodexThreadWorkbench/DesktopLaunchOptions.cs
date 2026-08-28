@@ -15,6 +15,9 @@ public sealed record DesktopLaunchOptions(DesktopLaunchMode Mode)
 
     public bool ShowWorkbenchWindow => Mode == DesktopLaunchMode.Workbench;
 
+    public bool SupportsConfirmationAutomation =>
+        Mode == DesktopLaunchMode.ConfirmationOverlay;
+
     public static DesktopLaunchOptions FromArgs(IEnumerable<string>? args)
     {
         var values = args?.ToArray() ?? [];
@@ -33,6 +36,6 @@ public sealed record DesktopLaunchOptions(DesktopLaunchMode Mode)
             return new DesktopLaunchOptions(DesktopLaunchMode.FloatingLauncher);
         }
 
-        return new DesktopLaunchOptions(DesktopLaunchMode.ConfirmationOverlay);
+        return new DesktopLaunchOptions(DesktopLaunchMode.Workbench);
     }
 }

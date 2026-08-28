@@ -23,7 +23,7 @@
           PointerEntered="OverlaySurface_OnPointerEntered"
           PointerExited="OverlaySurface_OnPointerExited">
     <Grid RowDefinitions="Auto,Auto,*,Auto">
-      <Grid Grid.Row="0" ColumnDefinitions="*,Auto">
+      <Grid Grid.Row="0" ColumnDefinitions="*,Auto,Auto">
         <StackPanel x:Name="DragHandle"
                     Grid.Column="0"
                     Background="Transparent"
@@ -49,8 +49,19 @@
                      FontWeight="SemiBold"
                      Text="{Binding CountText}" />
         </StackPanel>
+        <ToggleSwitch x:Name="AutoConfirmToggle"
+                      Grid.Column="1"
+                      Margin="0,0,12,0"
+                      VerticalAlignment="Center"
+                      OffContent="自动确认已关闭"
+                      OnContent="自动确认已开启"
+                      IsChecked="{Binding IsAutoConfirmEnabled, Mode=OneWay}"
+                      IsEnabled="{Binding CanToggleAutoConfirm}"
+                      Click="AutoConfirmToggle_OnClick"
+                      PointerExited="ActionButton_OnPointerExited"
+                      ToolTip.Tip="开启后，新出现的待确认任务会自动执行确认继续" />
         <Button x:Name="ConfirmAllButton"
-                Grid.Column="1"
+                Grid.Column="2"
                 Classes="primary"
                 Click="ConfirmAllButton_OnClick"
                 Content="{Binding ConfirmAllText}"
@@ -59,17 +70,29 @@
                 PointerExited="ActionButton_OnPointerExited" />
       </Grid>
 
-      <Border Grid.Row="1"
-              Margin="0,12,0,0"
-              Padding="10,7"
-              Background="#FFF4E6"
-              CornerRadius="7"
-              IsVisible="{Binding HasMonitorError}">
-        <TextBlock Foreground="#9A5B18"
-                   FontSize="11"
-                   Text="{Binding MonitorErrorText}"
-                   TextWrapping="Wrap" />
-      </Border>
+      <StackPanel Grid.Row="1">
+        <Border Margin="0,12,0,0"
+                Padding="10,7"
+                Background="#FFF4E6"
+                CornerRadius="7"
+                IsVisible="{Binding HasMonitorError}">
+          <TextBlock Foreground="#9A5B18"
+                     FontSize="11"
+                     Text="{Binding MonitorErrorText}"
+                     TextWrapping="Wrap" />
+        </Border>
+
+        <Border Margin="0,12,0,0"
+                Padding="10,7"
+                Background="#FFF4E6"
+                CornerRadius="7"
+                IsVisible="{Binding HasAutoConfirmError}">
+          <TextBlock Foreground="#9A5B18"
+                     FontSize="11"
+                     Text="{Binding AutoConfirmErrorText}"
+                     TextWrapping="Wrap" />
+        </Border>
+      </StackPanel>
 
       <ScrollViewer Grid.Row="2"
                     MaxHeight="560"

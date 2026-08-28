@@ -20,7 +20,7 @@ public interface ICodexForegroundSubmitter
         Func<CancellationToken, Task<bool>> isCurrentAsync,
         CancellationToken cancellationToken = default)
     {
-        await SubmitAsync(cancellationToken);
+        await SubmitAsync(cancellationToken).ConfigureAwait(false);
         return true;
     }
 }
@@ -56,8 +56,10 @@ public sealed class CodexDesktopMessageFallback(
         ArgumentException.ThrowIfNullOrWhiteSpace(text);
         var deepLink = $"codex://threads/{Uri.EscapeDataString(threadId)}" +
                        $"?prompt={Uri.EscapeDataString(text)}";
-        await _launcher.OpenAsync(deepLink, cancellationToken);
-        await _submitter.SubmitAsync(cancellationToken);
+        await _launcher.OpenAsync(deepLink, cancellationToken)
+            .ConfigureAwait(false);
+        await _submitter.SubmitAsync(cancellationToken)
+            .ConfigureAwait(false);
     }
 
     public async Task<bool> SendIfCurrentAsync(
@@ -71,10 +73,11 @@ public sealed class CodexDesktopMessageFallback(
         ArgumentNullException.ThrowIfNull(isCurrentAsync);
         var deepLink = $"codex://threads/{Uri.EscapeDataString(threadId)}" +
                        $"?prompt={Uri.EscapeDataString(text)}";
-        await _launcher.OpenAsync(deepLink, cancellationToken);
+        await _launcher.OpenAsync(deepLink, cancellationToken)
+            .ConfigureAwait(false);
         return await _submitter.SubmitIfCurrentAsync(
             isCurrentAsync,
-            cancellationToken);
+            cancellationToken).ConfigureAwait(false);
     }
 }
 
@@ -171,7 +174,7 @@ public sealed class WindowsCodexForegroundSubmitter : ICodexForegroundSubmitter
     {
         await SubmitIfCurrentAsync(
             _ => Task.FromResult(true),
-            cancellationToken);
+            cancellationToken).ConfigureAwait(false);
     }
 
     public async Task<bool> SubmitIfCurrentAsync(
@@ -198,11 +201,12 @@ public sealed class WindowsCodexForegroundSubmitter : ICodexForegroundSubmitter
                     requiresColdSettle
                         ? ColdPrefillSettleDelay
                         : WarmPrefillSettleDelay,
-                    cancellationToken);
+                    cancellationToken).ConfigureAwait(false);
                 if (codexWindow == _automation.GetForegroundWindow() &&
                     _automation.IsCodexDesktopWindow(codexWindow))
                 {
-                    if (!await isCurrentAsync(cancellationToken))
+                    if (!await isCurrentAsync(cancellationToken)
+                            .ConfigureAwait(false))
                     {
                         return false;
                     }
@@ -224,7 +228,8 @@ public sealed class WindowsCodexForegroundSubmitter : ICodexForegroundSubmitter
                 }
             }
 
-            await _delay(PollInterval, cancellationToken);
+            await _delay(PollInterval, cancellationToken)
+                .ConfigureAwait(false);
         }
 
         throw new InvalidOperationException(

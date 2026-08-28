@@ -194,8 +194,10 @@ test("the compatibility matrix covers every public card and its delivery evidenc
       assert.ok(row.includes(app.name), `${app.id} name`);
     }
     if (app.id === "codex-multi-thread-workbench") {
-      assert.match(row, /macOS：[^|]*待真实 runner 验证/u, "new Workbench macOS release remains pending real-runner verification");
-      assert.doesNotMatch(row, /arm64\/x64|清单记录分片/u, "new Workbench row must not claim ungenerated macOS manifests");
+      assert.match(row, /macOS：[^|]*arm64\/x64/u, "new Workbench records both real-runner architectures");
+      assert.match(row, /manifest-arm64\.json/u, "new Workbench records the arm64 manifest");
+      assert.match(row, /manifest-x64\.json/u, "new Workbench records the x64 manifest");
+      assert.doesNotMatch(row, /待真实 runner 验证/u, "new Workbench is activated only after real-runner verification");
     }
     assert.match(row, new RegExp(`\\| ${expectedType} \\|`), `${app.id} delivery type`);
     assert.match(row, /Windows/, `${app.id} Windows statement`);
@@ -227,6 +229,11 @@ test("the compatibility matrix covers every public card and its delivery evidenc
     "gamespec-relay": [
       ".github/workflows/build-gamespec-relay-release.yml",
       "docs/audits/evidence/2026-08-07-macos-download-manifest.json",
+    ],
+    "codex-multi-thread-workbench": [
+      "projects/codex-multi-thread-workbench/download/manifest.json",
+      "projects/codex-multi-thread-workbench/download/mac/manifest-arm64.json",
+      "projects/codex-multi-thread-workbench/download/mac/manifest-x64.json",
     ],
   };
 

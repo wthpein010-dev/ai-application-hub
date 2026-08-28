@@ -170,7 +170,7 @@ export function validateMacDownloadManifest({ apps, manifest }) {
     if (record.kind === "extension") {
       validateExtension(record);
       extension.push(record);
-    } else if (record.id === "codex-thread-workbench") {
+    } else if (["codex-thread-workbench", "codex-multi-thread-workbench"].includes(record.id)) {
       validateWorkbenchNative(record);
       native.push(record);
     } else {

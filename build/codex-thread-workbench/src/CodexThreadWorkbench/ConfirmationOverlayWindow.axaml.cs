@@ -129,6 +129,13 @@ public partial class ConfirmationOverlayWindow : Window
         object? sender,
         System.ComponentModel.PropertyChangedEventArgs e)
     {
+        if (e.PropertyName == nameof(
+                ConfirmationOverlayViewModel.IsAutoConfirmEnabled) &&
+            this.FindControl<ToggleSwitch>("AutoConfirmToggle") is { } toggle)
+        {
+            toggle.IsChecked = _viewModel?.IsAutoConfirmEnabled == true;
+        }
+
         if (e.PropertyName == nameof(ConfirmationOverlayViewModel.RequiresAttention))
         {
             if (_viewModel?.RequiresAttention == true)
@@ -309,6 +316,16 @@ public partial class ConfirmationOverlayWindow : Window
         }
 
         _viewModel?.ConfirmAllCommand.Execute(null);
+    }
+
+    private void AutoConfirmToggle_OnClick(object? sender, RoutedEventArgs e)
+    {
+        if (sender is not Button button || !TryConsumePointerAction(button))
+        {
+            return;
+        }
+
+        _viewModel?.ToggleAutoConfirmCommand.Execute(null);
     }
 
     private void IgnoreButton_OnClick(object? sender, RoutedEventArgs e)
