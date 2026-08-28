@@ -11,6 +11,7 @@ on:
       - "app-20260706-restore-games.js"
       - "scripts/audit-public-macos-downloads.sh"
       - "scripts/macos-download-manifest.mjs"
+      - "scripts/test-codex-confirmation-bar-macos-package.sh"
       - "tests/helpers/default-apps.mjs"
       - "build/codex-thread-workbench/scripts/test-macos-package.sh"
       - "build/codex-thread-workbench/src/CodexThreadWorkbench/CodexThreadWorkbench.csproj"
@@ -48,6 +49,7 @@ jobs:
             app-20260706-restore-games.js
             scripts/audit-public-macos-downloads.sh
             scripts/macos-download-manifest.mjs
+            scripts/test-codex-confirmation-bar-macos-package.sh
             tests/helpers/default-apps.mjs
             build/codex-thread-workbench/scripts/test-macos-package.sh
             build/codex-thread-workbench/src/CodexThreadWorkbench/CodexThreadWorkbench.csproj
@@ -79,6 +81,7 @@ jobs:
           set -euo pipefail
           chmod +x \
             scripts/audit-public-macos-downloads.sh \
+            scripts/test-codex-confirmation-bar-macos-package.sh \
             build/codex-thread-workbench/scripts/test-macos-package.sh
           scripts/audit-public-macos-downloads.sh \
             --arch "${{ matrix.arch }}" \

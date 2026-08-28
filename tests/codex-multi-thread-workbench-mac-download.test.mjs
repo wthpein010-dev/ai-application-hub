@@ -27,6 +27,97 @@ const workflowPath = join(
 );
 const execFileAsync = promisify(execFile);
 const sha256 = (bytes) => createHash("sha256").update(bytes).digest("hex").toUpperCase();
+const CRC32_TABLE = Uint32Array.from({ length: 256 }, (_, value) => {
+  let crc = value;
+  for (let bit = 0; bit < 8; bit += 1) crc = (crc & 1) ? 0xedb88320 ^ (crc >>> 1) : crc >>> 1;
+  return crc >>> 0;
+});
+
+function crc32(bytes) {
+  let crc = 0xffffffff;
+  for (const byte of bytes) crc = CRC32_TABLE[(crc ^ byte) & 0xff] ^ (crc >>> 8);
+  return (crc ^ 0xffffffff) >>> 0;
+}
+
+function createStoredZip(entries) {
+  const localRecords = [];
+  const centralRecords = [];
+  let localOffset = 0;
+  for (const entry of entries) {
+    const name = Buffer.from(entry.name, "utf8");
+    const data = Buffer.from(entry.data);
+    const checksum = crc32(data);
+    const local = Buffer.alloc(30 + name.length + data.length);
+    local.writeUInt32LE(0x04034b50, 0);
+    local.writeUInt16LE(20, 4);
+    local.writeUInt16LE(0x0800, 6);
+    local.writeUInt32LE(checksum, 14);
+    local.writeUInt32LE(data.length, 18);
+    local.writeUInt32LE(data.length, 22);
+    local.writeUInt16LE(name.length, 26);
+    name.copy(local, 30);
+    data.copy(local, 30 + name.length);
+    localRecords.push(local);
+
+    const central = Buffer.alloc(46 + name.length);
+    central.writeUInt32LE(0x02014b50, 0);
+    central.writeUInt16LE(0x0314, 4);
+    central.writeUInt16LE(20, 6);
+    central.writeUInt16LE(0x0800, 8);
+    central.writeUInt32LE(checksum, 16);
+    central.writeUInt32LE(data.length, 20);
+    central.writeUInt32LE(data.length, 24);
+    central.writeUInt16LE(name.length, 28);
+    central.writeUInt32LE(((entry.mode ?? 0o100644) << 16) >>> 0, 38);
+    central.writeUInt32LE(localOffset, 42);
+    name.copy(central, 46);
+    centralRecords.push(central);
+    localOffset += local.length;
+  }
+  const centralDirectory = Buffer.concat(centralRecords);
+  const end = Buffer.alloc(22);
+  end.writeUInt32LE(0x06054b50, 0);
+  end.writeUInt16LE(entries.length, 8);
+  end.writeUInt16LE(entries.length, 10);
+  end.writeUInt32LE(centralDirectory.length, 12);
+  end.writeUInt32LE(localOffset, 16);
+  return Buffer.concat([...localRecords, centralDirectory, end]);
+}
+
+function machO(architecture) {
+  const bytes = Buffer.alloc(32);
+  bytes.writeUInt32LE(0xfeedfacf, 0);
+  bytes.writeInt32LE(architecture === "arm64" ? 0x0100000c : 0x01000007, 4);
+  bytes.writeUInt32LE(2, 12);
+  return bytes;
+}
+
+function workbenchPlist({ displayName = "Codex 多线程工作台", version = "2.2.1" } = {}) {
+  return Buffer.from(`<?xml version="1.0" encoding="UTF-8"?>
+<plist version="1.0"><dict>
+<key>CFBundleDisplayName</key><string>${displayName}</string>
+<key>CFBundleExecutable</key><string>CodexThreadWorkbench</string>
+<key>CFBundleIdentifier</key><string>dev.wthpein010.codex-thread-workbench</string>
+<key>CFBundleShortVersionString</key><string>${version}</string>
+<key>CFBundleVersion</key><string>${version}</string>
+</dict></plist>`, "utf8");
+}
+
+function macAppZip(architecture, {
+  bundle = "CodexThreadWorkbench.app",
+  executableArchitecture = architecture,
+  displayName,
+  version,
+} = {}) {
+  return createStoredZip([
+    { name: `${bundle}/Contents/Info.plist`, data: workbenchPlist({ displayName, version }) },
+    {
+      name: `${bundle}/Contents/MacOS/CodexThreadWorkbench`,
+      data: machO(executableArchitecture),
+      mode: 0o100755,
+    },
+  ]);
+}
 
 async function temporaryDirectory(t, prefix) {
   const directory = await mkdtemp(join(tmpdir(), prefix));
@@ -45,6 +136,39 @@ async function runNode(script, args) {
       stdout: error.stdout || "",
     };
   }
+}
+
+async function writeArchitectureRelease(download, architecture, archive) {
+  await mkdir(join(download, "parts", architecture), { recursive: true });
+  const partPath = join(download, "parts", architecture, "part-000.bin");
+  await writeFile(partPath, archive);
+  await writeFile(
+    join(download, `manifest-${architecture}.json`),
+    `${JSON.stringify({
+      version: 1,
+      fileName: `CodexThreadWorkbench-macOS-${architecture}.app.zip`,
+      totalSize: archive.byteLength,
+      chunkSize: archive.byteLength,
+      sha256: sha256(archive),
+      parts: [{
+        index: 0,
+        path: `parts/${architecture}/part-000.bin`,
+        size: archive.byteLength,
+        sha256: sha256(archive),
+      }],
+    })}\n`,
+  );
+}
+
+async function writeActivationTargets(directory) {
+  const audit = join(directory, "macos-downloads.json");
+  const matrix = join(directory, "platform-matrix.md");
+  await writeFile(audit, '{"version":1,"downloads":[]}\n');
+  await writeFile(
+    matrix,
+    "| `codex-multi-thread-workbench` | Codex 多线程工作台 | 原生双平台 | Windows | macOS：待真实 runner 验证 | pending |\n",
+  );
+  return { audit, matrix };
 }
 
 test("Mac page offers independently verified Apple silicon and Intel downloads", async () => {
@@ -113,58 +237,18 @@ test("Mac splitter creates architecture-isolated manifests from exact package na
 test("Mac audit activation refuses a partial release and records both verified manifests", async (t) => {
   const directory = await temporaryDirectory(t, "multi-workbench-mac-activate-");
   const download = join(directory, "mac");
-  const audit = join(directory, "macos-downloads.json");
-  const matrix = join(directory, "platform-matrix.md");
   await mkdir(download, { recursive: true });
-  await writeFile(audit, '{"version":1,"downloads":[]}\n');
-  await writeFile(
-    matrix,
-    "| `codex-multi-thread-workbench` | Codex 多线程工作台 | 原生双平台 | Windows | macOS：待真实 runner 验证 | pending |\n",
-  );
+  const { audit, matrix } = await writeActivationTargets(directory);
 
-  const arm64 = Buffer.from("PK-arm64-real-runner-output");
-  await mkdir(join(download, "parts", "arm64"), { recursive: true });
-  await writeFile(join(download, "parts", "arm64", "part-000.bin"), arm64);
-  await writeFile(
-    join(download, "manifest-arm64.json"),
-    `${JSON.stringify({
-      version: 1,
-      fileName: "CodexThreadWorkbench-macOS-arm64.app.zip",
-      totalSize: arm64.byteLength,
-      chunkSize: arm64.byteLength,
-      sha256: sha256(arm64),
-      parts: [{
-        index: 0,
-        path: "parts/arm64/part-000.bin",
-        size: arm64.byteLength,
-        sha256: sha256(arm64),
-      }],
-    })}\n`,
-  );
+  const arm64 = macAppZip("arm64");
+  await writeArchitectureRelease(download, "arm64", arm64);
 
   const partial = await runNode(activator, [download, audit, matrix]);
   assert.notEqual(partial.code, 0);
   assert.match(partial.stderr, /manifest-x64\.json/);
 
-  const x64 = Buffer.from("PK-x64-real-runner-output");
-  await mkdir(join(download, "parts", "x64"), { recursive: true });
-  await writeFile(join(download, "parts", "x64", "part-000.bin"), x64);
-  await writeFile(
-    join(download, "manifest-x64.json"),
-    `${JSON.stringify({
-      version: 1,
-      fileName: "CodexThreadWorkbench-macOS-x64.app.zip",
-      totalSize: x64.byteLength,
-      chunkSize: x64.byteLength,
-      sha256: sha256(x64),
-      parts: [{
-        index: 0,
-        path: "parts/x64/part-000.bin",
-        size: x64.byteLength,
-        sha256: sha256(x64),
-      }],
-    })}\n`,
-  );
+  const x64 = macAppZip("x64");
+  await writeArchitectureRelease(download, "x64", x64);
 
   const activated = await runNode(activator, [download, audit, matrix]);
   assert.equal(activated.code, 0, activated.stderr);
@@ -178,6 +262,73 @@ test("Mac audit activation refuses a partial release and records both verified m
   assert.match(await readFile(matrix, "utf8"), /manifest-arm64\.json/);
   assert.match(await readFile(matrix, "utf8"), /manifest-x64\.json/);
   assert.doesNotMatch(await readFile(matrix, "utf8"), /待真实 runner 验证/);
+});
+
+test("Mac ZIP validation rejects malformed archives, wrong bundles, and wrong architectures", async (t) => {
+  const { validateWorkbenchMacZip } = await import(
+    "../scripts/lib/validated-workbench-macos-zip.mjs"
+  );
+  assert.doesNotThrow(() => validateWorkbenchMacZip(macAppZip("arm64"), "arm64"));
+  assert.doesNotThrow(() => validateWorkbenchMacZip(macAppZip("x64"), "x64"));
+
+  const invalid = [
+    ["PK junk", Buffer.from("PK-not-a-zip"), /central directory|end of central directory/i],
+    ["empty ZIP", createStoredZip([]), /no entries/i],
+    ["wrong bundle", macAppZip("arm64", { bundle: "Other.app" }), /CodexThreadWorkbench\.app/i],
+    ["wrong product", macAppZip("arm64", { displayName: "Other Product" }), /display name|identity/i],
+    ["wrong version", macAppZip("arm64", { version: "2.2.0" }), /version/i],
+    ["wrong architecture", macAppZip("arm64", { executableArchitecture: "x64" }), /arm64|cputype/i],
+  ];
+  for (const [label, archive, message] of invalid) {
+    assert.throws(() => validateWorkbenchMacZip(archive, "arm64"), message, label);
+  }
+
+  for (const [label, archive] of invalid) {
+    const directory = await temporaryDirectory(t, `multi-workbench-invalid-${label.replaceAll(" ", "-")}-`);
+    const download = join(directory, "mac");
+    await mkdir(download, { recursive: true });
+    const { audit, matrix } = await writeActivationTargets(directory);
+    await writeArchitectureRelease(download, "arm64", archive);
+    await writeArchitectureRelease(download, "x64", macAppZip("x64"));
+    const result = await runNode(activator, [download, audit, matrix]);
+    assert.notEqual(result.code, 0, `${label} must not activate`);
+    assert.deepEqual(JSON.parse(await readFile(audit, "utf8")).downloads, []);
+    assert.match(await readFile(matrix, "utf8"), /待真实 runner 验证/);
+  }
+});
+
+test("public Mac audit workflow checks out and enables every selected Workbench verifier", async () => {
+  const [workflow, audit] = await Promise.all([
+    readFile(join(root, ".github", "workflows", "audit-macos-downloads.yml"), "utf8"),
+    readFile(join(root, "scripts", "audit-public-macos-downloads.sh"), "utf8"),
+  ]);
+  const verifiers = [
+    "scripts/test-codex-confirmation-bar-macos-package.sh",
+    "build/codex-thread-workbench/scripts/test-macos-package.sh",
+  ];
+  for (const verifier of verifiers) {
+    assert.match(audit, new RegExp(verifier.replaceAll("/", "\\/")));
+    assert.equal(
+      workflow.split(verifier).length - 1,
+      3,
+      `${verifier} must be in trigger paths, sparse checkout, and chmod`,
+    );
+  }
+});
+
+test("legacy Confirmation Bar workflow builds from its immutable v2.1.8 snapshot", async () => {
+  const workflow = await readFile(
+    join(root, ".github", "workflows", "build-codex-thread-workbench.yml"),
+    "utf8",
+  );
+  const buildJob = workflow.slice(0, workflow.indexOf("  publish-pages-parts:"));
+  const publicationJob = workflow.slice(workflow.indexOf("  publish-pages-parts:"));
+  assert.match(buildJob, /uses:\s*actions\/checkout@v4[\s\S]*?ref:\s*fb3be183efb7ec195f4ebee426f9fbe679d9c768/);
+  assert.match(buildJob, /architecture:\s*arm64/);
+  assert.match(buildJob, /architecture:\s*x64/);
+  assert.match(buildJob, /CodexConfirmationBar-macOS-\$\{\{ matrix\.architecture \}\}\.app\.zip/);
+  assert.doesNotMatch(buildJob, /CodexThreadWorkbench-macOS-(?:arm64|x64)\.app\.zip/);
+  assert.doesNotMatch(publicationJob, /ref:\s*fb3be183efb7ec195f4ebee426f9fbe679d9c768/);
 });
 
 test("independent workflow verifies real apps before safely publishing both architectures", async () => {
@@ -205,7 +356,13 @@ test("independent workflow verifies real apps before safely publishing both arch
   assert.match(workflow, /activate-codex-multi-thread-workbench-macos\.mjs/);
   assert.match(workflow, /node scripts\/macos-download-manifest\.mjs --check/);
   assert.doesNotMatch(workflow, /node --test tests\/macos-download-manifest\.test\.mjs/);
-  assert.match(workflow, /git pull --rebase origin "\$\{GITHUB_REF_NAME\}"/);
+  assert.match(workflow, /git fetch --no-tags origin "\$\{GITHUB_REF_NAME\}"/);
+  assert.match(workflow, /remote_tip="\$\(git rev-parse FETCH_HEAD\)"/);
+  assert.match(workflow, /if \[\[ "\$\{remote_tip\}" != "\$\{GITHUB_SHA\}" \]\]/);
+  assert.match(workflow, /exit 1/);
+  assert.doesNotMatch(workflow, /git pull --rebase/);
+  assert.ok(workflow.indexOf("git fetch --no-tags") < workflow.indexOf("git commit -m"));
+  assert.ok(workflow.indexOf("git commit -m") < workflow.indexOf('git push origin "HEAD:${GITHUB_REF_NAME}"'));
   assert.match(workflow, /git push origin "HEAD:\$\{GITHUB_REF_NAME\}"/);
   assert.doesNotMatch(workflow, /git push[^\n]*--force/);
   assert.doesNotMatch(

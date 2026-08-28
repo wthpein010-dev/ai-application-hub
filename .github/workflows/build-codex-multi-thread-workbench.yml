@@ -140,6 +140,12 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
+          git fetch --no-tags origin "${GITHUB_REF_NAME}"
+          remote_tip="$(git rev-parse FETCH_HEAD)"
+          if [[ "${remote_tip}" != "${GITHUB_SHA}" ]]; then
+            echo "Publication branch moved from tested commit ${GITHUB_SHA} to ${remote_tip}; refusing to publish stale artifacts." >&2
+            exit 1
+          fi
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add \
@@ -153,5 +159,4 @@ jobs:
             exit 0
           fi
           git commit -m "release: publish verified multi-thread Workbench macOS packages"
-          git pull --rebase origin "${GITHUB_REF_NAME}"
           git push origin "HEAD:${GITHUB_REF_NAME}"

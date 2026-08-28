@@ -4,6 +4,7 @@ import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
 import { validateManifest } from "../projects/codex-multi-thread-workbench/download/download-core.js";
+import { validateWorkbenchMacZip } from "./lib/validated-workbench-macos-zip.mjs";
 
 const PUBLIC_ROOT = "https://wthpein010-dev.github.io/ai-application-hub/projects/codex-multi-thread-workbench/download/mac/";
 const ARCHITECTURES = ["arm64", "x64"];
@@ -29,7 +30,7 @@ async function verifiedArtifact(downloadDirectory, architecture) {
   if (archive.byteLength !== manifest.totalSize || sha256(archive) !== manifest.sha256) {
     throw new Error(`${manifestPath} does not reconstruct to its declared archive.`);
   }
-  if (archive.subarray(0, 2).toString("ascii") !== "PK") throw new Error(`${manifestPath} does not reconstruct a ZIP archive.`);
+  validateWorkbenchMacZip(archive, architecture);
   return manifest;
 }
 

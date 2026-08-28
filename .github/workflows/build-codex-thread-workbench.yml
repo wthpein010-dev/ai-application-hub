@@ -39,6 +39,7 @@ jobs:
       - name: Check out the build snapshot
         uses: actions/checkout@v4
         with:
+          ref: fb3be183efb7ec195f4ebee426f9fbe679d9c768
           sparse-checkout: |
             build/codex-thread-workbench
           sparse-checkout-cone-mode: false
