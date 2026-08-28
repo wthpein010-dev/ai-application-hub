@@ -47,7 +47,7 @@ try {
     assert.equal(await engineeringCard.count(), 1);
     assert.equal(await hub.locator('#appGrid article[data-app-id="brick-character-copy-preview"]').count(), 0);
     assert.equal(await engineeringCard.locator(".status-badge").textContent(), "工程体验");
-    assert.equal(await hub.locator("#engineeringGrid article[data-app-id]").last().getAttribute("data-app-id"), "brick-character-copy-preview");
+    assert.equal(await hub.locator("#engineeringGrid article[data-app-id]").last().getAttribute("data-app-id"), "trinket-market");
     await hub.close();
 
     const page = await browser.newPage({ viewport });

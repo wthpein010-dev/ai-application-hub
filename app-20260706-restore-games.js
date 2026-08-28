@@ -919,6 +919,30 @@ const defaultApps = [
     risk: 9,
     polish: 9
   },
+  {
+    id: "trinket-market",
+    name: "随身小物交易市场",
+    category: "游戏物品展示",
+    status: "engineering",
+    badge: "工程体验",
+    brief: "集中浏览砖块角色的随身小物，按数量、物品 ID 或中文名排序，并用苹果桌面式拖拽整理陈列顺序。",
+    problem: "持续增加的小物素材缺少统一目录、稳定物品 ID 和直观的获得数量对比，策划与美术难以快速查看热度和维护展示数据。",
+    aiUse: "AI 参与小物素材整理、透明像素视觉居中、密集响应式陈列、拖拽动效、可导入导出的本地编辑能力与自动化验证。",
+    folder: "./projects/trinket-market/",
+    entry: "./projects/trinket-market/index.html",
+    video: "./projects/trinket-market/video/index.html",
+    package: "",
+    platforms: {
+      web: { href: "./projects/trinket-market/index.html", label: "演示" },
+      windows: "",
+      mac: ""
+    },
+    tags: ["小物仓库", "获得数量", "拖拽排序", "公开编辑"],
+    speed: 10,
+    impact: 9,
+    risk: 9,
+    polish: 10
+  },
 ];
 
 let apps = loadApps();

@@ -81,8 +81,9 @@ test("the multi-thread Workbench is appended with a dedicated showcase image", (
   const apps = loadDefaultAppsFromRuntime(runtime);
   const media = loadMediaRegistry(mediaRuntime);
 
-  assert.equal(apps.length, 30);
-  assert.equal(apps.at(-1)?.id, "codex-multi-thread-workbench");
+  assert.equal(apps.length, 31);
+  const radarIndex = apps.findIndex(({ id }) => id === "x-ai-codex-radar");
+  assert.equal(apps.at(radarIndex + 1)?.id, "codex-multi-thread-workbench");
   assert.equal(media["codex-multi-thread-workbench"]?.src, "./assets/hub-showcase/codex-multi-thread-workbench.webp?v=20260827-hub-visual-polish");
   assert.equal(media["codex-multi-thread-workbench"]?.fallback, "Codex 多线程工作台");
   assert.equal(media["codex-multi-thread-workbench"]?.layout, "wide");
@@ -106,9 +107,9 @@ test("Bento metadata preserves order and permits the appended application to occ
 
   const collections = [
     ["hub", "gamepulse-mini-radar", "codex-quota-bar", "codex-thread-workbench", "web-media-collector", "minigame-project-simulator", "ai-game-requirements-workshop", "planner-daily-quiz", "travel-generator", "feishu-downloader", "codex-reviewer", "codex-habit-tool", "wanhuatong", "pureshrink", "planmap", "simuai", "gamespec-relay", "x-ai-codex-radar", "codex-multi-thread-workbench"],
-    ["vita-mahjong", "paws-home-client", "paws-level-editor", "brick-light-motion-lab", "brick-character-copy-preview"],
+    ["vita-mahjong", "paws-home-client", "paws-level-editor", "brick-light-motion-lab", "brick-character-copy-preview", "trinket-market"],
   ];
-  for (const [collection, ids] of collections.entries()) {
+  for (const ids of collections) {
     let used = 0;
     for (const id of ids) {
       const span = mediaSources[id].layout === "wide" ? 2 : 1;
@@ -119,7 +120,7 @@ test("Bento metadata preserves order and permits the appended application to occ
       used += span;
       if (used === 4) used = 0;
     }
-    if (collection === 1) assert.equal(used, 0, "reviewed engineering collection should end on a complete row");
+    assert.equal(used, 2, "reviewed collections should end with one intentional wide card");
   }
 });
 
@@ -222,7 +223,7 @@ test("browser smoke owns an independent literal catalog order oracle", () => {
   const expected = {
     apps: ["hub", "gamepulse-mini-radar", "codex-quota-bar", "codex-thread-workbench", "web-media-collector", "minigame-project-simulator", "ai-game-requirements-workshop", "planner-daily-quiz", "travel-generator", "feishu-downloader", "codex-reviewer", "codex-habit-tool", "wanhuatong", "pureshrink", "planmap", "simuai", "gamespec-relay", "x-ai-codex-radar", "codex-multi-thread-workbench"],
     games: ["zhuanglege-sha", "xiang-le-ge-xiang", "fill-what", "nang-keng-pai-pai-xiang", "icecream"],
-    engineering: ["vita-mahjong", "paws-home-client", "paws-level-editor", "brick-light-motion-lab", "brick-character-copy-preview"],
+    engineering: ["vita-mahjong", "paws-home-client", "paws-level-editor", "brick-light-motion-lab", "brick-character-copy-preview", "trinket-market"],
   };
   const oracle = /const expectedCollectionIds = \{([\s\S]*?)\n\};/u.exec(browserSmoke)?.[1] || "";
   for (const [collection, ids] of Object.entries(expected)) {
@@ -230,12 +231,12 @@ test("browser smoke owns an independent literal catalog order oracle", () => {
     assert.deepEqual(Array.from(literal.matchAll(/"([a-z0-9-]+)"/gu), ([, id]) => id), ids);
   }
   for (const expectation of [
-    "cardCount, 29",
-    "imageCount, 29",
-    "featureCount, 29",
-    ".count() === 29",
+    "cardCount, 30",
+    "imageCount, 30",
+    "featureCount, 30",
+    ".count() === 30",
   ]) assert.match(browserSmoke, new RegExp(expectation.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "u"));
-  assert.doesNotMatch(browserSmoke, /cardCount, 28|imageCount, 28|featureCount, 28|\.count\(\) === 28/u);
+  assert.doesNotMatch(browserSmoke, /cardCount, 29|imageCount, 29|featureCount, 29|\.count\(\) === 29/u);
   assert.match(browserSmoke, /const expectedNavigationIds = \[\s*\.\.\.expectedCollectionIds\.apps,\s*\.\.\.expectedCollectionIds\.games,\s*\.\.\.expectedCollectionIds\.engineering,\s*\];/u);
   assert.doesNotMatch(browserSmoke, /loadDefaultAppsFromRuntime|readFileSync\(join\(root, "app-20260706-restore-games\.js"\)/u);
 });
