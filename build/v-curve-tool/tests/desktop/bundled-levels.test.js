@@ -33,28 +33,30 @@ describe("bundled Editorlevel discovery", () => {
   });
 
   it("ignores the test override unless the caller explicitly allows it", () => {
+    const portableExecutableDirectory = path.resolve("fixtures", "portable-bundle");
     expect(bundledLevels.resolveBundledLevelDirectories).toBeTypeOf("function");
     expect(bundledLevels.resolveBundledLevelDirectories({
       allowOverride: false,
       overrideDirectory: "D:\\private",
-      portableExecutableDirectory: "E:\\bundle",
+      portableExecutableDirectory,
       executablePath: "C:\\temp\\tool.exe",
       isPackaged: true,
     })).toEqual([
-      path.resolve("E:\\bundle\\Editorlevel"),
-      path.resolve("E:\\bundle\\EditorLevels"),
+      path.join(portableExecutableDirectory, "Editorlevel"),
+      path.join(portableExecutableDirectory, "EditorLevels"),
     ]);
   });
 
   it("checks singular Editorlevel before plural EditorLevels beside the portable EXE", () => {
+    const portableExecutableDirectory = path.resolve("fixtures", "portable-bundle");
     expect(bundledLevels.resolveBundledLevelDirectories).toBeTypeOf("function");
     expect(bundledLevels.resolveBundledLevelDirectories({
-      portableExecutableDirectory: "E:\\bundle",
+      portableExecutableDirectory,
       executablePath: "C:\\temp\\tool.exe",
       isPackaged: true,
     })).toEqual([
-      path.resolve("E:\\bundle\\Editorlevel"),
-      path.resolve("E:\\bundle\\EditorLevels"),
+      path.join(portableExecutableDirectory, "Editorlevel"),
+      path.join(portableExecutableDirectory, "EditorLevels"),
     ]);
   });
 
