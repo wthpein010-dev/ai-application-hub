@@ -7,7 +7,7 @@ import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import test from "node:test";
 import { promisify } from "node:util";
-import { fileURLToPath } from "node:url";
+import { fileURLToPath, pathToFileURL } from "node:url";
 
 const root = dirname(dirname(fileURLToPath(import.meta.url)));
 const macRoot = join(
@@ -24,6 +24,11 @@ const workflowPath = join(
   ".github",
   "workflows",
   "build-codex-multi-thread-workbench.yml",
+);
+const sourceVerifier = join(
+  root,
+  "scripts",
+  "verify-codex-multi-thread-workbench-source.mjs",
 );
 const execFileAsync = promisify(execFile);
 const sha256 = (bytes) => createHash("sha256").update(bytes).digest("hex").toUpperCase();
@@ -392,6 +397,49 @@ test("independent workflow verifies real apps before safely publishing both arch
   assert.match(publicAudit, /codex-multi-thread-workbench/);
   assert.match(publicAudit, /test-codex-confirmation-bar-macos-package\.sh/);
   assert.match(publicAudit, /build\/codex-thread-workbench\/scripts\/test-macos-package\.sh/);
+});
+
+test("independent workflow executable-verifies the immutable source tree before Release tests", async () => {
+  const expectedCommit = "8e2126ba93a835e2e0e2864d83165b9358d995a1";
+  const expectedTree = "108cc3f9271d83573f010ba8f4c7dd67b70b41b9";
+  const helperPath = "scripts/verify-codex-multi-thread-workbench-source.mjs";
+  const workflow = await readFile(workflowPath, "utf8");
+  const { stdout } = await execFileAsync(
+    "git",
+    ["rev-parse", "HEAD:build/codex-thread-workbench"],
+    { cwd: root },
+  );
+  assert.equal(stdout.trim(), expectedTree);
+
+  assert.match(workflow, new RegExp(`WORKBENCH_SOURCE_COMMIT:\\s*${expectedCommit}`));
+  assert.match(workflow, new RegExp(`WORKBENCH_SOURCE_TREE:\\s*${expectedTree}`));
+  assert.equal(
+    workflow.split(helperPath).length - 1,
+    3,
+    "the verifier must be in trigger paths, build sparse checkout, and the build command",
+  );
+  const verificationIndex = workflow.indexOf(
+    'node ../../scripts/verify-codex-multi-thread-workbench-source.mjs "${GITHUB_SHA}" "${WORKBENCH_SOURCE_TREE}"',
+  );
+  assert.ok(verificationIndex >= 0, "the workflow must execute the source-tree verifier");
+  assert.ok(
+    verificationIndex < workflow.indexOf("dotnet test CodexThreadWorkbench.sln --configuration Release"),
+    "source identity must be verified before Release tests or builds",
+  );
+
+  const { verifyWorkbenchSourceTree } = await import(pathToFileURL(sourceVerifier));
+  assert.equal(
+    await verifyWorkbenchSourceTree({ repoRoot: root, commit: "HEAD", expectedTree }),
+    expectedTree,
+  );
+  await assert.rejects(
+    verifyWorkbenchSourceTree({
+      repoRoot: root,
+      commit: "HEAD",
+      expectedTree: "0000000000000000000000000000000000000000",
+    }),
+    /does not match expected tree/i,
+  );
 });
 
 test("public Mac manifests remain unavailable until the real workflow writes both", () => {

@@ -11,6 +11,7 @@ on:
       - "scripts/activate-codex-multi-thread-workbench-macos.mjs"
       - "scripts/lib/validated-workbench-macos-zip.mjs"
       - "scripts/split-codex-multi-thread-workbench-mac.mjs"
+      - "scripts/verify-codex-multi-thread-workbench-source.mjs"
       - "tests/codex-multi-thread-workbench-mac-download.test.mjs"
 
 permissions:
@@ -18,6 +19,7 @@ permissions:
 
 env:
   WORKBENCH_SOURCE_COMMIT: 8e2126ba93a835e2e0e2864d83165b9358d995a1
+  WORKBENCH_SOURCE_TREE: 108cc3f9271d83573f010ba8f4c7dd67b70b41b9
 
 concurrency:
   group: codex-multi-thread-workbench-macos-${{ github.ref }}
@@ -48,6 +50,7 @@ jobs:
         with:
           sparse-checkout: |
             build/codex-thread-workbench
+            scripts/verify-codex-multi-thread-workbench-source.mjs
           sparse-checkout-cone-mode: false
 
       - name: Set up .NET 8
@@ -59,6 +62,9 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 22
+
+      - name: Verify immutable source snapshot tree
+        run: node ../../scripts/verify-codex-multi-thread-workbench-source.mjs "${GITHUB_SHA}" "${WORKBENCH_SOURCE_TREE}"
 
       - name: Install the public Codex CLI
         run: npm install --global @openai/codex
