@@ -75,10 +75,10 @@
     },
     {
       "id": "gamespec-relay",
-      "name": "需求接力站",
+      "name": "游戏需求开工台",
       "kind": "native",
-      "catalogUrl": "https://github.com/wthpein010-dev/ai-application-hub/releases/download/gamespec-relay-v1.1.0/xuqiu-jielizhan-macos.zip",
-      "archiveUrl": "https://github.com/wthpein010-dev/ai-application-hub/releases/download/gamespec-relay-v1.1.0/xuqiu-jielizhan-macos.zip",
+      "catalogUrl": "https://github.com/wthpein010-dev/ai-application-hub/releases/download/gamespec-relay-v1.2.0/youxi-xuqiu-kaigongtai-macos.zip",
+      "archiveUrl": "https://github.com/wthpein010-dev/ai-application-hub/releases/download/gamespec-relay-v1.2.0/youxi-xuqiu-kaigongtai-macos.zip",
       "bytes": 256143029,
       "sha256": "A9CC65AF32F17DA61DA0E8350F744C9D2AE6A6735BE066CC01591C20D711F861",
       "architectures": [

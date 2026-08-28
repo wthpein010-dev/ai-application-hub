@@ -5,17 +5,17 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="color-scheme" content="dark" />
     <meta name="theme-color" content="#071512" />
-    <meta name="description" content="需求接力站把游戏团队讨论变成能开工、能验收的任务。" />
+    <meta name="description" content="游戏需求开工台把游戏讨论和文档拆成能开工、能验收的任务。" />
     <meta property="og:type" content="website" />
-    <meta property="og:title" content="需求接力站 · 游戏任务工作台" />
-    <meta property="og:description" content="把游戏讨论变成能开工、能验收的任务。" />
+    <meta property="og:title" content="游戏需求开工台 · 讨论完就能开工" />
+    <meta property="og:description" content="把游戏讨论和文档拆成能开工、能验收的任务。" />
     <meta property="og:image" content="https://wthpein010-dev.github.io/ai-application-hub/projects/gamespec-relay/og.png" />
     <meta name="twitter:card" content="summary_large_image" />
-    <meta name="twitter:title" content="需求接力站 · 游戏任务工作台" />
-    <meta name="twitter:description" content="把游戏讨论变成能开工、能验收的任务" />
+    <meta name="twitter:title" content="游戏需求开工台 · 讨论完就能开工" />
+    <meta name="twitter:description" content="把游戏讨论和文档拆成能开工、能验收的任务" />
     <meta name="twitter:image" content="https://wthpein010-dev.github.io/ai-application-hub/projects/gamespec-relay/og.png" />
     <link rel="icon" href="data:," />
-    <title>需求接力站</title>
+    <title>游戏需求开工台</title>
     <link rel="stylesheet" href="../../assets/subpage-shell.css" />
     <link rel="stylesheet" href="./shell.css" />
   </head>
@@ -25,9 +25,9 @@
       <span>返回主页</span>
     </a>
     <header class="topbar">
-      <a class="relay-wordmark" href="./index.html" aria-label="需求接力站演示首页">
-        <span class="relay-wordmark__mark" aria-hidden="true">接</span>
-        <span><strong>需求接力站</strong><small>把游戏讨论变成能开工、能验收的任务</small></span>
+      <a class="relay-wordmark" href="./index.html" aria-label="游戏需求开工台演示首页">
+        <span class="relay-wordmark__mark" aria-hidden="true">开</span>
+        <span><strong>游戏需求开工台</strong><small>把游戏讨论和文档拆成能开工、能验收的任务</small></span>
       </a>
       <div class="topbar-meta" aria-label="产品特性">
         <span><i aria-hidden="true"></i>离线可用</span>
@@ -35,16 +35,16 @@
       </div>
     </header>
     <main class="demo-frame-shell">
-      <div id="relayLoading" class="frame-loading" role="progressbar" aria-label="需求接力站加载进度" aria-valuemin="0" aria-valuemax="100" aria-valuenow="42">
+      <div id="relayLoading" class="frame-loading" role="progressbar" aria-label="游戏需求开工台加载进度" aria-valuemin="0" aria-valuemax="100" aria-valuenow="42">
         <div class="frame-loading__content">
-          <span class="loading-mark" aria-hidden="true">接</span>
-          <strong>正在建立游戏交付工作台</strong>
-          <span id="relayLoadingText">装载离线分析器与任务模板…</span>
+          <span class="loading-mark" aria-hidden="true">开</span>
+          <strong>正在准备游戏需求开工台</strong>
+          <span id="relayLoadingText">装载离线拆单与验收模板…</span>
           <i aria-hidden="true"><b id="relayLoadingBar"></b></i>
           <small id="relayLoadingValue">42%</small>
         </div>
       </div>
-      <iframe id="relayFrame" src="./app/index.html" title="需求接力站交互演示" loading="eager" fetchpriority="high"></iframe>
+      <iframe id="relayFrame" src="./app/index.html" title="游戏需求开工台交互演示" loading="eager" fetchpriority="high"></iframe>
     </main>
     <script>
       const frame = document.querySelector("#relayFrame");
@@ -58,7 +58,7 @@
         bar.style.width = `${amount}%`;
         value.textContent = `${amount}%`;
       }
-      progress(72, "准备首领二阶段演示内容…");
+      progress(72, "准备首领二阶段开工示例…");
       frame.addEventListener("load", () => {
         progress(100, "工作台已就绪");
         window.setTimeout(() => loading.classList.add("is-ready"), 180);
