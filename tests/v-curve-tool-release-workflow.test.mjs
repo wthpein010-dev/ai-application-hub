@@ -107,6 +107,32 @@ test("the publisher promotes the exact verified Mac artifact without overwriting
   assert.doesNotMatch(workflow, /--clobber/u);
 });
 
+test("the publisher anchors both packages to the committed manifest before explicitly publishing only a complete draft", async () => {
+  const workflow = await readFile(publisherWorkflowPath, "utf8");
+
+  assert.match(workflow, /RELEASE_ID:\s*378411760/u);
+  assert.match(workflow, /actions\/checkout@v4/u);
+  assert.match(workflow, /ref:\s*\$\{\{ inputs\.expected_source_sha \}\}/u);
+  assert.match(workflow, /projects\/v-curve-tool\/release-manifest\.json/u);
+  assert.match(workflow, /const manifest = JSON\.parse\(readFileSync\(/u);
+  assert.match(workflow, /manifest\.assets\.windows\.bytes/u);
+  assert.match(workflow, /manifest\.assets\.windows\.sha256/u);
+  assert.match(workflow, /manifest\.assets\.mac\.bytes/u);
+  assert.match(workflow, /manifest\.assets\.mac\.sha256/u);
+  assert.match(workflow, /EXPECTED_WINDOWS_ARCHIVE/u);
+  assert.match(workflow, /expectedAssetNames/u);
+  assert.match(workflow, /The Release does not contain the complete verified V curve asset set/u);
+  assert.match(
+    workflow,
+    /gh api --method PATCH "repos\/\$GITHUB_REPOSITORY\/releases\/\$RELEASE_ID" -f draft=false/u,
+  );
+  assert.ok(
+    workflow.indexOf("Verify the complete manifest-bound assets before publication")
+      < workflow.indexOf("gh api --method PATCH"),
+    "the Release must remain a draft until all manifest-bound assets are verified",
+  );
+});
+
 test("the Hub suite includes both root and Xiang Le Ge Xiang Node tests while excluding nested Vitest", async () => {
   const packageJson = JSON.parse(await readFile(hubPackagePath, "utf8"));
   const workflow = await readFile(hubVerificationWorkflowPath, "utf8");

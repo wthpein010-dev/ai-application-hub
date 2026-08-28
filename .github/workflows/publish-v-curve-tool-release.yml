@@ -24,14 +24,23 @@ env:
   ARTIFACT_RUN_ID: ${{ inputs.artifact_run_id }}
   ARTIFACT_NAME: v-curve-tool-macos-release
   RELEASE_TAG: v-curve-tool-v1.2.0
+  RELEASE_ID: 378411760
   EXPECTED_SOURCE_SHA: ${{ inputs.expected_source_sha }}
   EXPECTED_ARCHIVE: V-Curve-Comparison-Tool-1.2.0-macOS.zip
+  EXPECTED_WINDOWS_ARCHIVE: V-Curve-Comparison-Tool-1.2.0-Windows-x64.zip
 
 jobs:
   publish:
     name: Promote the immutable Mac artifact
     runs-on: ubuntu-latest
     steps:
+      - name: Check out the manifest committed by the artifact source
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.expected_source_sha }}
+          sparse-checkout: projects/v-curve-tool/release-manifest.json
+          sparse-checkout-cone-mode: false
+
       - name: Download the previously verified artifact
         env:
           GH_TOKEN: ${{ github.token }}
@@ -69,14 +78,21 @@ jobs:
           const root = "release-assets";
           const archive = join(root, process.env.EXPECTED_ARCHIVE);
           const metadata = JSON.parse(readFileSync(join(root, "v-curve-tool-macos-release.json"), "utf8"));
+          const manifest = JSON.parse(readFileSync("projects/v-curve-tool/release-manifest.json", "utf8"));
+          if (manifest.schemaVersion !== "v-curve-tool-release/1" || manifest.version !== "1.2.0") {
+            throw new Error(`unexpected release manifest: ${JSON.stringify(manifest)}`);
+          }
+          if (manifest.assets.mac.file !== process.env.EXPECTED_ARCHIVE) {
+            throw new Error(`manifest Mac asset drift: ${manifest.assets.mac.file}`);
+          }
           const expected = {
-            version: "1.2.0",
+            version: manifest.version,
             sourceCommit: process.env.EXPECTED_SOURCE_SHA,
             asset: process.env.EXPECTED_ARCHIVE,
-            bytes: metadata.bytes,
-            sha256: metadata.sha256,
-            architectures: ["arm64", "x64"],
-            bundledFiles: 62,
+            bytes: manifest.assets.mac.bytes,
+            sha256: manifest.assets.mac.sha256,
+            architectures: manifest.assets.mac.architectures,
+            bundledFiles: manifest.bundledLevels.files,
           };
           if (JSON.stringify(metadata) !== JSON.stringify(expected)) {
             throw new Error(`artifact metadata drift: ${JSON.stringify(metadata)}`);
@@ -101,6 +117,34 @@ jobs:
           }
           NODE
 
+      - name: Verify the committed Windows asset
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          gh release download "$RELEASE_TAG" \
+            --repo "$GITHUB_REPOSITORY" \
+            --pattern "$EXPECTED_WINDOWS_ARCHIVE" \
+            --dir release-assets
+          node - <<'NODE'
+          const { createHash } = require("node:crypto");
+          const { readFileSync, statSync } = require("node:fs");
+          const { join } = require("node:path");
+          const manifest = JSON.parse(readFileSync("projects/v-curve-tool/release-manifest.json", "utf8"));
+          const archive = join("release-assets", process.env.EXPECTED_WINDOWS_ARCHIVE);
+          if (manifest.assets.windows.file !== process.env.EXPECTED_WINDOWS_ARCHIVE) {
+            throw new Error(`manifest Windows asset drift: ${manifest.assets.windows.file}`);
+          }
+          if (statSync(archive).size !== manifest.assets.windows.bytes) {
+            throw new Error(`Windows archive byte drift: ${statSync(archive).size}`);
+          }
+          const digest = createHash("sha256").update(readFileSync(archive)).digest("hex").toUpperCase();
+          if (digest !== manifest.assets.windows.sha256) {
+            throw new Error(`Windows archive digest drift: ${digest}`);
+          }
+          NODE
+
       - name: Upload only when the immutable assets are absent
         env:
           GH_TOKEN: ${{ github.token }}
@@ -108,6 +152,14 @@ jobs:
         run: |
           set -euo pipefail
           gh release view "$RELEASE_TAG" --repo "$GITHUB_REPOSITORY" >/dev/null
+          release_json="$(gh api "repos/$GITHUB_REPOSITORY/releases/$RELEASE_ID")"
+          RELEASE_JSON="$release_json" node - <<'NODE'
+          const release = JSON.parse(process.env.RELEASE_JSON);
+          if (release.id !== Number(process.env.RELEASE_ID) || release.tag_name !== process.env.RELEASE_TAG) {
+            throw new Error(`unexpected release target: ${JSON.stringify(release)}`);
+          }
+          if (release.draft !== true) throw new Error("refusing to alter a Release that is already public");
+          NODE
           tag_sha="$(gh api "repos/$GITHUB_REPOSITORY/git/ref/tags/$RELEASE_TAG" --jq '.object.sha')"
           test "$tag_sha" = "$EXPECTED_SOURCE_SHA"
 
@@ -148,3 +200,83 @@ jobs:
             echo "The Release contains a partial V curve Mac asset set; refusing to overwrite it." >&2
             exit 1
           fi
+
+      - name: Verify the complete manifest-bound assets before publication
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          release_json="$(gh api "repos/$GITHUB_REPOSITORY/releases/$RELEASE_ID")"
+          RELEASE_JSON="$release_json" node - <<'NODE'
+          const release = JSON.parse(process.env.RELEASE_JSON);
+          const expectedAssetNames = new Set([
+            process.env.EXPECTED_WINDOWS_ARCHIVE,
+            process.env.EXPECTED_ARCHIVE,
+            `${process.env.EXPECTED_ARCHIVE}.sha256.txt`,
+            "v-curve-tool-macos-release.json",
+          ]);
+          const actualAssetNames = new Set(release.assets.map((asset) => asset.name));
+          if (release.id !== Number(process.env.RELEASE_ID) || release.tag_name !== process.env.RELEASE_TAG || release.draft !== true) {
+            throw new Error(`Release is not the expected draft: ${JSON.stringify(release)}`);
+          }
+          if (actualAssetNames.size !== expectedAssetNames.size
+            || ![...expectedAssetNames].every((asset) => actualAssetNames.has(asset))) {
+            throw new Error("The Release does not contain the complete verified V curve asset set");
+          }
+          NODE
+          mkdir published-assets
+          for asset in "$EXPECTED_WINDOWS_ARCHIVE" "$EXPECTED_ARCHIVE" "$EXPECTED_ARCHIVE.sha256.txt" v-curve-tool-macos-release.json; do
+            gh release download "$RELEASE_TAG" \
+              --repo "$GITHUB_REPOSITORY" \
+              --pattern "$asset" \
+              --dir published-assets
+          done
+          node - <<'NODE'
+          const { createHash } = require("node:crypto");
+          const { readFileSync, statSync } = require("node:fs");
+          const { join } = require("node:path");
+          const manifest = JSON.parse(readFileSync("projects/v-curve-tool/release-manifest.json", "utf8"));
+          const root = "published-assets";
+          const verifyArchive = (asset, expected) => {
+            const archive = join(root, asset);
+            if (statSync(archive).size !== expected.bytes) {
+              throw new Error(`${asset} byte drift: ${statSync(archive).size}`);
+            }
+            const digest = createHash("sha256").update(readFileSync(archive)).digest("hex").toUpperCase();
+            if (digest !== expected.sha256) throw new Error(`${asset} digest drift: ${digest}`);
+          };
+          verifyArchive(process.env.EXPECTED_WINDOWS_ARCHIVE, manifest.assets.windows);
+          verifyArchive(process.env.EXPECTED_ARCHIVE, manifest.assets.mac);
+          const metadata = JSON.parse(readFileSync(join(root, "v-curve-tool-macos-release.json"), "utf8"));
+          const expectedMetadata = {
+            version: manifest.version,
+            sourceCommit: process.env.EXPECTED_SOURCE_SHA,
+            asset: manifest.assets.mac.file,
+            bytes: manifest.assets.mac.bytes,
+            sha256: manifest.assets.mac.sha256,
+            architectures: manifest.assets.mac.architectures,
+            bundledFiles: manifest.bundledLevels.files,
+          };
+          if (JSON.stringify(metadata) !== JSON.stringify(expectedMetadata)) {
+            throw new Error(`published Mac metadata drift: ${JSON.stringify(metadata)}`);
+          }
+          const [recordedDigest, recordedName] = readFileSync(join(root, `${process.env.EXPECTED_ARCHIVE}.sha256.txt`), "utf8").trim().split(/\s+/u);
+          if (recordedDigest.toUpperCase() !== manifest.assets.mac.sha256 || recordedName !== manifest.assets.mac.file) {
+            throw new Error(`published Mac checksum drift: ${recordedDigest} ${recordedName}`);
+          }
+          NODE
+
+      - name: Publish only the complete verified draft Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          published_release="$(gh api --method PATCH "repos/$GITHUB_REPOSITORY/releases/$RELEASE_ID" -f draft=false)"
+          PUBLISHED_RELEASE="$published_release" node - <<'NODE'
+          const release = JSON.parse(process.env.PUBLISHED_RELEASE);
+          if (release.id !== Number(process.env.RELEASE_ID) || release.tag_name !== process.env.RELEASE_TAG || release.draft !== false) {
+            throw new Error(`Release publication drift: ${JSON.stringify(release)}`);
+          }
+          NODE
