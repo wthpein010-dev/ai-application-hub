@@ -72,6 +72,7 @@ jobs:
           plutil -lint "$app/Contents/Info.plist"
           file "$executable" | grep -q 'Mach-O'
           file "$executable" | grep -q '${{ matrix.expected-machine }}'
+          codesign --force --deep --sign - "$app"
           codesign --verify --deep --strict "$app"
           levels="$app/Contents/Resources/Editorlevel"
           test "$(find "$levels" -type f | wc -l | tr -d ' ')" = "62"
@@ -82,6 +83,8 @@ jobs:
           canonical_executable="$(cd "$(dirname "$executable")" && pwd -P)/$(basename "$executable")"
           pgrep -f "$canonical_executable"
           pkill -f "$canonical_executable" || true
+          rm -f "$archive"
+          ditto -c -k --sequesterRsrc --keepParent "$app" "$archive"
           shasum -a 256 "$archive" > "$archive.sha256.txt"
 
       - name: Upload the architecture package

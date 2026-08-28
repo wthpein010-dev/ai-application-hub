@@ -47,3 +47,16 @@ test("the release workflow builds and launches V curve on Apple silicon and Inte
   assert.match(workflow, /V-Curve-Comparison-Tool-1\.2\.0-macOS\.zip/u);
   assert.match(workflow, /actions\/upload-artifact@v4/u);
 });
+
+test("the release workflow uploads the ad-hoc signed macOS applications", async () => {
+  const workflow = await readFile(workflowPath, "utf8");
+  const sign = 'codesign --force --deep --sign - "$app"';
+  const verify = 'codesign --verify --deep --strict "$app"';
+  const rearchive = 'ditto -c -k --sequesterRsrc --keepParent "$app" "$archive"';
+
+  assert.ok(workflow.includes(sign), "the built app must receive an ad-hoc signature");
+  assert.ok(workflow.includes(verify), "the ad-hoc signature must be strictly verified");
+  assert.ok(workflow.includes(rearchive), "the signed app must replace the unsigned builder archive");
+  assert.ok(workflow.indexOf(sign) < workflow.indexOf(verify));
+  assert.ok(workflow.indexOf(verify) < workflow.indexOf(rearchive));
+});
