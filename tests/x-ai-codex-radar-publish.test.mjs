@@ -11,11 +11,12 @@ const runtime = readFileSync(join(root, "app-20260706-restore-games.js"), "utf8"
 const apps = loadDefaultAppsFromRuntime(runtime);
 const projectRoot = join(root, "projects", "x-ai-codex-radar");
 
-test("X intelligence forum is the final Hub tool with demo and video only", () => {
+test("X intelligence forum remains the final application tool before the engineering addition", () => {
   const radar = apps.find((app) => app.id === "x-ai-codex-radar");
 
   assert.ok(radar, "the Radar catalog card should exist");
-  assert.equal(apps.at(-1).id, "x-ai-codex-radar");
+  assert.equal(apps.at(-2).id, "x-ai-codex-radar");
+  assert.equal(apps.at(-1).id, "trinket-market");
   assert.equal(radar.name, "X 情报吧｜AI / Codex 雷达");
   assert.equal(radar.category, "AI 情报工具");
   assert.equal(radar.status, "assistant");

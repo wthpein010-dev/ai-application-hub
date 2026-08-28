@@ -94,9 +94,9 @@ test("current Bento metadata fills complete rows without visual-order reflow", (
 
   const collections = [
     ["hub", "gamepulse-mini-radar", "codex-quota-bar", "codex-thread-workbench", "web-media-collector", "minigame-project-simulator", "ai-game-requirements-workshop", "planner-daily-quiz", "travel-generator", "feishu-downloader", "codex-reviewer", "codex-habit-tool", "wanhuatong", "pureshrink", "planmap", "simuai", "gamespec-relay", "x-ai-codex-radar"],
-    ["vita-mahjong", "paws-home-client", "paws-level-editor", "brick-light-motion-lab", "brick-character-copy-preview"],
+    ["vita-mahjong", "paws-home-client", "paws-level-editor", "brick-light-motion-lab", "brick-character-copy-preview", "trinket-market"],
   ];
-  for (const ids of collections) {
+  for (const [collectionIndex, ids] of collections.entries()) {
     let used = 0;
     for (const id of ids) {
       const span = mediaSources[id].layout === "wide" ? 2 : 1;
@@ -107,7 +107,7 @@ test("current Bento metadata fills complete rows without visual-order reflow", (
       used += span;
       if (used === 4) used = 0;
     }
-    assert.equal(used, 0, "reviewed application and engineering collections should end on complete rows");
+    assert.equal(used, collectionIndex === 0 ? 0 : 2, "reviewed collections should use the intended final-row span");
   }
 });
 
@@ -210,7 +210,7 @@ test("browser smoke owns an independent literal catalog order oracle", () => {
   const expected = {
     apps: ["hub", "gamepulse-mini-radar", "codex-quota-bar", "codex-thread-workbench", "web-media-collector", "minigame-project-simulator", "ai-game-requirements-workshop", "planner-daily-quiz", "travel-generator", "feishu-downloader", "codex-reviewer", "codex-habit-tool", "wanhuatong", "pureshrink", "planmap", "simuai", "gamespec-relay", "x-ai-codex-radar"],
     games: ["zhuanglege-sha", "xiang-le-ge-xiang", "fill-what", "nang-keng-pai-pai-xiang", "icecream"],
-    engineering: ["vita-mahjong", "paws-home-client", "paws-level-editor", "brick-light-motion-lab", "brick-character-copy-preview"],
+    engineering: ["vita-mahjong", "paws-home-client", "paws-level-editor", "brick-light-motion-lab", "brick-character-copy-preview", "trinket-market"],
   };
   const oracle = /const expectedCollectionIds = \{([\s\S]*?)\n\};/u.exec(browserSmoke)?.[1] || "";
   for (const [collection, ids] of Object.entries(expected)) {

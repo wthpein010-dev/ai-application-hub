@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="color-scheme" content="dark">
+    <link rel="icon" href="data:,">
+    <title>随身小物交易市场介绍视频</title>
+    <link rel="stylesheet" href="../../../assets/hub-video-player.css">
+  </head>
+  <body data-hub-video-page>
+    <a class="hub-video-home" href="../../../index.html#engineering">返回主页</a>
+    <main class="hub-video-page">
+      <p class="hub-video-kicker">功能演示</p>
+      <h1>随身小物交易市场 · 小物排序与桌面式拖拽</h1>
+      <p class="hub-video-description">浏览十一件随身小物，切换数量、物品 ID 与中文名排序；开启参考估值，拖拽整理陈列，并在浏览器内编辑、导入或导出数据。</p>
+      <section class="hub-video-player" aria-label="随身小物交易市场介绍视频">
+        <div class="hub-video-stage">
+          <div class="hub-video-load-card" id="loadCard" role="status">
+            <strong>准备播放功能演示</strong>
+            <p data-hub-video-message>点击后再加载视频，避免打开页面时等待。</p>
+            <button id="loadVideo" type="button">加载并播放视频</button>
+          </div>
+          <video id="introVideo" controls playsinline preload="none" data-src="./trinket-market-demo.mp4" poster="./poster.jpg" hidden>
+            <track kind="captions" src="./trinket-market-demo.vtt" srclang="zh" label="中文字幕" default>
+          </video>
+        </div>
+      </section>
+      <nav class="hub-video-actions" aria-label="视频相关入口">
+        <a href="./trinket-market-demo.mp4">打开 MP4</a>
+        <a href="../index.html">打开项目</a>
+      </nav>
+      <section class="hub-video-chapters" aria-label="视频章节">
+        <button class="hub-video-chapter" type="button" data-time="0"><time>00:00</time><span>市场与数量排行</span></button>
+        <button class="hub-video-chapter" type="button" data-time="5"><time>00:05</time><span>估值与多种排序</span></button>
+        <button class="hub-video-chapter" type="button" data-time="20"><time>00:20</time><span>跨行桌面式拖拽</span></button>
+        <button class="hub-video-chapter" type="button" data-time="30"><time>00:30</time><span>访客本地编辑</span></button>
+        <button class="hub-video-chapter" type="button" data-time="43"><time>00:43</time><span>导出与配色切换</span></button>
+      </section>
+    </main>
+    <script type="module" src="../../../assets/hub-video-player.js"></script>
+  </body>
+</html>

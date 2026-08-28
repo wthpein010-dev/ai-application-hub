@@ -289,4 +289,14 @@ globalThis.HUB_PROJECT_MEDIA = Object.freeze({
     accent: "#f59e0b",
     visualKind: "data",
   }),
+  "trinket-market": Object.freeze({
+    src: "./assets/hub-showcase/trinket-market.webp?v=20260827-hub-visual-polish",
+    alt: "随身小物交易市场功能画面",
+    position: "center top",
+    layout: "wide",
+    fallback: "随身小物交易市场",
+    feature: "小物目录、数量排行与桌面式拖拽整理",
+    accent: "#f0c75e",
+    visualKind: "game",
+  }),
 });
