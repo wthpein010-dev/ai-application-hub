@@ -61,6 +61,10 @@ try {
     await page.goto(`${origin}/projects/gamespec-relay/index.html`, { waitUntil: "networkidle" });
     await page.waitForFunction(() => document.querySelector("#relayLoading")?.classList.contains("is-ready"));
     assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true);
+    const shellTextSizes = await page.locator(".hub-home-link, .relay-wordmark__mark").evaluateAll((nodes) =>
+      nodes.map((node) => Number.parseFloat(getComputedStyle(node).fontSize)),
+    );
+    assert.ok(shellTextSizes.every((size) => size >= 15), `shell text fell below 15px: ${shellTextSizes.join(", ")}`);
 
     await page.goto(`${origin}/projects/gamespec-relay/app/index.html`, { waitUntil: "networkidle" });
     assert.deepEqual(await page.locator("[data-step-target]").allTextContents(), [
@@ -70,7 +74,16 @@ try {
       "4查看改动影响",
     ]);
     if (viewport.name === "mobile") {
-      assert.ok(await page.locator("#loadSample").evaluate((node) => node.getBoundingClientRect().height >= 44));
+      const mobileControlHeights = await page.locator("button, .ghost-button").evaluateAll((nodes) =>
+        nodes
+          .filter((node) => node.getBoundingClientRect().width > 0)
+          .map((node) => Math.round(node.getBoundingClientRect().height)),
+      );
+      assert.ok(mobileControlHeights.length > 0);
+      assert.ok(
+        mobileControlHeights.every((height) => height >= 46),
+        `mobile control fell below 46px: ${mobileControlHeights.join(", ")}`,
+      );
     }
     await page.locator("#loadSample").click();
     assert.match(await page.locator("#sourceInput").inputValue(), /40%/);
@@ -78,7 +91,12 @@ try {
     await page.locator("#analyzeButton").click();
     await page.waitForSelector("[data-task-id]", { state: "attached" });
 
-    assert.ok(await page.locator("[data-role-lane]").count() >= 5);
+    assert.deepEqual(
+      await page.locator("[data-role-lane]").evaluateAll((nodes) =>
+        nodes.map((node) => node.getAttribute("data-role-lane")),
+      ),
+      ["策划", "客户端", "特效", "音频", "动画", "测试"],
+    );
     assert.ok(await page.locator("[data-acceptance-item]").count() >= 8);
     assert.equal(await page.locator("[data-question-status='open']").count(), 2);
 
