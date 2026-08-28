@@ -40,7 +40,7 @@ function renderSources() {
   const list = $("#sourceList");
   list.replaceChildren();
   if (!state.sources.length) {
-    list.innerHTML = '<div class="empty-card"><span aria-hidden="true">⌁</span><strong>把讨论放进来</strong><p>助手会保留原文证据，不会把未确认意见写成事实。</p></div>';
+    list.innerHTML = '<div class="empty-card"><span aria-hidden="true">文</span><strong>先把讨论材料放进来</strong><p>原文证据会被保留，未确认意见不会被当成事实。</p></div>';
     return;
   }
   for (const source of state.sources) {
@@ -371,13 +371,13 @@ $("#loadChangeSample").addEventListener("click", () => {
 $("#openDiff").addEventListener("click", () => setStep("versions"));
 
 $("#exportMarkdown").addEventListener("click", async () => {
-  if (await downloadText("需求接力站-交付文档.md", "text/markdown;charset=utf-8", toMarkdown(state.pack))) announce("文档版已导出");
+  if (await downloadText("游戏需求开工台-交付文档.md", "text/markdown;charset=utf-8", toMarkdown(state.pack))) announce("文档版已导出");
 });
 $("#exportJson").addEventListener("click", async () => {
-  if (await downloadText("需求接力站-数据备份.json", "application/json;charset=utf-8", toJson(state.pack))) announce("数据备份已导出");
+  if (await downloadText("游戏需求开工台-数据备份.json", "application/json;charset=utf-8", toJson(state.pack))) announce("数据备份已导出");
 });
 $("#exportCsv").addEventListener("click", async () => {
-  if (await downloadText("需求接力站-任务表格.csv", "text/csv;charset=utf-8", `\uFEFF${toTaskCsv(state.pack)}`)) announce("任务表格已导出");
+  if (await downloadText("游戏需求开工台-任务表格.csv", "text/csv;charset=utf-8", `\uFEFF${toTaskCsv(state.pack)}`)) announce("任务表格已导出");
 });
 $("#copyCodex").addEventListener("click", async () => {
   const content = toCodexContext(state.pack);

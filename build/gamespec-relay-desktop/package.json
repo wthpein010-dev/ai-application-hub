@@ -1,8 +1,8 @@
 {
   "name": "gamespec-relay-desktop",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "private": true,
-  "description": "需求接力站离线游戏任务工作台",
+  "description": "游戏需求开工台离线任务拆解与验收工作台",
   "author": "wthpein010-dev",
   "main": "main.cjs",
   "license": "MIT",
@@ -28,7 +28,7 @@
   },
   "build": {
     "appId": "dev.wthpein010.gamespec-relay",
-    "productName": "需求接力站",
+    "productName": "游戏需求开工台",
     "icon": "build/icon.png",
     "asar": true,
     "files": [
@@ -49,7 +49,7 @@
     },
     "win": {
       "target": [{ "target": "portable", "arch": ["x64"] }],
-      "artifactName": "需求接力站-微软系统.${ext}"
+      "artifactName": "游戏需求开工台-微软系统.${ext}"
     },
     "mac": {
       "target": [{ "target": "zip" }],
@@ -57,7 +57,7 @@
       "identity": null,
       "hardenedRuntime": false,
       "gatekeeperAssess": false,
-      "artifactName": "需求接力站-苹果电脑-${arch}.${ext}"
+      "artifactName": "游戏需求开工台-苹果电脑-${arch}.${ext}"
     }
   }
 }

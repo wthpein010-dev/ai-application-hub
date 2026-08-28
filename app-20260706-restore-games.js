@@ -840,32 +840,32 @@ const defaultApps = [
   },
   {
     id: "gamespec-relay",
-    name: "需求接力站",
+    name: "游戏需求开工台",
     category: "游戏研发效率工具",
     status: "assistant",
     badge: "辅助工具",
-    brief: "把群聊、会议纪要和策划文档变成能开工、能验收的任务，并说清变更会影响哪里。",
-    problem: "游戏需求讨论后仍要人工整理、拆分和补验收口径，信息遗漏容易造成跨职能返工。",
-    aiUse: "智能助手负责语义分析、证据追溯、任务拆分、质量检查和变更影响；完整示例可离线运行。",
+    brief: "把群聊、会议纪要和策划文档拆成能开工、能验收的六职能任务，并标出决定、疑问和改动影响。",
+    problem: "游戏需求聊完后还要人工整理、拆单和补验收口径，关键信息遗漏会让策划、开发与测试反复返工。",
+    aiUse: "智能助手负责理解材料、追溯证据、按职能拆单、检查验收和计算改动影响；完整示例可离线运行。",
     folder: "./projects/gamespec-relay/",
     entry: "./projects/gamespec-relay/index.html",
     video: "./projects/gamespec-relay/video/index.html",
-    package: "https://github.com/wthpein010-dev/ai-application-hub/releases/tag/gamespec-relay-v1.1.0",
+    package: "https://github.com/wthpein010-dev/ai-application-hub/releases/tag/gamespec-relay-v1.2.0",
     platforms: {
       web: {
         href: "./projects/gamespec-relay/index.html",
         label: "演示"
       },
       windows: {
-        href: "https://github.com/wthpein010-dev/ai-application-hub/releases/download/gamespec-relay-v1.1.0/xuqiu-jielizhan-windows-x64.zip",
+        href: "https://github.com/wthpein010-dev/ai-application-hub/releases/download/gamespec-relay-v1.2.0/youxi-xuqiu-kaigongtai-windows-x64.zip",
         label: "微软版下载"
       },
       mac: {
-        href: "https://github.com/wthpein010-dev/ai-application-hub/releases/download/gamespec-relay-v1.1.0/xuqiu-jielizhan-macos.zip",
+        href: "https://github.com/wthpein010-dev/ai-application-hub/releases/download/gamespec-relay-v1.2.0/youxi-xuqiu-kaigongtai-macos.zip",
         label: "苹果电脑版下载"
       }
     },
-    tags: ["游戏需求", "跨职能交付", "验收标准", "版本影响"],
+    tags: ["需求拆解", "开工任务", "验收标准", "改动影响"],
     speed: 10,
     impact: 10,
     risk: 9,

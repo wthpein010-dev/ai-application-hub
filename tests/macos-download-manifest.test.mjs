@@ -417,16 +417,16 @@ test("the audit script rejects a Chromium extension without manifest.json", asyn
   assert.match(result.stderr, /missing manifest\.json/i);
 });
 
-test("the audit script accepts a 需求接力站 combined native fixture", async (t) => {
+test("the audit script accepts a 游戏需求开工台 combined native fixture", async (t) => {
   const directory = await withFixture(t);
   const archive = await createFixtureZip(directory, "gamespec-relay", {
-    "arm64/需求接力站.app/Contents/Info.plist": "fixture",
-    "arm64/需求接力站.app/Contents/MacOS/需求接力站": "fixture",
+    "arm64/游戏需求开工台.app/Contents/Info.plist": "fixture",
+    "arm64/游戏需求开工台.app/Contents/MacOS/游戏需求开工台": "fixture",
   });
   const artifact = await fixtureArtifact(archive);
   const manifestPath = await writeFixtureManifest(directory, {
     id: "gamespec-relay",
-    name: "需求接力站",
+    name: "游戏需求开工台",
     kind: "native",
     catalogUrl: artifact.archiveUrl,
     ...artifact,
