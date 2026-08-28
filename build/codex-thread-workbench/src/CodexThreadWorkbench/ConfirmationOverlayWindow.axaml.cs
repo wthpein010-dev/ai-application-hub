@@ -3,6 +3,7 @@ using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.Interactivity;
 using Avalonia.Markup.Xaml;
+using Avalonia.Media;
 using Avalonia.Threading;
 using Avalonia.VisualTree;
 using CodexThreadWorkbench.Presentation;
@@ -19,12 +20,18 @@ public partial class ConfirmationOverlayWindow : Window
         TimeSpan.FromMilliseconds(170);
     private static readonly TimeSpan InteractionArmDelay =
         TimeSpan.FromMilliseconds(650);
+    private static readonly TimeSpan AttentionCueDuration =
+        TimeSpan.FromMilliseconds(1080);
     private ConfirmationOverlayViewModel? _viewModel;
     private readonly ConfirmationOverlayPlacement _placement = new();
     private readonly ConfirmationPointerActionGate _pointerActionGate = new();
     private CancellationTokenSource? _idleCollapseCancellation;
     private CancellationTokenSource? _interactionArmCancellation;
     private CancellationTokenSource? _positionAnimationCancellation;
+    private CancellationTokenSource? _attentionCueCancellation;
+    private ScaleTransform? _spriteScale;
+    private TranslateTransform? _spriteLift;
+    private int _attentionCueGeneration;
     private PixelPoint? _expandedPosition;
     private bool _isIdlePreviewExpanded;
     private bool _isPointerOverSurface;
@@ -57,6 +64,7 @@ public partial class ConfirmationOverlayWindow : Window
         if (_viewModel.HasItems)
         {
             BeginInteractionGuard();
+            BeginAttentionCue();
         }
 
         _ = UpdatePresentationAsync(animate: false);
@@ -91,6 +99,7 @@ public partial class ConfirmationOverlayWindow : Window
         CancelIdleCollapse();
         CancelInteractionArm();
         CancelPositionAnimation();
+        CancelAttentionCue(resetVisuals: true);
         _pointerActionGate.Clear();
         if (_viewModel is not null)
         {
@@ -120,6 +129,7 @@ public partial class ConfirmationOverlayWindow : Window
         CancelIdleCollapse();
         CancelInteractionArm();
         CancelPositionAnimation();
+        CancelAttentionCue(resetVisuals: true);
         _pointerActionGate.Clear();
         Screens.Changed -= OnScreensChanged;
         base.OnClosed(e);
@@ -155,6 +165,13 @@ public partial class ConfirmationOverlayWindow : Window
             }
 
             _ = UpdatePresentationAsync();
+        }
+
+        if (e.PropertyName == nameof(
+                ConfirmationOverlayViewModel.AttentionPulseRevision) &&
+            _viewModel?.HasItems == true)
+        {
+            BeginAttentionCue();
         }
     }
 
@@ -482,6 +499,184 @@ public partial class ConfirmationOverlayWindow : Window
         _interactionArmCancellation?.Cancel();
         _interactionArmCancellation?.Dispose();
         _interactionArmCancellation = null;
+    }
+
+    private void BeginAttentionCue()
+    {
+        if (!Dispatcher.UIThread.CheckAccess())
+        {
+            Dispatcher.UIThread.Post(BeginAttentionCue);
+            return;
+        }
+
+        CancelAttentionCue(resetVisuals: false);
+        var generation = _attentionCueGeneration;
+        var cancellation = new CancellationTokenSource();
+        _attentionCueCancellation = cancellation;
+        ConfirmationOverlayDiagnostics.Write(
+            $"attention:cue-start:revision={_viewModel?.AttentionPulseRevision ?? 0}");
+        _ = PlayAttentionCueAsync(generation, cancellation.Token);
+    }
+
+    private async Task PlayAttentionCueAsync(
+        int generation,
+        CancellationToken cancellationToken)
+    {
+        var sprite = this.FindControl<Border>("TaskSprite");
+        var aura = this.FindControl<Border>("TaskSpriteAura");
+        var banner = this.FindControl<Border>("NewTaskBanner");
+        var list = this.FindControl<ItemsControl>("ConfirmationList");
+        var sparks = new Control?[]
+        {
+            this.FindControl<Control>("TaskSparkLeft"),
+            this.FindControl<Control>("TaskSparkRight")
+        };
+        if (sprite is null || aura is null)
+        {
+            return;
+        }
+
+        EnsureSpriteTransform(sprite);
+        aura.Opacity = 0.34;
+        if (banner is not null)
+        {
+            banner.Opacity = 0.35;
+        }
+
+        if (list is not null)
+        {
+            list.Opacity = 0.55;
+        }
+
+        var startedAt = System.Diagnostics.Stopwatch.GetTimestamp();
+        try
+        {
+            while (true)
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+                var elapsed = System.Diagnostics.Stopwatch.GetElapsedTime(startedAt);
+                var progress = Math.Clamp(
+                    elapsed.TotalMilliseconds / AttentionCueDuration.TotalMilliseconds,
+                    0,
+                    1);
+                var hop = Math.Max(0, Math.Sin(progress * Math.PI * 4)) *
+                          (1 - (progress * 0.45));
+                var scale = 1 + (hop * 0.075);
+                _spriteScale!.ScaleX = scale;
+                _spriteScale.ScaleY = scale;
+                _spriteLift!.Y = -6 * hop;
+
+                var pulse = Math.Max(0, Math.Sin(progress * Math.PI * 6));
+                aura.Opacity = (0.24 + (0.5 * pulse)) *
+                               Math.Max(0, 1 - (progress * 0.8));
+                for (var index = 0; index < sparks.Length; index++)
+                {
+                    if (sparks[index] is null)
+                    {
+                        continue;
+                    }
+
+                    var sparkPhase = Math.Max(
+                        0,
+                        Math.Sin((progress * Math.PI * 4) - (index * 0.7)));
+                    sparks[index]!.Opacity = sparkPhase * (1 - progress);
+                }
+
+                var reveal = 1 - Math.Pow(1 - progress, 3);
+                if (banner is not null)
+                {
+                    banner.Opacity = 0.35 + (0.65 * reveal);
+                }
+
+                if (list is not null)
+                {
+                    list.Opacity = 0.55 + (0.45 * reveal);
+                }
+
+                if (progress >= 1)
+                {
+                    break;
+                }
+
+                await Task.Delay(16, cancellationToken);
+            }
+
+            ConfirmationOverlayDiagnostics.Write("attention:cue-complete");
+        }
+        catch (OperationCanceledException)
+        {
+        }
+        finally
+        {
+            if (generation == _attentionCueGeneration)
+            {
+                ResetAttentionCueVisuals();
+            }
+        }
+    }
+
+    private void EnsureSpriteTransform(Border sprite)
+    {
+        if (_spriteScale is not null && _spriteLift is not null)
+        {
+            return;
+        }
+
+        _spriteScale = new ScaleTransform();
+        _spriteLift = new TranslateTransform();
+        var transforms = new TransformGroup();
+        transforms.Children.Add(_spriteScale);
+        transforms.Children.Add(_spriteLift);
+        sprite.RenderTransform = transforms;
+    }
+
+    private void CancelAttentionCue(bool resetVisuals)
+    {
+        _attentionCueGeneration++;
+        _attentionCueCancellation?.Cancel();
+        _attentionCueCancellation?.Dispose();
+        _attentionCueCancellation = null;
+        if (resetVisuals)
+        {
+            ResetAttentionCueVisuals();
+        }
+    }
+
+    private void ResetAttentionCueVisuals()
+    {
+        if (_spriteScale is not null)
+        {
+            _spriteScale.ScaleX = 1;
+            _spriteScale.ScaleY = 1;
+        }
+
+        if (_spriteLift is not null)
+        {
+            _spriteLift.Y = 0;
+        }
+
+        if (this.FindControl<Border>("TaskSpriteAura") is { } aura)
+        {
+            aura.Opacity = 0;
+        }
+
+        foreach (var name in new[] { "TaskSparkLeft", "TaskSparkRight" })
+        {
+            if (this.FindControl<Control>(name) is { } spark)
+            {
+                spark.Opacity = 0;
+            }
+        }
+
+        if (this.FindControl<Border>("NewTaskBanner") is { } banner)
+        {
+            banner.Opacity = 1;
+        }
+
+        if (this.FindControl<ItemsControl>("ConfirmationList") is { } list)
+        {
+            list.Opacity = 1;
+        }
     }
 
     private void CancelPositionAnimation()

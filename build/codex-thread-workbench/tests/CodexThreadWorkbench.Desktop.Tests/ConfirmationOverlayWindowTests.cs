@@ -43,6 +43,18 @@ public sealed class ConfirmationOverlayWindowTests
     }
 
     [AvaloniaFact]
+    public void Overlay_UsesTaskSpriteAndFriendlyNewTaskVisuals()
+    {
+        var window = new ConfirmationOverlayWindow();
+
+        Assert.NotNull(window.FindControl<Control>("TaskSprite"));
+        Assert.NotNull(window.FindControl<Control>("TaskSpriteAura"));
+        Assert.NotNull(window.FindControl<Control>("TaskSparkLeft"));
+        Assert.NotNull(window.FindControl<Control>("TaskSparkRight"));
+        Assert.NotNull(window.FindControl<Control>("NewTaskBanner"));
+    }
+
+    [AvaloniaFact]
     public void PositionAtTopCenter_UsesWorkingArea()
     {
         var window = new ConfirmationOverlayWindow { Width = 560 };
@@ -250,6 +262,93 @@ public sealed class ConfirmationOverlayWindowTests
         Assert.True(viewModel.RequiresAttention);
         Assert.Equal("扫描异常 · 请检查", viewModel.CountText);
         window.CloseForShutdown();
+    }
+
+    [AvaloniaFact]
+    public async Task NewCandidate_PlaysTaskSpriteCueAgainWhileAlreadyExpanded()
+    {
+        var monitor = new PushMonitor();
+        var client = new ClickRecordingClient();
+        await using var viewModel = new ConfirmationOverlayViewModel(
+            client,
+            monitor,
+            new ConfirmationDetector());
+        var window = new ConfirmationOverlayWindow();
+        window.Attach(viewModel);
+        await WaitForAsync(() => window.IsVisible);
+
+        var sprite = window.FindControl<Border>("TaskSprite");
+        var aura = window.FindControl<Border>("TaskSpriteAura");
+        var sparkLeft = window.FindControl<Control>("TaskSparkLeft");
+        var sparkRight = window.FindControl<Control>("TaskSparkRight");
+        var banner = window.FindControl<Border>("NewTaskBanner");
+        var list = window.FindControl<ItemsControl>("ConfirmationList");
+        Assert.NotNull(sprite);
+        Assert.NotNull(aura);
+        Assert.NotNull(sparkLeft);
+        Assert.NotNull(sparkRight);
+        Assert.NotNull(banner);
+        Assert.NotNull(list);
+        Assert.False(banner.IsVisible);
+        Assert.Equal(0, aura.Opacity);
+        var actionAttempts = 0;
+        viewModel.ActionAttempted += _ => actionAttempts++;
+
+        var first = new ConfirmationCandidate(
+            "thread-1",
+            "待确认任务一",
+            "message-1",
+            "请确认方案，确认后开始实施。",
+            DateTimeOffset.UtcNow);
+        monitor.Push(first);
+
+        await WaitForAsync(() => banner.IsVisible && aura.Opacity > 0.2);
+        Assert.NotNull(sprite.RenderTransform);
+        await WaitForAsync(() => aura.Opacity == 0);
+
+        monitor.Push(first);
+        await Task.Delay(120);
+        Assert.Equal(1, viewModel.AttentionPulseRevision);
+        Assert.Equal(0, aura.Opacity);
+
+        monitor.Push(
+            first,
+            new ConfirmationCandidate(
+                "thread-2",
+                "待确认任务二",
+                "message-2",
+                "要现在打开吗？",
+                DateTimeOffset.UtcNow.AddSeconds(1)));
+
+        await WaitForAsync(() => aura.Opacity > 0.2);
+        monitor.Push(
+            first,
+            new ConfirmationCandidate(
+                "thread-2",
+                "待确认任务二",
+                "message-2",
+                "要现在打开吗？",
+                DateTimeOffset.UtcNow.AddSeconds(1)),
+            new ConfirmationCandidate(
+                "thread-3",
+                "待确认任务三",
+                "message-3",
+                "是否要立即开始生成？",
+                DateTimeOffset.UtcNow.AddSeconds(2)));
+        await WaitForAsync(() => viewModel.AttentionPulseRevision == 3);
+        await Task.Delay(80);
+        Assert.True(aura.Opacity > 0.2);
+        Assert.Equal(0, actionAttempts);
+        Assert.Equal(0, client.StartCalls);
+        window.CloseForShutdown();
+
+        Assert.Equal(0, aura.Opacity);
+        Assert.Equal(0, sparkLeft.Opacity);
+        Assert.Equal(0, sparkRight.Opacity);
+        Assert.Equal(1, banner.Opacity);
+        Assert.Equal(1, list.Opacity);
+        Assert.Equal(0, actionAttempts);
+        Assert.Equal(0, client.StartCalls);
     }
 
     [AvaloniaFact]

@@ -16,7 +16,7 @@ public sealed class AppResourcesTests
         Assert.Equal(
             "Codex Thread Workbench",
             assembly.GetCustomAttribute<AssemblyProductAttribute>()?.Product);
-        Assert.Equal("2.2.1.0", assembly.GetName().Version?.ToString());
+        Assert.Equal("2.3.0.0", assembly.GetName().Version?.ToString());
     }
 
     [AvaloniaFact]

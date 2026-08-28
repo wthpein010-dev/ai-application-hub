@@ -1,39 +1,39 @@
 {
   "version": 1,
   "fileName": "CodexThreadWorkbench-Windows-x64.zip",
-  "totalSize": 40236064,
+  "totalSize": 41563474,
   "chunkSize": 8388608,
-  "sha256": "EEC5BA0395FF51F0FFDCC7E74E5C1FAA739E7DD062EFECA5FE82067DCAB594E4",
+  "sha256": "0540F0DC2FDB5CDEEC22E205BC4BBF89A7FEAA502EA474745E701B4F1F8F2098",
   "parts": [
     {
       "index": 0,
-      "path": "parts/v2.2.1-9665e04/part-000.bin",
+      "path": "parts/v2.3.0-8e2126b/part-000.bin",
       "size": 8388608,
-      "sha256": "4691BBF4B29E252A1BB71EBE451BB153CCB704FCDB83C8FE37043CA56230476C"
+      "sha256": "6CB2CB591B585990B37DB3A238949ED83939F0F1030E5F316E9B604715F60939"
     },
     {
       "index": 1,
-      "path": "parts/v2.2.1-9665e04/part-001.bin",
+      "path": "parts/v2.3.0-8e2126b/part-001.bin",
       "size": 8388608,
-      "sha256": "FD2C8CAA510328BBCA69E7DF942E80E5EA433EE221772EB2C086B83175C7212D"
+      "sha256": "C0F27B043C8A8FEDC0B6D4C862270B01F2DDB7C3E140FF1A9ABAB07EEB4052EF"
     },
     {
       "index": 2,
-      "path": "parts/v2.2.1-9665e04/part-002.bin",
+      "path": "parts/v2.3.0-8e2126b/part-002.bin",
       "size": 8388608,
-      "sha256": "F6FA9EA4231062D8D533580DAD9A5853473C343D98C34977CE7A18266EB60BC3"
+      "sha256": "00DDFF04FBD8C1C9246FF3EBC62E4A7C92D472299EB5643A891F14F821E85E11"
     },
     {
       "index": 3,
-      "path": "parts/v2.2.1-9665e04/part-003.bin",
+      "path": "parts/v2.3.0-8e2126b/part-003.bin",
       "size": 8388608,
-      "sha256": "AC6812E5293DAB56CF4431842BF915C88D359C19B320255A9AA6F3151F0D3996"
+      "sha256": "718DCDE386786067A8174F9413C7FC957749EBA8F989231B792EBFA6F154E5E4"
     },
     {
       "index": 4,
-      "path": "parts/v2.2.1-9665e04/part-004.bin",
-      "size": 6681632,
-      "sha256": "4780D610D860D5E402DC3DCCFB3D8D8E96BB621741BF1C393CAD4E31FF2ACFDF"
+      "path": "parts/v2.3.0-8e2126b/part-004.bin",
+      "size": 8009042,
+      "sha256": "112AD859E7FBB3A17001A7BBF9F6BEFF7003125D535F44F0D071D80BA745E625"
     }
   ]
 }

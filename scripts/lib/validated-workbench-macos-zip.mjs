@@ -164,8 +164,8 @@ function validatePlist(bytes) {
   if (plistValue(xml, "CFBundleDisplayName") !== "Codex 多线程工作台") fail("Info.plist display name does not match product identity");
   if (plistValue(xml, "CFBundleExecutable") !== "CodexThreadWorkbench") fail("Info.plist executable does not match product identity");
   if (plistValue(xml, "CFBundleIdentifier") !== "dev.wthpein010.codex-thread-workbench") fail("Info.plist bundle identifier does not match product identity");
-  if (plistValue(xml, "CFBundleShortVersionString") !== "2.2.1") fail("Info.plist short version must be 2.2.1");
-  if (plistValue(xml, "CFBundleVersion") !== "2.2.1") fail("Info.plist bundle version must be 2.2.1");
+  if (plistValue(xml, "CFBundleShortVersionString") !== "2.3.0") fail("Info.plist short version must be 2.3.0");
+  if (plistValue(xml, "CFBundleVersion") !== "2.3.0") fail("Info.plist bundle version must be 2.3.0");
 }
 
 function validateMachO(bytes, architecture) {

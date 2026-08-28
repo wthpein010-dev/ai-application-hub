@@ -73,7 +73,8 @@ test("Workbench page presents the direct multi-thread operating surface", async 
   const html = await read(`../${projectPath}/index.html`);
 
   assert.match(html, /Codex 多线程工作台/);
-  assert.match(html, /v2\.2\.1/);
+  assert.match(html, /v2\.3\.0/);
+  assert.doesNotMatch(html, /v2\.2\.1/);
   assert.match(html, /一级界面直接对话/);
   assert.match(html, /拖拽标题栏交换位置/);
   assert.match(html, /data-role="workbench-board"/);

@@ -3,11 +3,11 @@ import { mkdir, readFile, rm, writeFile } from "node:fs/promises";
 import { basename, join, resolve } from "node:path";
 
 const FILE_NAME = "CodexThreadWorkbench-Windows-x64.zip";
-const RELEASE_DIRECTORY = "v2.2.1-9665e04";
-const TOTAL_SIZE = 40_236_064;
+const RELEASE_DIRECTORY = "v2.3.0-8e2126b";
+const TOTAL_SIZE = 41_563_474;
 const CHUNK_SIZE = 8_388_608;
 const ARCHIVE_SHA256 =
-  "EEC5BA0395FF51F0FFDCC7E74E5C1FAA739E7DD062EFECA5FE82067DCAB594E4";
+  "0540F0DC2FDB5CDEEC22E205BC4BBF89A7FEAA502EA474745E701B4F1F8F2098";
 
 const sha256 = bytes => createHash("sha256").update(bytes).digest("hex").toUpperCase();
 const [sourceArgument, outputArgument] = process.argv.slice(2);

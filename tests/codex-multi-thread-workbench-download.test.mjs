@@ -13,13 +13,14 @@ globalThis.crypto ??= webcrypto;
 
 const EXPECTED = {
   fileName: "CodexThreadWorkbench-Windows-x64.zip",
-  totalSize: 40_236_064,
-  sha256: "EEC5BA0395FF51F0FFDCC7E74E5C1FAA739E7DD062EFECA5FE82067DCAB594E4",
+  releaseDirectory: "v2.3.0-8e2126b",
+  totalSize: 41_563_474,
+  sha256: "0540F0DC2FDB5CDEEC22E205BC4BBF89A7FEAA502EA474745E701B4F1F8F2098",
 };
 
 const sha256 = bytes => createHash("sha256").update(bytes).digest("hex").toUpperCase();
 
-test("Windows v2.2.1 manifest is ordered and pinned to the verified archive", () => {
+test("Windows v2.3.0 manifest is ordered and pinned to the verified archive", () => {
   core.validateManifest(manifest);
   assert.equal(manifest.fileName, EXPECTED.fileName);
   assert.equal(manifest.totalSize, EXPECTED.totalSize);
@@ -27,6 +28,11 @@ test("Windows v2.2.1 manifest is ordered and pinned to the verified archive", ()
   assert.equal(manifest.chunkSize, 8_388_608);
   assert.equal(manifest.parts.length, 5);
   assert.deepEqual(manifest.parts.map(part => part.index), [0, 1, 2, 3, 4]);
+  assert.deepEqual(
+    manifest.parts.map(part => part.path),
+    [0, 1, 2, 3, 4].map(index =>
+      `parts/${EXPECTED.releaseDirectory}/part-${String(index).padStart(3, "0")}.bin`),
+  );
   assert.equal(manifest.parts.reduce((sum, part) => sum + part.size, 0), manifest.totalSize);
 });
 
@@ -81,13 +87,15 @@ test("Windows download page identifies the desktop Workbench and visible retry f
     readFile(join(root, "scripts", "split-codex-multi-thread-workbench.mjs"), "utf8"),
   ]);
   assert.match(html, /Codex 多线程工作台/);
-  assert.match(html, /v2\.2\.1/);
+  assert.match(html, /v2\.3\.0/);
+  assert.doesNotMatch(html, /v2\.2\.1/);
   assert.match(html, /CodexThreadWorkbench-Windows-x64\.zip/);
   assert.match(html, /data-role="progress"/);
   assert.match(html, /data-role="retry-button"/);
   assert.match(controller, /maxAttempts:\s*3/);
   assert.match(controller, /link\.download\s*=\s*manifest\.fileName/);
   assert.match(splitter, new RegExp(EXPECTED.fileName.replaceAll(".", "\\.")));
-  assert.match(splitter, /40_236_064/);
+  assert.match(splitter, new RegExp(EXPECTED.releaseDirectory.replaceAll(".", "\\.")));
+  assert.match(splitter, /41_563_474/);
   assert.match(splitter, new RegExp(EXPECTED.sha256));
 });

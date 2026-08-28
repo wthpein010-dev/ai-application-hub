@@ -92,7 +92,7 @@ function machO(architecture) {
   return bytes;
 }
 
-function workbenchPlist({ displayName = "Codex 多线程工作台", version = "2.2.1" } = {}) {
+function workbenchPlist({ displayName = "Codex 多线程工作台", version = "2.3.0" } = {}) {
   return Buffer.from(`<?xml version="1.0" encoding="UTF-8"?>
 <plist version="1.0"><dict>
 <key>CFBundleDisplayName</key><string>${displayName}</string>
@@ -178,7 +178,8 @@ test("Mac page offers independently verified Apple silicon and Intel downloads",
   ]);
 
   assert.match(html, /Codex 多线程工作台/);
-  assert.match(html, /v2\.2\.1/);
+  assert.match(html, /v2\.3\.0/);
+  assert.doesNotMatch(html, /v2\.2\.1/);
   assert.match(html, /Apple\s*(?:芯片|silicon)/i);
   assert.match(html, /Intel/i);
   assert.match(html, /macOS\s*13\+/i);
@@ -276,7 +277,7 @@ test("Mac ZIP validation rejects malformed archives, wrong bundles, and wrong ar
     ["empty ZIP", createStoredZip([]), /no entries/i],
     ["wrong bundle", macAppZip("arm64", { bundle: "Other.app" }), /CodexThreadWorkbench\.app/i],
     ["wrong product", macAppZip("arm64", { displayName: "Other Product" }), /display name|identity/i],
-    ["wrong version", macAppZip("arm64", { version: "2.2.0" }), /version/i],
+    ["wrong version", macAppZip("arm64", { version: "2.2.1" }), /version/i],
     ["wrong architecture", macAppZip("arm64", { executableArchitecture: "x64" }), /arm64|cputype/i],
   ];
   for (const [label, archive, message] of invalid) {
@@ -349,8 +350,12 @@ test("independent workflow verifies real apps before safely publishing both arch
     /- "scripts\/lib\/validated-workbench-macos-zip\.mjs"/,
     "changes to the ZIP validator must trigger the independent build workflow",
   );
-  assert.match(project, /<Version>2\.2\.1<\/Version>/);
+  assert.match(project, /<Version>2\.3\.0<\/Version>/);
   assert.match(project, /<AssemblyName>CodexThreadWorkbench<\/AssemblyName>/);
+  assert.match(
+    workflow,
+    /WORKBENCH_SOURCE_COMMIT:\s*8e2126ba93a835e2e0e2864d83165b9358d995a1/,
+  );
   assert.match(workflow, /runtime:\s*osx-arm64\s+runner:\s*macos-14/);
   assert.match(workflow, /runtime:\s*osx-x64\s+runner:\s*macos-15-intel/);
   assert.match(workflow, /dotnet test CodexThreadWorkbench\.sln --configuration Release/);

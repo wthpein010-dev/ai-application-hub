@@ -15,6 +15,24 @@ public sealed class ConfirmationDetector
         @"(?:(?:可以|可行|合适|行得通|没问题|行)(?:吗|么|呢)?|行不行)[？?]\s*$|" +
         @"(?:可以|可行|合适|行得通|没问题|行)(?:吗|么|呢)\s*$",
         RegexOptions.Compiled | RegexOptions.CultureInvariant);
+    private static readonly Regex ImmediateActionQuestionPattern = new(
+        @"(?:^|[。！!；;，,:：\r\n])\s*(?:" +
+        @"(?:要不要|是否要)" + ImmediateActionModifierPattern +
+        ImmediateActionObjectPattern + ImmediateActionVerbPattern +
+        @"[^。！!；;\r\n？?]{0,20}[？?]|" +
+        @"(?:要|需要)" + ImmediateActionModifierPattern +
+        ImmediateActionObjectPattern + ImmediateActionVerbPattern +
+        @"[^。！!；;\r\n？?]{0,20}(?:吗|么)[？?]?" +
+        @")\s*$",
+        RegexOptions.Compiled | RegexOptions.CultureInvariant);
+    private const string ImmediateActionModifierPattern =
+        @"(?:(?:我|现在|马上|立即|直接|就|先|再|重新|帮你|为你)\s*)*";
+    private const string ImmediateActionObjectPattern =
+        @"(?:(?:把|将|在|到)[^。！!；;\r\n？?]{1,12})?";
+    private const string ImmediateActionVerbPattern =
+        @"(?:打开|启动|开始|继续|生成|执行|制作|开发|实现|构建|发布|运行|" +
+        @"展示|预览|写入|处理|修改|创建|导出|播放|安装|更新|切换|提交|" +
+        @"发送|下载|上传|保存|做)";
     private static readonly Regex ImplementationStartQuestionPattern = new(
         @"(?:按|照|依照|按照)[^。！!\r\n]{0,32}(?:开始|直接|着手)" +
         @"[^。！!\r\n？?]{0,16}(?:吗|么|呢)[？?]?\s*$",
@@ -43,6 +61,10 @@ public sealed class ConfirmationDetector
         "误报",
         "漏检"
     ];
+    private static readonly Regex ReportedQuestionContextPattern = new(
+        @"(?:如下|原文|引用|示例|文案|用例|规则|回复|内容|输出|日志|记录|" +
+        @"文本|消息|提示词)\s*[：:]?\s*$",
+        RegexOptions.Compiled | RegexOptions.CultureInvariant);
     private static readonly string[] UserActionSignals =
     [
         "请确认",
@@ -138,8 +160,26 @@ public sealed class ConfirmationDetector
                ConfirmationQuestionPattern.IsMatch(actionableText) ||
                NeedConfirmationPromptPattern.IsMatch(actionableText) ||
                ProposalApprovalQuestionPattern.IsMatch(actionableText) ||
+               IsImmediateActionQuestion(actionableText) ||
                ImplementationStartQuestionPattern.IsMatch(actionableText) ||
                DeferredImplementationPromptPattern.IsMatch(actionableText);
+    }
+
+    private static bool IsImmediateActionQuestion(string value)
+    {
+        var match = ImmediateActionQuestionPattern.Match(value);
+        if (!match.Success)
+        {
+            return false;
+        }
+
+        var contextStart = match.Index == 0
+            ? 0
+            : value.LastIndexOfAny(
+                ['。', '！', '!', '；', ';', '\r', '\n'],
+                match.Index - 1) + 1;
+        var context = value[contextStart..match.Index];
+        return !ReportedQuestionContextPattern.IsMatch(context);
     }
 
     private static bool IsQuotedExample(string value, int matchIndex)

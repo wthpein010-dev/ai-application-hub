@@ -25,11 +25,13 @@ public sealed class ConfirmationOverlayViewModel : ObservableObject, IAsyncDispo
     private readonly Dictionary<string, Task<bool>> _preloadTasks =
         new(StringComparer.Ordinal);
     private readonly HashSet<(string ThreadId, string MessageId)> _autoAttempts = [];
+    private readonly HashSet<(string ThreadId, string MessageId)> _attentionCuedKeys = [];
     private readonly SynchronizationContext? _synchronizationContext;
     private bool _isInteractionArmed = true;
     private bool _isAutoConfirmEnabled;
     private bool _isAutoConfirmSaving;
     private bool _isConfirmingAll;
+    private int _attentionPulseRevision;
     private string _confirmAllText = "一键全部确认";
     private string _autoConfirmErrorText = string.Empty;
     private string _monitorErrorText;
@@ -78,6 +80,8 @@ public sealed class ConfirmationOverlayViewModel : ObservableObject, IAsyncDispo
 
     public bool RequiresAttention =>
         HasItems || HasMonitorError || HasAutoConfirmError;
+
+    public int AttentionPulseRevision => _attentionPulseRevision;
 
     public string BadgeText => Items.Count switch
     {
@@ -438,6 +442,12 @@ public sealed class ConfirmationOverlayViewModel : ObservableObject, IAsyncDispo
         var ordered = candidates
             .OrderByDescending(candidate => candidate.UpdatedAt)
             .ToArray();
+        var hasNewCandidate = false;
+        foreach (var candidate in ordered)
+        {
+            hasNewCandidate |= _attentionCuedKeys.Add(
+                (candidate.ThreadId, candidate.MessageId));
+        }
         var keys = ordered
             .Select(candidate => (candidate.ThreadId, candidate.MessageId))
             .ToHashSet();
@@ -486,6 +496,12 @@ public sealed class ConfirmationOverlayViewModel : ObservableObject, IAsyncDispo
         OnPropertyChanged(nameof(CountText));
         OnPropertyChanged(nameof(BadgeText));
         OnPropertyChanged(nameof(CanConfirmAll));
+        if (hasNewCandidate)
+        {
+            _attentionPulseRevision++;
+            OnPropertyChanged(nameof(AttentionPulseRevision));
+        }
+
         ConfirmAllCommand.RaiseCanExecuteChanged();
         QueueAutoConfirm();
     }

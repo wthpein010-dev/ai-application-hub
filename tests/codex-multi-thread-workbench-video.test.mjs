@@ -31,7 +31,8 @@ function parseCues(contents) {
 test("desktop Workbench video page uses the shared player and Chinese captions", () => {
   const html = readFileSync(join(videoRoot, "index.html"), "utf8");
   assert.match(html, /Codex 多线程工作台/);
-  assert.match(html, /v2\.2\.1/);
+  assert.match(html, /v2\.3\.0/);
+  assert.doesNotMatch(html, /v2\.2\.1/);
   for (const topic of ["一级界面", "直接对话", "拖拽换位", "状态刷新", "Windows", "macOS"]) {
     assert.match(html, new RegExp(topic));
   }
@@ -47,6 +48,7 @@ test("desktop Workbench video page uses the shared player and Chinese captions",
 test("desktop Workbench captions are seven non-overlapping single-line chapters", () => {
   const captions = readFileSync(join(videoRoot, "codex-multi-thread-workbench-demo.vtt"), "utf8");
   const script = readFileSync(join(videoRoot, "tutorial-script.md"), "utf8");
+  const renderer = readFileSync(join(root, "scripts", "render-codex-multi-thread-workbench-video.mjs"), "utf8");
   const cues = parseCues(captions);
   assert.equal(cues.length, 7);
   for (const cue of cues) {
@@ -57,6 +59,10 @@ test("desktop Workbench captions are seven non-overlapping single-line chapters"
   for (const topic of ["多线程", "对话", "拖拽", "全屏", "状态", "Windows", "macOS"]) {
     assert.match(script, new RegExp(topic));
   }
+  assert.match(script, /v2\.3\.0/);
+  assert.match(captions, /v2\.3\.0/);
+  assert.match(renderer, /codex-multi-thread-workbench-v230-recording/);
+  assert.doesNotMatch(`${script}\n${captions}\n${renderer}`, /v2\.2\.1|v221-recording/);
   assert.equal(existsSync(join(videoRoot, "poster.jpg")), true);
 });
 

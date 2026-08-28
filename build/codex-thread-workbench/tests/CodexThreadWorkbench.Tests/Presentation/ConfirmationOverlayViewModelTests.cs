@@ -806,6 +806,35 @@ public sealed class ConfirmationOverlayViewModelTests
     }
 
     [Fact]
+    public async Task CandidateArrival_IncrementsAttentionPulseOnlyForNewCandidateKeys()
+    {
+        var first = Candidate("thread-1", "message-1");
+        var second = Candidate("thread-2", "message-2");
+        var monitor = new FakeConfirmationMonitor();
+        await using var viewModel = new ConfirmationOverlayViewModel(
+            new FakeCodexThreadClient(),
+            monitor,
+            new ConfirmationDetector());
+
+        Assert.Equal(0, viewModel.AttentionPulseRevision);
+
+        monitor.Push(first);
+        Assert.Equal(1, viewModel.AttentionPulseRevision);
+
+        monitor.Push(first);
+        Assert.Equal(1, viewModel.AttentionPulseRevision);
+
+        monitor.Push();
+        Assert.Equal(1, viewModel.AttentionPulseRevision);
+
+        monitor.Push(first);
+        Assert.Equal(1, viewModel.AttentionPulseRevision);
+
+        monitor.Push(first, second);
+        Assert.Equal(2, viewModel.AttentionPulseRevision);
+    }
+
+    [Fact]
     public async Task MonitorError_IsMirroredUntilItClears_AndUnsubscribedOnDispose()
     {
         var monitor = new FakeConfirmationMonitor();

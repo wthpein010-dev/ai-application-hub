@@ -16,6 +16,9 @@ on:
 permissions:
   contents: write
 
+env:
+  WORKBENCH_SOURCE_COMMIT: 8e2126ba93a835e2e0e2864d83165b9358d995a1
+
 concurrency:
   group: codex-multi-thread-workbench-macos-${{ github.ref }}
   cancel-in-progress: false
