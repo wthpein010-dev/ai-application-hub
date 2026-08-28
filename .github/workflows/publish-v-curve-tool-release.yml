@@ -34,6 +34,23 @@ jobs:
     name: Promote the immutable Mac artifact
     runs-on: ubuntu-latest
     steps:
+      - name: Require a current main dispatch before reading the manifest
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ "$GITHUB_REF" != "refs/heads/main" ]]; then
+            echo "The publisher may only be dispatched from refs/heads/main." >&2
+            exit 1
+          fi
+          main_sha="$(gh api "repos/$GITHUB_REPOSITORY/git/ref/heads/main" --jq '.object.sha')"
+          if [[ "$GITHUB_SHA" != "$main_sha" ]]; then
+            echo "The workflow SHA does not equal the current main ref." >&2
+            exit 1
+          fi
+          echo "CURRENT_MAIN_SHA=$main_sha" >> "$GITHUB_ENV"
+
       - name: Check out the manifest committed by the workflow-dispatch revision
         uses: actions/checkout@v4
         with:
@@ -77,11 +94,16 @@ jobs:
           import { createHash } from "node:crypto";
           import { readFileSync, statSync } from "node:fs";
           import { join } from "node:path";
-          import { assertMacArtifactMatchesManifest } from "./scripts/v-curve-release-publisher.mjs";
+          import { assertCurrentMainDispatch, assertMacArtifactMatchesManifest } from "./scripts/v-curve-release-publisher.mjs";
           const root = "release-assets";
           const archive = join(root, process.env.EXPECTED_ARCHIVE);
           const metadata = JSON.parse(readFileSync(join(root, "v-curve-tool-macos-release.json"), "utf8"));
           const manifest = JSON.parse(readFileSync("projects/v-curve-tool/release-manifest.json", "utf8"));
+          assertCurrentMainDispatch({
+            githubRef: process.env.GITHUB_REF,
+            githubSha: process.env.GITHUB_SHA,
+            mainRefSha: process.env.CURRENT_MAIN_SHA,
+          });
           if (manifest.assets.mac.file !== process.env.EXPECTED_ARCHIVE) {
             throw new Error(`manifest Mac asset drift: ${manifest.assets.mac.file}`);
           }
@@ -182,11 +204,22 @@ jobs:
           )"
 
           if [[ "$existing_count" = "0" ]]; then
-            gh release upload "$RELEASE_TAG" \
-              "release-assets/$EXPECTED_ARCHIVE" \
-              "release-assets/$EXPECTED_ARCHIVE.sha256.txt" \
-              "release-assets/v-curve-tool-macos-release.json" \
-              --repo "$GITHUB_REPOSITORY"
+            upload_url="$(RELEASE_JSON="$release_json" node --input-type=module - <<'NODE'
+            import { createExactReleaseUploadPlan } from "./scripts/v-curve-release-publisher.mjs";
+            const plan = createExactReleaseUploadPlan({ release: JSON.parse(process.env.RELEASE_JSON) });
+            process.stdout.write(plan.uploadUrl);
+            NODE
+            )"
+            for asset in "${expected_assets[@]}"; do
+              encoded_name="$(ASSET_NAME="$asset" node -e 'process.stdout.write(encodeURIComponent(process.env.ASSET_NAME))')"
+              curl --fail --silent --show-error \
+                --request POST \
+                --header "Authorization: Bearer $GH_TOKEN" \
+                --header "Accept: application/vnd.github+json" \
+                --header "Content-Type: application/octet-stream" \
+                --data-binary "@release-assets/$asset" \
+                "$upload_url?name=$encoded_name" > /dev/null
+            done
           elif [[ "$existing_count" = "3" ]]; then
             mkdir existing-assets
             for asset in "${expected_assets[@]}"; do
@@ -238,7 +271,7 @@ jobs:
               -H "Accept: application/octet-stream" > "published-assets/$asset"
           done < asset-plan.tsv
           final_release_json="$(gh api "repos/$GITHUB_REPOSITORY/releases/$RELEASE_ID")"
-          RELEASE_JSON="$final_release_json" node --input-type=module - <<'NODE'
+          RELEASE_JSON="$final_release_json" EXPECTED_PLAN="$asset_plan" node --input-type=module - <<'NODE'
           import { createHash } from "node:crypto";
           import { execFileSync } from "node:child_process";
           import { readFileSync, statSync } from "node:fs";
@@ -259,6 +292,7 @@ jobs:
             manifest,
             sourceSha: process.env.EXPECTED_SOURCE_SHA,
             release: JSON.parse(process.env.RELEASE_JSON),
+            expectedPlan: JSON.parse(process.env.EXPECTED_PLAN),
             macArtifactMetadata,
             verifyAssets: async () => {
               verifyArchive(manifest.assets.windows.file, manifest.assets.windows);

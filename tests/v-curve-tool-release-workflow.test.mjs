@@ -67,6 +67,7 @@ function draftReleaseFixture() {
     id: 378411760,
     tag_name: "v-curve-tool-v1.2.0",
     draft: true,
+    upload_url: "https://uploads.github.com/repos/wthpein010-dev/ai-application-hub/releases/378411760/assets{?name,label}",
     assets: [
       { id: 101, name: releaseManifestFixture.assets.windows.file },
       { id: 102, name: releaseManifestFixture.assets.mac.file },
@@ -156,7 +157,11 @@ test("the publisher promotes the exact verified Mac artifact without overwriting
   assert.match(workflow, /metadata\.sha256/u);
   assert.match(workflow, /recordedName/u);
   assert.match(workflow, /gh run download/u);
-  assert.match(workflow, /gh release upload/u);
+  assert.match(workflow, /Require a current main dispatch before reading the manifest/u);
+  assert.match(workflow, /repos\/\$GITHUB_REPOSITORY\/git\/ref\/heads\/main/u);
+  assert.match(workflow, /curl --fail --silent --show-error/u);
+  assert.match(workflow, /createExactReleaseUploadPlan/u);
+  assert.doesNotMatch(workflow, /gh release upload/u);
   assert.doesNotMatch(workflow, /--clobber/u);
 });
 
@@ -186,7 +191,11 @@ test("the publisher anchors both packages to the committed manifest before expli
 });
 
 test("the publisher refuses incomplete or manifest-mismatched draft assets before PATCH and promotes only the exact Release", async () => {
-  const { publishVerifiedDraftRelease } = await import("../scripts/v-curve-release-publisher.mjs");
+  const {
+    assertCurrentMainDispatch,
+    createExactReleaseUploadPlan,
+    publishVerifiedDraftRelease,
+  } = await import("../scripts/v-curve-release-publisher.mjs");
   let verifyCalls = 0;
   let publishCalls = 0;
   const verifyAssets = async () => { verifyCalls += 1; };
@@ -228,6 +237,24 @@ test("the publisher refuses incomplete or manifest-mismatched draft assets befor
   );
   assert.equal(verifyCalls, 0, "failed release contracts must not fetch or verify assets");
   assert.equal(publishCalls, 0, "failed release contracts must never reach PATCH");
+  let corruptedVerifyCalls = 0;
+  let corruptedPublishCalls = 0;
+  await assert.rejects(
+    publishVerifiedDraftRelease({
+      manifest: releaseManifestFixture,
+      sourceSha: sourceShaFixture,
+      release: draftReleaseFixture(),
+      macArtifactMetadata: macArtifactMetadataFixture,
+      verifyAssets: async () => {
+        corruptedVerifyCalls += 1;
+        throw new Error("downloaded checksum does not match the manifest");
+      },
+      publish: async () => { corruptedPublishCalls += 1; },
+    }),
+    /downloaded checksum does not match/u,
+  );
+  assert.equal(corruptedVerifyCalls, 1, "the corrupt download must enter the verifier");
+  assert.equal(corruptedPublishCalls, 0, "a corrupt download must never reach PATCH");
 
   const published = await publishVerifiedDraftRelease({
     manifest: releaseManifestFixture,
@@ -253,6 +280,65 @@ test("the publisher refuses incomplete or manifest-mismatched draft assets befor
   assert.equal(verifyCalls, 1);
   assert.equal(publishCalls, 1);
   assert.equal(published.draft, false);
+
+  let replacementVerifyCalls = 0;
+  let replacementPublishCalls = 0;
+  await assert.rejects(
+    publishVerifiedDraftRelease({
+      manifest: releaseManifestFixture,
+      sourceSha: sourceShaFixture,
+      release: {
+        ...draftReleaseFixture(),
+        assets: draftReleaseFixture().assets.map((asset) => (
+          asset.name === releaseManifestFixture.assets.mac.file ? { ...asset, id: 202 } : asset
+        )),
+      },
+      expectedPlan: {
+        releaseId: 378411760,
+        assets: [
+          { id: 101, name: releaseManifestFixture.assets.windows.file },
+          { id: 102, name: releaseManifestFixture.assets.mac.file },
+          { id: 103, name: `${releaseManifestFixture.assets.mac.file}.sha256.txt` },
+          { id: 104, name: "v-curve-tool-macos-release.json" },
+        ],
+      },
+      macArtifactMetadata: macArtifactMetadataFixture,
+      verifyAssets: async () => { replacementVerifyCalls += 1; },
+      publish: async (releaseId) => {
+        replacementPublishCalls += 1;
+        return { id: releaseId, tag_name: "v-curve-tool-v1.2.0", draft: false };
+      },
+    }),
+    /asset IDs changed/u,
+  );
+  assert.equal(replacementVerifyCalls, 0, "replacement IDs must not enter final verification");
+  assert.equal(replacementPublishCalls, 0, "replacement IDs must not reach PATCH");
+
+  assert.doesNotThrow(() => assertCurrentMainDispatch({
+    githubRef: "refs/heads/main",
+    githubSha: "b".repeat(40),
+    mainRefSha: "b".repeat(40),
+  }));
+  assert.throws(
+    () => assertCurrentMainDispatch({
+      githubRef: "refs/heads/feature/release",
+      githubSha: "b".repeat(40),
+      mainRefSha: "b".repeat(40),
+    }),
+    /must be dispatched from refs\/heads\/main/u,
+  );
+  assert.throws(
+    () => assertCurrentMainDispatch({
+      githubRef: "refs/heads/main",
+      githubSha: "b".repeat(40),
+      mainRefSha: "c".repeat(40),
+    }),
+    /does not equal the current main ref/u,
+  );
+  assert.deepEqual(createExactReleaseUploadPlan({ release: draftReleaseFixture() }), {
+    releaseId: 378411760,
+    uploadUrl: "https://uploads.github.com/repos/wthpein010-dev/ai-application-hub/releases/378411760/assets",
+  });
 });
 
 test("the Hub suite includes both root and Xiang Le Ge Xiang Node tests while excluding nested Vitest", async () => {

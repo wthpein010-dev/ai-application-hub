@@ -23,6 +23,30 @@ function assertReleaseManifest(manifest) {
   }
 }
 
+function assertExactDraftRelease(release) {
+  if (release?.id !== releaseId || release.tag_name !== releaseTag || release.draft !== true) {
+    throw new Error(`Release is not the expected draft: ${JSON.stringify(release)}`);
+  }
+}
+
+export function assertCurrentMainDispatch({ githubRef, githubSha, mainRefSha }) {
+  if (githubRef !== "refs/heads/main") {
+    throw new Error(`Release publisher must be dispatched from refs/heads/main, got ${githubRef}`);
+  }
+  if (githubSha !== mainRefSha) {
+    throw new Error(`workflow SHA ${githubSha} does not equal the current main ref ${mainRefSha}`);
+  }
+}
+
+export function createExactReleaseUploadPlan({ release }) {
+  assertExactDraftRelease(release);
+  const uploadUrl = release.upload_url?.replace(/\{.*$/u, "");
+  if (!uploadUrl?.endsWith(`/releases/${releaseId}/assets`)) {
+    throw new Error(`unexpected Release upload URL: ${release.upload_url}`);
+  }
+  return { releaseId, uploadUrl };
+}
+
 export function assertMacArtifactMatchesManifest({ manifest, sourceSha, macArtifactMetadata }) {
   assertReleaseManifest(manifest);
   const expected = expectedMacMetadata(manifest, sourceSha);
@@ -33,9 +57,7 @@ export function assertMacArtifactMatchesManifest({ manifest, sourceSha, macArtif
 
 export function createCompleteDraftReleasePlan({ manifest, sourceSha, release, macArtifactMetadata }) {
   assertMacArtifactMatchesManifest({ manifest, sourceSha, macArtifactMetadata });
-  if (release?.id !== releaseId || release.tag_name !== releaseTag || release.draft !== true) {
-    throw new Error(`Release is not the expected draft: ${JSON.stringify(release)}`);
-  }
+  assertExactDraftRelease(release);
 
   const expectedAssetNames = [
     manifest.assets.windows.file,
@@ -59,6 +81,7 @@ export async function publishVerifiedDraftRelease({
   manifest,
   sourceSha,
   release,
+  expectedPlan,
   macArtifactMetadata,
   verifyAssets,
   publish,
@@ -69,6 +92,9 @@ export async function publishVerifiedDraftRelease({
     release,
     macArtifactMetadata,
   });
+  if (expectedPlan && !sameJson(plan, expectedPlan)) {
+    throw new Error(`Release asset IDs changed: ${JSON.stringify(plan.assets)}`);
+  }
   await verifyAssets(plan);
   const published = await publish(plan.releaseId);
   if (published?.id !== plan.releaseId || published.tag_name !== releaseTag || published.draft !== false) {
