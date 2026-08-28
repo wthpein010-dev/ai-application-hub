@@ -54,6 +54,7 @@ test("V curve is the final project-development card with four truthful actions",
 test("the public demo is the real offline tool inside the shared engineering shell", () => {
   const html = readFileSync(join(projectRoot, "index.html"), "utf8");
   const appHtml = join(projectRoot, "app", "index.html");
+  const trackedBuild = join(root, "build", "v-curve-tool", "dist", "V曲线对比工具.html");
 
   assert.match(html, /class="hub-home-link"/u);
   assert.match(html, /href="\.\.\/\.\.\/index\.html#engineering"/u);
@@ -62,6 +63,15 @@ test("the public demo is the real offline tool inside the shared engineering she
   assert.ok(existsSync(appHtml));
   assert.ok(statSync(appHtml).size > 100_000, "the demo must contain the real bundled web app");
   assert.match(readFileSync(appHtml, "utf8"), /羊了个羊 900121/u);
+  const appBytes = readFileSync(appHtml);
+  const trackedBuildBytes = readFileSync(trackedBuild);
+  assert.equal(appBytes.includes(13), false, "the public demo must use repository-safe LF line endings");
+  assert.equal(trackedBuildBytes.includes(13), false, "the tracked build must use repository-safe LF line endings");
+  assert.deepEqual(
+    appBytes,
+    trackedBuildBytes,
+    "the public demo must be the exact tracked desktop/web build",
+  );
 });
 
 test("the immutable release manifest records the verified Windows and macOS packages", () => {
@@ -72,9 +82,9 @@ test("the immutable release manifest records the verified Windows and macOS pack
   assert.deepEqual(manifest.assets.windows, {
     file: windowsAsset,
     url: `${releaseBase}/${windowsAsset}`,
-    bytes: 99_701_539,
-    sha256: "443855838911F4DB9C97514550630FBC77730B77EF1A6E366B02F3098953B0DE",
-    executableSha256: "996054A99829EEE9E64153EA0A40F61D78C106191BFC2297E38314F43EC62FBDA",
+    bytes: 99_701_005,
+    sha256: "7AD80A5926FE7B7F110CE4C845B5F466BA0C276D77300790DDFA1C0D3919AB97",
+    executableSha256: "B0D1C277CDFE1758E7921F4A81BE8BE5B7F67A9F4EE53B2BFE9554459AC964FD",
     signature: "NotSigned",
   });
   assert.equal(manifest.assets.mac.file, macAsset);

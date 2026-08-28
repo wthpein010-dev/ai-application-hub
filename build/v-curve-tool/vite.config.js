@@ -8,6 +8,9 @@ function renameOutputHtml() {
     generateBundle(_options, bundle) {
       const entry = bundle["index.html"];
       if (!entry) return;
+      if (typeof entry.source === "string") {
+        entry.source = entry.source.replace(/\r\n?/gu, "\n");
+      }
       delete bundle["index.html"];
       entry.fileName = "V曲线对比工具.html";
       bundle[entry.fileName] = entry;

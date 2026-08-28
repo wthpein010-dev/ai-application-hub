@@ -2,13 +2,6 @@ name: Publish the verified V Curve macOS release
 
 on:
   workflow_dispatch:
-  push:
-    branches:
-      - feat/v-curve-tool-20260828
-      - main
-    paths:
-      - ".github/workflows/publish-v-curve-tool-release.yml"
-      - "tests/v-curve-tool-release-workflow.test.mjs"
 
 permissions:
   actions: read

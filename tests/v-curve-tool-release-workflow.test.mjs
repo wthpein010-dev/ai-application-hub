@@ -74,10 +74,20 @@ test("the release workflow uploads the ad-hoc signed macOS applications", async 
   assert.ok(workflow.indexOf(verify) < workflow.indexOf(rearchive));
 });
 
+test("the macOS checksum files record portable archive basenames", async () => {
+  const workflow = await readFile(workflowPath, "utf8");
+  const portableChecksum = '(cd "$(dirname "$archive")" && shasum -a 256 "$(basename "$archive")") > "$archive.sha256.txt"';
+
+  assert.equal(workflow.split(portableChecksum).length - 1, 2);
+  assert.doesNotMatch(workflow, /shasum -a 256 "\$archive"/u);
+});
+
 test("the publisher promotes the exact verified Mac artifact without overwriting assets", async () => {
   assert.ok(existsSync(publisherWorkflowPath), "missing immutable V curve release publisher");
   const workflow = await readFile(publisherWorkflowPath, "utf8");
 
+  assert.match(workflow, /on:\s*\n\s*workflow_dispatch:/u);
+  assert.doesNotMatch(workflow, /\n\s*push:/u);
   assert.match(workflow, /actions:\s*read/u);
   assert.match(workflow, /contents:\s*write/u);
   assert.match(workflow, /ARTIFACT_RUN_ID:\s*"33152604613"/u);
@@ -91,11 +101,14 @@ test("the publisher promotes the exact verified Mac artifact without overwriting
   assert.doesNotMatch(workflow, /--clobber/u);
 });
 
-test("the Hub suite excludes nested Vitest source tests from Node discovery", async () => {
+test("the Hub suite includes both root and Xiang Le Ge Xiang Node tests while excluding nested Vitest", async () => {
   const packageJson = JSON.parse(await readFile(hubPackagePath, "utf8"));
   const workflow = await readFile(hubVerificationWorkflowPath, "utf8");
 
-  assert.equal(packageJson.scripts.test, 'node --test "tests/**/*.test.mjs"');
+  assert.equal(
+    packageJson.scripts.test,
+    'node --test "tests/**/*.test.mjs" "projects/xiang-le-ge-xiang/tests/**/*.test.mjs"',
+  );
   assert.match(workflow, /xvfb-run -a npm test/u);
   assert.doesNotMatch(workflow, /xvfb-run -a node --test(?:\s|$)/u);
 });
