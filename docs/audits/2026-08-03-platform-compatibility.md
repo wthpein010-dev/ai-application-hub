@@ -1,7 +1,7 @@
 # AI Application Hub 平台兼容矩阵
 
-- 日期：2026-08-21
-- 范围：主页当前 29 张公开项目卡片
+- 日期：2026-08-28
+- 范围：主页当前 30 张公开项目卡片
 - 规则：网页、小游戏和工程体验通过现代浏览器覆盖 Windows 与 macOS；只有经过原生构建、架构检查和产物校验的项目显示系统下载。
 - 通用门禁：`tests/hub-entry-pages-browser-smoke.mjs`、`tests/hub-video-pages-browser-smoke.mjs`、`tests/hub-platform-artifacts.test.mjs`。
 
@@ -36,9 +36,10 @@
 | `brick-character-copy-preview` | 砖块角色文案预览 | 工程在线体验 | Windows：现代浏览器 | macOS：现代浏览器 | [网页体验](https://wthpein010-dev.github.io/ai-application-hub/projects/brick-character-copy-preview/index.html)；提供表格审阅、角色形象与游戏内详情同步预览 |
 | `gamespec-relay` | 游戏需求开工台 | 原生双平台 | Windows： [微软版下载](https://github.com/wthpein010-dev/ai-application-hub/releases/download/gamespec-relay-v1.2.0/youxi-xuqiu-kaigongtai-windows-x64.zip)，x64，95,099,625 字节，SHA-256 `D9B82A86BB216E04803D950A4A9E70EFB765DFD9FC0B89A29F22F875CBFE3DA7` | macOS： [苹果电脑版下载](https://github.com/wthpein010-dev/ai-application-hub/releases/download/gamespec-relay-v1.2.0/youxi-xuqiu-kaigongtai-macos.zip)，arm64/x64，254,286,944 字节，SHA-256 `AECE9FCB9FD8D29B3E82E04A44BFDC2FD22601B0E6B3FA116EF773657B8995CC` | [项目页](https://wthpein010-dev.github.io/ai-application-hub/projects/gamespec-relay/index.html)；`.github/workflows/build-gamespec-relay-release.yml` 的 Release Run `33153665572` 完成 Windows x64、macOS arm64/x64 构建、架构核对、临时签名、包校验和真实启动；Mac 公网清单见 `docs/audits/evidence/2026-08-07-macos-download-manifest.json`。 |
 | `x-ai-codex-radar` | AI / Codex 雷达 | 网页跨平台 | Windows：现代浏览器 | macOS：现代浏览器 | [公开演示](https://wthpein010-dev.github.io/ai-application-hub/projects/x-ai-codex-radar/index.html)；无需登录的交互页明确使用示例数据，私有实时采集入口需 ChatGPT 登录；不提供虚假桌面安装包 |
+| `trinket-market` | 随身小物交易市场 | 工程在线体验 | Windows：现代浏览器 | macOS：现代浏览器 | [网页体验](https://wthpein010-dev.github.io/ai-application-hub/projects/trinket-market/index.html)；访客修改保存在当前浏览器，可导入或导出 JSON，永久修改通过公开 GitHub 仓库提交 |
 
 ## 结论
 
-- 29 个项目都可在 Windows 与 macOS 上通过网页查看或体验。
+- 30 个项目都可在 Windows 与 macOS 上通过网页查看或体验。
 - 5 个项目提供经过验证的原生 Windows/macOS 成品；飞书插件提供同一份跨平台浏览器扩展。
 - 其余项目不再显示来源码、Unity 工程、WebGL 压缩包或占位 ZIP 形式的伪系统下载。

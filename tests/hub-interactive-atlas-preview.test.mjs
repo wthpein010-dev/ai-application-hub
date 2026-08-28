@@ -25,7 +25,7 @@ test("preview data mirrors every production project in order", async () => {
   const sourceApps = loadDefaultAppsFromRuntime(runtime);
   const generated = await import(`${pathToFileURL(dataPath).href}?t=${Date.now()}`);
 
-  assert.equal(sourceApps.length, 29);
+  assert.equal(sourceApps.length, 30);
   assert.equal(generated.projects.length, sourceApps.length);
   assert.deepEqual(
     generated.projects.map(({ id }) => id),
