@@ -1157,8 +1157,58 @@ export const projects = [
     }
   },
   {
-    "id": "trinket-market",
+    "id": "codex-multi-thread-workbench",
     "index": 29,
+    "name": "Codex 多线程工作台",
+    "category": "AI 开发桌面工具",
+    "kind": "app",
+    "badge": "桌面工作台",
+    "brief": "把多个真实 Codex 任务放进同一个一级界面：并排看标题与对话、直接输入消息、辨认运行状态，并拖拽交换卡片位置。",
+    "problem": "多任务并行时，反复进入单个任务查看上下文、回复和确认状态会打断操作节奏，也很难同时维护多个正在推进的工作。",
+    "aiUse": "桌面端只连接本机 codex app-server 与会话日志，不读取凭据；Windows 与 macOS 双平台默认直接打开完整工作台，悬浮模式保留为显式可选功能。",
+    "tags": [
+      "Codex",
+      "多线程操作",
+      "拖拽布局",
+      "Windows",
+      "macOS"
+    ],
+    "actions": [
+      {
+        "type": "web",
+        "label": "网页预览",
+        "href": "./projects/codex-multi-thread-workbench/index.html",
+        "sourceLabel": "演示"
+      },
+      {
+        "type": "video",
+        "label": "介绍视频",
+        "href": "./projects/codex-multi-thread-workbench/video/index.html",
+        "sourceLabel": "介绍视频"
+      },
+      {
+        "type": "windows",
+        "label": "Wins下载",
+        "href": "https://wthpein010-dev.github.io/ai-application-hub/projects/codex-multi-thread-workbench/download/",
+        "sourceLabel": "Wins下载"
+      },
+      {
+        "type": "mac",
+        "label": "Mac下载",
+        "href": "https://wthpein010-dev.github.io/ai-application-hub/projects/codex-multi-thread-workbench/download/mac/",
+        "sourceLabel": "Mac下载"
+      }
+    ],
+    "visual": {
+      "accent": "#9d4a78",
+      "surface": "#faeaf3",
+      "ink": "#642645",
+      "mark": "CO"
+    }
+  },
+  {
+    "id": "trinket-market",
+    "index": 30,
     "name": "随身小物交易市场",
     "category": "游戏物品展示",
     "kind": "engineering",
