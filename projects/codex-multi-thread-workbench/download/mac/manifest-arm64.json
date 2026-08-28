@@ -1,0 +1,39 @@
+{
+  "version": 1,
+  "fileName": "CodexThreadWorkbench-macOS-arm64.app.zip",
+  "totalSize": 40722996,
+  "chunkSize": 8388608,
+  "sha256": "466A8308D270DCE344A6918E80BAF13BF90A21E341728DEA157301A17D94822F",
+  "parts": [
+    {
+      "index": 0,
+      "path": "parts/arm64/part-000.bin",
+      "size": 8388608,
+      "sha256": "0CF2128DCE71E28F33D2DC93BC0DF080336ECC63955F7C3E254C8DDB4387C03F"
+    },
+    {
+      "index": 1,
+      "path": "parts/arm64/part-001.bin",
+      "size": 8388608,
+      "sha256": "DA34ABC405A30E9B85B1C1228DF62362E36208E3E09D1FFF020D77136A3994FC"
+    },
+    {
+      "index": 2,
+      "path": "parts/arm64/part-002.bin",
+      "size": 8388608,
+      "sha256": "BDF3B8749D331C31EBB6F677E7C38B2E2F8D7A2352AE492052DFD3F83DF40997"
+    },
+    {
+      "index": 3,
+      "path": "parts/arm64/part-003.bin",
+      "size": 8388608,
+      "sha256": "2CE6E727C651DA41F2637F8916AE5D8C112A317686227558D075969929F9F196"
+    },
+    {
+      "index": 4,
+      "path": "parts/arm64/part-004.bin",
+      "size": 7168564,
+      "sha256": "A66D0B37A8535FC42C35A3F61BF0D2D3A9B597C5F6E0922F3B0FB1D08F54C881"
+    }
+  ]
+}

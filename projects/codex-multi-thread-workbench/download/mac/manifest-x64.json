@@ -1,0 +1,45 @@
+{
+  "version": 1,
+  "fileName": "CodexThreadWorkbench-macOS-x64.app.zip",
+  "totalSize": 42093884,
+  "chunkSize": 8388608,
+  "sha256": "1BED482BAE26F812D776C188BFFE18FB487EC708C310F0064535CEE0AEA830EE",
+  "parts": [
+    {
+      "index": 0,
+      "path": "parts/x64/part-000.bin",
+      "size": 8388608,
+      "sha256": "10CDDF5F2DF3F2E1C76FAD953C13778C5240F7B4DF8BF4296EF96FBF928896E4"
+    },
+    {
+      "index": 1,
+      "path": "parts/x64/part-001.bin",
+      "size": 8388608,
+      "sha256": "910A0DADB919A87BE1B4F0384DC825F4C24D8376ED0731672430B5068B7E0232"
+    },
+    {
+      "index": 2,
+      "path": "parts/x64/part-002.bin",
+      "size": 8388608,
+      "sha256": "CBC172E7CFDF926308097E640A79643C4C0C559A0DEA969503E24ED448E8F9A5"
+    },
+    {
+      "index": 3,
+      "path": "parts/x64/part-003.bin",
+      "size": 8388608,
+      "sha256": "F969F26BE43F9C38D7205CBBD002643F1300B1DCB3D911BD6805AF217C8AB21A"
+    },
+    {
+      "index": 4,
+      "path": "parts/x64/part-004.bin",
+      "size": 8388608,
+      "sha256": "D7426BECBF4970A6767971630946C9B6A836D31E568AA236836AF9449F865632"
+    },
+    {
+      "index": 5,
+      "path": "parts/x64/part-005.bin",
+      "size": 150844,
+      "sha256": "D56CF7AE4E170037999BFCFF2242FCDDF4C6AC203207B19B0BCDAF5C3ECBE3EC"
+    }
+  ]
+}
