@@ -1,0 +1,116 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="浏览、排序和拖拽整理随身小物，查看全服获得数量，并在需要时开启参考估值。">
+  <meta name="color-scheme" content="dark">
+  <link rel="icon" href="data:,">
+  <title>随身小物交易市场</title>
+  <link rel="stylesheet" href="../../assets/subpage-shell.css">
+  <link rel="stylesheet" href="./styles.css">
+</head>
+<body class="hub-subpage" data-theme="a">
+  <a class="hub-home-link" href="../../index.html#engineering">
+    <span aria-hidden="true">←</span>
+    返回主页
+  </a>
+
+  <div class="market-shell">
+    <header class="market-header">
+      <a class="market-brand" href="#market-app" aria-label="回到随身小物交易市场顶部">
+        <span class="brand-mark" aria-hidden="true">◇</span>
+        <span><strong>随身小物交易市场</strong><small>TRINKET EXCHANGE</small></span>
+      </a>
+      <nav class="market-nav" aria-label="页面导航">
+        <a href="#catalog">市场目录</a>
+        <a href="#about">数据说明</a>
+      </nav>
+      <span class="live-state"><i aria-hidden="true"></i>目录已同步</span>
+    </header>
+
+    <main id="market-app">
+      <section class="market-intro" aria-labelledby="market-title">
+        <div>
+          <span class="eyebrow">COMMUNITY INVENTORY</span>
+          <h1 id="market-title">随身小物交易市场</h1>
+          <p>查看全服获得数量与收藏热度。参考估值仅作展示，不构成真实交易。</p>
+        </div>
+        <dl class="market-stats" aria-label="市场数据概览">
+          <div><dt>全服获得总数</dt><dd id="total-acquired">--</dd><small>次累计获得</small></div>
+          <div><dt>已收录小物</dt><dd id="total-items">--</dd><small>个稳定物品 ID</small></div>
+          <div><dt id="third-stat-label">参考估值隐藏</dt><dd id="third-stat">--</dd><small id="third-stat-caption">开启开关后显示</small></div>
+        </dl>
+      </section>
+
+      <section class="catalog" id="catalog" aria-labelledby="catalog-title">
+        <div class="catalog-toolbar">
+          <label class="search-field">
+            <span class="search-icon" aria-hidden="true">⌕</span>
+            <span class="sr-only">搜索随身小物</span>
+            <input id="search-input" type="search" placeholder="搜索名称或物品 ID" autocomplete="off">
+          </label>
+
+          <label class="control-field">
+            <span>排序</span>
+            <select id="sort-mode" aria-label="选择排序方式">
+              <option value="manual">手动顺序</option>
+              <option value="id">物品 ID</option>
+              <option value="name">中文名拼音</option>
+              <option value="acquired" selected>获得数量</option>
+            </select>
+          </label>
+
+          <button class="control-button" id="sort-direction" type="button" data-direction="desc" aria-label="切换排序方向">
+            <span aria-hidden="true">⇅</span><span id="sort-direction-label">高 → 低</span>
+          </button>
+
+          <label class="value-toggle">
+            <input id="value-toggle" type="checkbox">
+            <span class="toggle-track" aria-hidden="true"><i></i></span>
+            <span>参考估值</span>
+          </label>
+
+          <label class="control-field theme-field">
+            <span>配色</span>
+            <select id="theme-select" aria-label="选择页面配色">
+              <option value="a" selected>A 暗夜藏品所</option>
+              <option value="b">B 深海蓝仓</option>
+              <option value="c">C 暖金陈列室</option>
+            </select>
+          </label>
+        </div>
+
+        <div class="catalog-summary">
+          <span id="result-count">正在读取目录…</span>
+          <h2 id="catalog-title">市场目录</h2>
+          <span class="drag-tip">按住卡片拖拽排序</span>
+        </div>
+
+        <div class="item-grid" id="item-grid" aria-label="随身小物列表"></div>
+        <div class="empty-state" id="empty-state" hidden>
+          <strong>没有找到匹配的小物</strong>
+          <span>换个名称或物品 ID 试试</span>
+        </div>
+        <p class="sr-only" id="drag-status" role="status" aria-live="polite"></p>
+      </section>
+
+      <section class="market-note" id="about" aria-labelledby="about-title">
+        <div>
+          <span class="eyebrow">DATA CONTRACT</span>
+          <h2 id="about-title">数量来自稳定物品 ID</h2>
+        </div>
+        <p>后续统计服务可按 <code>HAND-xxxx</code> 上报获得次数；页面会重新计算数量排名。估值开关默认关闭，避免把示例数值误解为真实成交价。</p>
+      </section>
+    </main>
+  </div>
+
+  <div class="error-panel" id="error-panel" role="alert" hidden>
+    <strong>市场目录暂时无法读取</strong>
+    <span id="error-message">请稍后重试。</span>
+    <button id="retry-button" type="button">重新读取</button>
+  </div>
+
+  <script type="module" src="./app.js"></script>
+</body>
+</html>
