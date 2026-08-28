@@ -79,8 +79,8 @@
       "kind": "native",
       "catalogUrl": "https://github.com/wthpein010-dev/ai-application-hub/releases/download/gamespec-relay-v1.2.0/youxi-xuqiu-kaigongtai-macos.zip",
       "archiveUrl": "https://github.com/wthpein010-dev/ai-application-hub/releases/download/gamespec-relay-v1.2.0/youxi-xuqiu-kaigongtai-macos.zip",
-      "bytes": 256143029,
-      "sha256": "A9CC65AF32F17DA61DA0E8350F744C9D2AE6A6735BE066CC01591C20D711F861",
+      "bytes": 254286944,
+      "sha256": "AECE9FCB9FD8D29B3E82E04A44BFDC2FD22601B0E6B3FA116EF773657B8995CC",
       "architectures": [
         "arm64",
         "x64"
