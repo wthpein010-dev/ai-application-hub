@@ -12,7 +12,9 @@ const mime = new Map([
   [".html", "text/html; charset=utf-8"],
   [".js", "text/javascript; charset=utf-8"],
   [".json", "application/json; charset=utf-8"],
+  [".jpg", "image/jpeg"],
   [".png", "image/png"],
+  [".webp", "image/webp"],
 ]);
 
 const server = createServer(async (request, response) => {
@@ -143,6 +145,86 @@ try {
   assert.match(await page.locator("#drag-status").textContent(), /已移动到第/);
   assert.deepEqual(errors, []);
   await page.close();
+
+  const editPage = await browser.newPage({ viewport: { width: 1024, height: 1000 }, acceptDownloads: true });
+  const editErrors = [];
+  editPage.on("console", (message) => { if (message.type() === "error") editErrors.push(`console: ${message.text()}`); });
+  editPage.on("pageerror", (error) => editErrors.push(`page: ${error.message}`));
+  editPage.on("requestfailed", (request) => editErrors.push(`request: ${request.url()} ${request.failure()?.errorText}`));
+  await editPage.addInitScript(() => {
+    if (sessionStorage.getItem("trinket-market-test-ready")) return;
+    localStorage.clear();
+    sessionStorage.setItem("trinket-market-test-ready", "true");
+  });
+  await editPage.goto(`${origin}/projects/trinket-market/index.html`, { waitUntil: "networkidle" });
+  await editPage.locator("body[data-ready='true']").waitFor();
+  assert.match(await editPage.locator("#github-source").getAttribute("href"), /^https:\/\/github\.com\/wthpein010-dev\/ai-application-hub/);
+
+  await editPage.locator("#edit-mode").click();
+  assert.equal(await editPage.locator(".item-edit").count(), 11);
+  await editPage.locator('.item-card[data-id="1"] .item-edit').click();
+  await editPage.locator("#edit-name").fill("测试冰水壶");
+  await editPage.locator("#edit-rarity").fill("限定");
+  await editPage.locator("#edit-acquired").fill("20001");
+  await editPage.locator("#item-form button[type='submit']").click();
+  await editPage.locator("#item-dialog").waitFor({ state: "hidden" });
+  assert.equal(await editPage.locator('.item-card[data-id="1"] .item-name').textContent(), "测试冰水壶");
+  assert.match(await editPage.locator('.item-card[data-id="1"] .item-count').textContent(), /20,001/);
+
+  await editPage.reload({ waitUntil: "networkidle" });
+  await editPage.locator("body[data-ready='true']").waitFor();
+  assert.equal(await editPage.locator('.item-card[data-id="1"] .item-name').textContent(), "测试冰水壶");
+
+  await editPage.locator("#edit-mode").click();
+  await editPage.locator('.item-card[data-id="1"] .item-edit').click();
+  await editPage.locator("#edit-image").setInputFiles(join(root, "projects", "trinket-market", "assets", "items", "hand_2.png"));
+  await editPage.locator("#item-form button[type='submit']").click();
+  await editPage.waitForFunction(() => document.querySelector('.item-card[data-id="1"] .item-art img')?.src.startsWith("blob:"));
+  await editPage.reload({ waitUntil: "networkidle" });
+  await editPage.locator("body[data-ready='true']").waitFor();
+  await editPage.waitForFunction(() => document.querySelector('.item-card[data-id="1"] .item-art img')?.src.startsWith("blob:"));
+
+  const downloadPromise = editPage.waitForEvent("download");
+  await editPage.locator("#export-json").click();
+  const download = await downloadPromise;
+  const exported = JSON.parse(await readFile(await download.path(), "utf8"));
+  assert.equal(exported.version, 1);
+  assert.equal(exported.items.find((item) => item.id === 1).name, "测试冰水壶");
+  assert.match(exported.items.find((item) => item.id === 1).imageData, /^data:image\/png;base64,/);
+
+  await editPage.locator("#import-json").setInputFiles({
+    name: "invalid.json",
+    mimeType: "application/json",
+    buffer: Buffer.from(JSON.stringify({ version: 1, items: [exported.items[0], exported.items[0]], order: [] })),
+  });
+  await editPage.waitForFunction(() => document.querySelector("#edit-status")?.textContent.includes("重复"));
+  assert.match(await editPage.locator("#edit-status").textContent(), /重复/);
+
+  const importedItems = exported.items.map((item) => ({ ...item, imageData: undefined }));
+  importedItems[0] = { ...importedItems[0], name: "导入冰水壶", acquired: 22222 };
+  await editPage.locator("#import-json").setInputFiles({
+    name: "valid.json",
+    mimeType: "application/json",
+    buffer: Buffer.from(JSON.stringify({ version: 1, items: importedItems, order: exported.order })),
+  });
+  await editPage.waitForFunction(() => document.querySelector('.item-card[data-id="1"] .item-name')?.textContent === "导入冰水壶");
+  assert.match(await editPage.locator("#edit-status").textContent(), /已导入/);
+
+  editPage.once("dialog", (dialog) => dialog.accept());
+  await editPage.locator("#reset-data").click();
+  await editPage.waitForFunction(() => document.querySelector('.item-card[data-id="1"] .item-name')?.textContent === "便携冰水壶");
+  assert.match(await editPage.locator("#edit-status").textContent(), /已恢复官方数据/);
+
+  await editPage.locator("#edit-mode").click();
+  await editPage.locator('.item-card[data-id="1"] .item-edit').click();
+  await editPage.locator("#edit-image").setInputFiles({ name: "bad.txt", mimeType: "text/plain", buffer: Buffer.from("bad") });
+  await editPage.locator("#item-form button[type='submit']").click();
+  assert.match(await editPage.locator("#dialog-error").textContent(), /仅支持 PNG、JPG 和 WebP/);
+  assert.equal(await editPage.locator("#item-dialog").isVisible(), true);
+  await editPage.locator("#dialog-cancel").click();
+
+  assert.deepEqual(editErrors, []);
+  await editPage.close();
 } finally {
   await browser.close();
   server.close();

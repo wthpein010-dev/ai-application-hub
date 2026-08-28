@@ -81,6 +81,16 @@
           </label>
         </div>
 
+        <div class="editor-toolbar" aria-label="公开编辑工具">
+          <button id="edit-mode" type="button" aria-pressed="false">编辑物品</button>
+          <button id="export-json" type="button">导出 JSON</button>
+          <label class="import-button" for="import-json">导入 JSON</label>
+          <input id="import-json" type="file" accept="application/json,.json" hidden>
+          <button id="reset-data" type="button">恢复官方数据</button>
+          <a id="github-source" href="https://github.com/wthpein010-dev/ai-application-hub/tree/main/projects/trinket-market" target="_blank" rel="noreferrer">GitHub 源码</a>
+          <span id="edit-status" role="status" aria-live="polite">访客修改仅保存在当前浏览器</span>
+        </div>
+
         <div class="catalog-summary">
           <span id="result-count">正在读取目录…</span>
           <h2 id="catalog-title">市场目录</h2>
@@ -104,6 +114,36 @@
       </section>
     </main>
   </div>
+
+  <dialog class="item-dialog" id="item-dialog" aria-labelledby="dialog-title">
+    <form id="item-form" method="dialog">
+      <div class="dialog-heading">
+        <div><span class="eyebrow">LOCAL EDIT</span><h2 id="dialog-title">编辑随身小物</h2></div>
+        <button id="dialog-close" type="button" aria-label="关闭编辑窗口">×</button>
+      </div>
+      <div class="dialog-layout">
+        <div class="dialog-preview">
+          <img id="edit-image-preview" alt="当前物品图片预览">
+          <small>图片只保存在当前浏览器</small>
+        </div>
+        <div class="dialog-fields">
+          <label><span>物品 ID</span><input id="edit-id" type="text" readonly></label>
+          <label><span>物品名字</span><input id="edit-name" type="text" maxlength="24" required></label>
+          <label><span>名字拼音</span><input id="edit-pinyin" type="text" maxlength="80" pattern="[A-Za-z]+" required></label>
+          <label><span>稀有度</span><input id="edit-rarity" type="text" maxlength="12" required></label>
+          <label><span>全服获得数量</span><input id="edit-acquired" type="number" min="0" step="1" required></label>
+          <label><span>参考估值</span><input id="edit-value" type="number" min="0" step="0.01" required></label>
+          <label><span>涨跌幅 %</span><input id="edit-change" type="number" step="0.1" required></label>
+          <label class="image-field"><span>替换图片</span><input id="edit-image" type="file" accept="image/png,image/jpeg,image/webp"><small>PNG / JPG / WebP，最大 8 MB</small></label>
+        </div>
+      </div>
+      <p class="dialog-error" id="dialog-error" role="alert"></p>
+      <div class="dialog-actions">
+        <button id="dialog-cancel" type="button">取消</button>
+        <button type="submit">保存修改</button>
+      </div>
+    </form>
+  </dialog>
 
   <div class="error-panel" id="error-panel" role="alert" hidden>
     <strong>市场目录暂时无法读取</strong>

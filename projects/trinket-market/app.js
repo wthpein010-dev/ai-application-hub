@@ -1,4 +1,13 @@
 import { applyAcquisitionCounts, sortItems, validateItems } from "./core/items.js";
+import {
+  clearItemImages,
+  loadItemImages,
+  loadLocalState,
+  removeLocalState,
+  saveItemImage,
+  saveLocalState,
+  validateImportedState,
+} from "./core/storage.js";
 
 const STORAGE_KEY = "trinket-market-v1-preferences";
 const DEFAULT_THEME = "a";
@@ -16,19 +25,63 @@ const dragStatus = document.querySelector("#drag-status");
 const errorPanel = document.querySelector("#error-panel");
 const errorMessage = document.querySelector("#error-message");
 const retryButton = document.querySelector("#retry-button");
+const editModeButton = document.querySelector("#edit-mode");
+const exportButton = document.querySelector("#export-json");
+const importInput = document.querySelector("#import-json");
+const resetButton = document.querySelector("#reset-data");
+const editStatus = document.querySelector("#edit-status");
+const itemDialog = document.querySelector("#item-dialog");
+const itemForm = document.querySelector("#item-form");
+const dialogError = document.querySelector("#dialog-error");
+const editImageInput = document.querySelector("#edit-image");
+const editImagePreview = document.querySelector("#edit-image-preview");
+const dialogCloseButton = document.querySelector("#dialog-close");
+const dialogCancelButton = document.querySelector("#dialog-cancel");
+const editIdInput = document.querySelector("#edit-id");
+const editNameInput = document.querySelector("#edit-name");
+const editPinyinInput = document.querySelector("#edit-pinyin");
+const editRarityInput = document.querySelector("#edit-rarity");
+const editAcquiredInput = document.querySelector("#edit-acquired");
+const editValueInput = document.querySelector("#edit-value");
+const editChangeInput = document.querySelector("#edit-change");
 
 const state = {
+  canonicalItems: [],
   items: [],
   manualOrder: [],
+  imageBlobs: new Map(),
+  imageUrls: new Map(),
   query: "",
   sort: "acquired",
   direction: "desc",
   showValue: false,
   theme: DEFAULT_THEME,
+  editMode: false,
+  editingId: 0,
+  previewUrl: "",
 };
 
 function formatNumber(value) {
   return new Intl.NumberFormat("zh-CN").format(value);
+}
+
+function escapeHtml(value) {
+  return String(value).replace(/[&<>'"]/g, (character) => ({
+    "&": "&amp;",
+    "<": "&lt;",
+    ">": "&gt;",
+    "'": "&#39;",
+    '"': "&quot;",
+  })[character]);
+}
+
+function setEditStatus(message, isError = false) {
+  editStatus.textContent = message;
+  editStatus.dataset.error = isError ? "true" : "false";
+}
+
+function imageSource(item) {
+  return state.imageUrls.get(item.id) || item.image;
 }
 
 function loadPreferences() {
@@ -50,6 +103,33 @@ function savePreferences() {
   }
 }
 
+function persistEditableState(message = "修改已保存到当前浏览器") {
+  const saved = saveLocalState(localStorage, { version: 1, items: state.items, order: state.manualOrder });
+  setEditStatus(saved ? message : "当前修改已生效，但未能保存到浏览器", !saved);
+  return saved;
+}
+
+function revokeImageUrls() {
+  for (const url of state.imageUrls.values()) URL.revokeObjectURL(url);
+  state.imageUrls.clear();
+}
+
+function revokePreviewUrl() {
+  if (!state.previewUrl) return;
+  URL.revokeObjectURL(state.previewUrl);
+  state.previewUrl = "";
+}
+
+async function refreshImageOverrides() {
+  revokeImageUrls();
+  try {
+    state.imageBlobs = await loadItemImages();
+  } catch {
+    state.imageBlobs = new Map();
+  }
+  for (const [id, blob] of state.imageBlobs) state.imageUrls.set(id, URL.createObjectURL(blob));
+}
+
 function rankMap(items) {
   return new Map(items.slice().sort((a, b) => b.acquired - a.acquired || a.id - b.id).map((item, index) => [item.id, index + 1]));
 }
@@ -66,16 +146,21 @@ function currentItems() {
 function cardMarkup(item, rank) {
   const direction = item.change >= 0 ? "up" : "down";
   const change = `${item.change >= 0 ? "+" : ""}${item.change.toFixed(1)}%`;
+  const name = escapeHtml(item.name);
+  const rarity = escapeHtml(item.rarity);
+  const source = escapeHtml(imageSource(item));
+  const editButton = state.editMode ? `<button class="item-edit" type="button" aria-label="编辑${name}">编辑</button>` : "";
   return `
-    <article class="item-card" data-id="${item.id}" aria-label="${item.name}，全服获得 ${formatNumber(item.acquired)} 次，数量排名第 ${rank}">
+    <article class="item-card" data-id="${item.id}" aria-label="${name}，全服获得 ${formatNumber(item.acquired)} 次，数量排名第 ${rank}">
+      ${editButton}
       <div class="item-card-content">
         <div class="item-card-top">
           <span class="item-id">HAND-${String(item.id).padStart(4, "0")}</span>
-          <span class="item-rarity">${item.rarity}</span>
+          <span class="item-rarity">${rarity}</span>
         </div>
-        <div class="item-art"><img src="${item.image}" alt="${item.name}" draggable="false"></div>
+        <div class="item-art"><img src="${source}" alt="${name}" draggable="false"></div>
         <div class="item-info">
-          <h3 class="item-name">${item.name}</h3>
+          <h3 class="item-name">${name}</h3>
           <span class="item-change ${direction}">${change}</span>
           <div class="item-meta">
             <div><small>全服获得</small><strong class="item-count">${formatNumber(item.acquired)} 次</strong></div>
@@ -145,6 +230,121 @@ function render() {
   centerImages();
 }
 
+function updateEditMode(enabled) {
+  state.editMode = Boolean(enabled);
+  editModeButton.setAttribute("aria-pressed", String(state.editMode));
+  editModeButton.textContent = state.editMode ? "完成编辑" : "编辑物品";
+  render();
+}
+
+function openItemEditor(id) {
+  const item = state.items.find((candidate) => candidate.id === Number(id));
+  if (!item) return;
+  state.editingId = item.id;
+  dialogError.textContent = "";
+  editImageInput.value = "";
+  editIdInput.value = `HAND-${String(item.id).padStart(4, "0")}`;
+  editNameInput.value = item.name;
+  editPinyinInput.value = item.pinyin;
+  editRarityInput.value = item.rarity;
+  editAcquiredInput.value = String(item.acquired);
+  editValueInput.value = String(item.value);
+  editChangeInput.value = String(item.change);
+  editImagePreview.src = imageSource(item);
+  itemDialog.showModal();
+  editNameInput.focus();
+}
+
+function closeItemEditor() {
+  revokePreviewUrl();
+  state.editingId = 0;
+  editImageInput.value = "";
+  dialogError.textContent = "";
+  itemDialog.close();
+}
+
+function acceptedImage(file) {
+  return file && ["image/png", "image/jpeg", "image/webp"].includes(file.type) && file.size <= 8 * 1024 * 1024;
+}
+
+function imageTypeError(file) {
+  if (!file || !["image/png", "image/jpeg", "image/webp"].includes(file.type)) return "仅支持 PNG、JPG 和 WebP 图片";
+  if (file.size > 8 * 1024 * 1024) return "图片不能超过 8 MB";
+  return "";
+}
+
+function blobAsDataUrl(blob) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(String(reader.result));
+    reader.onerror = () => reject(reader.error || new Error("图片读取失败"));
+    reader.readAsDataURL(blob);
+  });
+}
+
+function dataUrlAsBlob(dataUrl) {
+  const [header, encoded] = dataUrl.split(",", 2);
+  const mimeType = /^data:([^;]+);base64$/i.exec(header)?.[1];
+  if (!mimeType || !encoded) throw new TypeError("图片数据无效");
+  const bytes = Uint8Array.from(atob(encoded), (character) => character.charCodeAt(0));
+  return new Blob([bytes], { type: mimeType });
+}
+
+async function exportEditableState() {
+  try {
+    const items = await Promise.all(state.items.map(async (item) => {
+      const imageBlob = state.imageBlobs.get(item.id);
+      return imageBlob ? { ...item, imageData: await blobAsDataUrl(imageBlob) } : { ...item };
+    }));
+    const payload = JSON.stringify({ version: 1, items, order: state.manualOrder }, null, 2);
+    const url = URL.createObjectURL(new Blob([payload], { type: "application/json" }));
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `trinket-market-${new Date().toISOString().slice(0, 10)}.json`;
+    link.click();
+    setTimeout(() => URL.revokeObjectURL(url), 0);
+    setEditStatus("已导出当前小物数据与本地图片");
+  } catch (error) {
+    setEditStatus(error instanceof Error ? `导出失败：${error.message}` : "导出失败", true);
+  }
+}
+
+async function importEditableState(file) {
+  try {
+    const imported = validateImportedState(JSON.parse(await file.text()));
+    await clearItemImages();
+    for (const item of imported.items) {
+      if (item.imageData) await saveItemImage(item.id, dataUrlAsBlob(item.imageData));
+    }
+    state.items = imported.items.map(({ imageData, ...item }) => item);
+    state.manualOrder = imported.order;
+    savePreferences();
+    persistEditableState("已导入小物数据并保存到当前浏览器");
+    await refreshImageOverrides();
+    render();
+  } catch (error) {
+    setEditStatus(error instanceof Error ? `导入失败：${error.message}` : "导入文件无效", true);
+  } finally {
+    importInput.value = "";
+  }
+}
+
+async function restoreCanonicalData() {
+  if (!window.confirm("恢复后会清除当前浏览器里的物品修改、图片和拖拽顺序。是否继续？")) return;
+  try {
+    removeLocalState(localStorage);
+    await clearItemImages();
+    state.items = state.canonicalItems.map((item) => ({ ...item }));
+    state.manualOrder = state.items.map((item) => item.id);
+    savePreferences();
+    await refreshImageOverrides();
+    render();
+    setEditStatus("已恢复官方数据");
+  } catch (error) {
+    setEditStatus(error instanceof Error ? `恢复失败：${error.message}` : "恢复失败", true);
+  }
+}
+
 function setDirection(direction) {
   state.direction = direction === "asc" ? "asc" : "desc";
   sortDirection.dataset.direction = state.direction;
@@ -183,7 +383,7 @@ function animateGridMove(before) {
 }
 
 function beginDrag(event, card) {
-  if (event.button !== 0 || state.query) return;
+  if (event.button !== 0 || state.query || event.target.closest("button, a, input, select, textarea, label")) return;
   event.preventDefault();
   const rect = card.getBoundingClientRect();
   const offsetX = event.clientX - rect.left;
@@ -222,6 +422,7 @@ function beginDrag(event, card) {
     grid.classList.remove("is-drag-active");
     state.manualOrder = itemOrderFromGrid();
     savePreferences();
+    persistEditableState("拖拽顺序已保存到当前浏览器");
     const position = state.manualOrder.indexOf(Number(card.dataset.id)) + 1;
     dragStatus.textContent = `已移动到第 ${position} 位`;
   }
@@ -234,6 +435,11 @@ function beginDrag(event, card) {
 grid.addEventListener("pointerdown", (event) => {
   const card = event.target.closest(".item-card");
   if (card) beginDrag(event, card);
+});
+
+grid.addEventListener("click", (event) => {
+  const button = event.target.closest(".item-edit");
+  if (button) openItemEditor(button.closest(".item-card")?.dataset.id);
 });
 
 searchInput.addEventListener("input", () => {
@@ -259,6 +465,66 @@ valueToggle.addEventListener("change", () => {
 
 themeSelect.addEventListener("change", () => applyTheme(themeSelect.value));
 retryButton.addEventListener("click", () => loadCatalog());
+editModeButton.addEventListener("click", () => updateEditMode(!state.editMode));
+exportButton.addEventListener("click", exportEditableState);
+importInput.addEventListener("change", () => {
+  const [file] = importInput.files;
+  if (file) importEditableState(file);
+});
+resetButton.addEventListener("click", restoreCanonicalData);
+dialogCloseButton.addEventListener("click", closeItemEditor);
+dialogCancelButton.addEventListener("click", closeItemEditor);
+itemDialog.addEventListener("cancel", (event) => {
+  event.preventDefault();
+  closeItemEditor();
+});
+editImageInput.addEventListener("change", () => {
+  revokePreviewUrl();
+  const [file] = editImageInput.files;
+  if (!file) return;
+  const error = imageTypeError(file);
+  if (error) {
+    dialogError.textContent = error;
+    return;
+  }
+  dialogError.textContent = "";
+  state.previewUrl = URL.createObjectURL(file);
+  editImagePreview.src = state.previewUrl;
+});
+itemForm.addEventListener("submit", async (event) => {
+  event.preventDefault();
+  dialogError.textContent = "";
+  const [file] = editImageInput.files;
+  const imageError = file ? imageTypeError(file) : "";
+  if (imageError) {
+    dialogError.textContent = imageError;
+    return;
+  }
+  const current = state.items.find((item) => item.id === state.editingId);
+  if (!current) {
+    dialogError.textContent = "找不到要编辑的物品";
+    return;
+  }
+  try {
+    const [updated] = validateItems([{
+      ...current,
+      name: editNameInput.value,
+      pinyin: editPinyinInput.value,
+      rarity: editRarityInput.value,
+      acquired: Number(editAcquiredInput.value),
+      value: Number(editValueInput.value),
+      change: Number(editChangeInput.value),
+    }]);
+    if (file && acceptedImage(file)) await saveItemImage(updated.id, file);
+    state.items = state.items.map((item) => item.id === updated.id ? updated : item);
+    persistEditableState();
+    if (file) await refreshImageOverrides();
+    closeItemEditor();
+    render();
+  } catch (error) {
+    dialogError.textContent = error instanceof Error ? error.message : "保存失败，请检查输入内容";
+  }
+});
 
 window.TrinketMarketAPI = Object.freeze({
   setAcquisitionCounts(counts) {
@@ -278,8 +544,12 @@ async function loadCatalog() {
   try {
     const response = await fetch("./data/items.json", { cache: "no-store" });
     if (!response.ok) throw new Error(`目录请求失败（${response.status}）`);
-    state.items = validateItems(await response.json());
+    state.canonicalItems = validateItems(await response.json());
+    const saved = loadLocalState(localStorage);
+    state.items = saved?.items || state.canonicalItems.map((item) => ({ ...item }));
+    state.manualOrder = saved?.order || state.manualOrder;
     if (!state.manualOrder.length) state.manualOrder = state.items.map((item) => item.id);
+    await refreshImageOverrides();
     render();
     document.body.dataset.ready = "true";
   } catch (error) {
@@ -288,6 +558,11 @@ async function loadCatalog() {
     document.body.dataset.ready = "error";
   }
 }
+
+window.addEventListener("beforeunload", () => {
+  revokePreviewUrl();
+  revokeImageUrls();
+});
 
 loadPreferences();
 applyTheme(state.theme);

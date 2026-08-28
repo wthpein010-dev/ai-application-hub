@@ -17,6 +17,10 @@ function normalizeItem(item) {
   if (!Number.isInteger(acquired) || acquired < 0) throw new TypeError("获得数量必须是非负整数");
   if (!Number.isFinite(value) || value < 0) throw new TypeError("参考估值必须是非负数字");
   if (!Number.isFinite(change)) throw new TypeError("涨跌幅必须是有效数字");
+  const image = text(item.image, "物品图片");
+  if (!/^\.\/assets\/items\/[a-z0-9_.-]+\.(?:png|jpe?g|webp)$/i.test(image)) {
+    throw new TypeError("物品图片必须使用本项目素材目录");
+  }
 
   return {
     id,
@@ -26,7 +30,7 @@ function normalizeItem(item) {
     acquired,
     value,
     change,
-    image: text(item.image, "物品图片"),
+    image,
   };
 }
 

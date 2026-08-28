@@ -8,6 +8,11 @@ import {
   sortItems,
   validateItems,
 } from "../projects/trinket-market/core/items.js";
+import {
+  loadLocalState,
+  saveLocalState,
+  validateImportedState,
+} from "../projects/trinket-market/core/storage.js";
 
 const root = dirname(dirname(fileURLToPath(import.meta.url)));
 const projectRoot = resolve(root, "projects", "trinket-market");
@@ -25,6 +30,7 @@ test("validation rejects duplicate IDs and invalid market values", () => {
   assert.throws(() => validateItems([{ ...canonical[0] }, { ...canonical[0] }]), /重复/);
   assert.throws(() => validateItems([{ ...canonical[0], acquired: -1 }]), /获得数量/);
   assert.throws(() => validateItems([{ ...canonical[0], value: Number.NaN }]), /估值/);
+  assert.throws(() => validateItems([{ ...canonical[0], image: "https://example.com/tracker.png" }]), /本项目素材/);
 });
 
 test("acquisition bridge updates known non-negative integer counts only", () => {
@@ -47,4 +53,25 @@ test("sorting supports IDs, names, counts, and a complete manual order", () => {
 test("manual sorting appends IDs absent from a stale saved order", () => {
   const sample = canonical.slice(0, 4);
   assert.deepEqual(sortItems(sample, "manual", "asc", [3, 1]).map((item) => item.id), [3, 1, 2, 4]);
+});
+
+test("imported state validates item data and repairs stale manual order", () => {
+  const imported = validateImportedState({ version: 1, items: canonical, order: [3, 1, 99, 3] });
+  assert.equal(imported.version, 1);
+  assert.deepEqual(imported.order, [3, 1, 2, 4, 5, 6, 7, 8, 9, 10, 11]);
+  assert.throws(() => validateImportedState({ version: 1, items: [canonical[0], canonical[0]], order: [] }), /重复/);
+  assert.throws(() => validateImportedState({ version: 2, items: canonical, order: [] }), /版本/);
+});
+
+test("browser state round-trips and corrupt saved data falls back safely", () => {
+  const memory = new Map();
+  const storage = {
+    getItem: (key) => memory.get(key) ?? null,
+    setItem: (key, value) => memory.set(key, String(value)),
+  };
+  const saved = saveLocalState(storage, { version: 1, items: canonical, order: [2, 1] });
+  assert.equal(saved, true);
+  assert.deepEqual(loadLocalState(storage).order.slice(0, 3), [2, 1, 3]);
+  memory.set("trinket-market-v1-data", "{broken");
+  assert.equal(loadLocalState(storage), null);
 });
