@@ -343,6 +343,12 @@ test("independent workflow verifies real apps before safely publishing both arch
     ),
   ]);
 
+  const workflowTrigger = workflow.slice(0, workflow.indexOf("\npermissions:"));
+  assert.match(
+    workflowTrigger,
+    /- "scripts\/lib\/validated-workbench-macos-zip\.mjs"/,
+    "changes to the ZIP validator must trigger the independent build workflow",
+  );
   assert.match(project, /<Version>2\.2\.1<\/Version>/);
   assert.match(project, /<AssemblyName>CodexThreadWorkbench<\/AssemblyName>/);
   assert.match(workflow, /runtime:\s*osx-arm64\s+runner:\s*macos-14/);

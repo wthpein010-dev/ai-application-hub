@@ -9,6 +9,7 @@ on:
       - ".github/workflows/build-codex-multi-thread-workbench.yml"
       - "build/codex-thread-workbench/**"
       - "scripts/activate-codex-multi-thread-workbench-macos.mjs"
+      - "scripts/lib/validated-workbench-macos-zip.mjs"
       - "scripts/split-codex-multi-thread-workbench-mac.mjs"
       - "tests/codex-multi-thread-workbench-mac-download.test.mjs"
 
