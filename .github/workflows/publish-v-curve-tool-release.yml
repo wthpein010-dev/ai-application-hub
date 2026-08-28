@@ -34,11 +34,13 @@ jobs:
     name: Promote the immutable Mac artifact
     runs-on: ubuntu-latest
     steps:
-      - name: Check out the manifest committed by the artifact source
+      - name: Check out the manifest committed by the workflow-dispatch revision
         uses: actions/checkout@v4
         with:
-          ref: ${{ inputs.expected_source_sha }}
-          sparse-checkout: projects/v-curve-tool/release-manifest.json
+          ref: ${{ github.sha }}
+          sparse-checkout: |
+            projects/v-curve-tool/release-manifest.json
+            scripts/v-curve-release-publisher.mjs
           sparse-checkout-cone-mode: false
 
       - name: Download the previously verified artifact
@@ -71,32 +73,23 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          node - <<'NODE'
-          const { createHash } = require("node:crypto");
-          const { readFileSync, statSync } = require("node:fs");
-          const { join } = require("node:path");
+          node --input-type=module - <<'NODE'
+          import { createHash } from "node:crypto";
+          import { readFileSync, statSync } from "node:fs";
+          import { join } from "node:path";
+          import { assertMacArtifactMatchesManifest } from "./scripts/v-curve-release-publisher.mjs";
           const root = "release-assets";
           const archive = join(root, process.env.EXPECTED_ARCHIVE);
           const metadata = JSON.parse(readFileSync(join(root, "v-curve-tool-macos-release.json"), "utf8"));
           const manifest = JSON.parse(readFileSync("projects/v-curve-tool/release-manifest.json", "utf8"));
-          if (manifest.schemaVersion !== "v-curve-tool-release/1" || manifest.version !== "1.2.0") {
-            throw new Error(`unexpected release manifest: ${JSON.stringify(manifest)}`);
-          }
           if (manifest.assets.mac.file !== process.env.EXPECTED_ARCHIVE) {
             throw new Error(`manifest Mac asset drift: ${manifest.assets.mac.file}`);
           }
-          const expected = {
-            version: manifest.version,
-            sourceCommit: process.env.EXPECTED_SOURCE_SHA,
-            asset: process.env.EXPECTED_ARCHIVE,
-            bytes: manifest.assets.mac.bytes,
-            sha256: manifest.assets.mac.sha256,
-            architectures: manifest.assets.mac.architectures,
-            bundledFiles: manifest.bundledLevels.files,
-          };
-          if (JSON.stringify(metadata) !== JSON.stringify(expected)) {
-            throw new Error(`artifact metadata drift: ${JSON.stringify(metadata)}`);
-          }
+          assertMacArtifactMatchesManifest({
+            manifest,
+            sourceSha: process.env.EXPECTED_SOURCE_SHA,
+            macArtifactMetadata: metadata,
+          });
           if (!Number.isSafeInteger(metadata.bytes) || metadata.bytes <= 0) {
             throw new Error(`invalid archive byte count: ${metadata.bytes}`);
           }
@@ -123,10 +116,19 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          gh release download "$RELEASE_TAG" \
-            --repo "$GITHUB_REPOSITORY" \
-            --pattern "$EXPECTED_WINDOWS_ARCHIVE" \
-            --dir release-assets
+          release_json="$(gh api "repos/$GITHUB_REPOSITORY/releases/$RELEASE_ID")"
+          asset_id="$(RELEASE_JSON="$release_json" node - <<'NODE'
+          const release = JSON.parse(process.env.RELEASE_JSON);
+          if (release.id !== Number(process.env.RELEASE_ID) || release.tag_name !== process.env.RELEASE_TAG || release.draft !== true) {
+            throw new Error(`Release is not the expected draft: ${JSON.stringify(release)}`);
+          }
+          const asset = release.assets.find((candidate) => candidate.name === process.env.EXPECTED_WINDOWS_ARCHIVE);
+          if (!Number.isSafeInteger(asset?.id)) throw new Error("missing Windows asset on the target Release");
+          process.stdout.write(String(asset.id));
+          NODE
+          )"
+          gh api "repos/$GITHUB_REPOSITORY/releases/assets/$asset_id" \
+            -H "Accept: application/octet-stream" > "release-assets/$EXPECTED_WINDOWS_ARCHIVE"
           node - <<'NODE'
           const { createHash } = require("node:crypto");
           const { readFileSync, statSync } = require("node:fs");
@@ -151,7 +153,6 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          gh release view "$RELEASE_TAG" --repo "$GITHUB_REPOSITORY" >/dev/null
           release_json="$(gh api "repos/$GITHUB_REPOSITORY/releases/$RELEASE_ID")"
           RELEASE_JSON="$release_json" node - <<'NODE'
           const release = JSON.parse(process.env.RELEASE_JSON);
@@ -168,7 +169,7 @@ jobs:
           $EXPECTED_ARCHIVE.sha256.txt
           v-curve-tool-macos-release.json
           EOF
-          assets_json="$(gh release view "$RELEASE_TAG" --repo "$GITHUB_REPOSITORY" --json assets)"
+          assets_json="$release_json"
           existing_count="$(ASSETS_JSON="$assets_json" node - <<'NODE'
           const expected = new Set([
             process.env.EXPECTED_ARCHIVE,
@@ -189,10 +190,15 @@ jobs:
           elif [[ "$existing_count" = "3" ]]; then
             mkdir existing-assets
             for asset in "${expected_assets[@]}"; do
-              gh release download "$RELEASE_TAG" \
-                --repo "$GITHUB_REPOSITORY" \
-                --pattern "$asset" \
-                --dir existing-assets
+              asset_id="$(ASSETS_JSON="$assets_json" ASSET_NAME="$asset" node - <<'NODE'
+              const release = JSON.parse(process.env.ASSETS_JSON);
+              const found = release.assets.find((candidate) => candidate.name === process.env.ASSET_NAME);
+              if (!Number.isSafeInteger(found?.id)) throw new Error(`missing immutable asset: ${process.env.ASSET_NAME}`);
+              process.stdout.write(String(found.id));
+              NODE
+              )"
+              gh api "repos/$GITHUB_REPOSITORY/releases/assets/$asset_id" \
+                -H "Accept: application/octet-stream" > "existing-assets/$asset"
               cmp --silent "release-assets/$asset" "existing-assets/$asset"
             done
             echo "The immutable Mac release assets already match; no upload was required."
@@ -208,34 +214,36 @@ jobs:
         run: |
           set -euo pipefail
           release_json="$(gh api "repos/$GITHUB_REPOSITORY/releases/$RELEASE_ID")"
-          RELEASE_JSON="$release_json" node - <<'NODE'
-          const release = JSON.parse(process.env.RELEASE_JSON);
-          const expectedAssetNames = new Set([
-            process.env.EXPECTED_WINDOWS_ARCHIVE,
-            process.env.EXPECTED_ARCHIVE,
-            `${process.env.EXPECTED_ARCHIVE}.sha256.txt`,
-            "v-curve-tool-macos-release.json",
-          ]);
-          const actualAssetNames = new Set(release.assets.map((asset) => asset.name));
-          if (release.id !== Number(process.env.RELEASE_ID) || release.tag_name !== process.env.RELEASE_TAG || release.draft !== true) {
-            throw new Error(`Release is not the expected draft: ${JSON.stringify(release)}`);
-          }
-          if (actualAssetNames.size !== expectedAssetNames.size
-            || ![...expectedAssetNames].every((asset) => actualAssetNames.has(asset))) {
-            throw new Error("The Release does not contain the complete verified V curve asset set");
-          }
+          asset_plan="$(RELEASE_JSON="$release_json" node --input-type=module - <<'NODE'
+          import { readFileSync } from "node:fs";
+          import { createCompleteDraftReleasePlan } from "./scripts/v-curve-release-publisher.mjs";
+          const manifest = JSON.parse(readFileSync("projects/v-curve-tool/release-manifest.json", "utf8"));
+          const macArtifactMetadata = JSON.parse(readFileSync("release-assets/v-curve-tool-macos-release.json", "utf8"));
+          const plan = createCompleteDraftReleasePlan({
+            manifest,
+            sourceSha: process.env.EXPECTED_SOURCE_SHA,
+            release: JSON.parse(process.env.RELEASE_JSON),
+            macArtifactMetadata,
+          });
+          process.stdout.write(JSON.stringify(plan));
           NODE
+          )"
           mkdir published-assets
-          for asset in "$EXPECTED_WINDOWS_ARCHIVE" "$EXPECTED_ARCHIVE" "$EXPECTED_ARCHIVE.sha256.txt" v-curve-tool-macos-release.json; do
-            gh release download "$RELEASE_TAG" \
-              --repo "$GITHUB_REPOSITORY" \
-              --pattern "$asset" \
-              --dir published-assets
-          done
-          node - <<'NODE'
-          const { createHash } = require("node:crypto");
-          const { readFileSync, statSync } = require("node:fs");
-          const { join } = require("node:path");
+          PLAN_JSON="$asset_plan" node - <<'NODE' > asset-plan.tsv
+          const plan = JSON.parse(process.env.PLAN_JSON);
+          for (const asset of plan.assets) process.stdout.write(`${asset.id}\t${asset.name}\n`);
+          NODE
+          while IFS=$'\t' read -r asset_id asset; do
+            gh api "repos/$GITHUB_REPOSITORY/releases/assets/$asset_id" \
+              -H "Accept: application/octet-stream" > "published-assets/$asset"
+          done < asset-plan.tsv
+          final_release_json="$(gh api "repos/$GITHUB_REPOSITORY/releases/$RELEASE_ID")"
+          RELEASE_JSON="$final_release_json" node --input-type=module - <<'NODE'
+          import { createHash } from "node:crypto";
+          import { execFileSync } from "node:child_process";
+          import { readFileSync, statSync } from "node:fs";
+          import { join } from "node:path";
+          import { publishVerifiedDraftRelease } from "./scripts/v-curve-release-publisher.mjs";
           const manifest = JSON.parse(readFileSync("projects/v-curve-tool/release-manifest.json", "utf8"));
           const root = "published-assets";
           const verifyArchive = (asset, expected) => {
@@ -246,37 +254,27 @@ jobs:
             const digest = createHash("sha256").update(readFileSync(archive)).digest("hex").toUpperCase();
             if (digest !== expected.sha256) throw new Error(`${asset} digest drift: ${digest}`);
           };
-          verifyArchive(process.env.EXPECTED_WINDOWS_ARCHIVE, manifest.assets.windows);
-          verifyArchive(process.env.EXPECTED_ARCHIVE, manifest.assets.mac);
-          const metadata = JSON.parse(readFileSync(join(root, "v-curve-tool-macos-release.json"), "utf8"));
-          const expectedMetadata = {
-            version: manifest.version,
-            sourceCommit: process.env.EXPECTED_SOURCE_SHA,
-            asset: manifest.assets.mac.file,
-            bytes: manifest.assets.mac.bytes,
-            sha256: manifest.assets.mac.sha256,
-            architectures: manifest.assets.mac.architectures,
-            bundledFiles: manifest.bundledLevels.files,
-          };
-          if (JSON.stringify(metadata) !== JSON.stringify(expectedMetadata)) {
-            throw new Error(`published Mac metadata drift: ${JSON.stringify(metadata)}`);
-          }
-          const [recordedDigest, recordedName] = readFileSync(join(root, `${process.env.EXPECTED_ARCHIVE}.sha256.txt`), "utf8").trim().split(/\s+/u);
-          if (recordedDigest.toUpperCase() !== manifest.assets.mac.sha256 || recordedName !== manifest.assets.mac.file) {
-            throw new Error(`published Mac checksum drift: ${recordedDigest} ${recordedName}`);
-          }
-          NODE
-
-      - name: Publish only the complete verified draft Release
-        env:
-          GH_TOKEN: ${{ github.token }}
-        shell: bash
-        run: |
-          set -euo pipefail
-          published_release="$(gh api --method PATCH "repos/$GITHUB_REPOSITORY/releases/$RELEASE_ID" -f draft=false)"
-          PUBLISHED_RELEASE="$published_release" node - <<'NODE'
-          const release = JSON.parse(process.env.PUBLISHED_RELEASE);
-          if (release.id !== Number(process.env.RELEASE_ID) || release.tag_name !== process.env.RELEASE_TAG || release.draft !== false) {
-            throw new Error(`Release publication drift: ${JSON.stringify(release)}`);
-          }
+          const macArtifactMetadata = JSON.parse(readFileSync(join(root, "v-curve-tool-macos-release.json"), "utf8"));
+          await publishVerifiedDraftRelease({
+            manifest,
+            sourceSha: process.env.EXPECTED_SOURCE_SHA,
+            release: JSON.parse(process.env.RELEASE_JSON),
+            macArtifactMetadata,
+            verifyAssets: async () => {
+              verifyArchive(manifest.assets.windows.file, manifest.assets.windows);
+              verifyArchive(manifest.assets.mac.file, manifest.assets.mac);
+              const [recordedDigest, recordedName] = readFileSync(
+                join(root, `${manifest.assets.mac.file}.sha256.txt`),
+                "utf8",
+              ).trim().split(/\s+/u);
+              if (recordedDigest.toUpperCase() !== manifest.assets.mac.sha256 || recordedName !== manifest.assets.mac.file) {
+                throw new Error(`published Mac checksum drift: ${recordedDigest} ${recordedName}`);
+              }
+            },
+            publish: async (id) => JSON.parse(execFileSync(
+              "gh",
+              ["api", "--method", "PATCH", `repos/${process.env.GITHUB_REPOSITORY}/releases/${id}`, "-f", "draft=false"],
+              { encoding: "utf8" },
+            )),
+          });
           NODE

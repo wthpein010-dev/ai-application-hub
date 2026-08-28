@@ -22,6 +22,60 @@ const publisherWorkflowPath = join(
   "publish-v-curve-tool-release.yml",
 );
 
+const releaseManifestFixture = {
+  schemaVersion: "v-curve-tool-release/1",
+  version: "1.2.0",
+  assets: {
+    windows: {
+      file: "V-Curve-Comparison-Tool-1.2.0-Windows-x64.zip",
+      bytes: 99_701_005,
+      sha256: "7AD80A5926FE7B7F110CE4C845B5F466BA0C276D77300790DDFA1C0D3919AB97",
+    },
+    mac: {
+      file: "V-Curve-Comparison-Tool-1.2.0-macOS.zip",
+      bytes: 261_380_371,
+      sha256: "A355EEA4BBB98D66E6C976363C970F2ADBAFB4A99D95E5AE72166C8341A793B7",
+      architectures: ["arm64", "x64"],
+    },
+  },
+  bundledLevels: { files: 62 },
+};
+const sourceShaFixture = "a".repeat(40);
+const macArtifactMetadataFixture = {
+  version: "1.2.0",
+  sourceCommit: sourceShaFixture,
+  asset: releaseManifestFixture.assets.mac.file,
+  bytes: releaseManifestFixture.assets.mac.bytes,
+  sha256: releaseManifestFixture.assets.mac.sha256,
+  architectures: ["arm64", "x64"],
+  bundledFiles: 62,
+};
+const staleSourceManifestFixture = {
+  ...releaseManifestFixture,
+  assets: {
+    ...releaseManifestFixture.assets,
+    mac: {
+      ...releaseManifestFixture.assets.mac,
+      bytes: 261_378_127,
+      sha256: "F992C85AFAFC207D5C2B76220D2297C6AF4829C58DC6A3794414E1208A9D22C4",
+    },
+  },
+};
+
+function draftReleaseFixture() {
+  return {
+    id: 378411760,
+    tag_name: "v-curve-tool-v1.2.0",
+    draft: true,
+    assets: [
+      { id: 101, name: releaseManifestFixture.assets.windows.file },
+      { id: 102, name: releaseManifestFixture.assets.mac.file },
+      { id: 103, name: `${releaseManifestFixture.assets.mac.file}.sha256.txt` },
+      { id: 104, name: "v-curve-tool-macos-release.json" },
+    ],
+  };
+}
+
 test("the tracked V curve source builds both native macOS architectures", async () => {
   assert.ok(existsSync(join(sourceRoot, "package.json")), "missing tracked V curve source snapshot");
   const packageJson = JSON.parse(await readFile(join(sourceRoot, "package.json"), "utf8"));
@@ -102,7 +156,6 @@ test("the publisher promotes the exact verified Mac artifact without overwriting
   assert.match(workflow, /metadata\.sha256/u);
   assert.match(workflow, /recordedName/u);
   assert.match(workflow, /gh run download/u);
-  assert.match(workflow, /gh release view/u);
   assert.match(workflow, /gh release upload/u);
   assert.doesNotMatch(workflow, /--clobber/u);
 });
@@ -112,25 +165,94 @@ test("the publisher anchors both packages to the committed manifest before expli
 
   assert.match(workflow, /RELEASE_ID:\s*378411760/u);
   assert.match(workflow, /actions\/checkout@v4/u);
-  assert.match(workflow, /ref:\s*\$\{\{ inputs\.expected_source_sha \}\}/u);
+  assert.match(workflow, /ref:\s*\$\{\{ github\.sha \}\}/u);
+  assert.doesNotMatch(workflow, /ref:\s*\$\{\{ inputs\.expected_source_sha \}\}/u);
   assert.match(workflow, /projects\/v-curve-tool\/release-manifest\.json/u);
   assert.match(workflow, /const manifest = JSON\.parse\(readFileSync\(/u);
   assert.match(workflow, /manifest\.assets\.windows\.bytes/u);
   assert.match(workflow, /manifest\.assets\.windows\.sha256/u);
-  assert.match(workflow, /manifest\.assets\.mac\.bytes/u);
-  assert.match(workflow, /manifest\.assets\.mac\.sha256/u);
   assert.match(workflow, /EXPECTED_WINDOWS_ARCHIVE/u);
-  assert.match(workflow, /expectedAssetNames/u);
-  assert.match(workflow, /The Release does not contain the complete verified V curve asset set/u);
-  assert.match(
-    workflow,
-    /gh api --method PATCH "repos\/\$GITHUB_REPOSITORY\/releases\/\$RELEASE_ID" -f draft=false/u,
-  );
+  assert.match(workflow, /releases\/assets\/\$asset_id/u);
+  assert.match(workflow, /scripts\/v-curve-release-publisher\.mjs/u);
+  assert.match(workflow, /createCompleteDraftReleasePlan/u);
+  assert.match(workflow, /publishVerifiedDraftRelease/u);
+  assert.match(workflow, /releases\/\$\{id\}/u);
+  assert.doesNotMatch(workflow, /gh release download/u);
   assert.ok(
     workflow.indexOf("Verify the complete manifest-bound assets before publication")
-      < workflow.indexOf("gh api --method PATCH"),
+      < workflow.lastIndexOf("publishVerifiedDraftRelease"),
     "the Release must remain a draft until all manifest-bound assets are verified",
   );
+});
+
+test("the publisher refuses incomplete or manifest-mismatched draft assets before PATCH and promotes only the exact Release", async () => {
+  const { publishVerifiedDraftRelease } = await import("../scripts/v-curve-release-publisher.mjs");
+  let verifyCalls = 0;
+  let publishCalls = 0;
+  const verifyAssets = async () => { verifyCalls += 1; };
+  const publish = async () => { publishCalls += 1; };
+
+  await assert.rejects(
+    publishVerifiedDraftRelease({
+      manifest: releaseManifestFixture,
+      sourceSha: sourceShaFixture,
+      release: { ...draftReleaseFixture(), assets: draftReleaseFixture().assets.slice(0, 3) },
+      macArtifactMetadata: macArtifactMetadataFixture,
+      verifyAssets,
+      publish,
+    }),
+    /complete verified V curve asset set/u,
+  );
+  await assert.rejects(
+    publishVerifiedDraftRelease({
+      manifest: releaseManifestFixture,
+      sourceSha: sourceShaFixture,
+      release: draftReleaseFixture(),
+      macArtifactMetadata: { ...macArtifactMetadataFixture, sha256: "0".repeat(64) },
+      verifyAssets,
+      publish,
+    }),
+    /artifact metadata drift/u,
+  );
+  await assert.rejects(
+    publishVerifiedDraftRelease({
+      manifest: staleSourceManifestFixture,
+      sourceSha: sourceShaFixture,
+      release: draftReleaseFixture(),
+      macArtifactMetadata: macArtifactMetadataFixture,
+      verifyAssets,
+      publish,
+    }),
+    /artifact metadata drift/u,
+    "the stale build-source manifest must not become the publishing contract",
+  );
+  assert.equal(verifyCalls, 0, "failed release contracts must not fetch or verify assets");
+  assert.equal(publishCalls, 0, "failed release contracts must never reach PATCH");
+
+  const published = await publishVerifiedDraftRelease({
+    manifest: releaseManifestFixture,
+    sourceSha: sourceShaFixture,
+    release: draftReleaseFixture(),
+    macArtifactMetadata: macArtifactMetadataFixture,
+    verifyAssets: async (plan) => {
+      verifyCalls += 1;
+      assert.equal(plan.releaseId, 378411760);
+      assert.deepEqual(plan.assets, [
+        { id: 101, name: releaseManifestFixture.assets.windows.file },
+        { id: 102, name: releaseManifestFixture.assets.mac.file },
+        { id: 103, name: `${releaseManifestFixture.assets.mac.file}.sha256.txt` },
+        { id: 104, name: "v-curve-tool-macos-release.json" },
+      ]);
+    },
+    publish: async (releaseId) => {
+      publishCalls += 1;
+      assert.equal(releaseId, 378411760);
+      return { id: releaseId, tag_name: "v-curve-tool-v1.2.0", draft: false };
+    },
+  });
+  assert.equal(verifyCalls, 1);
+  assert.equal(publishCalls, 1);
+  assert.equal(published.draft, false);
 });
 
 test("the Hub suite includes both root and Xiang Le Ge Xiang Node tests while excluding nested Vitest", async () => {
