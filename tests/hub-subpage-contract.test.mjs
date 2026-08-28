@@ -41,7 +41,7 @@ function localLinkTarget(pagePath, href) {
 }
 
 test("all local entries use one shared fixed return control", () => {
-  assert.equal(apps.length, 27);
+  assert.equal(apps.length, 28);
   for (const app of apps) {
     const pagePath = join(root, ...app.entry.replace(/^\.\//, "").split("/"));
     const html = readFileSync(pagePath, "utf8");
