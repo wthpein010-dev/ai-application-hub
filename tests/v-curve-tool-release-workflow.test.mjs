@@ -88,13 +88,19 @@ test("the publisher promotes the exact verified Mac artifact without overwriting
 
   assert.match(workflow, /on:\s*\n\s*workflow_dispatch:/u);
   assert.doesNotMatch(workflow, /\n\s*push:/u);
+  assert.match(workflow, /artifact_run_id:/u);
+  assert.match(workflow, /expected_source_sha:/u);
   assert.match(workflow, /actions:\s*read/u);
   assert.match(workflow, /contents:\s*write/u);
-  assert.match(workflow, /ARTIFACT_RUN_ID:\s*"33152604613"/u);
+  assert.match(workflow, /ARTIFACT_RUN_ID:\s*\$\{\{ inputs\.artifact_run_id \}\}/u);
+  assert.match(workflow, /EXPECTED_SOURCE_SHA:\s*\$\{\{ inputs\.expected_source_sha \}\}/u);
   assert.match(workflow, /ARTIFACT_NAME:\s*v-curve-tool-macos-release/u);
   assert.match(workflow, /RELEASE_TAG:\s*v-curve-tool-v1\.2\.0/u);
-  assert.match(workflow, /1700462f5f12c5aff874862e74da02d38ffea4a8/u);
-  assert.match(workflow, /F992C85AFAFC207D5C2B76220D2297C6AF4829C58DC6A3794414E1208A9D22C4/u);
+  assert.doesNotMatch(workflow, /EXPECTED_ARCHIVE_BYTES/u);
+  assert.doesNotMatch(workflow, /EXPECTED_ARCHIVE_SHA256/u);
+  assert.match(workflow, /metadata\.bytes/u);
+  assert.match(workflow, /metadata\.sha256/u);
+  assert.match(workflow, /recordedName/u);
   assert.match(workflow, /gh run download/u);
   assert.match(workflow, /gh release view/u);
   assert.match(workflow, /gh release upload/u);

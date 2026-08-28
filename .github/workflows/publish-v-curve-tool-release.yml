@@ -2,6 +2,15 @@ name: Publish the verified V Curve macOS release
 
 on:
   workflow_dispatch:
+    inputs:
+      artifact_run_id:
+        description: Successful V Curve macOS build run ID
+        required: true
+        type: string
+      expected_source_sha:
+        description: Exact source commit recorded by that build
+        required: true
+        type: string
 
 permissions:
   actions: read
@@ -12,13 +21,11 @@ concurrency:
   cancel-in-progress: false
 
 env:
-  ARTIFACT_RUN_ID: "33152604613"
+  ARTIFACT_RUN_ID: ${{ inputs.artifact_run_id }}
   ARTIFACT_NAME: v-curve-tool-macos-release
   RELEASE_TAG: v-curve-tool-v1.2.0
-  EXPECTED_SOURCE_SHA: 1700462f5f12c5aff874862e74da02d38ffea4a8
+  EXPECTED_SOURCE_SHA: ${{ inputs.expected_source_sha }}
   EXPECTED_ARCHIVE: V-Curve-Comparison-Tool-1.2.0-macOS.zip
-  EXPECTED_ARCHIVE_BYTES: "261378127"
-  EXPECTED_ARCHIVE_SHA256: F992C85AFAFC207D5C2B76220D2297C6AF4829C58DC6A3794414E1208A9D22C4
 
 jobs:
   publish:
@@ -31,9 +38,13 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
+          [[ "$ARTIFACT_RUN_ID" =~ ^[0-9]+$ ]]
           run_json="$(gh run view "$ARTIFACT_RUN_ID" --repo "$GITHUB_REPOSITORY" --json conclusion,headSha,status)"
           RUN_JSON="$run_json" node - <<'NODE'
           const run = JSON.parse(process.env.RUN_JSON);
+          if (!/^[0-9a-f]{40}$/u.test(process.env.EXPECTED_SOURCE_SHA)) {
+            throw new Error("expected source SHA must be a full lowercase commit id");
+          }
           if (run.status !== "completed" || run.conclusion !== "success") {
             throw new Error(`artifact run is not a completed success: ${JSON.stringify(run)}`);
           }
@@ -62,22 +73,31 @@ jobs:
             version: "1.2.0",
             sourceCommit: process.env.EXPECTED_SOURCE_SHA,
             asset: process.env.EXPECTED_ARCHIVE,
-            bytes: Number(process.env.EXPECTED_ARCHIVE_BYTES),
-            sha256: process.env.EXPECTED_ARCHIVE_SHA256,
+            bytes: metadata.bytes,
+            sha256: metadata.sha256,
             architectures: ["arm64", "x64"],
             bundledFiles: 62,
           };
           if (JSON.stringify(metadata) !== JSON.stringify(expected)) {
             throw new Error(`artifact metadata drift: ${JSON.stringify(metadata)}`);
           }
-          if (statSync(archive).size !== expected.bytes) {
+          if (!Number.isSafeInteger(metadata.bytes) || metadata.bytes <= 0) {
+            throw new Error(`invalid archive byte count: ${metadata.bytes}`);
+          }
+          if (!/^[A-F0-9]{64}$/u.test(metadata.sha256)) {
+            throw new Error(`invalid archive digest: ${metadata.sha256}`);
+          }
+          if (statSync(archive).size !== metadata.bytes) {
             throw new Error(`archive byte drift: ${statSync(archive).size}`);
           }
           const digest = createHash("sha256").update(readFileSync(archive)).digest("hex").toUpperCase();
-          if (digest !== expected.sha256) throw new Error(`archive digest drift: ${digest}`);
-          const recordedDigest = readFileSync(`${archive}.sha256.txt`, "utf8").trim().split(/\s+/u)[0].toUpperCase();
-          if (recordedDigest !== expected.sha256) {
+          if (digest !== metadata.sha256) throw new Error(`archive digest drift: ${digest}`);
+          const [recordedDigest, recordedName] = readFileSync(`${archive}.sha256.txt`, "utf8").trim().split(/\s+/u);
+          if (recordedDigest.toUpperCase() !== metadata.sha256) {
             throw new Error(`recorded digest drift: ${recordedDigest}`);
+          }
+          if (recordedName !== process.env.EXPECTED_ARCHIVE) {
+            throw new Error(`checksum path is not portable: ${recordedName}`);
           }
           NODE
 
