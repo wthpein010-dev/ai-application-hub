@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { spawnSync } from "node:child_process";
 import { existsSync } from "node:fs";
 import { readdir, readFile } from "node:fs/promises";
 import { dirname, join } from "node:path";
@@ -22,9 +23,14 @@ const publisherWorkflowPath = join(
   "publish-v-curve-tool-release.yml",
 );
 
+const sourceShaFixture = "a".repeat(40);
 const releaseManifestFixture = {
   schemaVersion: "v-curve-tool-release/1",
   version: "1.2.0",
+  releaseWorkflow: {
+    runId: 33_163_156_365,
+    sourceCommit: sourceShaFixture,
+  },
   assets: {
     windows: {
       file: "V-Curve-Comparison-Tool-1.2.0-Windows-x64.zip",
@@ -40,7 +46,6 @@ const releaseManifestFixture = {
   },
   bundledLevels: { files: 62 },
 };
-const sourceShaFixture = "a".repeat(40);
 const macArtifactMetadataFixture = {
   version: "1.2.0",
   sourceCommit: sourceShaFixture,
@@ -70,11 +75,26 @@ function draftReleaseFixture() {
     upload_url: "https://uploads.github.com/repos/wthpein010-dev/ai-application-hub/releases/378411760/assets{?name,label}",
     assets: [
       { id: 101, name: releaseManifestFixture.assets.windows.file },
-      { id: 102, name: releaseManifestFixture.assets.mac.file },
-      { id: 103, name: `${releaseManifestFixture.assets.mac.file}.sha256.txt` },
-      { id: 104, name: "v-curve-tool-macos-release.json" },
+      { id: 102, name: `${releaseManifestFixture.assets.windows.file}.sha256.txt` },
+      { id: 103, name: releaseManifestFixture.assets.mac.file },
+      { id: 104, name: `${releaseManifestFixture.assets.mac.file}.sha256.txt` },
+      { id: 105, name: "v-curve-tool-macos-release.json" },
     ],
   };
+}
+
+function workflowRunScript(workflow, stepName) {
+  const normalized = workflow.replace(/\r\n/gu, "\n");
+  const stepMarker = `      - name: ${stepName}\n`;
+  const stepStart = normalized.indexOf(stepMarker);
+  assert.notEqual(stepStart, -1, `missing workflow step: ${stepName}`);
+  const runMarker = "        run: |\n";
+  const runStart = normalized.indexOf(runMarker, stepStart);
+  assert.notEqual(runStart, -1, `missing run block: ${stepName}`);
+  const contentStart = runStart + runMarker.length;
+  const nextStep = normalized.indexOf("\n      - name:", contentStart);
+  const block = normalized.slice(contentStart, nextStep === -1 ? normalized.length : nextStep);
+  return block.split("\n").map((line) => line.startsWith("          ") ? line.slice(10) : line).join("\n");
 }
 
 test("the tracked V curve source builds both native macOS architectures", async () => {
@@ -155,7 +175,6 @@ test("the publisher promotes the exact verified Mac artifact without overwriting
   assert.doesNotMatch(workflow, /EXPECTED_ARCHIVE_SHA256/u);
   assert.match(workflow, /metadata\.bytes/u);
   assert.match(workflow, /metadata\.sha256/u);
-  assert.match(workflow, /recordedName/u);
   assert.match(workflow, /gh run download/u);
   assert.match(workflow, /Require a current main dispatch before reading the manifest/u);
   assert.match(workflow, /repos\/\$GITHUB_REPOSITORY\/git\/ref\/heads\/main/u);
@@ -163,6 +182,30 @@ test("the publisher promotes the exact verified Mac artifact without overwriting
   assert.match(workflow, /createExactReleaseUploadPlan/u);
   assert.doesNotMatch(workflow, /gh release upload/u);
   assert.doesNotMatch(workflow, /--clobber/u);
+});
+
+test("every V curve publisher Bash step is syntactically executable", async (context) => {
+  const workflow = await readFile(publisherWorkflowPath, "utf8");
+  const windowsGitBash = "C:/Program Files/Git/bin/bash.exe";
+  const bash = process.platform === "win32" && existsSync(windowsGitBash) ? windowsGitBash : "bash";
+
+  for (const stepName of [
+    "Require a current main dispatch before reading the manifest",
+    "Download the previously verified artifact",
+    "Verify provenance, bytes and digest",
+    "Verify the committed Windows asset",
+    "Upload only when the immutable assets are absent",
+    "Verify the complete manifest-bound assets before publication",
+  ]) {
+    await context.test(stepName, () => {
+      const result = spawnSync(bash, ["-n"], {
+        input: workflowRunScript(workflow, stepName),
+        encoding: "utf8",
+      });
+      assert.equal(result.error, undefined, result.error?.message);
+      assert.equal(result.status, 0, result.stderr);
+    });
+  }
 });
 
 test("the publisher anchors both packages to the committed manifest before explicitly publishing only a complete draft", async () => {
@@ -177,10 +220,17 @@ test("the publisher anchors both packages to the committed manifest before expli
   assert.match(workflow, /manifest\.assets\.windows\.bytes/u);
   assert.match(workflow, /manifest\.assets\.windows\.sha256/u);
   assert.match(workflow, /EXPECTED_WINDOWS_ARCHIVE/u);
+  assert.match(workflow, /EXPECTED_WINDOWS_CHECKSUM/u);
   assert.match(workflow, /releases\/assets\/\$asset_id/u);
   assert.match(workflow, /scripts\/v-curve-release-publisher\.mjs/u);
+  assert.match(workflow, /assertArtifactProvenance/u);
+  assert.match(workflow, /assertPortableChecksum/u);
   assert.match(workflow, /createCompleteDraftReleasePlan/u);
   assert.match(workflow, /publishVerifiedDraftRelease/u);
+  assert.match(workflow, /loadRelease:/u);
+  assert.match(workflow, /loadTagSha:/u);
+  assert.match(workflow, /"-F", "draft=false"/u);
+  assert.doesNotMatch(workflow, /"-f", "draft=false"/u);
   assert.match(workflow, /releases\/\$\{id\}/u);
   assert.doesNotMatch(workflow, /gh release download/u);
   assert.ok(
@@ -192,7 +242,9 @@ test("the publisher anchors both packages to the committed manifest before expli
 
 test("the publisher refuses incomplete or manifest-mismatched draft assets before PATCH and promotes only the exact Release", async () => {
   const {
+    assertArtifactProvenance,
     assertCurrentMainDispatch,
+    assertPortableChecksum,
     createExactReleaseUploadPlan,
     publishVerifiedDraftRelease,
   } = await import("../scripts/v-curve-release-publisher.mjs");
@@ -200,14 +252,23 @@ test("the publisher refuses incomplete or manifest-mismatched draft assets befor
   let publishCalls = 0;
   const verifyAssets = async () => { verifyCalls += 1; };
   const publish = async () => { publishCalls += 1; };
+  const loadRelease = async () => draftReleaseFixture();
+  const loadTagSha = async () => sourceShaFixture;
 
   await assert.rejects(
     publishVerifiedDraftRelease({
       manifest: releaseManifestFixture,
       sourceSha: sourceShaFixture,
-      release: { ...draftReleaseFixture(), assets: draftReleaseFixture().assets.slice(0, 3) },
+      release: {
+        ...draftReleaseFixture(),
+        assets: draftReleaseFixture().assets.filter(
+          (asset) => asset.name !== `${releaseManifestFixture.assets.windows.file}.sha256.txt`,
+        ),
+      },
       macArtifactMetadata: macArtifactMetadataFixture,
       verifyAssets,
+      loadRelease,
+      loadTagSha,
       publish,
     }),
     /complete verified V curve asset set/u,
@@ -219,6 +280,8 @@ test("the publisher refuses incomplete or manifest-mismatched draft assets befor
       release: draftReleaseFixture(),
       macArtifactMetadata: { ...macArtifactMetadataFixture, sha256: "0".repeat(64) },
       verifyAssets,
+      loadRelease,
+      loadTagSha,
       publish,
     }),
     /artifact metadata drift/u,
@@ -230,6 +293,8 @@ test("the publisher refuses incomplete or manifest-mismatched draft assets befor
       release: draftReleaseFixture(),
       macArtifactMetadata: macArtifactMetadataFixture,
       verifyAssets,
+      loadRelease,
+      loadTagSha,
       publish,
     }),
     /artifact metadata drift/u,
@@ -249,6 +314,8 @@ test("the publisher refuses incomplete or manifest-mismatched draft assets befor
         corruptedVerifyCalls += 1;
         throw new Error("downloaded checksum does not match the manifest");
       },
+      loadRelease,
+      loadTagSha,
       publish: async () => { corruptedPublishCalls += 1; },
     }),
     /downloaded checksum does not match/u,
@@ -266,11 +333,14 @@ test("the publisher refuses incomplete or manifest-mismatched draft assets befor
       assert.equal(plan.releaseId, 378411760);
       assert.deepEqual(plan.assets, [
         { id: 101, name: releaseManifestFixture.assets.windows.file },
-        { id: 102, name: releaseManifestFixture.assets.mac.file },
-        { id: 103, name: `${releaseManifestFixture.assets.mac.file}.sha256.txt` },
-        { id: 104, name: "v-curve-tool-macos-release.json" },
+        { id: 102, name: `${releaseManifestFixture.assets.windows.file}.sha256.txt` },
+        { id: 103, name: releaseManifestFixture.assets.mac.file },
+        { id: 104, name: `${releaseManifestFixture.assets.mac.file}.sha256.txt` },
+        { id: 105, name: "v-curve-tool-macos-release.json" },
       ]);
     },
+    loadRelease,
+    loadTagSha,
     publish: async (releaseId) => {
       publishCalls += 1;
       assert.equal(releaseId, 378411760);
@@ -290,20 +360,23 @@ test("the publisher refuses incomplete or manifest-mismatched draft assets befor
       release: {
         ...draftReleaseFixture(),
         assets: draftReleaseFixture().assets.map((asset) => (
-          asset.name === releaseManifestFixture.assets.mac.file ? { ...asset, id: 202 } : asset
+          asset.name === releaseManifestFixture.assets.mac.file ? { ...asset, id: 203 } : asset
         )),
       },
       expectedPlan: {
         releaseId: 378411760,
         assets: [
           { id: 101, name: releaseManifestFixture.assets.windows.file },
-          { id: 102, name: releaseManifestFixture.assets.mac.file },
-          { id: 103, name: `${releaseManifestFixture.assets.mac.file}.sha256.txt` },
-          { id: 104, name: "v-curve-tool-macos-release.json" },
+          { id: 102, name: `${releaseManifestFixture.assets.windows.file}.sha256.txt` },
+          { id: 103, name: releaseManifestFixture.assets.mac.file },
+          { id: 104, name: `${releaseManifestFixture.assets.mac.file}.sha256.txt` },
+          { id: 105, name: "v-curve-tool-macos-release.json" },
         ],
       },
       macArtifactMetadata: macArtifactMetadataFixture,
       verifyAssets: async () => { replacementVerifyCalls += 1; },
+      loadRelease,
+      loadTagSha,
       publish: async (releaseId) => {
         replacementPublishCalls += 1;
         return { id: releaseId, tag_name: "v-curve-tool-v1.2.0", draft: false };
@@ -313,6 +386,96 @@ test("the publisher refuses incomplete or manifest-mismatched draft assets befor
   );
   assert.equal(replacementVerifyCalls, 0, "replacement IDs must not enter final verification");
   assert.equal(replacementPublishCalls, 0, "replacement IDs must not reach PATCH");
+
+  let postVerifyCalls = 0;
+  let postVerifyPublishCalls = 0;
+  await assert.rejects(
+    publishVerifiedDraftRelease({
+      manifest: releaseManifestFixture,
+      sourceSha: sourceShaFixture,
+      release: draftReleaseFixture(),
+      macArtifactMetadata: macArtifactMetadataFixture,
+      verifyAssets: async () => { postVerifyCalls += 1; },
+      loadRelease: async () => ({
+        ...draftReleaseFixture(),
+        assets: draftReleaseFixture().assets.map((asset) => (
+          asset.name === releaseManifestFixture.assets.mac.file ? { ...asset, id: 303 } : asset
+        )),
+      }),
+      loadTagSha,
+      publish: async () => { postVerifyPublishCalls += 1; },
+    }),
+    /asset IDs changed after verification/u,
+  );
+  assert.equal(postVerifyCalls, 1, "the final snapshot is loaded only after byte verification");
+  assert.equal(postVerifyPublishCalls, 0, "post-verification replacement must not reach PATCH");
+
+  let tagRacePublishCalls = 0;
+  await assert.rejects(
+    publishVerifiedDraftRelease({
+      manifest: releaseManifestFixture,
+      sourceSha: sourceShaFixture,
+      release: draftReleaseFixture(),
+      macArtifactMetadata: macArtifactMetadataFixture,
+      verifyAssets,
+      loadRelease,
+      loadTagSha: async () => "b".repeat(40),
+      publish: async () => { tagRacePublishCalls += 1; },
+    }),
+    /Release tag source changed after verification/u,
+  );
+  assert.equal(tagRacePublishCalls, 0, "post-verification tag replacement must not reach PATCH");
+
+  assert.doesNotThrow(() => assertArtifactProvenance({
+    manifest: releaseManifestFixture,
+    artifactRunId: String(releaseManifestFixture.releaseWorkflow.runId),
+    sourceSha: sourceShaFixture,
+    run: { status: "completed", conclusion: "success", headSha: sourceShaFixture },
+  }));
+  assert.throws(
+    () => assertArtifactProvenance({
+      manifest: releaseManifestFixture,
+      artifactRunId: "33163156364",
+      sourceSha: sourceShaFixture,
+      run: { status: "completed", conclusion: "success", headSha: sourceShaFixture },
+    }),
+    /artifact run does not match the release manifest/u,
+  );
+  assert.throws(
+    () => assertArtifactProvenance({
+      manifest: releaseManifestFixture,
+      artifactRunId: String(releaseManifestFixture.releaseWorkflow.runId),
+      sourceSha: "b".repeat(40),
+      run: { status: "completed", conclusion: "success", headSha: "b".repeat(40) },
+    }),
+    /source SHA does not match the release manifest/u,
+  );
+
+  const windowsChecksum = `${releaseManifestFixture.assets.windows.sha256.toLowerCase()}  ${releaseManifestFixture.assets.windows.file}\n`;
+  assert.doesNotThrow(() => assertPortableChecksum({
+    content: windowsChecksum,
+    expectedSha: releaseManifestFixture.assets.windows.sha256,
+    expectedFile: releaseManifestFixture.assets.windows.file,
+    label: "Windows",
+  }));
+  assert.throws(
+    () => assertPortableChecksum({
+      content: windowsChecksum.replace(releaseManifestFixture.assets.windows.file, "wrong.zip"),
+      expectedSha: releaseManifestFixture.assets.windows.sha256,
+      expectedFile: releaseManifestFixture.assets.windows.file,
+      label: "Windows",
+    }),
+    /Windows checksum drift/u,
+  );
+  assert.throws(
+    () => assertPortableChecksum({
+      content: windowsChecksum.replace(releaseManifestFixture.assets.windows.sha256.toLowerCase(), "0".repeat(64)),
+      expectedSha: releaseManifestFixture.assets.windows.sha256,
+      expectedFile: releaseManifestFixture.assets.windows.file,
+      label: "Windows",
+    }),
+    /Windows checksum drift/u,
+  );
 
   assert.doesNotThrow(() => assertCurrentMainDispatch({
     githubRef: "refs/heads/main",
