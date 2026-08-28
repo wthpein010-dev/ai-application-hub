@@ -38,6 +38,7 @@ test("the release workflow builds and launches V curve on Apple silicon and Inte
   const workflow = await readFile(workflowPath, "utf8");
 
   assert.match(workflow, /workflow_dispatch:/u);
+  assert.match(workflow, /push:[\s\S]*feat\/v-curve-tool-20260828/u);
   assert.match(workflow, /runner:\s*macos-14/u);
   assert.match(workflow, /runner:\s*macos-15-intel/u);
   assert.match(workflow, /npm run build:mac:\$\{\{ matrix\.arch \}\}/u);

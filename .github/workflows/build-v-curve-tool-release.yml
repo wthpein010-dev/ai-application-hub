@@ -2,6 +2,13 @@ name: Build V Curve comparison tool for macOS
 
 on:
   workflow_dispatch:
+  push:
+    branches:
+      - feat/v-curve-tool-20260828
+    paths:
+      - ".github/workflows/build-v-curve-tool-release.yml"
+      - "build/v-curve-tool/**"
+      - "tests/v-curve-tool-release-workflow.test.mjs"
 
 permissions:
   contents: read
