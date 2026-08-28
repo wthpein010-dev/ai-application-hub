@@ -193,6 +193,10 @@ test("the compatibility matrix covers every public card and its delivery evidenc
     if (app.id === "codex-thread-workbench") {
       assert.ok(row.includes(app.name), `${app.id} name`);
     }
+    if (app.id === "codex-multi-thread-workbench") {
+      assert.match(row, /macOS：[^|]*待真实 runner 验证/u, "new Workbench macOS release remains pending real-runner verification");
+      assert.doesNotMatch(row, /arm64\/x64|清单记录分片/u, "new Workbench row must not claim ungenerated macOS manifests");
+    }
     assert.match(row, new RegExp(`\\| ${expectedType} \\|`), `${app.id} delivery type`);
     assert.match(row, /Windows/, `${app.id} Windows statement`);
     assert.match(row, /macOS/, `${app.id} macOS statement`);

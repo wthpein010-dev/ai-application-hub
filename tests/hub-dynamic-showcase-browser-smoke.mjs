@@ -45,6 +45,7 @@ const expectedCollectionIds = {
     "simuai",
     "gamespec-relay",
     "x-ai-codex-radar",
+    "codex-multi-thread-workbench",
   ],
   games: ["zhuanglege-sha", "xiang-le-ge-xiang", "fill-what", "nang-keng-pai-pai-xiang", "icecream"],
   engineering: [
@@ -341,7 +342,7 @@ try {
       noHorizontalOverflow: document.documentElement.scrollWidth <= document.documentElement.clientWidth,
       resources: performance.getEntriesByType("resource").map((entry) => entry.name),
     }));
-    check(initialBaseline.cardCount, 28, `${viewport.name} initial DOM renders exactly 28 cards before catalog scrolling`);
+    check(initialBaseline.cardCount, 29, `${viewport.name} initial DOM renders exactly 29 cards before catalog scrolling`);
     check(initialBaseline.clickflowCount, 0, `${viewport.name} initial DOM has zero ClickFlow nodes`);
     check(initialBaseline.noHorizontalOverflow, `${viewport.name} initial DOM has no horizontal overflow`);
     check(initialBaseline.resources.some((url) => /clickflow/iu.test(url)), false, `${viewport.name} initial resources exclude ClickFlow`);
@@ -472,7 +473,7 @@ try {
         featureTextReadable: Array.from(document.querySelectorAll(".card-feature")).every((feature) => Number.parseFloat(getComputedStyle(feature).fontSize) >= 14),
       };
     });
-    check(baseline.cardCount, 28, `${viewport.name} renders 28 cards`);
+    check(baseline.cardCount, 29, `${viewport.name} renders 29 cards`);
     check(baseline.allIds, expectedNavigationIds, `${viewport.name} preserves the independent production navigation order`);
     check(baseline.apps, expectedCollectionIds.apps, `${viewport.name} preserves production application order`);
     check(baseline.games, expectedCollectionIds.games, `${viewport.name} preserves production game order`);
@@ -484,9 +485,9 @@ try {
     check(requests.some((url) => /clickflow/iu.test(url)), false, `${viewport.name} has zero ClickFlow requests`);
     check(baseline.noHorizontalOverflow, `${viewport.name} has no horizontal overflow`);
     check(baseline.imagesReady, `${viewport.name} loads every card image`);
-    check(baseline.imageCount, 28, `${viewport.name} renders 28 card images`);
-    check(baseline.blankImages, [], `${viewport.name} renders 28 nonblank, nontransparent catalog images`);
-    check(baseline.imagesVisible, `${viewport.name} displays all 28 loaded card images`);
+    check(baseline.imageCount, 29, `${viewport.name} renders 29 card images`);
+    check(baseline.blankImages, [], `${viewport.name} renders 29 nonblank, nontransparent catalog images`);
+    check(baseline.imagesVisible, `${viewport.name} displays all 29 loaded card images`);
     check(baseline.unfittedImages, [], `${viewport.name} fits every loaded card image to its media frame`);
     check(baseline.imageFramesReady, `${viewport.name} keeps stable media framing`);
     check(baseline.mediaFallbackCount, 0, `${viewport.name} has zero catalog fallback states`);
@@ -504,7 +505,7 @@ try {
     check(baseline.readingProgressMax, 100, `${viewport.name} exposes a bounded page reading progress`);
     check(baseline.readingProgressNow, 0, `${viewport.name} reading progress starts at the reset top position`);
     check(baseline.activeNavigation, "#overview", `${viewport.name} highlights overview at the reset top position`);
-    check(baseline.featureCount, 28, `${viewport.name} renders one project feature per card`);
+    check(baseline.featureCount, 29, `${viewport.name} renders one project feature per card`);
     check(baseline.featureTextReadable, `${viewport.name} project features use readable text`);
     const performance = await page.evaluate(() => {
       const navigation = performance.getEntriesByType("navigation")[0];
@@ -666,7 +667,7 @@ try {
       navigationIds: [...expectedSearch.apps, ...expectedSearch.games, ...expectedSearch.engineering],
     });
     await page.locator("#searchInput").fill("");
-    check(await page.locator(".app-card[data-app-id]").count(), 28, `${viewport.name} reset restores all cards`);
+    check(await page.locator(".app-card[data-app-id]").count(), 29, `${viewport.name} reset restores all cards`);
     const resetOrder = await page.locator(".app-card[data-app-id]").evaluateAll((cards) => cards.map((card) => card.dataset.appId));
     check(resetOrder, expectedNavigationIds, `${viewport.name} reset restores production order`);
     await assertNoEntranceReplay(page, `${viewport.name}/search reset`);
@@ -802,7 +803,7 @@ try {
   });
   collectBrowserErrors(storagePage, "storage-throwing");
   await storagePage.goto(`${baseUrl}/index.html?qa=keep#apps`, { waitUntil: "networkidle" });
-  const storageBooted = await storagePage.locator(".app-card[data-app-id]").count() === 28;
+  const storageBooted = await storagePage.locator(".app-card[data-app-id]").count() === 29;
   check(storageBooted, "storage-throwing context renders default catalog");
   if (storageBooted) {
     check(await storagePage.getAttribute("html", "data-theme"), "clean", "storage-throwing context uses default theme");
