@@ -61,6 +61,13 @@ test("imported state validates item data and repairs stale manual order", () => 
   assert.deepEqual(imported.order, [3, 1, 2, 4, 5, 6, 7, 8, 9, 10, 11]);
   assert.throws(() => validateImportedState({ version: 1, items: [canonical[0], canonical[0]], order: [] }), /重复/);
   assert.throws(() => validateImportedState({ version: 2, items: canonical, order: [] }), /版本/);
+  assert.throws(() => validateImportedState({ version: 1, items: canonical.slice(0, 10), order: [] }), /完整包含/);
+  assert.throws(() => validateImportedState({ version: 1, items: [...canonical.slice(0, 10), { ...canonical[10], id: 99 }], order: [] }), /完整包含/);
+  assert.throws(() => validateImportedState({
+    version: 1,
+    items: canonical.map((item, index) => index === 0 ? { ...item, imageData: "data:image/png;base64,YmFk" } : item),
+    order: [],
+  }), /图片数据/);
 });
 
 test("browser state round-trips and corrupt saved data falls back safely", () => {
@@ -74,4 +81,5 @@ test("browser state round-trips and corrupt saved data falls back safely", () =>
   assert.deepEqual(loadLocalState(storage).order.slice(0, 3), [2, 1, 3]);
   memory.set("trinket-market-v1-data", "{broken");
   assert.equal(loadLocalState(storage), null);
+  assert.equal(saveLocalState({ setItem: () => { throw new Error("quota"); } }, { version: 1, items: canonical, order: [] }), false);
 });

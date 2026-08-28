@@ -10,6 +10,7 @@ const projectRoot = join(root, "projects", "trinket-market");
 test("market page owns the approved public title and Hub return shell", () => {
   const html = readFileSync(join(projectRoot, "index.html"), "utf8");
   assert.match(html, /<title>随身小物交易市场<\/title>/);
+  assert.match(html, /数据更新时间/);
   assert.match(html, /<body class="hub-subpage" data-theme="a">/);
   assert.match(html, /class="hub-home-link" href="\.\.\/\.\.\/index\.html#engineering"/);
   assert.match(html, /\.\.\/\.\.\/assets\/subpage-shell\.css/);

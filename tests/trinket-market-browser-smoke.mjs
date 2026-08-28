@@ -46,6 +46,7 @@ try {
     { width: 1440, height: 1000, columns: 9 },
     { width: 1024, height: 1000, columns: 8 },
     { width: 736, height: 1000, columns: 6 },
+    { width: 390, height: 844, columns: 3 },
     { width: 360, height: 1000, columns: 3 },
   ];
 
@@ -192,6 +193,18 @@ try {
   assert.equal(exported.items.find((item) => item.id === 1).name, "测试冰水壶");
   assert.match(exported.items.find((item) => item.id === 1).imageData, /^data:image\/png;base64,/);
 
+  const malformedImageImport = structuredClone(exported);
+  malformedImageImport.items[0].name = "不应写入";
+  malformedImageImport.items[0].imageData = "data:image/png;base64,YmFk";
+  await editPage.locator("#import-json").setInputFiles({
+    name: "malformed-image.json",
+    mimeType: "application/json",
+    buffer: Buffer.from(JSON.stringify(malformedImageImport)),
+  });
+  await editPage.waitForFunction(() => document.querySelector("#edit-status")?.textContent.includes("图片数据"));
+  assert.equal(await editPage.locator('.item-card[data-id="1"] .item-name').textContent(), "测试冰水壶");
+  assert.equal(await editPage.locator('.item-card[data-id="1"] .item-art img').evaluate((image) => image.src.startsWith("blob:")), true);
+
   await editPage.locator("#import-json").setInputFiles({
     name: "invalid.json",
     mimeType: "application/json",
@@ -221,6 +234,13 @@ try {
   await editPage.locator("#item-form button[type='submit']").click();
   assert.match(await editPage.locator("#dialog-error").textContent(), /仅支持 PNG、JPG 和 WebP/);
   assert.equal(await editPage.locator("#item-dialog").isVisible(), true);
+  await editPage.locator("#edit-image").setInputFiles({
+    name: "oversize.png",
+    mimeType: "image/png",
+    buffer: Buffer.alloc(8 * 1024 * 1024 + 1),
+  });
+  await editPage.locator("#item-form button[type='submit']").click();
+  assert.match(await editPage.locator("#dialog-error").textContent(), /不能超过 8 MB/);
   await editPage.locator("#dialog-cancel").click();
 
   assert.deepEqual(editErrors, []);

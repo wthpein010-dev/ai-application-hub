@@ -1,9 +1,11 @@
 import { applyAcquisitionCounts, sortItems, validateItems } from "./core/items.js";
 import {
   clearItemImages,
+  DATA_STORAGE_KEY,
   loadItemImages,
   loadLocalState,
   removeLocalState,
+  replaceItemImages,
   saveItemImage,
   saveLocalState,
   validateImportedState,
@@ -35,6 +37,8 @@ const itemForm = document.querySelector("#item-form");
 const dialogError = document.querySelector("#dialog-error");
 const editImageInput = document.querySelector("#edit-image");
 const editImagePreview = document.querySelector("#edit-image-preview");
+const dataUpdated = document.querySelector("#data-updated");
+const dataUpdatedCaption = document.querySelector("#data-updated-caption");
 const dialogCloseButton = document.querySelector("#dialog-close");
 const dialogCancelButton = document.querySelector("#dialog-cancel");
 const editIdInput = document.querySelector("#edit-id");
@@ -182,6 +186,15 @@ function updateStats() {
   document.querySelector("#third-stat-caption").textContent = state.showValue ? "按示例单价估算" : "开启开关后显示";
 }
 
+function updateDataTimestamp(date = new Date(), caption = "实时数量更新") {
+  const year = String(date.getFullYear());
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  dataUpdated.dateTime = `${year}-${month}-${day}`;
+  dataUpdated.textContent = `${month}/${day}`;
+  dataUpdatedCaption.textContent = `${year} ${caption}`;
+}
+
 function centerImageOnAlpha(image) {
   if (!image.naturalWidth || !image.naturalHeight) return;
   const canvas = document.createElement("canvas");
@@ -312,16 +325,32 @@ async function exportEditableState() {
 async function importEditableState(file) {
   try {
     const imported = validateImportedState(JSON.parse(await file.text()));
-    await clearItemImages();
+    const imageReplacements = new Map();
     for (const item of imported.items) {
-      if (item.imageData) await saveItemImage(item.id, dataUrlAsBlob(item.imageData));
+      if (item.imageData) imageReplacements.set(item.id, dataUrlAsBlob(item.imageData));
     }
-    state.items = imported.items.map(({ imageData, ...item }) => item);
+    const nextItems = imported.items.map(({ imageData, ...item }) => item);
+    const previousLocalData = localStorage.getItem(DATA_STORAGE_KEY);
+    if (!saveLocalState(localStorage, { version: 1, items: nextItems, order: imported.order })) {
+      throw new Error("未能保存导入数据到当前浏览器");
+    }
+    try {
+      await replaceItemImages(imageReplacements);
+    } catch (error) {
+      try {
+        if (previousLocalData === null) localStorage.removeItem(DATA_STORAGE_KEY);
+        else localStorage.setItem(DATA_STORAGE_KEY, previousLocalData);
+      } catch {
+        // Keep the live session unchanged even if browser storage also rejects rollback.
+      }
+      throw error;
+    }
+    state.items = nextItems;
     state.manualOrder = imported.order;
     savePreferences();
-    persistEditableState("已导入小物数据并保存到当前浏览器");
     await refreshImageOverrides();
     render();
+    setEditStatus("已导入小物数据并保存到当前浏览器");
   } catch (error) {
     setEditStatus(error instanceof Error ? `导入失败：${error.message}` : "导入文件无效", true);
   } finally {
@@ -529,6 +558,7 @@ itemForm.addEventListener("submit", async (event) => {
 window.TrinketMarketAPI = Object.freeze({
   setAcquisitionCounts(counts) {
     state.items = applyAcquisitionCounts(state.items, counts);
+    updateDataTimestamp();
     render();
     return state.items.map(({ id, acquired }) => ({ id, acquired }));
   },

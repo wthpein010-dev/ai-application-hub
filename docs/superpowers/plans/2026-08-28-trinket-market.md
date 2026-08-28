@@ -53,7 +53,7 @@ test("acquisition updates reject unknown and negative counts", () => {
 
 - [ ] **Step 2: Run the tests and confirm red**
 
-Run: `node --test tests/trinket-market-core.test.mjs`  
+Run: `node --test tests/trinket-market-core.test.mjs`
 Expected: FAIL because the files and exported functions do not exist.
 
 - [ ] **Step 3: Copy the 11 source PNGs and add validated data/helpers**
@@ -69,7 +69,7 @@ export function applyAcquisitionCounts(items, counts) {
 
 - [ ] **Step 4: Run the focused tests and confirm green**
 
-Run: `node --test tests/trinket-market-core.test.mjs`  
+Run: `node --test tests/trinket-market-core.test.mjs`
 Expected: all Task 1 tests pass.
 
 - [ ] **Step 5: Commit the canonical data slice**
@@ -108,7 +108,7 @@ Browser assertions: 11 cards, 8 columns at 1024px, 6 at 736px, 3 at 360px, 163px
 
 - [ ] **Step 2: Run focused tests and confirm red**
 
-Run: `node --test tests/trinket-market-page.test.mjs && node tests/trinket-market-browser-smoke.mjs`  
+Run: `node --test tests/trinket-market-page.test.mjs && node tests/trinket-market-browser-smoke.mjs`
 Expected: FAIL because the page is absent.
 
 - [ ] **Step 3: Build semantic HTML and theme-responsive CSS**
@@ -139,7 +139,7 @@ window.addEventListener("trinket-market:counts", (event) => {
 
 - [ ] **Step 5: Run the focused page and browser tests**
 
-Run: `node --test tests/trinket-market-core.test.mjs tests/trinket-market-page.test.mjs && node tests/trinket-market-browser-smoke.mjs`  
+Run: `node --test tests/trinket-market-core.test.mjs tests/trinket-market-page.test.mjs && node tests/trinket-market-browser-smoke.mjs`
 Expected: all focused tests and all viewport/drag assertions pass.
 
 - [ ] **Step 6: Commit the working market surface**
@@ -175,7 +175,7 @@ Browser assertions edit HAND-0001 to `测试冰水壶`, set acquired to `20001`,
 
 - [ ] **Step 2: Run focused tests and confirm red**
 
-Run: `node --test tests/trinket-market-core.test.mjs && node tests/trinket-market-browser-smoke.mjs`  
+Run: `node --test tests/trinket-market-core.test.mjs && node tests/trinket-market-browser-smoke.mjs`
 Expected: FAIL on missing storage/edit behavior.
 
 - [ ] **Step 3: Implement storage and accessible edit controls**
@@ -192,7 +192,7 @@ Use one native `<dialog>` with labeled fields; keep file validation at `image/pn
 
 - [ ] **Step 4: Run focused persistence/browser tests**
 
-Run: `node --test tests/trinket-market-core.test.mjs tests/trinket-market-page.test.mjs && node tests/trinket-market-browser-smoke.mjs`  
+Run: `node --test tests/trinket-market-core.test.mjs tests/trinket-market-page.test.mjs && node tests/trinket-market-browser-smoke.mjs`
 Expected: all edit, import/export, image, reset, and reload assertions pass.
 
 - [ ] **Step 5: Commit visitor editing**
@@ -230,7 +230,7 @@ test("trinket market is the final engineering project with web and video only", 
 
 - [ ] **Step 2: Run publication tests and confirm red**
 
-Run: `node --test tests/trinket-market-publish.test.mjs tests/hub-subpage-contract.test.mjs tests/card-action-layout.test.mjs`  
+Run: `node --test tests/trinket-market-publish.test.mjs tests/hub-subpage-contract.test.mjs tests/card-action-layout.test.mjs`
 Expected: FAIL because the project is not registered.
 
 - [ ] **Step 3: Register the project and add media metadata**
@@ -252,7 +252,7 @@ Run the local page at 1440×900, capture `trinket-market.png`, then convert with
 
 - [ ] **Step 5: Run publication and Hub contract tests**
 
-Run: `node --test tests/trinket-market-publish.test.mjs tests/hub-subpage-contract.test.mjs tests/card-action-layout.test.mjs tests/hub-dynamic-showcase.test.mjs`  
+Run: `node --test tests/trinket-market-publish.test.mjs tests/hub-subpage-contract.test.mjs tests/card-action-layout.test.mjs tests/hub-dynamic-showcase.test.mjs`
 Expected: all focused publication tests pass.
 
 - [ ] **Step 6: Commit Hub integration**
@@ -290,7 +290,7 @@ assert.equal(cues.every((cue) => cue.text.length === 1), true);
 
 - [ ] **Step 2: Run the media test and confirm red**
 
-Run: `node --test tests/trinket-market-publish.test.mjs`  
+Run: `node --test tests/trinket-market-publish.test.mjs`
 Expected: FAIL because video assets are absent.
 
 - [ ] **Step 3: Add recorder, encoder, player, script, and captions**
@@ -299,12 +299,12 @@ The recorder demonstrates sorting, estimate toggle, cross-row drag, edit mode, a
 
 - [ ] **Step 4: Record and encode the tutorial**
 
-Run: `node scripts/record-trinket-market-video.mjs && node scripts/build-trinket-market-video.mjs`  
+Run: `node scripts/record-trinket-market-video.mjs && node scripts/build-trinket-market-video.mjs`
 Expected: MP4 and poster are created; recorder reports zero console/page/request errors.
 
 - [ ] **Step 5: Run media and shared-player tests**
 
-Run: `node --test tests/trinket-market-publish.test.mjs tests/project-video-coverage.test.mjs && node tests/hub-video-pages-browser-smoke.mjs`  
+Run: `node --test tests/trinket-market-publish.test.mjs tests/project-video-coverage.test.mjs && node tests/hub-video-pages-browser-smoke.mjs`
 Expected: H.264, duration, subtitles, lazy loading, playback progress, and shared player contract all pass.
 
 - [ ] **Step 6: Commit the tutorial**
@@ -327,14 +327,14 @@ git commit -m "feat: add trinket market tutorial video"
 
 - [ ] **Step 1: Run focused trinket validation**
 
-Run: `node --test tests/trinket-market-*.test.mjs && node tests/trinket-market-browser-smoke.mjs`  
+Run: `node --test tests/trinket-market-*.test.mjs && node tests/trinket-market-browser-smoke.mjs`
 Expected: zero failures and zero browser errors.
 
 - [ ] **Step 2: Run full repository validation**
 
-Run: `node --test`  
-Run: `npm run audit:hub`  
-Run: `node tests/hub-entry-pages-browser-smoke.mjs`  
+Run: `node --test`
+Run: `npm run audit:hub`
+Run: `node tests/hub-entry-pages-browser-smoke.mjs`
 Expected: zero failures and zero Important audit findings.
 
 - [ ] **Step 3: Inspect the branch diff and request code review**
@@ -343,18 +343,18 @@ Run: `git diff --check origin/main...HEAD` and review every changed path against
 
 - [ ] **Step 4: Rebase on current remote main and rerun release gates**
 
-Run: `git fetch origin main && git rebase origin/main`  
-Run: focused tests, `node --test`, and `npm run audit:hub` again.  
+Run: `git fetch origin main && git rebase origin/main`
+Run: focused tests, `node --test`, and `npm run audit:hub` again.
 Expected: clean rebase and all gates green.
 
 - [ ] **Step 5: Push the feature branch and merge without force**
 
-Run: `git push -u origin feat/trinket-market-20260828`  
+Run: `git push -u origin feat/trinket-market-20260828`
 Create a pull request, verify checks, and merge normally to `main`.
 
 - [ ] **Step 6: Wait for exact-SHA GitHub Pages and validation workflows**
 
-Use `gh run list` and `gh run watch` for the merged SHA.  
+Use `gh run list` and `gh run watch` for the merged SHA.
 Expected: Pages and Hub validation workflows both conclude `success`.
 
 - [ ] **Step 7: Verify public pages and media**

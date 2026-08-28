@@ -143,7 +143,7 @@ h1, h2, p { margin-top: 0; }
 .market-stats {
   margin: 0;
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(4, 1fr);
   border: 1px solid var(--line);
   border-radius: 12px;
   background: var(--surface);
@@ -153,6 +153,7 @@ h1, h2, p { margin-top: 0; }
 .market-stats div + div { border-left: 1px solid var(--line); }
 .market-stats dt, .market-stats small { color: var(--muted); font-size: 9px; }
 .market-stats dd { margin: 4px 0 2px; overflow: hidden; color: var(--ink); font-size: 20px; font-weight: 800; text-overflow: ellipsis; white-space: nowrap; font-variant-numeric: tabular-nums; }
+.market-stats .updated-stat dd { font-size: 17px; }
 
 .catalog { padding-top: 16px; }
 .catalog-toolbar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }

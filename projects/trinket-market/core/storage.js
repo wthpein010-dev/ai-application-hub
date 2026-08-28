@@ -3,6 +3,7 @@ import { validateItems } from "./items.js";
 export const DATA_STORAGE_KEY = "trinket-market-v1-data";
 const IMAGE_DB_NAME = "trinket-market-v1-images";
 const IMAGE_STORE_NAME = "images";
+const CANONICAL_IDS = Object.freeze(Array.from({ length: 11 }, (_, index) => index + 1));
 
 function normalizeOrder(items, input) {
   const validIds = new Set(items.map((item) => item.id));
@@ -16,18 +17,35 @@ function normalizeOrder(items, input) {
 }
 
 function validImageData(value) {
-  if (typeof value !== "string" || !/^data:image\/(?:png|jpeg|webp);base64,/i.test(value)) return false;
-  const encoded = value.slice(value.indexOf(",") + 1);
-  return Math.ceil(encoded.length * 0.75) <= 8 * 1024 * 1024;
+  const match = typeof value === "string" ? /^data:image\/(png|jpeg|webp);base64,([A-Za-z0-9+/]+={0,2})$/i.exec(value) : null;
+  if (!match || match[2].length % 4 !== 0) return false;
+  let binary;
+  try {
+    binary = atob(match[2]);
+  } catch {
+    return false;
+  }
+  if (!binary.length || binary.length > 8 * 1024 * 1024) return false;
+  const bytes = Array.from(binary.slice(0, 12), (character) => character.charCodeAt(0));
+  if (match[1].toLowerCase() === "png") return [137, 80, 78, 71, 13, 10, 26, 10].every((byte, index) => bytes[index] === byte);
+  if (match[1].toLowerCase() === "jpeg") return bytes[0] === 255 && bytes[1] === 216 && bytes[2] === 255;
+  return bytes.slice(0, 4).map((byte) => String.fromCharCode(byte)).join("") === "RIFF"
+    && bytes.slice(8, 12).map((byte) => String.fromCharCode(byte)).join("") === "WEBP";
 }
 
 export function validateImportedState(value) {
   if (!value || typeof value !== "object" || Array.isArray(value)) throw new TypeError("导入文件格式无效");
   if (Number(value.version) !== 1) throw new TypeError("导入文件版本不受支持");
   const normalized = validateItems(value.items);
+  const ids = normalized.map((item) => item.id).sort((left, right) => left - right);
+  if (ids.length !== CANONICAL_IDS.length || ids.some((id, index) => id !== CANONICAL_IDS[index])) {
+    throw new TypeError("导入文件必须完整包含 HAND-0001 至 HAND-0011");
+  }
   const items = normalized.map((item, index) => {
     const imageData = value.items[index]?.imageData;
-    return validImageData(imageData) ? { ...item, imageData } : item;
+    if (imageData === undefined) return item;
+    if (!validImageData(imageData)) throw new TypeError(`HAND-${String(item.id).padStart(4, "0")} 的图片数据无效`);
+    return { ...item, imageData };
   });
   return { version: 1, items, order: normalizeOrder(items, value.order) };
 }
@@ -117,4 +135,15 @@ export async function loadItemImages() {
 
 export function clearItemImages() {
   return withImageStore("readwrite", (store) => store.clear());
+}
+
+export function replaceItemImages(images) {
+  const records = [...images].map(([id, blob]) => ({ id: Number(id), blob }));
+  if (records.some(({ id, blob }) => !Number.isInteger(id) || !CANONICAL_IDS.includes(id) || !(blob instanceof Blob))) {
+    return Promise.reject(new TypeError("本地图片数据无效"));
+  }
+  return withImageStore("readwrite", (store) => {
+    store.clear();
+    for (const record of records) store.put(record);
+  });
 }
