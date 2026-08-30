@@ -1,0 +1,58 @@
+name: Snapshot GamePulse rankings
+
+on:
+  schedule:
+    # 23:20 UTC = 07:20 Beijing time, after the source's 07:10 refresh window.
+    - cron: "20 23 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pages: write
+
+concurrency:
+  group: gamepulse-rankings-snapshot-${{ github.repository }}-main
+  cancel-in-progress: false
+
+jobs:
+  snapshot:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - name: Check out main
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Fetch, validate, and stage a safe snapshot
+        run: node scripts/update-gamepulse-snapshot.mjs
+
+      - name: Verify the published shape and preview contract
+        run: node --test tests/gamepulse-snapshot-update.test.mjs tests/gamepulse-public-preview.test.mjs tests/gamepulse-publish.test.mjs
+
+      - name: Commit only a changed valid snapshot
+        shell: bash
+        run: |
+          set -euo pipefail
+          target="projects/gamepulse-mini-radar/data/rankings.json"
+          git add -- "$target"
+          if git diff --cached --quiet; then
+            echo "Snapshot unchanged."
+            exit 0
+          fi
+          git diff --cached --check
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git commit -m "data: snapshot GamePulse rankings"
+          git fetch --no-tags origin main
+          git rebase origin/main
+          git push origin HEAD:main
+
+      - name: Request a legacy GitHub Pages rebuild
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh api --method POST "repos/$GITHUB_REPOSITORY/pages/builds"

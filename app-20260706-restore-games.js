@@ -224,13 +224,13 @@ const defaultApps = [
     problem: "小游戏开发者既要扫描可信榜位，也要持续沉淀玩法案例、寻找合作机会，并把公开信息接入自己的工作流。",
     aiUse: "AI 参与榜单清洗、知识摘要、关联推荐和异常回退；投稿审核后公开，站点每天北京时间 07:10 后检查更新。",
     folder: "https://gamepulse-mini-radar.polite-chord-7994.chatgpt.site",
-    entry: "https://gamepulse-mini-radar.polite-chord-7994.chatgpt.site",
+    entry: "./projects/gamepulse-mini-radar/index.html",
     video: "./projects/gamepulse-mini-radar/video/index.html",
     package: "",
     platforms: {
       web: {
-        href: "https://gamepulse-mini-radar.polite-chord-7994.chatgpt.site",
-        label: "演示"
+        href: "./projects/gamepulse-mini-radar/index.html",
+        label: "只读预览"
       },
       windows: "",
       mac: ""
@@ -2062,6 +2062,9 @@ function normalizeApp(app) {
     };
   }
   if (normalized.id === "gamepulse-mini-radar") {
+    const retiredPreviewUrl = "https://gamepulse-mini-radar.polite-chord-7994.chatgpt.site";
+    const usesRetiredPreview = (value) =>
+      typeof value === "string" && value.replace(/\/+$/, "") === retiredPreviewUrl;
     const legacyName = "GamePulse 小游雷达";
     const legacyBrief = "把国内微信小游戏热门榜、畅销榜与海外 US iOS Casual Top 10 放在同一张开发者工作台上。";
     const legacyTags = ["小游戏排行", "微信小游戏", "iOS Casual", "产品洞察"];
@@ -2080,6 +2083,21 @@ function normalizeApp(app) {
       )
     ) {
       normalized.tags = [...base.tags];
+    }
+    if (usesRetiredPreview(normalized.entry)) {
+      normalized.entry = base.entry;
+    }
+    const storedWeb = normalized.platforms?.web;
+    if (usesRetiredPreview(storedWeb)) {
+      normalized.platforms = {
+        ...(normalized.platforms || {}),
+        web: { ...base.platforms.web },
+      };
+    } else if (storedWeb && typeof storedWeb === "object" && usesRetiredPreview(storedWeb.href)) {
+      normalized.platforms = {
+        ...(normalized.platforms || {}),
+        web: { ...storedWeb, ...base.platforms.web },
+      };
     }
   }
   if (normalized.id === "planner-daily-quiz") {

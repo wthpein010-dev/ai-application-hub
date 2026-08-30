@@ -1,0 +1,114 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="description" content="小游戏每日排行的 GitHub Pages 只读快照，展示微信人气、应用宝热门、应用宝畅销与海外 iOS 四个来源。" />
+  <title>小游戏每日排行</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='16' fill='%230b1726'/%3E%3Cpath d='M14 45V31h8v14zm14 0V21h8v24zm14 0V12h8v33z' fill='%235fe0d3'/%3E%3C/svg%3E" />
+  <link rel="stylesheet" href="../../assets/subpage-shell.css" />
+  <link rel="stylesheet" href="./preview.css" />
+  <script src="./app.js" defer></script>
+</head>
+<body class="hub-subpage gamepulse-preview">
+  <a class="hub-home-link" href="../../index.html#apps" aria-label="返回 AI Application Hub 应用集合">
+    <span class="hub-home-link__icon" aria-hidden="true">←</span>
+    <span>返回应用集合</span>
+  </a>
+
+  <header class="topbar preview-header">
+    <div class="preview-header__inner">
+      <p class="eyebrow">GamePulse · GitHub Pages 只读预览</p>
+      <h1>小游戏每日排行</h1>
+      <p class="lede">在不依赖完整站访问线路的情况下，查看最近一次成功同步的四个公开榜单来源。</p>
+      <div class="preview-actions">
+        <a class="primary-link" href="https://gamepulse-mini-radar.polite-chord-7994.chatgpt.site" target="_blank" rel="noopener noreferrer">打开完整站（实时榜单与完整功能）</a>
+        <span class="read-only-note">只展示同步快照，不提供投稿、收藏或写入。</span>
+      </div>
+    </div>
+  </header>
+
+  <main class="preview-main">
+    <section class="snapshot-status" aria-labelledby="snapshot-heading">
+      <div>
+        <p class="section-kicker">同步状态</p>
+        <h2 id="snapshot-heading">最近可用快照</h2>
+      </div>
+      <div class="snapshot-status__detail" aria-live="polite">
+        <span id="snapshotBadge" class="status-badge" data-state="loading">正在读取</span>
+        <time id="snapshotTime">等待首次同步</time>
+        <span id="sourceDate"></span>
+      </div>
+    </section>
+
+    <p id="loadMessage" class="load-message" role="status">正在读取同仓库快照……</p>
+
+    <div class="ranking-grid" aria-label="四个独立榜单来源">
+      <section class="ranking-card" data-ranking="wechat" aria-labelledby="wechat-title">
+        <div class="ranking-card__heading">
+          <div><p class="source-tag">国内 · 微信</p><h2 id="wechat-title">微信游戏人气榜</h2></div>
+          <span class="source-health" data-health="wechat">等待同步</span>
+        </div>
+        <div class="table-scroll" tabindex="0" aria-label="微信游戏人气榜表格，可横向滚动">
+          <table>
+            <caption>微信游戏人气榜原始名次 Top 10</caption>
+            <thead><tr><th scope="col">名次</th><th scope="col">游戏</th><th scope="col">开发者</th><th scope="col">分类</th></tr></thead>
+            <tbody id="wechatRows"><tr><td colspan="4">等待首次同步</td></tr></tbody>
+          </table>
+        </div>
+      </section>
+
+      <section class="ranking-card" data-ranking="popular" aria-labelledby="popular-title">
+        <div class="ranking-card__heading">
+          <div><p class="source-tag">国内 · 应用宝</p><h2 id="popular-title">微信小游戏热门榜</h2></div>
+          <span class="source-health" data-health="popular">等待同步</span>
+        </div>
+        <div class="table-scroll" tabindex="0" aria-label="应用宝热门榜表格，可横向滚动">
+          <table>
+            <caption>应用宝微信小游戏热门榜原始名次 Top 10</caption>
+            <thead><tr><th scope="col">名次</th><th scope="col">游戏</th><th scope="col">开发者</th><th scope="col">分类</th></tr></thead>
+            <tbody id="popularRows"><tr><td colspan="4">等待首次同步</td></tr></tbody>
+          </table>
+        </div>
+      </section>
+
+      <section class="ranking-card" data-ranking="grossing" aria-labelledby="grossing-title">
+        <div class="ranking-card__heading">
+          <div><p class="source-tag">国内 · 应用宝</p><h2 id="grossing-title">微信小游戏畅销榜</h2></div>
+          <span class="source-health" data-health="grossing">等待同步</span>
+        </div>
+        <div class="table-scroll" tabindex="0" aria-label="应用宝畅销榜表格，可横向滚动">
+          <table>
+            <caption>应用宝微信小游戏畅销榜原始名次 Top 10</caption>
+            <thead><tr><th scope="col">名次</th><th scope="col">游戏</th><th scope="col">开发者</th><th scope="col">分类</th></tr></thead>
+            <tbody id="grossingRows"><tr><td colspan="4">等待首次同步</td></tr></tbody>
+          </table>
+        </div>
+      </section>
+
+      <section class="ranking-card" data-ranking="overseas" aria-labelledby="overseas-title">
+        <div class="ranking-card__heading">
+          <div><p class="source-tag">海外 · 美国 iPhone</p><h2 id="overseas-title">iOS 休闲游戏榜</h2></div>
+          <span class="source-health" data-health="overseas">等待同步</span>
+        </div>
+        <div class="table-scroll" tabindex="0" aria-label="海外 iOS 休闲榜表格，可横向滚动">
+          <table>
+            <caption>美国 iPhone 休闲游戏榜原始名次 Top 10</caption>
+            <thead><tr><th scope="col">名次</th><th scope="col">游戏</th><th scope="col">开发者</th><th scope="col">分类</th></tr></thead>
+            <tbody id="overseasRows"><tr><td colspan="4">等待首次同步</td></tr></tbody>
+          </table>
+        </div>
+      </section>
+    </div>
+
+    <aside class="method-note" aria-label="数据口径说明">
+      <h2>数据口径</h2>
+      <p>四个来源分别保留原始名次，不跨来源合并。GitHub Actions 仅在源接口返回完整且通过校验的数据时替换快照；同步失败会继续展示上一份有效数据。</p>
+    </aside>
+  </main>
+
+  <footer class="preview-footer">
+    <p>静态镜像由 AI Application Hub 发布；完整站可能受访问线路限制。</p>
+  </footer>
+</body>
+</html>

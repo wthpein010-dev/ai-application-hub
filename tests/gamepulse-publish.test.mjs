@@ -25,11 +25,15 @@ test("GamePulse is published once in the application collection", () => {
   assert.equal(app.name, "小游戏每日排行");
   assert.equal(app.status, "assistant");
   assert.equal(
-    app.entry,
+    app.folder,
     "https://gamepulse-mini-radar.polite-chord-7994.chatgpt.site",
   );
+  assert.equal(
+    app.entry,
+    "./projects/gamepulse-mini-radar/index.html",
+  );
   assert.equal(app.platforms.web.href, app.entry);
-  assert.equal(app.platforms.web.label, "演示");
+  assert.equal(app.platforms.web.label, "只读预览");
   assert.equal(
     app.video,
     "./projects/gamepulse-mini-radar/video/index.html",

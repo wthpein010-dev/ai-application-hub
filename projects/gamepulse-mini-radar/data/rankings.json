@@ -1,0 +1,18 @@
+{
+  "schemaVersion": 1,
+  "state": "pending",
+  "mirroredAt": null,
+  "sourceUpdatedAt": null,
+  "displayDate": "",
+  "stale": true,
+  "storage": "pending",
+  "sourceUrl": "https://gamepulse-mini-radar.polite-chord-7994.chatgpt.site/api/rankings",
+  "sourceHealth": [],
+  "rankings": {
+    "wechat": [],
+    "popular": [],
+    "grossing": [],
+    "overseas": []
+  },
+  "message": "等待 GitHub Actions 完成首次安全同步。"
+}
