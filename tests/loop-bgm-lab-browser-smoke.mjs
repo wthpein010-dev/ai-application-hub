@@ -282,6 +282,19 @@ try {
   assert.ok(automaticPromptsAfter.every(prompt => prompt.includes(`${expectedAutomaticReference.analysis.key.name}, around ${Math.round(expectedAutomaticReference.analysis.tempo.bpm)} BPM`)));
   assert.notDeepEqual(automaticPromptsAfter, automaticPromptsBefore, "deleting the aggregate-defining reference must rebuild all prompts");
 
+  await page.locator("#reference-list .analysis-item").first().locator("button").click();
+  await page.waitForFunction(() => {
+    const stored = JSON.parse(localStorage.getItem("loop-bgm-lab-v1"));
+    return stored.references.length === 0
+      && stored.styleSpec.key === "D minor"
+      && stored.styleSpec.tempo.target === 112;
+  });
+  assert.equal(await page.locator("#style-key").inputValue(), "D minor");
+  assert.equal(await page.locator("#style-tempo").inputValue(), "112");
+  const emptyReferencePrompts = await page.locator(".batch-card .prompt-text").allTextContents();
+  assert.equal(emptyReferencePrompts.length, 5);
+  assert.ok(emptyReferencePrompts.every(prompt => prompt.includes("D minor, around 112 BPM")));
+
   const automaticKey = await page.locator("#style-key").inputValue();
   await page.locator("#style-key").fill(automaticKey);
   await page.locator("#style-tempo").fill("120");

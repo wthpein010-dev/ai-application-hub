@@ -25,7 +25,7 @@ const FILE_NAME_KEY = /(?:file.?name|filename|originalName|localFile)/i;
 const RAW_MEDIA_WORD = /^(?:raw|binary|audio|samples?|channels?|buffers?|pcm|waveform)$/i;
 const NON_URL_FILE_NAME = /(?:^|[\\/\s("'`=])[^\\/\s"'`=]+\.[a-z][a-z0-9]{0,9}(?=$|[?#\s)"'`,;])/i;
 const LOCAL_URL = /(?:file|blob):/i;
-const SECRET_VALUE = /\b(?:cookie|token|api.?key|recovery.?key|session)\s*[:=]/i;
+const SECRET_VALUE = /(?:^|[?&#;\s("'`])(?:cookie|token|api(?:[_-]?key)|recovery(?:[_-]?key)|session|password|secret)\s*[:=]/i;
 
 function isPlainObject(value) {
   return value !== null && typeof value === "object" && !Array.isArray(value);
@@ -73,11 +73,13 @@ function assertSafeValue(value, key = "", path = [], seen = new WeakSet()) {
   }
   if (FILE_NAME_KEY.test(key)) fail(`Portable state cannot contain a file name key: ${key}`);
   const explicitAnalysisScalar = isExplicitAnalysisPath(currentPath) && (key === "sampleRate" || key === "channelCount");
-  if (typeof value === "string" && !isHttpsUrl(value)) {
-    if (containsAbsolutePath(value)) fail(`Absolute path is not allowed in portable state: ${key || "value"}`);
-    if (LOCAL_URL.test(value)) fail(`Portable state cannot contain file: or blob: URLs in ${key || "value"}`);
-    if (NON_URL_FILE_NAME.test(value)) fail(`Portable state cannot contain a non-URL file name in ${key || "value"}`);
+  if (typeof value === "string") {
     if (SECRET_VALUE.test(value)) fail(`Portable state cannot contain a secret-like value in ${key || "value"}`);
+    if (!isHttpsUrl(value)) {
+      if (containsAbsolutePath(value)) fail(`Absolute path is not allowed in portable state: ${key || "value"}`);
+      if (LOCAL_URL.test(value)) fail(`Portable state cannot contain file: or blob: URLs in ${key || "value"}`);
+      if (NON_URL_FILE_NAME.test(value)) fail(`Portable state cannot contain a non-URL file name in ${key || "value"}`);
+    }
   }
   if (isRawMediaKey(key) && !explicitAnalysisScalar) {
     fail(`Forbidden key for raw audio or binary data; absolute path and file payloads are not portable: ${key}`);

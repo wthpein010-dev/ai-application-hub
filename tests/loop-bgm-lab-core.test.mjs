@@ -230,6 +230,33 @@ test("portable JSON and Markdown preserve safe human display labels but reject u
   }
 });
 
+test("secret-bearing HTTPS query and hash labels are rejected globally while ordinary HTTPS sources remain portable", () => {
+  const ordinary = {
+    ...createDailyPlan(),
+    sourceUrl: "https://example.test/files/alice-budget.xlsx?topic=tokenization#preview",
+    currentBestCandidate: { displayName: "欢乐版本 A", hash: "b".repeat(64) }
+  };
+  const ordinaryJson = exportProjectJson(ordinary);
+  assert.equal(importProjectJson(ordinaryJson).sourceUrl, ordinary.sourceUrl);
+  assert.doesNotThrow(() => exportProjectMarkdown(ordinary));
+
+  for (const parameter of ["token", "apiKey", "cookie", "session", "password", "secret"]) {
+    for (const separator of ["?", "#"]) {
+      const unsafe = {
+        ...createDailyPlan(),
+        currentBestCandidate: {
+          displayName: `https://example.test/label${separator}${parameter}=private`,
+          hash: "b".repeat(64)
+        }
+      };
+      assert.throws(() => validateProject(unsafe), /secret/i);
+      assert.throws(() => importProjectJson(JSON.stringify(unsafe)), /secret/i);
+      assert.throws(() => exportProjectJson(unsafe), /secret/i);
+      assert.throws(() => exportProjectMarkdown(unsafe), /secret/i);
+    }
+  }
+});
+
 test("project validation and JSON import keep nested secret validation under path-labelled values", () => {
   const plan = createDailyPlan();
   const nestedToken = { ...plan, extensions: { localPath: { token: "secret" } } };

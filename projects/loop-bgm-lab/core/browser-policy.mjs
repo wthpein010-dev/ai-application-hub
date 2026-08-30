@@ -38,7 +38,14 @@ function winningKey(analyses) {
 export function aggregateReferenceStyle(records, currentStyle, overrides = {}) {
   const style = normalizeStyleSpec(currentStyle);
   const analyses = Array.isArray(records) ? records.map(record => record?.analysis ?? record).filter(Boolean) : [];
-  if (!analyses.length) return style;
+  if (!analyses.length) {
+    const defaults = normalizeStyleSpec();
+    return normalizeStyleSpec({
+      ...defaults,
+      key: overrides.key ? style.key : defaults.key,
+      tempo: overrides.tempo ? style.tempo : defaults.tempo
+    });
+  }
   const tempo = weightedMedian(
     analyses,
     analysis => analysis?.tempo?.bpm,

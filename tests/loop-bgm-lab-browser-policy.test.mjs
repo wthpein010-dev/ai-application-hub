@@ -50,6 +50,29 @@ test("reference aggregation respects persisted user overrides for key and tempo"
   assert.deepEqual(style.tempo, defaultStyle.tempo);
 });
 
+test("empty reference aggregation resets canonical defaults except explicitly overridden key and tempo fields", async () => {
+  // Break caught: deleting the final reference leaves its learned key/tempo in StyleSpec and rebuilt prompts.
+  const { aggregateReferenceStyle } = await loadPolicy();
+  const learnedStyle = {
+    ...defaultStyle,
+    key: "C major",
+    tempo: { target: 96, min: 93, max: 100 },
+    mood: ["reference-derived"],
+    structure: { ...defaultStyle.structure, bars: 32 }
+  };
+  const cases = [
+    { name: "no overrides", overrides: {}, key: "D minor", tempo: defaultStyle.tempo },
+    { name: "tempo only", overrides: { tempo: true }, key: "D minor", tempo: learnedStyle.tempo },
+    { name: "key only", overrides: { key: true }, key: "C major", tempo: defaultStyle.tempo },
+    { name: "both", overrides: { key: true, tempo: true }, key: "C major", tempo: learnedStyle.tempo }
+  ];
+
+  for (const entry of cases) {
+    const actual = aggregateReferenceStyle([], learnedStyle, entry.overrides);
+    assert.deepEqual(actual, { ...defaultStyle, key: entry.key, tempo: entry.tempo }, entry.name);
+  }
+});
+
 test("decoded audio budgets reject long metadata and excessive scalar samples before analysis", async () => {
   // Break caught: a small compressed file expands to an unbounded AudioBuffer and freezes sample extraction.
   const {
