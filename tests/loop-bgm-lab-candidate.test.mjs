@@ -254,6 +254,7 @@ test("experiment records are detached and deeply immutable while project validat
   const plan = transitionBatch(createDailyPlan(), "batch-1", "submitted");
   const experiment = {
     id: "experiment-1",
+    runId: plan.runs[0].id,
     batchId: "batch-1",
     candidateId: "candidate-1",
     candidateHash: "b".repeat(64),
@@ -274,6 +275,15 @@ test("experiment records are detached and deeply immutable while project validat
   };
   const project = validateProject({
     ...plan,
+    batches: plan.batches.map((batch, index) => index === 0 ? {
+      ...batch,
+      generatedUrl: experiment.generatedUrl,
+      currentCandidateId: experiment.candidateId,
+      candidateHash: experiment.candidateHash,
+      subjectiveScore: experiment.subjectiveScore,
+      reviewNote: experiment.reviewNote,
+      disposition: experiment.disposition,
+    } : batch),
     candidates: [{
       id: "candidate-1",
       batchId: "batch-1",

@@ -4,6 +4,8 @@ import {
   exportProjectJson,
   exportProjectMarkdown,
   importProjectJson,
+  rebuildPromptQueue,
+  recordGenerationRun,
   transitionBatch,
   validateProject
 } from "./core/project-state.mjs";
@@ -212,43 +214,13 @@ function aggregateReferences(records = project.references || []) {
   };
 }
 
-function mergeBatchProgress(freshBatches, previousBatches) {
-  const previousById = new Map((previousBatches || []).map(batch => [batch.id, batch]));
-  return freshBatches.map(batch => {
-    const previous = previousById.get(batch.id);
-    if (!previous) return batch;
-    return {
-      ...batch,
-      status: previous.status,
-      generatedUrl: previous.generatedUrl,
-      generationConditions: previous.generationConditions,
-      candidateHash: previous.candidateHash,
-      subjectiveScore: previous.subjectiveScore,
-      nextRoundNote: previous.nextRoundNote,
-      reviewNote: previous.reviewNote,
-      disposition: previous.disposition
-    };
-  });
-}
-
 function rebuildPlanForReferences(references, baseProject = project) {
   const styleSpec = aggregateReferenceStyle(
     references,
     baseProject.styleSpec,
     baseProject.extensions?.styleOverrides || {}
   );
-  const plan = createDailyPlan({ styleSpec });
-  return validateProject({
-    ...baseProject,
-    styleSpec: plan.styleSpec,
-    credits: plan.credits,
-    batches: mergeBatchProgress(plan.batches, baseProject.batches),
-    references,
-    candidates: baseProject.candidates,
-    experiments: baseProject.experiments,
-    currentBestCandidate: baseProject.currentBestCandidate,
-    nextRoundSuggestion: baseProject.nextRoundSuggestion
-  });
+  return rebuildPromptQueue({ ...baseProject, references }, styleSpec);
 }
 
 function metric(label, value) {
@@ -320,6 +292,33 @@ function releaseAllAudio() {
   for (const url of [...objectUrls]) revokeObjectUrl(url);
 }
 
+function updateDisplayName(kind, id, nextValue) {
+  clearError();
+  try {
+    const collectionName = kind === "reference" ? "references" : "candidates";
+    const displayName = nextValue.trim();
+    const records = project[collectionName].map(record => {
+      if (record.id !== id) return record;
+      if (displayName) return { ...record, displayName };
+      const { displayName: _removed, ...withoutDisplayName } = record;
+      return withoutDisplayName;
+    });
+    let currentBestCandidate = project.currentBestCandidate;
+    if (kind === "candidate" && currentBestCandidate?.candidateId === id) {
+      const { displayName: _removed, ...identity } = currentBestCandidate;
+      currentBestCandidate = displayName ? { ...identity, displayName } : identity;
+    }
+    project = validateProject({ ...project, [collectionName]: records, currentBestCandidate });
+    persistProject();
+    if (kind === "reference") renderReferences();
+    else renderCandidateHistory();
+    showLive(`${kind === "reference" ? "参考" : "候选"}导出显示名已保存；本机文件名仍不会写入持久状态。`);
+  } catch (error) {
+    renderAll();
+    showError(error instanceof Error ? error.message : "显示名保存失败。 ");
+  }
+}
+
 function renderReferences() {
   referenceList.replaceChildren();
   for (const [index, record] of (project.references || []).entries()) {
@@ -328,7 +327,7 @@ function renderReferences() {
     item.dataset.analysisState = "ready";
     const copy = createElement("div");
     copy.append(
-      createElement("strong", { text: session?.name || `参考 ${index + 1}（仅恢复数值记录）` }),
+      createElement("strong", { text: record.displayName || session?.name || `参考 ${index + 1}（仅恢复数值记录）` }),
       createElement("span", { className: "hash-fragment", text: audioSummary(record.analysis, record.hash) })
     );
     if (record.analysis.warnings?.length) {
@@ -337,7 +336,14 @@ function renderReferences() {
     const remove = createElement("button", { className: "text-button", text: "移除" });
     remove.type = "button";
     remove.addEventListener("click", () => removeReference(record.id));
-    item.append(copy, remove);
+    const displayName = createElement("input", { className: "reference-display-name" });
+    displayName.type = "text";
+    displayName.autocomplete = "off";
+    displayName.maxLength = 120;
+    displayName.placeholder = `参考 ${index + 1}`;
+    displayName.value = record.displayName || "";
+    displayName.addEventListener("change", () => updateDisplayName("reference", record.id, displayName.value));
+    item.append(copy, labelledField("导出显示名（可选）", displayName), remove);
     referenceList.append(item);
   }
   for (const failure of referenceFailures) {
@@ -519,38 +525,6 @@ function renderComparison() {
   setAudioElement(candidatePlayer, candidateSession?.candidateId === candidate.id ? candidateSession.url : null);
 }
 
-function updateCandidateHash(candidateId, nextHash) {
-  clearError();
-  try {
-    const normalizedHash = nextHash.trim().toLowerCase();
-    if (!/^[a-f0-9]{64}$/.test(normalizedHash)) throw new TypeError("候选 SHA-256 必须是 64 位十六进制。 ");
-    const candidate = project.candidates.find(item => item.id === candidateId);
-    if (!candidate) throw new TypeError(`未知候选：${candidateId}`);
-    const previousHash = candidate.hash;
-    const candidates = project.candidates.map(item => item.id === candidate.id ? { ...item, hash: normalizedHash } : item);
-    const batches = project.batches.map(batch => batch.id === candidate.batchId && batch.candidateHash === previousHash
-      ? { ...batch, candidateHash: normalizedHash }
-      : batch);
-    const experiments = project.experiments.map(experiment => experiment.candidateId === candidate.id
-      ? { ...experiment, candidateHash: normalizedHash }
-      : experiment);
-    const currentBestCandidate = project.currentBestCandidate?.candidateId === candidate.id
-      ? { ...project.currentBestCandidate, hash: normalizedHash }
-      : project.currentBestCandidate;
-    project = validateProject({ ...project, batches, candidates, experiments, currentBestCandidate });
-    if (candidateSession?.candidateId === candidate.id) candidateSession.hash = normalizedHash;
-    selectedCandidateId = candidate.id;
-    persistProject();
-    renderBatches();
-    renderCandidateHistory();
-    renderComparison();
-    showLive("候选 SHA-256 已同步到候选、批次和实验记录。 ");
-  } catch (error) {
-    renderCandidateHistory();
-    showError(error instanceof Error ? error.message : "候选 SHA-256 更新失败。 ");
-  }
-}
-
 function updateCandidateReview(candidateId, batchPatch) {
   clearError();
   try {
@@ -558,19 +532,12 @@ function updateCandidateReview(candidateId, batchPatch) {
     if (!candidate) throw new TypeError(`未知候选：${candidateId}`);
     const batch = project.batches.find(item => item.id === candidate.batchId);
     if (!batch) throw new TypeError(`候选关联的批次不存在：${candidate.batchId}`);
-    const normalizedPatch = { ...batchPatch, candidateHash: candidate.hash };
-    const generationConditions = batch.generationConditions || (normalizedPatch.generatedUrl !== null
-      && Object.hasOwn(normalizedPatch, "generatedUrl")
-      ? {
-        batchId: batch.id,
-        changedAxis: batch.changedAxis,
-        prompt: batch.prompt,
-        excludePrompt: batch.excludePrompt,
-        styleSpec: structuredClone(project.styleSpec),
-      }
-      : null);
-    const batches = project.batches.map(item => item.id === batch.id
-      ? { ...item, ...normalizedPatch, ...(generationConditions ? { generationConditions } : {}) }
+    const experiment = project.experiments.find(item => item.candidateId === candidate.id);
+    if (!experiment) throw new TypeError(`候选关联的实验不存在：${candidate.id}`);
+    const normalizedPatch = { ...batchPatch };
+    const isBatchCurrent = batch.currentCandidateId === candidate.id;
+    const batches = project.batches.map(item => item.id === batch.id && isBatchCurrent
+      ? { ...item, ...normalizedPatch, currentCandidateId: candidate.id, candidateHash: candidate.hash }
       : item);
     const experiments = project.experiments.map(experiment => experiment.candidateId === candidate.id
       ? {
@@ -588,7 +555,7 @@ function updateCandidateReview(candidateId, batchPatch) {
     renderBatches();
     renderCandidateHistory();
     renderComparison();
-    showLive("候选复盘已保存到批次和实验历史。 ");
+    showLive(isBatchCurrent ? "候选复盘已保存到当前批次和实验历史。 " : "候选复盘已保存到其独立实验历史。 ");
   } catch (error) {
     renderAll();
     showError(error instanceof Error ? error.message : "候选复盘保存失败。 ");
@@ -633,7 +600,7 @@ function renderCandidateHistory() {
   for (const [index, candidate] of [...project.candidates].reverse().entries()) {
     const batch = project.batches.find(item => item.id === candidate.batchId);
     const experiment = project.experiments.find(item => item.candidateId === candidate.id);
-    const isBatchCurrent = batch?.candidateHash === candidate.hash;
+    const isBatchCurrent = batch?.currentCandidateId === candidate.id;
     const card = createElement("article", { className: "candidate-history-item" });
     card.dataset.candidateId = candidate.id;
     card.dataset.batchId = candidate.batchId;
@@ -652,14 +619,21 @@ function renderCandidateHistory() {
     });
     heading.append(view);
 
+    const candidateDisplayName = createElement("input", { className: "candidate-display-name" });
+    candidateDisplayName.type = "text";
+    candidateDisplayName.autocomplete = "off";
+    candidateDisplayName.maxLength = 120;
+    candidateDisplayName.placeholder = `候选 ${project.candidates.length - index}`;
+    candidateDisplayName.value = candidate.displayName || "";
+    candidateDisplayName.addEventListener("change", () => updateDisplayName("candidate", candidate.id, candidateDisplayName.value));
+
     const candidateHash = createElement("input", { className: "candidate-hash" });
     candidateHash.type = "text";
     candidateHash.autocomplete = "off";
     candidateHash.spellcheck = false;
     candidateHash.maxLength = 64;
-    candidateHash.pattern = "[A-Fa-f0-9]{64}";
+    candidateHash.readOnly = true;
     candidateHash.value = candidate.hash;
-    candidateHash.addEventListener("change", () => updateCandidateHash(candidate.id, candidateHash.value));
 
     const generatedUrl = createElement("input", { className: "candidate-generated-url" });
     generatedUrl.type = "url";
@@ -704,7 +678,8 @@ function renderCandidateHistory() {
 
     const fields = createElement("div", { className: "candidate-review-grid" });
     fields.append(
-      labelledField("候选 SHA-256", candidateHash),
+      labelledField("导出显示名（可选）", candidateDisplayName),
+      labelledField("候选 SHA-256（只读）", candidateHash),
       labelledField("生成链接", generatedUrl),
       labelledField("主观评分", score),
       labelledField("复核 / 拒绝理由", reviewNote),
@@ -914,14 +889,12 @@ async function processCandidateFile(file) {
     const comparison = compareCandidate(reference, result.analysis);
     const similarityClassValue = classifySimilarity(comparison);
     const advice = recommendNextVariant(comparison);
-    const generationConditions = selectedBatch.generationConditions || {
-      batchId: selectedBatch.id,
-      changedAxis: selectedBatch.changedAxis,
-      prompt: selectedBatch.prompt,
-      excludePrompt: selectedBatch.excludePrompt,
-      styleSpec: structuredClone(project.styleSpec),
-    };
-    const candidateId = allocateId("candidate", project.candidates || []);
+    const projectWithRun = recordGenerationRun(project, batchId);
+    const currentBatch = projectWithRun.batches.find(batch => batch.id === batchId);
+    const run = projectWithRun.runs.find(item => item.id === currentBatch?.currentRunId);
+    if (!currentBatch || !run) throw new TypeError("无法为候选建立独立生成运行。 ");
+    const generationConditions = run.generationConditions;
+    const candidateId = allocateId("candidate", projectWithRun.candidates || []);
     const record = {
       id: candidateId,
       batchId,
@@ -933,11 +906,12 @@ async function processCandidateFile(file) {
       advice
     };
     const experiment = {
-      id: allocateId("experiment", project.experiments || []),
+      id: allocateId("experiment", projectWithRun.experiments || []),
+      runId: run.id,
       batchId,
       candidateId,
       candidateHash: result.hash,
-      generatedUrl: selectedBatch.generatedUrl,
+      generatedUrl: currentBatch.generatedUrl,
       subjectiveScore: null,
       reviewNote: "",
       disposition: "unrated",
@@ -946,21 +920,21 @@ async function processCandidateFile(file) {
       advice,
       generationConditions: structuredClone(generationConditions)
     };
-    const batches = project.batches.map(batch => batch.id === batchId
+    const batches = projectWithRun.batches.map(batch => batch.id === batchId
       ? {
         ...batch,
+        currentCandidateId: candidateId,
         candidateHash: result.hash,
-        generationConditions: batch.generationConditions || generationConditions,
         subjectiveScore: null,
         reviewNote: "",
         disposition: "unrated"
       }
       : batch);
     const nextProject = validateProject({
-      ...project,
+      ...projectWithRun,
       batches,
-      candidates: [...project.candidates, record],
-      experiments: [...project.experiments, experiment],
+      candidates: [...projectWithRun.candidates, record],
+      experiments: [...projectWithRun.experiments, experiment],
       nextRoundSuggestion: advice
     });
     const nextUrl = createAudioUrl(file);
@@ -1039,13 +1013,9 @@ styleForm.addEventListener("submit", event => {
     tempo: { target: tempo, min: Math.max(70, tempo - 3), max: Math.min(160, tempo + 4) },
     structure: { ...project.styleSpec.structure, bars: Number(styleBars.value) }
   };
-  const freshPlan = createDailyPlan({ styleSpec: nextStyle });
   const previousOverrides = project.extensions?.styleOverrides || {};
-  project = validateProject({
+  project = rebuildPromptQueue({
     ...project,
-    styleSpec: freshPlan.styleSpec,
-    credits: freshPlan.credits,
-    batches: mergeBatchProgress(freshPlan.batches, project.batches),
     extensions: {
       ...(project.extensions || {}),
       styleOverrides: {
@@ -1054,7 +1024,7 @@ styleForm.addEventListener("submit", event => {
         bars: Boolean(previousOverrides.bars) || Number(styleBars.value) !== project.styleSpec.structure.bars
       }
     }
-  });
+  }, nextStyle);
   persistProject();
   renderBatches();
   showLive("已按更新后的画像重新生成 5 个单变量批次。 ");

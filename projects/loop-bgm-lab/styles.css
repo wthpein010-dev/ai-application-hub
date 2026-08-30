@@ -251,6 +251,8 @@ h1, h2, h3, p { margin-top: 0; }
   border-radius: 13px;
   background: var(--paper-strong);
 }
+.analysis-item { grid-template-columns: minmax(0, 1fr) minmax(150px, .45fr) auto; }
+.analysis-item > label { min-width: 0; display: grid; gap: 5px; color: var(--muted); font-size: 10px; font-weight: 800; }
 .analysis-item[data-analysis-state="error"] { border-color: var(--coral); background: var(--coral-soft); }
 .analysis-item strong, .analysis-item span, .license-entry strong, .license-entry span { display: block; overflow-wrap: anywhere; }
 .analysis-item span, .license-entry span { margin-top: 3px; color: var(--muted); font-size: 11px; line-height: 1.55; }
@@ -353,6 +355,7 @@ tr:last-child td { border-bottom: 0; }
 .candidate-history-heading .candidate-view { grid-column: 2; grid-row: 1 / span 2; }
 .candidate-review-grid { margin-top: 10px; display: grid; grid-template-columns: minmax(0, 2fr) minmax(110px, .7fr) minmax(0, 2fr) minmax(120px, .8fr) auto; align-items: end; gap: 8px; }
 .candidate-review-grid > label { min-width: 0; display: grid; gap: 5px; color: var(--muted); font-size: 10px; font-weight: 800; }
+.candidate-hash[readonly] { color: var(--muted); background: var(--cream); cursor: default; }
 .candidate-best-field { min-height: 42px; padding: 0 9px; display: flex !important; grid-template-columns: none; flex-direction: row; align-items: center; justify-content: center; border: 1px solid var(--line); border-radius: 10px; background: white; white-space: nowrap; }
 .candidate-best-field input { width: 18px; height: 18px; padding: 0; }
 
@@ -426,6 +429,7 @@ tr:last-child td { border-bottom: 0; }
   .license-form .wide-field { grid-column: auto; }
   .style-form .primary-button { width: 100%; }
   .candidate-toolbar { grid-template-columns: 1fr; }
+  .analysis-item { grid-template-columns: 1fr; align-items: stretch; }
   .candidate-review-grid { grid-template-columns: 1fr; }
   .candidate-history-heading { grid-template-columns: minmax(0, 1fr); }
   .candidate-history-heading span, .candidate-history-heading .candidate-view { grid-column: 1; grid-row: auto; }

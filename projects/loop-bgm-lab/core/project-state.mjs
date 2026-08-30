@@ -6,7 +6,7 @@ import {
   validateLicenseEntry,
 } from "./candidate-score.mjs";
 import { assertHttpsUrl, assertPortableValue, isPlainObject } from "./portable-safety.mjs";
-import { createPromptVariants } from "./prompt-engine.mjs";
+import { createPromptVariants, normalizeStyleSpec } from "./prompt-engine.mjs";
 
 const PROJECT_VERSION = 1;
 const STATUS_VALUES = new Set(["planned", "submitted", "downloaded", "reviewed", "rejected"]);
@@ -19,12 +19,12 @@ const TRANSITIONS = {
 };
 const PROJECT_KEYS = new Set([
   "version", "toolVersion", "ruleCheckedAt", "styleSpec", "credits", "batches",
-  "sourceUrl", "references", "candidates", "experiments", "licenses", "currentBestCandidate",
+  "sourceUrl", "references", "candidates", "runs", "experiments", "licenses", "currentBestCandidate",
   "outstandingIssues", "nextRoundSuggestion", "extensions"
 ]);
 const BATCH_KEYS = new Set([
   "id", "changedAxis", "prompt", "excludePrompt", "expectedDifference", "credits",
-  "status", "generatedUrl", "generationConditions", "candidateHash", "subjectiveScore", "nextRoundNote",
+  "status", "generatedUrl", "currentRunId", "generationConditions", "currentCandidateId", "candidateHash", "subjectiveScore", "nextRoundNote",
   "reviewNote", "disposition"
 ]);
 const BATCH_PATCH_KEYS = new Set([
@@ -36,8 +36,9 @@ const STRUCTURE_KEYS = new Set(["bars", "loopable", "intro", "outro"]);
 const CREDIT_KEYS = new Set(["planned", "perBatch", "batchCount"]);
 const REFERENCE_KEYS = new Set(["id", "displayName", "hash", "analysis"]);
 const CANDIDATE_KEYS = new Set(["id", "displayName", "batchId", "hash", "analysis", "referenceBasis", "comparison", "similarityClass", "advice"]);
+const RUN_KEYS = new Set(["id", "sourceUrl", "status", "generatedUrl", "generationConditions"]);
 const EXPERIMENT_KEYS = new Set([
-  "id", "batchId", "candidateId", "candidateHash", "generatedUrl", "subjectiveScore",
+  "id", "runId", "batchId", "candidateId", "candidateHash", "generatedUrl", "subjectiveScore",
   "reviewNote", "disposition", "referenceBasis", "comparison", "advice", "generationConditions"
 ]);
 const ANALYSIS_KEYS = new Set(["durationSeconds", "sampleRate", "channelCount", "peak", "rms", "tempo", "key", "spectrum", "loop", "warnings"]);
@@ -141,6 +142,11 @@ function assertHash(value, field, { nullable = false } = {}) {
   if (typeof value !== "string" || !HASH_PATTERN.test(value)) fail(`${field} must be a SHA-256 hash`);
 }
 
+function assertDisplayName(value, field) {
+  assertString(value, field, { nonEmpty: true });
+  if (value.length > 120) fail(`${field} must be at most 120 characters`);
+}
+
 function assertNullableHttpsUrl(value, field) {
   if (value === null) return;
   assertHttpsUrl(value, field);
@@ -184,14 +190,22 @@ function validateBatch(batch) {
   if (!STATUS_VALUES.has(batch.status)) fail(`Unsupported batch status: ${batch.status}`);
   assertInteger(batch.credits, "batch.credits", { minimum: 1 });
   assertNullableHttpsUrl(batch.generatedUrl, "batch.generatedUrl");
+  if (batch.currentRunId !== null) assertId(batch.currentRunId, "batch.currentRunId");
   if (batch.generationConditions !== null) {
     validateGenerationConditions(batch.generationConditions, "batch.generationConditions", batch);
   }
   if ((batch.generatedUrl !== null || ["submitted", "downloaded", "reviewed"].includes(batch.status))
-    && batch.generationConditions === null) {
-    fail("recorded batches require frozen generationConditions");
+    && (batch.currentRunId === null || batch.generationConditions === null)) {
+    fail("recorded batches require a current run and frozen generationConditions");
   }
+  if ((batch.currentRunId === null) !== (batch.generationConditions === null)) {
+    fail("batch.currentRunId and generationConditions must both be null or both be recorded");
+  }
+  if (batch.currentCandidateId !== null) assertId(batch.currentCandidateId, "batch.currentCandidateId");
   assertHash(batch.candidateHash, "batch.candidateHash", { nullable: true });
+  if ((batch.currentCandidateId === null) !== (batch.candidateHash === null)) {
+    fail("batch.currentCandidateId and candidateHash must both be null or both be recorded");
+  }
   assertNumber(batch.subjectiveScore, "batch.subjectiveScore", { nullable: true });
   if (batch.subjectiveScore !== null && (batch.subjectiveScore < 1 || batch.subjectiveScore > 5)) {
     fail("batch.subjectiveScore must be between 1 and 5");
@@ -356,6 +370,60 @@ function snapshotGenerationConditions(batch, styleSpec) {
   };
 }
 
+function clearCurrentProgress(batch) {
+  return {
+    ...batch,
+    status: "planned",
+    generatedUrl: null,
+    currentRunId: null,
+    generationConditions: null,
+    currentCandidateId: null,
+    candidateHash: null,
+    subjectiveScore: null,
+    nextRoundNote: "",
+    reviewNote: "",
+    disposition: "unrated",
+  };
+}
+
+function nextRunId(project) {
+  const used = new Set([
+    ...project.batches,
+    ...project.references,
+    ...project.candidates,
+    ...project.runs,
+    ...project.experiments,
+    ...project.licenses,
+  ].map(item => item.id));
+  let index = project.runs.reduce((maximum, run) => {
+    const match = /^run-(\d+)$/.exec(run.id);
+    return match ? Math.max(maximum, Number(match[1])) : maximum;
+  }, 0) + 1;
+  while (used.has(`run-${index}`)) index += 1;
+  return `run-${index}`;
+}
+
+function appendRun(project, batchIndex, { status, generatedUrl, resetProgress = false } = {}) {
+  const original = project.batches[batchIndex];
+  const current = resetProgress ? clearCurrentProgress(original) : original;
+  const generationConditions = snapshotGenerationConditions(current, project.styleSpec);
+  const run = {
+    id: nextRunId(project),
+    sourceUrl: project.sourceUrl,
+    status: status ?? current.status,
+    generatedUrl: typeof generatedUrl === "undefined" ? current.generatedUrl : generatedUrl,
+    generationConditions,
+  };
+  const batch = {
+    ...current,
+    status: status ?? current.status,
+    generatedUrl: typeof generatedUrl === "undefined" ? current.generatedUrl : generatedUrl,
+    currentRunId: run.id,
+    generationConditions,
+  };
+  return { batch, run };
+}
+
 function validateAdvice(value, field, { nullable = false } = {}) {
   if (nullable && value === null) return;
   if (value?.kind === "evidence-insufficient") {
@@ -377,7 +445,7 @@ function validateReference(value, index) {
   assertKnownKeys(value, REFERENCE_KEYS, field);
   assertRequiredKeys(value, new Set(["id", "hash", "analysis"]), field);
   assertId(value.id, `${field}.id`);
-  if (Object.hasOwn(value, "displayName")) assertString(value.displayName, `${field}.displayName`, { nonEmpty: true });
+  if (Object.hasOwn(value, "displayName")) assertDisplayName(value.displayName, `${field}.displayName`);
   assertHash(value.hash, `${field}.hash`);
   validateAnalysis(value.analysis, `${field}.analysis`);
 }
@@ -387,7 +455,7 @@ function validateCandidate(value, index, batchIds) {
   assertKnownKeys(value, CANDIDATE_KEYS, field);
   assertRequiredKeys(value, new Set(["id", "batchId", "hash", "analysis", "referenceBasis", "comparison", "similarityClass", "advice"]), field);
   assertId(value.id, `${field}.id`);
-  if (Object.hasOwn(value, "displayName")) assertString(value.displayName, `${field}.displayName`, { nonEmpty: true });
+  if (Object.hasOwn(value, "displayName")) assertDisplayName(value.displayName, `${field}.displayName`);
   assertId(value.batchId, `${field}.batchId`);
   if (!batchIds.has(value.batchId)) fail(`${field}.batchId must reference an existing batch`);
   assertHash(value.hash, `${field}.hash`);
@@ -410,11 +478,25 @@ function validateCandidate(value, index, batchIds) {
   }
 }
 
-function validateExperiment(value, index, candidatesById, batchesById) {
+function validateRun(value, index, batchesById) {
+  const field = `runs[${index}]`;
+  assertKnownKeys(value, RUN_KEYS, field);
+  assertRequiredKeys(value, RUN_KEYS, field);
+  assertId(value.id, `${field}.id`);
+  assertHttpsUrl(value.sourceUrl, `${field}.sourceUrl`);
+  if (!STATUS_VALUES.has(value.status)) fail(`${field}.status is unsupported`);
+  assertNullableHttpsUrl(value.generatedUrl, `${field}.generatedUrl`);
+  const batch = batchesById.get(value.generationConditions?.batchId);
+  if (!batch) fail(`${field}.generationConditions.batchId must reference an existing batch`);
+  validateGenerationConditions(value.generationConditions, `${field}.generationConditions`, batch);
+}
+
+function validateExperiment(value, index, candidatesById, batchesById, runsById) {
   const field = `experiments[${index}]`;
   assertKnownKeys(value, EXPERIMENT_KEYS, field);
   assertRequiredKeys(value, EXPERIMENT_KEYS, field);
   assertId(value.id, `${field}.id`);
+  assertId(value.runId, `${field}.runId`);
   assertId(value.batchId, `${field}.batchId`);
   assertId(value.candidateId, `${field}.candidateId`);
   const batch = batchesById.get(value.batchId);
@@ -433,10 +515,11 @@ function validateExperiment(value, index, candidatesById, batchesById) {
   validateComparison(value.comparison, `${field}.comparison`);
   validateDerivedComparison(value.referenceBasis, candidate, value.comparison, `${field}.comparison`);
   validateAdvice(value.advice, `${field}.advice`);
-  validateGenerationConditions(value.generationConditions, `${field}.generationConditions`, batch);
-  if (batch.generationConditions === null
-    || stableStringify(value.generationConditions) !== stableStringify(batch.generationConditions)) {
-    fail(`${field}.generationConditions must match its frozen batch conditions`);
+  const run = runsById.get(value.runId);
+  if (!run) fail(`${field}.runId must reference an existing run`);
+  if (run.generationConditions.batchId !== value.batchId
+    || stableStringify(value.generationConditions) !== stableStringify(run.generationConditions)) {
+    fail(`${field}.generationConditions must match its own frozen run conditions`);
   }
   if (stableStringify(value.referenceBasis) !== stableStringify(candidate.referenceBasis)
     || stableStringify(value.comparison) !== stableStringify(candidate.comparison)
@@ -504,22 +587,36 @@ export function validateProject(input) {
   assertNullableHttpsUrl(input.sourceUrl, "sourceUrl");
   if (!Array.isArray(input.references)) fail("references must be an array");
   if (!Array.isArray(input.candidates)) fail("candidates must be an array");
+  if (!Array.isArray(input.runs)) fail("runs must be an array");
   if (!Array.isArray(input.experiments)) fail("experiments must be an array");
   if (!Array.isArray(input.licenses)) fail("licenses must be an array");
   input.references.forEach(validateReference);
   input.candidates.forEach((candidate, index) => validateCandidate(candidate, index, batchIds));
   const candidatesById = new Map(input.candidates.map(candidate => [candidate.id, candidate]));
-  input.experiments.forEach((experiment, index) => validateExperiment(experiment, index, candidatesById, batchesById));
+  input.runs.forEach((run, index) => validateRun(run, index, batchesById));
+  const runsById = new Map(input.runs.map(run => [run.id, run]));
+  input.experiments.forEach((experiment, index) => validateExperiment(experiment, index, candidatesById, batchesById, runsById));
   const validatedLicenses = input.licenses.map(validateLicenseEntry);
 
   for (const batch of input.batches) {
-    if (batch.candidateHash === null) continue;
-    const matchingCandidate = input.candidates.findLast(candidate => (
-      candidate.batchId === batch.id && candidate.hash === batch.candidateHash
+    if (batch.currentRunId !== null) {
+      const run = runsById.get(batch.currentRunId);
+      if (!run
+        || stableStringify(run.generationConditions) !== stableStringify(batch.generationConditions)) {
+        fail(`batch ${batch.id} currentRunId or generationConditions is inconsistent with its current run`);
+      }
+    }
+    if (batch.currentCandidateId === null) continue;
+    const matchingCandidate = candidatesById.get(batch.currentCandidateId);
+    if (!matchingCandidate
+      || matchingCandidate.batchId !== batch.id
+      || matchingCandidate.hash !== batch.candidateHash) {
+      fail(`batch ${batch.id} currentCandidateId or candidateHash is inconsistent with its current candidate`);
+    }
+    const matchingExperiment = input.experiments.find(experiment => (
+      experiment.candidateId === matchingCandidate.id && experiment.runId === batch.currentRunId
     ));
-    if (!matchingCandidate) continue;
-    const matchingExperiment = input.experiments.findLast(experiment => experiment.candidateId === matchingCandidate.id);
-    if (!matchingExperiment) continue;
+    if (!matchingExperiment) fail(`batch ${batch.id} current candidate must bind to its current run experiment`);
     for (const field of ["generatedUrl", "subjectiveScore", "reviewNote", "disposition"]) {
       if (batch[field] !== matchingExperiment[field]) {
         fail(`batch ${batch.id} ${field} is inconsistent with its current experiment`);
@@ -531,16 +628,11 @@ export function validateProject(input) {
     ...input.batches.map(batch => batch.id),
     ...input.references.map(reference => reference.id),
     ...input.candidates.map(candidate => candidate.id),
+    ...input.runs.map(run => run.id),
     ...input.experiments.map(experiment => experiment.id),
     ...validatedLicenses.map(license => license.id),
   ];
   if (new Set(allIds).size !== allIds.length) fail("all persisted ids must be unique");
-  for (const batch of input.batches) {
-    const associated = input.candidates.filter(candidate => candidate.batchId === batch.id);
-    if (batch.candidateHash !== null && associated.length > 0 && !associated.some(candidate => candidate.hash === batch.candidateHash)) {
-      fail(`batch ${batch.id} candidateHash must reference one of its candidates`);
-    }
-  }
   if (input.currentBestCandidate !== null) {
     const field = "currentBestCandidate";
     const keys = new Set(["candidateId", "displayName", "hash"]);
@@ -549,7 +641,7 @@ export function validateProject(input) {
     assertId(input.currentBestCandidate.candidateId, `${field}.candidateId`);
     assertHash(input.currentBestCandidate.hash, `${field}.hash`);
     if (Object.hasOwn(input.currentBestCandidate, "displayName")) {
-      assertString(input.currentBestCandidate.displayName, `${field}.displayName`, { nonEmpty: true });
+      assertDisplayName(input.currentBestCandidate.displayName, `${field}.displayName`);
     }
     const candidate = candidatesById.get(input.currentBestCandidate.candidateId);
     if (!candidate || candidate.hash !== input.currentBestCandidate.hash) fail(`${field} must reference an existing candidate and matching hash`);
@@ -577,6 +669,38 @@ export function validateProject(input) {
   return output;
 }
 
+export function rebuildPromptQueue(project, styleSpec) {
+  const validated = validateProject(project);
+  const normalizedStyle = normalizeStyleSpec(styleSpec);
+  validateStyleSpec(normalizedStyle);
+  const freshBatches = createPromptVariants(normalizedStyle);
+  const batches = freshBatches.map((fresh, index) => {
+    const previous = validated.batches[index];
+    const previousConditions = snapshotGenerationConditions(previous, validated.styleSpec);
+    const nextConditions = snapshotGenerationConditions(fresh, normalizedStyle);
+    return stableStringify(previousConditions) === stableStringify(nextConditions) ? previous : fresh;
+  });
+  return validateProject({
+    ...validated,
+    styleSpec: normalizedStyle,
+    batches,
+  });
+}
+
+export function recordGenerationRun(project, batchId) {
+  const validated = validateProject(project);
+  const batchIndex = validated.batches.findIndex(batch => batch.id === batchId);
+  if (batchIndex < 0) fail(`Unknown batch: ${batchId}`);
+  const current = validated.batches[batchIndex];
+  if (current.currentRunId !== null && current.currentCandidateId === null) return validated;
+  const { batch, run } = appendRun(validated, batchIndex, {
+    resetProgress: current.currentRunId !== null,
+  });
+  validated.batches[batchIndex] = batch;
+  validated.runs.push(run);
+  return validateProject(validated);
+}
+
 export function transitionBatch(plan, batchId, status, patch = {}) {
   const validated = validateProject(plan);
   if (!STATUS_VALUES.has(status)) fail(`Unsupported batch status: ${status}`);
@@ -591,21 +715,98 @@ export function transitionBatch(plan, batchId, status, patch = {}) {
   if (!TRANSITIONS[current.status].has(status)) fail(`Invalid status transition: ${current.status} -> ${status}`);
   const shouldFreezeConditions = current.generationConditions === null
     && (status === "submitted" || (Object.hasOwn(patch, "generatedUrl") && patch.generatedUrl !== null));
+  let run = null;
+  const recorded = shouldFreezeConditions
+    ? appendRun(validated, index, {
+      status,
+      generatedUrl: Object.hasOwn(patch, "generatedUrl") ? patch.generatedUrl : current.generatedUrl,
+    })
+    : null;
   const next = {
-    ...current,
+    ...(recorded?.batch || current),
     ...patch,
     status,
-    generationConditions: current.generationConditions || (shouldFreezeConditions
-      ? snapshotGenerationConditions(current, validated.styleSpec)
-      : null)
   };
+  run = recorded?.run || null;
   validateBatch(next);
   validated.batches[index] = next;
+  if (run) validated.runs.push(run);
   return validated;
 }
 
 export function exportProjectJson(project) {
   return stableStringify(validateProject(project));
+}
+
+function migrateLegacyVersionOne(input) {
+  if (!isPlainObject(input) || input.version !== 1 || Object.hasOwn(input, "runs")) return input;
+  const migrated = cloneJson(input);
+  migrated.runs = [];
+  const usedIds = new Set([
+    ...(migrated.batches || []),
+    ...(migrated.references || []),
+    ...(migrated.candidates || []),
+    ...(migrated.experiments || []),
+    ...(migrated.licenses || []),
+  ].map(item => item?.id).filter(Boolean));
+  let nextIndex = 1;
+  const allocateLegacyRunId = () => {
+    while (usedIds.has(`run-${nextIndex}`)) nextIndex += 1;
+    const id = `run-${nextIndex}`;
+    usedIds.add(id);
+    nextIndex += 1;
+    return id;
+  };
+  const batchById = new Map((migrated.batches || []).map(batch => [batch.id, batch]));
+  migrated.experiments = (migrated.experiments || []).map(experiment => {
+    const batch = batchById.get(experiment.batchId);
+    const runId = allocateLegacyRunId();
+    migrated.runs.push({
+      id: runId,
+      sourceUrl: migrated.sourceUrl,
+      status: batch?.status || "planned",
+      generatedUrl: experiment.generatedUrl ?? null,
+      generationConditions: cloneJson(experiment.generationConditions),
+    });
+    return { ...experiment, runId };
+  });
+  migrated.batches = (migrated.batches || []).map(batch => {
+    let currentRunId = null;
+    let currentCandidateId = null;
+    let candidateHash = batch.candidateHash ?? null;
+    if (batch.generationConditions !== null) {
+      const candidate = [...(migrated.candidates || [])].reverse().find(item => (
+        item.batchId === batch.id && item.hash === candidateHash
+      ));
+      const experiment = candidate
+        ? [...migrated.experiments].reverse().find(item => item.candidateId === candidate.id)
+        : null;
+      if (experiment
+        && stableStringify(experiment.generationConditions) === stableStringify(batch.generationConditions)) {
+        currentRunId = experiment.runId;
+        currentCandidateId = candidate.id;
+      } else {
+        currentRunId = allocateLegacyRunId();
+        migrated.runs.push({
+          id: currentRunId,
+          sourceUrl: migrated.sourceUrl,
+          status: batch.status,
+          generatedUrl: batch.generatedUrl,
+          generationConditions: cloneJson(batch.generationConditions),
+        });
+        candidateHash = null;
+      }
+    } else {
+      candidateHash = null;
+    }
+    return {
+      ...batch,
+      currentRunId,
+      currentCandidateId,
+      candidateHash,
+    };
+  });
+  return migrated;
 }
 
 export function importProjectJson(text) {
@@ -616,7 +817,7 @@ export function importProjectJson(text) {
   } catch {
     fail("project JSON is invalid");
   }
-  return validateProject(parsed);
+  return validateProject(migrateLegacyVersionOne(parsed));
 }
 
 export function exportProjectMarkdown(project) {
@@ -646,6 +847,8 @@ export function exportProjectMarkdown(project) {
     lines.push(`- Expected difference: ${markdownText(batch.expectedDifference)}`);
     lines.push(`- Prompt: ${markdownText(batch.prompt)}`);
     lines.push(`- Exclude: ${markdownText(batch.excludePrompt)}`);
+    if (batch.currentRunId) lines.push(`- Current run ID: ${markdownText(batch.currentRunId)}`);
+    if (batch.currentCandidateId) lines.push(`- Current candidate ID: ${markdownText(batch.currentCandidateId)}`);
     if (batch.generatedUrl) lines.push(`- Generated URL: ${markdownText(batch.generatedUrl)}`);
     if (batch.candidateHash) lines.push(`- Candidate hash: ${markdownText(batch.candidateHash)}`);
     if (batch.subjectiveScore !== null) lines.push(`- Subjective score: ${batch.subjectiveScore}`);
@@ -653,6 +856,20 @@ export function exportProjectMarkdown(project) {
     if (batch.reviewNote) lines.push(`- Review / rejection reason: ${markdownText(batch.reviewNote)}`);
     if (batch.nextRoundNote) lines.push(`- Next-round note: ${markdownText(batch.nextRoundNote)}`);
     lines.push("");
+  }
+  lines.push("## 生成运行快照", "");
+  if (safe.runs.length === 0) lines.push("- 尚无已记录生成运行。", "");
+  for (const run of safe.runs) {
+    const conditions = run.generationConditions;
+    lines.push(`### ${markdownText(run.id)}`);
+    lines.push(`- Batch: ${markdownText(conditions.batchId)}`);
+    lines.push(`- Axis: ${markdownText(conditions.changedAxis)}`);
+    lines.push(`- Status: ${markdownText(run.status)}`);
+    lines.push(`- Source: ${markdownText(run.sourceUrl)}`);
+    if (run.generatedUrl) lines.push(`- Generated URL: ${markdownText(run.generatedUrl)}`);
+    lines.push(`- Prompt: ${markdownText(conditions.prompt)}`);
+    lines.push(`- Exclude: ${markdownText(conditions.excludePrompt)}`);
+    lines.push("- Frozen StyleSpec:", "", "```json", markdownText(stableStringify({ styleSpec: conditions.styleSpec })), "```", "");
   }
   const appendJsonSection = (title, value) => {
     if (typeof value === "undefined") return;

@@ -22,6 +22,32 @@ function isSecretKey(key) {
   return normalized.length > 0 && SECRET_KEY_PARTS.some(part => normalized.includes(part));
 }
 
+function decodedParameterName(name) {
+  let decoded = String(name);
+  for (let index = 0; index < 2; index += 1) {
+    try {
+      const next = decodeURIComponent(decoded.replace(/\+/g, " "));
+      if (next === decoded) break;
+      decoded = next;
+    } catch {
+      break;
+    }
+  }
+  return decoded;
+}
+
+function assertNoSecretParameters(parsed, field) {
+  const parameterSets = [parsed.searchParams];
+  if (parsed.hash.length > 1) parameterSets.push(new URLSearchParams(parsed.hash.slice(1)));
+  for (const parameters of parameterSets) {
+    for (const name of parameters.keys()) {
+      if (isSecretKey(decodedParameterName(name))) {
+        fail(`${field} cannot contain a secret-like parameter name`);
+      }
+    }
+  }
+}
+
 function isHttpsUrl(value) {
   if (typeof value !== "string") return false;
   try {
@@ -45,6 +71,7 @@ export function assertHttpsUrl(value, field = "URL") {
   }
   if (parsed.protocol !== "https:") fail(`${field} must use HTTPS`);
   if (parsed.username || parsed.password) fail(`${field} must not contain credentials or userinfo`);
+  assertNoSecretParameters(parsed, field);
   if (SECRET_VALUE.test(value)) fail(`${field} cannot contain a secret-like value`);
   return value;
 }

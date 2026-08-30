@@ -5,6 +5,7 @@ import {
   exportProjectJson,
   exportProjectMarkdown,
   importProjectJson,
+  rebuildPromptQueue,
   transitionBatch,
   validateProject,
 } from "../projects/loop-bgm-lab/core/project-state.mjs";
@@ -80,6 +81,7 @@ function completeProject() {
   const batches = plan.batches.map((batch, index) => ({
     ...batch,
     generatedUrl: index === 0 ? "https://suno.com/song/example" : null,
+    currentCandidateId: index === 0 ? "candidate-1" : null,
     candidateHash: index === 0 ? CANDIDATE_HASH : null,
     subjectiveScore: index === 0 ? 4 : null,
     nextRoundNote: index === 0 ? "Change the melodic motif." : "",
@@ -108,6 +110,7 @@ function completeProject() {
     }],
     experiments: [{
       id: "experiment-1",
+      runId: plan.runs[0].id,
       batchId: "batch-1",
       candidateId: "candidate-1",
       candidateHash: CANDIDATE_HASH,
@@ -154,16 +157,13 @@ test("durable experiments preserve frozen generation conditions after current ba
     tempo: { target: 130, min: 127, max: 134 },
     structure: { ...project.styleSpec.structure, bars: 32 },
   };
-  const later = {
-    ...project,
-    styleSpec: laterStyle,
-    credits: createDailyPlan({ styleSpec: laterStyle }).credits,
-    batches: createDailyPlan({ styleSpec: laterStyle }).batches.map((batch, index) => index === 0
-      ? { ...batch, status: "submitted", generationConditions: snapshot }
-      : batch),
-  };
+  const later = rebuildPromptQueue(project, laterStyle);
 
   const restored = importProjectJson(exportProjectJson(later));
+  assert.equal(restored.batches[0].status, "planned");
+  assert.equal(restored.batches[0].currentRunId, null);
+  assert.equal(restored.batches[0].currentCandidateId, null);
+  assert.equal(restored.runs[0].id, project.runs[0].id);
   assert.deepEqual(restored.experiments[0].generationConditions, snapshot);
   assert.match(exportProjectMarkdown(restored), /"generationConditions"/);
   assert.match(exportProjectMarkdown(restored), /around 112 BPM/);

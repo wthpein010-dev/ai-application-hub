@@ -110,6 +110,29 @@ test("candidate markup exposes an explicit batch association, durable history, a
   assert.match(app, /来源核验日期/);
 });
 
+test("browser workflow exposes explicit portable display-name editors and keeps computed hashes read-only", () => {
+  // Break caught: local private filenames become durable labels, or a hand-edited hash changes candidate identity.
+  const app = readProjectFile("app.js");
+  assert.match(app, /reference-display-name/);
+  assert.match(app, /candidate-display-name/);
+  assert.match(app, /导出显示名/);
+  assert.match(app, /候选 SHA-256（只读）/);
+  assert.match(app, /candidateHash\.readOnly\s*=\s*true/);
+  assert.doesNotMatch(app, /function updateCandidateHash|updateCandidateHash\(/);
+  assert.match(app, /显示名已保存/);
+});
+
+test("dated Suno free-tier notice includes attribution, official terms, and a provenance-ledger option", () => {
+  // Break caught: free-tier copy omits the attribution condition or offers no explicit Suno provenance record path.
+  const html = readProjectFile("index.html");
+  assert.match(html, /规则核验于\s*<time datetime="2026-08-30">2026-08-30<\/time>/);
+  assert.match(html, /免费(?:档|\/Basic)[^<]*(?:注明|署名)[^<]*Suno/);
+  assert.match(html, /href="https:\/\/suno\.com\/terms"[^>]*target="_blank"[^>]*rel="noopener noreferrer"/);
+  assert.match(html, /不构成法律清场|不提供法律清场|不代表法律清场/);
+  assert.match(html, /<option>Suno<\/option>/);
+  assert.match(html, /Suno[^<]*(?:来源|provenance)[^<]*授权台账/);
+});
+
 test("project import stages a complete render before committing state or releasing audio", () => {
   // Break caught: a render-time failure can replace the active project, persisted JSON, or playback URLs.
   const source = readProjectFile("app.js");

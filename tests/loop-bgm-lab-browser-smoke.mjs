@@ -221,7 +221,7 @@ try {
   ]);
   assert.deepEqual(await page.locator(".axis-label").allTextContents(), ["基线", "旋律音色", "律动", "打击乐", "循环结构"]);
 
-  await assertPickerKeyboardFocus(page, "#suno-create-link", "reference-files");
+  await assertPickerKeyboardFocus(page, ".rights-card a[href='https://suno.com/terms']", "reference-files");
   await page.locator(".batch-card:last-child .open-suno").focus();
   await page.keyboard.press("Tab");
   assert.equal(await page.evaluate(() => document.activeElement?.id), "candidate-batch");
@@ -323,6 +323,13 @@ try {
   assert.equal(afterOverrideDeletion.styleSpec.tempo.target, 120, "explicit tempo override must survive deletion recomputation");
   assert.equal(afterOverrideDeletion.styleSpec.key, afterOverrideDeletion.references[0].analysis.key.name, "non-overridden key must still recompute");
   assert.deepEqual(afterOverrideDeletion.extensions.styleOverrides, { bars: false, key: false, tempo: true });
+  assert.equal(Object.hasOwn(afterOverrideDeletion.references[0], "displayName"), false, "a local private filename must not become a durable displayName");
+  const referenceNameEditor = page.locator("#reference-list .reference-display-name");
+  assert.match(await referenceNameEditor.evaluate(input => input.labels?.[0]?.textContent || ""), /导出显示名/);
+  await referenceNameEditor.fill("参考节奏 A");
+  await referenceNameEditor.press("Tab");
+  await page.waitForFunction(() => JSON.parse(localStorage.getItem("loop-bgm-lab-v1")).references[0]?.displayName === "参考节奏 A");
+  assert.match(await page.locator("#app-live").textContent(), /显示名已保存/);
   const overridePrompts = await page.locator(".batch-card .prompt-text").allTextContents();
   assert.equal(overridePrompts.length, 5);
   assert.ok(overridePrompts.every(prompt => prompt.includes(`${afterOverrideDeletion.styleSpec.key}, around 120 BPM`)));
@@ -345,16 +352,30 @@ try {
   assert.equal(await page.locator(".batch-card[data-axis='baseline'] .batch-status").inputValue(), "planned");
 
   await page.locator(".batch-card[data-axis='baseline'] .batch-status").selectOption("submitted");
-  await page.waitForFunction(() => JSON.parse(localStorage.getItem("loop-bgm-lab-v1")).batches[0].generationConditions?.styleSpec.tempo.target === 120, null, { timeout: 5_000 });
-  const recordedRunConditions = await page.evaluate(() => structuredClone(JSON.parse(localStorage.getItem("loop-bgm-lab-v1")).batches[0].generationConditions));
+  await page.waitForFunction(() => {
+    const stored = JSON.parse(localStorage.getItem("loop-bgm-lab-v1"));
+    return stored.runs?.length === 1
+      && stored.batches[0].currentRunId === stored.runs[0].id
+      && stored.runs[0].generationConditions.styleSpec.tempo.target === 120;
+  }, null, { timeout: 5_000 });
+  const firstRecordedRun = await page.evaluate(() => structuredClone(JSON.parse(localStorage.getItem("loop-bgm-lab-v1")).runs[0]));
+  const recordedRunConditions = firstRecordedRun.generationConditions;
   await page.locator("#style-tempo").fill("126");
   await page.locator("#style-form button[type='submit']").click();
-  await page.waitForFunction(() => {
+  await page.waitForFunction(firstRunId => {
     const stored = JSON.parse(localStorage.getItem("loop-bgm-lab-v1"));
     return stored.styleSpec.tempo.target === 126
       && stored.batches[0].prompt.includes("around 126 BPM")
-      && stored.batches[0].generationConditions?.styleSpec.tempo.target === 120;
-  });
+      && stored.batches[0].status === "planned"
+      && stored.batches[0].currentRunId === null
+      && stored.batches[0].currentCandidateId === null
+      && stored.batches[0].candidateHash === null
+      && stored.batches[0].generationConditions === null
+      && stored.batches[0].generatedUrl === null
+      && stored.runs.length === 1
+      && stored.runs[0].id === firstRunId
+      && stored.runs[0].generationConditions.styleSpec.tempo.target === 120;
+  }, firstRecordedRun.id);
   await page.locator(".search-link[data-source='Pixabay Music']").click();
   const searchOpen = await page.evaluate(() => window.__externalOpens.at(-1));
   assert.match(searchOpen.url, /^https:\/\/pixabay\.com\/music\/search/);
@@ -387,9 +408,20 @@ try {
   });
   assert.equal(firstCandidate.experimentCount, 1);
   assert.equal(firstCandidate.currentBestCandidate, null, "analysis must not silently promote a candidate to best");
-  assert.deepEqual(await page.evaluate(() => JSON.parse(localStorage.getItem("loop-bgm-lab-v1")).experiments[0].generationConditions), recordedRunConditions);
+  const secondRecordedRun = await page.evaluate(() => structuredClone(JSON.parse(localStorage.getItem("loop-bgm-lab-v1")).runs[1]));
+  assert.notEqual(secondRecordedRun.id, firstRecordedRun.id);
+  assert.equal(secondRecordedRun.generationConditions.styleSpec.tempo.target, 126);
+  assert.deepEqual(await page.evaluate(() => JSON.parse(localStorage.getItem("loop-bgm-lab-v1")).experiments[0].generationConditions), secondRecordedRun.generationConditions);
+  assert.equal(await page.evaluate(() => JSON.parse(localStorage.getItem("loop-bgm-lab-v1")).experiments[0].runId), secondRecordedRun.id);
+  assert.equal(await page.evaluate(() => Object.hasOwn(JSON.parse(localStorage.getItem("loop-bgm-lab-v1")).candidates[0], "displayName")), false);
 
   const firstHistory = page.locator(`.candidate-history-item[data-candidate-id='${firstCandidate.id}']`);
+  const candidateNameEditor = firstHistory.locator(".candidate-display-name");
+  assert.match(await candidateNameEditor.evaluate(input => input.labels?.[0]?.textContent || ""), /导出显示名/);
+  await candidateNameEditor.fill("欢乐版本 A");
+  await candidateNameEditor.press("Tab");
+  await page.waitForFunction(candidateId => JSON.parse(localStorage.getItem("loop-bgm-lab-v1")).candidates.find(item => item.id === candidateId)?.displayName === "欢乐版本 A", firstCandidate.id);
+  assert.doesNotMatch(await page.evaluate(() => localStorage.getItem("loop-bgm-lab-v1")), /different-reference\.wav/);
   await firstHistory.locator(".candidate-generated-url").fill("https://suno.com/song/browser-smoke-a");
   await firstHistory.locator(".candidate-generated-url").press("Tab");
   await page.waitForFunction(candidateId => {
@@ -414,14 +446,14 @@ try {
   }, firstCandidate.id);
 
   const firstPlaybackUrl = await page.locator("#candidate-player").getAttribute("src");
-  await page.locator("#candidate-batch").selectOption("batch-2");
-  await page.locator("#candidate-file").setInputFiles(demoWav);
+  await page.locator("#candidate-batch").selectOption("batch-1");
+  await page.locator("#candidate-file").setInputFiles(differentFile);
   await page.waitForFunction(hash => {
     const stored = JSON.parse(localStorage.getItem("loop-bgm-lab-v1"));
     return stored.candidates.length === 2
       && stored.experiments.length === 2
       && stored.candidates.at(-1).hash === hash;
-  }, expectedWavSha256, { timeout: 45_000 });
+  }, expectedDifferentSha256, { timeout: 45_000 });
   const candidateHistory = await page.evaluate(() => {
     const stored = JSON.parse(localStorage.getItem("loop-bgm-lab-v1"));
     return {
@@ -434,24 +466,31 @@ try {
   assert.deepEqual(candidateHistory, {
     candidateCount: 2,
     experimentCount: 2,
-    lastBatchId: "batch-2",
+    lastBatchId: "batch-1",
     bestId: firstCandidate.id
   });
   assert.equal(await page.locator("#candidate-history .candidate-history-item").count(), 2);
   assert.equal(await page.evaluate(url => window.__revokedObjectUrls.includes(url), firstPlaybackUrl), true, "only the displaced playback URL should be revoked");
   const secondCandidateId = await page.evaluate(() => JSON.parse(localStorage.getItem("loop-bgm-lab-v1")).candidates.at(-1).id);
-  const manualCandidateHash = "e".repeat(64);
   const secondHistory = page.locator(`.candidate-history-item[data-candidate-id='${secondCandidateId}']`);
-  await secondHistory.locator(".candidate-hash").fill(manualCandidateHash);
-  await secondHistory.locator(".candidate-hash").press("Tab");
-  await page.waitForFunction(({ candidateId, hash }) => {
+  assert.equal(await secondHistory.locator(".candidate-hash").evaluate(input => input.readOnly), true);
+  assert.equal(await secondHistory.locator(".candidate-hash").inputValue(), expectedDifferentSha256);
+  assert.deepEqual(await page.evaluate(() => {
     const stored = JSON.parse(localStorage.getItem("loop-bgm-lab-v1"));
-    const candidate = stored.candidates.find(item => item.id === candidateId);
-    const experiment = stored.experiments.find(item => item.candidateId === candidateId);
-    return candidate?.hash === hash
-      && experiment?.candidateHash === hash
-      && stored.batches.find(item => item.id === candidate.batchId)?.candidateHash === hash;
-  }, { candidateId: secondCandidateId, hash: manualCandidateHash });
+    return {
+      hashes: stored.candidates.map(candidate => candidate.hash),
+      currentCandidateId: stored.batches[0].currentCandidateId,
+      bestCandidateId: stored.currentBestCandidate.candidateId,
+      experimentRunIds: stored.experiments.map(experiment => experiment.runId),
+      runIds: stored.runs.slice(1).map(run => run.id),
+    };
+  }), {
+    hashes: [expectedDifferentSha256, expectedDifferentSha256],
+    currentCandidateId: secondCandidateId,
+    bestCandidateId: firstCandidate.id,
+    experimentRunIds: [secondRecordedRun.id, await page.evaluate(() => JSON.parse(localStorage.getItem("loop-bgm-lab-v1")).runs[2].id)],
+    runIds: await page.evaluate(() => JSON.parse(localStorage.getItem("loop-bgm-lab-v1")).runs.slice(1).map(run => run.id)),
+  });
   assert.equal(await page.locator("#reference-player").getAttribute("src").then(value => value.startsWith("blob:")), true);
   assert.equal(await page.locator("#candidate-player").getAttribute("src").then(value => value.startsWith("blob:")), true);
   await page.locator("#reference-player").evaluate(audio => audio.play());
@@ -516,18 +555,24 @@ try {
   const jsonDownload = await jsonDownloadPromise;
   const exportedText = await readFile(await jsonDownload.path(), "utf8");
   const exported = JSON.parse(exportedText);
-  assert.equal(exported.batches[0].status, "submitted");
+  assert.equal(exported.batches[0].status, "planned");
   assert.equal(exported.references[0].hash, expectedDifferentSha256);
   assert.equal(exported.licenses[0].category, "cc0");
   assert.equal(exported.candidates.length, 2);
   assert.equal(exported.experiments.length, 2);
-  assert.equal(exported.batches[0].generatedUrl, "https://suno.com/song/browser-smoke-a");
+  assert.equal(exported.batches[0].generatedUrl, null);
+  assert.equal(exported.experiments[0].generatedUrl, "https://suno.com/song/browser-smoke-a");
+  assert.equal(exported.runs.length, 3);
+  assert.equal(exported.runs[0].id, firstRecordedRun.id);
   assert.equal(exported.experiments[0].generationConditions.batchId, "batch-1");
   assert.equal(exported.experiments[0].generationConditions.changedAxis, "baseline");
-  assert.equal(exported.experiments[0].generationConditions.prompt, recordedRunConditions.prompt);
-  assert.deepEqual(exported.batches[0].generationConditions, recordedRunConditions);
+  assert.equal(exported.experiments[0].generationConditions.prompt, secondRecordedRun.generationConditions.prompt);
+  assert.deepEqual(exported.batches[0].generationConditions, exported.runs[2].generationConditions);
+  assert.equal(exported.batches[0].currentCandidateId, secondCandidateId);
   assert.deepEqual(exported.experiments[0].referenceBasis, exported.candidates[0].referenceBasis);
-  assert.doesNotMatch(exportedText, /demo-reference\.wav|blob:|audioBytes|apiKey|cookie|token|[A-Z]:\\|\/Users\//i);
+  assert.match(exportedText, /参考节奏 A/);
+  assert.match(exportedText, /欢乐版本 A/);
+  assert.doesNotMatch(exportedText, /demo-reference\.wav|different-reference\.wav|blob:|audioBytes|apiKey|cookie|token|[A-Z]:\\|\/Users\//i);
 
   const markdownDownloadPromise = page.waitForEvent("download");
   await page.locator("#export-markdown").click();
@@ -537,17 +582,20 @@ try {
   assert.match(markdown, /CC0/);
   assert.match(markdown, /https:\/\/suno\.com\/song\/browser-smoke-a/);
   assert.match(markdown, /实验历史/);
+  assert.match(markdown, /生成运行快照/);
+  assert.match(markdown, new RegExp(firstRecordedRun.id));
   assert.match(markdown, /拒绝本轮/);
   assert.match(markdown, /"generationConditions"/);
   assert.doesNotMatch(markdown, /demo-reference\.wav|blob:|audioBytes|apiKey|cookie|token|[A-Z]:\\|\/Users\//i);
 
   await page.reload({ waitUntil: "networkidle" });
   await page.locator("body[data-ready='true']").waitFor();
-  assert.equal(await page.locator(".batch-card[data-axis='baseline'] .batch-status").inputValue(), "submitted");
+  assert.equal(await page.locator(".batch-card[data-axis='baseline'] .batch-status").inputValue(), "planned");
   assert.equal(await page.locator("#license-list .license-entry").count(), 1);
   assert.equal(await page.locator("#reference-list [data-analysis-state='ready']").count(), 1);
   assert.equal(await page.locator("#candidate-history .candidate-history-item").count(), 2);
   assert.doesNotMatch(await page.locator("#reference-list").textContent(), /demo-reference\.wav/);
+  assert.match(await page.locator("#reference-list").textContent(), /参考节奏 A/);
 
   await page.locator("#import-project").setInputFiles({
     name: "invalid.json",
@@ -555,7 +603,7 @@ try {
     buffer: Buffer.from(JSON.stringify({ ...exported, batches: exported.batches.slice(0, 4) }))
   });
   await page.waitForFunction(() => document.querySelector("#import-status")?.textContent.includes("导入失败"));
-  assert.equal(await page.locator(".batch-card[data-axis='baseline'] .batch-status").inputValue(), "submitted");
+  assert.equal(await page.locator(".batch-card[data-axis='baseline'] .batch-status").inputValue(), "planned");
   assert.equal(await page.locator("#license-list .license-entry").count(), 1);
 
   const storedBeforeMaliciousImport = await page.evaluate(() => localStorage.getItem("loop-bgm-lab-v1"));
@@ -571,7 +619,7 @@ try {
   });
   await page.waitForFunction(() => document.querySelector("#import-status")?.textContent.includes("导入失败"));
   assert.equal(await page.evaluate(() => localStorage.getItem("loop-bgm-lab-v1")), storedBeforeMaliciousImport, "rejected import must be atomic before persistence");
-  assert.equal(await page.locator(".batch-card[data-axis='baseline'] .batch-status").inputValue(), "submitted");
+  assert.equal(await page.locator(".batch-card[data-axis='baseline'] .batch-status").inputValue(), "planned");
 
   const postRejectJsonPromise = page.waitForEvent("download");
   await page.locator("#export-json").click();

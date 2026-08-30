@@ -203,7 +203,7 @@ test("allows only explicit batch status transitions and never infers submission 
   const plan = createDailyPlan();
   const linked = transitionBatch(plan, "batch-1", "planned", { generatedUrl: "https://suno.com/create" });
   const submitted = transitionBatch(linked, "batch-1", "submitted");
-  const downloaded = transitionBatch(submitted, "batch-1", "downloaded", { candidateHash: "a".repeat(64) });
+  const downloaded = transitionBatch(submitted, "batch-1", "downloaded");
   const reviewed = transitionBatch(downloaded, "batch-1", "reviewed", { subjectiveScore: 4 });
 
   assert.equal(linked.batches[0].status, "planned");
@@ -406,16 +406,27 @@ test("project validation and JSON import keep nested secret validation under pat
 
 test("round-trips validated project JSON losslessly and keeps Markdown free of paths and secrets", () => {
   const plan = transitionBatch(createDailyPlan(), "batch-1", "submitted");
+  const candidateHash = "b".repeat(64);
   const project = validateProject({
     ...plan,
+    batches: plan.batches.map((batch, index) => index === 0 ? {
+      ...batch,
+      generatedUrl: "https://suno.com/song/example",
+      currentCandidateId: "candidate-1",
+      candidateHash,
+      subjectiveScore: 4,
+      reviewNote: "Keep the next iteration focused on one axis.",
+      disposition: "accepted",
+    } : batch),
     sourceUrl: "https://suno.com/create",
     references: [{ id: "reference-1", displayName: "Reference A", hash: "a".repeat(64), analysis: analysisFixture() }],
     candidates: [candidateFixture({ displayName: "Sunny Loop" })],
     experiments: [{
       id: "experiment-1",
+      runId: plan.runs[0].id,
       batchId: "batch-1",
       candidateId: "candidate-1",
-      candidateHash: "b".repeat(64),
+      candidateHash,
       generatedUrl: "https://suno.com/song/example",
       subjectiveScore: 4,
       reviewNote: "Keep the next iteration focused on one axis.",
