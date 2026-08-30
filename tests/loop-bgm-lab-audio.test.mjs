@@ -58,6 +58,14 @@ function dMinorProgression(seconds = 12, sampleRate = SAMPLE_RATE) {
   return output;
 }
 
+function reverseFinalQuarter(samples) {
+  const output = samples.slice();
+  const quarter = Math.floor(output.length / 4);
+  const reversedEndpoint = output.slice(output.length - quarter).reverse();
+  output.set(reversedEndpoint, output.length - quarter);
+  return output;
+}
+
 function assertUnit(value, label) {
   assert.ok(Number.isFinite(value), `${label} must be finite`);
   assert.ok(value >= 0 && value <= 1, `${label} must be in [0, 1], got ${value}`);
@@ -96,6 +104,13 @@ test("estimateTempo resolves 110 and 115 BPM impulse trains within three BPM", (
   }
 });
 
+test("estimateTempo keeps 110 BPM accuracy when a long input reaches the frame cap", () => {
+  const result = estimateTempo(impulseTrain(110, 300), SAMPLE_RATE);
+
+  assert.ok(Math.abs(result.bpm - 110) <= 3, `${result.bpm} should be near 110`);
+  assertUnit(result.confidence, "long-input tempo confidence");
+});
+
 test("estimateKey identifies a D-minor scale and progression fixture", () => {
   const result = estimateKey(dMinorProgression(), SAMPLE_RATE);
 
@@ -117,12 +132,7 @@ test("measureSpectrum reports a 440 Hz sine centroid near its hand-set frequency
 
 test("scoreLoopBoundary gives a periodic endpoint a better score than a discontinuity", () => {
   const smooth = sine(200, 4);
-  const discontinuous = smooth.slice();
-  const quarter = Math.floor(discontinuous.length / 4);
-  const reversedEndpoint = discontinuous.slice(discontinuous.length - quarter).reverse();
-  for (let offset = 0; offset < quarter; offset += 1) {
-    discontinuous[discontinuous.length - quarter + offset] = reversedEndpoint[offset];
-  }
+  const discontinuous = reverseFinalQuarter(smooth);
 
   const smoothResult = scoreLoopBoundary(smooth, SAMPLE_RATE);
   const discontinuousResult = scoreLoopBoundary(discontinuous, SAMPLE_RATE);
@@ -131,6 +141,27 @@ test("scoreLoopBoundary gives a periodic endpoint a better score than a disconti
   assert.ok(smoothResult.score >= 0.75, `smooth score ${smoothResult.score}`);
   assert.deepEqual(Object.keys(smoothResult.components).sort(), ["boundary", "centroid", "chroma", "envelope"]);
   Object.entries(smoothResult.components).forEach(([name, value]) => assertUnit(value, `loop ${name}`));
+});
+
+test("scoreLoopBoundary distinguishes a smooth seam from a reversed seam at cosine phase", () => {
+  const smooth = sine(200, 4, { phase: Math.PI / 2 });
+  const reversed = reverseFinalQuarter(smooth);
+  const smoothResult = scoreLoopBoundary(smooth, SAMPLE_RATE);
+  const reversedResult = scoreLoopBoundary(reversed, SAMPLE_RATE);
+
+  assert.ok(smoothResult.score > reversedResult.score + 0.05, `${smoothResult.score} vs ${reversedResult.score}`);
+});
+
+test("scoreLoopBoundary uses the published component weights", () => {
+  const result = scoreLoopBoundary(sine(217, 3.75, { phase: 0.37 }), SAMPLE_RATE);
+  const expected = (
+    result.components.envelope * 0.30 +
+    result.components.chroma * 0.35 +
+    result.components.centroid * 0.20 +
+    result.components.boundary * 0.15
+  );
+
+  assert.ok(Math.abs(result.score - expected) < 1e-12, `${result.score} vs ${expected}`);
 });
 
 test("analyzePcm returns the stable shape, hand-derived levels, and deterministic bounded values", () => {

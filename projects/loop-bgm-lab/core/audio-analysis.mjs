@@ -99,18 +99,22 @@ function fft(real, imaginary) {
   }
 }
 
-function frameStarts(sampleLength, maxFrames) {
+function frameStarts(sampleLength, maxFrames, { contiguous = false } = {}) {
   if (sampleLength <= FFT_SIZE) return [0];
   const available = Math.floor((sampleLength - FFT_SIZE) / HOP_SIZE) + 1;
   const count = Math.min(available, maxFrames);
   if (available <= maxFrames) return Array.from({ length: count }, (_, index) => index * HOP_SIZE);
+  if (contiguous) {
+    const firstFrame = Math.floor((available - count) / 2);
+    return Array.from({ length: count }, (_, index) => (firstFrame + index) * HOP_SIZE);
+  }
   return Array.from({ length: count }, (_, index) => (
     Math.round((index * (available - 1)) / (count - 1)) * HOP_SIZE
   ));
 }
 
-function spectraFor(samples, maxFrames = DEFAULT_MAX_FRAMES) {
-  const starts = frameStarts(samples.length, maxFrames);
+function spectraFor(samples, maxFrames = DEFAULT_MAX_FRAMES, frameOptions = {}) {
+  const starts = frameStarts(samples.length, maxFrames, frameOptions);
   const spectra = [];
   for (const start of starts) {
     const real = new Float64Array(FFT_SIZE);
@@ -234,10 +238,7 @@ export function mixToMono(channels) {
   return output;
 }
 
-export function estimateTempo(samples, sampleRate, options = {}) {
-  assertSamples(samples);
-  assertSampleRate(sampleRate);
-  const { spectra, starts } = spectraFor(samples, normalizedMaxFrames(options));
+function tempoFromSpectra(spectra, starts, sampleRate) {
   if (spectra.length < 3) return { bpm: 0, confidence: 0 };
   const flux = new Float64Array(spectra.length - 1);
   let maximumFlux = 0;
@@ -305,10 +306,7 @@ export function estimateTempo(samples, sampleRate, options = {}) {
   return { bpm: Math.round(bestBpm * 100) / 100, confidence: clamp01(bestScore) };
 }
 
-export function estimateKey(samples, sampleRate, options = {}) {
-  assertSamples(samples);
-  assertSampleRate(sampleRate);
-  const { spectra } = spectraFor(samples, normalizedMaxFrames(options));
+function keyFromSpectra(spectra, sampleRate) {
   const chroma = chromaFromSpectra(spectra, sampleRate);
   const total = chroma.reduce((sum, value) => sum + value, 0);
   if (total <= 1e-12) return { name: "Unknown", tonic: "", mode: "unknown", confidence: 0, chroma };
@@ -328,6 +326,20 @@ export function estimateKey(samples, sampleRate, options = {}) {
     confidence,
     chroma
   };
+}
+
+export function estimateTempo(samples, sampleRate, options = {}) {
+  assertSamples(samples);
+  assertSampleRate(sampleRate);
+  const { spectra, starts } = spectraFor(samples, normalizedMaxFrames(options), { contiguous: true });
+  return tempoFromSpectra(spectra, starts, sampleRate);
+}
+
+export function estimateKey(samples, sampleRate, options = {}) {
+  assertSamples(samples);
+  assertSampleRate(sampleRate);
+  const { spectra } = spectraFor(samples, normalizedMaxFrames(options));
+  return keyFromSpectra(spectra, sampleRate);
 }
 
 export function measureSpectrum(samples, sampleRate, options = {}) {
@@ -358,22 +370,21 @@ export function scoreLoopBoundary(samples, sampleRate, options = {}) {
   const chroma = vectorCosine(startChroma, endChroma);
   const centroid = clamp01(1 - Math.abs(startSpectrum.centroidHz - endSpectrum.centroidHz) / Math.max(1, Math.min(5000, sampleRate * 0.45)));
 
-  const boundaryBlock = Math.min(512, windowLength);
-  const opening = start.subarray(0, boundaryBlock);
-  const closing = end.subarray(end.length - boundaryBlock);
-  const openingDerivative = new Float64Array(Math.max(0, boundaryBlock - 1));
-  const closingDerivativeTowardSeam = new Float64Array(openingDerivative.length);
-  for (let index = 0; index < openingDerivative.length; index += 1) {
-    openingDerivative[index] = opening[index + 1] - opening[index];
-    const closingIndex = closing.length - 1 - index;
-    closingDerivativeTowardSeam[index] = closing[closingIndex] - closing[closingIndex - 1];
-  }
-  const derivativeContinuity = vectorCosine(openingDerivative, closingDerivativeTowardSeam);
   let peak = 0;
   for (let index = 0; index < samples.length; index += 1) peak = Math.max(peak, Math.abs(samples[index]));
-  const levelDifference = Math.abs(samples[0] - samples[samples.length - 1]) / Math.max(peak * 2, 1e-8);
+  const first = samples[0];
+  const last = samples[samples.length - 1];
+  const seamStep = first - last;
+  const beforeStep = samples.length > 1 ? last - samples[samples.length - 2] : 0;
+  const afterStep = samples.length > 1 ? samples[1] - first : 0;
+  const stepScale = Math.max(Math.abs(seamStep), Math.abs(beforeStep), Math.abs(afterStep));
+  const stepCadence = stepScale <= 1e-12 ? 1 : clamp01(1 - Math.min(
+    Math.abs(Math.abs(seamStep) - Math.abs(beforeStep)),
+    Math.abs(Math.abs(seamStep) - Math.abs(afterStep))
+  ) / stepScale);
+  const levelDifference = Math.abs(seamStep) / Math.max(peak * 2, 1e-8);
   const levelContinuity = clamp01(1 - levelDifference);
-  const boundary = clamp01(derivativeContinuity * 0.8 + levelContinuity * 0.2);
+  const boundary = clamp01(stepCadence * 0.8 + levelContinuity * 0.2);
   const components = { envelope, chroma, centroid, boundary };
   const score = clamp01(Object.entries(LOOP_WEIGHTS).reduce((sum, [name, weight]) => sum + components[name] * weight, 0));
   return { score, components };
@@ -390,9 +401,17 @@ export function analyzePcm(pcm, options = {}) {
   }
   const rms = mono.length > 0 ? Math.sqrt(energy / mono.length) : 0;
   const durationSeconds = mono.length / pcm.sampleRate;
-  const tempo = estimateTempo(mono, pcm.sampleRate, options);
-  const key = estimateKey(mono, pcm.sampleRate, options);
-  const spectrum = measureSpectrum(mono, pcm.sampleRate, options);
+  const maxFrames = normalizedMaxFrames(options);
+  const tempoFrames = spectraFor(mono, maxFrames, { contiguous: true });
+  const availableFrameCount = mono.length <= FFT_SIZE
+    ? 1
+    : Math.floor((mono.length - FFT_SIZE) / HOP_SIZE) + 1;
+  const overviewFrames = availableFrameCount <= maxFrames
+    ? tempoFrames
+    : spectraFor(mono, maxFrames);
+  const tempo = tempoFromSpectra(tempoFrames.spectra, tempoFrames.starts, pcm.sampleRate);
+  const key = keyFromSpectra(overviewFrames.spectra, pcm.sampleRate);
+  const spectrum = spectrumFromSpectra(overviewFrames.spectra, pcm.sampleRate);
   const loop = scoreLoopBoundary(mono, pcm.sampleRate, options);
   const warnings = [];
   if (durationSeconds < 8) warnings.push(warning("short-audio"));
