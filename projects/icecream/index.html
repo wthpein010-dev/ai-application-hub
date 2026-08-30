@@ -1,145 +1,428 @@
-<!DOCTYPE html>
-<html lang="en-us">
+<!doctype html>
+<html lang="zh-CN">
   <head>
-    <meta charset="utf-8">
-    <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="description" content="吃了个冰 Unity WebGL 体验入口，点击后加载游戏资源。" />
     <title>吃了个冰</title>
-    <link rel="shortcut icon" href="TemplateData/favicon.ico">
-    <link rel="stylesheet" href="TemplateData/style.css">
-    <link rel="stylesheet" href="../../assets/subpage-shell.css">
-    <script src="icecream-preview-bridge.js"></script>
-<style>
-html, body { width: 100%; height: 100%; margin: 0; overflow: hidden; background: #f7f0ff; }
-body { display: flex; align-items: center; justify-content: center; }
-#unity-container, #unity-container.unity-desktop, #unity-container.unity-mobile {
-  position: relative; left: auto; top: auto; transform: none;
-  width: min(100vw, calc(100vh * 750 / 1624));
-  height: min(100vh, calc(100vw * 1624 / 750));
-}
-#unity-canvas { width: 100% !important; height: 100% !important; background: #f7f0ff; }
-#unity-footer, #unity-warning { display: none !important; }
-</style>
-</head>
+    <link rel="shortcut icon" href="./TemplateData/favicon.ico" />
+    <link rel="stylesheet" href="../../assets/subpage-shell.css" />
+    <script src="./icecream-preview-bridge.js"></script>
+    <style>
+      :root {
+        color-scheme: light;
+        --ink: #34234a;
+        --muted: #695b80;
+        --pink: #ff8fc8;
+        --pink-deep: #e854a3;
+        --blue: #73d9f4;
+      }
+
+      * { box-sizing: border-box; }
+
+      body {
+        margin: 0;
+        min-height: 100vh;
+        overflow-x: hidden;
+        color: var(--ink);
+        font-family: "Microsoft YaHei", "PingFang SC", Arial, sans-serif;
+        background:
+          radial-gradient(circle at 76% 16%, rgba(255, 255, 255, 0.78), transparent 28%),
+          radial-gradient(circle at 18% 18%, rgba(255, 175, 215, 0.7), transparent 30%),
+          linear-gradient(135deg, #cbbcff 0%, #f5bfe0 48%, #a9ebef 100%);
+      }
+
+      body::before {
+        content: "";
+        position: fixed;
+        inset: 0;
+        z-index: -1;
+        pointer-events: none;
+        background-image:
+          radial-gradient(circle, rgba(255, 255, 255, 0.48) 0 3px, transparent 4px),
+          radial-gradient(circle, rgba(255, 255, 255, 0.3) 0 2px, transparent 3px);
+        background-position: 18px 20px, 58px 62px;
+        background-size: 84px 84px;
+        mask-image: linear-gradient(to bottom, #000, transparent 90%);
+      }
+
+      .page {
+        width: min(1180px, calc(100% - 32px));
+        margin: 0 auto;
+        padding: 22px 0 32px;
+      }
+
+      .topbar {
+        display: flex;
+        align-items: center;
+        justify-content: flex-end;
+        min-height: 48px;
+      }
+
+      .topbar span {
+        color: rgba(52, 35, 74, 0.76);
+        font-size: 14px;
+        font-weight: 800;
+      }
+
+      .layout {
+        display: grid;
+        grid-template-columns: minmax(320px, 1fr) minmax(360px, 430px);
+        gap: clamp(28px, 5vw, 62px);
+        align-items: center;
+        min-height: calc(100vh - 102px);
+      }
+
+      .copy { max-width: 660px; }
+
+      h1 {
+        margin: 0 0 18px;
+        color: #4a2768;
+        font-size: clamp(46px, 7vw, 78px);
+        line-height: 1.04;
+        text-shadow: 0 8px 22px rgba(105, 58, 139, 0.2);
+      }
+
+      .lead {
+        margin: 0;
+        color: rgba(52, 35, 74, 0.86);
+        font-size: 18px;
+        line-height: 1.8;
+      }
+
+      .meta {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        margin-top: 24px;
+      }
+
+      .meta span {
+        display: inline-flex;
+        align-items: center;
+        min-height: 32px;
+        padding: 0 12px;
+        border: 1px solid rgba(255, 255, 255, 0.62);
+        border-radius: 8px;
+        background: rgba(255, 255, 255, 0.38);
+        color: #563b70;
+        font-weight: 800;
+        backdrop-filter: blur(8px);
+      }
+
+      .actions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 12px;
+        margin-top: 30px;
+      }
+
+      button,
+      .button {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-width: 104px;
+        min-height: 48px;
+        padding: 0 20px;
+        border: 0;
+        border-radius: 8px;
+        color: #382447;
+        font: inherit;
+        font-weight: 900;
+        text-decoration: none;
+        cursor: pointer;
+      }
+
+      button:disabled { cursor: wait; filter: saturate(0.84); }
+
+      #startButton {
+        color: #fff;
+        background: linear-gradient(180deg, var(--pink), var(--pink-deep));
+        box-shadow: 0 16px 36px rgba(222, 64, 148, 0.28);
+      }
+
+      .button { background: linear-gradient(180deg, #b9f1ff, var(--blue)); }
+
+      .fullscreen {
+        min-width: 60px;
+        border: 1px solid rgba(255, 255, 255, 0.7);
+        background: rgba(255, 255, 255, 0.32);
+      }
+
+      .stage {
+        position: relative;
+        width: min(100%, 430px);
+        aspect-ratio: 750 / 1624;
+        justify-self: center;
+        overflow: hidden;
+        border: 0;
+        border-radius: 8px;
+        background: #f7f0ff;
+        box-shadow:
+          inset 0 0 0 1px rgba(255, 255, 255, 0.76),
+          0 24px 90px rgba(81, 49, 112, 0.28);
+      }
+
+      .stage:fullscreen,
+      .stage:-webkit-full-screen {
+        width: min(100vw, calc(100vh * 750 / 1624));
+        height: min(100vh, calc(100vw * 1624 / 750));
+        margin: auto;
+        border: 0;
+        border-radius: 0;
+        background: #f7f0ff;
+        box-shadow: none;
+      }
+
+      #unity-canvas {
+        display: block;
+        width: 100%;
+        height: 100%;
+        background: #f7f0ff;
+      }
+
+      .placeholder,
+      #loadingPanel {
+        position: absolute;
+        inset: 0;
+        display: grid;
+        place-items: center;
+        padding: 28px;
+        text-align: center;
+      }
+
+      .placeholder {
+        background:
+          radial-gradient(circle at 50% 20%, rgba(255, 255, 255, 0.95), transparent 18%),
+          linear-gradient(180deg, rgba(255, 232, 248, 0.98), rgba(214, 203, 255, 0.96));
+      }
+
+      .placeholder strong {
+        display: block;
+        margin-bottom: 14px;
+        color: #703d8f;
+        font-size: 34px;
+        line-height: 1.2;
+      }
+
+      .placeholder p {
+        margin: 0;
+        color: var(--muted);
+        line-height: 1.7;
+        font-weight: 800;
+      }
+
+      #loadingPanel { display: none; background: rgba(69, 45, 91, 0.72); }
+      .progress { width: min(280px, 80%); }
+
+      .progress span {
+        display: block;
+        margin-bottom: 12px;
+        color: #fff;
+        font-weight: 900;
+      }
+
+      .progress-track {
+        height: 12px;
+        overflow: hidden;
+        border-radius: 999px;
+        background: rgba(255, 255, 255, 0.28);
+      }
+
+      #progressFill {
+        width: 0%;
+        height: 100%;
+        border-radius: inherit;
+        background: linear-gradient(90deg, #ff86c2, #8eeafa);
+      }
+
+      #unity-warning {
+        position: fixed;
+        left: 50%;
+        bottom: 18px;
+        z-index: 10;
+        width: min(680px, calc(100% - 32px));
+        transform: translateX(-50%);
+      }
+
+      #unity-warning div {
+        margin-top: 8px;
+        padding: 10px 12px;
+        border-radius: 8px;
+        color: #34234a;
+        background: #fff0a8;
+        font-weight: 800;
+      }
+
+      .is-running .placeholder { display: none; }
+
+      @media (max-width: 860px) {
+        .page { padding-top: 16px; }
+        .topbar { min-height: 40px; }
+        .layout {
+          grid-template-columns: 1fr;
+          gap: 24px;
+          min-height: auto;
+          padding-top: 24px;
+        }
+        .copy { max-width: none; }
+        .stage { width: min(100%, 430px); }
+      }
+    </style>
+  </head>
   <body class="hub-subpage">
     <a class="hub-home-link" href="../../index.html#games" aria-label="返回主页"><span class="hub-home-link__icon" aria-hidden="true">←</span><span>返回主页</span></a>
-    <div id="unity-container" class="unity-desktop">
-      <canvas id="unity-canvas" width=960 height=600 tabindex="-1"></canvas>
-      <div id="unity-loading-bar">
-        <div id="unity-logo"></div>
-        <div id="unity-progress-bar-empty">
-          <div id="unity-progress-bar-full"></div>
-        </div>
-      </div>
-      <div id="unity-warning"> </div>
-      <div id="unity-footer">
-        <div id="unity-webgl-logo"></div>
-        <div id="unity-fullscreen-button"></div>
-        <div id="unity-build-title">IceCream</div>
-      </div>
+
+    <div class="page">
+      <header class="topbar"><span>Unity WebGL · 竖屏 750 × 1624</span></header>
+      <main class="layout">
+        <section class="copy">
+          <h1>吃了个冰</h1>
+          <p class="lead">按顾客需求选择冰激凌口味、完成甜筒制作，并在逐步升级的配单挑战中连续闯过 10 个关卡。</p>
+          <div class="meta">
+            <span>Unity WebGL</span>
+            <span>10 关挑战</span>
+            <span>750 × 1624</span>
+          </div>
+          <div class="actions">
+            <button id="startButton" type="button">开始体验</button>
+            <a class="button" href="../../index.html#games">返回合集</a>
+            <button id="fullscreenButton" class="button fullscreen" type="button">全屏</button>
+          </div>
+        </section>
+
+        <section id="stage" class="stage" aria-label="吃了个冰游戏窗口">
+          <canvas id="unity-canvas" width="750" height="1624" tabindex="-1"></canvas>
+          <div class="placeholder">
+            <div>
+              <strong>吃了个冰</strong>
+              <p>点击左侧按钮后再加载游戏资源，首次启动需要等待一小段时间。</p>
+            </div>
+          </div>
+          <div id="loadingPanel">
+            <div class="progress">
+              <span id="loadingText">正在准备资源...</span>
+              <div class="progress-track"><div id="progressFill"></div></div>
+            </div>
+          </div>
+        </section>
+      </main>
     </div>
+
+    <div id="unity-warning"></div>
+
     <script>
+      const stage = document.querySelector("#stage");
+      const canvas = document.querySelector("#unity-canvas");
+      const startButton = document.querySelector("#startButton");
+      const loadingPanel = document.querySelector("#loadingPanel");
+      const loadingText = document.querySelector("#loadingText");
+      const progressFill = document.querySelector("#progressFill");
+      const fullscreenButton = document.querySelector("#fullscreenButton");
+      const warningBanner = document.querySelector("#unity-warning");
+      let unityInstance = null;
+      let loadingStarted = false;
+      let loaderScript = null;
 
-      var container = document.querySelector("#unity-container");
-      var canvas = document.querySelector("#unity-canvas");
-      var loadingBar = document.querySelector("#unity-loading-bar");
-      var progressBarFull = document.querySelector("#unity-progress-bar-full");
-      var fullscreenButton = document.querySelector("#unity-fullscreen-button");
-      var warningBanner = document.querySelector("#unity-warning");
-
-      // Shows a temporary message banner/ribbon for a few seconds, or
-      // a permanent error message on top of the canvas if type=='error'.
-      // If type=='warning', a yellow highlight color is used.
-      // Modify or remove this function to customize the visually presented
-      // way that non-critical warnings and error messages are presented to the
-      // user.
-      function unityShowBanner(msg, type) {
-        function updateBannerVisibility() {
-          warningBanner.style.display = warningBanner.children.length ? 'block' : 'none';
+      function unityShowBanner(message, type) {
+        const item = document.createElement("div");
+        item.textContent = message;
+        if (type === "error") {
+          item.dataset.unityError = "true";
+          item.style.background = "#ff9eac";
         }
-        var div = document.createElement('div');
-        div.innerHTML = msg;
-        warningBanner.appendChild(div);
-        if (type == 'error') div.style = 'background: red; padding: 10px;';
-        else {
-          if (type == 'warning') div.style = 'background: yellow; padding: 10px;';
-          setTimeout(function() {
-            warningBanner.removeChild(div);
-            updateBannerVisibility();
-          }, 5000);
-        }
-        updateBannerVisibility();
+        warningBanner.appendChild(item);
+        if (type !== "error") window.setTimeout(() => item.remove(), 5000);
       }
 
-      var buildUrl = "Build";
-      var loaderUrl = buildUrl + "/WebGLPreview.loader.js";
-      var config = {
-        dataUrl: buildUrl + "/WebGLPreview.data",
-        frameworkUrl: buildUrl + "/WebGLPreview.framework.js",
-        codeUrl: buildUrl + "/WebGLPreview.wasm",
-        streamingAssetsUrl: "StreamingAssets",
-        companyName: "DefaultCompany",
-        productName: "IceCream",
-        productVersion: "1.0",
-        showBanner: unityShowBanner,
-      };
-
-      // By default, Unity keeps WebGL canvas render target size matched with
-      // the DOM size of the canvas element (scaled by window.devicePixelRatio)
-      // Set this to false if you want to decouple this synchronization from
-      // happening inside the engine, and you would instead like to size up
-      // the canvas DOM size and WebGL render target sizes yourself.
-      // config.matchWebGLToCanvasSize = false;
-
-      // If you would like all file writes inside Unity Application.persistentDataPath
-      // directory to automatically persist so that the contents are remembered when
-      // the user revisits the site the next time, uncomment the following line:
-      // config.autoSyncPersistentDataPath = true;
-      // This autosyncing is currently not the default behavior to avoid regressing
-      // existing user projects that might rely on the earlier manual
-      // JS_FileSystem_Sync() behavior, but in future Unity version, this will be
-      // expected to change.
-
-      if (/iPhone|iPad|iPod|Android/i.test(navigator.userAgent)) {
-        // Mobile device style: fill the whole browser client area with the game canvas:
-
-        var meta = document.createElement('meta');
-        meta.name = 'viewport';
-        meta.content = 'width=device-width, height=device-height, initial-scale=1.0, user-scalable=no, shrink-to-fit=yes';
-        document.getElementsByTagName('head')[0].appendChild(meta);
-        container.className = "unity-mobile";
-        canvas.className = "unity-mobile";
-
-        // To lower canvas resolution on mobile devices to gain some
-        // performance, uncomment the following line:
-        // config.devicePixelRatio = 1;
-
-
-      } else {
-        // Desktop style: Render the game canvas in a window that can be maximized to fullscreen:
-
-        canvas.style.width = "960px";
-        canvas.style.height = "600px";
+      function clearLoadErrors() {
+        warningBanner.querySelectorAll("[data-unity-error]").forEach(item => item.remove());
       }
 
-      loadingBar.style.display = "block";
+      function syncCanvasResolution() {
+        const ratio = Math.min(window.devicePixelRatio || 1, 2);
+        const rect = stage.getBoundingClientRect();
+        const width = Math.max(1, Math.round(rect.width * ratio));
+        const height = Math.max(1, Math.round(rect.height * ratio));
+        if (canvas.width !== width) canvas.width = width;
+        if (canvas.height !== height) canvas.height = height;
+      }
 
-      var script = document.createElement("script");
-      script.src = loaderUrl;
-      script.onload = () => {
-        createUnityInstance(canvas, config, (progress) => {
-          progressBarFull.style.width = 100 * progress + "%";
-              }).then((unityInstance) => {
-                loadingBar.style.display = "none";
-                fullscreenButton.onclick = () => {
-                  unityInstance.SetFullscreen(1);
-                };
-              }).catch((message) => {
-                alert(message);
-              });
-            };
+      function resetLoadState(message) {
+        startButton.disabled = false;
+        startButton.textContent = "重新加载";
+        loadingPanel.style.display = "none";
+        stage.classList.remove("is-running");
+        loadingStarted = false;
+        if (loaderScript) {
+          loaderScript.remove();
+          loaderScript = null;
+        }
+        unityShowBanner(message, "error");
+      }
 
-      document.body.appendChild(script);
+      function loadGame() {
+        if (loadingStarted) return;
+        if (window.location.protocol === "file:") {
+          unityShowBanner("Unity WebGL 需要通过 http:// 或 https:// 打开。", "error");
+          return;
+        }
 
+        clearLoadErrors();
+        loadingStarted = true;
+        startButton.disabled = true;
+        startButton.textContent = "加载中...";
+        stage.classList.add("is-running");
+        loadingPanel.style.display = "grid";
+        syncCanvasResolution();
+
+        const buildUrl = "Build";
+        const buildVersion = "20260830-demo-shell";
+        const config = {
+          dataUrl: buildUrl + "/WebGLPreview.data?v=" + buildVersion,
+          frameworkUrl: buildUrl + "/WebGLPreview.framework.js?v=" + buildVersion,
+          codeUrl: buildUrl + "/WebGLPreview.wasm?v=" + buildVersion,
+          streamingAssetsUrl: "StreamingAssets",
+          companyName: "DefaultCompany",
+          productName: "IceCream",
+          productVersion: "1.0",
+          showBanner: unityShowBanner,
+          autoSyncPersistentDataPath: true,
+          devicePixelRatio: Math.min(window.devicePixelRatio || 1, 2)
+        };
+
+        loaderScript = document.createElement("script");
+        loaderScript.src = buildUrl + "/WebGLPreview.loader.js?v=" + buildVersion;
+        loaderScript.onload = () => {
+          createUnityInstance(canvas, config, progress => {
+            const percent = Math.round(progress * 100);
+            progressFill.style.width = percent + "%";
+            loadingText.textContent = "正在加载资源 " + percent + "%";
+          }).then(instance => {
+            unityInstance = instance;
+            loadingPanel.style.display = "none";
+            startButton.textContent = "游戏已启动";
+          }).catch(message => resetLoadState(String(message)));
+        };
+        loaderScript.onerror = () => resetLoadState("Unity 加载脚本失败，请刷新后重试。");
+        document.body.appendChild(loaderScript);
+      }
+
+      syncCanvasResolution();
+      window.addEventListener("resize", syncCanvasResolution);
+      startButton.addEventListener("click", loadGame);
+      fullscreenButton.addEventListener("click", () => {
+        if (stage.requestFullscreen) {
+          stage.requestFullscreen();
+        } else if (stage.webkitRequestFullscreen) {
+          stage.webkitRequestFullscreen();
+        } else if (unityInstance) {
+          unityInstance.SetFullscreen(1);
+        }
+      });
+      document.addEventListener("fullscreenchange", syncCanvasResolution);
+      document.addEventListener("webkitfullscreenchange", syncCanvasResolution);
     </script>
   </body>
 </html>
