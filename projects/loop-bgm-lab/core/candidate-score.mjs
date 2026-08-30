@@ -26,7 +26,17 @@ function clamp01(value) {
 }
 
 function rounded(value) {
-  return Math.round(value * 1e12) / 1e12;
+  if (!finiteNumber(value)) return value;
+  const scaled = value * 1e12;
+  return finiteNumber(scaled) ? Math.round(scaled) / 1e12 : value;
+}
+
+function finiteDelta(candidate, reference) {
+  const delta = candidate - reference;
+  if (finiteNumber(delta)) return rounded(delta);
+  if (candidate > reference) return Number.MAX_VALUE;
+  if (candidate < reference) return -Number.MAX_VALUE;
+  return 0;
 }
 
 function scoreFromDelta(delta, tolerance) {
@@ -47,7 +57,7 @@ function tempoComponent(reference, candidate) {
   const available = finiteNumber(referenceTempo?.bpm) && finiteNumber(candidateTempo?.bpm)
     && positiveConfidence(referenceTempo?.confidence) && positiveConfidence(candidateTempo?.confidence);
   if (!available) return component(false, WEIGHTS.tempo, 0, { deltaBpm: null });
-  const deltaBpm = rounded(candidateTempo.bpm - referenceTempo.bpm);
+  const deltaBpm = finiteDelta(candidateTempo.bpm, referenceTempo.bpm);
   return component(true, WEIGHTS.tempo, scoreFromDelta(deltaBpm, 24), { deltaBpm });
 }
 
@@ -77,7 +87,7 @@ function keyComponent(reference, candidate) {
 function numericComponent(reference, candidate, weight, detailName, tolerance = 1) {
   const available = finiteNumber(reference) && finiteNumber(candidate);
   if (!available) return component(false, weight, 0, { [detailName]: null });
-  const delta = rounded(candidate - reference);
+  const delta = finiteDelta(candidate, reference);
   return component(true, weight, scoreFromDelta(delta, tolerance), { [detailName]: delta });
 }
 
@@ -86,7 +96,7 @@ function durationComponent(reference, candidate) {
   const candidateDuration = candidate?.durationSeconds;
   const available = finiteNumber(referenceDuration) && finiteNumber(candidateDuration) && referenceDuration > 0 && candidateDuration > 0;
   if (!available) return component(false, WEIGHTS.duration, 0, { deltaSeconds: null });
-  const deltaSeconds = rounded(candidateDuration - referenceDuration);
+  const deltaSeconds = finiteDelta(candidateDuration, referenceDuration);
   return component(true, WEIGHTS.duration, scoreFromDelta(deltaSeconds, referenceDuration), { deltaSeconds });
 }
 
@@ -170,9 +180,14 @@ export function recommendNextVariant(comparison) {
 const SECRET_OR_BINARY_KEY = /(audioBytes|cookie|token|apiKey|recoveryKey|session)/i;
 const LOCAL_PATH_KEY = /^(?:localPath|filePath|audioPath|path)$/i;
 
+function isAbsolutePath(value) {
+  return /^[a-zA-Z]:[\\/]/.test(value) || value.startsWith("/") || value.startsWith("\\\\");
+}
+
 function assertSafeJson(value, key = "", seen = new WeakSet()) {
   if (SECRET_OR_BINARY_KEY.test(key)) fail(`Forbidden key: ${key}`);
-  if (LOCAL_PATH_KEY.test(key) && typeof value === "string" && (/^[a-zA-Z]:[\\/]/.test(value) || value.startsWith("/"))) {
+  const pathSensitive = LOCAL_PATH_KEY.test(key);
+  if (pathSensitive && typeof value === "string" && isAbsolutePath(value)) {
     fail(`Absolute path is not allowed in ${key}`);
   }
   if (value === null || typeof value === "string" || typeof value === "boolean") return;
@@ -181,13 +196,16 @@ function assertSafeJson(value, key = "", seen = new WeakSet()) {
     return;
   }
   if (Array.isArray(value)) {
-    value.forEach(item => assertSafeJson(item, "", seen));
+    if (seen.has(value)) fail("Circular values are not allowed");
+    seen.add(value);
+    value.forEach(item => assertSafeJson(item, pathSensitive ? key : "", seen));
+    seen.delete(value);
     return;
   }
   if (!isPlainObject(value)) fail("Only plain JSON values are allowed");
   if (seen.has(value)) fail("Circular values are not allowed");
   seen.add(value);
-  Object.entries(value).forEach(([childKey, childValue]) => assertSafeJson(childValue, childKey, seen));
+  Object.entries(value).forEach(([childKey, childValue]) => assertSafeJson(childValue, pathSensitive ? key : childKey, seen));
   seen.delete(value);
 }
 

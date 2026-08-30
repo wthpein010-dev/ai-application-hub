@@ -122,6 +122,19 @@ test("rejects absolute local paths but permits HTTPS source URLs", () => {
   assert.throws(() => validateProject({ ...plan, localPath: "/Users/music.wav" }), /absolute path/i);
 });
 
+test("project validation rejects sensitive local-path fields through nested arrays and UNC paths", () => {
+  const plan = createDailyPlan();
+
+  for (const value of [
+    { extensions: { localPath: ["C:\\private\\audio.wav"] } },
+    { extensions: { metadata: { audioPath: [["/private/audio.wav"]] } } },
+    { extensions: { filePath: "\\\\server\\share\\audio.wav" } },
+    { experiments: [{ id: "run-1", metadata: { localPath: ["C:\\private\\audio.wav"] } }] }
+  ]) {
+    assert.throws(() => validateProject({ ...plan, ...value }), /absolute path/i);
+  }
+});
+
 test("round-trips validated project JSON losslessly and keeps Markdown free of paths and secrets", () => {
   const project = validateProject({
     ...createDailyPlan(),

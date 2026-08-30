@@ -31,26 +31,33 @@ function fail(message) {
   throw new TypeError(message);
 }
 
-function assertSafeValue(value, key = "") {
+function assertSafeValue(value, key = "", seen = new WeakSet()) {
   if (SECRET_OR_BINARY_KEY.test(key)) {
     fail(`Forbidden key: ${key}`);
   }
-  if (LOCAL_PATH_KEY.test(key) && typeof value === "string" && isAbsolutePath(value)) {
+  const pathSensitive = LOCAL_PATH_KEY.test(key);
+  if (pathSensitive && typeof value === "string" && isAbsolutePath(value)) {
     fail(`Absolute path is not allowed in ${key}`);
   }
   if (Array.isArray(value)) {
-    value.forEach(item => assertSafeValue(item));
+    if (seen.has(value)) fail("Circular values are not allowed");
+    seen.add(value);
+    value.forEach(item => assertSafeValue(item, pathSensitive ? key : "", seen));
+    seen.delete(value);
     return;
   }
   if (isPlainObject(value)) {
+    if (seen.has(value)) fail("Circular values are not allowed");
+    seen.add(value);
     for (const [childKey, childValue] of Object.entries(value)) {
-      assertSafeValue(childValue, childKey);
+      assertSafeValue(childValue, pathSensitive ? key : childKey, seen);
     }
+    seen.delete(value);
   }
 }
 
 function isAbsolutePath(value) {
-  return /^[a-zA-Z]:[\\/]/.test(value) || value.startsWith("/");
+  return /^[a-zA-Z]:[\\/]/.test(value) || value.startsWith("/") || value.startsWith("\\\\");
 }
 
 function markdownText(value) {
@@ -163,7 +170,7 @@ export function validateProject(input) {
 
   const output = {};
   for (const key of PROJECT_KEYS) {
-    if (key !== "extensions" && Object.hasOwn(input, key)) output[key] = cloneJson(input[key]);
+    if (key !== "extensions" && key !== "experiments" && Object.hasOwn(input, key)) output[key] = cloneJson(input[key]);
   }
   const unknown = {};
   for (const [key, value] of Object.entries(input)) {
@@ -172,7 +179,7 @@ export function validateProject(input) {
   const suppliedExtensions = input.extensions ? cloneJson(input.extensions) : {};
   if (!isPlainObject(suppliedExtensions)) fail("extensions must be an object");
   output.extensions = { ...suppliedExtensions, ...unknown };
-  if (Array.isArray(input.experiments)) output.experiments = input.experiments.map(record => cloneJson(createExperimentRecord(record)));
+  if (Array.isArray(input.experiments)) output.experiments = input.experiments.map(createExperimentRecord);
   if (Array.isArray(input.licenses)) output.licenses = input.licenses.map(validateLicenseEntry);
   return output;
 }

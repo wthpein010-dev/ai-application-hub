@@ -71,6 +71,20 @@ test("classifySimilarity uses inclusive coverage and score thresholds with all c
   assert.equal(classifySimilarity({ coverage: 1, similarity: 0.7499, coreMatches: true }), "distinct");
 });
 
+test("compareCandidate derives too-close only when each real core feature matches", () => {
+  const same = compareCandidate(reference, reference);
+  const tooFast = compareCandidate(reference, { ...reference, tempo: { bpm: 125, confidence: 0.9 } });
+  const parallelKey = compareCandidate(reference, { ...reference, key: { name: "D major", tonic: "D", mode: "major", confidence: 0.8 } });
+  const brighter = compareCandidate(reference, { ...reference, spectrum: { brightness: 0.7 } });
+
+  assert.equal(same.coreMatches, true);
+  assert.equal(classifySimilarity(same), "too-close");
+  for (const comparison of [tooFast, parallelKey, brighter]) {
+    assert.equal(comparison.coreMatches, false);
+    assert.equal(classifySimilarity(comparison), "review");
+  }
+});
+
 test("recommendNextVariant limits every iteration to one existing prompt-engine axis in Chinese", () => {
   const recommendation = recommendNextVariant(compareCandidate(reference, {
     ...reference,
@@ -142,6 +156,9 @@ test("experiment records are detached and deeply immutable while project validat
   assert.equal(Object.isFrozen(record), true);
   assert.equal(Object.isFrozen(record.comparison), true);
   assert.throws(() => createExperimentRecord({ localPath: "C:\\music.wav" }), /absolute path/i);
+  assert.throws(() => createExperimentRecord({ localPath: ["C:\\private\\audio.wav"] }), /absolute path/i);
+  assert.throws(() => createExperimentRecord({ metadata: { localPath: [["/private/audio.wav"]] } }), /absolute path/i);
+  assert.throws(() => createExperimentRecord({ localPath: "\\\\server\\share\\audio.wav" }), /absolute path/i);
   assert.throws(() => createExperimentRecord({ token: "secret" }), /forbidden key/i);
 
   const project = validateProject({
@@ -159,5 +176,36 @@ test("experiment records are detached and deeply immutable while project validat
 
   assert.deepEqual(restored, project);
   assert.deepEqual(project.experiments, [{ id: "run-1", comparison: { similarity: 0.8 }, metadata: { labels: ["baseline"] } }]);
+  assert.equal(Object.isFrozen(project.experiments[0]), true);
+  assert.equal(Object.isFrozen(project.experiments[0].comparison), true);
+  assert.equal(Object.isFrozen(project.experiments[0].metadata.labels), true);
+  assert.equal(Object.isFrozen(restored.experiments[0]), true);
+  assert.equal(Object.isFrozen(restored.experiments[0].metadata.labels), true);
   assert.equal(project.licenses[0].category, "cc0");
+});
+
+test("compareCandidate never exposes non-finite numeric leaves for extreme finite features", () => {
+  const extreme = Number.MAX_VALUE;
+  const comparison = compareCandidate({
+    durationSeconds: Number.MIN_VALUE,
+    rms: extreme,
+    tempo: { bpm: extreme, confidence: 1 },
+    key: { name: "D minor", tonic: "D", mode: "minor", confidence: 1 },
+    spectrum: { brightness: extreme },
+    loop: { score: extreme }
+  }, {
+    durationSeconds: extreme,
+    rms: -extreme,
+    tempo: { bpm: -extreme, confidence: 1 },
+    key: { name: "D minor", tonic: "D", mode: "minor", confidence: 1 },
+    spectrum: { brightness: -extreme },
+    loop: { score: -extreme }
+  });
+
+  const assertFiniteNumbers = value => {
+    if (typeof value === "number") assert.equal(Number.isFinite(value), true);
+    if (Array.isArray(value)) value.forEach(assertFiniteNumbers);
+    if (value && typeof value === "object") Object.values(value).forEach(assertFiniteNumbers);
+  };
+  assertFiniteNumbers(comparison);
 });
