@@ -16,6 +16,21 @@ import {
 } from "../projects/loop-bgm-lab/core/prompt-engine.mjs";
 
 const BASELINE_PROMPT = "Instrumental upbeat casual puzzle game background music, D minor, around 112 BPM, bright melodic synth plucks, springy bass, crisp light electronic percussion, playful and cheeky motif, steady energetic groove, polished wide stereo mix, seamless 64-bar gameplay loop, no intro, no outro, ending matches the opening harmony and energy";
+const BASELINE_GROUPS = {
+  melodyTimbre: "bright melodic synth plucks",
+  bass: "springy bass",
+  percussion: "crisp light electronic percussion",
+  motif: "playful and cheeky motif",
+  rhythm: "steady energetic groove",
+  mix: "polished wide stereo mix",
+  loopStructure: "seamless 64-bar gameplay loop, no intro, no outro, ending matches the opening harmony and energy"
+};
+const VARIANT_GROUP_VALUES = {
+  melodyTimbre: "toy mallet and short marimba-like synth",
+  rhythm: "subtle syncopation with a more restrained four-on-the-floor drive",
+  percussion: "wooden click, soft clap, and tiny shaker percussion",
+  loopStructure: "seamless 32-bar A/B loop, no intro, no outro, reinforced ending-to-opening harmony connection"
+};
 
 test("stableStringify orders object keys while preserving array order", () => {
   assert.equal(
@@ -45,10 +60,12 @@ test("creates five deterministic single-axis prompt variants", () => {
     assert.equal(variant.status, "planned");
     assert.match(variant.excludePrompt, /vocals/);
   }
-  assert.match(variants[1].prompt, /toy mallet/);
-  assert.match(variants[2].prompt, /syncopation/);
-  assert.match(variants[3].prompt, /wooden click/);
-  assert.match(variants[4].prompt, /32-bar A\/B loop/);
+  for (const variant of variants.slice(1)) {
+    for (const [group, baselineValue] of Object.entries(BASELINE_GROUPS)) {
+      const expected = group === variant.changedAxis ? VARIANT_GROUP_VALUES[group] : baselineValue;
+      assert.match(variant.prompt, new RegExp(expected.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")));
+    }
+  }
 });
 
 test("creates a five-batch 50-credit daily plan without treating it as account balance", () => {
@@ -59,6 +76,10 @@ test("creates a five-batch 50-credit daily plan without treating it as account b
   assert.deepEqual(plan.credits, { planned: 50, perBatch: 10, batchCount: 5 });
   assert.equal(plan.batches.length, 5);
   assert.equal(plan.batches.reduce((sum, batch) => sum + batch.credits, 0), 50);
+  assert.match(
+    exportProjectMarkdown(plan),
+    /Local plan based on rules checked on 2026-08-30; not an actual account balance\./
+  );
 });
 
 test("allows only explicit batch status transitions and never infers submission from links", () => {
@@ -122,5 +143,7 @@ test("round-trips validated project JSON losslessly and keeps Markdown free of p
   assert.match(markdown, /Sunny Loop/);
   assert.match(markdown, /Reference A/);
   assert.match(markdown, /CC0/);
+  assert.match(markdown, /https:\/\/suno\.com\/create/);
+  assert.match(markdown, /https:\/\/example\.test\/license/);
   assert.doesNotMatch(markdown, /C:\\|\/Users\/|cookie|token|apiKey|recoveryKey/i);
 });

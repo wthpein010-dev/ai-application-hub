@@ -52,9 +52,16 @@ function isAbsolutePath(value) {
 }
 
 function markdownText(value) {
-  return String(value)
+  const urls = [];
+  const protectedUrls = String(value).replace(/https?:\/\/[^\s"\\]+/g, url => {
+    const marker = `\u0000loop-bgm-url-${urls.length}\u0000`;
+    urls.push(url);
+    return marker;
+  });
+  const redacted = protectedUrls
     .replace(/[a-zA-Z]:[\\/][^\s]*/g, "[redacted local path]")
     .replace(/(^|[^A-Za-z0-9:])\/(?!\/)[^\s"\\]+/g, "$1[redacted local path]");
+  return redacted.replace(/\u0000loop-bgm-url-(\d+)\u0000/g, (_, index) => urls[Number(index)]);
 }
 
 function assertString(value, field, { nullable = false } = {}) {
@@ -206,6 +213,7 @@ export function exportProjectMarkdown(project) {
     `- Tool version: ${markdownText(safe.toolVersion)}`,
     `- Rule checked: ${markdownText(safe.ruleCheckedAt)}`,
     `- Planned credits: ${safe.credits.planned} (${safe.credits.batchCount} × ${safe.credits.perBatch})`,
+    `- Local plan based on rules checked on ${markdownText(safe.ruleCheckedAt)}; not an actual account balance.`,
     "",
     "## 风格画像",
     "",
