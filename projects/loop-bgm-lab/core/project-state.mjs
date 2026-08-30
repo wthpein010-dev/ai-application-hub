@@ -1,4 +1,11 @@
-import { createExperimentRecord, validateLicenseEntry } from "./candidate-score.mjs";
+import {
+  classifySimilarity,
+  createExperimentRecord,
+  recommendNextVariant,
+  validateLicenseEntry,
+} from "./candidate-score.mjs";
+import { assertHttpsUrl, assertPortableValue, isPlainObject } from "./portable-safety.mjs";
+import { createPromptVariants } from "./prompt-engine.mjs";
 
 const PROJECT_VERSION = 1;
 const STATUS_VALUES = new Set(["planned", "submitted", "downloaded", "reviewed", "rejected"]);
@@ -16,98 +23,40 @@ const PROJECT_KEYS = new Set([
 ]);
 const BATCH_KEYS = new Set([
   "id", "changedAxis", "prompt", "excludePrompt", "expectedDifference", "credits",
-  "status", "generatedUrl", "candidateHash", "subjectiveScore", "nextRoundNote"
+  "status", "generatedUrl", "candidateHash", "subjectiveScore", "nextRoundNote",
+  "reviewNote", "disposition"
 ]);
-const BATCH_PATCH_KEYS = new Set(["generatedUrl", "candidateHash", "subjectiveScore", "nextRoundNote"]);
+const BATCH_PATCH_KEYS = new Set([
+  "generatedUrl", "candidateHash", "subjectiveScore", "nextRoundNote", "reviewNote", "disposition"
+]);
 const STYLE_KEYS = new Set(["version", "intent", "tempo", "key", "mood", "instruments", "structure", "mix", "exclusions"]);
-const SECRET_KEY = /(cookie|token|apiKey|recoveryKey|session)/i;
-const FILE_NAME_KEY = /(?:file.?name|filename|originalName|localFile)/i;
-const RAW_MEDIA_WORD = /^(?:raw|binary|audio|samples?|channels?|buffers?|pcm|waveform)$/i;
-const NON_URL_FILE_NAME = /(?:^|[\\/\s("'`=])[^\\/\s"'`=]+\.[a-z][a-z0-9]{0,9}(?=$|[?#\s)"'`,;])/i;
-const LOCAL_URL = /(?:file|blob):/i;
-const SECRET_VALUE = /(?:^|[?&#;\s("'`])(?:cookie|token|api(?:[_-]?key)|recovery(?:[_-]?key)|session|password|secret)\s*[:=]/i;
-
-function isPlainObject(value) {
-  return value !== null && typeof value === "object" && !Array.isArray(value);
-}
-
+const TEMPO_KEYS = new Set(["target", "min", "max"]);
+const STRUCTURE_KEYS = new Set(["bars", "loopable", "intro", "outro"]);
+const CREDIT_KEYS = new Set(["planned", "perBatch", "batchCount"]);
+const REFERENCE_KEYS = new Set(["id", "displayName", "hash", "analysis"]);
+const CANDIDATE_KEYS = new Set(["id", "displayName", "batchId", "hash", "analysis", "comparison", "similarityClass", "advice"]);
+const EXPERIMENT_KEYS = new Set([
+  "id", "batchId", "candidateId", "candidateHash", "generatedUrl", "subjectiveScore",
+  "reviewNote", "disposition", "comparison", "advice"
+]);
+const ANALYSIS_KEYS = new Set(["durationSeconds", "sampleRate", "channelCount", "peak", "rms", "tempo", "key", "spectrum", "loop", "warnings"]);
+const ANALYSIS_TEMPO_KEYS = new Set(["bpm", "confidence"]);
+const ANALYSIS_KEY_KEYS = new Set(["name", "tonic", "mode", "confidence", "chroma"]);
+const SPECTRUM_KEYS = new Set(["centroidHz", "brightness"]);
+const LOOP_KEYS = new Set(["score", "components"]);
+const LOOP_COMPONENT_KEYS = new Set(["envelope", "chroma", "centroid", "boundary"]);
+const WARNING_KEYS = new Set(["code", "message"]);
+const COMPARISON_KEYS = new Set(["components", "coverage", "similarity", "coreMatches"]);
+const COMPARISON_COMPONENT_NAMES = ["tempo", "key", "brightness", "dynamics", "loop", "duration"];
+const COMPARISON_WEIGHTS = Object.freeze({ tempo: 0.25, key: 0.2, brightness: 0.15, dynamics: 0.1, loop: 0.2, duration: 0.1 });
+const ADVICE_KEYS = new Set(["changedAxis", "reason", "adjustment"]);
+const ADVICE_AXES = new Set(["melodyTimbre", "rhythm", "percussion", "loopStructure"]);
+const SIMILARITY_CLASSES = new Set(["insufficient", "too-close", "review", "distinct"]);
+const DISPOSITION_VALUES = new Set(["unrated", "accepted", "rejected"]);
+const HASH_PATTERN = /^[a-f0-9]{64}$/i;
+const DATE_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
 function fail(message) {
   throw new TypeError(message);
-}
-
-function isHttpsUrl(value) {
-  if (typeof value !== "string") return false;
-  try {
-    return new URL(value).protocol === "https:";
-  } catch {
-    return false;
-  }
-}
-
-function containsAbsolutePath(value) {
-  return /[a-zA-Z]:[\\/][^\s"'`]*/.test(value)
-    || /\\\\[^\\\s"'`]+\\[^\s"'`]*/.test(value)
-    || /\/\/[^/\s"'`]+\/[^\s"'`]*/.test(value)
-    || /(?:^|[\s("'`=:])\/(?!\/)[^\s"'`]*/.test(value);
-}
-
-function isExplicitAnalysisPath(path) {
-  return (path[0] === "references" || path[0] === "candidates") && path.includes("analysis");
-}
-
-function isExplicitChromaPath(path) {
-  return isExplicitAnalysisPath(path) && path.at(-2) === "key" && path.at(-1) === "chroma";
-}
-
-function isRawMediaKey(key) {
-  return String(key)
-    .replace(/([a-z0-9])([A-Z])/g, "$1 $2")
-    .split(/[^a-zA-Z0-9]+/)
-    .some(word => RAW_MEDIA_WORD.test(word));
-}
-
-function assertSafeValue(value, key = "", path = [], seen = new WeakSet()) {
-  const currentPath = key ? [...path, key] : path;
-  if (SECRET_KEY.test(key)) {
-    fail(`Forbidden key: ${key}`);
-  }
-  if (FILE_NAME_KEY.test(key)) fail(`Portable state cannot contain a file name key: ${key}`);
-  const explicitAnalysisScalar = isExplicitAnalysisPath(currentPath) && (key === "sampleRate" || key === "channelCount");
-  if (typeof value === "string") {
-    if (SECRET_VALUE.test(value)) fail(`Portable state cannot contain a secret-like value in ${key || "value"}`);
-    if (!isHttpsUrl(value)) {
-      if (containsAbsolutePath(value)) fail(`Absolute path is not allowed in portable state: ${key || "value"}`);
-      if (LOCAL_URL.test(value)) fail(`Portable state cannot contain file: or blob: URLs in ${key || "value"}`);
-      if (NON_URL_FILE_NAME.test(value)) fail(`Portable state cannot contain a non-URL file name in ${key || "value"}`);
-    }
-  }
-  if (isRawMediaKey(key) && !explicitAnalysisScalar) {
-    fail(`Forbidden key for raw audio or binary data; absolute path and file payloads are not portable: ${key}`);
-  }
-  if (Array.isArray(value)) {
-    if (seen.has(value)) fail("Circular values are not allowed");
-    if (key === "chroma") {
-      if (!isExplicitChromaPath(currentPath)
-        || value.length !== 12
-        || value.some(item => typeof item !== "number" || !Number.isFinite(item) || item < 0 || item > 1)) {
-        fail("analysis.key.chroma must be an explicit 12-value feature vector");
-      }
-    } else if (value.length > 0 && value.every(item => typeof item === "number")) {
-      fail(`Unknown numeric array is not portable at ${currentPath.join(".") || "project"}`);
-    }
-    seen.add(value);
-    value.forEach(item => assertSafeValue(item, "", currentPath, seen));
-    seen.delete(value);
-    return;
-  }
-  if (isPlainObject(value)) {
-    if (seen.has(value)) fail("Circular values are not allowed");
-    seen.add(value);
-    for (const [childKey, childValue] of Object.entries(value)) {
-      assertSafeValue(childValue, childKey, currentPath, seen);
-    }
-    seen.delete(value);
-  }
 }
 
 function markdownText(value) {
@@ -123,8 +72,8 @@ function markdownText(value) {
   return redacted.replace(/\u0000loop-bgm-url-(\d+)\u0000/g, (_, index) => urls[Number(index)]);
 }
 
-function assertString(value, field, { nullable = false } = {}) {
-  if ((nullable && value === null) || typeof value === "string") return;
+function assertString(value, field, { nullable = false, nonEmpty = false } = {}) {
+  if ((nullable && value === null) || (typeof value === "string" && (!nonEmpty || value.trim().length > 0))) return;
   fail(`${field} must be a string${nullable ? " or null" : ""}`);
 }
 
@@ -139,41 +88,260 @@ function assertArrayOfStrings(value, field) {
   }
 }
 
-function validateStyleSpec(styleSpec) {
-  if (!isPlainObject(styleSpec)) fail("styleSpec must be an object");
-  for (const key of Object.keys(styleSpec)) {
-    if (!STYLE_KEYS.has(key)) fail(`Unsupported styleSpec field: ${key}`);
+function assertKnownKeys(value, allowed, field) {
+  if (!isPlainObject(value)) fail(`${field} must be an object`);
+  for (const key of Object.keys(value)) {
+    if (!allowed.has(key)) fail(`Unsupported ${field} field: ${key}`);
   }
+}
+
+function assertRequiredKeys(value, required, field) {
+  for (const key of required) {
+    if (!Object.hasOwn(value, key)) fail(`${field}.${key} is required`);
+  }
+}
+
+function assertInteger(value, field, { minimum = Number.MIN_SAFE_INTEGER, maximum = Number.MAX_SAFE_INTEGER } = {}) {
+  if (!Number.isSafeInteger(value) || value < minimum || value > maximum) {
+    fail(`${field} must be an integer between ${minimum} and ${maximum}`);
+  }
+}
+
+function assertUnitNumber(value, field) {
+  assertNumber(value, field);
+  if (value < 0 || value > 1) fail(`${field} must be between 0 and 1`);
+}
+
+function assertDate(value, field) {
+  assertString(value, field, { nonEmpty: true });
+  const match = value.match(DATE_PATTERN);
+  if (!match) fail(`${field} must be a valid YYYY-MM-DD date`);
+  const [year, month, day] = value.split("-").map(Number);
+  const date = new Date(Date.UTC(year, month - 1, day));
+  if (date.getUTCFullYear() !== year || date.getUTCMonth() !== month - 1 || date.getUTCDate() !== day) {
+    fail(`${field} must be a valid YYYY-MM-DD date`);
+  }
+}
+
+function assertId(value, field) {
+  assertString(value, field, { nonEmpty: true });
+  if (!/^[a-z][a-z0-9-]{0,79}$/i.test(value)) fail(`${field} must be a portable identifier`);
+}
+
+function assertHash(value, field, { nullable = false } = {}) {
+  if (nullable && value === null) return;
+  if (typeof value !== "string" || !HASH_PATTERN.test(value)) fail(`${field} must be a SHA-256 hash`);
+}
+
+function assertNullableHttpsUrl(value, field) {
+  if (value === null) return;
+  assertHttpsUrl(value, field);
+}
+
+function validateStyleSpec(styleSpec) {
+  assertKnownKeys(styleSpec, STYLE_KEYS, "styleSpec");
+  assertRequiredKeys(styleSpec, STYLE_KEYS, "styleSpec");
   if (styleSpec.version !== PROJECT_VERSION) fail("styleSpec.version must be 1");
-  assertString(styleSpec.intent, "styleSpec.intent");
-  assertString(styleSpec.key, "styleSpec.key");
+  assertString(styleSpec.intent, "styleSpec.intent", { nonEmpty: true });
+  assertString(styleSpec.key, "styleSpec.key", { nonEmpty: true });
   assertArrayOfStrings(styleSpec.mood, "styleSpec.mood");
   assertArrayOfStrings(styleSpec.instruments, "styleSpec.instruments");
   assertArrayOfStrings(styleSpec.mix, "styleSpec.mix");
   assertArrayOfStrings(styleSpec.exclusions, "styleSpec.exclusions");
-  if (!isPlainObject(styleSpec.tempo)) fail("styleSpec.tempo must be an object");
+  for (const [field, value] of [["mood", styleSpec.mood], ["instruments", styleSpec.instruments], ["mix", styleSpec.mix]]) {
+    if (!value.length || value.some(item => item.trim().length === 0)) fail(`styleSpec.${field} must contain non-empty strings`);
+  }
+  assertKnownKeys(styleSpec.tempo, TEMPO_KEYS, "styleSpec.tempo");
+  assertRequiredKeys(styleSpec.tempo, TEMPO_KEYS, "styleSpec.tempo");
   for (const key of ["target", "min", "max"]) assertNumber(styleSpec.tempo[key], `styleSpec.tempo.${key}`);
-  if (!isPlainObject(styleSpec.structure)) fail("styleSpec.structure must be an object");
-  assertNumber(styleSpec.structure.bars, "styleSpec.structure.bars");
+  if (styleSpec.tempo.min > styleSpec.tempo.target || styleSpec.tempo.target > styleSpec.tempo.max) {
+    fail("styleSpec.tempo must satisfy min <= target <= max");
+  }
+  assertKnownKeys(styleSpec.structure, STRUCTURE_KEYS, "styleSpec.structure");
+  assertRequiredKeys(styleSpec.structure, STRUCTURE_KEYS, "styleSpec.structure");
+  assertInteger(styleSpec.structure.bars, "styleSpec.structure.bars", { minimum: 1, maximum: 512 });
+  if (![32, 64].includes(styleSpec.structure.bars)) fail("styleSpec.structure.bars must be 32 or 64");
   if (typeof styleSpec.structure.loopable !== "boolean") fail("styleSpec.structure.loopable must be boolean");
-  assertString(styleSpec.structure.intro, "styleSpec.structure.intro");
-  assertString(styleSpec.structure.outro, "styleSpec.structure.outro");
+  assertString(styleSpec.structure.intro, "styleSpec.structure.intro", { nonEmpty: true });
+  assertString(styleSpec.structure.outro, "styleSpec.structure.outro", { nonEmpty: true });
 }
 
 function validateBatch(batch) {
-  if (!isPlainObject(batch)) fail("batch must be an object");
-  for (const key of Object.keys(batch)) {
-    if (!BATCH_KEYS.has(key)) fail(`Unsupported batch field: ${key}`);
-  }
+  assertKnownKeys(batch, BATCH_KEYS, "batch");
+  assertRequiredKeys(batch, BATCH_KEYS, "batch");
   for (const key of ["id", "changedAxis", "prompt", "excludePrompt", "expectedDifference", "status"]) {
-    assertString(batch[key], `batch.${key}`);
+    assertString(batch[key], `batch.${key}`, { nonEmpty: true });
   }
+  assertId(batch.id, "batch.id");
   if (!STATUS_VALUES.has(batch.status)) fail(`Unsupported batch status: ${batch.status}`);
-  assertNumber(batch.credits, "batch.credits");
-  assertString(batch.generatedUrl, "batch.generatedUrl", { nullable: true });
-  assertString(batch.candidateHash, "batch.candidateHash", { nullable: true });
+  assertInteger(batch.credits, "batch.credits", { minimum: 1 });
+  assertNullableHttpsUrl(batch.generatedUrl, "batch.generatedUrl");
+  assertHash(batch.candidateHash, "batch.candidateHash", { nullable: true });
   assertNumber(batch.subjectiveScore, "batch.subjectiveScore", { nullable: true });
+  if (batch.subjectiveScore !== null && (batch.subjectiveScore < 1 || batch.subjectiveScore > 5)) {
+    fail("batch.subjectiveScore must be between 1 and 5");
+  }
   assertString(batch.nextRoundNote, "batch.nextRoundNote");
+  assertString(batch.reviewNote, "batch.reviewNote");
+  if (!DISPOSITION_VALUES.has(batch.disposition)) fail(`Unsupported batch disposition: ${batch.disposition}`);
+  if (batch.disposition === "rejected" && batch.reviewNote.trim().length === 0) {
+    fail("rejected batches require an explicit reviewNote");
+  }
+}
+
+function validateAnalysis(value, field) {
+  assertKnownKeys(value, ANALYSIS_KEYS, field);
+  assertRequiredKeys(value, ANALYSIS_KEYS, field);
+  assertNumber(value.durationSeconds, `${field}.durationSeconds`);
+  if (value.durationSeconds <= 0) fail(`${field}.durationSeconds must be positive`);
+  assertInteger(value.sampleRate, `${field}.sampleRate`, { minimum: 1 });
+  assertInteger(value.channelCount, `${field}.channelCount`, { minimum: 1, maximum: 8 });
+  for (const name of ["peak", "rms"]) {
+    assertNumber(value[name], `${field}.${name}`);
+    if (value[name] < 0) fail(`${field}.${name} cannot be negative`);
+  }
+  assertKnownKeys(value.tempo, ANALYSIS_TEMPO_KEYS, `${field}.tempo`);
+  assertRequiredKeys(value.tempo, ANALYSIS_TEMPO_KEYS, `${field}.tempo`);
+  assertNumber(value.tempo.bpm, `${field}.tempo.bpm`);
+  if (value.tempo.bpm < 0) fail(`${field}.tempo.bpm cannot be negative`);
+  assertUnitNumber(value.tempo.confidence, `${field}.tempo.confidence`);
+  assertKnownKeys(value.key, ANALYSIS_KEY_KEYS, `${field}.key`);
+  assertRequiredKeys(value.key, ANALYSIS_KEY_KEYS, `${field}.key`);
+  for (const name of ["name", "tonic", "mode"]) assertString(value.key[name], `${field}.key.${name}`);
+  if (!new Set(["major", "minor", "unknown"]).has(value.key.mode)) fail(`${field}.key.mode is unsupported`);
+  assertUnitNumber(value.key.confidence, `${field}.key.confidence`);
+  if (!Array.isArray(value.key.chroma) || value.key.chroma.length !== 12) fail(`${field}.key.chroma must contain 12 values`);
+  value.key.chroma.forEach((item, index) => assertUnitNumber(item, `${field}.key.chroma[${index}]`));
+  assertKnownKeys(value.spectrum, SPECTRUM_KEYS, `${field}.spectrum`);
+  assertRequiredKeys(value.spectrum, SPECTRUM_KEYS, `${field}.spectrum`);
+  assertNumber(value.spectrum.centroidHz, `${field}.spectrum.centroidHz`);
+  if (value.spectrum.centroidHz < 0) fail(`${field}.spectrum.centroidHz cannot be negative`);
+  assertUnitNumber(value.spectrum.brightness, `${field}.spectrum.brightness`);
+  assertKnownKeys(value.loop, LOOP_KEYS, `${field}.loop`);
+  assertRequiredKeys(value.loop, LOOP_KEYS, `${field}.loop`);
+  assertUnitNumber(value.loop.score, `${field}.loop.score`);
+  assertKnownKeys(value.loop.components, LOOP_COMPONENT_KEYS, `${field}.loop.components`);
+  assertRequiredKeys(value.loop.components, LOOP_COMPONENT_KEYS, `${field}.loop.components`);
+  for (const name of LOOP_COMPONENT_KEYS) assertUnitNumber(value.loop.components[name], `${field}.loop.components.${name}`);
+  if (!Array.isArray(value.warnings)) fail(`${field}.warnings must be an array`);
+  value.warnings.forEach((item, index) => {
+    assertKnownKeys(item, WARNING_KEYS, `${field}.warnings[${index}]`);
+    assertRequiredKeys(item, WARNING_KEYS, `${field}.warnings[${index}]`);
+    assertString(item.code, `${field}.warnings[${index}].code`, { nonEmpty: true });
+    assertString(item.message, `${field}.warnings[${index}].message`, { nonEmpty: true });
+  });
+}
+
+function validateComparison(value, field) {
+  assertKnownKeys(value, COMPARISON_KEYS, field);
+  assertRequiredKeys(value, COMPARISON_KEYS, field);
+  assertKnownKeys(value.components, new Set(COMPARISON_COMPONENT_NAMES), `${field}.components`);
+  assertRequiredKeys(value.components, new Set(COMPARISON_COMPONENT_NAMES), `${field}.components`);
+  for (const name of COMPARISON_COMPONENT_NAMES) {
+    const item = value.components[name];
+    const detailKey = name === "tempo" ? "deltaBpm" : name === "key" ? "relationship" : name === "duration" ? "deltaSeconds" : "delta";
+    assertKnownKeys(item, new Set(["available", "weight", "score", detailKey]), `${field}.components.${name}`);
+    assertRequiredKeys(item, new Set(["available", "weight", "score", detailKey]), `${field}.components.${name}`);
+    if (typeof item.available !== "boolean") fail(`${field}.components.${name}.available must be boolean`);
+    assertNumber(item.weight, `${field}.components.${name}.weight`);
+    if (Math.abs(item.weight - COMPARISON_WEIGHTS[name]) > 1e-12) fail(`${field}.components.${name}.weight is inconsistent`);
+    assertUnitNumber(item.score, `${field}.components.${name}.score`);
+    if (name === "key") {
+      if (!new Set(["unavailable", "same-key", "parallel-key", "same-mode", "different-key"]).has(item.relationship)) {
+        fail(`${field}.components.key.relationship is unsupported`);
+      }
+      if (item.available === (item.relationship === "unavailable")) fail(`${field}.components.key availability is inconsistent`);
+    } else {
+      assertNumber(item[detailKey], `${field}.components.${name}.${detailKey}`, { nullable: true });
+      if (item.available === (item[detailKey] === null)) fail(`${field}.components.${name} availability is inconsistent`);
+    }
+    if (!item.available && item.score !== 0) fail(`${field}.components.${name}.score must be 0 when unavailable`);
+  }
+  assertUnitNumber(value.coverage, `${field}.coverage`);
+  assertUnitNumber(value.similarity, `${field}.similarity`);
+  if (typeof value.coreMatches !== "boolean") fail(`${field}.coreMatches must be boolean`);
+  const available = COMPARISON_COMPONENT_NAMES.filter(name => value.components[name].available);
+  const availableWeight = available.reduce((sum, name) => sum + COMPARISON_WEIGHTS[name], 0);
+  const expectedCoverage = availableWeight;
+  const expectedSimilarity = availableWeight > 0
+    ? available.reduce((sum, name) => sum + value.components[name].score * COMPARISON_WEIGHTS[name], 0) / availableWeight
+    : 0;
+  if (Math.abs(value.coverage - expectedCoverage) > 1e-9 || Math.abs(value.similarity - expectedSimilarity) > 1e-9) {
+    fail(`${field} coverage or similarity is inconsistent with its components`);
+  }
+  const expectedCoreMatches = ["tempo", "key", "brightness"].every(name => value.components[name].available && value.components[name].score >= 0.85);
+  if (value.coreMatches !== expectedCoreMatches) fail(`${field}.coreMatches is inconsistent`);
+}
+
+function validateAdvice(value, field, { nullable = false } = {}) {
+  if (nullable && value === null) return;
+  assertKnownKeys(value, ADVICE_KEYS, field);
+  assertRequiredKeys(value, ADVICE_KEYS, field);
+  if (!ADVICE_AXES.has(value.changedAxis)) fail(`${field}.changedAxis is unsupported`);
+  assertString(value.reason, `${field}.reason`, { nonEmpty: true });
+  assertString(value.adjustment, `${field}.adjustment`, { nonEmpty: true });
+}
+
+function validateReference(value, index) {
+  const field = `references[${index}]`;
+  assertKnownKeys(value, REFERENCE_KEYS, field);
+  assertRequiredKeys(value, new Set(["id", "hash", "analysis"]), field);
+  assertId(value.id, `${field}.id`);
+  if (Object.hasOwn(value, "displayName")) assertString(value.displayName, `${field}.displayName`, { nonEmpty: true });
+  assertHash(value.hash, `${field}.hash`);
+  validateAnalysis(value.analysis, `${field}.analysis`);
+}
+
+function validateCandidate(value, index, batchIds) {
+  const field = `candidates[${index}]`;
+  assertKnownKeys(value, CANDIDATE_KEYS, field);
+  assertRequiredKeys(value, new Set(["id", "batchId", "hash", "analysis", "comparison", "similarityClass", "advice"]), field);
+  assertId(value.id, `${field}.id`);
+  if (Object.hasOwn(value, "displayName")) assertString(value.displayName, `${field}.displayName`, { nonEmpty: true });
+  assertId(value.batchId, `${field}.batchId`);
+  if (!batchIds.has(value.batchId)) fail(`${field}.batchId must reference an existing batch`);
+  assertHash(value.hash, `${field}.hash`);
+  validateAnalysis(value.analysis, `${field}.analysis`);
+  validateComparison(value.comparison, `${field}.comparison`);
+  if (!SIMILARITY_CLASSES.has(value.similarityClass)) fail(`${field}.similarityClass is unsupported`);
+  const expectedClass = classifySimilarity(value.comparison);
+  if (value.similarityClass !== expectedClass) fail(`${field}.similarityClass is inconsistent with comparison`);
+  validateAdvice(value.advice, `${field}.advice`);
+  if (stableStringify(value.advice) !== stableStringify(recommendNextVariant(value.comparison))) {
+    fail(`${field}.advice is inconsistent with comparison`);
+  }
+  if (value.analysis.tempo.confidence < 0.30 && value.comparison.components.tempo.available) {
+    fail(`${field}.comparison tempo cannot be available below the analyzer confidence threshold`);
+  }
+  if (value.analysis.key.confidence < 0.10 && value.comparison.components.key.available) {
+    fail(`${field}.comparison key cannot be available below the analyzer confidence threshold`);
+  }
+}
+
+function validateExperiment(value, index, candidatesById, batchIds) {
+  const field = `experiments[${index}]`;
+  assertKnownKeys(value, EXPERIMENT_KEYS, field);
+  assertRequiredKeys(value, EXPERIMENT_KEYS, field);
+  assertId(value.id, `${field}.id`);
+  assertId(value.batchId, `${field}.batchId`);
+  assertId(value.candidateId, `${field}.candidateId`);
+  if (!batchIds.has(value.batchId)) fail(`${field}.batchId must reference an existing batch`);
+  const candidate = candidatesById.get(value.candidateId);
+  if (!candidate) fail(`${field}.candidateId must reference an existing candidate`);
+  assertHash(value.candidateHash, `${field}.candidateHash`);
+  if (candidate.batchId !== value.batchId || candidate.hash !== value.candidateHash) fail(`${field} identity fields are inconsistent`);
+  assertNullableHttpsUrl(value.generatedUrl, `${field}.generatedUrl`);
+  assertNumber(value.subjectiveScore, `${field}.subjectiveScore`, { nullable: true });
+  if (value.subjectiveScore !== null && (value.subjectiveScore < 1 || value.subjectiveScore > 5)) fail(`${field}.subjectiveScore must be between 1 and 5`);
+  assertString(value.reviewNote, `${field}.reviewNote`);
+  if (!DISPOSITION_VALUES.has(value.disposition)) fail(`${field}.disposition is unsupported`);
+  if (value.disposition === "rejected" && value.reviewNote.trim().length === 0) fail(`${field}.reviewNote is required for rejection`);
+  validateComparison(value.comparison, `${field}.comparison`);
+  validateAdvice(value.advice, `${field}.advice`);
+  if (stableStringify(value.comparison) !== stableStringify(candidate.comparison)
+    || stableStringify(value.advice) !== stableStringify(candidate.advice)) {
+    fail(`${field} comparison or advice is inconsistent with its candidate`);
+  }
 }
 
 function cloneJson(value) {
@@ -204,37 +372,106 @@ export function stableStringify(value) {
 
 export function validateProject(input) {
   if (!isPlainObject(input)) fail("project must be an object");
-  assertSafeValue(input);
+  assertPortableValue(input);
+  assertRequiredKeys(input, PROJECT_KEYS, "project");
   if (input.version !== PROJECT_VERSION) fail("project.version must be 1");
-  assertString(input.toolVersion, "toolVersion");
-  assertString(input.ruleCheckedAt, "ruleCheckedAt");
+  assertString(input.toolVersion, "toolVersion", { nonEmpty: true });
+  assertDate(input.ruleCheckedAt, "ruleCheckedAt");
   validateStyleSpec(input.styleSpec);
-  if (!isPlainObject(input.credits)) fail("credits must be an object");
-  for (const key of ["planned", "perBatch", "batchCount"]) assertNumber(input.credits[key], `credits.${key}`);
+  assertKnownKeys(input.credits, CREDIT_KEYS, "credits");
+  assertRequiredKeys(input.credits, CREDIT_KEYS, "credits");
+  for (const key of CREDIT_KEYS) assertInteger(input.credits[key], `credits.${key}`, { minimum: 1 });
   if (!Array.isArray(input.batches) || input.batches.length !== 5) fail("project must contain exactly five batches");
   input.batches.forEach(validateBatch);
-  const ids = input.batches.map(batch => batch.id);
-  if (new Set(ids).size !== ids.length) fail("batch ids must be unique");
-  if (typeof input.experiments !== "undefined" && !Array.isArray(input.experiments)) fail("experiments must be an array");
-  if (typeof input.licenses !== "undefined" && !Array.isArray(input.licenses)) fail("licenses must be an array");
-  const validatedLicenses = Array.isArray(input.licenses) ? input.licenses.map(validateLicenseEntry) : null;
-  if (validatedLicenses && new Set(validatedLicenses.map(entry => entry.id)).size !== validatedLicenses.length) {
-    fail("license ids must be unique");
+  if (input.credits.batchCount !== input.batches.length
+    || input.credits.planned !== input.credits.perBatch * input.credits.batchCount
+    || input.batches.some(batch => batch.credits !== input.credits.perBatch)
+    || input.batches.reduce((sum, batch) => sum + batch.credits, 0) !== input.credits.planned) {
+    fail("credits and batch totals must be exactly consistent");
   }
+  const canonicalBatches = createPromptVariants(input.styleSpec);
+  const immutableBatchFields = ["id", "changedAxis", "prompt", "excludePrompt", "expectedDifference", "credits"];
+  input.batches.forEach((batch, index) => {
+    for (const field of immutableBatchFields) {
+      if (batch[field] !== canonicalBatches[index]?.[field]) fail(`batch ${index + 1} ${field} is inconsistent with styleSpec`);
+    }
+  });
+  const batchIds = new Set(input.batches.map(batch => batch.id));
+  if (batchIds.size !== input.batches.length) fail("batch ids must be unique");
+  assertString(input.sourceUrl, "sourceUrl", { nonEmpty: true });
+  assertNullableHttpsUrl(input.sourceUrl, "sourceUrl");
+  if (!Array.isArray(input.references)) fail("references must be an array");
+  if (!Array.isArray(input.candidates)) fail("candidates must be an array");
+  if (!Array.isArray(input.experiments)) fail("experiments must be an array");
+  if (!Array.isArray(input.licenses)) fail("licenses must be an array");
+  input.references.forEach(validateReference);
+  input.candidates.forEach((candidate, index) => validateCandidate(candidate, index, batchIds));
+  const candidatesById = new Map(input.candidates.map(candidate => [candidate.id, candidate]));
+  input.experiments.forEach((experiment, index) => validateExperiment(experiment, index, candidatesById, batchIds));
+  const validatedLicenses = input.licenses.map(validateLicenseEntry);
+
+  for (const batch of input.batches) {
+    if (batch.candidateHash === null) continue;
+    const matchingCandidate = input.candidates.findLast(candidate => (
+      candidate.batchId === batch.id && candidate.hash === batch.candidateHash
+    ));
+    if (!matchingCandidate) continue;
+    const matchingExperiment = input.experiments.findLast(experiment => experiment.candidateId === matchingCandidate.id);
+    if (!matchingExperiment) continue;
+    for (const field of ["generatedUrl", "subjectiveScore", "reviewNote", "disposition"]) {
+      if (batch[field] !== matchingExperiment[field]) {
+        fail(`batch ${batch.id} ${field} is inconsistent with its current experiment`);
+      }
+    }
+  }
+
+  const allIds = [
+    ...input.batches.map(batch => batch.id),
+    ...input.references.map(reference => reference.id),
+    ...input.candidates.map(candidate => candidate.id),
+    ...input.experiments.map(experiment => experiment.id),
+    ...validatedLicenses.map(license => license.id),
+  ];
+  if (new Set(allIds).size !== allIds.length) fail("all persisted ids must be unique");
+  for (const batch of input.batches) {
+    const associated = input.candidates.filter(candidate => candidate.batchId === batch.id);
+    if (batch.candidateHash !== null && associated.length > 0 && !associated.some(candidate => candidate.hash === batch.candidateHash)) {
+      fail(`batch ${batch.id} candidateHash must reference one of its candidates`);
+    }
+  }
+  if (input.currentBestCandidate !== null) {
+    const field = "currentBestCandidate";
+    const keys = new Set(["candidateId", "displayName", "hash"]);
+    assertKnownKeys(input.currentBestCandidate, keys, field);
+    assertRequiredKeys(input.currentBestCandidate, new Set(["candidateId", "hash"]), field);
+    assertId(input.currentBestCandidate.candidateId, `${field}.candidateId`);
+    assertHash(input.currentBestCandidate.hash, `${field}.hash`);
+    if (Object.hasOwn(input.currentBestCandidate, "displayName")) {
+      assertString(input.currentBestCandidate.displayName, `${field}.displayName`, { nonEmpty: true });
+    }
+    const candidate = candidatesById.get(input.currentBestCandidate.candidateId);
+    if (!candidate || candidate.hash !== input.currentBestCandidate.hash) fail(`${field} must reference an existing candidate and matching hash`);
+    if (Object.hasOwn(input.currentBestCandidate, "displayName")
+      && candidate.displayName !== input.currentBestCandidate.displayName) {
+      fail(`${field}.displayName must match its candidate`);
+    }
+  }
+  assertArrayOfStrings(input.outstandingIssues, "outstandingIssues");
+  validateAdvice(input.nextRoundSuggestion, "nextRoundSuggestion", { nullable: true });
+  if (!isPlainObject(input.extensions)) fail("extensions must be an object");
 
   const output = {};
   for (const key of PROJECT_KEYS) {
-    if (key !== "extensions" && key !== "experiments" && Object.hasOwn(input, key)) output[key] = cloneJson(input[key]);
+    if (key !== "extensions" && key !== "experiments" && key !== "licenses") output[key] = cloneJson(input[key]);
   }
   const unknown = {};
   for (const [key, value] of Object.entries(input)) {
     if (!PROJECT_KEYS.has(key)) unknown[key] = cloneJson(value);
   }
-  const suppliedExtensions = input.extensions ? cloneJson(input.extensions) : {};
-  if (!isPlainObject(suppliedExtensions)) fail("extensions must be an object");
+  const suppliedExtensions = cloneJson(input.extensions);
   output.extensions = { ...suppliedExtensions, ...unknown };
-  if (Array.isArray(input.experiments)) output.experiments = input.experiments.map(createExperimentRecord);
-  if (validatedLicenses) output.licenses = validatedLicenses;
+  output.experiments = input.experiments.map(createExperimentRecord);
+  output.licenses = validatedLicenses;
   return output;
 }
 
@@ -245,7 +482,7 @@ export function transitionBatch(plan, batchId, status, patch = {}) {
   for (const key of Object.keys(patch)) {
     if (!BATCH_PATCH_KEYS.has(key)) fail(`Unsupported batch patch field: ${key}`);
   }
-  assertSafeValue(patch);
+  assertPortableValue(patch);
   const index = validated.batches.findIndex(batch => batch.id === batchId);
   if (index < 0) fail(`Unknown batch: ${batchId}`);
   const current = validated.batches[index];
@@ -298,8 +535,11 @@ export function exportProjectMarkdown(project) {
     lines.push(`- Expected difference: ${markdownText(batch.expectedDifference)}`);
     lines.push(`- Prompt: ${markdownText(batch.prompt)}`);
     lines.push(`- Exclude: ${markdownText(batch.excludePrompt)}`);
+    if (batch.generatedUrl) lines.push(`- Generated URL: ${markdownText(batch.generatedUrl)}`);
     if (batch.candidateHash) lines.push(`- Candidate hash: ${markdownText(batch.candidateHash)}`);
     if (batch.subjectiveScore !== null) lines.push(`- Subjective score: ${batch.subjectiveScore}`);
+    lines.push(`- Disposition: ${markdownText(batch.disposition)}`);
+    if (batch.reviewNote) lines.push(`- Review / rejection reason: ${markdownText(batch.reviewNote)}`);
     if (batch.nextRoundNote) lines.push(`- Next-round note: ${markdownText(batch.nextRoundNote)}`);
     lines.push("");
   }
@@ -310,12 +550,14 @@ export function exportProjectMarkdown(project) {
   if (safe.sourceUrl) appendJsonSection("生成来源", safe.sourceUrl);
   appendJsonSection("参考记录", safe.references);
   appendJsonSection("候选记录", safe.candidates);
+  appendJsonSection("实验历史", safe.experiments);
   appendJsonSection("授权台账", safe.licenses);
   appendJsonSection("尚存问题", safe.outstandingIssues);
   appendJsonSection("下一轮建议", safe.nextRoundSuggestion);
   if (isPlainObject(safe.currentBestCandidate)) {
-    const { displayName, hash } = safe.currentBestCandidate;
+    const { candidateId, displayName, hash } = safe.currentBestCandidate;
     lines.push("## 当前最佳候选", "");
+    lines.push(`- Candidate ID: ${markdownText(candidateId)}`);
     if (typeof displayName === "string") lines.push(`- ${markdownText(displayName)}`);
     if (typeof hash === "string") lines.push(`- Hash: ${markdownText(hash)}`);
     lines.push("");

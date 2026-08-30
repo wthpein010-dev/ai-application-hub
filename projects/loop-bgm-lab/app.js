@@ -64,8 +64,12 @@ const styleForm = element("#style-form");
 const styleKey = element("#style-key");
 const styleTempo = element("#style-tempo");
 const styleBars = element("#style-bars");
+const approvedBaseline = element("#approved-baseline");
+const approvedExclusions = element("#approved-exclusions");
 const batchList = element("#batch-list");
 const candidateInput = element("#candidate-file");
+const candidateBatch = element("#candidate-batch");
+const candidateHistory = element("#candidate-history");
 const comparisonResult = element("#comparison-result");
 const comparisonBody = element("#comparison-components tbody");
 const comparisonCoverage = element("#comparison-coverage");
@@ -88,11 +92,13 @@ let project;
 let referenceFailures = [];
 const referenceSessions = new Map();
 let candidateSession = null;
+let selectedCandidateId = null;
 const objectUrls = new Set();
 const downloadUrls = new Set();
 const allocatedIds = {
   reference: new Set(),
   candidate: new Set(),
+  experiment: new Set(),
   license: new Set()
 };
 let referenceGeneration = 0;
@@ -118,17 +124,7 @@ function createElement(tag, options = {}) {
 }
 
 function defaultProject() {
-  return validateProject({
-    ...createDailyPlan(),
-    sourceUrl: SUNO_CREATE_URL,
-    references: [],
-    candidates: [],
-    experiments: [],
-    licenses: [],
-    currentBestCandidate: null,
-    outstandingIssues: [],
-    nextRoundSuggestion: null
-  });
+  return validateProject(createDailyPlan());
 }
 
 function showLive(message) {
@@ -216,6 +212,24 @@ function aggregateReferences(records = project.references || []) {
   };
 }
 
+function mergeBatchProgress(freshBatches, previousBatches) {
+  const previousById = new Map((previousBatches || []).map(batch => [batch.id, batch]));
+  return freshBatches.map(batch => {
+    const previous = previousById.get(batch.id);
+    if (!previous) return batch;
+    return {
+      ...batch,
+      status: previous.status,
+      generatedUrl: previous.generatedUrl,
+      candidateHash: previous.candidateHash,
+      subjectiveScore: previous.subjectiveScore,
+      nextRoundNote: previous.nextRoundNote,
+      reviewNote: previous.reviewNote,
+      disposition: previous.disposition
+    };
+  });
+}
+
 function rebuildPlanForReferences(references, baseProject = project) {
   const styleSpec = aggregateReferenceStyle(
     references,
@@ -227,12 +241,12 @@ function rebuildPlanForReferences(references, baseProject = project) {
     ...baseProject,
     styleSpec: plan.styleSpec,
     credits: plan.credits,
-    batches: plan.batches,
+    batches: mergeBatchProgress(plan.batches, baseProject.batches),
     references,
-    candidates: [],
-    experiments: [],
-    currentBestCandidate: null,
-    nextRoundSuggestion: null
+    candidates: baseProject.candidates,
+    experiments: baseProject.experiments,
+    currentBestCandidate: baseProject.currentBestCandidate,
+    nextRoundSuggestion: baseProject.nextRoundSuggestion
   });
 }
 
@@ -348,13 +362,15 @@ function removeReference(id) {
   releaseCandidateSession();
   persistProject();
   renderAll();
-  showLive("已移除参考记录，并清空依赖它的候选比较。 ");
+  showLive("已移除参考记录并重建提示词；既有候选与实验历史仍保留。 ");
 }
 
 function renderStyle() {
   styleKey.value = project.styleSpec.key;
   styleTempo.value = String(project.styleSpec.tempo.target);
   styleBars.value = String(project.styleSpec.structure.bars);
+  approvedBaseline.textContent = project.batches[0].prompt;
+  approvedExclusions.textContent = project.batches[0].excludePrompt;
 }
 
 function optionFor(value, selected) {
@@ -389,8 +405,16 @@ function openExternal(url) {
 }
 
 function renderBatches() {
+  const selectedBatchId = candidateBatch.value;
+  candidateBatch.replaceChildren();
   batchList.replaceChildren();
   project.batches.forEach((batch, index) => {
+    const candidateOption = createElement("option", {
+      text: `${index + 1}. ${AXIS_LABELS[batch.changedAxis] || batch.changedAxis}`
+    });
+    candidateOption.value = batch.id;
+    candidateOption.selected = batch.id === selectedBatchId || (!selectedBatchId && index === 0);
+    candidateBatch.append(candidateOption);
     const card = createElement("article", { className: "batch-card" });
     card.dataset.axis = batch.changedAxis;
     const head = createElement("div", { className: "batch-head" });
@@ -452,7 +476,7 @@ function componentDetail(name, component) {
 }
 
 function renderComparison() {
-  const candidate = project.candidates?.[0];
+  const candidate = project.candidates.find(item => item.id === selectedCandidateId) || project.candidates.at(-1);
   comparisonBody.replaceChildren();
   if (!candidate?.comparison) {
     comparisonResult.dataset.analysisState = "empty";
@@ -460,7 +484,7 @@ function renderComparison() {
     comparisonSimilarity.textContent = "—";
     similarityClass.textContent = "等待候选";
     nextAdvice.textContent = "导入参考和候选后，这里只给出一个变量轴的下一轮建议。";
-    removeCandidateButton.hidden = true;
+    removeCandidateButton.hidden = !candidateSession;
     setAudioElement(candidatePlayer, null);
     return;
   }
@@ -480,8 +504,193 @@ function renderComparison() {
   }
   const advice = candidate.advice;
   nextAdvice.textContent = `${advice.reason} ${advice.adjustment}`;
-  removeCandidateButton.hidden = false;
-  setAudioElement(candidatePlayer, candidateSession?.url || null);
+  removeCandidateButton.hidden = !candidateSession;
+  setAudioElement(candidatePlayer, candidateSession?.candidateId === candidate.id ? candidateSession.url : null);
+}
+
+function updateCandidateHash(candidateId, nextHash) {
+  clearError();
+  try {
+    const normalizedHash = nextHash.trim().toLowerCase();
+    if (!/^[a-f0-9]{64}$/.test(normalizedHash)) throw new TypeError("候选 SHA-256 必须是 64 位十六进制。 ");
+    const candidate = project.candidates.find(item => item.id === candidateId);
+    if (!candidate) throw new TypeError(`未知候选：${candidateId}`);
+    const previousHash = candidate.hash;
+    const candidates = project.candidates.map(item => item.id === candidate.id ? { ...item, hash: normalizedHash } : item);
+    const batches = project.batches.map(batch => batch.id === candidate.batchId && batch.candidateHash === previousHash
+      ? { ...batch, candidateHash: normalizedHash }
+      : batch);
+    const experiments = project.experiments.map(experiment => experiment.candidateId === candidate.id
+      ? { ...experiment, candidateHash: normalizedHash }
+      : experiment);
+    const currentBestCandidate = project.currentBestCandidate?.candidateId === candidate.id
+      ? { ...project.currentBestCandidate, hash: normalizedHash }
+      : project.currentBestCandidate;
+    project = validateProject({ ...project, batches, candidates, experiments, currentBestCandidate });
+    if (candidateSession?.candidateId === candidate.id) candidateSession.hash = normalizedHash;
+    selectedCandidateId = candidate.id;
+    persistProject();
+    renderBatches();
+    renderCandidateHistory();
+    renderComparison();
+    showLive("候选 SHA-256 已同步到候选、批次和实验记录。 ");
+  } catch (error) {
+    renderCandidateHistory();
+    showError(error instanceof Error ? error.message : "候选 SHA-256 更新失败。 ");
+  }
+}
+
+function updateCandidateReview(candidateId, batchPatch) {
+  clearError();
+  try {
+    const candidate = project.candidates.find(item => item.id === candidateId);
+    if (!candidate) throw new TypeError(`未知候选：${candidateId}`);
+    const batch = project.batches.find(item => item.id === candidate.batchId);
+    if (!batch) throw new TypeError(`候选关联的批次不存在：${candidate.batchId}`);
+    const normalizedPatch = { ...batchPatch, candidateHash: candidate.hash };
+    const batches = project.batches.map(item => item.id === batch.id ? { ...item, ...normalizedPatch } : item);
+    const experiments = project.experiments.map(experiment => experiment.candidateId === candidate.id
+      ? {
+        ...experiment,
+        candidateHash: candidate.hash,
+        generatedUrl: Object.hasOwn(normalizedPatch, "generatedUrl") ? normalizedPatch.generatedUrl : experiment.generatedUrl,
+        subjectiveScore: Object.hasOwn(normalizedPatch, "subjectiveScore") ? normalizedPatch.subjectiveScore : experiment.subjectiveScore,
+        reviewNote: Object.hasOwn(normalizedPatch, "reviewNote") ? normalizedPatch.reviewNote : experiment.reviewNote,
+        disposition: Object.hasOwn(normalizedPatch, "disposition") ? normalizedPatch.disposition : experiment.disposition
+      }
+      : experiment);
+    project = validateProject({ ...project, batches, experiments });
+    selectedCandidateId = candidate.id;
+    persistProject();
+    renderBatches();
+    renderCandidateHistory();
+    renderComparison();
+    showLive("候选复盘已保存到批次和实验历史。 ");
+  } catch (error) {
+    renderAll();
+    showError(error instanceof Error ? error.message : "候选复盘保存失败。 ");
+  }
+}
+
+function setBestCandidate(candidateId, checked) {
+  clearError();
+  try {
+    const candidate = project.candidates.find(item => item.id === candidateId);
+    if (!candidate) throw new TypeError(`未知候选：${candidateId}`);
+    const isCurrent = project.currentBestCandidate?.candidateId === candidate.id;
+    const currentBestCandidate = checked
+      ? {
+        candidateId: candidate.id,
+        ...(candidate.displayName ? { displayName: candidate.displayName } : {}),
+        hash: candidate.hash
+      }
+      : isCurrent ? null : project.currentBestCandidate;
+    project = validateProject({ ...project, currentBestCandidate });
+    persistProject();
+    renderCandidateHistory();
+    showLive(checked ? "已明确设为当前最佳候选。 " : "已取消当前最佳候选。 ");
+  } catch (error) {
+    renderCandidateHistory();
+    showError(error instanceof Error ? error.message : "最佳候选更新失败。 ");
+  }
+}
+
+function labelledField(labelText, control) {
+  const label = createElement("label");
+  label.append(createElement("span", { text: labelText }), control);
+  return label;
+}
+
+function renderCandidateHistory() {
+  candidateHistory.replaceChildren();
+  if (!project.candidates.length) {
+    candidateHistory.append(createElement("p", { text: "尚无候选记录。分析候选后，历史会保留在这里。" }));
+    return;
+  }
+  for (const [index, candidate] of [...project.candidates].reverse().entries()) {
+    const batch = project.batches.find(item => item.id === candidate.batchId);
+    const experiment = project.experiments.find(item => item.candidateId === candidate.id);
+    const isBatchCurrent = batch?.candidateHash === candidate.hash;
+    const card = createElement("article", { className: "candidate-history-item" });
+    card.dataset.candidateId = candidate.id;
+    card.dataset.batchId = candidate.batchId;
+    if (candidate.id === selectedCandidateId) card.dataset.selected = "true";
+    const heading = createElement("div", { className: "candidate-history-heading" });
+    heading.append(
+      createElement("strong", { text: candidate.displayName || `候选 ${project.candidates.length - index}` }),
+      createElement("span", { text: `${candidate.batchId} · SHA-256 ${candidate.hash}` })
+    );
+    const view = createElement("button", { className: "text-button candidate-view", text: "查看比较" });
+    view.type = "button";
+    view.addEventListener("click", () => {
+      selectedCandidateId = candidate.id;
+      renderComparison();
+      renderCandidateHistory();
+    });
+    heading.append(view);
+
+    const candidateHash = createElement("input", { className: "candidate-hash" });
+    candidateHash.type = "text";
+    candidateHash.autocomplete = "off";
+    candidateHash.spellcheck = false;
+    candidateHash.maxLength = 64;
+    candidateHash.pattern = "[A-Fa-f0-9]{64}";
+    candidateHash.value = candidate.hash;
+    candidateHash.addEventListener("change", () => updateCandidateHash(candidate.id, candidateHash.value));
+
+    const generatedUrl = createElement("input", { className: "candidate-generated-url" });
+    generatedUrl.type = "url";
+    generatedUrl.inputMode = "url";
+    generatedUrl.placeholder = "https://suno.com/song/…";
+    generatedUrl.value = isBatchCurrent ? batch.generatedUrl || "" : experiment?.generatedUrl || "";
+    generatedUrl.addEventListener("change", () => updateCandidateReview(candidate.id, { generatedUrl: generatedUrl.value.trim() || null }));
+
+    const score = createElement("select", { className: "candidate-subjective-score" });
+    score.append(optionFor("", String(isBatchCurrent ? batch.subjectiveScore ?? "" : experiment?.subjectiveScore ?? "")));
+    score.firstElementChild.textContent = "未评分";
+    for (let value = 1; value <= 5; value += 1) {
+      const option = createElement("option", { text: `${value} / 5` });
+      option.value = String(value);
+      option.selected = String(isBatchCurrent ? batch.subjectiveScore ?? "" : experiment?.subjectiveScore ?? "") === String(value);
+      score.append(option);
+    }
+    score.addEventListener("change", () => updateCandidateReview(candidate.id, { subjectiveScore: score.value ? Number(score.value) : null }));
+
+    const reviewNote = createElement("textarea", { className: "candidate-review-note" });
+    reviewNote.rows = 2;
+    reviewNote.placeholder = "写明接受、复核或拒绝理由";
+    reviewNote.value = isBatchCurrent ? batch.reviewNote : experiment?.reviewNote || "";
+    reviewNote.addEventListener("change", () => updateCandidateReview(candidate.id, { reviewNote: reviewNote.value.trim() }));
+
+    const disposition = createElement("select", { className: "candidate-disposition" });
+    const dispositionValue = isBatchCurrent ? batch.disposition : experiment?.disposition || "unrated";
+    for (const [value, text] of [["unrated", "未处置"], ["accepted", "接受"], ["rejected", "拒绝"]]) {
+      const option = createElement("option", { text });
+      option.value = value;
+      option.selected = value === dispositionValue;
+      disposition.append(option);
+    }
+    disposition.addEventListener("change", () => updateCandidateReview(candidate.id, { disposition: disposition.value }));
+
+    const best = createElement("input", { className: "candidate-best" });
+    best.type = "checkbox";
+    best.checked = project.currentBestCandidate?.candidateId === candidate.id;
+    best.addEventListener("change", () => setBestCandidate(candidate.id, best.checked));
+    const bestLabel = labelledField("当前最佳", best);
+    bestLabel.className = "candidate-best-field";
+
+    const fields = createElement("div", { className: "candidate-review-grid" });
+    fields.append(
+      labelledField("候选 SHA-256", candidateHash),
+      labelledField("生成链接", generatedUrl),
+      labelledField("主观评分", score),
+      labelledField("复核 / 拒绝理由", reviewNote),
+      labelledField("处置", disposition),
+      bestLabel
+    );
+    card.append(heading, fields);
+    candidateHistory.append(card);
+  }
 }
 
 function renderLicenses() {
@@ -499,9 +708,11 @@ function renderLicenses() {
       link,
       createElement("span", { text: `SHA-256：${entry.fileSha256}` }),
       createElement("span", { text: entry.useWarning }),
-      createElement("span", { text: entry.attributionWarning })
+      createElement("span", { text: entry.attributionWarning }),
+      createElement("span", { text: `作者：${entry.author}` }),
+      createElement("span", { text: `来源核验日期：${entry.downloadedAt}` })
     );
-    if (entry.author) copy.append(createElement("span", { text: `作者：${entry.author}` }));
+    if (entry.attributionText) copy.append(createElement("span", { text: `署名文本：${entry.attributionText}` }));
     const remove = createElement("button", { className: "text-button", text: "移除" });
     remove.type = "button";
     remove.addEventListener("click", () => {
@@ -520,7 +731,22 @@ function renderAll() {
   renderReferences();
   renderBatches();
   renderComparison();
+  renderCandidateHistory();
   renderLicenses();
+}
+
+function stageProjectRender(stagedProject, stagedSelectedCandidateId) {
+  const activeProject = project;
+  const activeSelectedCandidateId = selectedCandidateId;
+  project = stagedProject;
+  selectedCandidateId = stagedSelectedCandidateId;
+  try {
+    renderAll();
+  } finally {
+    project = activeProject;
+    selectedCandidateId = activeSelectedCandidateId;
+    renderAll();
+  }
 }
 
 async function hashBytes(bytes) {
@@ -646,6 +872,12 @@ async function processReferenceFiles(files) {
 async function processCandidateFile(file) {
   clearError();
   const generation = ++candidateGeneration;
+  const batchId = candidateBatch.value;
+  const selectedBatch = project.batches.find(batch => batch.id === batchId);
+  if (!selectedBatch) {
+    showError("请先选择候选对应的提示词批次。 ");
+    return;
+  }
   const reference = aggregateReferences();
   if (!reference) {
     showError("请先导入至少一个可分析的参考音频。");
@@ -659,26 +891,52 @@ async function processCandidateFile(file) {
     const comparison = compareCandidate(reference, result.analysis);
     const similarityClassValue = classifySimilarity(comparison);
     const advice = recommendNextVariant(comparison);
+    const candidateId = allocateId("candidate", project.candidates || []);
     const record = {
-      id: allocateId("candidate", project.candidates || []),
+      id: candidateId,
+      batchId,
       hash: result.hash,
       analysis: result.analysis,
       comparison,
       similarityClass: similarityClassValue,
       advice
     };
-    releaseCandidateSession();
-    candidateSession = { name: file.name, url: createAudioUrl(file), hash: result.hash };
-    project = validateProject({
+    const experiment = {
+      id: allocateId("experiment", project.experiments || []),
+      batchId,
+      candidateId,
+      candidateHash: result.hash,
+      generatedUrl: selectedBatch.generatedUrl,
+      subjectiveScore: null,
+      reviewNote: "",
+      disposition: "unrated",
+      comparison,
+      advice
+    };
+    const batches = project.batches.map(batch => batch.id === batchId
+      ? {
+        ...batch,
+        candidateHash: result.hash,
+        subjectiveScore: null,
+        reviewNote: "",
+        disposition: "unrated"
+      }
+      : batch);
+    const nextProject = validateProject({
       ...project,
-      candidates: [record],
-      experiments: [{ id: `comparison-${result.hash.slice(0, 12)}`, candidateHash: result.hash, comparison, advice }],
-      currentBestCandidate: { hash: result.hash },
+      batches,
+      candidates: [...project.candidates, record],
+      experiments: [...project.experiments, experiment],
       nextRoundSuggestion: advice
     });
+    const nextUrl = createAudioUrl(file);
+    releaseCandidateSession();
+    candidateSession = { candidateId, name: file.name, url: nextUrl, hash: result.hash };
+    selectedCandidateId = candidateId;
+    project = nextProject;
     persistProject();
-    renderComparison();
-    showLive(`候选“${file.name}”分析完成；名称不会写入持久状态或导出。`);
+    renderAll();
+    showLive(`候选“${file.name}”分析完成并追加到历史；名称不会写入持久状态或导出。`);
   } catch (error) {
     if (generation !== candidateGeneration) return;
     renderComparison();
@@ -753,12 +1011,13 @@ styleForm.addEventListener("submit", event => {
     ...project,
     styleSpec: freshPlan.styleSpec,
     credits: freshPlan.credits,
-    batches: freshPlan.batches,
+    batches: mergeBatchProgress(freshPlan.batches, project.batches),
     extensions: {
       ...(project.extensions || {}),
       styleOverrides: {
         key: Boolean(previousOverrides.key) || nextKey !== project.styleSpec.key,
-        tempo: Boolean(previousOverrides.tempo) || tempo !== project.styleSpec.tempo.target
+        tempo: Boolean(previousOverrides.tempo) || tempo !== project.styleSpec.tempo.target,
+        bars: Boolean(previousOverrides.bars) || Number(styleBars.value) !== project.styleSpec.structure.bars
       }
     }
   });
@@ -776,10 +1035,9 @@ candidateInput.addEventListener("change", () => {
 removeCandidateButton.addEventListener("click", () => {
   candidateGeneration += 1;
   releaseCandidateSession();
-  project = validateProject({ ...project, candidates: [], experiments: [], currentBestCandidate: null, nextRoundSuggestion: null });
-  persistProject();
   renderComparison();
-  showLive("已移除候选及其临时播放地址。 ");
+  renderCandidateHistory();
+  showLive("已清除临时播放地址；候选与实验历史仍保留。 ");
 });
 
 for (const audio of [referencePlayer, candidatePlayer]) {
@@ -856,11 +1114,14 @@ importInput.addEventListener("change", async () => {
   clearError();
   try {
     const imported = importProjectJson(await file.text());
+    const importedSelectedCandidateId = imported.candidates.at(-1)?.id || null;
+    stageProjectRender(imported, importedSelectedCandidateId);
     referenceGeneration += 1;
     candidateGeneration += 1;
+    project = imported;
+    selectedCandidateId = importedSelectedCandidateId;
     releaseAllAudio();
     referenceFailures = [];
-    project = imported;
     rememberProjectIds(project);
     persistProject();
     renderAll();

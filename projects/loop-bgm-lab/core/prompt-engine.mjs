@@ -1,18 +1,22 @@
+import { assertPortableValue } from "./portable-safety.mjs";
+
 const DEFAULT_STYLE = {
   version: 1,
   intent: "casual-puzzle-level-bgm",
   tempo: { target: 112, min: 110, max: 116 },
   key: "D minor",
   mood: ["upbeat", "playful", "cheeky"],
-  instruments: ["bright synth plucks", "springy bass", "light electronic percussion"],
+  instruments: ["bright melodic synth plucks", "springy bass", "crisp light electronic percussion"],
   structure: { bars: 64, loopable: true, intro: "none", outro: "none" },
   mix: ["polished", "wide stereo", "gameplay-safe"],
   exclusions: ["vocals", "fade-out", "tempo changes", "key changes"]
 };
 
-const EXCLUDE_PROMPT = "vocals, rap, spoken words, cinematic orchestra, epic trailer, long ambient intro, breakdown, dramatic stop, tempo changes, key changes, fade-out, distorted bass, melancholic ballad, lo-fi vinyl noise";
-const FORBIDDEN_KEY = /(audioBytes|cookie|token|apiKey|recoveryKey|session)/i;
-const LOCAL_PATH_KEY = /^(?:localPath|filePath|audioPath|path)$/i;
+const DEFAULT_EXCLUSIONS = [
+  "vocals", "rap", "spoken words", "cinematic orchestra", "epic trailer", "long ambient intro",
+  "breakdown", "dramatic stop", "tempo changes", "key changes", "fade-out", "distorted bass",
+  "melancholic ballad", "lo-fi vinyl noise"
+];
 
 const VARIANTS = [
   {
@@ -41,25 +45,12 @@ const VARIANTS = [
   {
     id: "batch-5",
     changedAxis: "loopStructure",
-    loopStructure: "seamless 32-bar A/B loop, no intro, no outro, reinforced ending-to-opening harmony connection",
-    expectedDifference: "Loop structure becomes a shorter 32-bar A/B cycle with a reinforced end-to-start harmonic handoff."
+    changesLoopStructure: true
   }
 ];
 
 function copy(value) {
   return JSON.parse(JSON.stringify(value));
-}
-
-function assertSafeExtension(value, key = "") {
-  if (FORBIDDEN_KEY.test(key)) throw new TypeError(`Forbidden key: ${key}`);
-  if (LOCAL_PATH_KEY.test(key) && typeof value === "string" && (/^[a-zA-Z]:[\\/]/.test(value) || value.startsWith("/"))) {
-    throw new TypeError(`Absolute path is not allowed in ${key}`);
-  }
-  if (Array.isArray(value)) {
-    value.forEach(item => assertSafeExtension(item));
-  } else if (value && typeof value === "object") {
-    Object.entries(value).forEach(([childKey, childValue]) => assertSafeExtension(childValue, childKey));
-  }
 }
 
 function asStringArray(value, fallback) {
@@ -92,28 +83,55 @@ export function normalizeStyleSpec(input = {}) {
   };
 }
 
+function naturalList(values, fallback) {
+  const items = values.filter(value => typeof value === "string" && value.trim().length > 0);
+  if (!items.length) return fallback;
+  if (items.length === 1) return items[0];
+  if (items.length === 2) return `${items[0]} and ${items[1]}`;
+  return `${items.slice(0, -1).join(", ")}, and ${items.at(-1)}`;
+}
+
+function structurePhrase(style, variant) {
+  const bars = variant.changesLoopStructure ? (style.structure.bars === 32 ? 64 : 32) : style.structure.bars;
+  const form = variant.changesLoopStructure ? "A/B gameplay loop" : "gameplay loop";
+  const intro = style.structure.intro === "none" ? "no intro" : `${style.structure.intro} intro`;
+  const outro = style.structure.outro === "none" ? "no outro" : `${style.structure.outro} outro`;
+  const ending = variant.changesLoopStructure
+    ? "reinforced ending-to-opening harmony connection"
+    : "ending matches the opening harmony and energy";
+  return `${style.structure.loopable ? "seamless " : ""}${bars}-bar ${form}, ${intro}, ${outro}, ${ending}`;
+}
+
 function buildPrompt(style, variant) {
-  const melody = variant.melody ?? "bright melodic synth plucks";
+  const melody = variant.melody ?? style.instruments[0] ?? DEFAULT_STYLE.instruments[0];
+  const bass = style.instruments[1] ?? DEFAULT_STYLE.instruments[1];
+  const percussion = variant.percussion ?? naturalList(style.instruments.slice(2), DEFAULT_STYLE.instruments[2]);
+  const leadMood = style.mood[0] ?? DEFAULT_STYLE.mood[0];
+  const motifMood = naturalList(style.mood.slice(1), leadMood);
   const rhythm = variant.rhythm ?? "steady energetic groove";
-  const percussion = variant.percussion ?? "crisp light electronic percussion";
-  const loopStructure = variant.loopStructure ?? "seamless 64-bar gameplay loop, no intro, no outro, ending matches the opening harmony and energy";
-  return `Instrumental upbeat casual puzzle game background music, ${style.key}, around ${style.tempo.target} BPM, ${melody}, springy bass, ${percussion}, playful and cheeky motif, ${rhythm}, polished wide stereo mix, ${loopStructure}`;
+  const mix = style.mix.join(" ");
+  return `Instrumental ${leadMood} casual puzzle game background music, ${style.key}, around ${style.tempo.target} BPM, ${melody}, ${bass}, ${percussion}, ${motifMood} motif, ${rhythm}, ${mix} mix, ${structurePhrase(style, variant)}`;
 }
 
 export function createPromptVariants(styleSpec) {
   const style = normalizeStyleSpec(styleSpec);
+  const excludePrompt = [...new Set([...style.exclusions, ...DEFAULT_EXCLUSIONS])].join(", ");
   return VARIANTS.map(variant => ({
     id: variant.id,
     changedAxis: variant.changedAxis,
     prompt: buildPrompt(style, variant),
-    excludePrompt: EXCLUDE_PROMPT,
-    expectedDifference: variant.expectedDifference,
+    excludePrompt,
+    expectedDifference: variant.changesLoopStructure
+      ? `Loop structure changes from ${style.structure.bars} to ${style.structure.bars === 32 ? 64 : 32} bars with a reinforced end-to-start harmonic handoff.`
+      : variant.expectedDifference,
     credits: 10,
     status: "planned",
     generatedUrl: null,
     candidateHash: null,
     subjectiveScore: null,
-    nextRoundNote: ""
+    nextRoundNote: "",
+    reviewNote: "",
+    disposition: "unrated"
   }));
 }
 
@@ -121,7 +139,7 @@ export function createDailyPlan(options = {}) {
   const styleSpec = normalizeStyleSpec(options.styleSpec);
   const batches = createPromptVariants(styleSpec);
   const extensions = options.extensions && typeof options.extensions === "object" ? options.extensions : {};
-  assertSafeExtension(extensions);
+  assertPortableValue(extensions, "extensions");
   return {
     version: 1,
     toolVersion: typeof options.toolVersion === "string" ? options.toolVersion : "loop-bgm-lab/1.0.0",
@@ -129,6 +147,14 @@ export function createDailyPlan(options = {}) {
     styleSpec,
     credits: { planned: 50, perBatch: 10, batchCount: 5 },
     batches,
+    sourceUrl: "https://suno.com/create",
+    references: [],
+    candidates: [],
+    experiments: [],
+    licenses: [],
+    currentBestCandidate: null,
+    outstandingIssues: [],
+    nextRoundSuggestion: null,
     extensions: copy(extensions)
   };
 }

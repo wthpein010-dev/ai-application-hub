@@ -1,11 +1,11 @@
 import assert from "node:assert/strict";
 import { createServer } from "node:http";
 import { existsSync } from "node:fs";
-import { copyFile, mkdir, readFile, rm, writeFile } from "node:fs/promises";
-import { tmpdir } from "node:os";
+import { copyFile, readFile, writeFile } from "node:fs/promises";
 import { dirname, extname, join, normalize, resolve, sep } from "node:path";
 import { fileURLToPath } from "node:url";
 import { chromium } from "playwright";
+import { captureWorkspacePaths, createCaptureWorkspace } from "./loop-bgm-lab-capture-workspace.mjs";
 import {
   DEMO_REFERENCE_LICENSE,
   STORY_DURATION_MS,
@@ -14,9 +14,8 @@ import {
 } from "./loop-bgm-lab-video-contract.mjs";
 
 const root = dirname(dirname(fileURLToPath(import.meta.url)));
-const captureRoot = join(tmpdir(), "loop-bgm-lab-video-capture");
-const rawPath = join(captureRoot, "loop-bgm-lab-demo.webm");
-const metadataPath = join(captureRoot, "recording.json");
+const captureRoot = await createCaptureWorkspace();
+const { rawPath, metadataPath } = captureWorkspacePaths(captureRoot);
 const demoWav = join(root, "projects", "loop-bgm-lab", "assets", "demo-reference.wav");
 const mimeTypes = new Map([
   [".css", "text/css; charset=utf-8"],
@@ -123,8 +122,6 @@ async function scrollTo(page, selector, offset = 74) {
   }, offset);
 }
 
-await rm(captureRoot, { recursive: true, force: true });
-await mkdir(captureRoot, { recursive: true });
 const unmatchedRequests = [];
 const server = createStaticServer(unmatchedRequests);
 const origin = await startServer(server);
@@ -300,6 +297,7 @@ try {
   }, null, 2)}\n`, "utf8");
 
   process.stdout.write([
+    `Capture workspace: ${captureRoot}`,
     `Raw recording: ${rawPath}`,
     `Browser: ${launched.label}`,
     `Console errors: ${errors.console.length}`,
@@ -317,6 +315,7 @@ try {
     `Story start offset: ${metadata.storyStartOffsetMs} ms`,
     `Milestones within windows: ${metadata.milestones.length}/${STORY_MILESTONES.length}`,
     `Cleanup observed before teardown: ${cleanupObserved}`,
+    `Next: node scripts/build-loop-bgm-lab-video.mjs --capture-root "${captureRoot}"`,
   ].join("\n") + "\n");
 } finally {
   if (!contextClosed) await context.close().catch(() => undefined);

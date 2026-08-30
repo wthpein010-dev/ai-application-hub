@@ -1,3 +1,5 @@
+import { assertHttpsUrl, assertPortableValue, isPlainObject } from "./portable-safety.mjs";
+
 const WEIGHTS = Object.freeze({
   tempo: 0.25,
   key: 0.20,
@@ -8,13 +10,11 @@ const WEIGHTS = Object.freeze({
 });
 const TOTAL_WEIGHT = 1;
 const CORE_MATCH_SCORE = 0.85;
+const MIN_TEMPO_CONFIDENCE = 0.30;
+const MIN_KEY_CONFIDENCE = 0.10;
 
 function fail(message) {
   throw new TypeError(message);
-}
-
-function isPlainObject(value) {
-  return value !== null && typeof value === "object" && !Array.isArray(value);
 }
 
 function finiteNumber(value) {
@@ -43,8 +43,8 @@ function scoreFromDelta(delta, tolerance) {
   return rounded(clamp01(1 - Math.abs(delta) / tolerance));
 }
 
-function positiveConfidence(value) {
-  return finiteNumber(value) && value > 0;
+function meetsConfidence(value, minimum) {
+  return finiteNumber(value) && value >= minimum;
 }
 
 function component(available, weight, score, detail) {
@@ -55,7 +55,8 @@ function tempoComponent(reference, candidate) {
   const referenceTempo = reference?.tempo;
   const candidateTempo = candidate?.tempo;
   const available = finiteNumber(referenceTempo?.bpm) && finiteNumber(candidateTempo?.bpm)
-    && positiveConfidence(referenceTempo?.confidence) && positiveConfidence(candidateTempo?.confidence);
+    && meetsConfidence(referenceTempo?.confidence, MIN_TEMPO_CONFIDENCE)
+    && meetsConfidence(candidateTempo?.confidence, MIN_TEMPO_CONFIDENCE);
   if (!available) return component(false, WEIGHTS.tempo, 0, { deltaBpm: null });
   const deltaBpm = finiteDelta(candidateTempo.bpm, referenceTempo.bpm);
   return component(true, WEIGHTS.tempo, scoreFromDelta(deltaBpm, 24), { deltaBpm });
@@ -69,7 +70,7 @@ function keyComponent(reference, candidate) {
     && typeof key.name === "string" && key.name.length > 0
     && typeof key.tonic === "string" && key.tonic.length > 0
     && typeof key.mode === "string" && key.mode.length > 0
-    && positiveConfidence(key.confidence)
+    && meetsConfidence(key.confidence, MIN_KEY_CONFIDENCE)
   ));
   if (!available) return component(false, WEIGHTS.key, 0, { relationship: "unavailable" });
   if (referenceKey.tonic === candidateKey.tonic && referenceKey.mode === candidateKey.mode) {
@@ -161,6 +162,13 @@ const ADVICE = {
 };
 
 export function recommendNextVariant(comparison) {
+  if (classifySimilarity(comparison) === "too-close") {
+    return {
+      changedAxis: "melodyTimbre",
+      reason: "核心特征整体过近，不能把零差值虚构成某一项的最大差异。",
+      adjustment: "下一轮只调整 melodyTimbre：重新设计旋律动机与配器层次，避免沿用可识别的主导轮廓，其他变量保持不变。"
+    };
+  }
   const orderedNames = ["tempo", "loop", "brightness", "dynamics", "duration", "key"];
   let selected = "brightness";
   let largestGap = -1;
@@ -177,38 +185,6 @@ export function recommendNextVariant(comparison) {
   return { changedAxis: advice.changedAxis, reason: advice.reason, adjustment: advice.adjustment };
 }
 
-const SECRET_OR_BINARY_KEY = /(audioBytes|cookie|token|apiKey|recoveryKey|session)/i;
-const LOCAL_PATH_KEY = /^(?:localPath|filePath|audioPath|path)$/i;
-
-function isAbsolutePath(value) {
-  return /^[a-zA-Z]:[\\/]/.test(value) || value.startsWith("/") || value.startsWith("\\\\");
-}
-
-function assertSafeJson(value, key = "", inheritedPathSensitive = false, seen = new WeakSet()) {
-  if (SECRET_OR_BINARY_KEY.test(key)) fail(`Forbidden key: ${key}`);
-  const pathSensitive = inheritedPathSensitive || LOCAL_PATH_KEY.test(key);
-  if (pathSensitive && typeof value === "string" && isAbsolutePath(value)) {
-    fail(`Absolute path is not allowed in ${key}`);
-  }
-  if (value === null || typeof value === "string" || typeof value === "boolean") return;
-  if (typeof value === "number") {
-    if (!Number.isFinite(value)) fail("Only finite numbers are allowed");
-    return;
-  }
-  if (Array.isArray(value)) {
-    if (seen.has(value)) fail("Circular values are not allowed");
-    seen.add(value);
-    value.forEach(item => assertSafeJson(item, "", pathSensitive, seen));
-    seen.delete(value);
-    return;
-  }
-  if (!isPlainObject(value)) fail("Only plain JSON values are allowed");
-  if (seen.has(value)) fail("Circular values are not allowed");
-  seen.add(value);
-  Object.entries(value).forEach(([childKey, childValue]) => assertSafeJson(childValue, childKey, pathSensitive, seen));
-  seen.delete(value);
-}
-
 function detachAndFreeze(value) {
   if (value === null || typeof value !== "object") return value;
   if (Array.isArray(value)) return Object.freeze(value.map(detachAndFreeze));
@@ -219,46 +195,57 @@ function detachAndFreeze(value) {
 
 export function createExperimentRecord(input) {
   if (!isPlainObject(input)) fail("experiment record must be an object");
-  assertSafeJson(input);
+  assertPortableValue(input);
   return detachAndFreeze(input);
 }
 
-function licenseCategory(license) {
+function licenseFacts(license) {
   const normalized = license.trim().toLowerCase();
-  if (/\bcc\s*-?\s*by\s*-?\s*nc\b|\bnc\b/.test(normalized)) return "nc";
-  if (/^cc0(?:\b|\s)/.test(normalized)) return "cc0";
-  if (/\bcc\s*-?\s*by\b/.test(normalized)) return "cc-by";
-  return "unknown";
+  const cc0 = /^cc0(?:\b|\s|-)/.test(normalized);
+  const by = !cc0 && (/\bcc\s*-?\s*by\b/.test(normalized) || /\battribution\b/.test(normalized));
+  const nc = !cc0 && (/\bby\s*-?\s*nc\b/.test(normalized) || /\bnon\s*-?commercial\b/.test(normalized) || /\bnc\b/.test(normalized));
+  const category = cc0 ? "cc0" : by && nc ? "cc-by-nc" : by ? "cc-by" : nc ? "nc" : "unknown";
+  return { category, licenseFlags: { by, nc, cc0 } };
 }
 
 function assertRequiredString(value, field) {
   if (typeof value !== "string" || value.trim().length === 0) fail(`${field} must be a non-empty string`);
 }
 
-function assertHttpsUrl(value) {
-  assertRequiredString(value, "sourceUrl");
-  let url;
-  try {
-    url = new URL(value);
-  } catch {
-    fail("sourceUrl must be a valid HTTPS URL");
-  }
-  if (url.protocol !== "https:") fail("sourceUrl must use HTTPS");
-}
-
 export function validateLicenseEntry(entry) {
   if (!isPlainObject(entry)) fail("license entry must be an object");
-  assertSafeJson(entry);
+  const allowed = new Set([
+    "id", "source", "sourceUrl", "license", "fileSha256", "fileHash", "attributionText", "author",
+    "downloadedAt", "category", "licenseFlags", "useWarning", "attributionWarning"
+  ]);
+  for (const key of Object.keys(entry)) {
+    if (!allowed.has(key)) fail(`Unsupported license field: ${key}`);
+  }
+  assertHttpsUrl(entry.sourceUrl, "sourceUrl");
+  assertPortableValue(entry);
   assertRequiredString(entry.id, "license.id");
+  if (!/^[a-z][a-z0-9-]{0,79}$/i.test(entry.id)) fail("license.id must be a portable identifier");
   assertRequiredString(entry.source, "license.source");
-  assertHttpsUrl(entry.sourceUrl);
   assertRequiredString(entry.license, "license.license");
   const fileSha256 = entry.fileSha256 ?? entry.fileHash;
   if (typeof fileSha256 !== "string" || !/^[a-fA-F0-9]{64}$/.test(fileSha256)) {
     fail("license.fileSha256 must be a SHA-256 hash");
   }
-  const category = licenseCategory(entry.license);
-  if (category === "cc-by") assertRequiredString(entry.attributionText, "license.attributionText");
+  if (typeof entry.fileSha256 === "string" && typeof entry.fileHash === "string"
+    && entry.fileSha256.toLowerCase() !== entry.fileHash.toLowerCase()) {
+    fail("license hash fields are inconsistent");
+  }
+  const { category, licenseFlags } = licenseFacts(entry.license);
+  assertRequiredString(entry.author, "license.author");
+  assertRequiredString(entry.downloadedAt, "license.downloadedAt");
+  const dateMatch = entry.downloadedAt.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if (!dateMatch) fail("license.downloadedAt must be a valid YYYY-MM-DD date");
+  const [, year, month, day] = dateMatch.map(Number);
+  const date = new Date(Date.UTC(year, month - 1, day));
+  if (date.getUTCFullYear() !== year || date.getUTCMonth() !== month - 1 || date.getUTCDate() !== day) {
+    fail("license.downloadedAt must be a valid YYYY-MM-DD date");
+  }
+  if (licenseFlags.by) assertRequiredString(entry.attributionText, "license.attributionText");
   const warnings = {
     cc0: {
       useWarning: "标记为 CC0；仍请核对来源页面与实际使用范围。",
@@ -267,6 +254,10 @@ export function validateLicenseEntry(entry) {
     "cc-by": {
       useWarning: "CC-BY 需要按来源页面要求保留署名与许可证信息。",
       attributionWarning: "必须在项目素材台账和成品署名中保留提供的署名文本。"
+    },
+    "cc-by-nc": {
+      useWarning: "CC-BY-NC 同时要求署名并限制非商业使用，不应作为商业游戏素材使用。",
+      attributionWarning: "必须保留作者与署名文本；NC 限制仍独立生效。"
     },
     nc: {
       useWarning: "含 NC（非商业）限制，不应作为商业游戏素材使用。",
@@ -284,11 +275,21 @@ export function validateLicenseEntry(entry) {
     license: entry.license,
     fileSha256,
     category,
+    licenseFlags,
     useWarning: warnings.useWarning,
-    attributionWarning: warnings.attributionWarning
+    attributionWarning: warnings.attributionWarning,
+    author: entry.author,
+    downloadedAt: entry.downloadedAt
   };
   if (typeof entry.attributionText === "string" && entry.attributionText.length > 0) output.attributionText = entry.attributionText;
-  if (typeof entry.author === "string") output.author = entry.author;
-  if (typeof entry.downloadedAt === "string") output.downloadedAt = entry.downloadedAt;
+  if (Object.hasOwn(entry, "category") && entry.category !== category) fail("license.category is inconsistent with license text");
+  if (Object.hasOwn(entry, "licenseFlags")) {
+    const supplied = entry.licenseFlags;
+    if (!isPlainObject(supplied)
+      || supplied.by !== licenseFlags.by || supplied.nc !== licenseFlags.nc || supplied.cc0 !== licenseFlags.cc0
+      || Object.keys(supplied).some(key => !new Set(["by", "nc", "cc0"]).has(key))) {
+      fail("license.licenseFlags are inconsistent with license text");
+    }
+  }
   return output;
 }

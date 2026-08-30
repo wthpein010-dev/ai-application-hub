@@ -251,7 +251,7 @@ Demonstrate local privacy, reference analysis, five controlled variants, candida
 
 - [ ] **Step 4: Record and encode the tutorial**
 
-Run: `node scripts/record-loop-bgm-lab-video.mjs && node scripts/build-loop-bgm-lab-video.mjs`
+Run the recorder, copy its run-specific `Capture workspace` path, then run: `node scripts/build-loop-bgm-lab-video.mjs --capture-root "<capture workspace>"`. Each recorder invocation receives an isolated temp directory so concurrent runs cannot delete one another's files.
 Expected: MP4 and poster are created; recorder reports zero console, page, and failed-request errors.
 
 - [ ] **Step 5: Run media and player tests**

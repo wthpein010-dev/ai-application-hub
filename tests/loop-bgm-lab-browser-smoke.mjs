@@ -221,7 +221,10 @@ try {
   assert.deepEqual(await page.locator(".axis-label").allTextContents(), ["基线", "旋律音色", "律动", "打击乐", "循环结构"]);
 
   await assertPickerKeyboardFocus(page, "#suno-create-link", "reference-files");
-  await assertPickerKeyboardFocus(page, ".batch-card:last-child .open-suno", "candidate-file");
+  await page.locator(".batch-card:last-child .open-suno").focus();
+  await page.keyboard.press("Tab");
+  assert.equal(await page.evaluate(() => document.activeElement?.id), "candidate-batch");
+  await assertPickerKeyboardFocus(page, "#candidate-batch", "candidate-file");
   await assertPickerKeyboardFocus(page, "#export-markdown", "import-project");
 
   await page.locator("#reference-files").setInputFiles([demoWav, demoWav]);
@@ -318,7 +321,7 @@ try {
   const afterOverrideDeletion = await page.evaluate(() => JSON.parse(localStorage.getItem("loop-bgm-lab-v1")));
   assert.equal(afterOverrideDeletion.styleSpec.tempo.target, 120, "explicit tempo override must survive deletion recomputation");
   assert.equal(afterOverrideDeletion.styleSpec.key, afterOverrideDeletion.references[0].analysis.key.name, "non-overridden key must still recompute");
-  assert.deepEqual(afterOverrideDeletion.extensions.styleOverrides, { key: false, tempo: true });
+  assert.deepEqual(afterOverrideDeletion.extensions.styleOverrides, { bars: false, key: false, tempo: true });
   const overridePrompts = await page.locator(".batch-card .prompt-text").allTextContents();
   assert.equal(overridePrompts.length, 5);
   assert.ok(overridePrompts.every(prompt => prompt.includes(`${afterOverrideDeletion.styleSpec.key}, around 120 BPM`)));
@@ -354,25 +357,108 @@ try {
   await page.waitForFunction(started => window.__decodeStarted > started, candidateRaceStart.started);
   await page.locator("#candidate-file").setInputFiles(differentFile);
   await page.waitForFunction(completed => window.__decodeCompleted >= completed + 2, candidateRaceStart.completed, { timeout: 45_000 });
-  await page.waitForFunction(hash => JSON.parse(localStorage.getItem("loop-bgm-lab-v1")).candidates[0]?.hash === hash, expectedDifferentSha256);
+  await page.waitForFunction(hash => JSON.parse(localStorage.getItem("loop-bgm-lab-v1")).candidates.at(-1)?.hash === hash, expectedDifferentSha256);
   await page.locator("#comparison-result[data-analysis-state='ready']").waitFor({ timeout: 45_000 });
   assert.equal(await page.locator("#comparison-components tbody tr").count(), 6);
-  assert.match(await page.locator("#comparison-coverage").textContent(), /100/);
-  assert.match(await page.locator("#similarity-class").textContent(), /过近风险/);
+  assert.equal(await page.locator("#comparison-coverage").textContent(), "80%");
+  assert.match(await page.locator("#similarity-class").textContent(), /人工复核/);
   assert.match(await page.locator("#comparison-legal-note").textContent(), /不是侵权判断或法律保证/);
   assert.match(await page.locator("#next-advice").textContent(), /只调整/);
+  assert.equal(await page.locator("#candidate-history .candidate-history-item").count(), 1);
+  const firstCandidate = await page.evaluate(() => {
+    const stored = JSON.parse(localStorage.getItem("loop-bgm-lab-v1"));
+    return {
+      id: stored.candidates[0].id,
+      hash: stored.candidates[0].hash,
+      batchId: stored.candidates[0].batchId,
+      experimentCount: stored.experiments.length,
+      currentBestCandidate: stored.currentBestCandidate
+    };
+  });
+  assert.equal(firstCandidate.experimentCount, 1);
+  assert.equal(firstCandidate.currentBestCandidate, null, "analysis must not silently promote a candidate to best");
+
+  const firstHistory = page.locator(`.candidate-history-item[data-candidate-id='${firstCandidate.id}']`);
+  await firstHistory.locator(".candidate-generated-url").fill("https://suno.com/song/browser-smoke-a");
+  await firstHistory.locator(".candidate-generated-url").press("Tab");
+  await page.waitForFunction(candidateId => {
+    const stored = JSON.parse(localStorage.getItem("loop-bgm-lab-v1"));
+    return stored.experiments.find(item => item.candidateId === candidateId)?.generatedUrl === "https://suno.com/song/browser-smoke-a";
+  }, firstCandidate.id);
+  await firstHistory.locator(".candidate-subjective-score").selectOption("4");
+  await firstHistory.locator(".candidate-review-note").fill("旋律动机和编曲层次仍与参考过近，拒绝本轮。");
+  await firstHistory.locator(".candidate-review-note").press("Tab");
+  await firstHistory.locator(".candidate-disposition").selectOption("rejected");
+  await firstHistory.locator(".candidate-best").check();
+  await page.waitForFunction(candidateId => {
+    const stored = JSON.parse(localStorage.getItem("loop-bgm-lab-v1"));
+    const candidate = stored.candidates.find(item => item.id === candidateId);
+    const batch = stored.batches.find(item => item.id === candidate.batchId);
+    const experiment = stored.experiments.find(item => item.candidateId === candidateId);
+    return stored.currentBestCandidate?.candidateId === candidateId
+      && batch.generatedUrl === "https://suno.com/song/browser-smoke-a"
+      && batch.subjectiveScore === 4
+      && batch.disposition === "rejected"
+      && experiment.reviewNote.includes("拒绝本轮");
+  }, firstCandidate.id);
+
+  const firstPlaybackUrl = await page.locator("#candidate-player").getAttribute("src");
+  await page.locator("#candidate-batch").selectOption("batch-2");
+  await page.locator("#candidate-file").setInputFiles(demoWav);
+  await page.waitForFunction(hash => {
+    const stored = JSON.parse(localStorage.getItem("loop-bgm-lab-v1"));
+    return stored.candidates.length === 2
+      && stored.experiments.length === 2
+      && stored.candidates.at(-1).hash === hash;
+  }, expectedWavSha256, { timeout: 45_000 });
+  const candidateHistory = await page.evaluate(() => {
+    const stored = JSON.parse(localStorage.getItem("loop-bgm-lab-v1"));
+    return {
+      candidateCount: stored.candidates.length,
+      experimentCount: stored.experiments.length,
+      lastBatchId: stored.candidates.at(-1).batchId,
+      bestId: stored.currentBestCandidate?.candidateId
+    };
+  });
+  assert.deepEqual(candidateHistory, {
+    candidateCount: 2,
+    experimentCount: 2,
+    lastBatchId: "batch-2",
+    bestId: firstCandidate.id
+  });
+  assert.equal(await page.locator("#candidate-history .candidate-history-item").count(), 2);
+  assert.equal(await page.evaluate(url => window.__revokedObjectUrls.includes(url), firstPlaybackUrl), true, "only the displaced playback URL should be revoked");
+  const secondCandidateId = await page.evaluate(() => JSON.parse(localStorage.getItem("loop-bgm-lab-v1")).candidates.at(-1).id);
+  const manualCandidateHash = "e".repeat(64);
+  const secondHistory = page.locator(`.candidate-history-item[data-candidate-id='${secondCandidateId}']`);
+  await secondHistory.locator(".candidate-hash").fill(manualCandidateHash);
+  await secondHistory.locator(".candidate-hash").press("Tab");
+  await page.waitForFunction(({ candidateId, hash }) => {
+    const stored = JSON.parse(localStorage.getItem("loop-bgm-lab-v1"));
+    const candidate = stored.candidates.find(item => item.id === candidateId);
+    const experiment = stored.experiments.find(item => item.candidateId === candidateId);
+    return candidate?.hash === hash
+      && experiment?.candidateHash === hash
+      && stored.batches.find(item => item.id === candidate.batchId)?.candidateHash === hash;
+  }, { candidateId: secondCandidateId, hash: manualCandidateHash });
   assert.equal(await page.locator("#reference-player").getAttribute("src").then(value => value.startsWith("blob:")), true);
   assert.equal(await page.locator("#candidate-player").getAttribute("src").then(value => value.startsWith("blob:")), true);
   await page.locator("#reference-player").evaluate(audio => audio.play());
   await page.locator("#candidate-player").evaluate(audio => audio.play());
   assert.equal(await page.locator("#reference-player").evaluate(audio => audio.paused), true);
 
-  const validCandidateHash = await page.evaluate(() => JSON.parse(localStorage.getItem("loop-bgm-lab-v1")).candidates[0].hash);
+  const validCandidateSnapshot = await page.evaluate(() => {
+    const stored = JSON.parse(localStorage.getItem("loop-bgm-lab-v1"));
+    return { count: stored.candidates.length, hash: stored.candidates.at(-1).hash };
+  });
   await page.evaluate(() => { window.__returnOversizedDecodedBuffer = true; });
   await page.locator("#candidate-file").setInputFiles(demoWav);
   await page.waitForFunction(() => document.querySelector("#app-error")?.textContent.includes("采样总量"), null, { timeout: 45_000 });
   assert.equal(await page.evaluate(() => window.__sampleExtractions), 0, "oversized decoded metadata must be rejected before getChannelData");
-  assert.equal(await page.evaluate(() => JSON.parse(localStorage.getItem("loop-bgm-lab-v1")).candidates[0].hash), validCandidateHash);
+  assert.deepEqual(await page.evaluate(() => {
+    const stored = JSON.parse(localStorage.getItem("loop-bgm-lab-v1"));
+    return { count: stored.candidates.length, hash: stored.candidates.at(-1).hash };
+  }), validCandidateSnapshot);
 
   await addLicense(page, { suffix: "12345" });
   await page.locator("#license-list .license-entry").waitFor();
@@ -391,6 +477,29 @@ try {
   assert.equal(await page.locator("#license-list .license-entry").count(), 1, "one removal must remove exactly one license record");
   assert.equal(await page.locator("#license-list .license-entry").first().getAttribute("data-license-id"), replacementLicenseIds[1]);
 
+  const stateBeforeDeepReject = await page.evaluate(() => localStorage.getItem("loop-bgm-lab-v1"));
+  const activeCandidateUrl = await page.locator("#candidate-player").getAttribute("src");
+  const deepMalformedImport = JSON.parse(stateBeforeDeepReject);
+  deepMalformedImport.candidates.at(-1).comparison.components = {};
+  await page.locator("#import-project").setInputFiles({
+    name: "deep-malformed.json",
+    mimeType: "application/json",
+    buffer: Buffer.from(JSON.stringify(deepMalformedImport))
+  });
+  await page.waitForFunction(() => document.querySelector("#import-status")?.textContent.includes("导入失败"));
+  assert.equal(await page.evaluate(() => localStorage.getItem("loop-bgm-lab-v1")), stateBeforeDeepReject, "deep schema rejection must preserve persisted state");
+  assert.equal(await page.locator("#candidate-player").getAttribute("src"), activeCandidateUrl, "staged rejection must preserve active playback");
+  assert.equal(await page.evaluate(url => window.__revokedObjectUrls.includes(url), activeCandidateUrl), false, "staged rejection must not revoke live playback");
+  assert.equal(await page.locator("#candidate-history .candidate-history-item").count(), 2);
+
+  await page.locator("#remove-candidate").click();
+  assert.equal(await page.locator("#candidate-player").getAttribute("src"), null);
+  assert.equal(await page.locator("#remove-candidate").isHidden(), true);
+  assert.deepEqual(await page.evaluate(() => {
+    const stored = JSON.parse(localStorage.getItem("loop-bgm-lab-v1"));
+    return { candidates: stored.candidates.length, experiments: stored.experiments.length };
+  }), { candidates: 2, experiments: 2 }, "clearing temporary playback must retain review history");
+
   const jsonDownloadPromise = page.waitForEvent("download");
   await page.locator("#export-json").click();
   const jsonDownload = await jsonDownloadPromise;
@@ -399,6 +508,9 @@ try {
   assert.equal(exported.batches[0].status, "submitted");
   assert.equal(exported.references[0].hash, expectedDifferentSha256);
   assert.equal(exported.licenses[0].category, "cc0");
+  assert.equal(exported.candidates.length, 2);
+  assert.equal(exported.experiments.length, 2);
+  assert.equal(exported.batches[0].generatedUrl, "https://suno.com/song/browser-smoke-a");
   assert.doesNotMatch(exportedText, /demo-reference\.wav|blob:|audioBytes|apiKey|cookie|token|[A-Z]:\\|\/Users\//i);
 
   const markdownDownloadPromise = page.waitForEvent("download");
@@ -407,6 +519,9 @@ try {
   const markdown = await readFile(await markdownDownload.path(), "utf8");
   assert.match(markdown, /# 循环乐工房项目交接/);
   assert.match(markdown, /CC0/);
+  assert.match(markdown, /https:\/\/suno\.com\/song\/browser-smoke-a/);
+  assert.match(markdown, /实验历史/);
+  assert.match(markdown, /拒绝本轮/);
   assert.doesNotMatch(markdown, /demo-reference\.wav|blob:|audioBytes|apiKey|cookie|token|[A-Z]:\\|\/Users\//i);
 
   await page.reload({ waitUntil: "networkidle" });
@@ -414,6 +529,7 @@ try {
   assert.equal(await page.locator(".batch-card[data-axis='baseline'] .batch-status").inputValue(), "submitted");
   assert.equal(await page.locator("#license-list .license-entry").count(), 1);
   assert.equal(await page.locator("#reference-list [data-analysis-state='ready']").count(), 1);
+  assert.equal(await page.locator("#candidate-history .candidate-history-item").count(), 2);
   assert.doesNotMatch(await page.locator("#reference-list").textContent(), /demo-reference\.wav/);
 
   await page.locator("#import-project").setInputFiles({
@@ -453,7 +569,11 @@ try {
   validImport.batches[0].status = "planned";
   validImport.extensions = { transferredBy: "browser-smoke" };
   validImport.candidates[0].displayName = "欢乐版本 A";
-  validImport.currentBestCandidate = { displayName: "欢乐版本 A", hash: expectedDifferentSha256 };
+  validImport.currentBestCandidate = {
+    candidateId: validImport.candidates[0].id,
+    displayName: "欢乐版本 A",
+    hash: expectedDifferentSha256
+  };
   await page.locator("#import-project").setInputFiles({
     name: "valid.json",
     mimeType: "application/json",

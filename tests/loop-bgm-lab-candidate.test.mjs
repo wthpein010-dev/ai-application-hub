@@ -20,6 +20,19 @@ const reference = {
   loop: { score: 0.8 }
 };
 
+function completeAnalysis() {
+  return {
+    ...reference,
+    sampleRate: 44_100,
+    channelCount: 2,
+    peak: 0.8,
+    key: { ...reference.key, chroma: [0.01, 0.02, 0.24, 0.02, 0.03, 0.18, 0.02, 0.17, 0.03, 0.12, 0.02, 0.14] },
+    spectrum: { centroidHz: 1_800, brightness: reference.spectrum.brightness },
+    loop: { score: reference.loop.score, components: { envelope: 0.9, chroma: 0.9, centroid: 0.85, boundary: 0.82 } },
+    warnings: [],
+  };
+}
+
 test("compareCandidate reports hand-derived component scores, deltas, weights, and normalized similarity", () => {
   const comparison = compareCandidate(reference, {
     durationSeconds: 72,
@@ -58,6 +71,32 @@ test("compareCandidate excludes missing or zero-confidence features from coverag
   assert.equal(comparison.similarity, 1);
   assert.equal(classifySimilarity(comparison), "insufficient");
   assert.ok(Object.values(comparison.components).every(component => Number.isFinite(component.score)));
+});
+
+test("candidate comparison uses the analyzer's inclusive 0.30 tempo and 0.10 key confidence validity boundaries", () => {
+  // Break caught: low-confidence analyzer warnings still become trusted similarity evidence.
+  const atBoundary = compareCandidate(reference, {
+    ...reference,
+    tempo: { bpm: 120, confidence: 0.30 },
+    key: { ...reference.key, confidence: 0.10 },
+  });
+  const belowBoundary = compareCandidate(reference, {
+    ...reference,
+    tempo: { bpm: 120, confidence: 0.2999 },
+    key: { ...reference.key, confidence: 0.0999 },
+  });
+  const weakReference = compareCandidate({
+    ...reference,
+    tempo: { bpm: 120, confidence: 0.2999 },
+    key: { ...reference.key, confidence: 0.0999 },
+  }, reference);
+
+  assert.equal(atBoundary.components.tempo.available, true);
+  assert.equal(atBoundary.components.key.available, true);
+  for (const comparison of [belowBoundary, weakReference]) {
+    assert.equal(comparison.components.tempo.available, false);
+    assert.equal(comparison.components.key.available, false);
+  }
 });
 
 test("classifySimilarity uses inclusive coverage and score thresholds with all core matches required for too-close", () => {
@@ -99,13 +138,28 @@ test("recommendNextVariant limits every iteration to one existing prompt-engine 
   assert.doesNotMatch(`${recommendation.reason} ${recommendation.adjustment}`, /法律|侵权|保证|免责/);
 });
 
+test("an identical too-close candidate gets motif and arrangement differentiation advice without a fabricated tempo gap", () => {
+  // Break caught: all zero deltas tie on tempo and the UI claims tempo is the largest difference.
+  const comparison = compareCandidate(reference, reference);
+  const recommendation = recommendNextVariant(comparison);
+
+  assert.equal(classifySimilarity(comparison), "too-close");
+  assert.equal(comparison.components.tempo.deltaBpm, 0);
+  assert.equal(recommendation.changedAxis, "melodyTimbre");
+  assert.match(`${recommendation.reason} ${recommendation.adjustment}`, /旋律|动机/);
+  assert.match(`${recommendation.reason} ${recommendation.adjustment}`, /编配|配器/);
+  assert.doesNotMatch(`${recommendation.reason} ${recommendation.adjustment}`, /差异最明显|偏快|偏慢/);
+});
+
 test("validateLicenseEntry preserves HTTPS sources and distinguishes CC0, CC-BY, NC, and unknown without clearance claims", () => {
   const cc0 = validateLicenseEntry({
     id: "license-cc0-a",
     source: "Freesound",
     sourceUrl: "https://freesound.org/sounds/1",
     license: "CC0",
-    fileSha256: "a".repeat(64)
+    fileSha256: "a".repeat(64),
+    author: "Fixture Author",
+    downloadedAt: "2026-08-30"
   });
   const ccBy = validateLicenseEntry({
     id: "license-by-a",
@@ -113,28 +167,38 @@ test("validateLicenseEntry preserves HTTPS sources and distinguishes CC0, CC-BY,
     sourceUrl: "https://opengameart.org/content/a",
     license: "CC-BY 4.0",
     fileSha256: "b".repeat(64),
-    attributionText: "Example Artist — CC BY 4.0"
+    attributionText: "Example Artist — CC BY 4.0",
+    author: "Example Artist",
+    downloadedAt: "2026-08-30"
   });
   const nc = validateLicenseEntry({
     id: "license-nc-a",
     source: "Example",
     sourceUrl: "https://example.test/nc",
     license: "CC BY-NC 4.0",
-    fileSha256: "c".repeat(64)
+    fileSha256: "c".repeat(64),
+    attributionText: "NC Artist — CC BY-NC 4.0",
+    author: "NC Artist",
+    downloadedAt: "2026-08-30"
   });
   const unknown = validateLicenseEntry({
     id: "license-unknown-a",
     source: "Example",
     sourceUrl: "https://example.test/unknown",
     license: "Custom license",
-    fileSha256: "d".repeat(64)
+    fileSha256: "d".repeat(64),
+    author: "Unknown Licensor",
+    downloadedAt: "2026-08-30"
   });
 
   assert.equal(cc0.sourceUrl, "https://freesound.org/sounds/1");
   assert.equal(cc0.category, "cc0");
   assert.equal(ccBy.category, "cc-by");
-  assert.equal(nc.category, "nc");
+  assert.equal(nc.category, "cc-by-nc");
   assert.equal(unknown.category, "unknown");
+  assert.deepEqual(cc0.licenseFlags, { by: false, nc: false, cc0: true });
+  assert.deepEqual(ccBy.licenseFlags, { by: true, nc: false, cc0: false });
+  assert.deepEqual(nc.licenseFlags, { by: true, nc: true, cc0: false });
   for (const entry of [cc0, ccBy, nc, unknown]) {
     assert.match(entry.useWarning, /[\u3400-\u9fff]/);
     assert.match(entry.attributionWarning, /[\u3400-\u9fff]/);
@@ -143,6 +207,12 @@ test("validateLicenseEntry preserves HTTPS sources and distinguishes CC0, CC-BY,
   assert.throws(() => validateLicenseEntry({ ...cc0, sourceUrl: "http://example.test" }), /HTTPS/);
   assert.throws(() => validateLicenseEntry({ ...ccBy, attributionText: "" }), /attribution/i);
   assert.throws(() => validateLicenseEntry({ ...cc0, fileSha256: "not-a-hash" }), /SHA-256/);
+  assert.throws(() => validateLicenseEntry({ ...cc0, author: "" }), /author/i);
+  assert.throws(() => validateLicenseEntry({ ...cc0, downloadedAt: "" }), /downloadedAt/i);
+  assert.throws(() => validateLicenseEntry({ ...cc0, downloadedAt: "2026-02-31" }), /downloadedAt/i);
+  assert.throws(() => validateLicenseEntry({ ...cc0, sourceUrl: "https://user@example.test/source" }), /credentials|userinfo/i);
+  assert.throws(() => validateLicenseEntry({ ...cc0, id: "license id with spaces" }), /license\.id/i);
+  assert.throws(() => validateLicenseEntry({ ...cc0, fileHash: "f".repeat(64) }), /hash.*inconsistent/i);
 });
 
 test("experiment records are detached and deeply immutable while project validation preserves them and valid licenses through JSON", () => {
@@ -161,26 +231,50 @@ test("experiment records are detached and deeply immutable while project validat
   assert.throws(() => createExperimentRecord({ localPath: "\\\\server\\share\\audio.wav" }), /absolute path/i);
   assert.throws(() => createExperimentRecord({ token: "secret" }), /forbidden key/i);
 
+  const candidateComparison = compareCandidate(reference, reference);
+  const candidateAdvice = recommendNextVariant(candidateComparison);
+  const experiment = {
+    id: "experiment-1",
+    batchId: "batch-1",
+    candidateId: "candidate-1",
+    candidateHash: "b".repeat(64),
+    generatedUrl: "https://suno.com/song/example",
+    subjectiveScore: 4,
+    reviewNote: "Accepted after a manual listen.",
+    disposition: "accepted",
+    comparison: candidateComparison,
+    advice: candidateAdvice
+  };
   const project = validateProject({
     ...createDailyPlan(),
-    experiments: [record],
+    candidates: [{
+      id: "candidate-1",
+      batchId: "batch-1",
+      hash: "b".repeat(64),
+      analysis: completeAnalysis(),
+      comparison: candidateComparison,
+      similarityClass: "too-close",
+      advice: candidateAdvice
+    }],
+    experiments: [experiment],
     licenses: [{
       id: "license-cc0-a",
       source: "Freesound",
       sourceUrl: "https://freesound.org/sounds/1",
       license: "CC0",
-      fileSha256: "a".repeat(64)
+      fileSha256: "a".repeat(64),
+      author: "Fixture Author",
+      downloadedAt: "2026-08-30"
     }]
   });
   const restored = importProjectJson(JSON.stringify(project));
 
   assert.deepEqual(restored, project);
-  assert.deepEqual(project.experiments, [{ id: "run-1", comparison: { similarity: 0.8 }, metadata: { labels: ["baseline"] } }]);
+  assert.deepEqual(project.experiments, [experiment]);
   assert.equal(Object.isFrozen(project.experiments[0]), true);
   assert.equal(Object.isFrozen(project.experiments[0].comparison), true);
-  assert.equal(Object.isFrozen(project.experiments[0].metadata.labels), true);
   assert.equal(Object.isFrozen(restored.experiments[0]), true);
-  assert.equal(Object.isFrozen(restored.experiments[0].metadata.labels), true);
+  assert.equal(Object.isFrozen(restored.experiments[0].advice), true);
   assert.equal(project.licenses[0].category, "cc0");
 });
 

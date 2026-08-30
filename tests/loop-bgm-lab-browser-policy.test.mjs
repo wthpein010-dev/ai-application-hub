@@ -17,7 +17,7 @@ const defaultStyle = {
   tempo: { target: 112, min: 110, max: 116 },
   key: "D minor",
   mood: ["upbeat", "playful", "cheeky"],
-  instruments: ["bright synth plucks", "springy bass", "light electronic percussion"],
+  instruments: ["bright melodic synth plucks", "springy bass", "crisp light electronic percussion"],
   structure: { bars: 64, loopable: true, intro: "none", outro: "none" },
   mix: ["polished", "wide stereo", "gameplay-safe"],
   exclusions: ["vocals", "fade-out", "tempo changes", "key changes"]
@@ -50,7 +50,7 @@ test("reference aggregation respects persisted user overrides for key and tempo"
   assert.deepEqual(style.tempo, defaultStyle.tempo);
 });
 
-test("empty reference aggregation resets canonical defaults except explicitly overridden key and tempo fields", async () => {
+test("empty reference aggregation resets learned key/tempo fields while retaining a non-default imported bar count", async () => {
   // Break caught: deleting the final reference leaves its learned key/tempo in StyleSpec and rebuilt prompts.
   const { aggregateReferenceStyle } = await loadPolicy();
   const learnedStyle = {
@@ -69,8 +69,27 @@ test("empty reference aggregation resets canonical defaults except explicitly ov
 
   for (const entry of cases) {
     const actual = aggregateReferenceStyle([], learnedStyle, entry.overrides);
-    assert.deepEqual(actual, { ...defaultStyle, key: entry.key, tempo: entry.tempo }, entry.name);
+    assert.deepEqual(actual, {
+      ...defaultStyle,
+      key: entry.key,
+      tempo: entry.tempo,
+      structure: { ...defaultStyle.structure, bars: 32 },
+    }, entry.name);
   }
+});
+
+test("an explicit bars override survives reference aggregation and deleting the final reference", async () => {
+  // Break caught: selecting 32 bars is persisted visually but deleting references silently rebuilds 64-bar prompts.
+  const { aggregateReferenceStyle } = await loadPolicy();
+  const selected32 = {
+    ...defaultStyle,
+    structure: { ...defaultStyle.structure, bars: 32 },
+  };
+  const learned = [{ analysis: { tempo: { bpm: 96, confidence: 0.9 }, key: { name: "C major", confidence: 0.8 } } }];
+
+  assert.equal(aggregateReferenceStyle(learned, selected32, { bars: true }).structure.bars, 32);
+  assert.equal(aggregateReferenceStyle([], selected32, { bars: true }).structure.bars, 32);
+  assert.equal(aggregateReferenceStyle([], selected32, {}).structure.bars, 32);
 });
 
 test("decoded audio budgets reject long metadata and excessive scalar samples before analysis", async () => {

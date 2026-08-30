@@ -66,7 +66,7 @@ function topLevelMp4Boxes(path) {
 function ffprobeJson(path) {
   const result = spawnSync("ffprobe", [
     "-v", "error",
-    "-show_entries", "format=duration:stream=index,codec_type,codec_name,pix_fmt,width,height,avg_frame_rate,r_frame_rate",
+    "-show_entries", "format=duration:stream=index,codec_type,codec_name,pix_fmt,width,height,avg_frame_rate,r_frame_rate,nb_frames",
     "-of", "json",
     path,
   ], { encoding: "utf8" });
@@ -173,8 +173,8 @@ test("循环乐工房 publishes an exact silent fast-start H.264 tutorial", () =
     { codec: "h264", frameRate: "30/1", height: 720, pixelFormat: "yuv420p", width: 1280 },
   );
   assert.equal(videos[0].r_frame_rate, "30/1");
-  const duration = Number(probe.format.duration);
-  assert.ok(duration >= 45 && duration <= 90, `duration=${duration}`);
+  assert.equal(probe.format.duration, "72.000000", "the published tutorial must bind exactly to the 72-second story contract");
+  assert.equal(videos[0].nb_frames, "2160", "72 seconds at 30 fps must contain exactly 2160 frames");
 
   const boxes = topLevelMp4Boxes(mediaPath);
   assert.ok(boxes.includes("ftyp") && boxes.includes("moov") && boxes.includes("mdat"));
@@ -207,7 +207,7 @@ test("循环乐工房 captions and poster fit the complete public tutorial story
   for (let index = 1; index < cues.length; index += 1) {
     assert.ok(cues[index].start >= cues[index - 1].end, `cue ${index + 1} overlaps cue ${index}`);
   }
-  assert.ok(cues.at(-1).end <= 90_000, "captions should end within the media contract");
+  assert.ok(cues.at(-1).end <= 72_000, "captions should end within the exact 72-second media contract");
 
   const story = `${captions}\n${readFileSync(join(videoRoot, "tutorial-script.md"), "utf8")}`;
   for (const phrase of [

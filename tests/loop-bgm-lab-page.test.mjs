@@ -93,6 +93,38 @@ test("browser coordinator imports the analysis, plan/state, and candidate-scorin
   assert.doesNotMatch(source, /localStorage\.(?:getItem|setItem|removeItem)\((?!STORAGE_KEY)/);
 });
 
+test("candidate markup exposes an explicit batch association, durable history, and playback-only cleanup", () => {
+  // Break caught: selecting another candidate destroys the only persisted candidate/experiment and silently marks it best.
+  const html = readProjectFile("index.html");
+  const app = readProjectFile("app.js");
+  assert.match(html, /id="candidate-batch"/);
+  assert.match(html, /id="candidate-history"/);
+  assert.match(html, /id="remove-candidate"[^>]*>清除临时播放/);
+  assert.match(html, /候选历史会保留/);
+  assert.match(app, /candidate-hash/);
+  assert.match(app, /candidate-generated-url/);
+  assert.match(app, /candidate-subjective-score/);
+  assert.match(app, /candidate-review-note/);
+  assert.match(app, /candidate-disposition/);
+  assert.match(app, /candidate-best/);
+  assert.match(app, /来源核验日期/);
+});
+
+test("project import stages a complete render before committing state or releasing audio", () => {
+  // Break caught: a render-time failure can replace the active project, persisted JSON, or playback URLs.
+  const source = readProjectFile("app.js");
+  const importHandler = source.slice(source.indexOf('importInput.addEventListener("change"'));
+  const stagedRender = importHandler.indexOf("stageProjectRender(imported, importedSelectedCandidateId)");
+  const projectCommit = importHandler.indexOf("project = imported", stagedRender + 1);
+  const releaseAudio = importHandler.indexOf("releaseAllAudio()", projectCommit + 1);
+  const persistence = importHandler.indexOf("persistProject()", projectCommit + 1);
+
+  assert.ok(stagedRender >= 0, "the validated import must be staged through a render probe");
+  assert.ok(projectCommit > stagedRender, "the active project must remain unchanged during the render probe");
+  assert.ok(releaseAudio > projectCommit, "old playback URLs may be released only after the staged project commits");
+  assert.ok(persistence > projectCommit, "localStorage may be updated only after the staged project commits");
+});
+
 test("responsive styles protect keyboard focus, reduced motion, and narrow viewport flow", () => {
   // Break caught: keyboard users lose focus visibility or narrow pages regain horizontal overflow.
   const css = readProjectFile("styles.css");

@@ -128,8 +128,11 @@
         </div>
       </div>
       <div class="candidate-toolbar">
-        <label class="file-picker compact" for="candidate-file"><strong>选择 1 个候选音频</strong><span>替换时会释放上一个临时播放地址。</span><input id="candidate-file" class="visually-hidden" type="file" accept=".mp3,.wav,.m4a,.ogg,audio/mpeg,audio/wav,audio/mp4,audio/ogg"></label>
-        <button id="remove-candidate" class="text-button" type="button" hidden>移除候选</button>
+        <label>关联提示词批次
+          <select id="candidate-batch" aria-label="候选关联批次"></select>
+        </label>
+        <label class="file-picker compact" for="candidate-file"><strong>选择 1 个候选音频</strong><span>新分析会追加到历史，只替换临时播放地址。</span><input id="candidate-file" class="visually-hidden" type="file" accept=".mp3,.wav,.m4a,.ogg,audio/mpeg,audio/wav,audio/mp4,audio/ogg"></label>
+        <button id="remove-candidate" class="text-button" type="button" hidden>清除临时播放</button>
       </div>
       <div class="players" aria-label="参考与候选播放器">
         <label><span>参考 A</span><audio id="reference-player" controls preload="metadata"></audio></label>
@@ -148,6 +151,11 @@
           </table>
         </div>
         <p id="next-advice" class="advice-card">导入参考和候选后，这里只给出一个变量轴的下一轮建议。</p>
+      </div>
+      <div class="candidate-history-panel">
+        <h3>候选历史与人工复盘</h3>
+        <p>候选历史会保留；生成链接、评分、复核理由、处置和最佳候选都需要你明确填写或选择。</p>
+        <div id="candidate-history" class="candidate-history" aria-live="polite"></div>
       </div>
     </section>
 
@@ -177,8 +185,8 @@
         <label>来源 URL<input id="license-url" type="url" inputmode="url" placeholder="https://…" required></label>
         <label>原始许可证<input id="license-name" placeholder="例如 CC0 / CC-BY 4.0" required></label>
         <label>文件 SHA-256<input id="license-hash" minlength="64" maxlength="64" spellcheck="false" required></label>
-        <label>作者<input id="license-author" autocomplete="off"></label>
-        <label>下载日期<input id="license-date" type="date"></label>
+        <label>作者<input id="license-author" autocomplete="off" required></label>
+        <label>下载日期<input id="license-date" type="date" required></label>
         <label class="wide-field">署名文本<input id="license-attribution" autocomplete="off" placeholder="CC-BY 时必填"></label>
         <button class="primary-button" type="submit">加入授权台账</button>
       </form>

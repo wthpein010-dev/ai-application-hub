@@ -2,17 +2,15 @@ import { spawnSync } from "node:child_process";
 import { createRequire } from "node:module";
 import { existsSync } from "node:fs";
 import { mkdir, readFile, rm, stat } from "node:fs/promises";
-import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
+import { parseCaptureWorkspaceArgument } from "./loop-bgm-lab-capture-workspace.mjs";
 import { STORY_DURATION_MS, validateRecordingMetadata } from "./loop-bgm-lab-video-contract.mjs";
 
 const require = createRequire(import.meta.url);
 const bundledFfmpeg = require("ffmpeg-static");
 const root = dirname(dirname(fileURLToPath(import.meta.url)));
-const captureRoot = join(tmpdir(), "loop-bgm-lab-video-capture");
-const inputPath = join(captureRoot, "loop-bgm-lab-demo.webm");
-const metadataPath = join(captureRoot, "recording.json");
+const { root: captureRoot, rawPath: inputPath, metadataPath } = parseCaptureWorkspaceArgument();
 const videoRoot = join(root, "projects", "loop-bgm-lab", "video");
 const outputPath = join(videoRoot, "loop-bgm-lab-demo.mp4");
 const posterPath = join(videoRoot, "poster.jpg");
@@ -26,7 +24,7 @@ function run(args, label) {
 }
 
 if (!existsSync(inputPath) || !existsSync(metadataPath)) {
-  throw new Error(`Missing raw recording. Run scripts/record-loop-bgm-lab-video.mjs first.`);
+  throw new Error(`Missing raw recording in ${captureRoot}. Run scripts/record-loop-bgm-lab-video.mjs first and pass its capture workspace.`);
 }
 if (!ffmpegPath || !existsSync(ffmpegPath)) throw new Error("ffmpeg-static is unavailable; install repository dependencies first.");
 

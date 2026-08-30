@@ -40,10 +40,14 @@ export function aggregateReferenceStyle(records, currentStyle, overrides = {}) {
   const analyses = Array.isArray(records) ? records.map(record => record?.analysis ?? record).filter(Boolean) : [];
   if (!analyses.length) {
     const defaults = normalizeStyleSpec();
+    const preserveBars = Boolean(overrides.bars) || style.structure.bars !== defaults.structure.bars;
     return normalizeStyleSpec({
       ...defaults,
       key: overrides.key ? style.key : defaults.key,
-      tempo: overrides.tempo ? style.tempo : defaults.tempo
+      tempo: overrides.tempo ? style.tempo : defaults.tempo,
+      structure: preserveBars
+        ? { ...defaults.structure, bars: style.structure.bars }
+        : defaults.structure
     });
   }
   const tempo = weightedMedian(

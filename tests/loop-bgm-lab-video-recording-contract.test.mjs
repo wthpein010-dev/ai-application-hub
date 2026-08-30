@@ -2,8 +2,14 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { createHash } from "node:crypto";
 import { readFileSync } from "node:fs";
+import { rm } from "node:fs/promises";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
+import {
+  captureWorkspacePaths,
+  createCaptureWorkspace,
+  parseCaptureWorkspaceArgument,
+} from "../scripts/loop-bgm-lab-capture-workspace.mjs";
 import {
   DEMO_REFERENCE_LICENSE,
   STORY_DURATION_MS,
@@ -85,15 +91,35 @@ test("recording metadata proves one fixed story clock and bounded milestone drif
   assert.throws(() => validateRecordingMetadata(lateFinish), /finish drift/u);
 });
 
+test("concurrent recorder runs receive isolated validated capture workspaces", async () => {
+  const roots = await Promise.all([createCaptureWorkspace(), createCaptureWorkspace()]);
+  try {
+    assert.notEqual(roots[0], roots[1]);
+    for (const rootPath of roots) {
+      const paths = captureWorkspacePaths(rootPath);
+      assert.equal(paths.root, rootPath);
+      assert.equal(paths.rawPath, join(rootPath, "loop-bgm-lab-demo.webm"));
+      assert.equal(paths.metadataPath, join(rootPath, "recording.json"));
+      assert.deepEqual(parseCaptureWorkspaceArgument(["--capture-root", rootPath]), paths);
+    }
+    assert.throws(() => parseCaptureWorkspaceArgument([]), /--capture-root/u);
+    assert.throws(() => parseCaptureWorkspaceArgument(["--capture-root", dirname(roots[0])]), /dedicated capture directory/u);
+  } finally {
+    await Promise.all(roots.map(rootPath => rm(rootPath, { recursive: true, force: true })));
+  }
+});
+
 test("recorder and builder consume the shared provenance and measured trim contract", () => {
   const recorder = readFileSync(join(root, "scripts", "record-loop-bgm-lab-video.mjs"), "utf8");
   const builder = readFileSync(join(root, "scripts", "build-loop-bgm-lab-video.mjs"), "utf8");
   const app = readFileSync(join(root, "projects", "loop-bgm-lab", "app.js"), "utf8");
 
   assert.match(recorder, /DEMO_REFERENCE_LICENSE/u);
+  assert.match(recorder, /createCaptureWorkspace/u);
   assert.match(recorder, /validateRecordingMetadata/u);
   assert.doesNotMatch(recorder, /OpenGameArt|original-synthetic-demo|"0"\.repeat/u);
   assert.match(builder, /validateRecordingMetadata/u);
+  assert.match(builder, /parseCaptureWorkspaceArgument/u);
   assert.match(builder, /storyStartOffsetMs/u);
   assert.doesNotMatch(builder, /-sseof/u);
   assert.match(app, /SHA-256：\$\{entry\.fileSha256\}/u, "the public ledger must visibly expose the recorded hash");
