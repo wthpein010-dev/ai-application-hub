@@ -1157,8 +1157,45 @@ export const projects = [
     }
   },
   {
-    "id": "codex-multi-thread-workbench",
+    "id": "loop-bgm-lab",
     "index": 29,
+    "name": "循环乐工房",
+    "category": "AI 音乐工作流",
+    "kind": "app",
+    "badge": "辅助工具",
+    "brief": "在浏览器本地分析参考音乐，编排循环背景音乐提示词批次，并比较候选与维护授权台账。",
+    "problem": "制作可循环的游戏背景音乐时，参考特征、单变量尝试、候选对比和授权证据容易分散，难以形成可复核的工作流。",
+    "aiUse": "AI 辅助把本地音频特征归纳为风格画像和提示词计划；原始音频、路径与个人文件名不写入可导出项目状态。",
+    "tags": [
+      "循环音乐",
+      "本地分析",
+      "提示词批次",
+      "授权台账"
+    ],
+    "actions": [
+      {
+        "type": "web",
+        "label": "网页预览",
+        "href": "./projects/loop-bgm-lab/index.html",
+        "sourceLabel": "演示"
+      },
+      {
+        "type": "video",
+        "label": "介绍视频",
+        "href": "./projects/loop-bgm-lab/video/index.html",
+        "sourceLabel": "介绍视频"
+      }
+    ],
+    "visual": {
+      "accent": "#0e7a68",
+      "surface": "#dff5ee",
+      "ink": "#093f37",
+      "mark": "循环"
+    }
+  },
+  {
+    "id": "codex-multi-thread-workbench",
+    "index": 30,
     "name": "Codex 多线程工作台",
     "category": "AI 开发桌面工具",
     "kind": "app",
@@ -1208,7 +1245,7 @@ export const projects = [
   },
   {
     "id": "trinket-market",
-    "index": 30,
+    "index": 31,
     "name": "随身小物交易市场",
     "category": "游戏物品展示",
     "kind": "engineering",

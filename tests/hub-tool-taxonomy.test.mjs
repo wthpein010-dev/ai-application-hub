@@ -110,6 +110,7 @@ test("application cards use six concise public tool types", () => {
       "planmap",
       "simuai",
       "gamespec-relay",
+      "loop-bgm-lab",
     ],
     life: ["wanhuatong"],
     intelligence: ["gamepulse-mini-radar", "x-ai-codex-radar"],
