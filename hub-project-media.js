@@ -289,6 +289,16 @@ globalThis.HUB_PROJECT_MEDIA = Object.freeze({
     accent: "#f59e0b",
     visualKind: "data",
   }),
+  "loop-bgm-lab": Object.freeze({
+    src: "./assets/hub-showcase/loop-bgm-lab.webp?v=20260827-hub-visual-polish",
+    alt: "循环乐工房功能画面",
+    position: "center top",
+    layout: "wide",
+    fallback: "循环乐工房",
+    feature: "本地参考分析、提示词批次与授权台账",
+    accent: "#7c3aed",
+    visualKind: "product",
+  }),
   "codex-multi-thread-workbench": Object.freeze({
     src: "./assets/hub-showcase/codex-multi-thread-workbench.webp?v=20260827-hub-visual-polish",
     alt: "Codex 多线程工作台功能画面",

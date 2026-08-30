@@ -896,6 +896,30 @@ const defaultApps = [
     polish: 9
   },
   {
+    id: "loop-bgm-lab",
+    name: "循环乐工房",
+    category: "AI 音乐工作流",
+    status: "assistant",
+    badge: "辅助工具",
+    brief: "在浏览器本地分析参考音乐，编排循环背景音乐提示词批次，并比较候选与维护授权台账。",
+    problem: "制作可循环的游戏背景音乐时，参考特征、单变量尝试、候选对比和授权证据容易分散，难以形成可复核的工作流。",
+    aiUse: "AI 辅助把本地音频特征归纳为风格画像和提示词计划；原始音频、路径与个人文件名不写入可导出项目状态。",
+    folder: "./projects/loop-bgm-lab/",
+    entry: "./projects/loop-bgm-lab/index.html",
+    video: "./projects/loop-bgm-lab/video/index.html",
+    package: "",
+    platforms: {
+      web: { href: "./projects/loop-bgm-lab/index.html", label: "演示" },
+      windows: "",
+      mac: ""
+    },
+    tags: ["循环音乐", "本地分析", "提示词批次", "授权台账"],
+    speed: 9,
+    impact: 9,
+    risk: 9,
+    polish: 9
+  },
+  {
     id: "codex-multi-thread-workbench",
     name: "Codex 多线程工作台",
     category: "AI 开发桌面工具",

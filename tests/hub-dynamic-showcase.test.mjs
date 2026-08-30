@@ -81,16 +81,21 @@ test("the multi-thread Workbench is appended with a dedicated showcase image", (
   const apps = loadDefaultAppsFromRuntime(runtime);
   const media = loadMediaRegistry(mediaRuntime);
 
-  assert.equal(apps.length, 31);
+  assert.equal(apps.length, 32);
   const radarIndex = apps.findIndex(({ id }) => id === "x-ai-codex-radar");
-  assert.equal(apps.at(radarIndex + 1)?.id, "codex-multi-thread-workbench");
+  assert.equal(apps.at(radarIndex + 1)?.id, "loop-bgm-lab");
+  assert.equal(apps.at(radarIndex + 2)?.id, "codex-multi-thread-workbench");
+  assert.equal(media["loop-bgm-lab"]?.src, "./assets/hub-showcase/loop-bgm-lab.webp?v=20260827-hub-visual-polish");
+  assert.equal(media["loop-bgm-lab"]?.fallback, "循环乐工房");
+  assert.equal(media["loop-bgm-lab"]?.layout, "wide");
+  assert.ok(existsSync(join(root, "assets", "hub-showcase", "loop-bgm-lab.webp")));
   assert.equal(media["codex-multi-thread-workbench"]?.src, "./assets/hub-showcase/codex-multi-thread-workbench.webp?v=20260827-hub-visual-polish");
   assert.equal(media["codex-multi-thread-workbench"]?.fallback, "Codex 多线程工作台");
   assert.equal(media["codex-multi-thread-workbench"]?.layout, "wide");
   assert.ok(existsSync(join(root, "assets", "hub-showcase", "codex-multi-thread-workbench.webp")));
 });
 
-test("Bento metadata preserves order and permits the appended application to occupy a partial final row", () => {
+test("Bento metadata preserves order and closes the final application row", () => {
   const expectedLayouts = {
     "travel-generator": "standard",
     "codex-reviewer": "standard",
@@ -106,10 +111,10 @@ test("Bento metadata preserves order and permits the appended application to occ
   assert.equal(Object.values(mediaSources).filter(({ layout }) => layout === "tall").length, 0);
 
   const collections = [
-    ["hub", "gamepulse-mini-radar", "codex-quota-bar", "codex-thread-workbench", "web-media-collector", "minigame-project-simulator", "ai-game-requirements-workshop", "planner-daily-quiz", "travel-generator", "feishu-downloader", "codex-reviewer", "codex-habit-tool", "wanhuatong", "pureshrink", "planmap", "simuai", "gamespec-relay", "x-ai-codex-radar", "codex-multi-thread-workbench"],
-    ["vita-mahjong", "paws-home-client", "paws-level-editor", "brick-light-motion-lab", "brick-character-copy-preview", "trinket-market"],
+    { ids: ["hub", "gamepulse-mini-radar", "codex-quota-bar", "codex-thread-workbench", "web-media-collector", "minigame-project-simulator", "ai-game-requirements-workshop", "planner-daily-quiz", "travel-generator", "feishu-downloader", "codex-reviewer", "codex-habit-tool", "wanhuatong", "pureshrink", "planmap", "simuai", "gamespec-relay", "x-ai-codex-radar", "loop-bgm-lab", "codex-multi-thread-workbench"], finalSpan: 0 },
+    { ids: ["vita-mahjong", "paws-home-client", "paws-level-editor", "brick-light-motion-lab", "brick-character-copy-preview", "trinket-market"], finalSpan: 2 },
   ];
-  for (const ids of collections) {
+  for (const { ids, finalSpan } of collections) {
     let used = 0;
     for (const id of ids) {
       const span = mediaSources[id].layout === "wide" ? 2 : 1;
@@ -120,7 +125,7 @@ test("Bento metadata preserves order and permits the appended application to occ
       used += span;
       if (used === 4) used = 0;
     }
-    assert.equal(used, 2, "reviewed collections should end with one intentional wide card");
+    assert.equal(used, finalSpan, "reviewed collection should preserve its intentional final Bento span");
   }
 });
 
