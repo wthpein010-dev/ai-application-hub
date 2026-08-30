@@ -31,18 +31,18 @@ function fail(message) {
   throw new TypeError(message);
 }
 
-function assertSafeValue(value, key = "", seen = new WeakSet()) {
+function assertSafeValue(value, key = "", inheritedPathSensitive = false, seen = new WeakSet()) {
   if (SECRET_OR_BINARY_KEY.test(key)) {
     fail(`Forbidden key: ${key}`);
   }
-  const pathSensitive = LOCAL_PATH_KEY.test(key);
+  const pathSensitive = inheritedPathSensitive || LOCAL_PATH_KEY.test(key);
   if (pathSensitive && typeof value === "string" && isAbsolutePath(value)) {
     fail(`Absolute path is not allowed in ${key}`);
   }
   if (Array.isArray(value)) {
     if (seen.has(value)) fail("Circular values are not allowed");
     seen.add(value);
-    value.forEach(item => assertSafeValue(item, pathSensitive ? key : "", seen));
+    value.forEach(item => assertSafeValue(item, "", pathSensitive, seen));
     seen.delete(value);
     return;
   }
@@ -50,7 +50,7 @@ function assertSafeValue(value, key = "", seen = new WeakSet()) {
     if (seen.has(value)) fail("Circular values are not allowed");
     seen.add(value);
     for (const [childKey, childValue] of Object.entries(value)) {
-      assertSafeValue(childValue, pathSensitive ? key : childKey, seen);
+      assertSafeValue(childValue, childKey, pathSensitive, seen);
     }
     seen.delete(value);
   }

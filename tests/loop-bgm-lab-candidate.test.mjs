@@ -184,6 +184,12 @@ test("experiment records are detached and deeply immutable while project validat
   assert.equal(project.licenses[0].category, "cc0");
 });
 
+test("path-labelled experiment values still validate nested forbidden keys without blocking ordinary HTTPS metadata", () => {
+  assert.throws(() => createExperimentRecord({ localPath: { token: "secret" } }), /forbidden key/i);
+  assert.throws(() => createExperimentRecord({ localPath: [{ apiKey: "secret" }] }), /forbidden key/i);
+  assert.doesNotThrow(() => createExperimentRecord({ metadata: { sourceUrl: "https://example.test/audio" } }));
+});
+
 test("compareCandidate never exposes non-finite numeric leaves for extreme finite features", () => {
   const extreme = Number.MAX_VALUE;
   const comparison = compareCandidate({

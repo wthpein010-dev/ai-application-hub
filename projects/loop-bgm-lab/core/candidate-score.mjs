@@ -184,9 +184,9 @@ function isAbsolutePath(value) {
   return /^[a-zA-Z]:[\\/]/.test(value) || value.startsWith("/") || value.startsWith("\\\\");
 }
 
-function assertSafeJson(value, key = "", seen = new WeakSet()) {
+function assertSafeJson(value, key = "", inheritedPathSensitive = false, seen = new WeakSet()) {
   if (SECRET_OR_BINARY_KEY.test(key)) fail(`Forbidden key: ${key}`);
-  const pathSensitive = LOCAL_PATH_KEY.test(key);
+  const pathSensitive = inheritedPathSensitive || LOCAL_PATH_KEY.test(key);
   if (pathSensitive && typeof value === "string" && isAbsolutePath(value)) {
     fail(`Absolute path is not allowed in ${key}`);
   }
@@ -198,14 +198,14 @@ function assertSafeJson(value, key = "", seen = new WeakSet()) {
   if (Array.isArray(value)) {
     if (seen.has(value)) fail("Circular values are not allowed");
     seen.add(value);
-    value.forEach(item => assertSafeJson(item, pathSensitive ? key : "", seen));
+    value.forEach(item => assertSafeJson(item, "", pathSensitive, seen));
     seen.delete(value);
     return;
   }
   if (!isPlainObject(value)) fail("Only plain JSON values are allowed");
   if (seen.has(value)) fail("Circular values are not allowed");
   seen.add(value);
-  Object.entries(value).forEach(([childKey, childValue]) => assertSafeJson(childValue, pathSensitive ? key : childKey, seen));
+  Object.entries(value).forEach(([childKey, childValue]) => assertSafeJson(childValue, childKey, pathSensitive, seen));
   seen.delete(value);
 }
 

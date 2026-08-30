@@ -135,6 +135,17 @@ test("project validation rejects sensitive local-path fields through nested arra
   }
 });
 
+test("project validation and JSON import keep nested secret validation under path-labelled values", () => {
+  const plan = createDailyPlan();
+  const nestedToken = { ...plan, extensions: { localPath: { token: "secret" } } };
+  const nestedApiKey = { ...plan, extensions: { localPath: [{ apiKey: "secret" }] } };
+
+  assert.throws(() => validateProject(nestedToken), /forbidden key/i);
+  assert.throws(() => validateProject(nestedApiKey), /forbidden key/i);
+  assert.throws(() => importProjectJson(JSON.stringify(nestedToken)), /forbidden key/i);
+  assert.doesNotThrow(() => validateProject({ ...plan, extensions: { metadata: { sourceUrl: "https://example.test/audio" } } }));
+});
+
 test("round-trips validated project JSON losslessly and keeps Markdown free of paths and secrets", () => {
   const project = validateProject({
     ...createDailyPlan(),
