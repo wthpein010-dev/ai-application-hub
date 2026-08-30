@@ -162,8 +162,15 @@ const ADVICE = {
 };
 
 export function recommendNextVariant(comparison) {
+  if (classifySimilarity(comparison) === "insufficient") {
+    return {
+      kind: "evidence-insufficient",
+      message: "有效特征覆盖率低于 70%，证据不足；请补充可用分析数据后再判断。"
+    };
+  }
   if (classifySimilarity(comparison) === "too-close") {
     return {
+      kind: "variant",
       changedAxis: "melodyTimbre",
       reason: "核心特征整体过近，不能把零差值虚构成某一项的最大差异。",
       adjustment: "下一轮只调整 melodyTimbre：重新设计旋律动机与配器层次，避免沿用可识别的主导轮廓，其他变量保持不变。"
@@ -182,7 +189,7 @@ export function recommendNextVariant(comparison) {
     }
   }
   const advice = ADVICE[selected];
-  return { changedAxis: advice.changedAxis, reason: advice.reason, adjustment: advice.adjustment };
+  return { kind: "variant", changedAxis: advice.changedAxis, reason: advice.reason, adjustment: advice.adjustment };
 }
 
 function detachAndFreeze(value) {

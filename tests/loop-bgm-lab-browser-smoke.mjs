@@ -6,6 +6,7 @@ import { readFile } from "node:fs/promises";
 import { dirname, extname, join, normalize, relative, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { chromium } from "playwright";
+import { compareCandidate, recommendNextVariant } from "../projects/loop-bgm-lab/core/candidate-score.mjs";
 
 const root = dirname(dirname(fileURLToPath(import.meta.url)));
 const demoWav = join(root, "projects", "loop-bgm-lab", "assets", "demo-reference.wav");
@@ -511,6 +512,10 @@ try {
   assert.equal(exported.candidates.length, 2);
   assert.equal(exported.experiments.length, 2);
   assert.equal(exported.batches[0].generatedUrl, "https://suno.com/song/browser-smoke-a");
+  assert.equal(exported.experiments[0].generationConditions.batchId, "batch-1");
+  assert.equal(exported.experiments[0].generationConditions.changedAxis, "baseline");
+  assert.equal(exported.experiments[0].generationConditions.prompt, exported.batches[0].prompt);
+  assert.deepEqual(exported.experiments[0].referenceBasis, exported.candidates[0].referenceBasis);
   assert.doesNotMatch(exportedText, /demo-reference\.wav|blob:|audioBytes|apiKey|cookie|token|[A-Z]:\\|\/Users\//i);
 
   const markdownDownloadPromise = page.waitForEvent("download");
@@ -522,6 +527,7 @@ try {
   assert.match(markdown, /https:\/\/suno\.com\/song\/browser-smoke-a/);
   assert.match(markdown, /实验历史/);
   assert.match(markdown, /拒绝本轮/);
+  assert.match(markdown, /"generationConditions"/);
   assert.doesNotMatch(markdown, /demo-reference\.wav|blob:|audioBytes|apiKey|cookie|token|[A-Z]:\\|\/Users\//i);
 
   await page.reload({ waitUntil: "networkidle" });
@@ -574,6 +580,19 @@ try {
     displayName: "欢乐版本 A",
     hash: expectedDifferentSha256
   };
+  const lowEvidenceCandidate = validImport.candidates.at(-1);
+  const lowEvidenceExperiment = validImport.experiments.find(item => item.candidateId === lowEvidenceCandidate.id);
+  lowEvidenceCandidate.referenceBasis.tempo.confidence = 0.29;
+  lowEvidenceCandidate.referenceBasis.key.confidence = 0.09;
+  lowEvidenceCandidate.analysis.tempo.confidence = 0.29;
+  lowEvidenceCandidate.analysis.key.confidence = 0.09;
+  lowEvidenceCandidate.comparison = compareCandidate(lowEvidenceCandidate.referenceBasis, lowEvidenceCandidate.analysis);
+  lowEvidenceCandidate.similarityClass = "insufficient";
+  lowEvidenceCandidate.advice = recommendNextVariant(lowEvidenceCandidate.comparison);
+  lowEvidenceExperiment.referenceBasis = structuredClone(lowEvidenceCandidate.referenceBasis);
+  lowEvidenceExperiment.comparison = structuredClone(lowEvidenceCandidate.comparison);
+  lowEvidenceExperiment.advice = structuredClone(lowEvidenceCandidate.advice);
+  validImport.nextRoundSuggestion = structuredClone(lowEvidenceCandidate.advice);
   await page.locator("#import-project").setInputFiles({
     name: "valid.json",
     mimeType: "application/json",
@@ -583,6 +602,9 @@ try {
   assert.equal(await page.locator(".batch-card[data-axis='baseline'] .batch-status").inputValue(), "planned");
   assert.equal(await page.evaluate(() => JSON.parse(localStorage.getItem("loop-bgm-lab-v1")).extensions.transferredBy), "browser-smoke");
   assert.equal(await page.evaluate(() => JSON.parse(localStorage.getItem("loop-bgm-lab-v1")).currentBestCandidate.displayName), "欢乐版本 A");
+  assert.equal(await page.locator("#similarity-class").textContent(), "证据不足");
+  assert.equal(await page.locator("#next-advice").textContent(), "有效特征覆盖率低于 70%，证据不足；请补充可用分析数据后再判断。");
+  assert.doesNotMatch(await page.locator("#next-advice").textContent(), /loopStructure|melodyTimbre|rhythm|percussion|差异最明显/);
   const labelledJsonPromise = page.waitForEvent("download");
   await page.locator("#export-json").click();
   const labelledJson = await readFile(await (await labelledJsonPromise).path(), "utf8");

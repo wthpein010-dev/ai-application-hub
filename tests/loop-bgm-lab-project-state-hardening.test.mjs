@@ -37,6 +37,23 @@ function analysis({ bpm = 112, tempoConfidence = 0.9, keyConfidence = 0.8 } = {}
   };
 }
 
+function referenceBasis(options) {
+  const value = analysis(options);
+  return {
+    durationSeconds: value.durationSeconds,
+    rms: value.rms,
+    tempo: value.tempo,
+    key: {
+      name: value.key.name,
+      tonic: value.key.tonic,
+      mode: value.key.mode,
+      confidence: value.key.confidence,
+    },
+    spectrum: { brightness: value.spectrum.brightness },
+    loop: { score: value.loop.score },
+  };
+}
+
 function comparison() {
   return {
     components: {
@@ -70,6 +87,14 @@ function completeProject() {
   }));
   const candidateComparison = comparison();
   const candidateAdvice = advice();
+  const frozenReferenceBasis = referenceBasis();
+  const generationConditions = {
+    batchId: "batch-1",
+    changedAxis: "baseline",
+    prompt: batches[0].prompt,
+    excludePrompt: batches[0].excludePrompt,
+    styleSpec: structuredClone(plan.styleSpec),
+  };
   return {
     ...plan,
     sourceUrl: "https://suno.com/create",
@@ -81,6 +106,7 @@ function completeProject() {
       batchId: "batch-1",
       hash: CANDIDATE_HASH,
       analysis: analysis(),
+      referenceBasis: frozenReferenceBasis,
       comparison: candidateComparison,
       similarityClass: "too-close",
       advice: candidateAdvice,
@@ -94,8 +120,10 @@ function completeProject() {
       subjectiveScore: 4,
       reviewNote: "Rejected because the hook remains too close.",
       disposition: "rejected",
+      referenceBasis: frozenReferenceBasis,
       comparison: candidateComparison,
       advice: candidateAdvice,
+      generationConditions,
     }],
     licenses: [{
       id: "license-1",
@@ -112,6 +140,41 @@ function completeProject() {
     nextRoundSuggestion: candidateAdvice,
   };
 }
+
+test("validation rejects a fabricated too-close comparison against a 112 BPM frozen reference", () => {
+  // Break caught: a portable payload can claim a self-consistent zero tempo delta instead of deriving it from evidence.
+  const forged = structuredClone(completeProject());
+  forged.candidates[0].analysis.tempo.bpm = 999;
+
+  assert.throws(() => validateProject(forged), /comparison|reference/i);
+  assert.throws(() => importProjectJson(JSON.stringify(forged)), /comparison|reference/i);
+});
+
+test("durable experiments preserve frozen generation conditions after current batches are rebuilt", () => {
+  // Break caught: rebuilding prompt batches overwrites an already reviewed run's original prompt or style conditions.
+  const project = completeProject();
+  const snapshot = structuredClone(project.experiments[0].generationConditions);
+  const laterStyle = {
+    ...project.styleSpec,
+    tempo: { target: 130, min: 127, max: 134 },
+    structure: { ...project.styleSpec.structure, bars: 32 },
+  };
+  const later = {
+    ...project,
+    styleSpec: laterStyle,
+    credits: createDailyPlan({ styleSpec: laterStyle }).credits,
+    batches: createDailyPlan({ styleSpec: laterStyle }).batches,
+  };
+
+  const restored = importProjectJson(exportProjectJson(later));
+  assert.deepEqual(restored.experiments[0].generationConditions, snapshot);
+  assert.match(exportProjectMarkdown(restored), /"generationConditions"/);
+  assert.match(exportProjectMarkdown(restored), /around 112 BPM/);
+
+  const missingSnapshot = structuredClone(project);
+  delete missingSnapshot.experiments[0].generationConditions;
+  assert.throws(() => validateProject(missingSnapshot), /generationConditions/i);
+});
 
 test("portable safety rejects normalized secret-key variants and HTTPS userinfo through every persistence boundary", () => {
   const project = createDailyPlan();
@@ -166,6 +229,7 @@ test("version 1 validates every known persisted structure and cross-field identi
     },
     { name: "experiment candidate", value: { ...project, experiments: [{ ...project.experiments[0], candidateId: "missing-candidate" }] } },
     { name: "experiment hash", value: { ...project, experiments: [{ ...project.experiments[0], candidateHash: REFERENCE_HASH }] } },
+    { name: "generation snapshot prompt", value: { ...project, experiments: [{ ...project.experiments[0], generationConditions: { ...project.experiments[0].generationConditions, prompt: "fabricated historical prompt" } }] } },
     { name: "batch experiment evidence", value: { ...project, batches: project.batches.map((batch, index) => index === 0 ? { ...batch, generatedUrl: "https://suno.com/song/different" } : batch) } },
     { name: "credit multiplication", value: { ...project, credits: { ...project.credits, planned: 49 } } },
     { name: "credit sum", value: { ...project, batches: project.batches.map((batch, index) => index === 4 ? { ...batch, credits: 9 } : batch) } },

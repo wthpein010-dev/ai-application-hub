@@ -1,5 +1,6 @@
 import {
   classifySimilarity,
+  compareCandidate,
   createExperimentRecord,
   recommendNextVariant,
   validateLicenseEntry,
@@ -34,10 +35,10 @@ const TEMPO_KEYS = new Set(["target", "min", "max"]);
 const STRUCTURE_KEYS = new Set(["bars", "loopable", "intro", "outro"]);
 const CREDIT_KEYS = new Set(["planned", "perBatch", "batchCount"]);
 const REFERENCE_KEYS = new Set(["id", "displayName", "hash", "analysis"]);
-const CANDIDATE_KEYS = new Set(["id", "displayName", "batchId", "hash", "analysis", "comparison", "similarityClass", "advice"]);
+const CANDIDATE_KEYS = new Set(["id", "displayName", "batchId", "hash", "analysis", "referenceBasis", "comparison", "similarityClass", "advice"]);
 const EXPERIMENT_KEYS = new Set([
   "id", "batchId", "candidateId", "candidateHash", "generatedUrl", "subjectiveScore",
-  "reviewNote", "disposition", "comparison", "advice"
+  "reviewNote", "disposition", "referenceBasis", "comparison", "advice", "generationConditions"
 ]);
 const ANALYSIS_KEYS = new Set(["durationSeconds", "sampleRate", "channelCount", "peak", "rms", "tempo", "key", "spectrum", "loop", "warnings"]);
 const ANALYSIS_TEMPO_KEYS = new Set(["bpm", "confidence"]);
@@ -45,11 +46,18 @@ const ANALYSIS_KEY_KEYS = new Set(["name", "tonic", "mode", "confidence", "chrom
 const SPECTRUM_KEYS = new Set(["centroidHz", "brightness"]);
 const LOOP_KEYS = new Set(["score", "components"]);
 const LOOP_COMPONENT_KEYS = new Set(["envelope", "chroma", "centroid", "boundary"]);
+const COMPARISON_BASIS_KEYS = new Set(["durationSeconds", "rms", "tempo", "key", "spectrum", "loop"]);
+const COMPARISON_BASIS_TEMPO_KEYS = new Set(["bpm", "confidence"]);
+const COMPARISON_BASIS_KEY_KEYS = new Set(["name", "tonic", "mode", "confidence"]);
+const COMPARISON_BASIS_SPECTRUM_KEYS = new Set(["brightness"]);
+const COMPARISON_BASIS_LOOP_KEYS = new Set(["score"]);
+const GENERATION_CONDITIONS_KEYS = new Set(["batchId", "changedAxis", "prompt", "excludePrompt", "styleSpec"]);
 const WARNING_KEYS = new Set(["code", "message"]);
 const COMPARISON_KEYS = new Set(["components", "coverage", "similarity", "coreMatches"]);
 const COMPARISON_COMPONENT_NAMES = ["tempo", "key", "brightness", "dynamics", "loop", "duration"];
 const COMPARISON_WEIGHTS = Object.freeze({ tempo: 0.25, key: 0.2, brightness: 0.15, dynamics: 0.1, loop: 0.2, duration: 0.1 });
-const ADVICE_KEYS = new Set(["changedAxis", "reason", "adjustment"]);
+const VARIANT_ADVICE_KEYS = new Set(["kind", "changedAxis", "reason", "adjustment"]);
+const INSUFFICIENT_ADVICE_KEYS = new Set(["kind", "message"]);
 const ADVICE_AXES = new Set(["melodyTimbre", "rhythm", "percussion", "loopStructure"]);
 const SIMILARITY_CLASSES = new Set(["insufficient", "too-close", "review", "distinct"]);
 const DISPOSITION_VALUES = new Set(["unrated", "accepted", "rejected"]);
@@ -138,32 +146,32 @@ function assertNullableHttpsUrl(value, field) {
   assertHttpsUrl(value, field);
 }
 
-function validateStyleSpec(styleSpec) {
-  assertKnownKeys(styleSpec, STYLE_KEYS, "styleSpec");
-  assertRequiredKeys(styleSpec, STYLE_KEYS, "styleSpec");
-  if (styleSpec.version !== PROJECT_VERSION) fail("styleSpec.version must be 1");
-  assertString(styleSpec.intent, "styleSpec.intent", { nonEmpty: true });
-  assertString(styleSpec.key, "styleSpec.key", { nonEmpty: true });
-  assertArrayOfStrings(styleSpec.mood, "styleSpec.mood");
-  assertArrayOfStrings(styleSpec.instruments, "styleSpec.instruments");
-  assertArrayOfStrings(styleSpec.mix, "styleSpec.mix");
-  assertArrayOfStrings(styleSpec.exclusions, "styleSpec.exclusions");
-  for (const [field, value] of [["mood", styleSpec.mood], ["instruments", styleSpec.instruments], ["mix", styleSpec.mix]]) {
-    if (!value.length || value.some(item => item.trim().length === 0)) fail(`styleSpec.${field} must contain non-empty strings`);
+function validateStyleSpec(styleSpec, field = "styleSpec") {
+  assertKnownKeys(styleSpec, STYLE_KEYS, field);
+  assertRequiredKeys(styleSpec, STYLE_KEYS, field);
+  if (styleSpec.version !== PROJECT_VERSION) fail(`${field}.version must be 1`);
+  assertString(styleSpec.intent, `${field}.intent`, { nonEmpty: true });
+  assertString(styleSpec.key, `${field}.key`, { nonEmpty: true });
+  assertArrayOfStrings(styleSpec.mood, `${field}.mood`);
+  assertArrayOfStrings(styleSpec.instruments, `${field}.instruments`);
+  assertArrayOfStrings(styleSpec.mix, `${field}.mix`);
+  assertArrayOfStrings(styleSpec.exclusions, `${field}.exclusions`);
+  for (const [name, value] of [["mood", styleSpec.mood], ["instruments", styleSpec.instruments], ["mix", styleSpec.mix]]) {
+    if (!value.length || value.some(item => item.trim().length === 0)) fail(`${field}.${name} must contain non-empty strings`);
   }
-  assertKnownKeys(styleSpec.tempo, TEMPO_KEYS, "styleSpec.tempo");
-  assertRequiredKeys(styleSpec.tempo, TEMPO_KEYS, "styleSpec.tempo");
-  for (const key of ["target", "min", "max"]) assertNumber(styleSpec.tempo[key], `styleSpec.tempo.${key}`);
+  assertKnownKeys(styleSpec.tempo, TEMPO_KEYS, `${field}.tempo`);
+  assertRequiredKeys(styleSpec.tempo, TEMPO_KEYS, `${field}.tempo`);
+  for (const key of ["target", "min", "max"]) assertNumber(styleSpec.tempo[key], `${field}.tempo.${key}`);
   if (styleSpec.tempo.min > styleSpec.tempo.target || styleSpec.tempo.target > styleSpec.tempo.max) {
-    fail("styleSpec.tempo must satisfy min <= target <= max");
+    fail(`${field}.tempo must satisfy min <= target <= max`);
   }
-  assertKnownKeys(styleSpec.structure, STRUCTURE_KEYS, "styleSpec.structure");
-  assertRequiredKeys(styleSpec.structure, STRUCTURE_KEYS, "styleSpec.structure");
-  assertInteger(styleSpec.structure.bars, "styleSpec.structure.bars", { minimum: 1, maximum: 512 });
-  if (![32, 64].includes(styleSpec.structure.bars)) fail("styleSpec.structure.bars must be 32 or 64");
-  if (typeof styleSpec.structure.loopable !== "boolean") fail("styleSpec.structure.loopable must be boolean");
-  assertString(styleSpec.structure.intro, "styleSpec.structure.intro", { nonEmpty: true });
-  assertString(styleSpec.structure.outro, "styleSpec.structure.outro", { nonEmpty: true });
+  assertKnownKeys(styleSpec.structure, STRUCTURE_KEYS, `${field}.structure`);
+  assertRequiredKeys(styleSpec.structure, STRUCTURE_KEYS, `${field}.structure`);
+  assertInteger(styleSpec.structure.bars, `${field}.structure.bars`, { minimum: 1, maximum: 512 });
+  if (![32, 64].includes(styleSpec.structure.bars)) fail(`${field}.structure.bars must be 32 or 64`);
+  if (typeof styleSpec.structure.loopable !== "boolean") fail(`${field}.structure.loopable must be boolean`);
+  assertString(styleSpec.structure.intro, `${field}.structure.intro`, { nonEmpty: true });
+  assertString(styleSpec.structure.outro, `${field}.structure.outro`, { nonEmpty: true });
 }
 
 function validateBatch(batch) {
@@ -273,10 +281,75 @@ function validateComparison(value, field) {
   if (value.coreMatches !== expectedCoreMatches) fail(`${field}.coreMatches is inconsistent`);
 }
 
+function assertNullableNonNegativeNumber(value, field) {
+  assertNumber(value, field, { nullable: true });
+  if (value !== null && value < 0) fail(`${field} cannot be negative`);
+}
+
+function assertNullableUnitNumber(value, field) {
+  assertNumber(value, field, { nullable: true });
+  if (value !== null && (value < 0 || value > 1)) fail(`${field} must be between 0 and 1`);
+}
+
+function validateReferenceBasis(value, field) {
+  assertKnownKeys(value, COMPARISON_BASIS_KEYS, field);
+  assertRequiredKeys(value, COMPARISON_BASIS_KEYS, field);
+  assertNullableNonNegativeNumber(value.durationSeconds, `${field}.durationSeconds`);
+  assertNullableNonNegativeNumber(value.rms, `${field}.rms`);
+  assertKnownKeys(value.tempo, COMPARISON_BASIS_TEMPO_KEYS, `${field}.tempo`);
+  assertRequiredKeys(value.tempo, COMPARISON_BASIS_TEMPO_KEYS, `${field}.tempo`);
+  assertNullableNonNegativeNumber(value.tempo.bpm, `${field}.tempo.bpm`);
+  assertUnitNumber(value.tempo.confidence, `${field}.tempo.confidence`);
+  assertKnownKeys(value.key, COMPARISON_BASIS_KEY_KEYS, `${field}.key`);
+  assertRequiredKeys(value.key, COMPARISON_BASIS_KEY_KEYS, `${field}.key`);
+  for (const name of ["name", "tonic", "mode"]) assertString(value.key[name], `${field}.key.${name}`);
+  assertUnitNumber(value.key.confidence, `${field}.key.confidence`);
+  assertKnownKeys(value.spectrum, COMPARISON_BASIS_SPECTRUM_KEYS, `${field}.spectrum`);
+  assertRequiredKeys(value.spectrum, COMPARISON_BASIS_SPECTRUM_KEYS, `${field}.spectrum`);
+  assertNullableUnitNumber(value.spectrum.brightness, `${field}.spectrum.brightness`);
+  assertKnownKeys(value.loop, COMPARISON_BASIS_LOOP_KEYS, `${field}.loop`);
+  assertRequiredKeys(value.loop, COMPARISON_BASIS_LOOP_KEYS, `${field}.loop`);
+  assertNullableUnitNumber(value.loop.score, `${field}.loop.score`);
+}
+
+function validateDerivedComparison(referenceBasis, candidate, comparison, field) {
+  const expected = compareCandidate(referenceBasis, candidate.analysis);
+  if (stableStringify(comparison) !== stableStringify(expected)) {
+    fail(`${field} must be derived from its frozen reference basis and candidate analysis`);
+  }
+}
+
+function validateGenerationConditions(value, field, batch) {
+  assertKnownKeys(value, GENERATION_CONDITIONS_KEYS, field);
+  assertRequiredKeys(value, GENERATION_CONDITIONS_KEYS, field);
+  assertId(value.batchId, `${field}.batchId`);
+  assertString(value.changedAxis, `${field}.changedAxis`, { nonEmpty: true });
+  assertString(value.prompt, `${field}.prompt`, { nonEmpty: true });
+  assertString(value.excludePrompt, `${field}.excludePrompt`, { nonEmpty: true });
+  validateStyleSpec(value.styleSpec, `${field}.styleSpec`);
+  if (value.batchId !== batch.id || value.changedAxis !== batch.changedAxis) {
+    fail(`${field} batch identity or axis is inconsistent`);
+  }
+  const generatedBatch = createPromptVariants(value.styleSpec).find(item => item.id === value.batchId);
+  if (!generatedBatch
+    || generatedBatch.changedAxis !== value.changedAxis
+    || generatedBatch.prompt !== value.prompt
+    || generatedBatch.excludePrompt !== value.excludePrompt) {
+    fail(`${field} prompt or excludePrompt is inconsistent with its frozen styleSpec`);
+  }
+}
+
 function validateAdvice(value, field, { nullable = false } = {}) {
   if (nullable && value === null) return;
-  assertKnownKeys(value, ADVICE_KEYS, field);
-  assertRequiredKeys(value, ADVICE_KEYS, field);
+  if (value?.kind === "evidence-insufficient") {
+    assertKnownKeys(value, INSUFFICIENT_ADVICE_KEYS, field);
+    assertRequiredKeys(value, INSUFFICIENT_ADVICE_KEYS, field);
+    assertString(value.message, `${field}.message`, { nonEmpty: true });
+    return;
+  }
+  assertKnownKeys(value, VARIANT_ADVICE_KEYS, field);
+  assertRequiredKeys(value, VARIANT_ADVICE_KEYS, field);
+  if (value.kind !== "variant") fail(`${field}.kind is unsupported`);
   if (!ADVICE_AXES.has(value.changedAxis)) fail(`${field}.changedAxis is unsupported`);
   assertString(value.reason, `${field}.reason`, { nonEmpty: true });
   assertString(value.adjustment, `${field}.adjustment`, { nonEmpty: true });
@@ -295,14 +368,16 @@ function validateReference(value, index) {
 function validateCandidate(value, index, batchIds) {
   const field = `candidates[${index}]`;
   assertKnownKeys(value, CANDIDATE_KEYS, field);
-  assertRequiredKeys(value, new Set(["id", "batchId", "hash", "analysis", "comparison", "similarityClass", "advice"]), field);
+  assertRequiredKeys(value, new Set(["id", "batchId", "hash", "analysis", "referenceBasis", "comparison", "similarityClass", "advice"]), field);
   assertId(value.id, `${field}.id`);
   if (Object.hasOwn(value, "displayName")) assertString(value.displayName, `${field}.displayName`, { nonEmpty: true });
   assertId(value.batchId, `${field}.batchId`);
   if (!batchIds.has(value.batchId)) fail(`${field}.batchId must reference an existing batch`);
   assertHash(value.hash, `${field}.hash`);
   validateAnalysis(value.analysis, `${field}.analysis`);
+  validateReferenceBasis(value.referenceBasis, `${field}.referenceBasis`);
   validateComparison(value.comparison, `${field}.comparison`);
+  validateDerivedComparison(value.referenceBasis, value, value.comparison, `${field}.comparison`);
   if (!SIMILARITY_CLASSES.has(value.similarityClass)) fail(`${field}.similarityClass is unsupported`);
   const expectedClass = classifySimilarity(value.comparison);
   if (value.similarityClass !== expectedClass) fail(`${field}.similarityClass is inconsistent with comparison`);
@@ -318,14 +393,15 @@ function validateCandidate(value, index, batchIds) {
   }
 }
 
-function validateExperiment(value, index, candidatesById, batchIds) {
+function validateExperiment(value, index, candidatesById, batchesById) {
   const field = `experiments[${index}]`;
   assertKnownKeys(value, EXPERIMENT_KEYS, field);
   assertRequiredKeys(value, EXPERIMENT_KEYS, field);
   assertId(value.id, `${field}.id`);
   assertId(value.batchId, `${field}.batchId`);
   assertId(value.candidateId, `${field}.candidateId`);
-  if (!batchIds.has(value.batchId)) fail(`${field}.batchId must reference an existing batch`);
+  const batch = batchesById.get(value.batchId);
+  if (!batch) fail(`${field}.batchId must reference an existing batch`);
   const candidate = candidatesById.get(value.candidateId);
   if (!candidate) fail(`${field}.candidateId must reference an existing candidate`);
   assertHash(value.candidateHash, `${field}.candidateHash`);
@@ -336,9 +412,13 @@ function validateExperiment(value, index, candidatesById, batchIds) {
   assertString(value.reviewNote, `${field}.reviewNote`);
   if (!DISPOSITION_VALUES.has(value.disposition)) fail(`${field}.disposition is unsupported`);
   if (value.disposition === "rejected" && value.reviewNote.trim().length === 0) fail(`${field}.reviewNote is required for rejection`);
+  validateReferenceBasis(value.referenceBasis, `${field}.referenceBasis`);
   validateComparison(value.comparison, `${field}.comparison`);
+  validateDerivedComparison(value.referenceBasis, candidate, value.comparison, `${field}.comparison`);
   validateAdvice(value.advice, `${field}.advice`);
-  if (stableStringify(value.comparison) !== stableStringify(candidate.comparison)
+  validateGenerationConditions(value.generationConditions, `${field}.generationConditions`, batch);
+  if (stableStringify(value.referenceBasis) !== stableStringify(candidate.referenceBasis)
+    || stableStringify(value.comparison) !== stableStringify(candidate.comparison)
     || stableStringify(value.advice) !== stableStringify(candidate.advice)) {
     fail(`${field} comparison or advice is inconsistent with its candidate`);
   }
@@ -398,6 +478,7 @@ export function validateProject(input) {
   });
   const batchIds = new Set(input.batches.map(batch => batch.id));
   if (batchIds.size !== input.batches.length) fail("batch ids must be unique");
+  const batchesById = new Map(input.batches.map(batch => [batch.id, batch]));
   assertString(input.sourceUrl, "sourceUrl", { nonEmpty: true });
   assertNullableHttpsUrl(input.sourceUrl, "sourceUrl");
   if (!Array.isArray(input.references)) fail("references must be an array");
@@ -407,7 +488,7 @@ export function validateProject(input) {
   input.references.forEach(validateReference);
   input.candidates.forEach((candidate, index) => validateCandidate(candidate, index, batchIds));
   const candidatesById = new Map(input.candidates.map(candidate => [candidate.id, candidate]));
-  input.experiments.forEach((experiment, index) => validateExperiment(experiment, index, candidatesById, batchIds));
+  input.experiments.forEach((experiment, index) => validateExperiment(experiment, index, candidatesById, batchesById));
   const validatedLicenses = input.licenses.map(validateLicenseEntry);
 
   for (const batch of input.batches) {

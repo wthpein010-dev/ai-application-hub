@@ -130,7 +130,8 @@ test("recommendNextVariant limits every iteration to one existing prompt-engine 
     tempo: { bpm: 144, confidence: 0.9 }
   }));
 
-  assert.deepEqual(Object.keys(recommendation).sort(), ["adjustment", "changedAxis", "reason"]);
+  assert.deepEqual(Object.keys(recommendation).sort(), ["adjustment", "changedAxis", "kind", "reason"]);
+  assert.equal(recommendation.kind, "variant");
   assert.equal(recommendation.changedAxis, "rhythm");
   assert.match(recommendation.reason, /[\u3400-\u9fff]/);
   assert.match(recommendation.adjustment, /[\u3400-\u9fff]/);
@@ -149,6 +150,23 @@ test("an identical too-close candidate gets motif and arrangement differentiatio
   assert.match(`${recommendation.reason} ${recommendation.adjustment}`, /旋律|动机/);
   assert.match(`${recommendation.reason} ${recommendation.adjustment}`, /编配|配器/);
   assert.doesNotMatch(`${recommendation.reason} ${recommendation.adjustment}`, /差异最明显|偏快|偏慢/);
+});
+
+test("insufficient coverage returns evidence-only advice without an invented variable axis", () => {
+  // Break caught: low-confidence evidence falls through to a guessed largest-difference recommendation.
+  const comparison = compareCandidate(
+    { ...reference, tempo: { bpm: 120, confidence: 0.29 }, key: { ...reference.key, confidence: 0.09 } },
+    { ...reference, tempo: { bpm: 120, confidence: 0.29 }, key: { ...reference.key, confidence: 0.09 } }
+  );
+  const recommendation = recommendNextVariant(comparison);
+
+  assert.equal(comparison.coverage, 0.55);
+  assert.equal(classifySimilarity(comparison), "insufficient");
+  assert.deepEqual(recommendation, {
+    kind: "evidence-insufficient",
+    message: "有效特征覆盖率低于 70%，证据不足；请补充可用分析数据后再判断。"
+  });
+  assert.doesNotMatch(JSON.stringify(recommendation), /loopStructure|melodyTimbre|rhythm|percussion|差异最明显/);
 });
 
 test("validateLicenseEntry preserves HTTPS sources and distinguishes CC0, CC-BY, NC, and unknown without clearance claims", () => {
@@ -233,6 +251,7 @@ test("experiment records are detached and deeply immutable while project validat
 
   const candidateComparison = compareCandidate(reference, reference);
   const candidateAdvice = recommendNextVariant(candidateComparison);
+  const plan = createDailyPlan();
   const experiment = {
     id: "experiment-1",
     batchId: "batch-1",
@@ -242,16 +261,25 @@ test("experiment records are detached and deeply immutable while project validat
     subjectiveScore: 4,
     reviewNote: "Accepted after a manual listen.",
     disposition: "accepted",
+    referenceBasis: structuredClone(reference),
     comparison: candidateComparison,
-    advice: candidateAdvice
+    advice: candidateAdvice,
+    generationConditions: {
+      batchId: "batch-1",
+      changedAxis: plan.batches[0].changedAxis,
+      prompt: plan.batches[0].prompt,
+      excludePrompt: plan.batches[0].excludePrompt,
+      styleSpec: structuredClone(plan.styleSpec),
+    }
   };
   const project = validateProject({
-    ...createDailyPlan(),
+    ...plan,
     candidates: [{
       id: "candidate-1",
       batchId: "batch-1",
       hash: "b".repeat(64),
       analysis: completeAnalysis(),
+      referenceBasis: structuredClone(reference),
       comparison: candidateComparison,
       similarityClass: "too-close",
       advice: candidateAdvice

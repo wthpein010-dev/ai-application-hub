@@ -54,6 +54,23 @@ function analysisFixture() {
   };
 }
 
+function referenceBasisFixture() {
+  const analysis = analysisFixture();
+  return {
+    durationSeconds: analysis.durationSeconds,
+    rms: analysis.rms,
+    tempo: analysis.tempo,
+    key: {
+      name: analysis.key.name,
+      tonic: analysis.key.tonic,
+      mode: analysis.key.mode,
+      confidence: analysis.key.confidence,
+    },
+    spectrum: { brightness: analysis.spectrum.brightness },
+    loop: { score: analysis.loop.score },
+  };
+}
+
 function comparisonFixture() {
   return {
     components: {
@@ -81,6 +98,7 @@ function candidateFixture({ id = "candidate-1", displayName = "欢乐版本 A", 
     batchId,
     hash,
     analysis: analysisFixture(),
+    referenceBasis: referenceBasisFixture(),
     comparison: comparisonFixture(),
     similarityClass: "too-close",
     advice: adviceFixture(),
@@ -373,8 +391,9 @@ test("project validation and JSON import keep nested secret validation under pat
 });
 
 test("round-trips validated project JSON losslessly and keeps Markdown free of paths and secrets", () => {
+  const plan = createDailyPlan();
   const project = validateProject({
-    ...createDailyPlan(),
+    ...plan,
     sourceUrl: "https://suno.com/create",
     references: [{ id: "reference-1", displayName: "Reference A", hash: "a".repeat(64), analysis: analysisFixture() }],
     candidates: [candidateFixture({ displayName: "Sunny Loop" })],
@@ -387,8 +406,16 @@ test("round-trips validated project JSON losslessly and keeps Markdown free of p
       subjectiveScore: 4,
       reviewNote: "Keep the next iteration focused on one axis.",
       disposition: "accepted",
+      referenceBasis: referenceBasisFixture(),
       comparison: comparisonFixture(),
-      advice: adviceFixture()
+      advice: adviceFixture(),
+      generationConditions: {
+        batchId: "batch-1",
+        changedAxis: plan.batches[0].changedAxis,
+        prompt: plan.batches[0].prompt,
+        excludePrompt: plan.batches[0].excludePrompt,
+        styleSpec: structuredClone(plan.styleSpec),
+      }
     }],
     licenses: [{
       id: "license-cc0-a",

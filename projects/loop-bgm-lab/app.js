@@ -503,7 +503,9 @@ function renderComparison() {
     comparisonBody.append(row);
   }
   const advice = candidate.advice;
-  nextAdvice.textContent = `${advice.reason} ${advice.adjustment}`;
+  nextAdvice.textContent = advice.kind === "evidence-insufficient"
+    ? advice.message
+    : `${advice.reason} ${advice.adjustment}`;
   removeCandidateButton.hidden = !candidateSession;
   setAudioElement(candidatePlayer, candidateSession?.candidateId === candidate.id ? candidateSession.url : null);
 }
@@ -897,6 +899,7 @@ async function processCandidateFile(file) {
       batchId,
       hash: result.hash,
       analysis: result.analysis,
+      referenceBasis: structuredClone(reference),
       comparison,
       similarityClass: similarityClassValue,
       advice
@@ -910,8 +913,16 @@ async function processCandidateFile(file) {
       subjectiveScore: null,
       reviewNote: "",
       disposition: "unrated",
+      referenceBasis: structuredClone(reference),
       comparison,
-      advice
+      advice,
+      generationConditions: {
+        batchId: selectedBatch.id,
+        changedAxis: selectedBatch.changedAxis,
+        prompt: selectedBatch.prompt,
+        excludePrompt: selectedBatch.excludePrompt,
+        styleSpec: structuredClone(project.styleSpec),
+      }
     };
     const batches = project.batches.map(batch => batch.id === batchId
       ? {
