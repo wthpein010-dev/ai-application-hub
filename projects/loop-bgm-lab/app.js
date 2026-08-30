@@ -344,18 +344,10 @@ function removeReference(id) {
   const session = referenceSessions.get(id);
   if (session) revokeObjectUrl(session.url);
   referenceSessions.delete(id);
-  project = validateProject({
-    ...project,
-    references: (project.references || []).filter(record => record.id !== id),
-    candidates: [],
-    experiments: [],
-    currentBestCandidate: null,
-    nextRoundSuggestion: null
-  });
+  project = rebuildPlanForReferences((project.references || []).filter(record => record.id !== id));
   releaseCandidateSession();
   persistProject();
-  renderReferences();
-  renderComparison();
+  renderAll();
   showLive("已移除参考记录，并清空依赖它的候选比较。 ");
 }
 
@@ -743,13 +735,15 @@ styleForm.addEventListener("submit", event => {
     showError("调性不能为空，目标速度必须在 70–160 BPM。 ");
     return;
   }
+  const nextKey = styleKey.value.trim();
   const nextStyle = {
     ...project.styleSpec,
-    key: styleKey.value.trim(),
+    key: nextKey,
     tempo: { target: tempo, min: Math.max(70, tempo - 3), max: Math.min(160, tempo + 4) },
     structure: { ...project.styleSpec.structure, bars: Number(styleBars.value) }
   };
   const freshPlan = createDailyPlan({ styleSpec: nextStyle });
+  const previousOverrides = project.extensions?.styleOverrides || {};
   project = validateProject({
     ...project,
     styleSpec: freshPlan.styleSpec,
@@ -757,7 +751,10 @@ styleForm.addEventListener("submit", event => {
     batches: freshPlan.batches,
     extensions: {
       ...(project.extensions || {}),
-      styleOverrides: { key: true, tempo: true }
+      styleOverrides: {
+        key: Boolean(previousOverrides.key) || nextKey !== project.styleSpec.key,
+        tempo: Boolean(previousOverrides.tempo) || tempo !== project.styleSpec.tempo.target
+      }
     }
   });
   persistProject();

@@ -21,10 +21,11 @@ const BATCH_KEYS = new Set([
 const BATCH_PATCH_KEYS = new Set(["generatedUrl", "candidateHash", "subjectiveScore", "nextRoundNote"]);
 const STYLE_KEYS = new Set(["version", "intent", "tempo", "key", "mood", "instruments", "structure", "mix", "exclusions"]);
 const SECRET_KEY = /(cookie|token|apiKey|recoveryKey|session)/i;
-const FILE_NAME_KEY = /(?:file.?name|filename|originalName|displayName|localFile)/i;
+const FILE_NAME_KEY = /(?:file.?name|filename|originalName|localFile)/i;
 const RAW_MEDIA_WORD = /^(?:raw|binary|audio|samples?|channels?|buffers?|pcm|waveform)$/i;
-const AUDIO_FILE_NAME = /[^\\/\s"'`=]+\.(?:mp3|wav|m4a|ogg|aac|flac|wave)(?=$|[?#\s)"'`,;])/i;
+const NON_URL_FILE_NAME = /(?:^|[\\/\s("'`=])[^\\/\s"'`=]+\.[a-z][a-z0-9]{0,9}(?=$|[?#\s)"'`,;])/i;
 const LOCAL_URL = /(?:file|blob):/i;
+const SECRET_VALUE = /\b(?:cookie|token|api.?key|recovery.?key|session)\s*[:=]/i;
 
 function isPlainObject(value) {
   return value !== null && typeof value === "object" && !Array.isArray(value);
@@ -46,6 +47,7 @@ function isHttpsUrl(value) {
 function containsAbsolutePath(value) {
   return /[a-zA-Z]:[\\/][^\s"'`]*/.test(value)
     || /\\\\[^\\\s"'`]+\\[^\s"'`]*/.test(value)
+    || /\/\/[^/\s"'`]+\/[^\s"'`]*/.test(value)
     || /(?:^|[\s("'`=:])\/(?!\/)[^\s"'`]*/.test(value);
 }
 
@@ -74,7 +76,8 @@ function assertSafeValue(value, key = "", path = [], seen = new WeakSet()) {
   if (typeof value === "string" && !isHttpsUrl(value)) {
     if (containsAbsolutePath(value)) fail(`Absolute path is not allowed in portable state: ${key || "value"}`);
     if (LOCAL_URL.test(value)) fail(`Portable state cannot contain file: or blob: URLs in ${key || "value"}`);
-    if (AUDIO_FILE_NAME.test(value)) fail(`Portable state cannot contain a non-URL audio file name in ${key || "value"}`);
+    if (NON_URL_FILE_NAME.test(value)) fail(`Portable state cannot contain a non-URL file name in ${key || "value"}`);
+    if (SECRET_VALUE.test(value)) fail(`Portable state cannot contain a secret-like value in ${key || "value"}`);
   }
   if (isRawMediaKey(key) && !explicitAnalysisScalar) {
     fail(`Forbidden key for raw audio or binary data; absolute path and file payloads are not portable: ${key}`);

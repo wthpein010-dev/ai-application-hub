@@ -10,7 +10,9 @@ import { chromium } from "playwright";
 const root = dirname(dirname(fileURLToPath(import.meta.url)));
 const demoWav = join(root, "projects", "loop-bgm-lab", "assets", "demo-reference.wav");
 const expectedWavSha256 = "f6168016f3659617d48662cca4d8013eb6eac2b21f3b7e17f7d23108b4985d5f";
-const differentWav = Buffer.from(await readFile(demoWav));
+const demoWavBytes = await readFile(demoWav);
+const demoFile = { name: "demo-reference.wav", mimeType: "audio/wav", buffer: demoWavBytes };
+const differentWav = Buffer.from(demoWavBytes);
 differentWav.writeUInt32LE(37_800, 24);
 differentWav.writeUInt32LE(75_600, 28);
 const expectedDifferentSha256 = createHash("sha256").update(differentWav).digest("hex");
@@ -26,6 +28,10 @@ const mime = new Map([
 
 const server = createServer(async (request, response) => {
   try {
+    if ((request.url || "").split("?", 1)[0] === "/__response-monitor-redirect") {
+      response.writeHead(302, { location: "/projects/loop-bgm-lab/index.html" }).end();
+      return;
+    }
     const requestPath = normalize(decodeURIComponent((request.url || "/").split("?", 1)[0]).replace(/^\/+/, ""));
     let filePath = resolve(root, requestPath || "index.html");
     if (relative(root, filePath).startsWith("..")) throw new Error("Invalid path");
@@ -63,7 +69,7 @@ function observeErrors(page) {
     observation.errors.push(`request: ${request.url()} ${failure}`);
   });
   page.on("response", response => {
-    if (response.status() >= 400) observation.errors.push(`response: ${response.url()} ${response.status()}`);
+    if (response.status() < 200 || response.status() >= 300) observation.errors.push(`response: ${response.url()} ${response.status()}`);
   });
   return observation;
 }
@@ -190,6 +196,15 @@ async function addLicense(page, { suffix, license = "CC0", hash = expectedWavSha
 }
 
 try {
+  const responseProbePage = await browser.newPage();
+  const responseProbeErrors = observeErrors(responseProbePage);
+  await responseProbePage.goto(`${origin}/__response-monitor-redirect`, { waitUntil: "networkidle" });
+  assert.ok(
+    responseProbeErrors.errors.some(error => error === `response: ${origin}/__response-monitor-redirect 302`),
+    "the browser error collector must flag controlled 3xx responses"
+  );
+  await responseProbePage.close();
+
   const page = await browser.newPage({ viewport: { width: 1440, height: 900 }, acceptDownloads: true });
   const errors = observeErrors(page);
   await installInterceptors(page, errors, { clearOnce: true });
@@ -238,15 +253,62 @@ try {
   assert.match(aggregatedPrompt, new RegExp(`${aggregatedState.styleSpec.key}.*around ${aggregatedState.styleSpec.tempo.target} BPM`));
   assert.doesNotMatch(aggregatedPrompt, /D minor.*around 112 BPM/);
 
-  await page.locator("#style-key").fill("D minor");
-  await page.locator("#style-tempo").fill("112");
+  await page.locator("#reference-files").setInputFiles([differentFile, demoFile]);
+  await page.waitForFunction(() => JSON.parse(localStorage.getItem("loop-bgm-lab-v1")).references.length === 2, null, { timeout: 45_000 });
+  const beforeAutomaticDeletion = await page.evaluate(() => JSON.parse(localStorage.getItem("loop-bgm-lab-v1")));
+  const selectedTempoIndex = beforeAutomaticDeletion.references.findIndex(reference => (
+    Math.round(reference.analysis.tempo.bpm) === beforeAutomaticDeletion.styleSpec.tempo.target
+  ));
+  assert.notEqual(selectedTempoIndex, -1);
+  const removedAutomaticHash = beforeAutomaticDeletion.references[selectedTempoIndex].hash;
+  const expectedAutomaticReference = beforeAutomaticDeletion.references.find(reference => reference.hash !== removedAutomaticHash);
+  const automaticPromptsBefore = await page.locator(".batch-card .prompt-text").allTextContents();
+  await page.locator("#reference-list .analysis-item")
+    .filter({ hasText: removedAutomaticHash.slice(0, 12) })
+    .locator("button")
+    .click();
+  await page.waitForFunction(({ hash, target }) => {
+    const stored = JSON.parse(localStorage.getItem("loop-bgm-lab-v1"));
+    return stored.references.length === 1
+      && stored.references[0].hash === hash
+      && stored.styleSpec.tempo.target === target;
+  }, { hash: expectedAutomaticReference.hash, target: Math.round(expectedAutomaticReference.analysis.tempo.bpm) });
+  const afterAutomaticDeletion = await page.evaluate(() => JSON.parse(localStorage.getItem("loop-bgm-lab-v1")));
+  assert.equal(afterAutomaticDeletion.styleSpec.key, expectedAutomaticReference.analysis.key.name);
+  assert.equal(await page.locator("#style-key").inputValue(), expectedAutomaticReference.analysis.key.name);
+  assert.equal(Number(await page.locator("#style-tempo").inputValue()), Math.round(expectedAutomaticReference.analysis.tempo.bpm));
+  const automaticPromptsAfter = await page.locator(".batch-card .prompt-text").allTextContents();
+  assert.equal(automaticPromptsAfter.length, 5);
+  assert.ok(automaticPromptsAfter.every(prompt => prompt.includes(`${expectedAutomaticReference.analysis.key.name}, around ${Math.round(expectedAutomaticReference.analysis.tempo.bpm)} BPM`)));
+  assert.notDeepEqual(automaticPromptsAfter, automaticPromptsBefore, "deleting the aggregate-defining reference must rebuild all prompts");
+
+  const automaticKey = await page.locator("#style-key").inputValue();
+  await page.locator("#style-key").fill(automaticKey);
+  await page.locator("#style-tempo").fill("120");
   await page.locator("#style-form button[type='submit']").click();
-  await page.waitForFunction(() => JSON.parse(localStorage.getItem("loop-bgm-lab-v1")).styleSpec.tempo.target === 112);
-  await page.locator("#reference-files").setInputFiles(differentFile);
-  await page.waitForFunction(hash => JSON.parse(localStorage.getItem("loop-bgm-lab-v1")).references[0]?.hash === hash, expectedDifferentSha256);
-  assert.equal(await page.locator("#style-key").inputValue(), "D minor");
-  assert.equal(await page.locator("#style-tempo").inputValue(), "112");
-  assert.match(await page.locator(".batch-card[data-axis='baseline'] .prompt-text").textContent(), /D minor.*around 112 BPM/);
+  await page.waitForFunction(() => {
+    const stored = JSON.parse(localStorage.getItem("loop-bgm-lab-v1"));
+    return stored.styleSpec.tempo.target === 120
+      && stored.extensions.styleOverrides?.tempo === true
+      && stored.extensions.styleOverrides?.key === false;
+  });
+  await page.locator("#reference-files").setInputFiles([demoFile, differentFile]);
+  await page.waitForFunction(() => JSON.parse(localStorage.getItem("loop-bgm-lab-v1")).references.length === 2, null, { timeout: 45_000 });
+  await page.locator("#reference-list .analysis-item")
+    .filter({ hasText: expectedWavSha256.slice(0, 12) })
+    .locator("button")
+    .click();
+  await page.waitForFunction(hash => {
+    const stored = JSON.parse(localStorage.getItem("loop-bgm-lab-v1"));
+    return stored.references.length === 1 && stored.references[0].hash === hash;
+  }, expectedDifferentSha256);
+  const afterOverrideDeletion = await page.evaluate(() => JSON.parse(localStorage.getItem("loop-bgm-lab-v1")));
+  assert.equal(afterOverrideDeletion.styleSpec.tempo.target, 120, "explicit tempo override must survive deletion recomputation");
+  assert.equal(afterOverrideDeletion.styleSpec.key, afterOverrideDeletion.references[0].analysis.key.name, "non-overridden key must still recompute");
+  assert.deepEqual(afterOverrideDeletion.extensions.styleOverrides, { key: false, tempo: true });
+  const overridePrompts = await page.locator(".batch-card .prompt-text").allTextContents();
+  assert.equal(overridePrompts.length, 5);
+  assert.ok(overridePrompts.every(prompt => prompt.includes(`${afterOverrideDeletion.styleSpec.key}, around 120 BPM`)));
 
   const liveAudioUrls = await page.evaluate(() => {
     const active = new Set([document.querySelector("#reference-player")?.src, document.querySelector("#candidate-player")?.src].filter(url => url?.startsWith("blob:")));
@@ -377,6 +439,8 @@ try {
   const validImport = structuredClone(exported);
   validImport.batches[0].status = "planned";
   validImport.extensions = { transferredBy: "browser-smoke" };
+  validImport.candidates[0].displayName = "欢乐版本 A";
+  validImport.currentBestCandidate = { displayName: "欢乐版本 A", hash: expectedDifferentSha256 };
   await page.locator("#import-project").setInputFiles({
     name: "valid.json",
     mimeType: "application/json",
@@ -385,6 +449,15 @@ try {
   await page.waitForFunction(() => document.querySelector("#import-status")?.textContent.includes("已完整导入"));
   assert.equal(await page.locator(".batch-card[data-axis='baseline'] .batch-status").inputValue(), "planned");
   assert.equal(await page.evaluate(() => JSON.parse(localStorage.getItem("loop-bgm-lab-v1")).extensions.transferredBy), "browser-smoke");
+  assert.equal(await page.evaluate(() => JSON.parse(localStorage.getItem("loop-bgm-lab-v1")).currentBestCandidate.displayName), "欢乐版本 A");
+  const labelledJsonPromise = page.waitForEvent("download");
+  await page.locator("#export-json").click();
+  const labelledJson = await readFile(await (await labelledJsonPromise).path(), "utf8");
+  assert.match(labelledJson, /欢乐版本 A/);
+  const labelledMarkdownPromise = page.waitForEvent("download");
+  await page.locator("#export-markdown").click();
+  const labelledMarkdown = await readFile(await (await labelledMarkdownPromise).path(), "utf8");
+  assert.match(labelledMarkdown, /欢乐版本 A/);
   await assertNoOverflow(page, "1440x900");
   await assertNoObservedErrors(page, errors);
   await page.close();

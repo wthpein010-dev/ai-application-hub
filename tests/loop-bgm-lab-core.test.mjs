@@ -143,12 +143,14 @@ test("portable project validation rejects path, local URL, filename, and raw-aud
     { extensions: { note: "prefix=C:\\Users\\Alice\\reference.wav" } },
     { extensions: { note: "private source /Users/alice/reference.wav" } },
     { extensions: { note: "private source \\\\server\\share\\reference.wav" } },
+    { extensions: { note: "private source //server/share/private" } },
     { extensions: { playback: "blob:https://example.test/private" } },
     { extensions: { playback: "url=blob:https://example.test/private" } },
     { extensions: { playback: "file:///Users/alice/reference.wav" } },
     { extensions: { originalFileName: "reference" } },
     { extensions: { note: "reference.wav" } },
     { extensions: { note: "selected=reference.wav" } },
+    { extensions: { note: "alice-budget.xlsx" } },
     { extensions: { rawSamples: "redacted" } },
     { extensions: { payloadAudioCache: "redacted" } },
     { extensions: { waveform: [0.1, 0.2, 0.3] } },
@@ -158,6 +160,8 @@ test("portable project validation rejects path, local URL, filename, and raw-aud
   for (const value of rejected) {
     assert.throws(() => validateProject({ ...plan, ...value }), /portable|path|file name|audio|numeric array|forbidden/i);
     assert.throws(() => importProjectJson(JSON.stringify({ ...plan, ...value })), /portable|path|file name|audio|numeric array|forbidden/i);
+    assert.throws(() => exportProjectJson({ ...plan, ...value }), /portable|path|file name|audio|numeric array|forbidden/i);
+    assert.throws(() => exportProjectMarkdown({ ...plan, ...value }), /portable|path|file name|audio|numeric array|forbidden/i);
   }
 });
 
@@ -195,6 +199,35 @@ test("portable project validation rejects duplicate imported license IDs", () =>
     fileSha256: "a".repeat(64)
   };
   assert.throws(() => validateProject({ ...createDailyPlan(), licenses: [license, { ...license, sourceUrl: "https://freesound.org/s/8/" }] }), /license ids must be unique/i);
+});
+
+test("portable JSON and Markdown preserve safe human display labels but reject unsafe displayName values", () => {
+  const labelled = {
+    ...createDailyPlan(),
+    references: [{ id: "reference-1", displayName: "参考节奏 A", hash: "a".repeat(64) }],
+    candidates: [{ id: "candidate-1", displayName: "欢乐版本 A", hash: "b".repeat(64) }],
+    currentBestCandidate: { displayName: "欢乐版本 A", hash: "b".repeat(64) }
+  };
+  const exported = exportProjectJson(labelled);
+  const restored = importProjectJson(exported);
+  const markdown = exportProjectMarkdown(restored);
+  assert.equal(restored.references[0].displayName, "参考节奏 A");
+  assert.equal(restored.candidates[0].displayName, "欢乐版本 A");
+  assert.equal(restored.currentBestCandidate.displayName, "欢乐版本 A");
+  assert.match(markdown, /欢乐版本 A/);
+
+  for (const displayName of [
+    "alice-budget.xlsx",
+    "C:\\Users\\Alice\\private",
+    "//server/share/private",
+    "blob:https://example.test/private",
+    "file:///Users/Alice/private",
+    "token=private-value"
+  ]) {
+    const unsafe = { ...createDailyPlan(), currentBestCandidate: { displayName, hash: "b".repeat(64) } };
+    assert.throws(() => validateProject(unsafe), /portable|path|file name|file:|blob:|secret/i);
+    assert.throws(() => importProjectJson(JSON.stringify(unsafe)), /portable|path|file name|file:|blob:|secret/i);
+  }
 });
 
 test("project validation and JSON import keep nested secret validation under path-labelled values", () => {
