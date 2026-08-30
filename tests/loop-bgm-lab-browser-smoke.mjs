@@ -345,7 +345,16 @@ try {
   assert.equal(await page.locator(".batch-card[data-axis='baseline'] .batch-status").inputValue(), "planned");
 
   await page.locator(".batch-card[data-axis='baseline'] .batch-status").selectOption("submitted");
-  await page.waitForFunction(() => JSON.parse(localStorage.getItem("loop-bgm-lab-v1")).batches[0].status === "submitted");
+  await page.waitForFunction(() => JSON.parse(localStorage.getItem("loop-bgm-lab-v1")).batches[0].generationConditions?.styleSpec.tempo.target === 120, null, { timeout: 5_000 });
+  const recordedRunConditions = await page.evaluate(() => structuredClone(JSON.parse(localStorage.getItem("loop-bgm-lab-v1")).batches[0].generationConditions));
+  await page.locator("#style-tempo").fill("126");
+  await page.locator("#style-form button[type='submit']").click();
+  await page.waitForFunction(() => {
+    const stored = JSON.parse(localStorage.getItem("loop-bgm-lab-v1"));
+    return stored.styleSpec.tempo.target === 126
+      && stored.batches[0].prompt.includes("around 126 BPM")
+      && stored.batches[0].generationConditions?.styleSpec.tempo.target === 120;
+  });
   await page.locator(".search-link[data-source='Pixabay Music']").click();
   const searchOpen = await page.evaluate(() => window.__externalOpens.at(-1));
   assert.match(searchOpen.url, /^https:\/\/pixabay\.com\/music\/search/);
@@ -378,6 +387,7 @@ try {
   });
   assert.equal(firstCandidate.experimentCount, 1);
   assert.equal(firstCandidate.currentBestCandidate, null, "analysis must not silently promote a candidate to best");
+  assert.deepEqual(await page.evaluate(() => JSON.parse(localStorage.getItem("loop-bgm-lab-v1")).experiments[0].generationConditions), recordedRunConditions);
 
   const firstHistory = page.locator(`.candidate-history-item[data-candidate-id='${firstCandidate.id}']`);
   await firstHistory.locator(".candidate-generated-url").fill("https://suno.com/song/browser-smoke-a");
@@ -514,7 +524,8 @@ try {
   assert.equal(exported.batches[0].generatedUrl, "https://suno.com/song/browser-smoke-a");
   assert.equal(exported.experiments[0].generationConditions.batchId, "batch-1");
   assert.equal(exported.experiments[0].generationConditions.changedAxis, "baseline");
-  assert.equal(exported.experiments[0].generationConditions.prompt, exported.batches[0].prompt);
+  assert.equal(exported.experiments[0].generationConditions.prompt, recordedRunConditions.prompt);
+  assert.deepEqual(exported.batches[0].generationConditions, recordedRunConditions);
   assert.deepEqual(exported.experiments[0].referenceBasis, exported.candidates[0].referenceBasis);
   assert.doesNotMatch(exportedText, /demo-reference\.wav|blob:|audioBytes|apiKey|cookie|token|[A-Z]:\\|\/Users\//i);
 
@@ -605,6 +616,9 @@ try {
   assert.equal(await page.locator("#similarity-class").textContent(), "证据不足");
   assert.equal(await page.locator("#next-advice").textContent(), "有效特征覆盖率低于 70%，证据不足；请补充可用分析数据后再判断。");
   assert.doesNotMatch(await page.locator("#next-advice").textContent(), /loopStructure|melodyTimbre|rhythm|percussion|差异最明显/);
+  assert.equal(await page.locator("#comparison-coverage").textContent(), "—");
+  assert.equal(await page.locator("#comparison-similarity").textContent(), "—");
+  assert.equal(await page.locator("#comparison-components tbody tr").count(), 0);
   const labelledJsonPromise = page.waitForEvent("download");
   await page.locator("#export-json").click();
   const labelledJson = await readFile(await (await labelledJsonPromise).path(), "utf8");

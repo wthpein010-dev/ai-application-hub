@@ -213,6 +213,20 @@ test("allows only explicit batch status transitions and never infers submission 
   assert.throws(() => transitionBatch(plan, "batch-1", "planned", { id: "batch-other" }), /Unsupported batch patch field/);
 });
 
+test("recording a submitted run freezes its generation conditions before later plan rebuilds", () => {
+  // Break caught: a later StyleSpec edit rewrites the prompt and StyleSpec that explain an already submitted run.
+  const submitted = transitionBatch(createDailyPlan(), "batch-1", "submitted");
+  const snapshot = submitted.batches[0].generationConditions;
+
+  assert.deepEqual(snapshot, {
+    batchId: "batch-1",
+    changedAxis: "baseline",
+    prompt: BASELINE_PROMPT,
+    excludePrompt: submitted.batches[0].excludePrompt,
+    styleSpec: submitted.styleSpec,
+  });
+});
+
 test("validates a deep-copied project and preserves unknown top-level fields under extensions", () => {
   const plan = createDailyPlan();
   const validated = validateProject({ ...plan, futureSetting: { enabled: true } });
@@ -391,7 +405,7 @@ test("project validation and JSON import keep nested secret validation under pat
 });
 
 test("round-trips validated project JSON losslessly and keeps Markdown free of paths and secrets", () => {
-  const plan = createDailyPlan();
+  const plan = transitionBatch(createDailyPlan(), "batch-1", "submitted");
   const project = validateProject({
     ...plan,
     sourceUrl: "https://suno.com/create",

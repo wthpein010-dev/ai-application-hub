@@ -5,6 +5,7 @@ import {
   exportProjectJson,
   exportProjectMarkdown,
   importProjectJson,
+  transitionBatch,
   validateProject,
 } from "../projects/loop-bgm-lab/core/project-state.mjs";
 import { createDailyPlan } from "../projects/loop-bgm-lab/core/prompt-engine.mjs";
@@ -75,7 +76,7 @@ function advice() {
 }
 
 function completeProject() {
-  const plan = createDailyPlan();
+  const plan = transitionBatch(createDailyPlan(), "batch-1", "submitted");
   const batches = plan.batches.map((batch, index) => ({
     ...batch,
     generatedUrl: index === 0 ? "https://suno.com/song/example" : null,
@@ -88,13 +89,7 @@ function completeProject() {
   const candidateComparison = comparison();
   const candidateAdvice = advice();
   const frozenReferenceBasis = referenceBasis();
-  const generationConditions = {
-    batchId: "batch-1",
-    changedAxis: "baseline",
-    prompt: batches[0].prompt,
-    excludePrompt: batches[0].excludePrompt,
-    styleSpec: structuredClone(plan.styleSpec),
-  };
+  const generationConditions = structuredClone(plan.batches[0].generationConditions);
   return {
     ...plan,
     sourceUrl: "https://suno.com/create",
@@ -163,7 +158,9 @@ test("durable experiments preserve frozen generation conditions after current ba
     ...project,
     styleSpec: laterStyle,
     credits: createDailyPlan({ styleSpec: laterStyle }).credits,
-    batches: createDailyPlan({ styleSpec: laterStyle }).batches,
+    batches: createDailyPlan({ styleSpec: laterStyle }).batches.map((batch, index) => index === 0
+      ? { ...batch, status: "submitted", generationConditions: snapshot }
+      : batch),
   };
 
   const restored = importProjectJson(exportProjectJson(later));

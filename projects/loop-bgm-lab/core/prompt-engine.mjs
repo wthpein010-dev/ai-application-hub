@@ -127,6 +127,7 @@ export function createPromptVariants(styleSpec) {
     credits: 10,
     status: "planned",
     generatedUrl: null,
+    generationConditions: null,
     candidateHash: null,
     subjectiveScore: null,
     nextRoundNote: "",

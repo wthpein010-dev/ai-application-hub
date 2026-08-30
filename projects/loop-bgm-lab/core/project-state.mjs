@@ -24,7 +24,7 @@ const PROJECT_KEYS = new Set([
 ]);
 const BATCH_KEYS = new Set([
   "id", "changedAxis", "prompt", "excludePrompt", "expectedDifference", "credits",
-  "status", "generatedUrl", "candidateHash", "subjectiveScore", "nextRoundNote",
+  "status", "generatedUrl", "generationConditions", "candidateHash", "subjectiveScore", "nextRoundNote",
   "reviewNote", "disposition"
 ]);
 const BATCH_PATCH_KEYS = new Set([
@@ -184,6 +184,13 @@ function validateBatch(batch) {
   if (!STATUS_VALUES.has(batch.status)) fail(`Unsupported batch status: ${batch.status}`);
   assertInteger(batch.credits, "batch.credits", { minimum: 1 });
   assertNullableHttpsUrl(batch.generatedUrl, "batch.generatedUrl");
+  if (batch.generationConditions !== null) {
+    validateGenerationConditions(batch.generationConditions, "batch.generationConditions", batch);
+  }
+  if ((batch.generatedUrl !== null || ["submitted", "downloaded", "reviewed"].includes(batch.status))
+    && batch.generationConditions === null) {
+    fail("recorded batches require frozen generationConditions");
+  }
   assertHash(batch.candidateHash, "batch.candidateHash", { nullable: true });
   assertNumber(batch.subjectiveScore, "batch.subjectiveScore", { nullable: true });
   if (batch.subjectiveScore !== null && (batch.subjectiveScore < 1 || batch.subjectiveScore > 5)) {
@@ -339,6 +346,16 @@ function validateGenerationConditions(value, field, batch) {
   }
 }
 
+function snapshotGenerationConditions(batch, styleSpec) {
+  return {
+    batchId: batch.id,
+    changedAxis: batch.changedAxis,
+    prompt: batch.prompt,
+    excludePrompt: batch.excludePrompt,
+    styleSpec: cloneJson(styleSpec),
+  };
+}
+
 function validateAdvice(value, field, { nullable = false } = {}) {
   if (nullable && value === null) return;
   if (value?.kind === "evidence-insufficient") {
@@ -417,6 +434,10 @@ function validateExperiment(value, index, candidatesById, batchesById) {
   validateDerivedComparison(value.referenceBasis, candidate, value.comparison, `${field}.comparison`);
   validateAdvice(value.advice, `${field}.advice`);
   validateGenerationConditions(value.generationConditions, `${field}.generationConditions`, batch);
+  if (batch.generationConditions === null
+    || stableStringify(value.generationConditions) !== stableStringify(batch.generationConditions)) {
+    fail(`${field}.generationConditions must match its frozen batch conditions`);
+  }
   if (stableStringify(value.referenceBasis) !== stableStringify(candidate.referenceBasis)
     || stableStringify(value.comparison) !== stableStringify(candidate.comparison)
     || stableStringify(value.advice) !== stableStringify(candidate.advice)) {
@@ -568,7 +589,16 @@ export function transitionBatch(plan, batchId, status, patch = {}) {
   if (index < 0) fail(`Unknown batch: ${batchId}`);
   const current = validated.batches[index];
   if (!TRANSITIONS[current.status].has(status)) fail(`Invalid status transition: ${current.status} -> ${status}`);
-  const next = { ...current, ...patch, status };
+  const shouldFreezeConditions = current.generationConditions === null
+    && (status === "submitted" || (Object.hasOwn(patch, "generatedUrl") && patch.generatedUrl !== null));
+  const next = {
+    ...current,
+    ...patch,
+    status,
+    generationConditions: current.generationConditions || (shouldFreezeConditions
+      ? snapshotGenerationConditions(current, validated.styleSpec)
+      : null)
+  };
   validateBatch(next);
   validated.batches[index] = next;
   return validated;

@@ -8,7 +8,7 @@ import {
   recommendNextVariant,
   validateLicenseEntry
 } from "../projects/loop-bgm-lab/core/candidate-score.mjs";
-import { importProjectJson, validateProject } from "../projects/loop-bgm-lab/core/project-state.mjs";
+import { importProjectJson, transitionBatch, validateProject } from "../projects/loop-bgm-lab/core/project-state.mjs";
 import { createDailyPlan } from "../projects/loop-bgm-lab/core/prompt-engine.mjs";
 
 const reference = {
@@ -251,7 +251,7 @@ test("experiment records are detached and deeply immutable while project validat
 
   const candidateComparison = compareCandidate(reference, reference);
   const candidateAdvice = recommendNextVariant(candidateComparison);
-  const plan = createDailyPlan();
+  const plan = transitionBatch(createDailyPlan(), "batch-1", "submitted");
   const experiment = {
     id: "experiment-1",
     batchId: "batch-1",

@@ -221,6 +221,7 @@ function mergeBatchProgress(freshBatches, previousBatches) {
       ...batch,
       status: previous.status,
       generatedUrl: previous.generatedUrl,
+      generationConditions: previous.generationConditions,
       candidateHash: previous.candidateHash,
       subjectiveScore: previous.subjectiveScore,
       nextRoundNote: previous.nextRoundNote,
@@ -492,6 +493,14 @@ function renderComparison() {
   comparisonCoverage.textContent = `${Math.round(candidate.comparison.coverage * 100)}%`;
   comparisonSimilarity.textContent = `${Math.round(candidate.comparison.similarity * 100)}%`;
   similarityClass.textContent = CLASS_LABELS[candidate.similarityClass] || candidate.similarityClass;
+  if (candidate.similarityClass === "insufficient") {
+    comparisonCoverage.textContent = "—";
+    comparisonSimilarity.textContent = "—";
+    nextAdvice.textContent = candidate.advice.message;
+    removeCandidateButton.hidden = !candidateSession;
+    setAudioElement(candidatePlayer, candidateSession?.candidateId === candidate.id ? candidateSession.url : null);
+    return;
+  }
   for (const [name, component] of Object.entries(candidate.comparison.components)) {
     const row = createElement("tr");
     row.append(
@@ -550,7 +559,19 @@ function updateCandidateReview(candidateId, batchPatch) {
     const batch = project.batches.find(item => item.id === candidate.batchId);
     if (!batch) throw new TypeError(`候选关联的批次不存在：${candidate.batchId}`);
     const normalizedPatch = { ...batchPatch, candidateHash: candidate.hash };
-    const batches = project.batches.map(item => item.id === batch.id ? { ...item, ...normalizedPatch } : item);
+    const generationConditions = batch.generationConditions || (normalizedPatch.generatedUrl !== null
+      && Object.hasOwn(normalizedPatch, "generatedUrl")
+      ? {
+        batchId: batch.id,
+        changedAxis: batch.changedAxis,
+        prompt: batch.prompt,
+        excludePrompt: batch.excludePrompt,
+        styleSpec: structuredClone(project.styleSpec),
+      }
+      : null);
+    const batches = project.batches.map(item => item.id === batch.id
+      ? { ...item, ...normalizedPatch, ...(generationConditions ? { generationConditions } : {}) }
+      : item);
     const experiments = project.experiments.map(experiment => experiment.candidateId === candidate.id
       ? {
         ...experiment,
@@ -893,6 +914,13 @@ async function processCandidateFile(file) {
     const comparison = compareCandidate(reference, result.analysis);
     const similarityClassValue = classifySimilarity(comparison);
     const advice = recommendNextVariant(comparison);
+    const generationConditions = selectedBatch.generationConditions || {
+      batchId: selectedBatch.id,
+      changedAxis: selectedBatch.changedAxis,
+      prompt: selectedBatch.prompt,
+      excludePrompt: selectedBatch.excludePrompt,
+      styleSpec: structuredClone(project.styleSpec),
+    };
     const candidateId = allocateId("candidate", project.candidates || []);
     const record = {
       id: candidateId,
@@ -916,18 +944,13 @@ async function processCandidateFile(file) {
       referenceBasis: structuredClone(reference),
       comparison,
       advice,
-      generationConditions: {
-        batchId: selectedBatch.id,
-        changedAxis: selectedBatch.changedAxis,
-        prompt: selectedBatch.prompt,
-        excludePrompt: selectedBatch.excludePrompt,
-        styleSpec: structuredClone(project.styleSpec),
-      }
+      generationConditions: structuredClone(generationConditions)
     };
     const batches = project.batches.map(batch => batch.id === batchId
       ? {
         ...batch,
         candidateHash: result.hash,
+        generationConditions: batch.generationConditions || generationConditions,
         subjectiveScore: null,
         reviewNote: "",
         disposition: "unrated"
