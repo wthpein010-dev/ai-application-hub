@@ -72,9 +72,12 @@ test("CI external mode reports broken public actions without requiring a Pages b
 
   assert.ok(requests.length > 0);
   assert.equal(requests.every(({ url }) => /^https?:\/\//.test(url)), true);
+  assert.equal(report.findings.some((item) =>
+    item.rule === "online-target"
+    && item.projectId === "gamepulse-mini-radar"), false);
   assert.ok(report.findings.some((item) =>
     item.rule === "online-target"
-    && item.projectId === "gamepulse-mini-radar"
+    && item.projectId === "ai-game-requirements-workshop"
     && /HTTP 404/.test(item.message)));
 });
 
