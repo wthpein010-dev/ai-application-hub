@@ -128,7 +128,13 @@ test("round-trips validated project JSON losslessly and keeps Markdown free of p
     sourceUrl: "https://suno.com/create",
     references: [{ displayName: "Reference A", hash: "sha256:reference", features: { tempo: 112 } }],
     candidates: [{ displayName: "Sunny Loop", hash: "sha256:abc", sourceUrl: "https://suno.com/create" }],
-    licenses: [{ sourceUrl: "https://example.test/license", license: "CC0" }],
+    licenses: [{
+      id: "license-cc0-a",
+      source: "Example",
+      sourceUrl: "https://example.test/license",
+      license: "CC0",
+      fileSha256: "a".repeat(64)
+    }],
     currentBestCandidate: { displayName: "Sunny Loop", hash: "sha256:abc" },
     extensions: { futureSetting: { enabled: true } }
   });

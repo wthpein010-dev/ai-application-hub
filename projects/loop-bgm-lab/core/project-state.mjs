@@ -1,3 +1,5 @@
+import { createExperimentRecord, validateLicenseEntry } from "./candidate-score.mjs";
+
 const PROJECT_VERSION = 1;
 const STATUS_VALUES = new Set(["planned", "submitted", "downloaded", "reviewed", "rejected"]);
 const TRANSITIONS = {
@@ -9,7 +11,7 @@ const TRANSITIONS = {
 };
 const PROJECT_KEYS = new Set([
   "version", "toolVersion", "ruleCheckedAt", "styleSpec", "credits", "batches",
-  "sourceUrl", "references", "candidates", "licenses", "currentBestCandidate",
+  "sourceUrl", "references", "candidates", "experiments", "licenses", "currentBestCandidate",
   "outstandingIssues", "nextRoundSuggestion", "extensions"
 ]);
 const BATCH_KEYS = new Set([
@@ -156,6 +158,8 @@ export function validateProject(input) {
   input.batches.forEach(validateBatch);
   const ids = input.batches.map(batch => batch.id);
   if (new Set(ids).size !== ids.length) fail("batch ids must be unique");
+  if (typeof input.experiments !== "undefined" && !Array.isArray(input.experiments)) fail("experiments must be an array");
+  if (typeof input.licenses !== "undefined" && !Array.isArray(input.licenses)) fail("licenses must be an array");
 
   const output = {};
   for (const key of PROJECT_KEYS) {
@@ -168,6 +172,8 @@ export function validateProject(input) {
   const suppliedExtensions = input.extensions ? cloneJson(input.extensions) : {};
   if (!isPlainObject(suppliedExtensions)) fail("extensions must be an object");
   output.extensions = { ...suppliedExtensions, ...unknown };
+  if (Array.isArray(input.experiments)) output.experiments = input.experiments.map(record => cloneJson(createExperimentRecord(record)));
+  if (Array.isArray(input.licenses)) output.licenses = input.licenses.map(validateLicenseEntry);
   return output;
 }
 
