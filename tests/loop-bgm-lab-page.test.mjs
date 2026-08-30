@@ -85,6 +85,10 @@ test("browser coordinator imports the analysis, plan/state, and candidate-scorin
   assert.match(source, /\bcompareCandidate\b/);
   assert.match(source, /\bclassifySimilarity\b/);
   assert.match(source, /\brecommendNextVariant\b/);
+  assert.match(source, /from "\.\/core\/browser-policy\.mjs"/);
+  assert.match(source, /\baggregateReferenceStyle\b/);
+  assert.match(source, /\bassertDecodedAudioBudget\b/);
+  assert.match(source, /\bnextMonotonicId\b/);
   assert.match(source, /const STORAGE_KEY = "loop-bgm-lab-v1"/);
   assert.doesNotMatch(source, /localStorage\.(?:getItem|setItem|removeItem)\((?!STORAGE_KEY)/);
 });
@@ -94,6 +98,7 @@ test("responsive styles protect keyboard focus, reduced motion, and narrow viewp
   const css = readProjectFile("styles.css");
   assert.match(css, /overflow-x:\s*hidden/);
   assert.match(css, /:focus-visible/);
+  assert.match(css, /\.file-picker:focus-within/);
   assert.match(css, /@media\s*\(max-width:\s*720px\)/);
   assert.match(css, /grid-template-columns:\s*1fr/);
   assert.match(css, /@media\s*\(prefers-reduced-motion:\s*reduce\)/);

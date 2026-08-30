@@ -20,8 +20,11 @@ const BATCH_KEYS = new Set([
 ]);
 const BATCH_PATCH_KEYS = new Set(["generatedUrl", "candidateHash", "subjectiveScore", "nextRoundNote"]);
 const STYLE_KEYS = new Set(["version", "intent", "tempo", "key", "mood", "instruments", "structure", "mix", "exclusions"]);
-const SECRET_OR_BINARY_KEY = /(audioBytes|cookie|token|apiKey|recoveryKey|session)/i;
-const LOCAL_PATH_KEY = /^(?:localPath|filePath|audioPath|path)$/i;
+const SECRET_KEY = /(cookie|token|apiKey|recoveryKey|session)/i;
+const FILE_NAME_KEY = /(?:file.?name|filename|originalName|displayName|localFile)/i;
+const RAW_MEDIA_WORD = /^(?:raw|binary|audio|samples?|channels?|buffers?|pcm|waveform)$/i;
+const AUDIO_FILE_NAME = /[^\\/\s"'`=]+\.(?:mp3|wav|m4a|ogg|aac|flac|wave)(?=$|[?#\s)"'`,;])/i;
+const LOCAL_URL = /(?:file|blob):/i;
 
 function isPlainObject(value) {
   return value !== null && typeof value === "object" && !Array.isArray(value);
@@ -31,18 +34,64 @@ function fail(message) {
   throw new TypeError(message);
 }
 
-function assertSafeValue(value, key = "", inheritedPathSensitive = false, seen = new WeakSet()) {
-  if (SECRET_OR_BINARY_KEY.test(key)) {
+function isHttpsUrl(value) {
+  if (typeof value !== "string") return false;
+  try {
+    return new URL(value).protocol === "https:";
+  } catch {
+    return false;
+  }
+}
+
+function containsAbsolutePath(value) {
+  return /[a-zA-Z]:[\\/][^\s"'`]*/.test(value)
+    || /\\\\[^\\\s"'`]+\\[^\s"'`]*/.test(value)
+    || /(?:^|[\s("'`=:])\/(?!\/)[^\s"'`]*/.test(value);
+}
+
+function isExplicitAnalysisPath(path) {
+  return (path[0] === "references" || path[0] === "candidates") && path.includes("analysis");
+}
+
+function isExplicitChromaPath(path) {
+  return isExplicitAnalysisPath(path) && path.at(-2) === "key" && path.at(-1) === "chroma";
+}
+
+function isRawMediaKey(key) {
+  return String(key)
+    .replace(/([a-z0-9])([A-Z])/g, "$1 $2")
+    .split(/[^a-zA-Z0-9]+/)
+    .some(word => RAW_MEDIA_WORD.test(word));
+}
+
+function assertSafeValue(value, key = "", path = [], seen = new WeakSet()) {
+  const currentPath = key ? [...path, key] : path;
+  if (SECRET_KEY.test(key)) {
     fail(`Forbidden key: ${key}`);
   }
-  const pathSensitive = inheritedPathSensitive || LOCAL_PATH_KEY.test(key);
-  if (pathSensitive && typeof value === "string" && isAbsolutePath(value)) {
-    fail(`Absolute path is not allowed in ${key}`);
+  if (FILE_NAME_KEY.test(key)) fail(`Portable state cannot contain a file name key: ${key}`);
+  const explicitAnalysisScalar = isExplicitAnalysisPath(currentPath) && (key === "sampleRate" || key === "channelCount");
+  if (typeof value === "string" && !isHttpsUrl(value)) {
+    if (containsAbsolutePath(value)) fail(`Absolute path is not allowed in portable state: ${key || "value"}`);
+    if (LOCAL_URL.test(value)) fail(`Portable state cannot contain file: or blob: URLs in ${key || "value"}`);
+    if (AUDIO_FILE_NAME.test(value)) fail(`Portable state cannot contain a non-URL audio file name in ${key || "value"}`);
+  }
+  if (isRawMediaKey(key) && !explicitAnalysisScalar) {
+    fail(`Forbidden key for raw audio or binary data; absolute path and file payloads are not portable: ${key}`);
   }
   if (Array.isArray(value)) {
     if (seen.has(value)) fail("Circular values are not allowed");
+    if (key === "chroma") {
+      if (!isExplicitChromaPath(currentPath)
+        || value.length !== 12
+        || value.some(item => typeof item !== "number" || !Number.isFinite(item) || item < 0 || item > 1)) {
+        fail("analysis.key.chroma must be an explicit 12-value feature vector");
+      }
+    } else if (value.length > 0 && value.every(item => typeof item === "number")) {
+      fail(`Unknown numeric array is not portable at ${currentPath.join(".") || "project"}`);
+    }
     seen.add(value);
-    value.forEach(item => assertSafeValue(item, "", pathSensitive, seen));
+    value.forEach(item => assertSafeValue(item, "", currentPath, seen));
     seen.delete(value);
     return;
   }
@@ -50,14 +99,10 @@ function assertSafeValue(value, key = "", inheritedPathSensitive = false, seen =
     if (seen.has(value)) fail("Circular values are not allowed");
     seen.add(value);
     for (const [childKey, childValue] of Object.entries(value)) {
-      assertSafeValue(childValue, childKey, pathSensitive, seen);
+      assertSafeValue(childValue, childKey, currentPath, seen);
     }
     seen.delete(value);
   }
-}
-
-function isAbsolutePath(value) {
-  return /^[a-zA-Z]:[\\/]/.test(value) || value.startsWith("/") || value.startsWith("\\\\");
 }
 
 function markdownText(value) {
@@ -167,6 +212,10 @@ export function validateProject(input) {
   if (new Set(ids).size !== ids.length) fail("batch ids must be unique");
   if (typeof input.experiments !== "undefined" && !Array.isArray(input.experiments)) fail("experiments must be an array");
   if (typeof input.licenses !== "undefined" && !Array.isArray(input.licenses)) fail("licenses must be an array");
+  const validatedLicenses = Array.isArray(input.licenses) ? input.licenses.map(validateLicenseEntry) : null;
+  if (validatedLicenses && new Set(validatedLicenses.map(entry => entry.id)).size !== validatedLicenses.length) {
+    fail("license ids must be unique");
+  }
 
   const output = {};
   for (const key of PROJECT_KEYS) {
@@ -180,7 +229,7 @@ export function validateProject(input) {
   if (!isPlainObject(suppliedExtensions)) fail("extensions must be an object");
   output.extensions = { ...suppliedExtensions, ...unknown };
   if (Array.isArray(input.experiments)) output.experiments = input.experiments.map(createExperimentRecord);
-  if (Array.isArray(input.licenses)) output.licenses = input.licenses.map(validateLicenseEntry);
+  if (validatedLicenses) output.licenses = validatedLicenses;
   return output;
 }
 

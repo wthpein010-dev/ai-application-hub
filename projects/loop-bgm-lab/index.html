@@ -50,8 +50,8 @@
           <label class="file-picker" for="reference-files">
             <strong>选择参考音频</strong>
             <span>多选后会替换当前参考组；原始字节不会持久化。</span>
+            <input id="reference-files" class="visually-hidden" type="file" multiple accept=".mp3,.wav,.m4a,.ogg,audio/mpeg,audio/wav,audio/mp4,audio/ogg">
           </label>
-          <input id="reference-files" class="visually-hidden" type="file" multiple accept=".mp3,.wav,.m4a,.ogg,audio/mpeg,audio/wav,audio/mp4,audio/ogg">
           <button id="load-demo-reference" class="secondary-button" type="button">载入原创合成演示 WAV</button>
           <p id="reference-progress" class="live-box" role="status" aria-live="polite">等待选择文件。</p>
         </div>
@@ -127,8 +127,7 @@
         </div>
       </div>
       <div class="candidate-toolbar">
-        <label class="file-picker compact" for="candidate-file"><strong>选择 1 个候选音频</strong><span>替换时会释放上一个临时播放地址。</span></label>
-        <input id="candidate-file" class="visually-hidden" type="file" accept=".mp3,.wav,.m4a,.ogg,audio/mpeg,audio/wav,audio/mp4,audio/ogg">
+        <label class="file-picker compact" for="candidate-file"><strong>选择 1 个候选音频</strong><span>替换时会释放上一个临时播放地址。</span><input id="candidate-file" class="visually-hidden" type="file" accept=".mp3,.wav,.m4a,.ogg,audio/mpeg,audio/wav,audio/mp4,audio/ogg"></label>
         <button id="remove-candidate" class="text-button" type="button" hidden>移除候选</button>
       </div>
       <div class="players" aria-label="参考与候选播放器">
@@ -198,8 +197,7 @@
       <div class="handoff-actions">
         <button id="export-json" class="primary-button" type="button">导出 JSON</button>
         <button id="export-markdown" class="secondary-button" type="button">导出 Markdown</button>
-        <label class="file-picker compact" for="import-project"><strong>导入 JSON</strong><span>先完整校验，成功后才替换当前状态。</span></label>
-        <input id="import-project" class="visually-hidden" type="file" accept=".json,application/json">
+        <label class="file-picker compact" for="import-project"><strong>导入 JSON</strong><span>先完整校验，成功后才替换当前状态。</span><input id="import-project" class="visually-hidden" type="file" accept=".json,application/json"></label>
       </div>
       <p id="import-status" class="live-box" role="status" aria-live="polite">尚未导入项目。</p>
       <p id="storage-warning" class="warning-box" role="status" aria-live="polite" hidden></p>

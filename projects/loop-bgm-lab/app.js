@@ -13,6 +13,12 @@ import {
   recommendNextVariant,
   validateLicenseEntry
 } from "./core/candidate-score.mjs";
+import {
+  aggregateReferenceStyle,
+  assertDecodedAudioBudget,
+  assertPredecodeAudioBudget,
+  nextMonotonicId
+} from "./core/browser-policy.mjs";
 
 const STORAGE_KEY = "loop-bgm-lab-v1";
 const MAX_FILE_BYTES = 80 * 1024 * 1024;
@@ -84,6 +90,25 @@ const referenceSessions = new Map();
 let candidateSession = null;
 const objectUrls = new Set();
 const downloadUrls = new Set();
+const allocatedIds = {
+  reference: new Set(),
+  candidate: new Set(),
+  license: new Set()
+};
+let referenceGeneration = 0;
+let candidateGeneration = 0;
+
+function allocateId(prefix, entries = []) {
+  const id = nextMonotonicId([...entries, ...allocatedIds[prefix]], prefix);
+  allocatedIds[prefix].add(id);
+  return id;
+}
+
+function rememberProjectIds(value) {
+  for (const prefix of Object.keys(allocatedIds)) {
+    for (const entry of value?.[`${prefix}s`] || []) allocatedIds[prefix].add(entry.id);
+  }
+}
 
 function createElement(tag, options = {}) {
   const node = document.createElement(tag);
@@ -191,6 +216,26 @@ function aggregateReferences(records = project.references || []) {
   };
 }
 
+function rebuildPlanForReferences(references, baseProject = project) {
+  const styleSpec = aggregateReferenceStyle(
+    references,
+    baseProject.styleSpec,
+    baseProject.extensions?.styleOverrides || {}
+  );
+  const plan = createDailyPlan({ styleSpec });
+  return validateProject({
+    ...baseProject,
+    styleSpec: plan.styleSpec,
+    credits: plan.credits,
+    batches: plan.batches,
+    references,
+    candidates: [],
+    experiments: [],
+    currentBestCandidate: null,
+    nextRoundSuggestion: null
+  });
+}
+
 function metric(label, value) {
   const item = createElement("p");
   item.append(createElement("span", { text: label }), createElement("strong", { text: value }));
@@ -294,6 +339,8 @@ function renderReferences() {
 }
 
 function removeReference(id) {
+  referenceGeneration += 1;
+  candidateGeneration += 1;
   const session = referenceSessions.get(id);
   if (session) revokeObjectUrl(session.url);
   referenceSessions.delete(id);
@@ -449,6 +496,7 @@ function renderLicenses() {
   licenseList.replaceChildren();
   for (const entry of project.licenses || []) {
     const item = createElement("li", { className: "license-entry" });
+    item.dataset.licenseId = entry.id;
     const copy = createElement("div");
     copy.append(createElement("strong", { text: `${entry.source} · ${entry.license}` }));
     const link = createElement("a", { text: entry.sourceUrl });
@@ -491,16 +539,54 @@ function validateAudioFile(file) {
   }
 }
 
+async function checkMediaMetadataBudget(file) {
+  const url = createAudioUrl(file);
+  const audio = new Audio();
+  audio.preload = "metadata";
+  try {
+    const durationSeconds = await new Promise(resolveDuration => {
+      let settled = false;
+      const finish = value => {
+        if (settled) return;
+        settled = true;
+        window.clearTimeout(timeout);
+        audio.removeEventListener("loadedmetadata", onMetadata);
+        audio.removeEventListener("error", onUnavailable);
+        resolveDuration(value);
+      };
+      const onMetadata = () => finish(Number.isFinite(audio.duration) ? audio.duration : null);
+      const onUnavailable = () => finish(null);
+      const timeout = window.setTimeout(onUnavailable, 3_000);
+      audio.addEventListener("loadedmetadata", onMetadata);
+      audio.addEventListener("error", onUnavailable);
+      audio.src = url;
+    });
+    assertPredecodeAudioBudget({ durationSeconds });
+  } finally {
+    audio.pause();
+    audio.removeAttribute("src");
+    audio.load();
+    revokeObjectUrl(url);
+  }
+}
+
 async function analyzeFile(file) {
   validateAudioFile(file);
+  await checkMediaMetadataBudget(file);
   let bytes = await file.arrayBuffer();
   const hash = await hashBytes(bytes);
   const AudioContextClass = window.AudioContext || window.webkitAudioContext;
   if (!AudioContextClass) throw new Error("当前浏览器不支持 Web Audio 解码。");
   const context = new AudioContextClass();
   try {
-    const decoded = await context.decodeAudioData(bytes.slice(0));
+    const decoded = await context.decodeAudioData(bytes);
     bytes = null;
+    assertDecodedAudioBudget({
+      durationSeconds: decoded.duration,
+      length: decoded.length,
+      channelCount: decoded.numberOfChannels,
+      sampleRate: decoded.sampleRate
+    });
     const channels = Array.from({ length: decoded.numberOfChannels }, (_, index) => decoded.getChannelData(index));
     const analysis = analyzePcm({ sampleRate: decoded.sampleRate, channels }, { maxFrames: 512 });
     return { hash, analysis };
@@ -521,45 +607,48 @@ function createAudioUrl(file) {
 async function processReferenceFiles(files) {
   clearError();
   if (!files.length) return;
+  const generation = ++referenceGeneration;
+  candidateGeneration += 1;
   if (files.length > MAX_REFERENCE_FILES) {
     showError(`一次最多选择 ${MAX_REFERENCE_FILES} 个参考文件。`);
     return;
   }
-  releaseReferenceSessions();
-  releaseCandidateSession();
-  referenceFailures = [];
+  const failures = [];
   const references = [];
-  project = validateProject({
-    ...project,
-    references: [],
-    candidates: [],
-    experiments: [],
-    currentBestCandidate: null,
-    nextRoundSuggestion: null
-  });
-  renderReferences();
-  renderComparison();
+  const stagedSessions = new Map();
   for (const [index, file] of files.entries()) {
+    if (generation !== referenceGeneration) break;
     referenceProgress.textContent = `正在逐个解码：${index + 1} / ${files.length}（${file.name}）`;
     try {
       const result = await analyzeFile(file);
+      if (generation !== referenceGeneration) break;
       const url = createAudioUrl(file);
-      const id = `reference-${references.length + 1}`;
-      referenceSessions.set(id, { name: file.name, url });
+      const id = allocateId("reference", [...(project.references || []), ...references]);
+      stagedSessions.set(id, { name: file.name, url });
       references.push({ id, hash: result.hash, analysis: result.analysis });
     } catch (error) {
-      referenceFailures.push({ name: file.name, message: error instanceof Error ? error.message : "分析失败。" });
+      if (generation !== referenceGeneration) break;
+      failures.push({ name: file.name, message: error instanceof Error ? error.message : "分析失败。" });
     }
-    project = validateProject({ ...project, references });
-    renderReferences();
   }
+  if (generation !== referenceGeneration) {
+    for (const session of stagedSessions.values()) revokeObjectUrl(session.url);
+    return;
+  }
+  releaseReferenceSessions();
+  releaseCandidateSession();
+  referenceFailures = failures;
+  for (const [id, session] of stagedSessions) referenceSessions.set(id, session);
+  project = rebuildPlanForReferences(references);
   persistProject();
-  referenceProgress.textContent = `完成：${references.length} 个成功，${referenceFailures.length} 个失败。`;
+  renderAll();
+  referenceProgress.textContent = `完成：${references.length} 个成功，${failures.length} 个失败。`;
   showLive("参考分析完成；文件名仅保留在当前会话界面。 ");
 }
 
 async function processCandidateFile(file) {
   clearError();
+  const generation = ++candidateGeneration;
   const reference = aggregateReferences();
   if (!reference) {
     showError("请先导入至少一个可分析的参考音频。");
@@ -569,11 +658,12 @@ async function processCandidateFile(file) {
   similarityClass.textContent = "正在本地分析";
   try {
     const result = await analyzeFile(file);
+    if (generation !== candidateGeneration) return;
     const comparison = compareCandidate(reference, result.analysis);
     const similarityClassValue = classifySimilarity(comparison);
     const advice = recommendNextVariant(comparison);
     const record = {
-      id: "candidate-1",
+      id: allocateId("candidate", project.candidates || []),
       hash: result.hash,
       analysis: result.analysis,
       comparison,
@@ -593,6 +683,7 @@ async function processCandidateFile(file) {
     renderComparison();
     showLive(`候选“${file.name}”分析完成；名称不会写入持久状态或导出。`);
   } catch (error) {
+    if (generation !== candidateGeneration) return;
     renderComparison();
     showError(error instanceof Error ? error.message : "候选分析失败。");
   }
@@ -629,13 +720,17 @@ referenceInput.addEventListener("change", () => {
 
 element("#load-demo-reference").addEventListener("click", async () => {
   clearError();
+  const requestedGeneration = ++referenceGeneration;
+  candidateGeneration += 1;
   referenceProgress.textContent = "正在读取原创合成演示 WAV…";
   try {
     const response = await fetch("./assets/demo-reference.wav");
     if (!response.ok) throw new Error(`演示 WAV 请求失败（${response.status}）`);
     const blob = await response.blob();
+    if (requestedGeneration !== referenceGeneration) return;
     await processReferenceFiles([new File([blob], "demo-reference.wav", { type: "audio/wav" })]);
   } catch (error) {
+    if (requestedGeneration !== referenceGeneration) return;
     showError(error instanceof Error ? error.message : "无法载入演示 WAV。");
   }
 });
@@ -655,7 +750,16 @@ styleForm.addEventListener("submit", event => {
     structure: { ...project.styleSpec.structure, bars: Number(styleBars.value) }
   };
   const freshPlan = createDailyPlan({ styleSpec: nextStyle });
-  project = validateProject({ ...project, styleSpec: freshPlan.styleSpec, credits: freshPlan.credits, batches: freshPlan.batches });
+  project = validateProject({
+    ...project,
+    styleSpec: freshPlan.styleSpec,
+    credits: freshPlan.credits,
+    batches: freshPlan.batches,
+    extensions: {
+      ...(project.extensions || {}),
+      styleOverrides: { key: true, tempo: true }
+    }
+  });
   persistProject();
   renderBatches();
   showLive("已按更新后的画像重新生成 5 个单变量批次。 ");
@@ -668,6 +772,7 @@ candidateInput.addEventListener("change", () => {
 });
 
 removeCandidateButton.addEventListener("click", () => {
+  candidateGeneration += 1;
   releaseCandidateSession();
   project = validateProject({ ...project, candidates: [], experiments: [], currentBestCandidate: null, nextRoundSuggestion: null });
   persistProject();
@@ -703,7 +808,7 @@ licenseForm.addEventListener("submit", event => {
   clearError();
   try {
     const raw = {
-      id: `license-${(project.licenses || []).length + 1}`,
+      id: allocateId("license", project.licenses || []),
       source: element("#license-source").value,
       sourceUrl: element("#license-url").value.trim(),
       license: element("#license-name").value.trim(),
@@ -749,9 +854,12 @@ importInput.addEventListener("change", async () => {
   clearError();
   try {
     const imported = importProjectJson(await file.text());
+    referenceGeneration += 1;
+    candidateGeneration += 1;
     releaseAllAudio();
     referenceFailures = [];
     project = imported;
+    rememberProjectIds(project);
     persistProject();
     renderAll();
     importStatus.textContent = "已完整导入并替换当前项目；音频仍需在本机重新选择。";
@@ -761,12 +869,15 @@ importInput.addEventListener("change", async () => {
 });
 
 window.addEventListener("beforeunload", () => {
+  referenceGeneration += 1;
+  candidateGeneration += 1;
   releaseAllAudio();
   for (const url of downloadUrls) URL.revokeObjectURL(url);
   downloadUrls.clear();
 });
 
 project = loadProject();
+rememberProjectIds(project);
 renderAll();
 persistProject();
 document.body.dataset.ready = "true";

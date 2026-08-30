@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { createHash } from "node:crypto";
 import { createServer } from "node:http";
 import { existsSync } from "node:fs";
 import { readFile } from "node:fs/promises";
@@ -9,6 +10,11 @@ import { chromium } from "playwright";
 const root = dirname(dirname(fileURLToPath(import.meta.url)));
 const demoWav = join(root, "projects", "loop-bgm-lab", "assets", "demo-reference.wav");
 const expectedWavSha256 = "f6168016f3659617d48662cca4d8013eb6eac2b21f3b7e17f7d23108b4985d5f";
+const differentWav = Buffer.from(await readFile(demoWav));
+differentWav.writeUInt32LE(37_800, 24);
+differentWav.writeUInt32LE(75_600, 28);
+const expectedDifferentSha256 = createHash("sha256").update(differentWav).digest("hex");
+const differentFile = { name: "different-reference.wav", mimeType: "audio/wav", buffer: differentWav };
 const mime = new Map([
   [".css", "text/css; charset=utf-8"],
   [".html", "text/html; charset=utf-8"],
@@ -43,20 +49,27 @@ const browser = await chromium.launch({ headless: true, executablePath: browserE
 const origin = `http://127.0.0.1:${server.address().port}`;
 
 function observeErrors(page) {
-  const errors = [];
+  const observation = { errors: [], blobAborts: [], revokedUrls: new Set() };
   page.on("console", message => {
-    if (message.type() === "error") errors.push(`console: ${message.text()}`);
+    if (message.type() === "error") observation.errors.push(`console: ${message.text()}`);
   });
-  page.on("pageerror", error => errors.push(`page: ${error.message}`));
+  page.on("pageerror", error => observation.errors.push(`page: ${error.message}`));
   page.on("requestfailed", request => {
     const failure = request.failure()?.errorText || "failed";
-    if (request.url().startsWith("blob:") && failure.includes("ERR_ABORTED")) return;
-    errors.push(`request: ${request.url()} ${failure}`);
+    if (request.url().startsWith("blob:") && failure.includes("ERR_ABORTED")) {
+      observation.blobAborts.push({ url: request.url(), failure });
+      return;
+    }
+    observation.errors.push(`request: ${request.url()} ${failure}`);
   });
-  return errors;
+  page.on("response", response => {
+    if (response.status() >= 400) observation.errors.push(`response: ${response.url()} ${response.status()}`);
+  });
+  return observation;
 }
 
-async function installInterceptors(page, { clearOnce = false, failStorage = false } = {}) {
+async function installInterceptors(page, observation, { clearOnce = false, failStorage = false } = {}) {
+  await page.exposeFunction("__reportRevokedObjectUrl", url => observation.revokedUrls.add(String(url)));
   await page.addInitScript(({ clearOnce, failStorage }) => {
     if (clearOnce && !sessionStorage.getItem("loop-bgm-smoke-ready")) {
       localStorage.clear();
@@ -66,6 +79,12 @@ async function installInterceptors(page, { clearOnce = false, failStorage = fals
     window.__copiedText = "";
     window.__createdObjectUrls = [];
     window.__revokedObjectUrls = [];
+    window.__pendingRevocationReports = [];
+    window.__decodeStarted = 0;
+    window.__decodeCompleted = 0;
+    window.__delayNextDecode = false;
+    window.__returnOversizedDecodedBuffer = false;
+    window.__sampleExtractions = 0;
     const createObjectUrl = URL.createObjectURL.bind(URL);
     const revokeObjectUrl = URL.revokeObjectURL.bind(URL);
     URL.createObjectURL = value => {
@@ -75,8 +94,37 @@ async function installInterceptors(page, { clearOnce = false, failStorage = fals
     };
     URL.revokeObjectURL = url => {
       window.__revokedObjectUrls.push(String(url));
+      window.__pendingRevocationReports.push(window.__reportRevokedObjectUrl(String(url)));
       return revokeObjectUrl(url);
     };
+    const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+    if (AudioContextClass) {
+      const originalDecode = AudioContextClass.prototype.decodeAudioData;
+      AudioContextClass.prototype.decodeAudioData = function decodeAudioData(arrayBuffer, ...callbacks) {
+        window.__decodeStarted += 1;
+        if (window.__returnOversizedDecodedBuffer) {
+          window.__returnOversizedDecodedBuffer = false;
+          return Promise.resolve({
+            duration: 340.14,
+            length: 15_000_001,
+            numberOfChannels: 2,
+            sampleRate: 44_100,
+            getChannelData() {
+              window.__sampleExtractions += 1;
+              throw new Error("sample extraction must not happen for oversized decoded metadata");
+            }
+          }).finally(() => { window.__decodeCompleted += 1; });
+        }
+        const decode = () => originalDecode.call(this, arrayBuffer, ...callbacks);
+        if (!window.__delayNextDecode) {
+          return Promise.resolve(decode()).finally(() => { window.__decodeCompleted += 1; });
+        }
+        window.__delayNextDecode = false;
+        return new Promise((resolveDecode, rejectDecode) => {
+          window.setTimeout(() => Promise.resolve(decode()).then(resolveDecode, rejectDecode), 300);
+        }).finally(() => { window.__decodeCompleted += 1; });
+      };
+    }
     window.open = (url, target, features) => {
       window.__externalOpens.push({ url: String(url), target, features: String(features || "") });
       return null;
@@ -101,6 +149,14 @@ async function installInterceptors(page, { clearOnce = false, failStorage = fals
   }, { clearOnce, failStorage });
 }
 
+async function assertNoObservedErrors(page, observation) {
+  await page.evaluate(() => Promise.all(window.__pendingRevocationReports || []));
+  const unexpectedBlobAborts = observation.blobAborts
+    .filter(item => !observation.revokedUrls.has(item.url))
+    .map(item => `request: ${item.url} ${item.failure}`);
+  assert.deepEqual([...observation.errors, ...unexpectedBlobAborts], []);
+}
+
 async function assertNoOverflow(page, label) {
   const geometry = await page.evaluate(() => ({
     scrollWidth: document.documentElement.scrollWidth,
@@ -111,10 +167,32 @@ async function assertNoOverflow(page, label) {
   assert.ok(geometry.bodyWidth <= geometry.clientWidth, `${label} body overflow: ${JSON.stringify(geometry)}`);
 }
 
+async function assertPickerKeyboardFocus(page, precedingSelector, inputId) {
+  await page.locator(precedingSelector).focus();
+  await page.keyboard.press("Tab");
+  assert.equal(await page.evaluate(() => document.activeElement?.id), inputId);
+  const focusStyle = await page.locator(`label[for='${inputId}']`).evaluate(label => {
+    const style = getComputedStyle(label);
+    return { outlineStyle: style.outlineStyle, outlineWidth: Number.parseFloat(style.outlineWidth) };
+  });
+  assert.notEqual(focusStyle.outlineStyle, "none", `${inputId} picker label has no focus outline`);
+  assert.ok(focusStyle.outlineWidth >= 2, `${inputId} picker label outline is too thin: ${JSON.stringify(focusStyle)}`);
+}
+
+async function addLicense(page, { suffix, license = "CC0", hash = expectedWavSha256 }) {
+  await page.locator("#license-source").selectOption("Freesound");
+  await page.locator("#license-url").fill(`https://freesound.org/s/${suffix}/`);
+  await page.locator("#license-name").fill(license);
+  await page.locator("#license-hash").fill(hash);
+  await page.locator("#license-author").fill(`Synthetic Fixture ${suffix}`);
+  await page.locator("#license-date").fill("2026-08-30");
+  await page.locator("#license-form button[type='submit']").click();
+}
+
 try {
   const page = await browser.newPage({ viewport: { width: 1440, height: 900 }, acceptDownloads: true });
   const errors = observeErrors(page);
-  await installInterceptors(page, { clearOnce: true });
+  await installInterceptors(page, errors, { clearOnce: true });
   const response = await page.goto(`${origin}/projects/loop-bgm-lab/index.html`, { waitUntil: "networkidle" });
   assert.equal(response?.status(), 200);
   await page.locator("body[data-ready='true']").waitFor();
@@ -127,17 +205,54 @@ try {
   ]);
   assert.deepEqual(await page.locator(".axis-label").allTextContents(), ["基线", "旋律音色", "律动", "打击乐", "循环结构"]);
 
+  await assertPickerKeyboardFocus(page, "#suno-create-link", "reference-files");
+  await assertPickerKeyboardFocus(page, ".batch-card:last-child .open-suno", "candidate-file");
+  await assertPickerKeyboardFocus(page, "#export-markdown", "import-project");
+
   await page.locator("#reference-files").setInputFiles([demoWav, demoWav]);
   await page.waitForFunction(() => document.querySelector("#reference-progress")?.textContent.includes("2 个成功"), null, { timeout: 45_000 });
   const duplicateReferenceUrls = await page.evaluate(() => [...window.__createdObjectUrls]);
-  assert.equal(duplicateReferenceUrls.length, 2);
+  assert.ok(duplicateReferenceUrls.length >= 2);
+
+  const raceStart = await page.evaluate(() => ({ started: window.__decodeStarted, completed: window.__decodeCompleted }));
+  await page.evaluate(() => { window.__delayNextDecode = true; });
   await page.locator("#reference-files").setInputFiles(demoWav);
-  await page.waitForFunction(() => document.querySelector("#reference-progress")?.textContent.includes("完成：1 个成功"), null, { timeout: 45_000 });
+  await page.waitForFunction(started => window.__decodeStarted > started, raceStart.started);
+  await page.locator("#reference-files").setInputFiles(differentFile);
+  await page.waitForFunction(completed => window.__decodeCompleted >= completed + 2, raceStart.completed, { timeout: 45_000 });
+  await page.waitForFunction(hash => JSON.parse(localStorage.getItem("loop-bgm-lab-v1")).references[0]?.hash === hash, expectedDifferentSha256);
   await page.waitForFunction(() => document.querySelectorAll("#reference-list [data-analysis-state='ready']").length === 1);
   assert.equal(await page.evaluate(urls => urls.every(url => window.__revokedObjectUrls.includes(url)), duplicateReferenceUrls), true);
-  assert.match(await page.locator("#reference-list").textContent(), /demo-reference\.wav/);
-  assert.match(await page.locator("#reference-list").textContent(), new RegExp(expectedWavSha256.slice(0, 12)));
+  assert.match(await page.locator("#reference-list").textContent(), /different-reference\.wav/);
+  assert.match(await page.locator("#reference-list").textContent(), new RegExp(expectedDifferentSha256.slice(0, 12)));
   assert.match(await page.locator("#aggregate-summary").textContent(), /BPM/);
+
+  const aggregatedState = await page.evaluate(() => JSON.parse(localStorage.getItem("loop-bgm-lab-v1")));
+  assert.ok(Math.abs(aggregatedState.references[0].analysis.tempo.bpm - 112) >= 8, "different fixture must have a deliberately different detected tempo");
+  assert.notEqual(aggregatedState.references[0].analysis.key.name, "D minor", "different fixture must have a deliberately different detected key");
+  assert.equal(aggregatedState.styleSpec.tempo.target, Math.round(aggregatedState.references[0].analysis.tempo.bpm));
+  assert.equal(aggregatedState.styleSpec.key, aggregatedState.references[0].analysis.key.name);
+  assert.equal(Number(await page.locator("#style-tempo").inputValue()), aggregatedState.styleSpec.tempo.target);
+  assert.equal(await page.locator("#style-key").inputValue(), aggregatedState.styleSpec.key);
+  const aggregatedPrompt = await page.locator(".batch-card[data-axis='baseline'] .prompt-text").textContent();
+  assert.match(aggregatedPrompt, new RegExp(`${aggregatedState.styleSpec.key}.*around ${aggregatedState.styleSpec.tempo.target} BPM`));
+  assert.doesNotMatch(aggregatedPrompt, /D minor.*around 112 BPM/);
+
+  await page.locator("#style-key").fill("D minor");
+  await page.locator("#style-tempo").fill("112");
+  await page.locator("#style-form button[type='submit']").click();
+  await page.waitForFunction(() => JSON.parse(localStorage.getItem("loop-bgm-lab-v1")).styleSpec.tempo.target === 112);
+  await page.locator("#reference-files").setInputFiles(differentFile);
+  await page.waitForFunction(hash => JSON.parse(localStorage.getItem("loop-bgm-lab-v1")).references[0]?.hash === hash, expectedDifferentSha256);
+  assert.equal(await page.locator("#style-key").inputValue(), "D minor");
+  assert.equal(await page.locator("#style-tempo").inputValue(), "112");
+  assert.match(await page.locator(".batch-card[data-axis='baseline'] .prompt-text").textContent(), /D minor.*around 112 BPM/);
+
+  const liveAudioUrls = await page.evaluate(() => {
+    const active = new Set([document.querySelector("#reference-player")?.src, document.querySelector("#candidate-player")?.src].filter(url => url?.startsWith("blob:")));
+    return window.__createdObjectUrls.filter(url => !window.__revokedObjectUrls.includes(url) && !active.has(url));
+  });
+  assert.deepEqual(liveAudioUrls, [], "all displaced or temporary audio object URLs must be revoked");
 
   const baselinePrompt = await page.locator(".batch-card[data-axis='baseline'] .prompt-text").textContent();
   const baselineExclusion = (await page.locator(".batch-card[data-axis='baseline'] .exclude-text").textContent()).replace(/^排除：/, "");
@@ -158,7 +273,13 @@ try {
   assert.match(searchOpen.features, /noopener/);
   assert.match(searchOpen.features, /noreferrer/);
 
+  const candidateRaceStart = await page.evaluate(() => ({ started: window.__decodeStarted, completed: window.__decodeCompleted }));
+  await page.evaluate(() => { window.__delayNextDecode = true; });
   await page.locator("#candidate-file").setInputFiles(demoWav);
+  await page.waitForFunction(started => window.__decodeStarted > started, candidateRaceStart.started);
+  await page.locator("#candidate-file").setInputFiles(differentFile);
+  await page.waitForFunction(completed => window.__decodeCompleted >= completed + 2, candidateRaceStart.completed, { timeout: 45_000 });
+  await page.waitForFunction(hash => JSON.parse(localStorage.getItem("loop-bgm-lab-v1")).candidates[0]?.hash === hash, expectedDifferentSha256);
   await page.locator("#comparison-result[data-analysis-state='ready']").waitFor({ timeout: 45_000 });
   assert.equal(await page.locator("#comparison-components tbody tr").count(), 6);
   assert.match(await page.locator("#comparison-coverage").textContent(), /100/);
@@ -171,16 +292,29 @@ try {
   await page.locator("#candidate-player").evaluate(audio => audio.play());
   assert.equal(await page.locator("#reference-player").evaluate(audio => audio.paused), true);
 
-  await page.locator("#license-source").selectOption("Freesound");
-  await page.locator("#license-url").fill("https://freesound.org/s/12345/");
-  await page.locator("#license-name").fill("CC0");
-  await page.locator("#license-hash").fill(expectedWavSha256);
-  await page.locator("#license-author").fill("Synthetic Fixture");
-  await page.locator("#license-date").fill("2026-08-30");
-  await page.locator("#license-form button[type='submit']").click();
+  const validCandidateHash = await page.evaluate(() => JSON.parse(localStorage.getItem("loop-bgm-lab-v1")).candidates[0].hash);
+  await page.evaluate(() => { window.__returnOversizedDecodedBuffer = true; });
+  await page.locator("#candidate-file").setInputFiles(demoWav);
+  await page.waitForFunction(() => document.querySelector("#app-error")?.textContent.includes("采样总量"), null, { timeout: 45_000 });
+  assert.equal(await page.evaluate(() => window.__sampleExtractions), 0, "oversized decoded metadata must be rejected before getChannelData");
+  assert.equal(await page.evaluate(() => JSON.parse(localStorage.getItem("loop-bgm-lab-v1")).candidates[0].hash), validCandidateHash);
+
+  await addLicense(page, { suffix: "12345" });
   await page.locator("#license-list .license-entry").waitFor();
   assert.match(await page.locator("#license-list").textContent(), /CC0/);
   assert.match(await page.locator("#license-list").textContent(), /仍请核对来源页面/);
+  await addLicense(page, { suffix: "12346", hash: expectedDifferentSha256 });
+  const firstTwoLicenseIds = await page.locator("#license-list .license-entry").evaluateAll(items => items.map(item => item.dataset.licenseId));
+  assert.equal(new Set(firstTwoLicenseIds).size, 2);
+  await page.locator("#license-list .license-entry").first().locator("button").click();
+  assert.equal(await page.locator("#license-list .license-entry").count(), 1);
+  await addLicense(page, { suffix: "12347" });
+  const replacementLicenseIds = await page.locator("#license-list .license-entry").evaluateAll(items => items.map(item => item.dataset.licenseId));
+  assert.equal(new Set(replacementLicenseIds).size, 2);
+  assert.notEqual(replacementLicenseIds[0], replacementLicenseIds[1]);
+  await page.locator("#license-list .license-entry").first().locator("button").click();
+  assert.equal(await page.locator("#license-list .license-entry").count(), 1, "one removal must remove exactly one license record");
+  assert.equal(await page.locator("#license-list .license-entry").first().getAttribute("data-license-id"), replacementLicenseIds[1]);
 
   const jsonDownloadPromise = page.waitForEvent("download");
   await page.locator("#export-json").click();
@@ -188,7 +322,7 @@ try {
   const exportedText = await readFile(await jsonDownload.path(), "utf8");
   const exported = JSON.parse(exportedText);
   assert.equal(exported.batches[0].status, "submitted");
-  assert.equal(exported.references[0].hash, expectedWavSha256);
+  assert.equal(exported.references[0].hash, expectedDifferentSha256);
   assert.equal(exported.licenses[0].category, "cc0");
   assert.doesNotMatch(exportedText, /demo-reference\.wav|blob:|audioBytes|apiKey|cookie|token|[A-Z]:\\|\/Users\//i);
 
@@ -216,6 +350,30 @@ try {
   assert.equal(await page.locator(".batch-card[data-axis='baseline'] .batch-status").inputValue(), "submitted");
   assert.equal(await page.locator("#license-list .license-entry").count(), 1);
 
+  const storedBeforeMaliciousImport = await page.evaluate(() => localStorage.getItem("loop-bgm-lab-v1"));
+  const maliciousImport = structuredClone(exported);
+  maliciousImport.extensions = {
+    privateFileName: "C:\\Users\\Alice\\private-reference.wav",
+    nested: { playbackUrl: "blob:http://127.0.0.1/private-audio" }
+  };
+  await page.locator("#import-project").setInputFiles({
+    name: "malicious.json",
+    mimeType: "application/json",
+    buffer: Buffer.from(JSON.stringify(maliciousImport))
+  });
+  await page.waitForFunction(() => document.querySelector("#import-status")?.textContent.includes("导入失败"));
+  assert.equal(await page.evaluate(() => localStorage.getItem("loop-bgm-lab-v1")), storedBeforeMaliciousImport, "rejected import must be atomic before persistence");
+  assert.equal(await page.locator(".batch-card[data-axis='baseline'] .batch-status").inputValue(), "submitted");
+
+  const postRejectJsonPromise = page.waitForEvent("download");
+  await page.locator("#export-json").click();
+  const postRejectJson = await readFile(await (await postRejectJsonPromise).path(), "utf8");
+  assert.doesNotMatch(postRejectJson, /private-reference\.wav|blob:http|C:\\Users\\Alice/i);
+  const postRejectMarkdownPromise = page.waitForEvent("download");
+  await page.locator("#export-markdown").click();
+  const postRejectMarkdown = await readFile(await (await postRejectMarkdownPromise).path(), "utf8");
+  assert.doesNotMatch(postRejectMarkdown, /private-reference\.wav|blob:http|C:\\Users\\Alice/i);
+
   const validImport = structuredClone(exported);
   validImport.batches[0].status = "planned";
   validImport.extensions = { transferredBy: "browser-smoke" };
@@ -228,7 +386,7 @@ try {
   assert.equal(await page.locator(".batch-card[data-axis='baseline'] .batch-status").inputValue(), "planned");
   assert.equal(await page.evaluate(() => JSON.parse(localStorage.getItem("loop-bgm-lab-v1")).extensions.transferredBy), "browser-smoke");
   await assertNoOverflow(page, "1440x900");
-  assert.deepEqual(errors, []);
+  await assertNoObservedErrors(page, errors);
   await page.close();
 
   for (const viewport of [
@@ -238,7 +396,7 @@ try {
   ]) {
     const responsivePage = await browser.newPage({ viewport });
     const responsiveErrors = observeErrors(responsivePage);
-    await installInterceptors(responsivePage);
+    await installInterceptors(responsivePage, responsiveErrors);
     await responsivePage.emulateMedia({ reducedMotion: "reduce" });
     const responsiveResponse = await responsivePage.goto(`${origin}/projects/loop-bgm-lab/index.html`, { waitUntil: "networkidle" });
     assert.equal(responsiveResponse?.status(), 200);
@@ -254,19 +412,19 @@ try {
     });
     assert.ok(motion.animationSeconds <= 0.000001, JSON.stringify(motion));
     assert.ok(motion.transitionSeconds <= 0.000001, JSON.stringify(motion));
-    assert.deepEqual(responsiveErrors, []);
+    await assertNoObservedErrors(responsivePage, responsiveErrors);
     await responsivePage.close();
   }
 
   const storagePage = await browser.newPage({ viewport: { width: 390, height: 844 } });
   const storageErrors = observeErrors(storagePage);
-  await installInterceptors(storagePage, { failStorage: true });
+  await installInterceptors(storagePage, storageErrors, { failStorage: true });
   await storagePage.goto(`${origin}/projects/loop-bgm-lab/index.html`, { waitUntil: "networkidle" });
   await storagePage.locator("body[data-ready='true']").waitFor();
   await storagePage.locator(".batch-card[data-axis='baseline'] .batch-status").selectOption("submitted");
   assert.match(await storagePage.locator("#storage-warning").textContent(), /当前会话仍可继续.*导出 JSON/);
   assert.equal(await storagePage.locator(".batch-card[data-axis='baseline'] .batch-status").inputValue(), "submitted");
-  assert.deepEqual(storageErrors, []);
+  await assertNoObservedErrors(storagePage, storageErrors);
   await storagePage.close();
 } finally {
   await browser.close();

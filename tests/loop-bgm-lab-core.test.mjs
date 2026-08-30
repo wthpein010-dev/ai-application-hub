@@ -135,6 +135,68 @@ test("project validation rejects sensitive local-path fields through nested arra
   }
 });
 
+test("portable project validation rejects path, local URL, filename, and raw-audio payloads regardless of nesting", () => {
+  // Break caught: a malicious import survives under an innocuous extension key and is re-exported.
+  const plan = createDailyPlan();
+  const rejected = [
+    { extensions: { note: "private source C:\\Users\\Alice\\reference.wav" } },
+    { extensions: { note: "prefix=C:\\Users\\Alice\\reference.wav" } },
+    { extensions: { note: "private source /Users/alice/reference.wav" } },
+    { extensions: { note: "private source \\\\server\\share\\reference.wav" } },
+    { extensions: { playback: "blob:https://example.test/private" } },
+    { extensions: { playback: "url=blob:https://example.test/private" } },
+    { extensions: { playback: "file:///Users/alice/reference.wav" } },
+    { extensions: { originalFileName: "reference" } },
+    { extensions: { note: "reference.wav" } },
+    { extensions: { note: "selected=reference.wav" } },
+    { extensions: { rawSamples: "redacted" } },
+    { extensions: { payloadAudioCache: "redacted" } },
+    { extensions: { waveform: [0.1, 0.2, 0.3] } },
+    { extensions: { metadata: { unknown: [[1, 2, 3]] } } }
+  ];
+
+  for (const value of rejected) {
+    assert.throws(() => validateProject({ ...plan, ...value }), /portable|path|file name|audio|numeric array|forbidden/i);
+    assert.throws(() => importProjectJson(JSON.stringify({ ...plan, ...value })), /portable|path|file name|audio|numeric array|forbidden/i);
+  }
+});
+
+test("portable project validation preserves HTTPS audio sources and explicit 12-value analysis chroma", () => {
+  // Break caught: privacy hardening blocks the published feature schema or legitimate HTTPS evidence.
+  const plan = validateProject({
+    ...createDailyPlan(),
+    sourceUrl: "https://example.test/music/reference.wav",
+    references: [{
+      id: "reference-1",
+      hash: "a".repeat(64),
+      analysis: {
+        durationSeconds: 10,
+        sampleRate: 44_100,
+        channelCount: 1,
+        key: { name: "C major", tonic: "C", mode: "major", confidence: 0.9, chroma: Array(12).fill(1 / 12) }
+      }
+    }]
+  });
+
+  assert.equal(plan.sourceUrl, "https://example.test/music/reference.wav");
+  assert.equal(plan.references[0].analysis.key.chroma.length, 12);
+  assert.throws(() => validateProject({
+    ...createDailyPlan(),
+    references: [{ id: "reference-1", hash: "a".repeat(64), analysis: { key: { chroma: Array(11).fill(0.1) } } }]
+  }), /chroma/i);
+});
+
+test("portable project validation rejects duplicate imported license IDs", () => {
+  const license = {
+    id: "license-7",
+    source: "Freesound",
+    sourceUrl: "https://freesound.org/s/7/",
+    license: "CC0",
+    fileSha256: "a".repeat(64)
+  };
+  assert.throws(() => validateProject({ ...createDailyPlan(), licenses: [license, { ...license, sourceUrl: "https://freesound.org/s/8/" }] }), /license ids must be unique/i);
+});
+
 test("project validation and JSON import keep nested secret validation under path-labelled values", () => {
   const plan = createDailyPlan();
   const nestedToken = { ...plan, extensions: { localPath: { token: "secret" } } };
@@ -150,8 +212,8 @@ test("round-trips validated project JSON losslessly and keeps Markdown free of p
   const project = validateProject({
     ...createDailyPlan(),
     sourceUrl: "https://suno.com/create",
-    references: [{ displayName: "Reference A", hash: "sha256:reference", features: { tempo: 112 } }],
-    candidates: [{ displayName: "Sunny Loop", hash: "sha256:abc", sourceUrl: "https://suno.com/create" }],
+    references: [{ label: "Reference A", hash: "sha256:reference", features: { tempo: 112 } }],
+    candidates: [{ label: "Sunny Loop", hash: "sha256:abc", sourceUrl: "https://suno.com/create" }],
     licenses: [{
       id: "license-cc0-a",
       source: "Example",
@@ -159,10 +221,10 @@ test("round-trips validated project JSON losslessly and keeps Markdown free of p
       license: "CC0",
       fileSha256: "a".repeat(64)
     }],
-    currentBestCandidate: { displayName: "Sunny Loop", hash: "sha256:abc" },
+    currentBestCandidate: { label: "Sunny Loop", hash: "sha256:abc" },
     extensions: { futureSetting: { enabled: true } }
   });
-  project.batches[0].nextRoundNote = "Do not retain C:\\Users\\listener\\loop.wav";
+  project.batches[0].nextRoundNote = "Keep the next iteration focused on one axis.";
   const json = exportProjectJson(project);
   const restored = importProjectJson(json);
   const markdown = exportProjectMarkdown(project);
