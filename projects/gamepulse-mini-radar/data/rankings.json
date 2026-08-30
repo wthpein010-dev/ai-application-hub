@@ -1,18 +1,410 @@
 {
   "schemaVersion": 1,
-  "state": "pending",
-  "mirroredAt": null,
-  "sourceUpdatedAt": null,
-  "displayDate": "",
+  "state": "ready",
+  "mirroredAt": "2026-08-30T07:17:49.492Z",
+  "sourceUpdatedAt": "2026-08-30T07:17:37.469Z",
+  "displayDate": "2026.08.30",
   "stale": true,
-  "storage": "pending",
+  "storage": "d1",
   "sourceUrl": "https://gamepulse-mini-radar.polite-chord-7994.chatgpt.site/api/rankings",
-  "sourceHealth": [],
+  "sourceHealth": [
+    {
+      "id": "wechat",
+      "label": "微信游戏人气榜",
+      "status": "fresh",
+      "checkedAt": "2026-07-21T09:52:20.000Z",
+      "message": "用户提供的微信游戏客户端截图校验（前18名）"
+    },
+    {
+      "id": "popular",
+      "label": "应用宝热门榜",
+      "status": "fresh",
+      "checkedAt": "2026-08-30T07:17:37.469Z",
+      "message": ""
+    },
+    {
+      "id": "grossing",
+      "label": "应用宝畅销榜",
+      "status": "fresh",
+      "checkedAt": "2026-08-30T07:17:37.469Z",
+      "message": ""
+    },
+    {
+      "id": "overseas",
+      "label": "data.ai 海外榜",
+      "status": "cached",
+      "checkedAt": "2026-07-14T06:00:00.000Z",
+      "message": "公开页面受会话限制，使用最近一次人工校验快照"
+    }
+  ],
   "rankings": {
-    "wechat": [],
-    "popular": [],
-    "grossing": [],
-    "overseas": []
-  },
-  "message": "等待 GitHub Actions 完成首次安全同步。"
+    "wechat": [
+      {
+        "rank": 1,
+        "title": "赵云与阿斗",
+        "developer": "开发者信息待来源补充",
+        "category": "轻度休闲",
+        "subCategory": "休闲闯关",
+        "sourceLabel": "微信游戏 · 小游戏人气榜（截图校验） / 应用宝 · 热门榜",
+        "verifiedAt": "2026-08-30T07:17:37.469Z"
+      },
+      {
+        "rank": 2,
+        "title": "羊了个羊：星球",
+        "developer": "厂商信息待公开页确认",
+        "category": "轻度休闲",
+        "subCategory": "消除",
+        "sourceLabel": "微信游戏 · 小游戏人气榜（截图校验） / 应用宝 · 热门榜",
+        "verifiedAt": "2026-08-30T07:17:37.469Z"
+      },
+      {
+        "rank": 3,
+        "title": "来玩躲猫猫吧",
+        "developer": "开发者信息待来源补充",
+        "category": "轻度休闲",
+        "subCategory": "躲猫猫闯关",
+        "sourceLabel": "微信游戏 · 小游戏人气榜（截图校验）",
+        "verifiedAt": "2026-07-21T09:52:20.000Z"
+      },
+      {
+        "rank": 4,
+        "title": "腾讯欢乐斗地主",
+        "developer": "腾讯",
+        "category": "棋牌游戏",
+        "subCategory": "纸牌",
+        "sourceLabel": "微信游戏 · 小游戏人气榜（截图校验） / 应用宝 · 热门榜 / 应用宝 · 畅销榜",
+        "verifiedAt": "2026-08-30T07:17:37.469Z"
+      },
+      {
+        "rank": 5,
+        "title": "硬核武装",
+        "developer": "开发者信息待来源补充",
+        "category": "轻度休闲",
+        "subCategory": "弹幕射击",
+        "sourceLabel": "微信游戏 · 小游戏人气榜（截图校验）",
+        "verifiedAt": "2026-07-21T09:52:20.000Z"
+      },
+      {
+        "rank": 6,
+        "title": "贪吃蛇大作战",
+        "developer": "武汉微派网络",
+        "category": "轻度休闲",
+        "subCategory": "烧脑",
+        "sourceLabel": "微信游戏 · 小游戏人气榜（截图校验） / 应用宝 · 热门榜",
+        "verifiedAt": "2026-08-30T07:17:37.469Z"
+      },
+      {
+        "rank": 7,
+        "title": "镇邪人",
+        "developer": "开发者信息待来源补充",
+        "category": "轻度休闲",
+        "subCategory": "放置闯关",
+        "sourceLabel": "微信游戏 · 小游戏人气榜（截图校验）",
+        "verifiedAt": "2026-07-21T09:52:20.000Z"
+      },
+      {
+        "rank": 8,
+        "title": "挪车真有趣",
+        "developer": "开发者信息待来源补充",
+        "category": "轻度休闲",
+        "subCategory": "挪车解谜",
+        "sourceLabel": "微信游戏 · 小游戏人气榜（截图校验）",
+        "verifiedAt": "2026-07-21T09:52:20.000Z"
+      },
+      {
+        "rank": 9,
+        "title": "躺平发育",
+        "developer": "开发者信息待来源补充",
+        "category": "轻度休闲",
+        "subCategory": "塔防",
+        "sourceLabel": "微信游戏 · 小游戏人气榜（截图校验） / 应用宝 · 热门榜",
+        "verifiedAt": "2026-08-30T07:17:37.469Z"
+      },
+      {
+        "rank": 10,
+        "title": "QQ经典农场",
+        "developer": "腾讯",
+        "category": "轻度休闲",
+        "subCategory": "经营",
+        "sourceLabel": "微信游戏 · 小游戏人气榜（截图校验） / 应用宝 · 热门榜",
+        "verifiedAt": "2026-08-30T07:17:37.469Z"
+      }
+    ],
+    "popular": [
+      {
+        "rank": 1,
+        "title": "羊了个羊：星球",
+        "developer": "厂商信息待公开页确认",
+        "category": "轻度休闲",
+        "subCategory": "消除",
+        "sourceLabel": "微信游戏 · 小游戏人气榜（截图校验） / 应用宝 · 热门榜",
+        "verifiedAt": "2026-08-30T07:17:37.469Z"
+      },
+      {
+        "rank": 2,
+        "title": "向末日开炮",
+        "developer": "开发者信息待来源补充",
+        "category": "轻度休闲",
+        "subCategory": "经营",
+        "sourceLabel": "应用宝 · 热门榜 / 应用宝 · 畅销榜",
+        "verifiedAt": "2026-08-30T07:17:37.469Z"
+      },
+      {
+        "rank": 3,
+        "title": "腾讯欢乐斗地主",
+        "developer": "腾讯",
+        "category": "棋牌游戏",
+        "subCategory": "纸牌",
+        "sourceLabel": "微信游戏 · 小游戏人气榜（截图校验） / 应用宝 · 热门榜 / 应用宝 · 畅销榜",
+        "verifiedAt": "2026-08-30T07:17:37.469Z"
+      },
+      {
+        "rank": 4,
+        "title": "躺平发育",
+        "developer": "开发者信息待来源补充",
+        "category": "轻度休闲",
+        "subCategory": "塔防",
+        "sourceLabel": "微信游戏 · 小游戏人气榜（截图校验） / 应用宝 · 热门榜",
+        "verifiedAt": "2026-08-30T07:17:37.469Z"
+      },
+      {
+        "rank": 5,
+        "title": "赵云与阿斗",
+        "developer": "开发者信息待来源补充",
+        "category": "轻度休闲",
+        "subCategory": "休闲闯关",
+        "sourceLabel": "微信游戏 · 小游戏人气榜（截图校验） / 应用宝 · 热门榜",
+        "verifiedAt": "2026-08-30T07:17:37.469Z"
+      },
+      {
+        "rank": 6,
+        "title": "贪吃蛇大作战",
+        "developer": "武汉微派网络",
+        "category": "轻度休闲",
+        "subCategory": "烧脑",
+        "sourceLabel": "微信游戏 · 小游戏人气榜（截图校验） / 应用宝 · 热门榜",
+        "verifiedAt": "2026-08-30T07:17:37.469Z"
+      },
+      {
+        "rank": 7,
+        "title": "家园跑刀撤离",
+        "developer": "开发者信息待来源补充",
+        "category": "动作冒险",
+        "subCategory": "休闲益智",
+        "sourceLabel": "应用宝 · 热门榜",
+        "verifiedAt": "2026-08-30T07:17:37.469Z"
+      },
+      {
+        "rank": 8,
+        "title": "QQ经典农场",
+        "developer": "腾讯",
+        "category": "轻度休闲",
+        "subCategory": "经营",
+        "sourceLabel": "微信游戏 · 小游戏人气榜（截图校验） / 应用宝 · 热门榜",
+        "verifiedAt": "2026-08-30T07:17:37.469Z"
+      },
+      {
+        "rank": 9,
+        "title": "升级",
+        "developer": "开发者信息待来源补充",
+        "category": "棋牌",
+        "subCategory": "纸牌",
+        "sourceLabel": "应用宝 · 热门榜",
+        "verifiedAt": "2026-08-30T07:17:37.469Z"
+      },
+      {
+        "rank": 10,
+        "title": "抓大鹅",
+        "developer": "厂商信息待公开页确认",
+        "category": "轻度休闲",
+        "subCategory": "烧脑",
+        "sourceLabel": "微信游戏 · 小游戏人气榜（截图校验） / 应用宝 · 热门榜",
+        "verifiedAt": "2026-08-30T07:17:37.469Z"
+      }
+    ],
+    "grossing": [
+      {
+        "rank": 1,
+        "title": "向僵尸开炮",
+        "developer": "厂商信息待公开页确认",
+        "category": "轻度休闲",
+        "subCategory": "烧脑",
+        "sourceLabel": "应用宝 · 畅销榜",
+        "verifiedAt": "2026-08-30T07:17:37.469Z"
+      },
+      {
+        "rank": 2,
+        "title": "三国：冰河时代",
+        "developer": "厂商信息待公开页确认",
+        "category": "轻度休闲",
+        "subCategory": "创新品类",
+        "sourceLabel": "应用宝 · 畅销榜",
+        "verifiedAt": "2026-08-30T07:17:37.469Z"
+      },
+      {
+        "rank": 3,
+        "title": "浪漫餐厅",
+        "developer": "厂商信息待公开页确认",
+        "category": "轻度休闲",
+        "subCategory": "烧脑",
+        "sourceLabel": "应用宝 · 畅销榜",
+        "verifiedAt": "2026-08-30T07:17:37.469Z"
+      },
+      {
+        "rank": 4,
+        "title": "梦幻消除战",
+        "developer": "开发者信息待来源补充",
+        "category": "轻度休闲",
+        "subCategory": "经营",
+        "sourceLabel": "应用宝 · 畅销榜",
+        "verifiedAt": "2026-08-30T07:17:37.469Z"
+      },
+      {
+        "rank": 5,
+        "title": "疯狂水世界",
+        "developer": "厂商信息待公开页确认",
+        "category": "轻度休闲",
+        "subCategory": "经营",
+        "sourceLabel": "应用宝 · 畅销榜",
+        "verifiedAt": "2026-08-30T07:17:37.469Z"
+      },
+      {
+        "rank": 6,
+        "title": "向末日开炮",
+        "developer": "开发者信息待来源补充",
+        "category": "轻度休闲",
+        "subCategory": "经营",
+        "sourceLabel": "应用宝 · 热门榜 / 应用宝 · 畅销榜",
+        "verifiedAt": "2026-08-30T07:17:37.469Z"
+      },
+      {
+        "rank": 7,
+        "title": "向往的生活",
+        "developer": "开发者信息待来源补充",
+        "category": "轻度休闲",
+        "subCategory": "经营",
+        "sourceLabel": "应用宝 · 畅销榜",
+        "verifiedAt": "2026-08-30T07:17:37.469Z"
+      },
+      {
+        "rank": 8,
+        "title": "无尽冬日",
+        "developer": "开发者信息待来源补充",
+        "category": "动作冒险",
+        "subCategory": "战术竞技",
+        "sourceLabel": "应用宝 · 畅销榜",
+        "verifiedAt": "2026-08-30T07:17:37.469Z"
+      },
+      {
+        "rank": 9,
+        "title": "永远的蔚蓝星球",
+        "developer": "开发者信息待来源补充",
+        "category": "轻度休闲",
+        "subCategory": "塔防",
+        "sourceLabel": "应用宝 · 畅销榜",
+        "verifiedAt": "2026-08-30T07:17:37.469Z"
+      },
+      {
+        "rank": 10,
+        "title": "灵画师",
+        "developer": "开发者信息待来源补充",
+        "category": "角色扮演",
+        "subCategory": "ARPG",
+        "sourceLabel": "应用宝 · 畅销榜",
+        "verifiedAt": "2026-08-30T07:17:37.469Z"
+      }
+    ],
+    "overseas": [
+      {
+        "rank": 1,
+        "title": "Meowdoku!",
+        "developer": "Oakever Games",
+        "category": "轻度休闲",
+        "subCategory": "数独解谜",
+        "sourceLabel": "data.ai · US iOS Casual",
+        "verifiedAt": "2026-07-14T06:00:00.000Z"
+      },
+      {
+        "rank": 2,
+        "title": "Block Out! - Color Sort Puzzle",
+        "developer": "Grand Games A.Ş.",
+        "category": "轻度休闲",
+        "subCategory": "颜色排序",
+        "sourceLabel": "data.ai · US iOS Casual",
+        "verifiedAt": "2026-07-14T06:00:00.000Z"
+      },
+      {
+        "rank": 3,
+        "title": "Magic Sort!",
+        "developer": "Grand Games A.Ş.",
+        "category": "轻度休闲",
+        "subCategory": "分类解谜",
+        "sourceLabel": "data.ai · US iOS Casual",
+        "verifiedAt": "2026-07-14T06:00:00.000Z"
+      },
+      {
+        "rank": 4,
+        "title": "Gossip Harbor®: Merge & Story",
+        "developer": "MicroFun",
+        "category": "轻度休闲",
+        "subCategory": "合成叙事",
+        "sourceLabel": "data.ai · US iOS Casual",
+        "verifiedAt": "2026-07-14T06:00:00.000Z"
+      },
+      {
+        "rank": 5,
+        "title": "Bus Traffic Fever!",
+        "developer": "GOODROID",
+        "category": "轻度休闲",
+        "subCategory": "交通解谜",
+        "sourceLabel": "data.ai · US iOS Casual",
+        "verifiedAt": "2026-07-14T06:00:00.000Z"
+      },
+      {
+        "rank": 6,
+        "title": "Block Blast！",
+        "developer": "Hungry Studio",
+        "category": "轻度休闲",
+        "subCategory": "方块消除",
+        "sourceLabel": "data.ai · US iOS Casual",
+        "verifiedAt": "2026-07-14T06:00:00.000Z"
+      },
+      {
+        "rank": 7,
+        "title": "Arrows – Puzzle Escape",
+        "developer": "Lessmore",
+        "category": "轻度休闲",
+        "subCategory": "路径解谜",
+        "sourceLabel": "data.ai · US iOS Casual",
+        "verifiedAt": "2026-07-14T06:00:00.000Z"
+      },
+      {
+        "rank": 8,
+        "title": "Amaze GO!",
+        "developer": "Oakever Games",
+        "category": "轻度休闲",
+        "subCategory": "迷宫解谜",
+        "sourceLabel": "data.ai · US iOS Casual",
+        "verifiedAt": "2026-07-14T06:00:00.000Z"
+      },
+      {
+        "rank": 9,
+        "title": "Royal Kingdom",
+        "developer": "Dream Games",
+        "category": "轻度休闲",
+        "subCategory": "三消经营",
+        "sourceLabel": "data.ai · US iOS Casual",
+        "verifiedAt": "2026-07-14T06:00:00.000Z"
+      },
+      {
+        "rank": 10,
+        "title": "Township",
+        "developer": "Playrix",
+        "category": "轻度休闲",
+        "subCategory": "模拟经营",
+        "sourceLabel": "data.ai · US iOS Casual",
+        "verifiedAt": "2026-07-14T06:00:00.000Z"
+      }
+    ]
+  }
 }
