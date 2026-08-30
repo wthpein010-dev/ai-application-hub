@@ -55,7 +55,7 @@ jobs:
         shell: bash
         run: |
           sudo apt-get update
-          sudo apt-get install -y libarchive-tools python3-tk xvfb
+          sudo apt-get install -y ffmpeg libarchive-tools python3-tk xvfb
           mkdir -p "$RUNNER_TEMP/bsdtar-bin"
           ln -s /usr/bin/bsdtar "$RUNNER_TEMP/bsdtar-bin/tar"
           echo "$RUNNER_TEMP/bsdtar-bin" >> "$GITHUB_PATH"
