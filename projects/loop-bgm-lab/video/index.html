@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="color-scheme" content="dark">
+    <link rel="icon" href="data:,">
+    <title>循环乐工房介绍视频</title>
+    <link rel="stylesheet" href="../../../assets/hub-video-player.css">
+  </head>
+  <body data-hub-video-page>
+    <a class="hub-video-home" href="../../../index.html#apps">返回主页</a>
+    <main class="hub-video-page">
+      <p class="hub-video-kicker">无声功能演示</p>
+      <h1>循环乐工房 · 从本地画像到可迁移交接</h1>
+      <p class="hub-video-description">使用原创合成 WAV 演示本地分析、五个单变量提示词、Suno 人工操作边界、六特征候选风险、CC0 授权台账与 JSON / Markdown 交接。</p>
+      <section class="hub-video-player" aria-label="循环乐工房介绍视频">
+        <div class="hub-video-stage">
+          <div class="hub-video-load-card" id="loadCard" role="status">
+            <strong>准备播放无声功能演示</strong>
+            <p data-hub-video-message>点击后再加载视频，避免打开页面时等待。</p>
+            <button id="loadVideo" type="button">加载并播放视频</button>
+          </div>
+          <video id="introVideo" controls playsinline preload="none" data-src="./loop-bgm-lab-demo.mp4" poster="./poster.jpg" hidden>
+            <track kind="captions" src="./loop-bgm-lab-demo.vtt" srclang="zh-CN" label="中文字幕" default>
+          </video>
+        </div>
+      </section>
+      <nav class="hub-video-actions" aria-label="视频相关入口">
+        <a href="./loop-bgm-lab-demo.mp4">打开 MP4</a>
+        <a href="../index.html">打开项目</a>
+      </nav>
+      <section class="hub-video-chapters" aria-label="视频章节">
+        <button class="hub-video-chapter" type="button" data-time="0"><time>00:00</time><span>本地隐私边界</span></button>
+        <button class="hub-video-chapter" type="button" data-time="7"><time>00:07</time><span>原创合成参考分析</span></button>
+        <button class="hub-video-chapter" type="button" data-time="14"><time>00:14</time><span>画像与五个变量</span></button>
+        <button class="hub-video-chapter" type="button" data-time="22"><time>00:22</time><span>Suno 人工操作边界</span></button>
+        <button class="hub-video-chapter" type="button" data-time="30"><time>00:30</time><span>六特征风险比较</span></button>
+        <button class="hub-video-chapter" type="button" data-time="47"><time>00:47</time><span>CC0 授权台账</span></button>
+        <button class="hub-video-chapter" type="button" data-time="55"><time>00:55</time><span>JSON 与 Markdown 交接</span></button>
+      </section>
+    </main>
+    <script type="module" src="../../../assets/hub-video-player.js"></script>
+  </body>
+</html>

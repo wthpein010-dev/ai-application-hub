@@ -166,7 +166,7 @@ try {
     assert.deepEqual(errors, [], viewport.name + " console errors");
   }
 
-  for (const id of ["paws-level-editor", "nang-keng-pai-pai-xiang"]) {
+  for (const id of ["paws-level-editor", "nang-keng-pai-pai-xiang", "loop-bgm-lab"]) {
     const app = apps.find((candidate) => candidate.id === id);
     const context = await browser.newContext({ viewport: { width: 1280, height: 800 } });
     const page = await context.newPage();
