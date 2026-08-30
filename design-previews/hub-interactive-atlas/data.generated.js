@@ -59,8 +59,8 @@ export const projects = [
       {
         "type": "web",
         "label": "网页预览",
-        "href": "./projects/gamepulse-mini-radar/index.html",
-        "sourceLabel": "只读预览"
+        "href": "https://gamepulse-mini-radar.polite-chord-7994.chatgpt.site",
+        "sourceLabel": "演示"
       },
       {
         "type": "video",

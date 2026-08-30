@@ -495,7 +495,12 @@ function renderLicenses() {
     link.href = entry.sourceUrl;
     link.target = "_blank";
     link.rel = "noopener noreferrer";
-    copy.append(link, createElement("span", { text: entry.useWarning }), createElement("span", { text: entry.attributionWarning }));
+    copy.append(
+      link,
+      createElement("span", { text: `SHA-256：${entry.fileSha256}` }),
+      createElement("span", { text: entry.useWarning }),
+      createElement("span", { text: entry.attributionWarning })
+    );
     if (entry.author) copy.append(createElement("span", { text: `作者：${entry.author}` }));
     const remove = createElement("button", { className: "text-button", text: "移除" });
     remove.type = "button";

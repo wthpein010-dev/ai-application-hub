@@ -5,6 +5,7 @@ import { mkdir, readFile, rm, stat } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
+import { STORY_DURATION_MS, validateRecordingMetadata } from "./loop-bgm-lab-video-contract.mjs";
 
 const require = createRequire(import.meta.url);
 const bundledFfmpeg = require("ffmpeg-static");
@@ -30,16 +31,14 @@ if (!existsSync(inputPath) || !existsSync(metadataPath)) {
 if (!ffmpegPath || !existsSync(ffmpegPath)) throw new Error("ffmpeg-static is unavailable; install repository dependencies first.");
 
 const metadata = JSON.parse(await readFile(metadataPath, "utf8"));
-if (metadata.durationSeconds !== 72 || metadata.externalOpenCount !== 1) {
-  throw new Error(`Unexpected recorder metadata: ${JSON.stringify(metadata)}`);
-}
+validateRecordingMetadata(metadata);
 await mkdir(videoRoot, { recursive: true });
 
 run([
   "-y", "-hide_banner", "-loglevel", "error",
-  "-sseof", `-${metadata.durationSeconds}`,
   "-i", inputPath,
-  "-t", String(metadata.durationSeconds),
+  "-ss", (metadata.storyStartOffsetMs / 1_000).toFixed(3),
+  "-t", String(STORY_DURATION_MS / 1_000),
   "-map_metadata", "-1",
   "-vf", "scale=1280:720:flags=lanczos,fps=30",
   "-an",
