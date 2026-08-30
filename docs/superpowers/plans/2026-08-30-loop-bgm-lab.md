@@ -42,7 +42,7 @@ Cover stable key ordering, default D minor/112 BPM style, five deterministic var
 
 - [ ] **Step 2: Run the focused test and confirm red**
 
-Run: `node --test tests/loop-bgm-lab-core.test.mjs`  
+Run: `node --test tests/loop-bgm-lab-core.test.mjs`
 Expected: FAIL because the modules do not exist.
 
 - [ ] **Step 3: Add the minimum pure implementation**
@@ -51,7 +51,7 @@ Use explicit allowlists for schema fields and status transitions. Preserve forwa
 
 - [ ] **Step 4: Run the focused test and confirm green**
 
-Run: `node --test tests/loop-bgm-lab-core.test.mjs`  
+Run: `node --test tests/loop-bgm-lab-core.test.mjs`
 Expected: all Task 1 assertions pass.
 
 - [ ] **Step 5: Commit the state/prompt slice**
@@ -77,7 +77,7 @@ Generate in-memory sine tones, 110/115 BPM impulse trains, D-minor triads, smoot
 
 - [ ] **Step 2: Run the audio test and confirm red**
 
-Run: `node --test tests/loop-bgm-lab-audio.test.mjs`  
+Run: `node --test tests/loop-bgm-lab-audio.test.mjs`
 Expected: FAIL because the analyzer is absent.
 
 - [ ] **Step 3: Implement bounded DSP**
@@ -86,7 +86,7 @@ Use a radix-2 2048-point FFT, Hann window, 512 hop, spectral-flux autocorrelatio
 
 - [ ] **Step 4: Run the audio tests and confirm green**
 
-Run: `node --test tests/loop-bgm-lab-audio.test.mjs`  
+Run: `node --test tests/loop-bgm-lab-audio.test.mjs`
 Expected: all numerical and warning assertions pass on repeated runs.
 
 - [ ] **Step 5: Commit the analysis slice**
@@ -113,7 +113,7 @@ Cover weighted tempo/key/brightness/dynamics/loop/duration scores, missing-featu
 
 - [ ] **Step 2: Run the candidate tests and confirm red**
 
-Run: `node --test tests/loop-bgm-lab-core.test.mjs tests/loop-bgm-lab-candidate.test.mjs`  
+Run: `node --test tests/loop-bgm-lab-core.test.mjs tests/loop-bgm-lab-candidate.test.mjs`
 Expected: FAIL on missing comparison interfaces.
 
 - [ ] **Step 3: Implement explainable scoring and immutable records**
@@ -122,7 +122,7 @@ Return every component score and raw delta beside the aggregate. Treat threshold
 
 - [ ] **Step 4: Run focused tests and confirm green**
 
-Run: `node --test tests/loop-bgm-lab-core.test.mjs tests/loop-bgm-lab-candidate.test.mjs`  
+Run: `node --test tests/loop-bgm-lab-core.test.mjs tests/loop-bgm-lab-candidate.test.mjs`
 Expected: all Task 3 tests pass.
 
 - [ ] **Step 5: Commit candidate comparison**
@@ -152,7 +152,7 @@ Static assertions cover exact title, `hub-subpage` shell, `../../index.html#apps
 
 - [ ] **Step 2: Run focused page/browser tests and confirm red**
 
-Run: `node --test tests/loop-bgm-lab-page.test.mjs && node tests/loop-bgm-lab-browser-smoke.mjs`  
+Run: `node --test tests/loop-bgm-lab-page.test.mjs && node tests/loop-bgm-lab-browser-smoke.mjs`
 Expected: FAIL because the application page is absent.
 
 - [ ] **Step 3: Build semantic HTML and responsive CSS**
@@ -169,7 +169,7 @@ Use a deterministic checked-in build script or test helper to create an 8–12 s
 
 - [ ] **Step 6: Run all focused application tests**
 
-Run: `node --test tests/loop-bgm-lab-{core,audio,candidate,page}.test.mjs && node tests/loop-bgm-lab-browser-smoke.mjs`  
+Run: `node --test tests/loop-bgm-lab-{core,audio,candidate,page}.test.mjs && node tests/loop-bgm-lab-browser-smoke.mjs`
 Expected: all unit, page, interaction, persistence, privacy, and viewport assertions pass.
 
 - [ ] **Step 7: Commit the browser application**
@@ -197,7 +197,7 @@ Assert exactly one `loop-bgm-lab` record, final position in the assistant collec
 
 - [ ] **Step 2: Run focused publication tests and confirm red**
 
-Run: `node --test tests/loop-bgm-lab-publish.test.mjs tests/hub-subpage-contract.test.mjs tests/project-video-coverage.test.mjs`  
+Run: `node --test tests/loop-bgm-lab-publish.test.mjs tests/hub-subpage-contract.test.mjs tests/project-video-coverage.test.mjs`
 Expected: FAIL because the project is not registered and media is absent.
 
 - [ ] **Step 3: Register the card and media mapping**
@@ -210,7 +210,7 @@ Run the local page at 1440×900 with its deterministic demo state, capture PNG, 
 
 - [ ] **Step 5: Run publication and Hub contract tests**
 
-Run: `node --test tests/loop-bgm-lab-publish.test.mjs tests/hub-subpage-contract.test.mjs tests/card-action-layout.test.mjs tests/hub-dynamic-showcase.test.mjs`  
+Run: `node --test tests/loop-bgm-lab-publish.test.mjs tests/hub-subpage-contract.test.mjs tests/card-action-layout.test.mjs tests/hub-dynamic-showcase.test.mjs`
 Expected: all focused Hub tests pass.
 
 - [ ] **Step 6: Commit Hub integration**
@@ -242,7 +242,7 @@ Assert H.264/yuv420p, exact 1280×720, duration 45–90 seconds, faststart-compa
 
 - [ ] **Step 2: Run media tests and confirm red**
 
-Run: `node --test tests/loop-bgm-lab-publish.test.mjs tests/project-video-coverage.test.mjs`  
+Run: `node --test tests/loop-bgm-lab-publish.test.mjs tests/project-video-coverage.test.mjs`
 Expected: FAIL because video assets are absent.
 
 - [ ] **Step 3: Add deterministic recorder, encoder, player, captions, and script**
@@ -251,12 +251,12 @@ Demonstrate local privacy, reference analysis, five controlled variants, candida
 
 - [ ] **Step 4: Record and encode the tutorial**
 
-Run: `node scripts/record-loop-bgm-lab-video.mjs && node scripts/build-loop-bgm-lab-video.mjs`  
+Run: `node scripts/record-loop-bgm-lab-video.mjs && node scripts/build-loop-bgm-lab-video.mjs`
 Expected: MP4 and poster are created; recorder reports zero console, page, and failed-request errors.
 
 - [ ] **Step 5: Run media and player tests**
 
-Run: `node --test tests/loop-bgm-lab-publish.test.mjs tests/project-video-coverage.test.mjs && node tests/hub-video-pages-browser-smoke.mjs`  
+Run: `node --test tests/loop-bgm-lab-publish.test.mjs tests/project-video-coverage.test.mjs && node tests/hub-video-pages-browser-smoke.mjs`
 Expected: all codecs, duration, captions, lazy loading, playback, and shared-player assertions pass.
 
 - [ ] **Step 6: Commit the tutorial**
@@ -280,16 +280,16 @@ git commit -m "feat: add loop bgm lab tutorial"
 
 - [ ] **Step 1: Run focused project validation**
 
-Run: `node --test tests/loop-bgm-lab-*.test.mjs`  
-Run: `node tests/loop-bgm-lab-browser-smoke.mjs`  
+Run: `node --test tests/loop-bgm-lab-*.test.mjs`
+Run: `node tests/loop-bgm-lab-browser-smoke.mjs`
 Expected: zero failures, zero browser errors, and no unexpected network requests.
 
 - [ ] **Step 2: Run the full repository gates**
 
-Run: `node --test`  
-Run: `npm run audit:hub`  
-Run: `node tests/hub-entry-pages-browser-smoke.mjs`  
-Run: `node tests/hub-video-pages-browser-smoke.mjs`  
+Run: `node --test`
+Run: `npm run audit:hub`
+Run: `node tests/hub-entry-pages-browser-smoke.mjs`
+Run: `node tests/hub-video-pages-browser-smoke.mjs`
 Expected: zero test failures and zero Important audit findings.
 
 - [ ] **Step 3: Inspect the diff and request independent code review**
@@ -298,8 +298,8 @@ Run: `git diff --check origin/main...HEAD`, inspect every changed path against t
 
 - [ ] **Step 4: Rebase on current remote main and rerun release gates**
 
-Run: `git fetch origin main && git rebase origin/main`  
-Then rerun focused tests, full `node --test`, `npm run audit:hub`, and both browser-smoke suites.  
+Run: `git fetch origin main && git rebase origin/main`
+Then rerun focused tests, full `node --test`, `npm run audit:hub`, and both browser-smoke suites.
 Expected: clean rebase and all gates green.
 
 - [ ] **Step 5: Push the feature branch and merge normally**
@@ -308,7 +308,7 @@ Run: `git push -u origin feat/loop-bgm-lab`. Create a pull request, verify the e
 
 - [ ] **Step 6: Wait for exact-SHA Pages and verification workflows**
 
-Use `gh run list`, `gh run view`, and `gh run watch` for the merged SHA.  
+Use `gh run list`, `gh run view`, and `gh run watch` for the merged SHA.
 Expected: Pages deployment and Hub verification conclude `success`.
 
 - [ ] **Step 7: Verify public pages and media**
