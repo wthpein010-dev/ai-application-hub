@@ -90,7 +90,8 @@ public partial class App : Application
                 ConfirmationOverlayDiagnostics.Write($"action:{message}");
             if (launchOptions.Mode == DesktopLaunchMode.ConfirmationOverlay)
             {
-                overlayWindow = new ConfirmationOverlayWindow();
+                overlayWindow = new ConfirmationOverlayWindow(
+                    CodexThreadNavigatorFactory.CreateCurrent());
                 ConfirmationOverlayDiagnostics.Write("overlay:created");
                 session = new WorkbenchSession(
                     overlayViewModel,

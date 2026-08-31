@@ -69,6 +69,7 @@ test("hub registers the Confirmation Bar demo, video, Windows, Mac, and iOS acti
 
   assert.match(source, /id:\s*"codex-thread-workbench"/);
   assert.match(source, /name:\s*"Codex 待确认悬浮助手"/);
+  assert.match(source, /brief:\s*"[^"]*顶部悬停[^"]*查看原任务[^"]*自动确认[^"]*"/);
   assert.match(source, /entry:\s*"\.\/projects\/codex-thread-workbench\/index\.html"/);
   assert.match(source, new RegExp(`video:\\s*"${regexEscape(videoPage)}"`));
   assert.match(source, new RegExp(`package:\\s*"${regexEscape(downloadPage)}"`));
@@ -109,7 +110,10 @@ test("project page presents the confirmation overlay workflow and every release 
     "https://wthpein010-dev.github.io/ai-application-hub/projects/codex-thread-workbench/download/mac/";
 
   assert.match(html, /Codex 待确认悬浮助手/);
-  assert.match(html, /v2\.1\.8/);
+  assert.match(html, /v2\.3\.3/);
+  assert.match(html, /顶部悬停/);
+  assert.match(html, /查看原任务/);
+  assert.match(html, /自动确认/);
   assert.match(html, /普通关闭请求会被拦截/);
   assert.match(html, /每分钟检查恢复/);
   assert.match(html, /data-overlay-state="retracted"/);
@@ -189,6 +193,10 @@ test("confirmation overlay expands for candidates, retracts, and reports protect
     assert.equal(await page.locator('[data-role="candidate-count"]').textContent(), "2");
     assert.equal(await page.locator('[data-action="confirm-all"]').isVisible(), true);
 
+    await page.locator('[data-action="view-one"]').first().click();
+    assert.equal(await page.locator('[data-role="candidate"]').count(), 2);
+    assert.match(await page.locator('[data-role="activity-log"]').textContent(), /查看/);
+
     await page.locator('[data-action="confirm-one"]').first().click();
     assert.equal(await page.locator('[data-role="candidate"]').count(), 1);
     assert.equal(await page.locator('[data-role="candidate-count"]').textContent(), "1");
@@ -207,6 +215,22 @@ test("confirmation overlay expands for candidates, retracts, and reports protect
     await browser.close();
     await stopServer(server);
   }
+});
+
+test("v2.3.3 source snapshot retains the full-window hover fix", async () => {
+  const [project, xaml, code, placement] = await Promise.all([
+    read("../build/codex-thread-workbench/src/CodexThreadWorkbench/CodexThreadWorkbench.csproj"),
+    read("../build/codex-thread-workbench/src/CodexThreadWorkbench/ConfirmationOverlayWindow.axaml"),
+    read("../build/codex-thread-workbench/src/CodexThreadWorkbench/ConfirmationOverlayWindow.axaml.cs"),
+    read("../build/codex-thread-workbench/src/CodexThreadWorkbench/ConfirmationOverlayPlacement.cs"),
+  ]);
+
+  assert.match(project, /<Version>2\.3\.3<\/Version>/);
+  assert.match(xaml, /x:Name="OverlayRoot"/);
+  assert.match(xaml, /PointerEntered="OverlayRoot_OnPointerEntered"/);
+  assert.match(xaml, /PointerExited="OverlayRoot_OnPointerExited"/);
+  assert.match(code, /_isPointerOverWindow/);
+  assert.match(placement, /TopMargin = 0/);
 });
 
 test("error state is fail-closed and keyboard and mobile controls stay usable", async () => {
@@ -246,7 +270,17 @@ test("error state is fail-closed and keyboard and mobile controls stay usable", 
   }
 });
 
-test("Mac download page accepts both published Confirmation Bar manifests", async () => {
+test("Mac download page stays fail-closed until both manifests are published", async () => {
+  const manifestsPresent = ["arm64", "x64"].every((architecture) =>
+    existsSync(resolve(
+      root,
+      "projects",
+      "codex-thread-workbench",
+      "download",
+      "mac",
+      `manifest-${architecture}.json`,
+    ))
+  );
   const server = createStaticServer();
   const baseUrl = await startServer(server);
   const browser = await launchBrowser();
@@ -256,6 +290,18 @@ test("Mac download page accepts both published Confirmation Bar manifests", asyn
     await page.goto(`${baseUrl}/projects/codex-thread-workbench/download/mac/index.html`);
 
     const downloadButton = page.locator('[data-role="download-button"]');
+    if (!manifestsPresent) {
+      await page.waitForFunction(() =>
+        document.querySelector('[data-role="status"]')?.textContent?.includes("暂时不可用"),
+        undefined,
+        { timeout: 1_500 },
+      );
+      assert.equal(await downloadButton.isDisabled(), true);
+      assert.equal(await page.locator('[data-role="error"]').isVisible(), true);
+      assert.equal(await page.locator('[data-role="retry-button"]').isVisible(), true);
+      return;
+    }
+
     await page.waitForFunction(() =>
       document.querySelector('[data-role="download-button"]')?.disabled === false,
       undefined,
@@ -288,7 +334,7 @@ test("download page exposes progress, verification, failure and retry states", a
   ]);
 
   assert.match(html, /CodexConfirmationBar-Windows-x64\.zip/);
-  assert.match(html, /v2\.1\.8/);
+  assert.match(html, /v2\.3\.3/);
   assert.match(html, /data-role="download-button"/);
   assert.match(html, /data-role="retry-button"/);
   assert.match(html, /data-role="progress"/);

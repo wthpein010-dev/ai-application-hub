@@ -408,7 +408,7 @@ const defaultApps = [
     name: "Codex 待确认悬浮助手",
     category: "AI 开发桌面工具",
     status: "desktop",
-    brief: "自动扫描等待你确认继续的 Codex 任务；空闲时收进屏幕顶部，有候选时自动弹出，可逐条确认或一键全部确认。",
+    brief: "自动扫描等待你继续的 Codex 任务；空闲时收进屏幕顶部，顶部悬停稳定展开，可查看原任务，并按需开启自动确认。",
     problem: "多个 Codex 任务并行运行时，等待确认的任务容易埋在任务列表里；频繁切换检查既打断工作，也会拖慢后续执行。",
     aiUse: "桌面端通过本机 codex app-server 和会话日志识别未决确认，不读取凭据；Windows/macOS 负责真实线程操作，iOS 提供可安装的演示伴侣入口。",
     folder: "./projects/codex-thread-workbench/",

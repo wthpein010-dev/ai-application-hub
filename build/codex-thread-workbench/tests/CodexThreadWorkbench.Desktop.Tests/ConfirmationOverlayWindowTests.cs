@@ -43,15 +43,37 @@ public sealed class ConfirmationOverlayWindowTests
     }
 
     [AvaloniaFact]
-    public void Overlay_UsesTaskSpriteAndFriendlyNewTaskVisuals()
+    public void Overlay_UsesExternalGraphicCueWithoutInternalInstructionCopy()
     {
         var window = new ConfirmationOverlayWindow();
 
+        var surface = window.FindControl<Border>("OverlaySurface");
+        var badge = window.FindControl<Border>("AttentionBadge");
+        Assert.NotNull(surface);
+        Assert.NotNull(badge);
+        Assert.DoesNotContain(badge, surface.GetVisualDescendants());
         Assert.NotNull(window.FindControl<Control>("TaskSprite"));
         Assert.NotNull(window.FindControl<Control>("TaskSpriteAura"));
         Assert.NotNull(window.FindControl<Control>("TaskSparkLeft"));
         Assert.NotNull(window.FindControl<Control>("TaskSparkRight"));
-        Assert.NotNull(window.FindControl<Control>("NewTaskBanner"));
+        Assert.Null(window.FindControl<Control>("NewTaskBanner"));
+
+        var visibleCopy = window.GetVisualDescendants()
+            .OfType<TextBlock>()
+            .Select(textBlock => textBlock.Text ?? string.Empty)
+            .ToArray();
+        Assert.DoesNotContain(
+            visibleCopy,
+            text => text.Contains("有新任务等你决定", StringComparison.Ordinal));
+        Assert.DoesNotContain(
+            visibleCopy,
+            text => text.Contains("有任务等你决定时", StringComparison.Ordinal));
+        Assert.DoesNotContain("待你决定", visibleCopy);
+
+        var toggle = window.FindControl<ToggleSwitch>("AutoConfirmToggle");
+        Assert.NotNull(toggle);
+        Assert.Equal("自动", toggle.OffContent);
+        Assert.Equal("自动", toggle.OnContent);
     }
 
     [AvaloniaFact]
@@ -61,7 +83,7 @@ public sealed class ConfirmationOverlayWindowTests
 
         window.PositionAtTopCenter(new PixelRect(100, 50, 1500, 900));
 
-        Assert.Equal(new PixelPoint(570, 58), window.Position);
+        Assert.Equal(new PixelPoint(570, 50), window.Position);
     }
 
     [Fact]
@@ -182,7 +204,7 @@ public sealed class ConfirmationOverlayWindowTests
             "请确认方案，确认后开始实施。",
             DateTimeOffset.UtcNow));
         await WaitForAsync(() => !viewModel.IsInteractionArmed);
-        await WaitForAsync(() => window.Position.Y == workingArea.Y + 8);
+        await WaitForAsync(() => window.Position.Y == workingArea.Y);
         await WaitForAsync(() => viewModel.IsInteractionArmed);
 
         var confirmAllButton = window.FindControl<Button>("ConfirmAllButton");
@@ -198,6 +220,34 @@ public sealed class ConfirmationOverlayWindowTests
 
         Assert.True(window.IsVisible);
         Assert.Equal("暂无待确认 · 常驻扫描", viewModel.CountText);
+        window.CloseForShutdown();
+    }
+
+    [AvaloniaFact]
+    public async Task IdleHover_WhenPointerRemainsAtTopEdge_StaysExpanded()
+    {
+        var monitor = new PushMonitor();
+        await using var viewModel = new ConfirmationOverlayViewModel(
+            new NoopClient(),
+            monitor,
+            new ConfirmationDetector());
+        var window = new ConfirmationOverlayWindow();
+        window.Attach(viewModel);
+        await WaitForAsync(() => window.IsVisible && window.Bounds.Height > 1);
+        var primaryScreen = window.Screens.Primary;
+        Assert.NotNull(primaryScreen);
+        var workingArea = primaryScreen.WorkingArea;
+        await WaitForAsync(() =>
+            window.Position.Y + (int)Math.Ceiling(window.Bounds.Height) ==
+            workingArea.Y + ConfirmationOverlayWindow.IdlePeekHeight);
+
+        window.MouseMove(new Point(window.Bounds.Width / 2, window.Bounds.Height - 5));
+        await WaitForAsync(() => window.Position.Y == workingArea.Y);
+
+        window.MouseMove(new Point(window.Bounds.Width / 2, 5));
+        await Task.Delay(900);
+
+        Assert.Equal(workingArea.Y, window.Position.Y);
         window.CloseForShutdown();
     }
 
@@ -258,9 +308,87 @@ public sealed class ConfirmationOverlayWindowTests
 
         monitor.PushError("扫描连接暂时不可用");
 
-        await WaitForAsync(() => window.Position.Y == workingArea.Y + 8);
+        await WaitForAsync(() => window.Position.Y == workingArea.Y);
         Assert.True(viewModel.RequiresAttention);
         Assert.Equal("扫描异常 · 请检查", viewModel.CountText);
+        window.CloseForShutdown();
+    }
+
+    [AvaloniaFact]
+    public async Task ViewButton_OpensExactTaskWithoutSendingOrRemovingCandidate()
+    {
+        var monitor = new PushMonitor();
+        var client = new ClickRecordingClient();
+        var navigator = new RecordingThreadNavigator();
+        var window = new ConfirmationOverlayWindow(navigator);
+        await using var viewModel = new ConfirmationOverlayViewModel(
+            client,
+            monitor,
+            new ConfirmationDetector());
+        window.Attach(viewModel);
+        await WaitForAsync(() => window.IsVisible);
+        monitor.Push(new ConfirmationCandidate(
+            "thread-1",
+            "待确认任务",
+            "message-1",
+            "确认执行吗？",
+            DateTimeOffset.UtcNow));
+        await WaitForAsync(() => viewModel.IsInteractionArmed);
+        var button = window.GetVisualDescendants()
+            .OfType<Button>()
+            .Single(candidate => Equals(candidate.Content, "查看"));
+
+        button.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+        await Task.Delay(20);
+        Assert.Empty(navigator.ThreadIds);
+
+        var point = button.TranslatePoint(
+            new Point(button.Bounds.Width / 2, button.Bounds.Height / 2),
+            window)!.Value;
+        window.MouseDown(point, MouseButton.Left, RawInputModifiers.None);
+        window.MouseUp(point, MouseButton.Left, RawInputModifiers.None);
+
+        await WaitForAsync(() => navigator.ThreadIds.Count == 1);
+        Assert.Equal(["thread-1"], navigator.ThreadIds);
+        Assert.Equal(0, client.StartCalls);
+        Assert.Single(viewModel.Items);
+        window.CloseForShutdown();
+    }
+
+    [AvaloniaFact]
+    public async Task ViewButton_NavigationFailureKeepsCandidateAndOffersRetry()
+    {
+        var monitor = new PushMonitor();
+        var client = new ClickRecordingClient();
+        var navigator = new FailingThreadNavigator();
+        var window = new ConfirmationOverlayWindow(navigator);
+        await using var viewModel = new ConfirmationOverlayViewModel(
+            client,
+            monitor,
+            new ConfirmationDetector());
+        window.Attach(viewModel);
+        await WaitForAsync(() => window.IsVisible);
+        monitor.Push(new ConfirmationCandidate(
+            "thread-1",
+            "待确认任务",
+            "message-1",
+            "确认执行吗？",
+            DateTimeOffset.UtcNow));
+        await WaitForAsync(() => viewModel.IsInteractionArmed);
+        var button = window.GetVisualDescendants()
+            .OfType<Button>()
+            .Single(candidate => Equals(candidate.Content, "查看"));
+        var point = button.TranslatePoint(
+            new Point(button.Bounds.Width / 2, button.Bounds.Height / 2),
+            window)!.Value;
+
+        window.MouseDown(point, MouseButton.Left, RawInputModifiers.None);
+        window.MouseUp(point, MouseButton.Left, RawInputModifiers.None);
+
+        await WaitForAsync(() => Equals(button.Content, "重试查看"));
+        Assert.Equal(1, navigator.Calls);
+        Assert.Equal(0, client.StartCalls);
+        Assert.Single(viewModel.Items);
         window.CloseForShutdown();
     }
 
@@ -281,15 +409,15 @@ public sealed class ConfirmationOverlayWindowTests
         var aura = window.FindControl<Border>("TaskSpriteAura");
         var sparkLeft = window.FindControl<Control>("TaskSparkLeft");
         var sparkRight = window.FindControl<Control>("TaskSparkRight");
-        var banner = window.FindControl<Border>("NewTaskBanner");
+        var badge = window.FindControl<Border>("AttentionBadge");
         var list = window.FindControl<ItemsControl>("ConfirmationList");
         Assert.NotNull(sprite);
         Assert.NotNull(aura);
         Assert.NotNull(sparkLeft);
         Assert.NotNull(sparkRight);
-        Assert.NotNull(banner);
+        Assert.NotNull(badge);
         Assert.NotNull(list);
-        Assert.False(banner.IsVisible);
+        Assert.False(badge.IsVisible);
         Assert.Equal(0, aura.Opacity);
         var actionAttempts = 0;
         viewModel.ActionAttempted += _ => actionAttempts++;
@@ -302,8 +430,9 @@ public sealed class ConfirmationOverlayWindowTests
             DateTimeOffset.UtcNow);
         monitor.Push(first);
 
-        await WaitForAsync(() => banner.IsVisible && aura.Opacity > 0.2);
+        await WaitForAsync(() => badge.IsVisible && aura.Opacity > 0.2);
         Assert.NotNull(sprite.RenderTransform);
+        Assert.NotNull(badge.RenderTransform);
         await WaitForAsync(() => aura.Opacity == 0);
 
         monitor.Push(first);
@@ -345,7 +474,7 @@ public sealed class ConfirmationOverlayWindowTests
         Assert.Equal(0, aura.Opacity);
         Assert.Equal(0, sparkLeft.Opacity);
         Assert.Equal(0, sparkRight.Opacity);
-        Assert.Equal(1, banner.Opacity);
+        Assert.Equal(1, badge.Opacity);
         Assert.Equal(1, list.Opacity);
         Assert.Equal(0, actionAttempts);
         Assert.Equal(0, client.StartCalls);
@@ -557,6 +686,32 @@ public sealed class ConfirmationOverlayWindowTests
             bool value,
             CancellationToken cancellationToken = default) =>
             throw new IOException("settings locked");
+    }
+
+    private sealed class RecordingThreadNavigator : ICodexThreadNavigator
+    {
+        public List<string> ThreadIds { get; } = [];
+
+        public Task OpenAsync(
+            string threadId,
+            CancellationToken cancellationToken = default)
+        {
+            ThreadIds.Add(threadId);
+            return Task.CompletedTask;
+        }
+    }
+
+    private sealed class FailingThreadNavigator : ICodexThreadNavigator
+    {
+        public int Calls { get; private set; }
+
+        public Task OpenAsync(
+            string threadId,
+            CancellationToken cancellationToken = default)
+        {
+            Calls++;
+            throw new InvalidOperationException("navigation failed");
+        }
     }
 
     private sealed class ClickRecordingClient : ICodexThreadClient

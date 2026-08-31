@@ -19,6 +19,7 @@ permissions:
 
 env:
   WORKBENCH_SOURCE_COMMIT: 8e2126ba93a835e2e0e2864d83165b9358d995a1
+  WORKBENCH_HUB_SOURCE_COMMIT: cebe2d589f7b7caa2351374c80d7dee035d1a394
   WORKBENCH_SOURCE_TREE: 108cc3f9271d83573f010ba8f4c7dd67b70b41b9
 
 concurrency:
@@ -48,6 +49,7 @@ jobs:
       - name: Check out the source snapshot
         uses: actions/checkout@v4
         with:
+          ref: ${{ env.WORKBENCH_HUB_SOURCE_COMMIT }}
           sparse-checkout: |
             build/codex-thread-workbench
             scripts/verify-codex-multi-thread-workbench-source.mjs
@@ -64,7 +66,7 @@ jobs:
           node-version: 22
 
       - name: Verify immutable source snapshot tree
-        run: node ../../scripts/verify-codex-multi-thread-workbench-source.mjs "${GITHUB_SHA}" "${WORKBENCH_SOURCE_TREE}"
+        run: node ../../scripts/verify-codex-multi-thread-workbench-source.mjs "${WORKBENCH_HUB_SOURCE_COMMIT}" "${WORKBENCH_SOURCE_TREE}"
 
       - name: Install the public Codex CLI
         run: npm install --global @openai/codex
