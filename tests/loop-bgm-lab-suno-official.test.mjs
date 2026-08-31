@@ -126,6 +126,28 @@ test("API run URL evidence rejects normalized local and credential-bearing URLs"
   }
 });
 
+test("API runs reject normalized loopback and URL credentials in generic fields", () => {
+  const createInput = {
+    id: "api-run-5",
+    batchId: "batch-5",
+    createdAt: "2026-09-01T00:00:00.000Z",
+  };
+  const generating = transitionApiRun(
+    createApiRun(createInput),
+    "generating",
+    { updatedAt: "2026-09-01T00:00:01.000Z" },
+  );
+  const mappedLoopback = "https://[::ffff:127.0.0.1]/jobs/1";
+  assert.throws(() => createApiRun({ ...createInput, generatedUrl: mappedLoopback }), /local|public/i);
+  assert.throws(() => transitionApiRun(generating, "ready", { generatedUrl: mappedLoopback }), /local|public/i);
+
+  const credentialUrl = "https://user:secret@platform.suno.com/x";
+  for (const field of ["id", "batchId", "error"]) {
+    assert.throws(() => createApiRun({ ...createInput, [field]: credentialUrl }), /userinfo|credential|opaque|forbidden|secret/i);
+    assert.throws(() => transitionApiRun({ ...generating, [field]: credentialUrl }, "ready", {}), /userinfo|credential|opaque|forbidden|secret/i);
+  }
+});
+
 test("poll scheduling is deterministic, bounded, and honors a valid retry-after", () => {
   const run = transitionApiRun(
     createApiRun({ id: "api-run-2", batchId: "batch-2", createdAt: "2026-09-01T00:00:00.000Z" }),

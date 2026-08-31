@@ -45,6 +45,7 @@ const URL_CREDENTIAL_PARTS = Object.freeze([
 ]);
 const BASE_POLL_DELAY_MS = 2_000;
 const MAX_POLL_DELAY_MS = 30_000;
+const OPAQUE_ID = /^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$/;
 
 function isPlainObject(value) {
   return value !== null && typeof value === "object" && !Array.isArray(value);
@@ -85,10 +86,12 @@ function normalizedUrlPart(value) {
 
 function isLocalHostname(hostname) {
   const normalized = hostname.toLowerCase().replace(/\.+$/, "").replace(/^\[|\]$/g, "");
+  const mappedIpv4 = normalized.match(/^(?:::ffff:|0:0:0:0:0:ffff:)([0-9a-f]{1,4}):([0-9a-f]{1,4})$/i);
   return normalized === "localhost"
     || normalized.endsWith(".localhost")
     || normalized === "::1"
     || normalized === "::ffff:127.0.0.1"
+    || (mappedIpv4 !== null && (Number.parseInt(mappedIpv4[1], 16) >> 8) === 127)
     || /^127(?:\.\d{1,3}){0,3}$/.test(normalized);
 }
 
@@ -105,6 +108,7 @@ function hasCredentialUrlParameter(parsed) {
 }
 
 function assertSafeUrlParts(parsed, field) {
+  if (parsed.username || parsed.password) throw new TypeError(`URL userinfo is not allowed in API run field: ${field}`);
   if (isLocalHostname(parsed.hostname)) throw new TypeError(`Unsafe local URL is not allowed in API run field: ${field}`);
   if (hasCredentialUrlParameter(parsed)) throw new TypeError(`Forbidden credential-like URL parameter in API run field: ${field}`);
   if (parsed.search || parsed.hash) throw new TypeError(`API run URL fields must not contain a query or fragment: ${field}`);
@@ -143,7 +147,10 @@ function assertSafeScalar(value, field) {
   try {
     parsed = new URL(value);
   } catch {}
-  if (parsed && (parsed.protocol === "http:" || parsed.protocol === "https:")) assertSafeUrlParts(parsed, field);
+  if (parsed) {
+    if (parsed.username || parsed.password) throw new TypeError(`URL userinfo is not allowed in API run field: ${field}`);
+    if (parsed.protocol === "http:" || parsed.protocol === "https:") assertSafeUrlParts(parsed, field);
+  }
   if (/(?:^|[?&#;\s("'`])(?:cookie|token|access(?:[_-]?token)|api(?:[_-]?(?:key|secret))|client(?:[_-]?secret)|recovery(?:[_-]?key)|session|password|secret|authorization)\s*[:=]/i.test(value)
     || /\bbearer\s+\S+/i.test(value)) {
     throw new TypeError(`Forbidden secret-like value in API run field: ${field}`);
@@ -161,10 +168,10 @@ function assertAllowedKeys(value, allowed, label) {
 
 function assertRunValue(value) {
   assertAllowedKeys(value, RUN_FIELDS, "API run");
-  if (typeof value.id !== "string" || value.id.length === 0) throw new TypeError("API run id must be a non-empty string");
-  if (typeof value.batchId !== "string" || value.batchId.length === 0) throw new TypeError("API run batchId must be a non-empty string");
+  if (typeof value.id !== "string" || !OPAQUE_ID.test(value.id)) throw new TypeError("API run id must be a safe opaque ID");
+  if (typeof value.batchId !== "string" || !OPAQUE_ID.test(value.batchId)) throw new TypeError("API run batchId must be a safe opaque ID");
   if (!API_RUN_STATUSES.includes(value.status)) throw new TypeError("API run status is invalid");
-  if (value.jobId !== null && (typeof value.jobId !== "string" || !/^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$/.test(value.jobId))) {
+  if (value.jobId !== null && (typeof value.jobId !== "string" || !OPAQUE_ID.test(value.jobId))) {
     throw new TypeError("API run jobId must be a safe opaque ID or null");
   }
   if (typeof value.createdAt !== "string" || value.createdAt.length === 0) throw new TypeError("API run createdAt must be a string");
