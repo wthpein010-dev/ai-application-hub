@@ -39,6 +39,10 @@ const TRANSITIONS = Object.freeze({
   cancelled: Object.freeze([]),
 });
 const SECRET_KEY_PARTS = Object.freeze(["cookie", "token", "apikey", "recoverykey", "session", "password", "secret", "authorization"]);
+const URL_CREDENTIAL_PARTS = Object.freeze([
+  "cookie", "token", "accesstoken", "apikey", "apisecret", "clientsecret",
+  "authorization", "proxyauthorization", "session", "sessionsecret", "recoverykey", "password", "secret",
+]);
 const BASE_POLL_DELAY_MS = 2_000;
 const MAX_POLL_DELAY_MS = 30_000;
 
@@ -65,6 +69,47 @@ function isAbsolutePath(value) {
     || /\/\/[^/\s]/.test(value);
 }
 
+function normalizedUrlPart(value) {
+  let decoded = String(value);
+  for (let index = 0; index < 2; index += 1) {
+    try {
+      const next = decodeURIComponent(decoded.replace(/\+/g, " "));
+      if (next === decoded) break;
+      decoded = next;
+    } catch {
+      break;
+    }
+  }
+  return decoded.normalize("NFKC").toLowerCase().replace(/[^a-z0-9]+/g, "");
+}
+
+function isLocalHostname(hostname) {
+  const normalized = hostname.toLowerCase().replace(/\.+$/, "").replace(/^\[|\]$/g, "");
+  return normalized === "localhost"
+    || normalized.endsWith(".localhost")
+    || normalized === "::1"
+    || normalized === "::ffff:127.0.0.1"
+    || /^127(?:\.\d{1,3}){0,3}$/.test(normalized);
+}
+
+function hasCredentialUrlParameter(parsed) {
+  for (const [name, value] of parsed.searchParams) {
+    const normalizedName = normalizedUrlPart(name);
+    const normalizedValue = normalizedUrlPart(value);
+    if (URL_CREDENTIAL_PARTS.some(part => normalizedName.includes(part) || normalizedValue.includes(part))
+      || /^bearer\s+/i.test(value)) {
+      return true;
+    }
+  }
+  return false;
+}
+
+function assertSafeUrlParts(parsed, field) {
+  if (isLocalHostname(parsed.hostname)) throw new TypeError(`Unsafe local URL is not allowed in API run field: ${field}`);
+  if (hasCredentialUrlParameter(parsed)) throw new TypeError(`Forbidden credential-like URL parameter in API run field: ${field}`);
+  if (parsed.search || parsed.hash) throw new TypeError(`API run URL fields must not contain a query or fragment: ${field}`);
+}
+
 function assertNullablePublicHttpsUrl(value, field) {
   if (value === null) return;
   if (typeof value !== "string") throw new TypeError(`API run ${field} must be a string or null`);
@@ -74,19 +119,19 @@ function assertNullablePublicHttpsUrl(value, field) {
   } catch {
     throw new TypeError(`API run ${field} must be a public HTTPS URL`);
   }
-  if (parsed.protocol !== "https:" || parsed.username || parsed.password
-    || ["localhost", "127.0.0.1", "::1", "[::1]"].includes(parsed.hostname.toLowerCase())) {
+  if (parsed.protocol !== "https:" || parsed.username || parsed.password) {
     throw new TypeError(`API run ${field} must be a public HTTPS URL`);
   }
+  assertSafeUrlParts(parsed, field);
 }
 
 function isUnsafeUrl(value) {
   if (/(?:^|[\s("'`=])(?:blob|file):/i.test(value)) return true;
   try {
     const parsed = new URL(value);
-    return ["localhost", "127.0.0.1", "::1", "[::1]"].includes(parsed.hostname.toLowerCase());
+    return isLocalHostname(parsed.hostname);
   } catch {
-    return /https?:\/\/(?:localhost|127\.0\.0\.1|\[?::1\]?)(?::\d+)?(?:[/?#]|$)/i.test(value);
+    return /https?:\/\/(?:localhost|127\.0\.0\.1|\[?::1\]?)(?::\d+)?(?:[/?#.]|$)/i.test(value);
   }
 }
 
@@ -94,7 +139,12 @@ function assertSafeScalar(value, field) {
   if (typeof value !== "string") return;
   if (isAbsolutePath(value)) throw new TypeError(`Absolute path is not allowed in API run field: ${field}`);
   if (isUnsafeUrl(value)) throw new TypeError(`Unsafe local URL is not allowed in API run field: ${field}`);
-  if (/(?:^|[?&#;\s("'`])(?:cookie|token|api(?:[_-]?key)|recovery(?:[_-]?key)|session|password|secret|authorization)\s*[:=]/i.test(value)
+  let parsed;
+  try {
+    parsed = new URL(value);
+  } catch {}
+  if (parsed && (parsed.protocol === "http:" || parsed.protocol === "https:")) assertSafeUrlParts(parsed, field);
+  if (/(?:^|[?&#;\s("'`])(?:cookie|token|access(?:[_-]?token)|api(?:[_-]?(?:key|secret))|client(?:[_-]?secret)|recovery(?:[_-]?key)|session|password|secret|authorization)\s*[:=]/i.test(value)
     || /\bbearer\s+\S+/i.test(value)) {
     throw new TypeError(`Forbidden secret-like value in API run field: ${field}`);
   }
@@ -147,7 +197,7 @@ export function createApiRun(input) {
     id: input.id,
     batchId: input.batchId,
     status: "queued",
-    jobId: null,
+    jobId: input.jobId ?? null,
     createdAt: input.createdAt,
     updatedAt: input.updatedAt ?? input.createdAt,
     attempts: input.attempts ?? 0,

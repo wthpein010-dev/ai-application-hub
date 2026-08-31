@@ -96,6 +96,27 @@ test("API runs retain only safe public generation evidence", () => {
   }
 });
 
+test("API run URL evidence rejects normalized local and credential-bearing URLs", () => {
+  const createInput = {
+    id: "api-run-4",
+    batchId: "batch-4",
+    createdAt: "2026-09-01T00:00:00.000Z",
+  };
+  const queued = createApiRun({ ...createInput, jobId: "public-job-4" });
+  assert.equal(queued.jobId, "public-job-4");
+  const generating = transitionApiRun(queued, "generating", { updatedAt: "2026-09-01T00:00:01.000Z" });
+
+  for (const generatedUrl of [
+    "https://localhost./jobs/1",
+    "https://platform.suno.com/jobs/1?access_token=private",
+    "https://platform.suno.com/jobs/1?api-secret=private",
+  ]) {
+    assert.throws(() => createApiRun({ ...createInput, generatedUrl }), /public|local|forbidden|secret/i);
+    assert.throws(() => transitionApiRun(generating, "ready", { generatedUrl }), /public|local|forbidden|secret/i);
+  }
+  assert.throws(() => createApiRun({ ...createInput, error: "access_token=private" }), /forbidden|secret/i);
+});
+
 test("poll scheduling is deterministic, bounded, and honors a valid retry-after", () => {
   const run = transitionApiRun(
     createApiRun({ id: "api-run-2", batchId: "batch-2", createdAt: "2026-09-01T00:00:00.000Z" }),
