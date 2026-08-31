@@ -3,7 +3,6 @@ import { createDailyPlan } from "./core/prompt-engine.mjs";
 import {
   bindExperimentOutput,
   exportProjectJson,
-  exportProjectMarkdown,
   importProjectJson,
   rebuildPromptQueue,
   recordCreateRun,
@@ -12,6 +11,11 @@ import {
   updateRunOutputs,
   validateProject
 } from "./core/project-state.mjs";
+import {
+  MAX_PROJECT_DOCUMENT_BYTES,
+  exportProjectHandoffMarkdown,
+  importProjectDocument
+} from "./core/portable-handoff.mjs";
 import {
   classifySimilarity,
   compareCandidate,
@@ -97,6 +101,7 @@ const licenseForm = element("#license-form");
 const licenseFormError = element("#license-form-error");
 const licenseList = element("#license-list");
 const importInput = element("#import-project");
+const markdownExportButton = element("#export-markdown");
 const importStatus = element("#import-status");
 const storageWarning = element("#storage-warning");
 const appLive = element("#app-live");
@@ -1378,12 +1383,15 @@ element("#export-json").addEventListener("click", () => {
   }
 });
 
-element("#export-markdown").addEventListener("click", () => {
+markdownExportButton.addEventListener("click", async () => {
+  markdownExportButton.disabled = true;
   try {
-    downloadText(exportProjectMarkdown(project), "loop-bgm-lab-handoff.md", "text/markdown;charset=utf-8");
-    showLive("已导出不含音频、路径、个人文件名或秘密的 Markdown。 ");
+    downloadText(await exportProjectHandoffMarkdown(project), "loop-bgm-lab-handoff.md", "text/markdown;charset=utf-8");
+    showLive("已导出可完整恢复且不含音频、路径、个人文件名或秘密的 Markdown。");
   } catch (error) {
     showError(error instanceof Error ? error.message : "Markdown 导出失败。");
+  } finally {
+    markdownExportButton.disabled = false;
   }
 });
 
@@ -1393,7 +1401,11 @@ importInput.addEventListener("change", async () => {
   if (!file) return;
   clearError();
   try {
-    const imported = importProjectJson(await file.text());
+    if (file.size > MAX_PROJECT_DOCUMENT_BYTES) {
+      throw new TypeError("项目交接文件超过 48 MiB 限制。");
+    }
+    const result = await importProjectDocument(await file.text());
+    const imported = result.project;
     const importedSelectedCandidateId = imported.candidates.at(-1)?.id || null;
     stageProjectRender(imported, importedSelectedCandidateId);
     referenceGeneration += 1;
@@ -1405,9 +1417,9 @@ importInput.addEventListener("change", async () => {
     rememberProjectIds(project);
     persistProject();
     renderAll();
-    importStatus.textContent = "已完整导入并替换当前项目；音频仍需在本机重新选择。";
+    importStatus.textContent = `已完整导入 ${result.format === "markdown" ? "Markdown" : "JSON"} 并替换当前项目；音频仍需在本机重新选择。`;
   } catch (error) {
-    importStatus.textContent = `导入失败：${error instanceof Error ? error.message : "项目 JSON 无效"}。当前状态未被替换。`;
+    importStatus.textContent = `导入失败：${error instanceof Error ? error.message : "项目交接文件无效"}。当前状态未被替换。`;
   }
 });
 

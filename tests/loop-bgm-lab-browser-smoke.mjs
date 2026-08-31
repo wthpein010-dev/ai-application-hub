@@ -804,6 +804,23 @@ try {
   await page.locator("#export-markdown").click();
   const labelledMarkdown = await readFile(await (await labelledMarkdownPromise).path(), "utf8");
   assert.match(labelledMarkdown, /欢乐版本 A/);
+
+  const markdownHandoffContext = await browser.newContext({ viewport: { width: 1024, height: 768 }, acceptDownloads: true });
+  const markdownHandoffPage = await markdownHandoffContext.newPage();
+  const markdownHandoffErrors = observeErrors(markdownHandoffPage);
+  await installInterceptors(markdownHandoffPage, markdownHandoffErrors, { clearOnce: true });
+  await markdownHandoffPage.goto(`${origin}/projects/loop-bgm-lab/index.html`, { waitUntil: "networkidle" });
+  await markdownHandoffPage.locator("body[data-ready='true']").waitFor();
+  await markdownHandoffPage.locator("#import-project").setInputFiles({
+    name: "loop-bgm-lab-handoff.md",
+    mimeType: "text/markdown",
+    buffer: Buffer.from(labelledMarkdown)
+  });
+  await markdownHandoffPage.waitForFunction(() => document.querySelector("#import-status")?.textContent.includes("Markdown"));
+  assert.match(await markdownHandoffPage.locator("#candidate-history").textContent(), /欢乐版本 A/);
+  assert.equal(await markdownHandoffPage.evaluate(() => JSON.parse(localStorage.getItem("loop-bgm-lab-v1")).version), 2);
+  await assertNoObservedErrors(markdownHandoffPage, markdownHandoffErrors);
+  await markdownHandoffContext.close();
   await assertNoOverflow(page, "1440x900");
   await assertNoObservedErrors(page, errors);
   await page.close();

@@ -6,6 +6,9 @@ import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { spawnSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
+import { createDailyPlan } from "../projects/loop-bgm-lab/core/prompt-engine.mjs";
+import { exportProjectJson } from "../projects/loop-bgm-lab/core/project-state.mjs";
+import { importProjectDocument } from "../projects/loop-bgm-lab/core/portable-handoff.mjs";
 
 const root = dirname(dirname(fileURLToPath(import.meta.url)));
 const projectRoot = join(root, "projects", "loop-bgm-lab");
@@ -115,6 +118,26 @@ test("browser coordinator imports the analysis, plan/state, and candidate-scorin
   assert.match(source, /\bnextMonotonicId\b/);
   assert.match(source, /const STORAGE_KEY = "loop-bgm-lab-v1"/);
   assert.doesNotMatch(source, /localStorage\.(?:getItem|setItem|removeItem)\((?!STORAGE_KEY)/);
+});
+
+test("portable handoff picker accepts both complete recovery formats", () => {
+  // Break caught: the UI claims restorable Markdown but still only accepts JSON or downloads the human-only summary.
+  const html = readProjectFile("index.html");
+  const source = readProjectFile("app.js");
+
+  assert.match(html, /accept="[^"]*\.json[^"]*\.md[^"]*application\/json[^"]*text\/markdown[^"]*"/);
+  assert.match(source, /exportProjectHandoffMarkdown/);
+  assert.match(source, /importProjectDocument/);
+  assert.match(html, /JSON[^<]*Markdown[^<]*完整恢复/);
+});
+
+test("new plans identify the Markdown-handoff tool version without rewriting imported versions", async () => {
+  // Break caught: a newly created project advertises the pre-handoff tool version, or import rewrites an older project identity.
+  const created = createDailyPlan();
+  assert.equal(created.toolVersion, "loop-bgm-lab/1.2.0");
+
+  const imported = await importProjectDocument(exportProjectJson({ ...created, toolVersion: "loop-bgm-lab/1.1.0" }));
+  assert.equal(imported.project.toolVersion, "loop-bgm-lab/1.1.0");
 });
 
 test("candidate markup exposes an explicit batch association, durable history, and playback-only cleanup", () => {
