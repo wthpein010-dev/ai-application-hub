@@ -25,6 +25,12 @@ const workflowPath = join(
   "workflows",
   "build-codex-multi-thread-workbench.yml",
 );
+const hubVerificationWorkflowPath = join(
+  root,
+  ".github",
+  "workflows",
+  "verify-clickflow-publish.yml",
+);
 const sourceVerifier = join(
   root,
   "scripts",
@@ -460,6 +466,15 @@ test("independent workflow executable-verifies the immutable source tree before 
       expectedTree: "0000000000000000000000000000000000000000",
     }),
     /does not match expected tree/i,
+  );
+});
+
+test("full Hub CI fetches history before verifying an immutable Workbench source tree", async () => {
+  const workflow = await readFile(hubVerificationWorkflowPath, "utf8");
+  assert.match(
+    workflow,
+    /- name: Check out the complete Hub\s+uses: actions\/checkout@v4\s+with:\s+fetch-depth: 0/,
+    "the full suite resolves a pinned historical commit and therefore cannot use a shallow checkout",
   );
 });
 
