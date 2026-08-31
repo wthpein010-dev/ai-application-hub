@@ -252,3 +252,37 @@ test("Markdown handoff preserves generation evidence, experiment history, and ex
   assert.match(markdown, /Disposition: rejected/);
   assert.match(markdown, /Change the melodic motif\./);
 });
+
+test("portable boundaries reject future official API secrets while accepting public readiness metadata", () => {
+  const unsafeFutureApiFixtures = [
+    { authorization: "Bearer should-not-persist" },
+    { "Proxy-Authorization": "Basic should-not-persist" },
+    { api_secret: "should-not-persist" },
+    { clientSecret: "should-not-persist" },
+    { sessionSecret: "should-not-persist" },
+    { headers: { Authorization: "Bearer nested-secret" } },
+  ];
+
+  for (const futureApi of unsafeFutureApiFixtures) {
+    const unsafe = structuredClone(createDailyPlan());
+    unsafe.extensions = { futureApi: { nested: [futureApi] } };
+
+    assert.throws(() => validateProject(unsafe), /secret|forbidden/i);
+    assert.throws(() => exportProjectJson(unsafe), /secret|forbidden/i);
+    assert.throws(() => exportProjectMarkdown(unsafe), /secret|forbidden/i);
+  }
+
+  const safe = structuredClone(createDailyPlan());
+  safe.extensions = {
+    futureApi: {
+      authenticationDocumented: false,
+      officialEvidenceUrl: "https://platform.suno.com/",
+      sourceHeadersVerifiedAt: "2026-09-01",
+      contractVersion: "public-v1",
+    },
+  };
+
+  assert.doesNotThrow(() => validateProject(safe));
+  assert.doesNotThrow(() => exportProjectJson(safe));
+  assert.doesNotThrow(() => exportProjectMarkdown(safe));
+});

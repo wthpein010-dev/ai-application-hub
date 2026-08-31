@@ -29,6 +29,12 @@ function sectionIds(html) {
     .filter(Boolean);
 }
 
+function contentSecurityPolicy(html) {
+  const content = html.match(/<meta\b[^>]*http-equiv="Content-Security-Policy"[^>]*content="([^"]+)"/i)?.[1];
+  assert.ok(content, "the page must declare a Content-Security-Policy meta tag");
+  return content.split(";").map(directive => directive.trim()).filter(Boolean);
+}
+
 test("public page presents the approved six-step workflow in order inside the Hub app shell", () => {
   // Break caught: a region is removed/reordered or the page stops returning to the AI Apps collection.
   const html = readProjectFile("index.html");
@@ -131,6 +137,56 @@ test("dated Suno free-tier notice includes attribution, official terms, and a pr
   assert.match(html, /不构成法律清场|不提供法律清场|不代表法律清场/);
   assert.match(html, /<option>Suno<\/option>/);
   assert.match(html, /Suno[^<]*(?:来源|provenance)[^<]*授权台账/);
+});
+
+test("official API readiness is rendered from the fail-closed policy without transport or persistence hooks", () => {
+  // Break caught: the disabled gate is moved, hard-coded, made interactive, hidden on mobile, or coupled to remote transport/state.
+  const html = readProjectFile("index.html");
+  const source = readProjectFile("app.js");
+  const css = readProjectFile("styles.css");
+  const dailyQueueStart = html.indexOf('<section id="daily-queue"');
+  const nextSectionStart = html.indexOf('<section id="candidate-comparison"', dailyQueueStart);
+  const dailyQueue = html.slice(dailyQueueStart, nextSectionStart);
+  const summaryIndex = dailyQueue.indexOf('class="queue-summary"');
+  const readinessIndex = dailyQueue.indexOf('id="suno-api-readiness"');
+  const batchListIndex = dailyQueue.indexOf('id="batch-list"');
+
+  assert.ok(dailyQueueStart >= 0 && nextSectionStart > dailyQueueStart, "daily queue section must remain present");
+  for (const id of ["suno-api-readiness", "suno-api-status", "suno-api-checklist", "suno-api-action", "suno-platform-link"]) {
+    assert.equal((html.match(new RegExp(`id="${id}"`, "g")) || []).length, 1, `expected one #${id}`);
+  }
+  assert.ok(summaryIndex >= 0 && readinessIndex > summaryIndex, "readiness card must follow the queue summary");
+  assert.ok(batchListIndex > readinessIndex, "readiness card must precede the batch list");
+  assert.equal(sectionIds(html).length, 6, "the readiness card must not become a seventh workflow section");
+  assert.match(html, /id="suno-platform-link"[^>]*href="https:\/\/platform\.suno\.com\/"[^>]*target="_blank"[^>]*rel="noopener noreferrer"/);
+  assert.match(html, /<time datetime="2026-09-01">2026-09-01<\/time>/);
+  assert.match(html, /<time datetime="2026-09-03">2026-09-03<\/time>/);
+  assert.match(html, /href="https:\/\/help\.suno\.com\/en\/articles\/13614785"/);
+  assert.match(html, /这不是 API 下载契约/);
+  assert.match(html, /id="suno-api-action"[^>]*\bdisabled\b[^>]*>官方 API 尚不可用<\/button>/);
+
+  assert.match(source, /from "\.\/core\/suno-official-adapter\.mjs"/);
+  assert.match(source, /\bCURRENT_OFFICIAL_API_EVIDENCE\b/);
+  assert.match(source, /evaluateOfficialApiReadiness\(CURRENT_OFFICIAL_API_EVIDENCE\)/);
+  assert.match(source, /\.blockers\.map\(|for \(const blocker of .*\.blockers\)/);
+  assert.doesNotMatch(source, /0\/6 项已证实，官方 API 自动生成未启用/);
+  assert.doesNotMatch(source, /suno-api-action|sunoApiAction/);
+
+  const connectionDirectives = contentSecurityPolicy(html).filter(directive => directive.startsWith("connect-src"));
+  assert.deepEqual(connectionDirectives, ["connect-src 'self'"]);
+  const fetchCalls = [...source.matchAll(/\bfetch\s*\(([^)]*)\)/g)].map(match => match[1].trim());
+  assert.deepEqual(fetchCalls, ['"./assets/demo-reference.wav"']);
+  assert.doesNotMatch(source, /\b(?:XMLHttpRequest|WebSocket|EventSource)\b/);
+  assert.doesNotMatch(`${html}\n${source}`, /<input[^>]*(?:type=["']password["']|(?:id|name)=["'][^"']*(?:api.?key|password|credential)[^"']*["'])/i);
+  assert.doesNotMatch(source, /\.type\s*=\s*["']password["']|createElement\(["']input["'][\s\S]{0,160}(?:api.?key|password|credential)/i);
+
+  assert.match(css, /\.api-readiness-card\s*\{[^}]*min-width:\s*0/);
+  assert.match(css, /#suno-api-action:disabled\s*\{[^}]*(?:opacity|background|border)[^}]*cursor:\s*not-allowed/);
+  assert.match(css, /#suno-platform-link\s*\{[^}]*overflow-wrap:\s*anywhere/);
+  assert.match(css, /#suno-platform-link:focus-visible/);
+  const mobileReadiness = css.match(/@media\s*\(max-width:\s*760px\)\s*\{([\s\S]*?)\n\}/)?.[1] || "";
+  assert.match(mobileReadiness, /\.api-readiness-card\s*\{[^}]*grid-template-columns:\s*1fr/);
+  assert.doesNotMatch(mobileReadiness, /display:\s*none/);
 });
 
 test("project import stages a complete render before committing state or releasing audio", () => {

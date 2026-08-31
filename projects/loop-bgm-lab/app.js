@@ -21,6 +21,10 @@ import {
   assertPredecodeAudioBudget,
   nextMonotonicId
 } from "./core/browser-policy.mjs";
+import {
+  CURRENT_OFFICIAL_API_EVIDENCE,
+  evaluateOfficialApiReadiness
+} from "./core/suno-official-adapter.mjs";
 
 const STORAGE_KEY = "loop-bgm-lab-v1";
 const MAX_FILE_BYTES = 80 * 1024 * 1024;
@@ -68,6 +72,8 @@ const styleTempo = element("#style-tempo");
 const styleBars = element("#style-bars");
 const approvedBaseline = element("#approved-baseline");
 const approvedExclusions = element("#approved-exclusions");
+const sunoApiStatus = element("#suno-api-status");
+const sunoApiChecklist = element("#suno-api-checklist");
 const batchList = element("#batch-list");
 const candidateInput = element("#candidate-file");
 const candidateBatch = element("#candidate-batch");
@@ -89,6 +95,7 @@ const importStatus = element("#import-status");
 const storageWarning = element("#storage-warning");
 const appLive = element("#app-live");
 const appError = element("#app-error");
+const officialApiReadiness = evaluateOfficialApiReadiness(CURRENT_OFFICIAL_API_EVIDENCE);
 
 let project;
 let referenceFailures = [];
@@ -724,6 +731,14 @@ function renderLicenses() {
   }
 }
 
+function renderOfficialApiReadiness() {
+  sunoApiStatus.textContent = `${officialApiReadiness.confirmedCount}/${officialApiReadiness.totalCount} 项已证实，官方 API 自动生成未启用`;
+  sunoApiChecklist.replaceChildren();
+  for (const blocker of officialApiReadiness.blockers) {
+    sunoApiChecklist.append(createElement("li", { text: `未证实：${blocker}` }));
+  }
+}
+
 function renderAll() {
   renderStyle();
   renderReferences();
@@ -1145,6 +1160,7 @@ window.addEventListener("beforeunload", () => {
 
 project = loadProject();
 rememberProjectIds(project);
+renderOfficialApiReadiness();
 renderAll();
 persistProject();
 document.body.dataset.ready = "true";
