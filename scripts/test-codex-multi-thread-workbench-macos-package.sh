@@ -22,16 +22,16 @@ cleanup() {
 trap cleanup EXIT
 
 ditto -x -k "${archive_path}" "${temporary_directory}"
-app_directory="${temporary_directory}/CodexConfirmationBar.app"
-executable="${app_directory}/Contents/MacOS/CodexConfirmationBar"
+app_directory="${temporary_directory}/CodexThreadWorkbench.app"
+executable="${app_directory}/Contents/MacOS/CodexThreadWorkbench"
 info_plist="${app_directory}/Contents/Info.plist"
 test -f "${info_plist}"
 test -x "${executable}"
 
-[[ "$(plutil -extract CFBundleShortVersionString raw -o - "${info_plist}")" == "2.3.3" ]]
-[[ "$(plutil -extract CFBundleVersion raw -o - "${info_plist}")" == "2.3.3" ]]
-[[ "$(plutil -extract CFBundleIdentifier raw -o - "${info_plist}")" == "dev.wthpein010.codex-confirmation-bar" ]]
-[[ "$(plutil -extract CFBundleDisplayName raw -o - "${info_plist}")" == "Codex 待确认悬浮助手" ]]
+[[ "$(plutil -extract CFBundleShortVersionString raw -o - "${info_plist}")" == "2.3.0" ]]
+[[ "$(plutil -extract CFBundleVersion raw -o - "${info_plist}")" == "2.3.0" ]]
+[[ "$(plutil -extract CFBundleIdentifier raw -o - "${info_plist}")" == "dev.wthpein010.codex-thread-workbench" ]]
+[[ "$(plutil -extract CFBundleDisplayName raw -o - "${info_plist}")" == "Codex 多线程工作台" ]]
 file "${executable}" | grep -q "${expected_architecture}"
 codesign --verify --deep --strict "${app_directory}"
 "${executable}" --smoke-test
@@ -42,4 +42,4 @@ kill -0 "${app_pid}"
 kill "${app_pid}"
 wait "${app_pid}" 2>/dev/null || true
 app_pid=""
-echo "Verified legacy Confirmation Bar ${runtime} package: ${archive_path}"
+echo "Verified Codex Multi-Thread Workbench ${runtime} package: ${archive_path}"

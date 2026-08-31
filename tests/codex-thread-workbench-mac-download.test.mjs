@@ -30,7 +30,7 @@ test("Mac download page offers Apple silicon and Intel packages", () => {
   const html = readFileSync(join(macRoot, "index.html"), "utf8");
 
   assert.match(html, /Codex 待确认悬浮助手/);
-  assert.match(html, /v2\.1\.8/);
+  assert.match(html, /v2\.3\.3/);
   assert.match(html, /Apple\s*(?:芯片|silicon)/i);
   assert.match(html, /arm64/i);
   assert.match(html, /Intel/i);
@@ -61,7 +61,8 @@ test("Hub workflow builds and verifies both Mac architectures before publishing"
 
   assert.match(workflow, /runtime:\s*osx-arm64\s+runner:\s*macos-14/);
   assert.match(workflow, /runtime:\s*osx-x64\s+runner:\s*macos-15-intel/);
-  assert.match(workflow, /branches:\s*- codex\/workbench-v2-overlay-public/);
+  assert.match(workflow, /branches:\s*- release\/codex-confirmation-v233/);
+  assert.match(workflow, /ref:\s*\$\{\{ github\.sha \}\}/);
   assert.match(workflow, /CodexConfirmationBar-macOS-arm64\.app\.zip/);
   assert.match(workflow, /CodexConfirmationBar-macOS-x64\.app\.zip/);
   assert.equal((workflow.match(/scripts\/test-macos-package\.sh/g) || []).length, 2);

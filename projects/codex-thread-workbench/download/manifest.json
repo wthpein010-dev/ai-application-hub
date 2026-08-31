@@ -1,39 +1,39 @@
 {
   "version": 1,
   "fileName": "CodexConfirmationBar-Windows-x64.zip",
-  "totalSize": 41559148,
+  "totalSize": 41563039,
   "chunkSize": 8388608,
-  "sha256": "DDEE6CBA2EB68A78114C40EAD8F0D299825CCEC7F0689F45EA29577B526CCB2E",
+  "sha256": "0F33CFB41181E2AAAF2F4C01A5153894D6CE2256F22F9F6AE2C12503AA90F9BB",
   "parts": [
     {
       "index": 0,
-      "path": "parts/v2.1.8-8d3b26b/part-000.bin",
+      "path": "parts/v2.3.3-4b7c0b8/part-000.bin",
       "size": 8388608,
-      "sha256": "B7977380E7C8B07A0B17739AF190E22705E43CB7C3FF56F7171ACA29B2D671B9"
+      "sha256": "D946D2906E22BCF4F333757CAB5217B098FA9683CB3858AFF868BB7D3C85AC56"
     },
     {
       "index": 1,
-      "path": "parts/v2.1.8-8d3b26b/part-001.bin",
+      "path": "parts/v2.3.3-4b7c0b8/part-001.bin",
       "size": 8388608,
-      "sha256": "2A1DD543BFE5E3A09590A7C2B27AB76C22ECB6DDB3AAFB6220665D8917A5C020"
+      "sha256": "9410859E3DA7C709FADE2BA731057B6938A522CC3539CF055ED70DD72682C89D"
     },
     {
       "index": 2,
-      "path": "parts/v2.1.8-8d3b26b/part-002.bin",
+      "path": "parts/v2.3.3-4b7c0b8/part-002.bin",
       "size": 8388608,
-      "sha256": "5E5D469E64E9005C41836C549A6C014DF3A17E4CB7EE25B0FC3A91D67AB39635"
+      "sha256": "69665E11D04116589A8B9649B4FC7F3CAABC68F1E73AAFE3AE2845A9994DF01D"
     },
     {
       "index": 3,
-      "path": "parts/v2.1.8-8d3b26b/part-003.bin",
+      "path": "parts/v2.3.3-4b7c0b8/part-003.bin",
       "size": 8388608,
-      "sha256": "793AF15409E405CAAA5648E3231689C2064D984293A8B36AE56F4CA80C3CFC8C"
+      "sha256": "0048CF7C035BB04139A8E6C3267D49B99854BB79C99A3B5F7553DD908FC6F6A7"
     },
     {
       "index": 4,
-      "path": "parts/v2.1.8-8d3b26b/part-004.bin",
-      "size": 8004716,
-      "sha256": "3CC1D87264DEB6E3830186B0A012B593C5140F99B265B0BD5888185E1593B85E"
+      "path": "parts/v2.3.3-4b7c0b8/part-004.bin",
+      "size": 8008607,
+      "sha256": "F64B69950E5653FDD0E39227237B68FC5275D177B60B0BC9C71A0C40154C2E2B"
     }
   ]
 }

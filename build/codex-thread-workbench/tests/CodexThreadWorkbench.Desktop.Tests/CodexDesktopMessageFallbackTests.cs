@@ -5,6 +5,20 @@ namespace CodexThreadWorkbench.Desktop.Tests;
 public sealed class CodexDesktopMessageFallbackTests
 {
     [Fact]
+    public async Task ThreadNavigator_OpensExactTaskWithoutPromptOrSubmission()
+    {
+        var order = new List<string>();
+        var launcher = new RecordingLauncher(order);
+        var navigator = new CodexDeepLinkThreadNavigator(launcher);
+
+        await navigator.OpenAsync("thread id/with?symbols");
+
+        Assert.Equal(
+            ["open:codex://threads/thread%20id%2Fwith%3Fsymbols"],
+            order);
+    }
+
+    [Fact]
     public async Task SendAsync_OpensExactThreadPromptBeforeSubmitting()
     {
         var order = new List<string>();
