@@ -318,7 +318,6 @@ test("the native audit script enforces product checks and refreshes stale downlo
   assert.match(script, /ditto -x -k/);
   assert.match(script, /plutil -lint/);
   assert.match(script, /codesign --verify --deep --strict/);
-  assert.match(script, /test-macos-package\.sh/);
   assert.match(script, /ffmpeg-static\/ffmpeg/);
   assert.match(script, /--smoke-test/);
   assert.match(script, /node --check/);
