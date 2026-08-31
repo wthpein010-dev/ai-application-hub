@@ -5,8 +5,11 @@ import {
   exportProjectJson,
   exportProjectMarkdown,
   importProjectJson,
+  recordCreateRun,
+  recordGenerationRun,
   stableStringify,
   transitionBatch,
+  updateRunOutputs,
   validateProject
 } from "../projects/loop-bgm-lab/core/project-state.mjs";
 import {
@@ -188,7 +191,8 @@ test("32-bar style plans survive validated JSON round trips with prompts tied to
 test("creates a five-batch 50-credit daily plan without treating it as account balance", () => {
   const plan = createDailyPlan({ ruleCheckedAt: "2026-08-30" });
 
-  assert.equal(plan.version, 1);
+  assert.equal(plan.version, 2);
+  assert.equal(plan.styleSpec.version, 1);
   assert.equal(plan.ruleCheckedAt, "2026-08-30");
   assert.deepEqual(plan.credits, { planned: 50, perBatch: 10, batchCount: 5 });
   assert.equal(plan.batches.length, 5);
@@ -225,6 +229,111 @@ test("recording a submitted run freezes its generation conditions before later p
     excludePrompt: submitted.batches[0].excludePrompt,
     styleSpec: submitted.styleSpec,
   });
+});
+
+test("explicit Create registration stores up to two link-only outputs without candidate audio", () => {
+  const recorded = recordCreateRun(createDailyPlan(), "batch-1");
+  const runId = recorded.batches[0].currentRunId;
+
+  assert.equal(recorded.batches[0].status, "submitted");
+  assert.deepEqual(recorded.runs[0].outputs, []);
+  assert.equal(Object.hasOwn(recorded.runs[0], "generatedUrl"), false);
+  const linked = updateRunOutputs(recorded, runId, [
+    {
+      generatedUrl: "https://suno.com/song/example-a",
+      subjectiveScore: 4,
+      reviewNote: "Loop is usable; melody is slightly prominent.",
+      disposition: "accepted",
+    },
+    {
+      generatedUrl: "https://suno.com/song/example-b",
+      subjectiveScore: null,
+      reviewNote: "",
+      disposition: "unrated",
+    },
+  ]);
+
+  assert.equal(linked.candidates.length, 0);
+  assert.equal(linked.experiments.length, 0);
+  assert.equal(linked.batches[0].generatedUrl, "https://suno.com/song/example-a");
+  assert.equal(linked.runs[0].outputs[0].subjectiveScore, 4);
+  const restored = importProjectJson(exportProjectJson(linked));
+  assert.deepEqual(restored.runs[0].outputs, linked.runs[0].outputs);
+  assert.match(exportProjectMarkdown(restored), /example-a/);
+  assert.match(exportProjectMarkdown(restored), /Loop is usable/);
+});
+
+test("every explicit Create registration appends a submitted run and clears current batch progress", () => {
+  const first = recordCreateRun(createDailyPlan(), "batch-1");
+  const linked = updateRunOutputs(first, first.runs[0].id, [{
+    generatedUrl: "https://suno.com/song/example-a",
+    subjectiveScore: 5,
+    reviewNote: "Strong first result.",
+    disposition: "accepted",
+  }]);
+  const second = recordCreateRun(linked, "batch-1");
+
+  assert.equal(second.runs.length, 2);
+  assert.equal(second.runs[1].status, "submitted");
+  assert.notEqual(second.runs[1].id, second.runs[0].id);
+  assert.equal(second.batches[0].currentRunId, second.runs[1].id);
+  assert.equal(second.batches[0].generatedUrl, null);
+  assert.equal(second.batches[0].currentCandidateId, null);
+  assert.equal(second.batches[0].subjectiveScore, null);
+  assert.deepEqual(second.runs[0].outputs, linked.runs[0].outputs);
+  assert.deepEqual(second.runs[1].generationConditions, first.runs[0].generationConditions);
+});
+
+test("legacy candidate registration remains idempotent while a current unreviewed run exists", () => {
+  const once = recordGenerationRun(createDailyPlan(), "batch-1");
+  const twice = recordGenerationRun(once, "batch-1");
+
+  assert.equal(once.runs.length, 1);
+  assert.deepEqual(twice, once);
+});
+
+test("run outputs reject unsafe URLs, more than two results, and unexplained rejection", () => {
+  const recorded = recordCreateRun(createDailyPlan(), "batch-1");
+  const runId = recorded.runs[0].id;
+  const output = {
+    generatedUrl: "https://suno.com/song/example-a",
+    subjectiveScore: null,
+    reviewNote: "",
+    disposition: "unrated",
+  };
+
+  assert.throws(() => updateRunOutputs(recorded, runId, [output, output, output]), /at most two/i);
+  assert.throws(() => updateRunOutputs(recorded, runId, [{ ...output, generatedUrl: null }]), /HTTPS/i);
+  assert.throws(() => updateRunOutputs(recorded, runId, [{ ...output, generatedUrl: "http://suno.com/song/a" }]), /HTTPS/i);
+  assert.throws(() => updateRunOutputs(recorded, runId, [{ ...output, generatedUrl: "https://user:secret@suno.com/song/a" }]), /credentials|userinfo/i);
+  assert.throws(() => updateRunOutputs(recorded, runId, [{ ...output, disposition: "rejected" }]), /reviewNote/i);
+});
+
+test("imports schema v1 runs and deterministically migrates a legacy generated URL", () => {
+  const current = recordCreateRun(createDailyPlan(), "batch-1");
+  const legacyEmpty = structuredClone(current);
+  legacyEmpty.version = 1;
+  legacyEmpty.runs[0].generatedUrl = null;
+  delete legacyEmpty.runs[0].outputs;
+  const restoredEmpty = importProjectJson(JSON.stringify(legacyEmpty));
+  assert.equal(restoredEmpty.version, 2);
+  assert.equal(restoredEmpty.styleSpec.version, 1);
+  assert.deepEqual(restoredEmpty.runs[0].outputs, []);
+  assert.equal(Object.hasOwn(restoredEmpty.runs[0], "generatedUrl"), false);
+
+  const legacyLinked = structuredClone(current);
+  legacyLinked.version = 1;
+  legacyLinked.batches[0].generatedUrl = "https://suno.com/song/legacy-a";
+  legacyLinked.runs[0].generatedUrl = "https://suno.com/song/legacy-a";
+  delete legacyLinked.runs[0].outputs;
+  const restored = importProjectJson(JSON.stringify(legacyLinked));
+  assert.deepEqual(restored.runs[0].outputs, [{
+    generatedUrl: "https://suno.com/song/legacy-a",
+    subjectiveScore: null,
+    reviewNote: "",
+    disposition: "unrated",
+  }]);
+  assert.equal(Object.hasOwn(restored.runs[0], "generatedUrl"), false);
 });
 
 test("validates a deep-copied project and preserves unknown top-level fields under extensions", () => {

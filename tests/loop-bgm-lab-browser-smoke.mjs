@@ -22,6 +22,12 @@ differentWav.writeUInt32LE(37_800, 24);
 differentWav.writeUInt32LE(75_600, 28);
 const expectedDifferentSha256 = createHash("sha256").update(differentWav).digest("hex");
 const differentFile = { name: "different-reference.wav", mimeType: "audio/wav", buffer: differentWav };
+const invalidCandidateFile = { name: "broken-candidate.txt", mimeType: "text/plain", buffer: Buffer.from("not audio") };
+const excessCandidateFiles = Array.from({ length: 9 }, (_, index) => ({
+  name: `excess-candidate-${index + 1}.wav`,
+  mimeType: "audio/wav",
+  buffer: Buffer.from("not a wav")
+}));
 const mime = new Map([
   [".css", "text/css; charset=utf-8"],
   [".html", "text/html; charset=utf-8"],
@@ -162,8 +168,12 @@ async function installInterceptors(page, observation, { clearOnce = false, failS
 
 async function assertNoObservedErrors(page, observation) {
   await page.evaluate(() => Promise.all(window.__pendingRevocationReports || []));
+  const activeBlobUrls = new Set(await page.evaluate(() => [
+    document.querySelector("#reference-player")?.src,
+    document.querySelector("#candidate-player")?.src
+  ].filter(url => url?.startsWith("blob:"))));
   const unexpectedBlobAborts = observation.blobAborts
-    .filter(item => !observation.revokedUrls.has(item.url))
+    .filter(item => !observation.revokedUrls.has(item.url) && !activeBlobUrls.has(item.url))
     .map(item => `request: ${item.url} ${item.failure}`);
   assert.deepEqual([...observation.errors, ...unexpectedBlobAborts], []);
 }
@@ -259,10 +269,9 @@ try {
   assert.deepEqual(await page.locator(".axis-label").allTextContents(), ["基线", "旋律音色", "律动", "打击乐", "循环结构"]);
 
   await assertPickerKeyboardFocus(page, ".rights-card a[href='https://suno.com/terms']", "reference-files");
-  await page.locator(".batch-card:last-child .open-suno").focus();
+  await page.locator(".batch-card:last-child .record-create-run").focus();
   await page.keyboard.press("Tab");
   assert.equal(await page.evaluate(() => document.activeElement?.id), "candidate-batch");
-  await assertPickerKeyboardFocus(page, "#candidate-batch", "candidate-file");
   await assertPickerKeyboardFocus(page, "#export-markdown", "import-project");
 
   await page.locator("#reference-files").setInputFiles([demoWav, demoWav]);
@@ -389,14 +398,31 @@ try {
   assert.equal(await page.locator(".batch-card[data-axis='baseline'] .batch-status").inputValue(), "planned");
 
   await page.locator(".batch-card[data-axis='baseline'] .batch-status").selectOption("submitted");
+  await page.waitForFunction(() => document.querySelector("#app-error")?.textContent.includes("登记本次 Create"));
+  assert.deepEqual(await page.evaluate(() => {
+    const stored = JSON.parse(localStorage.getItem("loop-bgm-lab-v1"));
+    return { status: stored.batches[0].status, runCount: stored.runs.length };
+  }), { status: "planned", runCount: 0 }, "the status dropdown must not create a run");
+
+  await page.locator(".batch-card[data-axis='baseline'] .record-create-run").click();
   await page.waitForFunction(() => {
     const stored = JSON.parse(localStorage.getItem("loop-bgm-lab-v1"));
-    return stored.runs?.length === 1
+    return stored.version === 2
+      && stored.runs?.length === 1
       && stored.batches[0].currentRunId === stored.runs[0].id
+      && stored.runs[0].outputs.length === 0
       && stored.runs[0].generationConditions.styleSpec.tempo.target === 120;
   }, null, { timeout: 5_000 });
   const firstRecordedRun = await page.evaluate(() => structuredClone(JSON.parse(localStorage.getItem("loop-bgm-lab-v1")).runs[0]));
-  const recordedRunConditions = firstRecordedRun.generationConditions;
+  const firstRunPanel = page.locator(`.create-run-panel[data-run-id='${firstRecordedRun.id}']`);
+  assert.equal(await firstRunPanel.locator(".create-output-card").count(), 2);
+  await firstRunPanel.locator(".create-output-url").first().fill("https://suno.com/song/browser-smoke-link-only");
+  await firstRunPanel.locator(".create-output-url").first().press("Tab");
+  assert.equal(await page.evaluate(() => document.activeElement?.classList.contains("create-output-score")), true, "saving a run URL must preserve forward keyboard focus");
+  await page.waitForFunction(firstRunId => {
+    const run = JSON.parse(localStorage.getItem("loop-bgm-lab-v1")).runs.find(item => item.id === firstRunId);
+    return run?.outputs[0]?.generatedUrl === "https://suno.com/song/browser-smoke-link-only";
+  }, firstRecordedRun.id);
   await page.locator("#style-tempo").fill("126");
   await page.locator("#style-form button[type='submit']").click();
   await page.waitForFunction(firstRunId => {
@@ -411,6 +437,7 @@ try {
       && stored.batches[0].generatedUrl === null
       && stored.runs.length === 1
       && stored.runs[0].id === firstRunId
+      && stored.runs[0].outputs[0].generatedUrl === "https://suno.com/song/browser-smoke-link-only"
       && stored.runs[0].generationConditions.styleSpec.tempo.target === 120;
   }, firstRecordedRun.id);
   await page.locator(".search-link[data-source='Pixabay Music']").click();
@@ -419,35 +446,57 @@ try {
   assert.match(searchOpen.features, /noopener/);
   assert.match(searchOpen.features, /noreferrer/);
 
-  const candidateRaceStart = await page.evaluate(() => ({ started: window.__decodeStarted, completed: window.__decodeCompleted }));
-  await page.evaluate(() => { window.__delayNextDecode = true; });
-  await page.locator("#candidate-file").setInputFiles(demoWav);
-  await page.waitForFunction(started => window.__decodeStarted > started, candidateRaceStart.started);
-  await page.locator("#candidate-file").setInputFiles(differentFile);
-  await page.waitForFunction(completed => window.__decodeCompleted >= completed + 2, candidateRaceStart.completed, { timeout: 45_000 });
-  await page.waitForFunction(hash => JSON.parse(localStorage.getItem("loop-bgm-lab-v1")).candidates.at(-1)?.hash === hash, expectedDifferentSha256);
+  await page.locator(".batch-card[data-axis='baseline'] .record-create-run").click();
+  await page.waitForFunction(() => JSON.parse(localStorage.getItem("loop-bgm-lab-v1")).runs.length === 2);
+  const secondRecordedRun = await page.evaluate(() => structuredClone(JSON.parse(localStorage.getItem("loop-bgm-lab-v1")).runs[1]));
+  assert.notEqual(secondRecordedRun.id, firstRecordedRun.id);
+  assert.equal(secondRecordedRun.generationConditions.styleSpec.tempo.target, 126);
+  const secondRunPanel = page.locator(`.create-run-panel[data-run-id='${secondRecordedRun.id}']`);
+  await secondRunPanel.locator(".create-output-url").nth(0).fill("https://suno.com/song/browser-smoke-a");
+  await secondRunPanel.locator(".create-output-url").nth(0).press("Tab");
+  await page.waitForFunction(runId => JSON.parse(localStorage.getItem("loop-bgm-lab-v1")).runs.find(run => run.id === runId)?.outputs.length === 1, secondRecordedRun.id);
+  await secondRunPanel.locator(".create-output-url").nth(1).fill("https://suno.com/song/browser-smoke-b");
+  await secondRunPanel.locator(".create-output-url").nth(1).press("Tab");
+  await page.waitForFunction(runId => JSON.parse(localStorage.getItem("loop-bgm-lab-v1")).runs.find(run => run.id === runId)?.outputs.length === 2, secondRecordedRun.id);
+
+  await page.locator("#candidate-batch").selectOption("batch-1");
+  assert.equal(await page.locator("#candidate-file").isDisabled(), true, "candidate input must stay disabled until a run is explicitly selected");
+  await page.locator("#candidate-run").selectOption(secondRecordedRun.id);
+  assert.equal(await page.locator("#candidate-file").isDisabled(), false);
+  await page.locator("#candidate-batch").focus();
+  await page.keyboard.press("Tab");
+  assert.equal(await page.evaluate(() => document.activeElement?.id), "candidate-run");
+  await assertPickerKeyboardFocus(page, "#candidate-run", "candidate-file");
+  await page.locator("#candidate-file").setInputFiles([differentFile, demoFile]);
+  await page.waitForFunction(runId => {
+    const stored = JSON.parse(localStorage.getItem("loop-bgm-lab-v1"));
+    return stored.candidates.length === 2
+      && stored.experiments.length === 2
+      && stored.runs.length === 2
+      && stored.experiments.every(experiment => experiment.runId === runId)
+      && stored.experiments.every(experiment => experiment.outputIndex === null);
+  }, secondRecordedRun.id, { timeout: 45_000 });
   await page.locator("#comparison-result[data-analysis-state='ready']").waitFor({ timeout: 45_000 });
   assert.equal(await page.locator("#comparison-components tbody tr").count(), 6);
   assert.equal(await page.locator("#comparison-coverage").textContent(), "80%");
   assert.match(await page.locator("#similarity-class").textContent(), /人工复核/);
   assert.match(await page.locator("#comparison-legal-note").textContent(), /不是侵权判断或法律保证/);
   assert.match(await page.locator("#next-advice").textContent(), /只调整/);
-  assert.equal(await page.locator("#candidate-history .candidate-history-item").count(), 1);
-  const firstCandidate = await page.evaluate(() => {
+  assert.equal(await page.locator("#candidate-history .candidate-history-item").count(), 2);
+  const importedCandidates = await page.evaluate(() => {
     const stored = JSON.parse(localStorage.getItem("loop-bgm-lab-v1"));
     return {
-      id: stored.candidates[0].id,
-      hash: stored.candidates[0].hash,
-      batchId: stored.candidates[0].batchId,
+      first: structuredClone(stored.candidates[0]),
+      second: structuredClone(stored.candidates[1]),
       experimentCount: stored.experiments.length,
       currentBestCandidate: stored.currentBestCandidate
     };
   });
-  assert.equal(firstCandidate.experimentCount, 1);
-  assert.equal(firstCandidate.currentBestCandidate, null, "analysis must not silently promote a candidate to best");
-  const secondRecordedRun = await page.evaluate(() => structuredClone(JSON.parse(localStorage.getItem("loop-bgm-lab-v1")).runs[1]));
-  assert.notEqual(secondRecordedRun.id, firstRecordedRun.id);
-  assert.equal(secondRecordedRun.generationConditions.styleSpec.tempo.target, 126);
+  const firstCandidate = importedCandidates.first;
+  const secondCandidateId = importedCandidates.second.id;
+  assert.equal(importedCandidates.experimentCount, 2);
+  assert.equal(importedCandidates.currentBestCandidate, null, "analysis must not silently promote a candidate to best");
+  assert.deepEqual([firstCandidate.hash, importedCandidates.second.hash], [expectedDifferentSha256, expectedWavSha256]);
   assert.deepEqual(await page.evaluate(() => JSON.parse(localStorage.getItem("loop-bgm-lab-v1")).experiments[0].generationConditions), secondRecordedRun.generationConditions);
   assert.equal(await page.evaluate(() => JSON.parse(localStorage.getItem("loop-bgm-lab-v1")).experiments[0].runId), secondRecordedRun.id);
   assert.equal(await page.evaluate(() => Object.hasOwn(JSON.parse(localStorage.getItem("loop-bgm-lab-v1")).candidates[0], "displayName")), false);
@@ -459,11 +508,12 @@ try {
   await candidateNameEditor.press("Tab");
   await page.waitForFunction(candidateId => JSON.parse(localStorage.getItem("loop-bgm-lab-v1")).candidates.find(item => item.id === candidateId)?.displayName === "欢乐版本 A", firstCandidate.id);
   assert.doesNotMatch(await page.evaluate(() => localStorage.getItem("loop-bgm-lab-v1")), /different-reference\.wav/);
-  await firstHistory.locator(".candidate-generated-url").fill("https://suno.com/song/browser-smoke-a");
-  await firstHistory.locator(".candidate-generated-url").press("Tab");
+  assert.equal(await firstHistory.locator(".candidate-generated-url").evaluate(input => input.readOnly), true);
+  await firstHistory.locator(".candidate-output-binding").selectOption("0");
   await page.waitForFunction(candidateId => {
     const stored = JSON.parse(localStorage.getItem("loop-bgm-lab-v1"));
-    return stored.experiments.find(item => item.candidateId === candidateId)?.generatedUrl === "https://suno.com/song/browser-smoke-a";
+    const experiment = stored.experiments.find(item => item.candidateId === candidateId);
+    return experiment?.outputIndex === 0 && experiment.generatedUrl === "https://suno.com/song/browser-smoke-a";
   }, firstCandidate.id);
   await firstHistory.locator(".candidate-subjective-score").selectOption("4");
   await firstHistory.locator(".candidate-review-note").fill("旋律动机和编曲层次仍与参考过近，拒绝本轮。");
@@ -475,43 +525,69 @@ try {
     const candidate = stored.candidates.find(item => item.id === candidateId);
     const batch = stored.batches.find(item => item.id === candidate.batchId);
     const experiment = stored.experiments.find(item => item.candidateId === candidateId);
+    const run = stored.runs.find(item => item.id === experiment.runId);
     return stored.currentBestCandidate?.candidateId === candidateId
-      && batch.generatedUrl === "https://suno.com/song/browser-smoke-a"
-      && batch.subjectiveScore === 4
-      && batch.disposition === "rejected"
-      && experiment.reviewNote.includes("拒绝本轮");
+      && batch.currentCandidateId !== candidateId
+      && experiment.generatedUrl === "https://suno.com/song/browser-smoke-a"
+      && experiment.subjectiveScore === 4
+      && experiment.disposition === "rejected"
+      && experiment.reviewNote.includes("拒绝本轮")
+      && run.outputs[0].disposition === "rejected";
   }, firstCandidate.id);
 
-  const firstPlaybackUrl = await page.locator("#candidate-player").getAttribute("src");
-  await page.locator("#candidate-batch").selectOption("batch-1");
-  await page.locator("#candidate-file").setInputFiles(differentFile);
-  await page.waitForFunction(hash => {
+  const secondHistory = page.locator(`.candidate-history-item[data-candidate-id='${secondCandidateId}']`);
+  await secondHistory.locator(".candidate-output-binding").selectOption("1");
+  await secondHistory.locator(".candidate-subjective-score").selectOption("5");
+  await secondHistory.locator(".candidate-review-note").fill("循环衔接更自然，保留本轮。");
+  await secondHistory.locator(".candidate-review-note").press("Tab");
+  await secondHistory.locator(".candidate-disposition").selectOption("accepted");
+  await page.waitForFunction(candidateId => {
     const stored = JSON.parse(localStorage.getItem("loop-bgm-lab-v1"));
-    return stored.candidates.length === 2
-      && stored.experiments.length === 2
-      && stored.candidates.at(-1).hash === hash;
-  }, expectedDifferentSha256, { timeout: 45_000 });
+    const experiment = stored.experiments.find(item => item.candidateId === candidateId);
+    const batch = stored.batches[0];
+    return experiment?.outputIndex === 1
+      && experiment.generatedUrl === "https://suno.com/song/browser-smoke-b"
+      && experiment.subjectiveScore === 5
+      && experiment.disposition === "accepted"
+      && batch.currentCandidateId === candidateId
+      && batch.generatedUrl === experiment.generatedUrl
+      && batch.disposition === experiment.disposition;
+  }, secondCandidateId);
+
+  const firstPlaybackUrl = await page.locator("#candidate-player").getAttribute("src");
+  await page.locator("#candidate-file").setInputFiles([invalidCandidateFile, differentFile]);
+  await page.waitForFunction(({ hash, runId }) => {
+    const stored = JSON.parse(localStorage.getItem("loop-bgm-lab-v1"));
+    return stored.candidates.length === 3
+      && stored.experiments.length === 3
+      && stored.runs.length === 2
+      && stored.candidates.at(-1).hash === hash
+      && stored.experiments.at(-1).runId === runId;
+  }, { hash: expectedDifferentSha256, runId: secondRecordedRun.id }, { timeout: 45_000 });
+  assert.match(await page.locator("#candidate-progress").textContent(), /1 个成功，1 个失败.*broken-candidate\.txt/);
   const candidateHistory = await page.evaluate(() => {
     const stored = JSON.parse(localStorage.getItem("loop-bgm-lab-v1"));
     return {
       candidateCount: stored.candidates.length,
       experimentCount: stored.experiments.length,
       lastBatchId: stored.candidates.at(-1).batchId,
-      bestId: stored.currentBestCandidate?.candidateId
+      bestId: stored.currentBestCandidate?.candidateId,
+      currentCandidateId: stored.batches[0].currentCandidateId
     };
   });
+  const thirdCandidateId = candidateHistory.currentCandidateId;
   assert.deepEqual(candidateHistory, {
-    candidateCount: 2,
-    experimentCount: 2,
+    candidateCount: 3,
+    experimentCount: 3,
     lastBatchId: "batch-1",
-    bestId: firstCandidate.id
+    bestId: firstCandidate.id,
+    currentCandidateId: thirdCandidateId
   });
-  assert.equal(await page.locator("#candidate-history .candidate-history-item").count(), 2);
+  assert.equal(await page.locator("#candidate-history .candidate-history-item").count(), 3);
   assert.equal(await page.evaluate(url => window.__revokedObjectUrls.includes(url), firstPlaybackUrl), true, "only the displaced playback URL should be revoked");
-  const secondCandidateId = await page.evaluate(() => JSON.parse(localStorage.getItem("loop-bgm-lab-v1")).candidates.at(-1).id);
-  const secondHistory = page.locator(`.candidate-history-item[data-candidate-id='${secondCandidateId}']`);
-  assert.equal(await secondHistory.locator(".candidate-hash").evaluate(input => input.readOnly), true);
-  assert.equal(await secondHistory.locator(".candidate-hash").inputValue(), expectedDifferentSha256);
+  const thirdHistory = page.locator(`.candidate-history-item[data-candidate-id='${thirdCandidateId}']`);
+  assert.equal(await thirdHistory.locator(".candidate-hash").evaluate(input => input.readOnly), true);
+  assert.equal(await thirdHistory.locator(".candidate-hash").inputValue(), expectedDifferentSha256);
   assert.deepEqual(await page.evaluate(() => {
     const stored = JSON.parse(localStorage.getItem("loop-bgm-lab-v1"));
     return {
@@ -519,20 +595,26 @@ try {
       currentCandidateId: stored.batches[0].currentCandidateId,
       bestCandidateId: stored.currentBestCandidate.candidateId,
       experimentRunIds: stored.experiments.map(experiment => experiment.runId),
-      runIds: stored.runs.slice(1).map(run => run.id),
+      runIds: stored.runs.map(run => run.id),
     };
   }), {
-    hashes: [expectedDifferentSha256, expectedDifferentSha256],
-    currentCandidateId: secondCandidateId,
+    hashes: [expectedDifferentSha256, expectedWavSha256, expectedDifferentSha256],
+    currentCandidateId: thirdCandidateId,
     bestCandidateId: firstCandidate.id,
-    experimentRunIds: [secondRecordedRun.id, await page.evaluate(() => JSON.parse(localStorage.getItem("loop-bgm-lab-v1")).runs[2].id)],
-    runIds: await page.evaluate(() => JSON.parse(localStorage.getItem("loop-bgm-lab-v1")).runs.slice(1).map(run => run.id)),
+    experimentRunIds: [secondRecordedRun.id, secondRecordedRun.id, secondRecordedRun.id],
+    runIds: [firstRecordedRun.id, secondRecordedRun.id],
   });
+  assert.doesNotMatch(await page.evaluate(() => localStorage.getItem("loop-bgm-lab-v1")), /broken-candidate\.txt|different-reference\.wav|demo-reference\.wav/);
   assert.equal(await page.locator("#reference-player").getAttribute("src").then(value => value.startsWith("blob:")), true);
   assert.equal(await page.locator("#candidate-player").getAttribute("src").then(value => value.startsWith("blob:")), true);
   await page.locator("#reference-player").evaluate(audio => audio.play());
   await page.locator("#candidate-player").evaluate(audio => audio.play());
   assert.equal(await page.locator("#reference-player").evaluate(audio => audio.paused), true);
+
+  const decodeCountBeforeExcess = await page.evaluate(() => window.__decodeStarted);
+  await page.locator("#candidate-file").setInputFiles(excessCandidateFiles);
+  await page.waitForFunction(() => document.querySelector("#app-error")?.textContent.includes("一次最多选择 8 个候选文件"));
+  assert.equal(await page.evaluate(() => window.__decodeStarted), decodeCountBeforeExcess, "more than eight files must fail before decode");
 
   const validCandidateSnapshot = await page.evaluate(() => {
     const stored = JSON.parse(localStorage.getItem("loop-bgm-lab-v1"));
@@ -577,7 +659,7 @@ try {
   assert.equal(await page.evaluate(() => localStorage.getItem("loop-bgm-lab-v1")), stateBeforeDeepReject, "deep schema rejection must preserve persisted state");
   assert.equal(await page.locator("#candidate-player").getAttribute("src"), activeCandidateUrl, "staged rejection must preserve active playback");
   assert.equal(await page.evaluate(url => window.__revokedObjectUrls.includes(url), activeCandidateUrl), false, "staged rejection must not revoke live playback");
-  assert.equal(await page.locator("#candidate-history .candidate-history-item").count(), 2);
+  assert.equal(await page.locator("#candidate-history .candidate-history-item").count(), 3);
 
   await page.locator("#remove-candidate").click();
   assert.equal(await page.locator("#candidate-player").getAttribute("src"), null);
@@ -585,27 +667,32 @@ try {
   assert.deepEqual(await page.evaluate(() => {
     const stored = JSON.parse(localStorage.getItem("loop-bgm-lab-v1"));
     return { candidates: stored.candidates.length, experiments: stored.experiments.length };
-  }), { candidates: 2, experiments: 2 }, "clearing temporary playback must retain review history");
+  }), { candidates: 3, experiments: 3 }, "clearing temporary playback must retain review history");
 
   const jsonDownloadPromise = page.waitForEvent("download");
   await page.locator("#export-json").click();
   const jsonDownload = await jsonDownloadPromise;
   const exportedText = await readFile(await jsonDownload.path(), "utf8");
   const exported = JSON.parse(exportedText);
-  assert.equal(exported.batches[0].status, "planned");
+  assert.equal(exported.version, 2);
+  assert.equal(exported.batches[0].status, "downloaded");
   assert.equal(exported.references[0].hash, expectedDifferentSha256);
   assert.equal(exported.licenses[0].category, "cc0");
-  assert.equal(exported.candidates.length, 2);
-  assert.equal(exported.experiments.length, 2);
+  assert.equal(exported.candidates.length, 3);
+  assert.equal(exported.experiments.length, 3);
   assert.equal(exported.batches[0].generatedUrl, null);
   assert.equal(exported.experiments[0].generatedUrl, "https://suno.com/song/browser-smoke-a");
-  assert.equal(exported.runs.length, 3);
+  assert.equal(exported.experiments[1].generatedUrl, "https://suno.com/song/browser-smoke-b");
+  assert.equal(exported.experiments[2].outputIndex, null);
+  assert.equal(exported.runs.length, 2);
   assert.equal(exported.runs[0].id, firstRecordedRun.id);
+  assert.equal(exported.runs[0].outputs[0].generatedUrl, "https://suno.com/song/browser-smoke-link-only");
+  assert.equal(exported.runs[1].outputs.length, 2);
   assert.equal(exported.experiments[0].generationConditions.batchId, "batch-1");
   assert.equal(exported.experiments[0].generationConditions.changedAxis, "baseline");
   assert.equal(exported.experiments[0].generationConditions.prompt, secondRecordedRun.generationConditions.prompt);
-  assert.deepEqual(exported.batches[0].generationConditions, exported.runs[2].generationConditions);
-  assert.equal(exported.batches[0].currentCandidateId, secondCandidateId);
+  assert.deepEqual(exported.batches[0].generationConditions, exported.runs[1].generationConditions);
+  assert.equal(exported.batches[0].currentCandidateId, thirdCandidateId);
   assert.deepEqual(exported.experiments[0].referenceBasis, exported.candidates[0].referenceBasis);
   assert.match(exportedText, /参考节奏 A/);
   assert.match(exportedText, /欢乐版本 A/);
@@ -619,6 +706,7 @@ try {
   assert.match(markdown, /# 循环乐工房项目交接/);
   assert.match(markdown, /CC0/);
   assert.match(markdown, /https:\/\/suno\.com\/song\/browser-smoke-a/);
+  assert.match(markdown, /https:\/\/suno\.com\/song\/browser-smoke-b/);
   assert.match(markdown, /实验历史/);
   assert.match(markdown, /生成运行快照/);
   assert.match(markdown, new RegExp(firstRecordedRun.id));
@@ -631,10 +719,10 @@ try {
   await page.reload({ waitUntil: "networkidle" });
   await page.locator("body[data-ready='true']").waitFor();
   await assertOfficialReadinessCard(page, { singleColumn: false });
-  assert.equal(await page.locator(".batch-card[data-axis='baseline'] .batch-status").inputValue(), "planned");
+  assert.equal(await page.locator(".batch-card[data-axis='baseline'] .batch-status").inputValue(), "downloaded");
   assert.equal(await page.locator("#license-list .license-entry").count(), 1);
   assert.equal(await page.locator("#reference-list [data-analysis-state='ready']").count(), 1);
-  assert.equal(await page.locator("#candidate-history .candidate-history-item").count(), 2);
+  assert.equal(await page.locator("#candidate-history .candidate-history-item").count(), 3);
   assert.doesNotMatch(await page.locator("#reference-list").textContent(), /demo-reference\.wav/);
   assert.match(await page.locator("#reference-list").textContent(), /参考节奏 A/);
 
@@ -644,7 +732,7 @@ try {
     buffer: Buffer.from(JSON.stringify({ ...exported, batches: exported.batches.slice(0, 4) }))
   });
   await page.waitForFunction(() => document.querySelector("#import-status")?.textContent.includes("导入失败"));
-  assert.equal(await page.locator(".batch-card[data-axis='baseline'] .batch-status").inputValue(), "planned");
+  assert.equal(await page.locator(".batch-card[data-axis='baseline'] .batch-status").inputValue(), "downloaded");
   assert.equal(await page.locator("#license-list .license-entry").count(), 1);
 
   const storedBeforeMaliciousImport = await page.evaluate(() => localStorage.getItem("loop-bgm-lab-v1"));
@@ -660,7 +748,7 @@ try {
   });
   await page.waitForFunction(() => document.querySelector("#import-status")?.textContent.includes("导入失败"));
   assert.equal(await page.evaluate(() => localStorage.getItem("loop-bgm-lab-v1")), storedBeforeMaliciousImport, "rejected import must be atomic before persistence");
-  assert.equal(await page.locator(".batch-card[data-axis='baseline'] .batch-status").inputValue(), "planned");
+  assert.equal(await page.locator(".batch-card[data-axis='baseline'] .batch-status").inputValue(), "downloaded");
 
   const postRejectJsonPromise = page.waitForEvent("download");
   await page.locator("#export-json").click();
@@ -720,6 +808,34 @@ try {
   await assertNoObservedErrors(page, errors);
   await page.close();
 
+  const raceContext = await browser.newContext({ viewport: { width: 1024, height: 768 } });
+  const racePage = await raceContext.newPage();
+  const raceErrors = observeErrors(racePage);
+  await installInterceptors(racePage, raceErrors, { clearOnce: true });
+  await racePage.goto(`${origin}/projects/loop-bgm-lab/index.html`, { waitUntil: "networkidle" });
+  await racePage.locator("body[data-ready='true']").waitFor();
+  await racePage.locator("#load-demo-reference").click();
+  await racePage.waitForFunction(() => JSON.parse(localStorage.getItem("loop-bgm-lab-v1")).references.length === 1, null, { timeout: 45_000 });
+  await racePage.locator(".batch-card[data-axis='baseline'] .record-create-run").click();
+  const raceRunId = await racePage.evaluate(() => JSON.parse(localStorage.getItem("loop-bgm-lab-v1")).batches[0].currentRunId);
+  await racePage.locator("#candidate-run").selectOption(raceRunId);
+  const candidateRaceStart = await racePage.evaluate(() => ({ started: window.__decodeStarted, completed: window.__decodeCompleted }));
+  await racePage.evaluate(() => { window.__delayNextDecode = true; });
+  await racePage.locator("#candidate-file").setInputFiles(demoWav);
+  await racePage.waitForFunction(started => window.__decodeStarted > started, candidateRaceStart.started);
+  await racePage.locator("#candidate-file").setInputFiles(differentFile);
+  await racePage.waitForFunction(completed => window.__decodeCompleted >= completed + 2, candidateRaceStart.completed, { timeout: 45_000 });
+  await racePage.waitForFunction(({ hash, runId }) => {
+    const stored = JSON.parse(localStorage.getItem("loop-bgm-lab-v1"));
+    return stored.candidates.length === 1
+      && stored.candidates[0].hash === hash
+      && stored.runs.length === 1
+      && stored.experiments[0].runId === runId;
+  }, { hash: expectedDifferentSha256, runId: raceRunId });
+  assert.doesNotMatch(await racePage.evaluate(() => localStorage.getItem("loop-bgm-lab-v1")), /demo-reference\.wav|different-reference\.wav/);
+  await assertNoObservedErrors(racePage, raceErrors);
+  await raceContext.close();
+
   for (const viewport of [
     { width: 1024, height: 768 },
     { width: 390, height: 844 },
@@ -753,7 +869,7 @@ try {
   await installInterceptors(storagePage, storageErrors, { failStorage: true });
   await storagePage.goto(`${origin}/projects/loop-bgm-lab/index.html`, { waitUntil: "networkidle" });
   await storagePage.locator("body[data-ready='true']").waitFor();
-  await storagePage.locator(".batch-card[data-axis='baseline'] .batch-status").selectOption("submitted");
+  await storagePage.locator(".batch-card[data-axis='baseline'] .record-create-run").click();
   assert.match(await storagePage.locator("#storage-warning").textContent(), /当前会话仍可继续.*导出 JSON/);
   assert.equal(await storagePage.locator(".batch-card[data-axis='baseline'] .batch-status").inputValue(), "submitted");
   await assertNoObservedErrors(storagePage, storageErrors);

@@ -8,7 +8,8 @@ import {
 import { assertHttpsUrl, assertPortableValue, isPlainObject } from "./portable-safety.mjs";
 import { createPromptVariants, normalizeStyleSpec } from "./prompt-engine.mjs";
 
-const PROJECT_VERSION = 1;
+const PROJECT_VERSION = 2;
+const STYLE_SPEC_VERSION = 1;
 const STATUS_VALUES = new Set(["planned", "submitted", "downloaded", "reviewed", "rejected"]);
 const TRANSITIONS = {
   planned: new Set(["planned", "submitted", "rejected"]),
@@ -36,11 +37,13 @@ const STRUCTURE_KEYS = new Set(["bars", "loopable", "intro", "outro"]);
 const CREDIT_KEYS = new Set(["planned", "perBatch", "batchCount"]);
 const REFERENCE_KEYS = new Set(["id", "displayName", "hash", "analysis"]);
 const CANDIDATE_KEYS = new Set(["id", "displayName", "batchId", "hash", "analysis", "referenceBasis", "comparison", "similarityClass", "advice"]);
-const RUN_KEYS = new Set(["id", "sourceUrl", "status", "generatedUrl", "generationConditions"]);
+const RUN_KEYS = new Set(["id", "sourceUrl", "status", "outputs", "generationConditions"]);
+const RUN_OUTPUT_KEYS = new Set(["generatedUrl", "subjectiveScore", "reviewNote", "disposition"]);
 const EXPERIMENT_KEYS = new Set([
   "id", "runId", "batchId", "candidateId", "candidateHash", "generatedUrl", "subjectiveScore",
-  "reviewNote", "disposition", "referenceBasis", "comparison", "advice", "generationConditions"
+  "reviewNote", "disposition", "referenceBasis", "comparison", "advice", "generationConditions", "outputIndex"
 ]);
+const EXPERIMENT_REQUIRED_KEYS = new Set([...EXPERIMENT_KEYS].filter(key => key !== "outputIndex"));
 const ANALYSIS_KEYS = new Set(["durationSeconds", "sampleRate", "channelCount", "peak", "rms", "tempo", "key", "spectrum", "loop", "warnings"]);
 const ANALYSIS_TEMPO_KEYS = new Set(["bpm", "confidence"]);
 const ANALYSIS_KEY_KEYS = new Set(["name", "tonic", "mode", "confidence", "chroma"]);
@@ -62,6 +65,7 @@ const INSUFFICIENT_ADVICE_KEYS = new Set(["kind", "message"]);
 const ADVICE_AXES = new Set(["melodyTimbre", "rhythm", "percussion", "loopStructure"]);
 const SIMILARITY_CLASSES = new Set(["insufficient", "too-close", "review", "distinct"]);
 const DISPOSITION_VALUES = new Set(["unrated", "accepted", "rejected"]);
+const REVIEW_FIELDS = ["generatedUrl", "subjectiveScore", "reviewNote", "disposition"];
 const HASH_PATTERN = /^[a-f0-9]{64}$/i;
 const DATE_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
 function fail(message) {
@@ -155,7 +159,7 @@ function assertNullableHttpsUrl(value, field) {
 function validateStyleSpec(styleSpec, field = "styleSpec") {
   assertKnownKeys(styleSpec, STYLE_KEYS, field);
   assertRequiredKeys(styleSpec, STYLE_KEYS, field);
-  if (styleSpec.version !== PROJECT_VERSION) fail(`${field}.version must be 1`);
+  if (styleSpec.version !== STYLE_SPEC_VERSION) fail(`${field}.version must be 1`);
   assertString(styleSpec.intent, `${field}.intent`, { nonEmpty: true });
   assertString(styleSpec.key, `${field}.key`, { nonEmpty: true });
   assertArrayOfStrings(styleSpec.mood, `${field}.mood`);
@@ -178,6 +182,21 @@ function validateStyleSpec(styleSpec, field = "styleSpec") {
   if (typeof styleSpec.structure.loopable !== "boolean") fail(`${field}.structure.loopable must be boolean`);
   assertString(styleSpec.structure.intro, `${field}.structure.intro`, { nonEmpty: true });
   assertString(styleSpec.structure.outro, `${field}.structure.outro`, { nonEmpty: true });
+}
+
+function validateRunOutput(value, field) {
+  assertKnownKeys(value, RUN_OUTPUT_KEYS, field);
+  assertRequiredKeys(value, RUN_OUTPUT_KEYS, field);
+  assertHttpsUrl(value.generatedUrl, `${field}.generatedUrl`);
+  assertNumber(value.subjectiveScore, `${field}.subjectiveScore`, { nullable: true });
+  if (value.subjectiveScore !== null && (value.subjectiveScore < 1 || value.subjectiveScore > 5)) {
+    fail(`${field}.subjectiveScore must be between 1 and 5`);
+  }
+  assertString(value.reviewNote, `${field}.reviewNote`);
+  if (!DISPOSITION_VALUES.has(value.disposition)) fail(`${field}.disposition is unsupported`);
+  if (value.disposition === "rejected" && value.reviewNote.trim().length === 0) {
+    fail(`${field}.reviewNote is required for rejection`);
+  }
 }
 
 function validateBatch(batch) {
@@ -411,7 +430,12 @@ function appendRun(project, batchIndex, { status, generatedUrl, resetProgress = 
     id: nextRunId(project),
     sourceUrl: project.sourceUrl,
     status: status ?? current.status,
-    generatedUrl: typeof generatedUrl === "undefined" ? current.generatedUrl : generatedUrl,
+    outputs: (typeof generatedUrl === "undefined" ? current.generatedUrl : generatedUrl) === null ? [] : [{
+      generatedUrl: typeof generatedUrl === "undefined" ? current.generatedUrl : generatedUrl,
+      subjectiveScore: null,
+      reviewNote: "",
+      disposition: "unrated",
+    }],
     generationConditions,
   };
   const batch = {
@@ -485,7 +509,9 @@ function validateRun(value, index, batchesById) {
   assertId(value.id, `${field}.id`);
   assertHttpsUrl(value.sourceUrl, `${field}.sourceUrl`);
   if (!STATUS_VALUES.has(value.status)) fail(`${field}.status is unsupported`);
-  assertNullableHttpsUrl(value.generatedUrl, `${field}.generatedUrl`);
+  if (!Array.isArray(value.outputs)) fail(`${field}.outputs must be an array`);
+  if (value.outputs.length > 2) fail(`${field}.outputs may contain at most two results`);
+  value.outputs.forEach((output, outputIndex) => validateRunOutput(output, `${field}.outputs[${outputIndex}]`));
   const batch = batchesById.get(value.generationConditions?.batchId);
   if (!batch) fail(`${field}.generationConditions.batchId must reference an existing batch`);
   validateGenerationConditions(value.generationConditions, `${field}.generationConditions`, batch);
@@ -494,7 +520,7 @@ function validateRun(value, index, batchesById) {
 function validateExperiment(value, index, candidatesById, batchesById, runsById) {
   const field = `experiments[${index}]`;
   assertKnownKeys(value, EXPERIMENT_KEYS, field);
-  assertRequiredKeys(value, EXPERIMENT_KEYS, field);
+  assertRequiredKeys(value, EXPERIMENT_REQUIRED_KEYS, field);
   assertId(value.id, `${field}.id`);
   assertId(value.runId, `${field}.runId`);
   assertId(value.batchId, `${field}.batchId`);
@@ -517,6 +543,16 @@ function validateExperiment(value, index, candidatesById, batchesById, runsById)
   validateAdvice(value.advice, `${field}.advice`);
   const run = runsById.get(value.runId);
   if (!run) fail(`${field}.runId must reference an existing run`);
+  if (Object.hasOwn(value, "outputIndex") && value.outputIndex !== null) {
+    assertInteger(value.outputIndex, `${field}.outputIndex`, { minimum: 0, maximum: 1 });
+    const output = run.outputs[value.outputIndex];
+    if (!output) fail(`${field}.outputIndex must reference an existing run output`);
+    for (const reviewField of REVIEW_FIELDS) {
+      if (value[reviewField] !== output[reviewField]) {
+        fail(`${field}.${reviewField} must match its bound run output`);
+      }
+    }
+  }
   if (run.generationConditions.batchId !== value.batchId
     || stableStringify(value.generationConditions) !== stableStringify(run.generationConditions)) {
     fail(`${field}.generationConditions must match its own frozen run conditions`);
@@ -558,7 +594,7 @@ export function validateProject(input) {
   if (!isPlainObject(input)) fail("project must be an object");
   assertPortableValue(input);
   assertRequiredKeys(input, PROJECT_KEYS, "project");
-  if (input.version !== PROJECT_VERSION) fail("project.version must be 1");
+  if (input.version !== PROJECT_VERSION) fail("project.version must be 2");
   assertString(input.toolVersion, "toolVersion", { nonEmpty: true });
   assertDate(input.ruleCheckedAt, "ruleCheckedAt");
   validateStyleSpec(input.styleSpec);
@@ -701,6 +737,135 @@ export function recordGenerationRun(project, batchId) {
   return validateProject(validated);
 }
 
+export function recordCreateRun(project, batchId) {
+  const validated = validateProject(project);
+  const batchIndex = validated.batches.findIndex(batch => batch.id === batchId);
+  if (batchIndex < 0) fail(`Unknown batch: ${batchId}`);
+  const { batch, run } = appendRun(validated, batchIndex, {
+    status: "submitted",
+    resetProgress: true,
+  });
+  validated.batches[batchIndex] = batch;
+  validated.runs.push(run);
+  return validateProject(validated);
+}
+
+function synchronizeCurrentBatchReview(project, experiment) {
+  const batchIndex = project.batches.findIndex(batch => (
+    batch.id === experiment.batchId
+    && batch.currentRunId === experiment.runId
+    && batch.currentCandidateId === experiment.candidateId
+  ));
+  if (batchIndex < 0) return;
+  project.batches[batchIndex] = {
+    ...project.batches[batchIndex],
+    ...Object.fromEntries(REVIEW_FIELDS.map(field => [field, experiment[field]])),
+  };
+}
+
+export function updateRunOutputs(project, runId, outputs) {
+  const validated = validateProject(project);
+  assertId(runId, "runId");
+  if (!Array.isArray(outputs)) fail("outputs must be an array");
+  if (outputs.length > 2) fail("outputs may contain at most two results");
+  assertPortableValue(outputs, "outputs");
+  outputs.forEach((output, index) => validateRunOutput(output, `outputs[${index}]`));
+  const runIndex = validated.runs.findIndex(run => run.id === runId);
+  if (runIndex < 0) fail(`Unknown run: ${runId}`);
+  const normalizedOutputs = cloneJson(outputs);
+  validated.runs[runIndex] = { ...validated.runs[runIndex], outputs: normalizedOutputs };
+
+  validated.experiments = validated.experiments.map(experiment => {
+    if (experiment.runId !== runId || !Object.hasOwn(experiment, "outputIndex") || experiment.outputIndex === null) return experiment;
+    const output = normalizedOutputs[experiment.outputIndex];
+    if (!output) fail(`experiment ${experiment.id} outputIndex must reference an existing run output`);
+    const synchronized = {
+      ...experiment,
+      ...Object.fromEntries(REVIEW_FIELDS.map(field => [field, output[field]])),
+    };
+    synchronizeCurrentBatchReview(validated, synchronized);
+    return synchronized;
+  });
+
+  const currentBatchIndex = validated.batches.findIndex(batch => batch.currentRunId === runId);
+  if (currentBatchIndex >= 0 && validated.batches[currentBatchIndex].currentCandidateId === null) {
+    const output = normalizedOutputs[0] ?? {
+      generatedUrl: null,
+      subjectiveScore: null,
+      reviewNote: "",
+      disposition: "unrated",
+    };
+    validated.batches[currentBatchIndex] = {
+      ...validated.batches[currentBatchIndex],
+      ...Object.fromEntries(REVIEW_FIELDS.map(field => [field, output[field]])),
+    };
+  }
+  return validateProject(validated);
+}
+
+export function bindExperimentOutput(project, experimentId, outputIndex) {
+  const validated = validateProject(project);
+  assertId(experimentId, "experimentId");
+  const experimentIndex = validated.experiments.findIndex(experiment => experiment.id === experimentId);
+  if (experimentIndex < 0) fail(`Unknown experiment: ${experimentId}`);
+  const current = validated.experiments[experimentIndex];
+  if (outputIndex === null) {
+    const unbound = { ...current, outputIndex: null };
+    validated.experiments[experimentIndex] = unbound;
+    synchronizeCurrentBatchReview(validated, unbound);
+    return validateProject(validated);
+  }
+  assertInteger(outputIndex, "outputIndex", { minimum: 0, maximum: 1 });
+  const run = validated.runs.find(item => item.id === current.runId);
+  const output = run?.outputs[outputIndex];
+  if (!output) fail("outputIndex must reference an existing run output");
+  const synchronized = {
+    ...current,
+    outputIndex,
+    ...Object.fromEntries(REVIEW_FIELDS.map(field => [field, output[field]])),
+  };
+  validated.experiments[experimentIndex] = synchronized;
+  synchronizeCurrentBatchReview(validated, synchronized);
+  return validateProject(validated);
+}
+
+export function updateExperimentReview(project, experimentId, patch = {}) {
+  const validated = validateProject(project);
+  assertId(experimentId, "experimentId");
+  if (!isPlainObject(patch)) fail("experiment review patch must be an object");
+  for (const key of Object.keys(patch)) {
+    if (!REVIEW_FIELDS.includes(key)) fail(`Unsupported experiment review field: ${key}`);
+  }
+  assertPortableValue(patch, "experiment review patch");
+  const experimentIndex = validated.experiments.findIndex(experiment => experiment.id === experimentId);
+  if (experimentIndex < 0) fail(`Unknown experiment: ${experimentId}`);
+  const updated = { ...validated.experiments[experimentIndex], ...patch };
+  validated.experiments[experimentIndex] = updated;
+  if (Object.hasOwn(updated, "outputIndex") && updated.outputIndex !== null) {
+    const runIndex = validated.runs.findIndex(run => run.id === updated.runId);
+    const output = validated.runs[runIndex]?.outputs[updated.outputIndex];
+    if (!output) fail(`experiment ${experimentId} outputIndex must reference an existing run output`);
+    const outputs = validated.runs[runIndex].outputs.map((item, index) => index === updated.outputIndex
+      ? { ...item, ...Object.fromEntries(REVIEW_FIELDS.map(field => [field, updated[field]])) }
+      : item);
+    validated.runs[runIndex] = { ...validated.runs[runIndex], outputs };
+    const synchronizedReview = Object.fromEntries(REVIEW_FIELDS.map(field => [field, updated[field]]));
+    validated.experiments = validated.experiments.map(experiment => (
+      experiment.runId === updated.runId && experiment.outputIndex === updated.outputIndex
+        ? { ...experiment, ...synchronizedReview }
+        : experiment
+    ));
+    validated.experiments.forEach(experiment => {
+      if (experiment.runId === updated.runId && experiment.outputIndex === updated.outputIndex) {
+        synchronizeCurrentBatchReview(validated, experiment);
+      }
+    });
+  } else {
+    synchronizeCurrentBatchReview(validated, updated);
+  }
+  return validateProject(validated);
+}
+
 export function transitionBatch(plan, batchId, status, patch = {}) {
   const validated = validateProject(plan);
   if (!STATUS_VALUES.has(status)) fail(`Unsupported batch status: ${status}`);
@@ -738,8 +903,7 @@ export function exportProjectJson(project) {
   return stableStringify(validateProject(project));
 }
 
-function migrateLegacyVersionOne(input) {
-  if (!isPlainObject(input) || input.version !== 1 || Object.hasOwn(input, "runs")) return input;
+function addMissingLegacyRuns(input) {
   const migrated = cloneJson(input);
   migrated.runs = [];
   const usedIds = new Set([
@@ -809,6 +973,64 @@ function migrateLegacyVersionOne(input) {
   return migrated;
 }
 
+function legacyOutputFromEvidence(evidence, generatedUrl) {
+  return {
+    generatedUrl,
+    subjectiveScore: evidence.subjectiveScore ?? null,
+    reviewNote: evidence.reviewNote ?? "",
+    disposition: evidence.disposition ?? "unrated",
+  };
+}
+
+function migrateLegacyVersionOne(input) {
+  if (!isPlainObject(input) || input.version !== 1) return input;
+  const migrated = Object.hasOwn(input, "runs") ? cloneJson(input) : addMissingLegacyRuns(input);
+  migrated.version = PROJECT_VERSION;
+  const experimentsByRun = new Map();
+  for (const experiment of migrated.experiments || []) {
+    if (!experimentsByRun.has(experiment.runId)) experimentsByRun.set(experiment.runId, []);
+    experimentsByRun.get(experiment.runId).push(experiment);
+  }
+  const batchesByRun = new Map();
+  for (const batch of migrated.batches || []) {
+    if (batch.currentRunId !== null && typeof batch.currentRunId !== "undefined") {
+      batchesByRun.set(batch.currentRunId, batch);
+    }
+  }
+  migrated.runs = (migrated.runs || []).map(legacyRun => {
+    const outputsByUrl = new Map();
+    const addOutput = output => {
+      if (output.generatedUrl === null || typeof output.generatedUrl === "undefined") return;
+      outputsByUrl.set(output.generatedUrl, cloneJson(output));
+      if (outputsByUrl.size > 2) fail(`legacy run ${legacyRun.id} has more than two unique output links`);
+    };
+    for (const output of Array.isArray(legacyRun.outputs) ? legacyRun.outputs : []) addOutput(output);
+    if (legacyRun.generatedUrl !== null && typeof legacyRun.generatedUrl !== "undefined") {
+      addOutput(legacyOutputFromEvidence({}, legacyRun.generatedUrl));
+    }
+    for (const experiment of experimentsByRun.get(legacyRun.id) || []) {
+      if (experiment.generatedUrl !== null && typeof experiment.generatedUrl !== "undefined") {
+        addOutput(legacyOutputFromEvidence(experiment, experiment.generatedUrl));
+      }
+    }
+    const batch = batchesByRun.get(legacyRun.id);
+    if (batch?.generatedUrl !== null && typeof batch?.generatedUrl !== "undefined") {
+      addOutput(legacyOutputFromEvidence(batch, batch.generatedUrl));
+    }
+    const outputs = [...outputsByUrl.values()];
+    const { generatedUrl: ignoredGeneratedUrl, outputs: ignoredOutputs, ...run } = legacyRun;
+    return { ...run, outputs };
+  });
+  migrated.experiments = (migrated.experiments || []).map(legacyExperiment => {
+    if (Object.hasOwn(legacyExperiment, "outputIndex")) {
+      const { outputIndex: ignoredOutputIndex, ...unboundExperiment } = legacyExperiment;
+      return unboundExperiment;
+    }
+    return legacyExperiment;
+  });
+  return migrated;
+}
+
 export function importProjectJson(text) {
   if (typeof text !== "string") fail("project JSON must be text");
   let parsed;
@@ -866,7 +1088,13 @@ export function exportProjectMarkdown(project) {
     lines.push(`- Axis: ${markdownText(conditions.changedAxis)}`);
     lines.push(`- Status: ${markdownText(run.status)}`);
     lines.push(`- Source: ${markdownText(run.sourceUrl)}`);
-    if (run.generatedUrl) lines.push(`- Generated URL: ${markdownText(run.generatedUrl)}`);
+    run.outputs.forEach((output, index) => {
+      lines.push(`- Output ${index + 1}:`);
+      if (output.generatedUrl) lines.push(`  - Generated URL: ${markdownText(output.generatedUrl)}`);
+      if (output.subjectiveScore !== null) lines.push(`  - Subjective score: ${output.subjectiveScore}`);
+      lines.push(`  - Disposition: ${markdownText(output.disposition)}`);
+      if (output.reviewNote) lines.push(`  - Review / rejection reason: ${markdownText(output.reviewNote)}`);
+    });
     lines.push(`- Prompt: ${markdownText(conditions.prompt)}`);
     lines.push(`- Exclude: ${markdownText(conditions.excludePrompt)}`);
     lines.push("- Frozen StyleSpec:", "", "```json", markdownText(stableStringify({ styleSpec: conditions.styleSpec })), "```", "");
