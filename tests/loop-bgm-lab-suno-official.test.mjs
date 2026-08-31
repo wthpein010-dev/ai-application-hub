@@ -224,6 +224,29 @@ test("API runs apply IANA special-purpose IP policy without blocking global lite
   }
 });
 
+test("API runs honor the IANA global 192.88.99.2 exception before its deprecated parent block", () => {
+  const createInput = {
+    id: "api-run-8",
+    batchId: "batch-8",
+    createdAt: "2026-09-01T00:00:00.000Z",
+  };
+  const generating = transitionApiRun(
+    createApiRun(createInput),
+    "generating",
+    { updatedAt: "2026-09-01T00:00:01.000Z" },
+  );
+  for (const generatedUrl of [
+    "https://192.88.99.2/jobs/1",
+    "https://[::ffff:192.88.99.2]/jobs/1",
+  ]) {
+    assert.doesNotThrow(() => createApiRun({ ...createInput, generatedUrl }));
+    assert.doesNotThrow(() => transitionApiRun(generating, "ready", { generatedUrl }));
+  }
+  const deprecatedSibling = "https://192.88.99.3/jobs/1";
+  assert.throws(() => createApiRun({ ...createInput, generatedUrl: deprecatedSibling }), /local|public|global/i);
+  assert.throws(() => transitionApiRun(generating, "ready", { generatedUrl: deprecatedSibling }), /local|public|global/i);
+});
+
 test("poll scheduling is deterministic, bounded, and honors a valid retry-after", () => {
   const run = transitionApiRun(
     createApiRun({ id: "api-run-2", batchId: "batch-2", createdAt: "2026-09-01T00:00:00.000Z" }),

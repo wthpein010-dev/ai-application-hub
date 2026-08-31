@@ -49,7 +49,7 @@ const OPAQUE_ID = /^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$/;
 // IANA IPv4/IPv6 Special-Purpose Address registries, last verified 2025-10-09.
 // These are non-globally-reachable or terminated blocks; more-specific global
 // exceptions are checked first. This is literal parsing only and never performs DNS.
-const IANA_IPV4_GLOBAL_EXCEPTIONS = Object.freeze(["192.0.0.9/32", "192.0.0.10/32"]);
+const IANA_IPV4_GLOBAL_EXCEPTIONS = Object.freeze(["192.0.0.9/32", "192.0.0.10/32", "192.88.99.2/32"]);
 const IANA_IPV4_NON_GLOBAL_CIDRS = Object.freeze([
   "0.0.0.0/8", "10.0.0.0/8", "100.64.0.0/10", "127.0.0.0/8", "169.254.0.0/16",
   "172.16.0.0/12", "192.0.0.0/24", "192.0.2.0/24", "192.88.99.0/24", "192.168.0.0/16",
