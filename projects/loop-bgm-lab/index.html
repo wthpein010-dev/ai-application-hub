@@ -146,9 +146,13 @@
         <label>关联提示词批次
           <select id="candidate-batch" aria-label="候选关联批次"></select>
         </label>
-        <label class="file-picker compact" for="candidate-file"><strong>选择 1 个候选音频</strong><span>新分析会追加到历史，只替换临时播放地址。</span><input id="candidate-file" class="visually-hidden" type="file" accept=".mp3,.wav,.m4a,.ogg,audio/mpeg,audio/wav,audio/mp4,audio/ogg"></label>
+        <label>关联生成运行
+          <select id="candidate-run" aria-label="候选关联生成运行"></select>
+        </label>
+        <label class="file-picker compact" for="candidate-file"><strong>选择候选音频</strong><span>一次最多 8 个；同一次选择共用一个 run，单个失败不影响其余文件。</span><input id="candidate-file" class="visually-hidden" type="file" multiple accept=".mp3,.wav,.m4a,.ogg,audio/mpeg,audio/wav,audio/mp4,audio/ogg"></label>
         <button id="remove-candidate" class="text-button" type="button" hidden>清除临时播放</button>
       </div>
+      <p id="candidate-progress" class="live-box" role="status" aria-live="polite">先在批次卡登记一次 Create，再选择对应 run 和候选文件。</p>
       <div class="players" aria-label="参考与候选播放器">
         <label><span>参考 A</span><audio id="reference-player" controls preload="metadata"></audio></label>
         <label><span>候选 B</span><audio id="candidate-player" controls preload="metadata"></audio></label>

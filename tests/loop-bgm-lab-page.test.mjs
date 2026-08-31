@@ -78,6 +78,24 @@ test("markup is CSP-safe, credential-free, and exposes only the approved file an
   assert.doesNotMatch(source, /\.innerHTML\b|insertAdjacentHTML|outerHTML\s*=/);
 });
 
+test("manual Create registration and multi-candidate import expose explicit accessible controls", () => {
+  const html = readProjectFile("index.html");
+  const source = readProjectFile("app.js");
+
+  assert.match(html, /<select id="candidate-run"[^>]*aria-label="候选关联生成运行"/);
+  assert.match(html, /<input id="candidate-file"[^>]*\bmultiple\b/);
+  assert.match(html, /一次最多 8 个[^<]*同一次选择共用一个 run/);
+  assert.match(source, /请选择一次已登记的 Create/);
+  assert.match(source, /candidateInput\.disabled = selectableRunId === ""/);
+  assert.match(source, /className: "batch-action record-create-run"/);
+  assert.match(source, /className: "create-output-url"/);
+  assert.match(source, /className: "create-output-score"/);
+  assert.match(source, /className: "create-output-review"/);
+  assert.match(source, /className: "create-output-disposition"/);
+  assert.match(source, /aria-label[^\n]*结果 1/);
+  assert.match(source, /aria-label[^\n]*结果 2/);
+});
+
 test("browser coordinator imports the analysis, plan/state, and candidate-scoring boundaries", () => {
   // Break caught: the UI substitutes ad-hoc scoring or serialization instead of Tasks 1–3.
   const source = readProjectFile("app.js");

@@ -2,11 +2,14 @@ import test from "node:test";
 import assert from "node:assert/strict";
 
 import {
+  bindExperimentOutput,
   exportProjectJson,
   exportProjectMarkdown,
   importProjectJson,
   rebuildPromptQueue,
   transitionBatch,
+  updateExperimentReview,
+  updateRunOutputs,
   validateProject,
 } from "../projects/loop-bgm-lab/core/project-state.mjs";
 import { createDailyPlan } from "../projects/loop-bgm-lab/core/prompt-engine.mjs";
@@ -108,12 +111,22 @@ function completeProject() {
       similarityClass: "too-close",
       advice: candidateAdvice,
     }],
+    runs: [{
+      ...plan.runs[0],
+      outputs: [{
+        generatedUrl: "https://suno.com/song/example",
+        subjectiveScore: 4,
+        reviewNote: "Rejected because the hook remains too close.",
+        disposition: "rejected",
+      }],
+    }],
     experiments: [{
       id: "experiment-1",
       runId: plan.runs[0].id,
       batchId: "batch-1",
       candidateId: "candidate-1",
       candidateHash: CANDIDATE_HASH,
+      outputIndex: 0,
       generatedUrl: "https://suno.com/song/example",
       subjectiveScore: 4,
       reviewNote: "Rejected because the hook remains too close.",
@@ -173,6 +186,142 @@ test("durable experiments preserve frozen generation conditions after current ba
   assert.throws(() => validateProject(missingSnapshot), /generationConditions/i);
 });
 
+test("a candidate can bind to one run output and all review evidence must remain synchronized", () => {
+  const project = completeProject();
+
+  const valid = validateProject(project);
+  assert.equal(valid.experiments[0].outputIndex, 0);
+  const mismatchedUrl = structuredClone(project);
+  mismatchedUrl.experiments[0].generatedUrl = "https://suno.com/song/different";
+  assert.throws(() => validateProject(mismatchedUrl), /output|generatedUrl/i);
+  const mismatchedReview = structuredClone(project);
+  mismatchedReview.runs[0].outputs[0].reviewNote = "Different review";
+  assert.throws(() => importProjectJson(JSON.stringify(mismatchedReview)), /output|reviewNote|experiment/i);
+  const missingOutput = structuredClone(project);
+  missingOutput.runs[0].outputs = [];
+  assert.throws(() => validateProject(missingOutput), /outputIndex|output/i);
+});
+
+test("binding and review APIs synchronize the selected output, experiment, and current batch", () => {
+  const project = completeProject();
+  project.runs[0].outputs.push({
+    generatedUrl: "https://suno.com/song/example-b",
+    subjectiveScore: null,
+    reviewNote: "",
+    disposition: "unrated",
+  });
+  project.experiments[0].outputIndex = null;
+  project.experiments[0].generatedUrl = null;
+  project.experiments[0].subjectiveScore = null;
+  project.experiments[0].reviewNote = "";
+  project.experiments[0].disposition = "unrated";
+  project.batches[0].generatedUrl = null;
+  project.batches[0].subjectiveScore = null;
+  project.batches[0].reviewNote = "";
+  project.batches[0].disposition = "unrated";
+
+  const bound = bindExperimentOutput(project, "experiment-1", 1);
+  assert.equal(bound.experiments[0].outputIndex, 1);
+  assert.equal(bound.experiments[0].generatedUrl, "https://suno.com/song/example-b");
+  assert.equal(bound.batches[0].generatedUrl, "https://suno.com/song/example-b");
+
+  const reviewed = updateExperimentReview(bound, "experiment-1", {
+    subjectiveScore: 5,
+    reviewNote: "Best loop of this Create pair.",
+    disposition: "accepted",
+  });
+  assert.equal(reviewed.runs[0].outputs[1].subjectiveScore, 5);
+  assert.equal(reviewed.experiments[0].reviewNote, "Best loop of this Create pair.");
+  assert.equal(reviewed.batches[0].disposition, "accepted");
+
+  const outputEdited = updateRunOutputs(reviewed, reviewed.runs[0].id, [
+    reviewed.runs[0].outputs[0],
+    {
+      generatedUrl: "https://suno.com/song/example-b-final",
+      subjectiveScore: 3,
+      reviewNote: "The revised link is usable but less lively.",
+      disposition: "accepted",
+    },
+  ]);
+  assert.equal(outputEdited.experiments[0].generatedUrl, "https://suno.com/song/example-b-final");
+  assert.equal(outputEdited.experiments[0].subjectiveScore, 3);
+  assert.equal(outputEdited.batches[0].reviewNote, "The revised link is usable but less lively.");
+
+  const unbound = bindExperimentOutput(outputEdited, "experiment-1", null);
+  assert.equal(unbound.experiments[0].outputIndex, null);
+});
+
+test("reviewing one bound candidate synchronizes every experiment bound to the same output", () => {
+  const project = completeProject();
+  const secondHash = "d".repeat(64);
+  project.candidates.push({
+    ...project.candidates[0],
+    id: "candidate-2",
+    displayName: "Candidate B",
+    hash: secondHash,
+  });
+  project.experiments.push({
+    ...project.experiments[0],
+    id: "experiment-2",
+    candidateId: "candidate-2",
+    candidateHash: secondHash,
+  });
+
+  const reviewed = updateExperimentReview(project, "experiment-2", {
+    subjectiveScore: 2,
+    reviewNote: "Both imports point to the same weak output.",
+    disposition: "rejected",
+  });
+
+  assert.equal(reviewed.runs[0].outputs[0].subjectiveScore, 2);
+  assert.equal(reviewed.experiments[0].reviewNote, "Both imports point to the same weak output.");
+  assert.equal(reviewed.experiments[1].reviewNote, "Both imports point to the same weak output.");
+  assert.equal(reviewed.batches[0].subjectiveScore, 2);
+});
+
+test("schema v1 migration preserves runs and reviews without inventing output bindings", () => {
+  const legacy = structuredClone(completeProject());
+  legacy.version = 1;
+  legacy.runs[0].generatedUrl = legacy.runs[0].outputs[0].generatedUrl;
+  delete legacy.runs[0].outputs;
+  delete legacy.experiments[0].outputIndex;
+
+  const restored = importProjectJson(JSON.stringify(legacy));
+  assert.equal(restored.version, 2);
+  assert.equal(restored.styleSpec.version, 1);
+  assert.deepEqual(restored.runs[0].outputs[0], {
+    generatedUrl: "https://suno.com/song/example",
+    subjectiveScore: 4,
+    reviewNote: "Rejected because the hook remains too close.",
+    disposition: "rejected",
+  });
+  assert.equal(Object.hasOwn(restored.experiments[0], "outputIndex"), false);
+  assert.equal(Object.hasOwn(restored.runs[0], "generatedUrl"), false);
+
+  const oldest = structuredClone(legacy);
+  delete oldest.runs;
+  delete oldest.experiments[0].runId;
+  const restoredOldest = importProjectJson(JSON.stringify(oldest));
+  assert.equal(restoredOldest.runs.length, 1);
+  assert.equal(restoredOldest.experiments[0].runId, restoredOldest.runs[0].id);
+  assert.equal(Object.hasOwn(restoredOldest.experiments[0], "outputIndex"), false);
+});
+
+test("schema v1 migration rejects a third unique legacy output instead of truncating evidence", () => {
+  const legacy = structuredClone(completeProject());
+  legacy.version = 1;
+  legacy.runs[0].generatedUrl = "https://suno.com/song/from-run";
+  delete legacy.runs[0].outputs;
+  delete legacy.experiments[0].outputIndex;
+  legacy.experiments[0].generatedUrl = "https://suno.com/song/from-experiment";
+  legacy.batches[0].generatedUrl = "https://suno.com/song/from-batch";
+
+  assert.throws(
+    () => importProjectJson(JSON.stringify(legacy)),
+    /more than two unique|超过两个/i,
+  );
+});
+
 test("portable safety rejects normalized secret-key variants and HTTPS userinfo through every persistence boundary", () => {
   const project = createDailyPlan();
   const forbiddenKeys = ["api_key", "api-key", "API KEY", "recovery_key", "recovery-key", "session-id"];
@@ -197,7 +346,7 @@ test("portable safety rejects normalized secret-key variants and HTTPS userinfo 
   }
 });
 
-test("version 1 validates every known persisted structure and cross-field identity invariant", () => {
+test("schema version 2 validates every known persisted structure and cross-field identity invariant", () => {
   const project = completeProject();
   assert.deepEqual(importProjectJson(exportProjectJson(project)), validateProject(project));
 

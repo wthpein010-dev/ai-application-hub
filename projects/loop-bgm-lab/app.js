@@ -1,12 +1,15 @@
 import { analyzePcm } from "./core/audio-analysis.mjs";
 import { createDailyPlan } from "./core/prompt-engine.mjs";
 import {
+  bindExperimentOutput,
   exportProjectJson,
   exportProjectMarkdown,
   importProjectJson,
   rebuildPromptQueue,
-  recordGenerationRun,
+  recordCreateRun,
   transitionBatch,
+  updateExperimentReview,
+  updateRunOutputs,
   validateProject
 } from "./core/project-state.mjs";
 import {
@@ -29,6 +32,7 @@ import {
 const STORAGE_KEY = "loop-bgm-lab-v1";
 const MAX_FILE_BYTES = 80 * 1024 * 1024;
 const MAX_REFERENCE_FILES = 8;
+const MAX_CANDIDATE_FILES = 8;
 const SUNO_CREATE_URL = "https://suno.com/create";
 const ACCEPTED_EXTENSIONS = /\.(?:mp3|wav|m4a|ogg)$/i;
 const ACCEPTED_AUDIO_TYPES = new Set(["audio/mpeg", "audio/mp3", "audio/wav", "audio/x-wav", "audio/mp4", "audio/ogg"]);
@@ -77,6 +81,8 @@ const sunoApiChecklist = element("#suno-api-checklist");
 const batchList = element("#batch-list");
 const candidateInput = element("#candidate-file");
 const candidateBatch = element("#candidate-batch");
+const candidateRun = element("#candidate-run");
+const candidateProgress = element("#candidate-progress");
 const candidateHistory = element("#candidate-history");
 const comparisonResult = element("#comparison-result");
 const comparisonBody = element("#comparison-components tbody");
@@ -418,8 +424,165 @@ function openExternal(url) {
   if (opened) opened.opener = null;
 }
 
+function runsForBatch(batchId) {
+  return project.runs.filter(run => run.generationConditions.batchId === batchId);
+}
+
+function renderCandidateRunOptions(preferredRunId = candidateRun.value) {
+  const batch = project.batches.find(item => item.id === candidateBatch.value);
+  const runs = batch ? [...runsForBatch(batch.id)].reverse() : [];
+  const selectableRunId = runs.some(run => run.id === preferredRunId) ? preferredRunId : "";
+  candidateRun.replaceChildren();
+  const placeholder = createElement("option", { text: runs.length ? "请选择一次已登记的 Create" : "请先登记本次 Create" });
+  placeholder.value = "";
+  placeholder.selected = selectableRunId === "";
+  candidateRun.append(placeholder);
+  for (const run of runs) {
+    const option = createElement("option", {
+      text: `${run.id} · ${STATUS_LABELS[run.status]} · ${run.outputs.length} 个结果`
+    });
+    option.value = run.id;
+    option.selected = run.id === selectableRunId;
+    candidateRun.append(option);
+  }
+  candidateRun.disabled = runs.length === 0;
+  candidateInput.disabled = selectableRunId === "";
+  const picker = candidateInput.closest(".file-picker");
+  if (picker) picker.dataset.disabled = String(selectableRunId === "");
+}
+
+function outputDispositionSelect(output, outputLabel) {
+  const disposition = createElement("select", { className: "create-output-disposition" });
+  disposition.setAttribute("aria-label", `${outputLabel} 处置`);
+  for (const [value, text] of [["unrated", "未处置"], ["accepted", "接受"], ["rejected", "拒绝"]]) {
+    const option = createElement("option", { text });
+    option.value = value;
+    option.selected = value === (output?.disposition || "unrated");
+    disposition.append(option);
+  }
+  return disposition;
+}
+
+function collectRunOutputs(container) {
+  const outputs = [];
+  for (const [index, card] of [...container.querySelectorAll(".create-output-card")].entries()) {
+    const generatedUrl = card.querySelector(".create-output-url").value.trim();
+    const subjectiveScoreValue = card.querySelector(".create-output-score").value;
+    const reviewNote = card.querySelector(".create-output-review").value.trim();
+    const disposition = card.querySelector(".create-output-disposition").value;
+    const hasReview = subjectiveScoreValue !== "" || reviewNote !== "" || disposition !== "unrated";
+    if (!generatedUrl) {
+      if (hasReview) throw new TypeError(`结果 ${index + 1} 必须先填写 HTTPS 生成链接。`);
+      if (container.querySelectorAll(".create-output-card")[index + 1]?.querySelector(".create-output-url").value.trim()) {
+        throw new TypeError(`请先填写结果 ${index + 1}，结果不能跳号。`);
+      }
+      continue;
+    }
+    outputs.push({
+      generatedUrl,
+      subjectiveScore: subjectiveScoreValue ? Number(subjectiveScoreValue) : null,
+      reviewNote,
+      disposition
+    });
+  }
+  return outputs;
+}
+
+function saveRunOutputs(runId, container) {
+  clearError();
+  try {
+    project = updateRunOutputs(project, runId, collectRunOutputs(container));
+    persistProject();
+    const run = project.runs.find(item => item.id === runId);
+    const panelStatus = container.closest(".create-run-panel")?.querySelector(".create-run-heading span");
+    if (run && panelStatus) panelStatus.textContent = `${STATUS_LABELS[run.status]} · 条件已冻结 · ${run.outputs.length}/2 个结果`;
+    const runOption = [...candidateRun.options].find(option => option.value === runId);
+    if (run && runOption) runOption.textContent = `${run.id} · ${STATUS_LABELS[run.status]} · ${run.outputs.length} 个结果`;
+    renderCandidateHistory();
+    showLive(`运行 ${runId} 的结果链接与复盘已保存。`);
+  } catch (error) {
+    renderAll();
+    showError(error instanceof Error ? error.message : "生成结果保存失败。");
+  }
+}
+
+function createRunOutputEditor(run, index, container) {
+  const output = run.outputs[index];
+  const outputLabel = index === 0 ? "结果 1" : "结果 2";
+  const card = createElement("div", { className: "create-output-card" });
+  const title = createElement("strong", { text: outputLabel });
+
+  const url = createElement("input", { className: "create-output-url" });
+  url.type = "url";
+  url.inputMode = "url";
+  url.placeholder = "https://suno.com/song/…";
+  url.value = output?.generatedUrl || "";
+  url.setAttribute("aria-label", index === 0 ? "结果 1 生成链接" : "结果 2 生成链接");
+
+  const score = createElement("select", { className: "create-output-score" });
+  score.setAttribute("aria-label", `${outputLabel} 主观评分`);
+  const unrated = createElement("option", { text: "未评分" });
+  unrated.value = "";
+  unrated.selected = output?.subjectiveScore == null;
+  score.append(unrated);
+  for (let value = 1; value <= 5; value += 1) {
+    const option = createElement("option", { text: `${value} / 5` });
+    option.value = String(value);
+    option.selected = output?.subjectiveScore === value;
+    score.append(option);
+  }
+
+  const review = createElement("textarea", { className: "create-output-review" });
+  review.rows = 2;
+  review.placeholder = "循环、旋律、律动或拒绝理由";
+  review.value = output?.reviewNote || "";
+  review.setAttribute("aria-label", `${outputLabel} 复盘备注`);
+  const disposition = outputDispositionSelect(output, outputLabel);
+
+  for (const control of [url, score, review, disposition]) {
+    control.addEventListener("change", () => saveRunOutputs(run.id, container));
+  }
+  card.append(
+    title,
+    labelledField("Suno 结果链接", url),
+    labelledField("评分", score),
+    labelledField("复盘 / 拒绝理由", review),
+    labelledField("处置", disposition)
+  );
+  return card;
+}
+
+function createRunPanel(run) {
+  const panel = createElement("section", { className: "create-run-panel" });
+  panel.dataset.runId = run.id;
+  const heading = createElement("div", { className: "create-run-heading" });
+  heading.append(
+    createElement("strong", { text: run.id }),
+    createElement("span", { text: `${STATUS_LABELS[run.status]} · 条件已冻结 · ${run.outputs.length}/2 个结果` })
+  );
+  const editors = createElement("div", { className: "create-output-grid" });
+  editors.append(createRunOutputEditor(run, 0, editors), createRunOutputEditor(run, 1, editors));
+  panel.append(heading, editors);
+  return panel;
+}
+
+function registerCreateRun(batchId, batchNumber) {
+  clearError();
+  try {
+    project = recordCreateRun(project, batchId);
+    persistProject();
+    candidateRun.value = "";
+    renderAll();
+    showLive(`已登记批次 ${batchNumber} 的本次 Create，并冻结提示词与 StyleSpec；导入前请在候选区明确选择该 run。`);
+  } catch (error) {
+    renderAll();
+    showError(error instanceof Error ? error.message : "Create 运行登记失败。");
+  }
+}
+
 function renderBatches() {
   const selectedBatchId = candidateBatch.value;
+  const selectedRunId = candidateRun.value;
   candidateBatch.replaceChildren();
   batchList.replaceChildren();
   project.batches.forEach((batch, index) => {
@@ -462,14 +625,26 @@ function renderBatches() {
       openExternal(SUNO_CREATE_URL);
       showLive(`已打开批次 ${index + 1} 的创作入口；状态仍由你手动更新。`);
     });
-    actions.append(copyButton, openButton);
+    const recordButton = createElement("button", { className: "batch-action record-create-run", text: "登记本次 Create" });
+    recordButton.type = "button";
+    recordButton.addEventListener("click", () => registerCreateRun(batch.id, index + 1));
+    actions.append(copyButton, openButton, recordButton);
     card.append(head, expected, prompt, exclusion, actions);
+    const runList = createElement("div", { className: "create-run-list" });
+    for (const run of [...runsForBatch(batch.id)].reverse()) runList.append(createRunPanel(run));
+    if (runList.childElementCount) card.append(runList);
     batchList.append(card);
   });
+  renderCandidateRunOptions(selectedRunId);
 }
 
 function changeBatchStatus(batchId, nextStatus) {
   clearError();
+  if (nextStatus === "submitted") {
+    renderBatches();
+    showError("请使用“登记本次 Create”按钮建立已提交运行；状态下拉不会偷偷创建 run。");
+    return;
+  }
   try {
     project = transitionBatch(project, batchId, nextStatus);
     persistProject();
@@ -537,35 +712,36 @@ function updateCandidateReview(candidateId, batchPatch) {
   try {
     const candidate = project.candidates.find(item => item.id === candidateId);
     if (!candidate) throw new TypeError(`未知候选：${candidateId}`);
-    const batch = project.batches.find(item => item.id === candidate.batchId);
-    if (!batch) throw new TypeError(`候选关联的批次不存在：${candidate.batchId}`);
     const experiment = project.experiments.find(item => item.candidateId === candidate.id);
     if (!experiment) throw new TypeError(`候选关联的实验不存在：${candidate.id}`);
-    const normalizedPatch = { ...batchPatch };
-    const isBatchCurrent = batch.currentCandidateId === candidate.id;
-    const batches = project.batches.map(item => item.id === batch.id && isBatchCurrent
-      ? { ...item, ...normalizedPatch, currentCandidateId: candidate.id, candidateHash: candidate.hash }
-      : item);
-    const experiments = project.experiments.map(experiment => experiment.candidateId === candidate.id
-      ? {
-        ...experiment,
-        candidateHash: candidate.hash,
-        generatedUrl: Object.hasOwn(normalizedPatch, "generatedUrl") ? normalizedPatch.generatedUrl : experiment.generatedUrl,
-        subjectiveScore: Object.hasOwn(normalizedPatch, "subjectiveScore") ? normalizedPatch.subjectiveScore : experiment.subjectiveScore,
-        reviewNote: Object.hasOwn(normalizedPatch, "reviewNote") ? normalizedPatch.reviewNote : experiment.reviewNote,
-        disposition: Object.hasOwn(normalizedPatch, "disposition") ? normalizedPatch.disposition : experiment.disposition
-      }
-      : experiment);
-    project = validateProject({ ...project, batches, experiments });
+    project = updateExperimentReview(project, experiment.id, batchPatch);
     selectedCandidateId = candidate.id;
     persistProject();
-    renderBatches();
-    renderCandidateHistory();
-    renderComparison();
-    showLive(isBatchCurrent ? "候选复盘已保存到当前批次和实验历史。 " : "候选复盘已保存到其独立实验历史。 ");
+    renderAll();
+    showLive(Object.hasOwn(experiment, "outputIndex") && experiment.outputIndex !== null
+      ? "候选复盘已同步到绑定的运行结果、实验和当前批次。"
+      : "候选复盘已保存到其独立实验历史。");
   } catch (error) {
     renderAll();
     showError(error instanceof Error ? error.message : "候选复盘保存失败。 ");
+  }
+}
+
+function bindCandidateOutput(candidateId, value) {
+  clearError();
+  try {
+    const candidate = project.candidates.find(item => item.id === candidateId);
+    if (!candidate) throw new TypeError(`未知候选：${candidateId}`);
+    const experiment = project.experiments.find(item => item.candidateId === candidate.id);
+    if (!experiment) throw new TypeError(`候选关联的实验不存在：${candidate.id}`);
+    project = bindExperimentOutput(project, experiment.id, value === "" ? null : Number(value));
+    selectedCandidateId = candidate.id;
+    persistProject();
+    renderAll();
+    showLive(value === "" ? "候选已取消结果绑定。" : `候选已明确绑定到结果 ${Number(value) + 1}。`);
+  } catch (error) {
+    renderAll();
+    showError(error instanceof Error ? error.message : "候选结果绑定失败。");
   }
 }
 
@@ -642,12 +818,27 @@ function renderCandidateHistory() {
     candidateHash.readOnly = true;
     candidateHash.value = candidate.hash;
 
+    const run = project.runs.find(item => item.id === experiment?.runId);
+    const outputBinding = createElement("select", { className: "candidate-output-binding" });
+    outputBinding.setAttribute("aria-label", `${candidate.displayName || candidate.id} 关联生成结果`);
+    const unbound = createElement("option", { text: "未绑定结果" });
+    unbound.value = "";
+    unbound.selected = !Number.isInteger(experiment?.outputIndex);
+    outputBinding.append(unbound);
+    for (const [outputIndex, output] of (run?.outputs || []).entries()) {
+      const option = createElement("option", { text: `结果 ${outputIndex + 1} · ${output.generatedUrl}` });
+      option.value = String(outputIndex);
+      option.selected = experiment?.outputIndex === outputIndex;
+      outputBinding.append(option);
+    }
+    outputBinding.addEventListener("change", () => bindCandidateOutput(candidate.id, outputBinding.value));
+
     const generatedUrl = createElement("input", { className: "candidate-generated-url" });
     generatedUrl.type = "url";
     generatedUrl.inputMode = "url";
-    generatedUrl.placeholder = "https://suno.com/song/…";
-    generatedUrl.value = isBatchCurrent ? batch.generatedUrl || "" : experiment?.generatedUrl || "";
-    generatedUrl.addEventListener("change", () => updateCandidateReview(candidate.id, { generatedUrl: generatedUrl.value.trim() || null }));
+    generatedUrl.placeholder = "先明确绑定上方运行结果";
+    generatedUrl.readOnly = true;
+    generatedUrl.value = experiment?.generatedUrl || "";
 
     const score = createElement("select", { className: "candidate-subjective-score" });
     score.append(optionFor("", String(isBatchCurrent ? batch.subjectiveScore ?? "" : experiment?.subjectiveScore ?? "")));
@@ -687,7 +878,8 @@ function renderCandidateHistory() {
     fields.append(
       labelledField("导出显示名（可选）", candidateDisplayName),
       labelledField("候选 SHA-256（只读）", candidateHash),
-      labelledField("生成链接", generatedUrl),
+      labelledField("明确关联结果", outputBinding),
+      labelledField("已绑定生成链接（只读）", generatedUrl),
       labelledField("主观评分", score),
       labelledField("复核 / 拒绝理由", reviewNote),
       labelledField("处置", disposition),
@@ -882,13 +1074,25 @@ async function processReferenceFiles(files) {
   showLive("参考分析完成；文件名仅保留在当前会话界面。 ");
 }
 
-async function processCandidateFile(file) {
+async function processCandidateFiles(files) {
   clearError();
+  if (!files.length) return;
   const generation = ++candidateGeneration;
+  if (files.length > MAX_CANDIDATE_FILES) {
+    candidateProgress.textContent = `未处理：一次最多选择 ${MAX_CANDIDATE_FILES} 个候选文件。`;
+    showError(`一次最多选择 ${MAX_CANDIDATE_FILES} 个候选文件；本次没有开始解码。`);
+    return;
+  }
   const batchId = candidateBatch.value;
+  const runId = candidateRun.value;
   const selectedBatch = project.batches.find(batch => batch.id === batchId);
   if (!selectedBatch) {
     showError("请先选择候选对应的提示词批次。 ");
+    return;
+  }
+  const selectedRun = project.runs.find(run => run.id === runId);
+  if (!selectedRun || selectedRun.generationConditions.batchId !== batchId) {
+    showError("请先在该批次登记并明确选择一次 Create 运行。 ");
     return;
   }
   const reference = aggregateReferences();
@@ -896,75 +1100,116 @@ async function processCandidateFile(file) {
     showError("请先导入至少一个可分析的参考音频。");
     return;
   }
+  const sourceProject = project;
+  const shouldStopCandidateWork = () => {
+    if (generation !== candidateGeneration) return true;
+    if (project === sourceProject) return false;
+    renderComparison();
+    candidateProgress.textContent = "项目状态已在分析期间更新；本次候选结果未覆盖较新的修改。";
+    showLive("候选分析已安全取消，请按需要重新选择文件。 ");
+    return true;
+  };
   comparisonResult.dataset.analysisState = "working";
   similarityClass.textContent = "正在本地分析";
-  try {
-    const result = await analyzeFile(file);
-    if (generation !== candidateGeneration) return;
-    const comparison = compareCandidate(reference, result.analysis);
-    const similarityClassValue = classifySimilarity(comparison);
-    const advice = recommendNextVariant(comparison);
-    const projectWithRun = recordGenerationRun(project, batchId);
-    const currentBatch = projectWithRun.batches.find(batch => batch.id === batchId);
-    const run = projectWithRun.runs.find(item => item.id === currentBatch?.currentRunId);
-    if (!currentBatch || !run) throw new TypeError("无法为候选建立独立生成运行。 ");
-    const generationConditions = run.generationConditions;
-    const candidateId = allocateId("candidate", projectWithRun.candidates || []);
-    const record = {
-      id: candidateId,
-      batchId,
-      hash: result.hash,
-      analysis: result.analysis,
-      referenceBasis: structuredClone(reference),
-      comparison,
-      similarityClass: similarityClassValue,
-      advice
-    };
-    const experiment = {
-      id: allocateId("experiment", projectWithRun.experiments || []),
-      runId: run.id,
-      batchId,
-      candidateId,
-      candidateHash: result.hash,
-      generatedUrl: currentBatch.generatedUrl,
-      subjectiveScore: null,
-      reviewNote: "",
-      disposition: "unrated",
-      referenceBasis: structuredClone(reference),
-      comparison,
-      advice,
-      generationConditions: structuredClone(generationConditions)
-    };
-    const batches = projectWithRun.batches.map(batch => batch.id === batchId
-      ? {
-        ...batch,
-        currentCandidateId: candidateId,
+  const failures = [];
+  const successes = [];
+  let workingProject = project;
+  for (const [index, file] of files.entries()) {
+    if (shouldStopCandidateWork()) return;
+    candidateProgress.textContent = `正在逐个解码：${index + 1} / ${files.length}（${file.name}）`;
+    try {
+      const result = await analyzeFile(file);
+      if (shouldStopCandidateWork()) return;
+      const comparison = compareCandidate(reference, result.analysis);
+      const similarityClassValue = classifySimilarity(comparison);
+      const advice = recommendNextVariant(comparison);
+      const run = workingProject.runs.find(item => item.id === runId);
+      if (!run || run.generationConditions.batchId !== batchId) {
+        throw new TypeError("所选 Create 运行已失效，请重新选择。 ");
+      }
+      const candidateId = allocateId("candidate", workingProject.candidates || []);
+      const record = {
+        id: candidateId,
+        batchId,
+        hash: result.hash,
+        analysis: result.analysis,
+        referenceBasis: structuredClone(reference),
+        comparison,
+        similarityClass: similarityClassValue,
+        advice
+      };
+      const experiment = {
+        id: allocateId("experiment", workingProject.experiments || []),
+        runId,
+        batchId,
+        candidateId,
         candidateHash: result.hash,
+        generatedUrl: null,
         subjectiveScore: null,
         reviewNote: "",
-        disposition: "unrated"
-      }
-      : batch);
-    const nextProject = validateProject({
-      ...projectWithRun,
-      batches,
-      candidates: [...projectWithRun.candidates, record],
-      experiments: [...projectWithRun.experiments, experiment],
-      nextRoundSuggestion: advice
-    });
-    const nextUrl = createAudioUrl(file);
-    releaseCandidateSession();
-    candidateSession = { candidateId, name: file.name, url: nextUrl, hash: result.hash };
-    selectedCandidateId = candidateId;
-    project = nextProject;
-    persistProject();
-    renderAll();
-    showLive(`候选“${file.name}”分析完成并追加到历史；名称不会写入持久状态或导出。`);
-  } catch (error) {
-    if (generation !== candidateGeneration) return;
-    renderComparison();
-    showError(error instanceof Error ? error.message : "候选分析失败。");
+        disposition: "unrated",
+        referenceBasis: structuredClone(reference),
+        comparison,
+        advice,
+        generationConditions: structuredClone(run.generationConditions),
+        outputIndex: null
+      };
+      const batches = workingProject.batches.map(batch => batch.id === batchId
+        ? {
+          ...batch,
+          status: "downloaded",
+          currentRunId: runId,
+          generationConditions: structuredClone(run.generationConditions),
+          currentCandidateId: candidateId,
+          candidateHash: result.hash,
+          generatedUrl: null,
+          subjectiveScore: null,
+          reviewNote: "",
+          disposition: "unrated"
+        }
+        : batch);
+      const runs = workingProject.runs.map(item => item.id === runId ? { ...item, status: "downloaded" } : item);
+      workingProject = validateProject({
+        ...workingProject,
+        batches,
+        runs,
+        candidates: [...workingProject.candidates, record],
+        experiments: [...workingProject.experiments, experiment],
+        nextRoundSuggestion: advice
+      });
+      successes.push({ candidateId, file, hash: result.hash });
+    } catch (error) {
+      if (shouldStopCandidateWork()) return;
+      failures.push({ name: file.name, message: error instanceof Error ? error.message : "分析失败。" });
+    }
   }
+  if (shouldStopCandidateWork()) return;
+  if (!successes.length) {
+    const failureDetail = failures.map(item => ` ${item.name}：${item.message}`).join("");
+    candidateProgress.textContent = `完成：0 个成功，${failures.length} 个失败。${failureDetail}`;
+    renderComparison();
+    showError(`所选候选全部分析失败；已登记的 Create 运行仍保留。${failureDetail}`);
+    return;
+  }
+  const latest = successes.at(-1);
+  let nextUrl;
+  try {
+    stageProjectRender(workingProject, latest.candidateId);
+    nextUrl = createAudioUrl(latest.file);
+  } catch (error) {
+    renderAll();
+    showError(error instanceof Error ? error.message : "候选结果暂存失败；原项目保持不变。");
+    return;
+  }
+  releaseCandidateSession();
+  candidateSession = { candidateId: latest.candidateId, name: latest.file.name, url: nextUrl, hash: latest.hash };
+  selectedCandidateId = latest.candidateId;
+  project = workingProject;
+  persistProject();
+  renderAll();
+  const failureDetail = failures.map(item => ` ${item.name}：${item.message}`).join("");
+  candidateProgress.textContent = `完成：${successes.length} 个成功，${failures.length} 个失败。${failureDetail}`;
+  showLive(`已把 ${successes.length} 个候选追加到同一运行 ${runId}；文件名不会写入持久状态或导出。`);
 }
 
 function buildSearchUrl(source, query) {
@@ -1045,10 +1290,26 @@ styleForm.addEventListener("submit", event => {
   showLive("已按更新后的画像重新生成 5 个单变量批次。 ");
 });
 
+candidateBatch.addEventListener("change", () => {
+  renderCandidateRunOptions("");
+  candidateProgress.textContent = candidateRun.value
+    ? `已选择 ${candidateRun.value}；可一次导入最多 ${MAX_CANDIDATE_FILES} 个候选。`
+    : "该批次尚无 Create 运行，请先在批次卡登记。";
+});
+
+candidateRun.addEventListener("change", () => {
+  candidateInput.disabled = candidateRun.value === "";
+  const picker = candidateInput.closest(".file-picker");
+  if (picker) picker.dataset.disabled = String(candidateRun.value === "");
+  candidateProgress.textContent = candidateRun.value
+    ? `已选择 ${candidateRun.value}；所有本次导入成功的候选都会绑定此运行。`
+    : "请先登记并选择 Create 运行。";
+});
+
 candidateInput.addEventListener("change", () => {
-  const [file] = candidateInput.files;
+  const files = [...candidateInput.files];
   candidateInput.value = "";
-  if (file) processCandidateFile(file);
+  if (files.length) processCandidateFiles(files);
 });
 
 removeCandidateButton.addEventListener("click", () => {

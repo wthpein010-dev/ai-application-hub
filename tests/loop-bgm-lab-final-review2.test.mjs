@@ -183,6 +183,7 @@ test("legacy version-1 JSON migrates frozen conditions into run identities witho
   });
   const expectedConditions = structuredClone(current.experiments[0].generationConditions);
   const legacy = structuredClone(current);
+  legacy.version = 1;
   delete legacy.runs;
   delete legacy.batches[0].currentRunId;
   delete legacy.batches[0].currentCandidateId;
