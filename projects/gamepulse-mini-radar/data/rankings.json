@@ -1,9 +1,9 @@
 {
   "schemaVersion": 1,
   "state": "ready",
-  "mirroredAt": "2026-08-30T07:17:49.492Z",
-  "sourceUpdatedAt": "2026-08-30T07:17:37.469Z",
-  "displayDate": "2026.08.30",
+  "mirroredAt": "2026-08-31T01:24:34.007Z",
+  "sourceUpdatedAt": "2026-08-31T01:24:22.243Z",
+  "displayDate": "2026.08.31",
   "stale": true,
   "storage": "d1",
   "sourceUrl": "https://gamepulse-mini-radar.polite-chord-7994.chatgpt.site/api/rankings",
@@ -19,14 +19,14 @@
       "id": "popular",
       "label": "应用宝热门榜",
       "status": "fresh",
-      "checkedAt": "2026-08-30T07:17:37.469Z",
+      "checkedAt": "2026-08-31T01:24:22.243Z",
       "message": ""
     },
     {
       "id": "grossing",
       "label": "应用宝畅销榜",
       "status": "fresh",
-      "checkedAt": "2026-08-30T07:17:37.469Z",
+      "checkedAt": "2026-08-31T01:24:22.243Z",
       "message": ""
     },
     {
@@ -46,7 +46,7 @@
         "category": "轻度休闲",
         "subCategory": "休闲闯关",
         "sourceLabel": "微信游戏 · 小游戏人气榜（截图校验） / 应用宝 · 热门榜",
-        "verifiedAt": "2026-08-30T07:17:37.469Z"
+        "verifiedAt": "2026-08-31T01:24:22.243Z"
       },
       {
         "rank": 2,
@@ -55,7 +55,7 @@
         "category": "轻度休闲",
         "subCategory": "消除",
         "sourceLabel": "微信游戏 · 小游戏人气榜（截图校验） / 应用宝 · 热门榜",
-        "verifiedAt": "2026-08-30T07:17:37.469Z"
+        "verifiedAt": "2026-08-31T01:24:22.243Z"
       },
       {
         "rank": 3,
@@ -73,7 +73,7 @@
         "category": "棋牌游戏",
         "subCategory": "纸牌",
         "sourceLabel": "微信游戏 · 小游戏人气榜（截图校验） / 应用宝 · 热门榜 / 应用宝 · 畅销榜",
-        "verifiedAt": "2026-08-30T07:17:37.469Z"
+        "verifiedAt": "2026-08-31T01:24:22.243Z"
       },
       {
         "rank": 5,
@@ -91,7 +91,7 @@
         "category": "轻度休闲",
         "subCategory": "烧脑",
         "sourceLabel": "微信游戏 · 小游戏人气榜（截图校验） / 应用宝 · 热门榜",
-        "verifiedAt": "2026-08-30T07:17:37.469Z"
+        "verifiedAt": "2026-08-31T01:24:22.243Z"
       },
       {
         "rank": 7,
@@ -118,7 +118,7 @@
         "category": "轻度休闲",
         "subCategory": "塔防",
         "sourceLabel": "微信游戏 · 小游戏人气榜（截图校验） / 应用宝 · 热门榜",
-        "verifiedAt": "2026-08-30T07:17:37.469Z"
+        "verifiedAt": "2026-08-31T01:24:22.243Z"
       },
       {
         "rank": 10,
@@ -127,7 +127,7 @@
         "category": "轻度休闲",
         "subCategory": "经营",
         "sourceLabel": "微信游戏 · 小游戏人气榜（截图校验） / 应用宝 · 热门榜",
-        "verifiedAt": "2026-08-30T07:17:37.469Z"
+        "verifiedAt": "2026-08-31T01:24:22.243Z"
       }
     ],
     "popular": [
@@ -138,7 +138,7 @@
         "category": "轻度休闲",
         "subCategory": "消除",
         "sourceLabel": "微信游戏 · 小游戏人气榜（截图校验） / 应用宝 · 热门榜",
-        "verifiedAt": "2026-08-30T07:17:37.469Z"
+        "verifiedAt": "2026-08-31T01:24:22.243Z"
       },
       {
         "rank": 2,
@@ -147,7 +147,7 @@
         "category": "轻度休闲",
         "subCategory": "经营",
         "sourceLabel": "应用宝 · 热门榜 / 应用宝 · 畅销榜",
-        "verifiedAt": "2026-08-30T07:17:37.469Z"
+        "verifiedAt": "2026-08-31T01:24:22.243Z"
       },
       {
         "rank": 3,
@@ -156,7 +156,7 @@
         "category": "棋牌游戏",
         "subCategory": "纸牌",
         "sourceLabel": "微信游戏 · 小游戏人气榜（截图校验） / 应用宝 · 热门榜 / 应用宝 · 畅销榜",
-        "verifiedAt": "2026-08-30T07:17:37.469Z"
+        "verifiedAt": "2026-08-31T01:24:22.243Z"
       },
       {
         "rank": 4,
@@ -165,7 +165,7 @@
         "category": "轻度休闲",
         "subCategory": "塔防",
         "sourceLabel": "微信游戏 · 小游戏人气榜（截图校验） / 应用宝 · 热门榜",
-        "verifiedAt": "2026-08-30T07:17:37.469Z"
+        "verifiedAt": "2026-08-31T01:24:22.243Z"
       },
       {
         "rank": 5,
@@ -174,7 +174,7 @@
         "category": "轻度休闲",
         "subCategory": "休闲闯关",
         "sourceLabel": "微信游戏 · 小游戏人气榜（截图校验） / 应用宝 · 热门榜",
-        "verifiedAt": "2026-08-30T07:17:37.469Z"
+        "verifiedAt": "2026-08-31T01:24:22.243Z"
       },
       {
         "rank": 6,
@@ -183,7 +183,7 @@
         "category": "轻度休闲",
         "subCategory": "烧脑",
         "sourceLabel": "微信游戏 · 小游戏人气榜（截图校验） / 应用宝 · 热门榜",
-        "verifiedAt": "2026-08-30T07:17:37.469Z"
+        "verifiedAt": "2026-08-31T01:24:22.243Z"
       },
       {
         "rank": 7,
@@ -192,16 +192,16 @@
         "category": "动作冒险",
         "subCategory": "休闲益智",
         "sourceLabel": "应用宝 · 热门榜",
-        "verifiedAt": "2026-08-30T07:17:37.469Z"
+        "verifiedAt": "2026-08-31T01:24:22.243Z"
       },
       {
         "rank": 8,
-        "title": "QQ经典农场",
-        "developer": "腾讯",
-        "category": "轻度休闲",
-        "subCategory": "经营",
-        "sourceLabel": "微信游戏 · 小游戏人气榜（截图校验） / 应用宝 · 热门榜",
-        "verifiedAt": "2026-08-30T07:17:37.469Z"
+        "title": "洁癖大师",
+        "developer": "开发者信息待来源补充",
+        "category": "小游戏",
+        "subCategory": "玩法待补充",
+        "sourceLabel": "应用宝 · 热门榜",
+        "verifiedAt": "2026-08-31T01:24:22.243Z"
       },
       {
         "rank": 9,
@@ -210,16 +210,16 @@
         "category": "棋牌",
         "subCategory": "纸牌",
         "sourceLabel": "应用宝 · 热门榜",
-        "verifiedAt": "2026-08-30T07:17:37.469Z"
+        "verifiedAt": "2026-08-31T01:24:22.243Z"
       },
       {
         "rank": 10,
-        "title": "抓大鹅",
-        "developer": "厂商信息待公开页确认",
-        "category": "轻度休闲",
-        "subCategory": "烧脑",
-        "sourceLabel": "微信游戏 · 小游戏人气榜（截图校验） / 应用宝 · 热门榜",
-        "verifiedAt": "2026-08-30T07:17:37.469Z"
+        "title": "生存探险大作战",
+        "developer": "开发者信息待来源补充",
+        "category": "小游戏",
+        "subCategory": "玩法待补充",
+        "sourceLabel": "应用宝 · 热门榜",
+        "verifiedAt": "2026-08-31T01:24:22.243Z"
       }
     ],
     "grossing": [
@@ -230,7 +230,7 @@
         "category": "轻度休闲",
         "subCategory": "烧脑",
         "sourceLabel": "应用宝 · 畅销榜",
-        "verifiedAt": "2026-08-30T07:17:37.469Z"
+        "verifiedAt": "2026-08-31T01:24:22.243Z"
       },
       {
         "rank": 2,
@@ -239,7 +239,7 @@
         "category": "轻度休闲",
         "subCategory": "创新品类",
         "sourceLabel": "应用宝 · 畅销榜",
-        "verifiedAt": "2026-08-30T07:17:37.469Z"
+        "verifiedAt": "2026-08-31T01:24:22.243Z"
       },
       {
         "rank": 3,
@@ -248,7 +248,7 @@
         "category": "轻度休闲",
         "subCategory": "烧脑",
         "sourceLabel": "应用宝 · 畅销榜",
-        "verifiedAt": "2026-08-30T07:17:37.469Z"
+        "verifiedAt": "2026-08-31T01:24:22.243Z"
       },
       {
         "rank": 4,
@@ -257,7 +257,7 @@
         "category": "轻度休闲",
         "subCategory": "经营",
         "sourceLabel": "应用宝 · 畅销榜",
-        "verifiedAt": "2026-08-30T07:17:37.469Z"
+        "verifiedAt": "2026-08-31T01:24:22.243Z"
       },
       {
         "rank": 5,
@@ -266,7 +266,7 @@
         "category": "轻度休闲",
         "subCategory": "经营",
         "sourceLabel": "应用宝 · 畅销榜",
-        "verifiedAt": "2026-08-30T07:17:37.469Z"
+        "verifiedAt": "2026-08-31T01:24:22.243Z"
       },
       {
         "rank": 6,
@@ -275,7 +275,7 @@
         "category": "轻度休闲",
         "subCategory": "经营",
         "sourceLabel": "应用宝 · 热门榜 / 应用宝 · 畅销榜",
-        "verifiedAt": "2026-08-30T07:17:37.469Z"
+        "verifiedAt": "2026-08-31T01:24:22.243Z"
       },
       {
         "rank": 7,
@@ -284,7 +284,7 @@
         "category": "轻度休闲",
         "subCategory": "经营",
         "sourceLabel": "应用宝 · 畅销榜",
-        "verifiedAt": "2026-08-30T07:17:37.469Z"
+        "verifiedAt": "2026-08-31T01:24:22.243Z"
       },
       {
         "rank": 8,
@@ -293,7 +293,7 @@
         "category": "动作冒险",
         "subCategory": "战术竞技",
         "sourceLabel": "应用宝 · 畅销榜",
-        "verifiedAt": "2026-08-30T07:17:37.469Z"
+        "verifiedAt": "2026-08-31T01:24:22.243Z"
       },
       {
         "rank": 9,
@@ -302,7 +302,7 @@
         "category": "轻度休闲",
         "subCategory": "塔防",
         "sourceLabel": "应用宝 · 畅销榜",
-        "verifiedAt": "2026-08-30T07:17:37.469Z"
+        "verifiedAt": "2026-08-31T01:24:22.243Z"
       },
       {
         "rank": 10,
@@ -311,7 +311,7 @@
         "category": "角色扮演",
         "subCategory": "ARPG",
         "sourceLabel": "应用宝 · 畅销榜",
-        "verifiedAt": "2026-08-30T07:17:37.469Z"
+        "verifiedAt": "2026-08-31T01:24:22.243Z"
       }
     ],
     "overseas": [
