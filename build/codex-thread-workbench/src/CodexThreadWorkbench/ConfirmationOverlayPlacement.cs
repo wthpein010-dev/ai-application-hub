@@ -4,7 +4,7 @@ namespace CodexThreadWorkbench;
 
 public sealed class ConfirmationOverlayPlacement
 {
-    private const int TopMargin = 8;
+    private const int TopMargin = 0;
 
     public bool IsManuallyPositioned { get; private set; }
 

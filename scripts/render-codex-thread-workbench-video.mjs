@@ -95,12 +95,21 @@ async function recordWalkthrough() {
   await waitUntil(startedAt, 11.5);
   await page.getByRole("button", { name: "模拟待确认出现" }).click();
 
-  await waitUntil(startedAt, 17.5);
+  await waitUntil(startedAt, 15.5);
+  await page.locator('[data-action="view-one"]').first().click();
+
+  await waitUntil(startedAt, 18.5);
   await page.locator('[data-action="confirm-one"]').first().click();
 
-  await waitUntil(startedAt, 23.5);
+  await waitUntil(startedAt, 22.5);
+  await page.locator('[data-action="toggle-auto-confirm"]').click();
+  await waitUntil(startedAt, 24.5);
   await page.getByRole("button", { name: "模拟待确认出现" }).click();
-  await waitUntil(startedAt, 26.5);
+
+  await waitUntil(startedAt, 27.5);
+  await page.getByRole("button", { name: "重置演示" }).click();
+  await page.getByRole("button", { name: "模拟待确认出现" }).click();
+  await waitUntil(startedAt, 28.5);
   await page.locator('[data-action="confirm-all"]').click();
 
   await waitUntil(startedAt, 29.5);

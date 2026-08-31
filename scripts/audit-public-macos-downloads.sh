@@ -595,7 +595,7 @@ audit_workbench() {
   if [[ "${id}" == "codex-thread-workbench" ]]; then
     verifier="${repository_root}/scripts/test-codex-confirmation-bar-macos-package.sh"
   else
-    verifier="${repository_root}/build/codex-thread-workbench/scripts/test-macos-package.sh"
+    verifier="${repository_root}/scripts/test-codex-multi-thread-workbench-macos-package.sh"
   fi
   chmod +x "${verifier}"
   "${verifier}" "${archive}" "${workbench_runtime}"

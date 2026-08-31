@@ -48,14 +48,17 @@
     </Style>
   </Window.Styles>
 
+  <Grid x:Name="OverlayRoot"
+        Background="Transparent"
+        PointerEntered="OverlayRoot_OnPointerEntered"
+        PointerExited="OverlayRoot_OnPointerExited">
   <Border x:Name="OverlaySurface"
+          Margin="0,14,14,0"
           Padding="18,16,18,9"
           BorderBrush="#BBDDD0"
           BorderThickness="1"
           BoxShadow="0 14 42 0 #45233F35"
-          CornerRadius="19"
-          PointerEntered="OverlaySurface_OnPointerEntered"
-          PointerExited="OverlaySurface_OnPointerExited">
+          CornerRadius="19">
     <Border.Background>
       <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,100%">
         <GradientStop Color="#FFFCF7" Offset="0" />
@@ -64,7 +67,7 @@
       </LinearGradientBrush>
     </Border.Background>
 
-    <Grid RowDefinitions="Auto,Auto,Auto,*,Auto">
+    <Grid RowDefinitions="Auto,Auto,*,Auto">
       <Grid Grid.Row="0" ColumnDefinitions="Auto,*,Auto,Auto">
         <Grid Grid.Column="0"
               Width="56"
@@ -170,22 +173,18 @@
                     Cursor="SizeAll"
                     VerticalAlignment="Center"
                     PointerPressed="DragHandle_OnPointerPressed"
-                    Spacing="2"
                     ToolTip.Tip="拖动以移动待确认窗口">
           <TextBlock FontSize="16"
                      FontWeight="Bold"
                      Text="{Binding CountText}" />
-          <TextBlock Foreground="#6C7E77"
-                     FontSize="10.5"
-                     Text="有任务等你决定时，我会来提醒你" />
         </StackPanel>
 
         <ToggleSwitch x:Name="AutoConfirmToggle"
                       Grid.Column="2"
                       Margin="0,0,12,0"
                       VerticalAlignment="Center"
-                      OffContent="自动确认已关闭"
-                      OnContent="自动确认已开启"
+                      OffContent="自动"
+                      OnContent="自动"
                       IsChecked="{Binding IsAutoConfirmEnabled, Mode=OneWay}"
                       IsEnabled="{Binding CanToggleAutoConfirm}"
                       Click="AutoConfirmToggle_OnClick"
@@ -202,37 +201,7 @@
                 PointerExited="ActionButton_OnPointerExited" />
       </Grid>
 
-      <Border x:Name="NewTaskBanner"
-              Grid.Row="1"
-              Margin="0,12,0,0"
-              Padding="11,8"
-              Background="#FFF1E8"
-              BorderBrush="#FFD1BB"
-              BorderThickness="1"
-              CornerRadius="10"
-              IsVisible="{Binding HasItems}">
-        <Grid ColumnDefinitions="Auto,*,Auto">
-          <Border Width="8"
-                  Height="8"
-                  Margin="0,0,8,0"
-                  VerticalAlignment="Center"
-                  Background="#F08B62"
-                  CornerRadius="4" />
-          <TextBlock Grid.Column="1"
-                     VerticalAlignment="Center"
-                     Foreground="#8D4B31"
-                     FontSize="11.5"
-                     FontWeight="SemiBold"
-                     Text="叮！有新任务等你决定" />
-          <TextBlock Grid.Column="2"
-                     VerticalAlignment="Center"
-                     Foreground="#B66D4E"
-                     FontSize="10.5"
-                     Text="确认后立即继续" />
-        </Grid>
-      </Border>
-
-      <StackPanel Grid.Row="2">
+      <StackPanel Grid.Row="1">
         <Border Margin="0,10,0,0"
                 Padding="11,8"
                 Background="#FFF5E8"
@@ -260,7 +229,7 @@
         </Border>
       </StackPanel>
 
-      <ScrollViewer Grid.Row="3"
+      <ScrollViewer Grid.Row="2"
                     MaxHeight="540"
                     Margin="0,10,0,0"
                     HorizontalScrollBarVisibility="Disabled"
@@ -277,19 +246,15 @@
                       BoxShadow="0 5 16 0 #1F2B6A55"
                       CornerRadius="13">
                 <Grid RowDefinitions="Auto,Auto,Auto"
-                      ColumnDefinitions="*,Auto,Auto">
+                      ColumnDefinitions="*,Auto,Auto,Auto">
                   <StackPanel Grid.Row="0"
-                              Grid.ColumnSpan="3"
+                              Grid.ColumnSpan="4"
                               Orientation="Horizontal"
                               Spacing="7">
-                    <Border Padding="7,3"
-                            Background="#E5F7EF"
-                            CornerRadius="7">
-                      <TextBlock Foreground="#23795A"
-                                 FontSize="9.5"
-                                 FontWeight="SemiBold"
-                                 Text="待你决定" />
-                    </Border>
+                    <Ellipse Width="7"
+                             Height="7"
+                             VerticalAlignment="Center"
+                             Fill="#F08B62" />
                     <TextBlock VerticalAlignment="Center"
                                FontSize="13.5"
                                FontWeight="SemiBold"
@@ -297,7 +262,7 @@
                                TextTrimming="CharacterEllipsis" />
                   </StackPanel>
                   <TextBlock Grid.Row="1"
-                             Grid.ColumnSpan="3"
+                             Grid.ColumnSpan="4"
                              Margin="0,7,0,11"
                              Foreground="#61736C"
                              FontSize="11"
@@ -318,12 +283,20 @@
                   <Button Grid.Row="2"
                           Grid.Column="1"
                           Classes="overlayQuiet"
+                          Click="ViewButton_OnClick"
+                          Content="查看"
+                          IsEnabled="{Binding IsActionEnabled}"
+                          PointerExited="ActionButton_OnPointerExited"
+                          ToolTip.Tip="在 Codex 中查看此任务" />
+                  <Button Grid.Row="2"
+                          Grid.Column="2"
+                          Classes="overlayQuiet"
                           Click="IgnoreButton_OnClick"
                           Content="忽略"
                           IsEnabled="{Binding IsActionEnabled}"
                           PointerExited="ActionButton_OnPointerExited" />
                   <Button Grid.Row="2"
-                          Grid.Column="2"
+                          Grid.Column="3"
                           Classes="overlayPrimary"
                           Click="ConfirmButton_OnClick"
                           Content="{Binding ActionText}"
@@ -337,7 +310,7 @@
       </ScrollViewer>
 
       <Border x:Name="IdleGrabber"
-              Grid.Row="4"
+              Grid.Row="3"
               Width="148"
               Height="4"
               Margin="0,9,0,0"
@@ -349,4 +322,39 @@
               ToolTip.Tip="鼠标移入可查看扫描状态" />
     </Grid>
   </Border>
+  <Border x:Name="AttentionBadge"
+          Width="28"
+          Height="28"
+          Margin="0,0,0,0"
+          HorizontalAlignment="Right"
+          VerticalAlignment="Top"
+          Background="#F08B62"
+          BorderBrush="#FFF9F3"
+          BorderThickness="2"
+          BoxShadow="0 5 15 0 #4A9B4D32"
+          CornerRadius="14"
+          IsHitTestVisible="False"
+          IsVisible="{Binding HasItems}"
+          RenderTransformOrigin="50%,50%">
+    <Canvas Width="16" Height="16">
+      <Path Width="12"
+            Height="12"
+            Canvas.Left="2"
+            Canvas.Top="1"
+            Data="M 2,9 L 3.2,7.5 L 3.2,5.3 C 3.2,2.8 4.5,1.4 6,1.4 C 7.5,1.4 8.8,2.8 8.8,5.3 L 8.8,7.5 L 10,9 Z"
+            Fill="#FFF9F3"
+            Stretch="Fill" />
+      <Ellipse Width="4"
+               Height="2.5"
+               Canvas.Left="6"
+               Canvas.Top="12"
+               Fill="#FFF9F3" />
+      <Ellipse Width="3"
+               Height="3"
+               Canvas.Left="11.5"
+               Canvas.Top="1"
+               Fill="#FFE49B" />
+    </Canvas>
+  </Border>
+  </Grid>
 </Window>

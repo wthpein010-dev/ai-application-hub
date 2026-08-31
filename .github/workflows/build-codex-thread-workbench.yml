@@ -4,11 +4,14 @@ on:
   workflow_dispatch:
   push:
     branches:
-      - codex/workbench-v2-overlay-public
+      - release/codex-confirmation-v233
     paths:
       - ".github/workflows/build-codex-thread-workbench.yml"
       - "build/codex-thread-workbench/**"
+      - "scripts/activate-codex-confirmation-bar-macos.mjs"
+      - "scripts/publish-codex-confirmation-bar-macos.sh"
       - "scripts/split-workbench-mac.mjs"
+      - "scripts/test-codex-confirmation-bar-macos-package.sh"
       - "tests/codex-thread-workbench-mac-download.test.mjs"
 
 permissions:
@@ -39,9 +42,11 @@ jobs:
       - name: Check out the build snapshot
         uses: actions/checkout@v4
         with:
-          ref: fb3be183efb7ec195f4ebee426f9fbe679d9c768
+          ref: ${{ github.sha }}
           sparse-checkout: |
             build/codex-thread-workbench
+            scripts/publish-codex-confirmation-bar-macos.sh
+            scripts/test-codex-confirmation-bar-macos-package.sh
           sparse-checkout-cone-mode: false
 
       - name: Set up .NET 8
@@ -64,9 +69,11 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          chmod +x scripts/publish-macos.sh scripts/test-macos-package.sh
-          scripts/publish-macos.sh "${{ matrix.runtime }}"
-          scripts/test-macos-package.sh \
+          chmod +x \
+            ../../scripts/publish-codex-confirmation-bar-macos.sh \
+            ../../scripts/test-codex-confirmation-bar-macos-package.sh
+          ../../scripts/publish-codex-confirmation-bar-macos.sh "${{ matrix.runtime }}"
+          ../../scripts/test-codex-confirmation-bar-macos-package.sh \
             "artifacts/release/CodexConfirmationBar-macOS-${{ matrix.architecture }}.app.zip" \
             "${{ matrix.runtime }}"
           shasum -a 256 \
@@ -91,7 +98,10 @@ jobs:
           fetch-depth: 0
           sparse-checkout: |
             .github/workflows/build-codex-thread-workbench.yml
+            app-20260706-restore-games.js
             build/codex-thread-workbench/src/CodexThreadWorkbench/CodexThreadWorkbench.csproj
+            docs/audits/2026-08-03-platform-compatibility.md
+            docs/audits/evidence/2026-08-07-macos-download-manifest.json
             package.json
             package-lock.json
             projects/codex-thread-workbench
@@ -126,6 +136,10 @@ jobs:
             artifacts/workbench-macos/CodexConfirmationBar-macOS-x64.app.zip \
             projects/codex-thread-workbench/download/mac \
             x64
+          node scripts/activate-codex-confirmation-bar-macos.mjs \
+            projects/codex-thread-workbench/download/mac \
+            docs/audits/evidence/2026-08-07-macos-download-manifest.json \
+            docs/audits/2026-08-03-platform-compatibility.md
 
       - name: Verify download, media, and manifest contracts
         run: |
@@ -133,21 +147,31 @@ jobs:
             tests/codex-thread-workbench-download.test.mjs \
             tests/codex-thread-workbench-mac-download.test.mjs \
             tests/codex-thread-workbench-video.test.mjs
+          node scripts/macos-download-manifest.mjs --check
+          node --test --test-name-pattern="compatibility matrix covers" \
+            tests/hub-platform-artifacts.test.mjs
 
       - name: Commit verified Mac packages to the publication branch
         shell: bash
         run: |
           set -euo pipefail
+          git fetch --no-tags origin "${GITHUB_REF_NAME}"
+          remote_tip="$(git rev-parse FETCH_HEAD)"
+          if [[ "${remote_tip}" != "${GITHUB_SHA}" ]]; then
+            echo "Publication branch moved from tested commit ${GITHUB_SHA} to ${remote_tip}; refusing to publish stale artifacts." >&2
+            exit 1
+          fi
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add \
             projects/codex-thread-workbench/download/mac/manifest-arm64.json \
             projects/codex-thread-workbench/download/mac/manifest-x64.json \
-            projects/codex-thread-workbench/download/mac/parts
+            projects/codex-thread-workbench/download/mac/parts \
+            docs/audits/evidence/2026-08-07-macos-download-manifest.json \
+            docs/audits/2026-08-03-platform-compatibility.md
           if git diff --cached --quiet; then
             echo "Verified package parts are already current."
             exit 0
           fi
           git commit -m "release: publish verified workbench macOS packages"
-          git pull --rebase origin "${GITHUB_REF_NAME}"
           git push origin "HEAD:${GITHUB_REF_NAME}"
