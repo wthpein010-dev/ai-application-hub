@@ -153,19 +153,20 @@ git add projects/loop-bgm-lab/core/suno-official-adapter.mjs projects/loop-bgm-l
 git commit -m "feat: add fail-closed Suno API readiness core"
 ```
 
-### Task 2: Harden portable secret rejection for future API evidence
+### Task 2: Lock the existing portable secret rejection at real boundaries
 
 **Files:**
-- Modify: `projects/loop-bgm-lab/core/portable-safety.mjs`
 - Modify: `tests/loop-bgm-lab-project-state-hardening.test.mjs`
 
 **Interfaces:**
 - Consumes: every value entering project validation, JSON import, Markdown export, or persisted state.
-- Produces: the existing portable-safety verdict, extended to reject normalized `authorization`, `proxyAuthorization`, `apiSecret`, `clientSecret`, `sessionSecret`, and credential-bearing header containers anywhere in nested objects or arrays.
+- Produces: regression evidence that the existing portable-safety verdict rejects normalized `authorization`, `proxyAuthorization`, `apiSecret`, `clientSecret`, `sessionSecret`, and credential-bearing header containers anywhere in nested objects or arrays.
 
-- [ ] **Step 1: Add a failing real-boundary test**
+**Baseline correction (2026-09-01):** read-only probes against plan base `a41c074` proved that all listed unsafe shapes already fail through `validateProject`, `exportProjectJson`, and `exportProjectMarkdown`, while the safe public metadata remains accepted. The behavior came from the earlier normalized classifier in `portable-safety.mjs`; therefore this task adds a characterization/regression test and must not manufacture a production change.
 
-Append one table-driven test that deep-clones `createDailyPlan()` and places each literal secret shape under `extensions.futureApi`. For every fixture, assert that `validateProject`, `exportProjectJson`, and `exportProjectMarkdown` reject it; retain a safe fixture `{ officialEvidenceUrl: "https://platform.suno.com/", contractVersion: "public-v1" }` that still validates.
+- [ ] **Step 1: Add a real-boundary regression test**
+
+Append one table-driven test that deep-clones `createDailyPlan()` and places each literal secret shape below `extensions.futureApi`, including an array layer. For every fixture, assert that `validateProject`, `exportProjectJson`, and `exportProjectMarkdown` reject it; retain safe public metadata that still passes all three boundaries.
 
 ```js
 for (const futureApi of [
@@ -173,18 +174,34 @@ for (const futureApi of [
   { "Proxy-Authorization": "Basic should-not-persist" },
   { api_secret: "should-not-persist" },
   { clientSecret: "should-not-persist" },
+  { sessionSecret: "should-not-persist" },
   { headers: { Authorization: "Bearer nested-secret" } },
 ]) {
-  const unsafe = { ...createDailyPlan(), extensions: { futureApi } };
+  const unsafe = { ...createDailyPlan(), extensions: { futureApi: { nested: [futureApi] } } };
   assert.throws(() => validateProject(unsafe), /secret|forbidden/i);
   assert.throws(() => exportProjectJson(unsafe), /secret|forbidden/i);
   assert.throws(() => exportProjectMarkdown(unsafe), /secret|forbidden/i);
 }
+
+const safe = {
+  ...createDailyPlan(),
+  extensions: {
+    futureApi: {
+      authenticationDocumented: false,
+      officialEvidenceUrl: "https://platform.suno.com/",
+      sourceHeadersVerifiedAt: "2026-09-01",
+      contractVersion: "public-v1",
+    },
+  },
+};
+assert.doesNotThrow(() => validateProject(safe));
+assert.doesNotThrow(() => exportProjectJson(safe));
+assert.doesNotThrow(() => exportProjectMarkdown(safe));
 ```
 
-The production mutation caught is removing any new normalized key from the dangerous-key classifier while leaving the older `apiKey|cookie|token` checks intact.
+The regression catches removing `authorization` or `secret` from the current normalized dangerous-key classifier while leaving the older `apiKey|cookie|token` checks intact.
 
-- [ ] **Step 2: Run the focused test and verify red**
+- [ ] **Step 2: Run the focused test and verify the established behavior**
 
 Run:
 
@@ -192,11 +209,11 @@ Run:
 node --test tests/loop-bgm-lab-project-state-hardening.test.mjs
 ```
 
-Expected: at least the `authorization` or `api_secret` fixture is accepted, causing an assertion failure for the intended missing protection.
+Expected: all tests pass. Record this as characterization evidence, not a RED phase, because there is no missing production behavior.
 
-- [ ] **Step 3: Extend the normalized dangerous-key classifier**
+- [ ] **Step 3: Confirm no production change was manufactured**
 
-Modify only the key-classification boundary in `portable-safety.mjs`. Keep ordinary public metadata such as `author`, `authenticationDocumented`, `sourceHeadersVerifiedAt`, and `contractVersion` valid. Do not add a blanket rejection for every key containing `auth` or `header`.
+Run `git diff --exit-code -- projects/loop-bgm-lab/core/portable-safety.mjs`. Expected: exit 0. If the new test unexpectedly fails, stop and report the contradiction instead of broadening the classifier or adding blanket `auth`/`header` rejection.
 
 - [ ] **Step 4: Run Task 2 tests and verify green**
 
@@ -211,8 +228,8 @@ Expected: all tests pass; the safe public evidence fixture remains accepted.
 - [ ] **Step 5: Commit Task 2**
 
 ```powershell
-git add projects/loop-bgm-lab/core/portable-safety.mjs tests/loop-bgm-lab-project-state-hardening.test.mjs
-git commit -m "security: block future API secrets from portable state"
+git add tests/loop-bgm-lab-project-state-hardening.test.mjs
+git commit -m "test: lock future API secret rejection"
 ```
 
 ### Task 3: Render the disabled readiness card and dated download notice
