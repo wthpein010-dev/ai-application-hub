@@ -115,6 +115,15 @@ test("API run URL evidence rejects normalized local and credential-bearing URLs"
     assert.throws(() => transitionApiRun(generating, "ready", { generatedUrl }), /public|local|forbidden|secret/i);
   }
   assert.throws(() => createApiRun({ ...createInput, error: "access_token=private" }), /forbidden|secret/i);
+
+  for (const jobId of [
+    "https://user:secret@platform.suno.com/jobs/1",
+    "http://platform.suno.com/jobs/1",
+    "ftp://platform.suno.com/jobs/1",
+  ]) {
+    assert.throws(() => createApiRun({ ...createInput, jobId }), /jobId/i);
+    assert.throws(() => transitionApiRun(generating, "ready", { jobId }), /jobId/i);
+  }
 });
 
 test("poll scheduling is deterministic, bounded, and honors a valid retry-after", () => {

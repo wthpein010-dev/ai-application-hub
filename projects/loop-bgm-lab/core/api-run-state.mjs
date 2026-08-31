@@ -164,7 +164,9 @@ function assertRunValue(value) {
   if (typeof value.id !== "string" || value.id.length === 0) throw new TypeError("API run id must be a non-empty string");
   if (typeof value.batchId !== "string" || value.batchId.length === 0) throw new TypeError("API run batchId must be a non-empty string");
   if (!API_RUN_STATUSES.includes(value.status)) throw new TypeError("API run status is invalid");
-  if (value.jobId !== null && typeof value.jobId !== "string") throw new TypeError("API run jobId must be a string or null");
+  if (value.jobId !== null && (typeof value.jobId !== "string" || !/^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$/.test(value.jobId))) {
+    throw new TypeError("API run jobId must be a safe opaque ID or null");
+  }
   if (typeof value.createdAt !== "string" || value.createdAt.length === 0) throw new TypeError("API run createdAt must be a string");
   if (typeof value.updatedAt !== "string" || value.updatedAt.length === 0) throw new TypeError("API run updatedAt must be a string");
   if (!Number.isInteger(value.attempts) || value.attempts < 0) throw new TypeError("API run attempts must be a non-negative integer");
