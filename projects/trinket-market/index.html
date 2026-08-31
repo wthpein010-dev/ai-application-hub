@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="description" content="浏览、排序和拖拽整理随身小物，查看全服获得数量，并在需要时开启参考估值。">
-  <meta name="color-scheme" content="dark">
+  <meta name="color-scheme" content="dark light">
   <link rel="icon" href="data:,">
   <title>随身小物交易市场</title>
   <link rel="stylesheet" href="../../assets/subpage-shell.css">
@@ -27,6 +27,15 @@
         <a href="#about">数据说明</a>
       </nav>
       <span class="live-state"><i aria-hidden="true"></i>目录已同步</span>
+      <label class="control-field theme-field header-theme">
+        <span>皮肤</span>
+        <select id="theme-select" aria-label="选择页面皮肤">
+          <option value="a" selected>A 暗夜藏品所</option>
+          <option value="b">B 深海蓝仓</option>
+          <option value="c">C 暖金陈列室</option>
+          <option value="d">D 白昼集市</option>
+        </select>
+      </label>
     </header>
 
     <main id="market-app">
@@ -72,14 +81,6 @@
             <span>参考估值</span>
           </label>
 
-          <label class="control-field theme-field">
-            <span>配色</span>
-            <select id="theme-select" aria-label="选择页面配色">
-              <option value="a" selected>A 暗夜藏品所</option>
-              <option value="b">B 深海蓝仓</option>
-              <option value="c">C 暖金陈列室</option>
-            </select>
-          </label>
         </div>
 
         <div class="editor-toolbar" aria-label="公开编辑工具">

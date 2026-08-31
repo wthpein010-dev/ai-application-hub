@@ -41,6 +41,26 @@ const browserExecutable = [
 const browser = await chromium.launch({ headless: true, executablePath: browserExecutable });
 const origin = `http://127.0.0.1:${server.address().port}`;
 
+function rgbChannels(value) {
+  const channels = value.match(/[\d.]+/g)?.slice(0, 3).map(Number);
+  assert.equal(channels?.length, 3, `expected an RGB color, received ${value}`);
+  return channels;
+}
+
+function relativeLuminance(value) {
+  const [red, green, blue] = rgbChannels(value).map((channel) => {
+    const normalized = channel / 255;
+    return normalized <= 0.04045 ? normalized / 12.92 : ((normalized + 0.055) / 1.055) ** 2.4;
+  });
+  return 0.2126 * red + 0.7152 * green + 0.0722 * blue;
+}
+
+function contrastRatio(foreground, background) {
+  const lighter = Math.max(relativeLuminance(foreground), relativeLuminance(background));
+  const darker = Math.min(relativeLuminance(foreground), relativeLuminance(background));
+  return (lighter + 0.05) / (darker + 0.05);
+}
+
 try {
   const layouts = [
     { width: 1440, height: 1000, columns: 9 },
@@ -87,6 +107,72 @@ try {
     assert.deepEqual(errors, []);
     await page.close();
   }
+
+  const themePage = await browser.newPage({ viewport: { width: 390, height: 844 } });
+  const themeErrors = [];
+  themePage.on("console", (message) => { if (message.type() === "error") themeErrors.push(`console: ${message.text()}`); });
+  themePage.on("pageerror", (error) => themeErrors.push(`page: ${error.message}`));
+  themePage.on("requestfailed", (request) => themeErrors.push(`request: ${request.url()} ${request.failure()?.errorText}`));
+  await themePage.addInitScript(() => {
+    if (sessionStorage.getItem("trinket-market-theme-test-ready")) return;
+    localStorage.clear();
+    sessionStorage.setItem("trinket-market-theme-test-ready", "true");
+  });
+  await themePage.goto(`${origin}/projects/trinket-market/index.html`, { waitUntil: "networkidle" });
+  await themePage.locator("body[data-ready='true']").waitFor();
+
+  const headerLayout = await themePage.evaluate(() => {
+    const header = document.querySelector(".market-header").getBoundingClientRect();
+    const brand = document.querySelector(".market-brand").getBoundingClientRect();
+    const theme = document.querySelector(".header-theme").getBoundingClientRect();
+    const navigation = document.querySelector(".market-nav").getBoundingClientRect();
+    return {
+      themeIsHeaderChild: document.querySelector(".header-theme")?.parentElement?.classList.contains("market-header"),
+      sameTopRow: Math.abs((brand.top + brand.height / 2) - (theme.top + theme.height / 2)) < 4,
+      rightInset: header.right - theme.right,
+      navigationBelow: navigation.top >= Math.max(brand.bottom, theme.bottom),
+      overflow: document.documentElement.scrollWidth > document.documentElement.clientWidth,
+    };
+  });
+  assert.equal(headerLayout.themeIsHeaderChild, true);
+  assert.equal(headerLayout.sameTopRow, true, JSON.stringify(headerLayout));
+  assert.ok(headerLayout.rightInset >= 0 && headerLayout.rightInset <= 18, `theme control right inset was ${headerLayout.rightInset}px`);
+  assert.equal(headerLayout.navigationBelow, true);
+  assert.equal(headerLayout.overflow, false);
+
+  await themePage.locator("#theme-select").selectOption("d");
+  await themePage.locator("body[data-theme='d']").waitFor();
+  const daylight = await themePage.evaluate(() => {
+    const colorProbe = document.createElement("span");
+    colorProbe.style.color = "var(--accent)";
+    colorProbe.style.backgroundColor = "var(--accent)";
+    document.body.append(colorProbe);
+    const accent = getComputedStyle(colorProbe).color;
+    colorProbe.style.color = "var(--accent-ink)";
+    const accentInk = getComputedStyle(colorProbe).color;
+    colorProbe.remove();
+    return {
+      colorScheme: getComputedStyle(document.body).colorScheme,
+      surface: getComputedStyle(document.querySelector(".market-stats")).backgroundColor,
+      text: getComputedStyle(document.querySelector(".market-stats dd")).color,
+      accent,
+      accentInk,
+      savedTheme: JSON.parse(localStorage.getItem("trinket-market-v1-preferences") || "null")?.theme,
+    };
+  });
+  assert.equal(daylight.colorScheme, "light");
+  assert.ok(relativeLuminance(daylight.surface) >= 0.8, `daylight surface was too dark: ${daylight.surface}`);
+  assert.ok(relativeLuminance(daylight.text) <= 0.2, `daylight text was too light: ${daylight.text}`);
+  assert.ok(contrastRatio(daylight.text, daylight.surface) >= 7, "daylight text contrast must remain AAA for normal text");
+  assert.ok(contrastRatio(daylight.accent, daylight.surface) >= 4.5, "daylight accent text must remain readable on light surfaces");
+  assert.ok(contrastRatio(daylight.accentInk, daylight.accent) >= 4.5, "daylight accent buttons must retain readable labels");
+  assert.equal(daylight.savedTheme, "d");
+
+  await themePage.reload({ waitUntil: "networkidle" });
+  await themePage.locator("body[data-ready='true'][data-theme='d']").waitFor();
+  assert.equal(await themePage.locator("#theme-select").inputValue(), "d");
+  assert.deepEqual(themeErrors, []);
+  await themePage.close();
 
   const page = await browser.newPage({ viewport: { width: 1024, height: 1000 } });
   const errors = [];

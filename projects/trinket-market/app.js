@@ -13,7 +13,7 @@ import {
 
 const STORAGE_KEY = "trinket-market-v1-preferences";
 const DEFAULT_THEME = "a";
-const THEMES = new Set(["a", "b", "c"]);
+const THEMES = new Set(["a", "b", "c", "d"]);
 const grid = document.querySelector("#item-grid");
 const searchInput = document.querySelector("#search-input");
 const sortMode = document.querySelector("#sort-mode");
