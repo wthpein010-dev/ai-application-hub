@@ -19,6 +19,20 @@ test("current public evidence keeps official API execution disabled at zero of s
   assert.equal(result.totalCount, 6);
   assert.equal(result.blockers.length, 6);
   assert.equal(result.verifiedAt, "2026-09-01");
+  assert.deepEqual(result.sources, ["https://platform.suno.com/"]);
+  assert.notEqual(result.sources, CURRENT_OFFICIAL_API_EVIDENCE.sources);
+});
+
+test("official readiness evidence requires a safe official source collection", () => {
+  const missingSources = {
+    checks: { ...CURRENT_OFFICIAL_API_EVIDENCE.checks },
+    verifiedAt: "2026-09-01",
+  };
+  assert.throws(() => evaluateOfficialApiReadiness(missingSources), /sources/i);
+  assert.throws(() => evaluateOfficialApiReadiness({
+    ...CURRENT_OFFICIAL_API_EVIDENCE,
+    sources: ["file:///private/evidence"],
+  }), /sources/i);
 });
 
 test("only complete official zero-cost evidence authorizes a future attempt descriptor", () => {
@@ -49,6 +63,37 @@ test("API runs follow the one-way async lifecycle without retaining secrets", ()
   assert.equal(generating.status, "generating");
   assert.throws(() => transitionApiRun(generating, "downloaded", {}), /Invalid API run status transition/);
   assert.throws(() => transitionApiRun(generating, "ready", { authorization: "Bearer secret" }), /forbidden/i);
+});
+
+test("API runs retain only safe public generation evidence", () => {
+  const generating = transitionApiRun(
+    createApiRun({ id: "api-run-3", batchId: "batch-3", createdAt: "2026-09-01T00:00:00.000Z" }),
+    "generating",
+    { updatedAt: "2026-09-01T00:00:01.000Z" },
+  );
+  const ready = transitionApiRun(generating, "ready", {
+    generatedUrl: "https://platform.suno.com/jobs/1",
+    updatedAt: "2026-09-01T00:00:02.000Z",
+  });
+  const downloading = transitionApiRun(ready, "downloading", { updatedAt: "2026-09-01T00:00:03.000Z" });
+  const downloaded = transitionApiRun(downloading, "downloaded", {
+    downloadSha256: "a".repeat(64),
+    errorCode: "none",
+    updatedAt: "2026-09-01T00:00:04.000Z",
+  });
+  assert.equal(ready.generatedUrl, "https://platform.suno.com/jobs/1");
+  assert.equal(downloaded.downloadSha256, "a".repeat(64));
+  assert.equal(downloaded.errorCode, "none");
+
+  for (const patch of [
+    { generatedUrl: "https://localhost/jobs/1" },
+    { generatedUrl: "blob:https://platform.suno.com/jobs/1" },
+    { generatedUrl: "file:///private/evidence" },
+    { generatedUrl: "C:\\private\\evidence" },
+    { authorization: "Bearer private" },
+  ]) {
+    assert.throws(() => transitionApiRun(generating, "ready", patch), /forbidden|local|path/i);
+  }
 });
 
 test("poll scheduling is deterministic, bounded, and honors a valid retry-after", () => {

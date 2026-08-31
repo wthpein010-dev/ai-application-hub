@@ -17,10 +17,18 @@ const RUN_FIELDS = Object.freeze([
   "updatedAt",
   "attempts",
   "nextPollAt",
+  "generatedUrl",
+  "downloadSha256",
+  "errorCode",
   "error",
 ]);
-const CREATE_FIELDS = Object.freeze(["id", "batchId", "createdAt", "updatedAt"]);
-const PATCH_FIELDS = Object.freeze(["jobId", "updatedAt", "attempts", "nextPollAt", "error"]);
+const CREATE_FIELDS = Object.freeze([
+  "id", "batchId", "jobId", "createdAt", "updatedAt", "attempts", "nextPollAt",
+  "generatedUrl", "downloadSha256", "errorCode", "error",
+]);
+const PATCH_FIELDS = Object.freeze([
+  "jobId", "updatedAt", "attempts", "nextPollAt", "generatedUrl", "downloadSha256", "errorCode", "error",
+]);
 const TRANSITIONS = Object.freeze({
   queued: Object.freeze(["generating", "failed", "cancelled"]),
   generating: Object.freeze(["ready", "failed", "cancelled"]),
@@ -50,10 +58,26 @@ function assertSafeKey(key) {
 }
 
 function isAbsolutePath(value) {
+  if (/^[a-z][a-z0-9+.-]*:\/\//i.test(value)) return false;
   return /[a-z]:[\\/]/i.test(value)
     || /\\\\[^\\\s]/.test(value)
     || /(?:^|[\s("'`=:])\/(?!\/)[^\s"'`]*/.test(value)
     || /\/\/[^/\s]/.test(value);
+}
+
+function assertNullablePublicHttpsUrl(value, field) {
+  if (value === null) return;
+  if (typeof value !== "string") throw new TypeError(`API run ${field} must be a string or null`);
+  let parsed;
+  try {
+    parsed = new URL(value);
+  } catch {
+    throw new TypeError(`API run ${field} must be a public HTTPS URL`);
+  }
+  if (parsed.protocol !== "https:" || parsed.username || parsed.password
+    || ["localhost", "127.0.0.1", "::1", "[::1]"].includes(parsed.hostname.toLowerCase())) {
+    throw new TypeError(`API run ${field} must be a public HTTPS URL`);
+  }
 }
 
 function isUnsafeUrl(value) {
@@ -97,6 +121,13 @@ function assertRunValue(value) {
   if (value.nextPollAt !== null && (!Number.isFinite(value.nextPollAt) || value.nextPollAt < 0)) {
     throw new TypeError("API run nextPollAt must be a non-negative finite number or null");
   }
+  assertNullablePublicHttpsUrl(value.generatedUrl, "generatedUrl");
+  if (value.downloadSha256 !== null && (typeof value.downloadSha256 !== "string" || !/^[a-fA-F0-9]{64}$/.test(value.downloadSha256))) {
+    throw new TypeError("API run downloadSha256 must be a SHA-256 hash or null");
+  }
+  if (value.errorCode !== null && (typeof value.errorCode !== "string" || !/^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$/.test(value.errorCode))) {
+    throw new TypeError("API run errorCode must be a safe code or null");
+  }
   if (value.error !== null && typeof value.error !== "string") throw new TypeError("API run error must be a string or null");
 }
 
@@ -112,17 +143,22 @@ export function createApiRun(input) {
   if (input.updatedAt !== undefined && (typeof input.updatedAt !== "string" || input.updatedAt.length === 0)) {
     throw new TypeError("API run updatedAt must be a string");
   }
-  return detachedRun({
+  const run = detachedRun({
     id: input.id,
     batchId: input.batchId,
     status: "queued",
     jobId: null,
     createdAt: input.createdAt,
     updatedAt: input.updatedAt ?? input.createdAt,
-    attempts: 0,
-    nextPollAt: null,
-    error: null,
+    attempts: input.attempts ?? 0,
+    nextPollAt: input.nextPollAt ?? null,
+    generatedUrl: input.generatedUrl ?? null,
+    downloadSha256: input.downloadSha256 ?? null,
+    errorCode: input.errorCode ?? null,
+    error: input.error ?? null,
   });
+  assertRunValue(run);
+  return run;
 }
 
 export function transitionApiRun(run, nextStatus, patch = {}) {

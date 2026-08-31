@@ -20,6 +20,7 @@ const EVIDENCE_BLOCKERS = Object.freeze({
 export const CURRENT_OFFICIAL_API_EVIDENCE = Object.freeze({
   checks: Object.freeze(Object.fromEntries(OFFICIAL_API_EVIDENCE_KEYS.map(key => [key, false]))),
   verifiedAt: "2026-09-01",
+  sources: Object.freeze(["https://platform.suno.com/"]),
 });
 
 function isPlainObject(value) {
@@ -35,7 +36,7 @@ function assertExactKeys(value, keys, label) {
 }
 
 function assertEvidence(evidence) {
-  assertExactKeys(evidence, ["checks", "verifiedAt"], "Official API evidence");
+  assertExactKeys(evidence, ["checks", "verifiedAt", "sources"], "Official API evidence");
   assertExactKeys(evidence.checks, OFFICIAL_API_EVIDENCE_KEYS, "Official API evidence checks");
   for (const key of OFFICIAL_API_EVIDENCE_KEYS) {
     if (typeof evidence.checks[key] !== "boolean") {
@@ -44,6 +45,22 @@ function assertEvidence(evidence) {
   }
   if (typeof evidence.verifiedAt !== "string" || !/^\d{4}-\d{2}-\d{2}$/.test(evidence.verifiedAt)) {
     throw new TypeError("Official API evidence verifiedAt must be a YYYY-MM-DD string");
+  }
+  if (!Array.isArray(evidence.sources) || evidence.sources.length === 0) {
+    throw new TypeError("Official API evidence sources must be a non-empty array");
+  }
+  for (const source of evidence.sources) {
+    if (typeof source !== "string") throw new TypeError("Official API evidence sources must contain strings");
+    let parsed;
+    try {
+      parsed = new URL(source);
+    } catch {
+      throw new TypeError("Official API evidence sources must contain official HTTPS URLs");
+    }
+    if (parsed.protocol !== "https:" || parsed.origin !== OFFICIAL_PLATFORM_ORIGIN
+      || parsed.username || parsed.password || parsed.search || parsed.hash) {
+      throw new TypeError("Official API evidence sources must contain official HTTPS URLs");
+    }
   }
 }
 
@@ -58,6 +75,7 @@ export function evaluateOfficialApiReadiness(evidence) {
     totalCount: OFFICIAL_API_EVIDENCE_KEYS.length,
     blockers: [...blockers],
     verifiedAt: evidence.verifiedAt,
+    sources: [...evidence.sources],
   };
 }
 
