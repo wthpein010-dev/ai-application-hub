@@ -7,6 +7,10 @@ import { dirname, extname, join, normalize, relative, resolve } from "node:path"
 import { fileURLToPath } from "node:url";
 import { chromium } from "playwright";
 import { compareCandidate, recommendNextVariant } from "../projects/loop-bgm-lab/core/candidate-score.mjs";
+import {
+  CURRENT_OFFICIAL_API_EVIDENCE,
+  evaluateOfficialApiReadiness,
+} from "../projects/loop-bgm-lab/core/suno-official-adapter.mjs";
 
 const root = dirname(dirname(fileURLToPath(import.meta.url)));
 const demoWav = join(root, "projects", "loop-bgm-lab", "assets", "demo-reference.wav");
@@ -186,6 +190,37 @@ async function assertPickerKeyboardFocus(page, precedingSelector, inputId) {
   assert.ok(focusStyle.outlineWidth >= 2, `${inputId} picker label outline is too thin: ${JSON.stringify(focusStyle)}`);
 }
 
+const expectedOfficialReadiness = evaluateOfficialApiReadiness(CURRENT_OFFICIAL_API_EVIDENCE);
+const expectedOfficialStatus = "0/6 项已证实，官方 API 自动生成未启用";
+const expectedDownloadNotice = "Suno 公告称消费者下载限制将于 2026-09-03 生效；这不是 API 下载契约，使用前请复核官方页面。";
+const forbiddenApiState = /platform\.suno\.com|officialApiEvidence|apiRun|credentials|authorization|apiSecret|apiKey|cookie|token|blob:|[A-Z]:\\|\/Users\//i;
+
+function assertNoOfficialApiState(value, label) {
+  assert.doesNotMatch(String(value), forbiddenApiState, `${label} must not retain official API readiness, credentials, or local paths`);
+}
+
+async function assertOfficialReadinessCard(page, { singleColumn }) {
+  assert.equal(await page.locator("#suno-api-status").count(), 1, "#suno-api-status must exist");
+  assert.equal(await page.locator("#suno-api-status").textContent(), expectedOfficialStatus);
+  assert.deepEqual(
+    await page.locator("#suno-api-checklist li").allTextContents(),
+    expectedOfficialReadiness.blockers.map(blocker => `未证实：${blocker}`),
+  );
+  assert.equal(await page.locator("#suno-api-action").isDisabled(), true);
+  assert.equal(await page.locator("#suno-platform-link").getAttribute("href"), "https://platform.suno.com/");
+  assert.equal(await page.locator("#daily-queue #suno-api-readiness").count(), 1);
+  assert.equal(await page.locator("#suno-api-readiness").isVisible(), true);
+  assert.equal(await page.locator("#suno-api-status").isVisible(), true);
+  assert.equal(await page.locator("#suno-api-readiness .api-download-notice").textContent(), expectedDownloadNotice);
+  assert.equal(await page.locator("main > section").count(), 6);
+  const layout = await page.locator("#suno-api-readiness").evaluate(card => ({
+    display: getComputedStyle(card).display,
+    tracks: getComputedStyle(card).gridTemplateColumns.split(" ").filter(Boolean).length,
+  }));
+  assert.notEqual(layout.display, "none");
+  assert.equal(layout.tracks === 1, singleColumn, `unexpected readiness grid at this viewport: ${JSON.stringify(layout)}`);
+}
+
 async function addLicense(page, { suffix, license = "CC0", hash = expectedWavSha256 }) {
   await page.locator("#license-source").selectOption("Freesound");
   await page.locator("#license-url").fill(`https://freesound.org/s/${suffix}/`);
@@ -214,6 +249,8 @@ try {
   await page.locator("body[data-ready='true']").waitFor();
 
   assert.equal(await page.title(), "循环乐工房");
+  await assertOfficialReadinessCard(page, { singleColumn: false });
+  assertNoOfficialApiState(await page.evaluate(() => localStorage.getItem("loop-bgm-lab-v1")), "initial localStorage");
   assert.equal(await page.locator("main > section").count(), 6);
   assert.equal(await page.locator(".batch-card").count(), 5);
   assert.deepEqual(await page.locator(".batch-card").evaluateAll(cards => cards.map(card => card.dataset.axis)), [
@@ -573,6 +610,7 @@ try {
   assert.match(exportedText, /参考节奏 A/);
   assert.match(exportedText, /欢乐版本 A/);
   assert.doesNotMatch(exportedText, /demo-reference\.wav|different-reference\.wav|blob:|audioBytes|apiKey|cookie|token|[A-Z]:\\|\/Users\//i);
+  assertNoOfficialApiState(exportedText, "JSON export");
 
   const markdownDownloadPromise = page.waitForEvent("download");
   await page.locator("#export-markdown").click();
@@ -587,9 +625,12 @@ try {
   assert.match(markdown, /拒绝本轮/);
   assert.match(markdown, /"generationConditions"/);
   assert.doesNotMatch(markdown, /demo-reference\.wav|blob:|audioBytes|apiKey|cookie|token|[A-Z]:\\|\/Users\//i);
+  assertNoOfficialApiState(markdown, "Markdown export");
+  assertNoOfficialApiState(await page.evaluate(() => localStorage.getItem("loop-bgm-lab-v1")), "localStorage after export");
 
   await page.reload({ waitUntil: "networkidle" });
   await page.locator("body[data-ready='true']").waitFor();
+  await assertOfficialReadinessCard(page, { singleColumn: false });
   assert.equal(await page.locator(".batch-card[data-axis='baseline'] .batch-status").inputValue(), "planned");
   assert.equal(await page.locator("#license-list .license-entry").count(), 1);
   assert.equal(await page.locator("#reference-list [data-analysis-state='ready']").count(), 1);
@@ -691,6 +732,7 @@ try {
     const responsiveResponse = await responsivePage.goto(`${origin}/projects/loop-bgm-lab/index.html`, { waitUntil: "networkidle" });
     assert.equal(responsiveResponse?.status(), 200);
     await responsivePage.locator("body[data-ready='true']").waitFor();
+    await assertOfficialReadinessCard(responsivePage, { singleColumn: viewport.width <= 760 });
     assert.equal(await responsivePage.locator("main > section").count(), 6);
     await assertNoOverflow(responsivePage, `${viewport.width}x${viewport.height}`);
     const motion = await responsivePage.locator(".primary-button").first().evaluate(element => {

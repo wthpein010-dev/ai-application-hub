@@ -115,6 +115,20 @@
       <div class="queue-summary" aria-label="计划额度">
         <strong>50</strong><span>计划 credits</span><strong>5</strong><span>单变量批次</span>
       </div>
+      <aside id="suno-api-readiness" class="api-readiness-card" aria-labelledby="suno-api-title">
+        <div>
+          <p class="eyebrow">官方 API 准备度</p>
+          <h3 id="suno-api-title">自动生成安全门禁</h3>
+          <p id="suno-api-status" role="status"></p>
+          <p class="api-verified-at">核验日：<time datetime="2026-09-01">2026-09-01</time></p>
+        </div>
+        <ul id="suno-api-checklist" class="api-readiness-list"></ul>
+        <div class="button-row">
+          <button id="suno-api-action" type="button" disabled>官方 API 尚不可用</button>
+          <a id="suno-platform-link" href="https://platform.suno.com/" target="_blank" rel="noopener noreferrer">查看 Suno Platform</a>
+        </div>
+        <p class="api-download-notice">Suno 公告称消费者下载限制将于 <time datetime="2026-09-03">2026-09-03</time> 生效；这不是 API 下载契约，使用前请复核<a href="https://help.suno.com/en/articles/13614785" target="_blank" rel="noopener noreferrer">官方页面</a>。</p>
+      </aside>
       <div id="batch-list" class="batch-list" aria-live="polite"></div>
       <p class="fine-print">复制和打开页面都是明确的用户操作；打开 Suno Create 绝不会自动把批次标为 submitted。</p>
     </section>
