@@ -2,12 +2,17 @@ import assert from "node:assert/strict";
 import { execFile } from "node:child_process";
 import { createHash } from "node:crypto";
 import { existsSync, readFileSync } from "node:fs";
-import { mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
+import { mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import test from "node:test";
 import { promisify } from "node:util";
-import { fileURLToPath } from "node:url";
+import { fileURLToPath, pathToFileURL } from "node:url";
+
+import {
+  extractValidatedZip,
+  readZipEntries,
+} from "./helpers/zip-central-directory.mjs";
 
 const root = dirname(dirname(fileURLToPath(import.meta.url)));
 const downloadRoot = join(
@@ -25,6 +30,39 @@ const coreUrl = new URL(
 const sha256 = (bytes) =>
   createHash("sha256").update(bytes).digest("hex").toUpperCase();
 const execFileAsync = promisify(execFile);
+const activator = join(
+  root,
+  "scripts",
+  "activate-codex-confirmation-bar-macos.mjs",
+);
+
+function plistString(xml, key) {
+  const escaped = key.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  const match = new RegExp(
+    `<key>\\s*${escaped}\\s*</key>\\s*<string>([^<]*)</string>`,
+  ).exec(xml);
+  assert.ok(match, `Info.plist should contain ${key}`);
+  return match[1].trim();
+}
+
+async function reconstructPublishedArchive(architecture, destination) {
+  const manifest = JSON.parse(
+    await readFile(join(macRoot, `manifest-${architecture}.json`), "utf8"),
+  );
+  const chunks = await Promise.all(
+    manifest.parts.map(async (part) => {
+      const bytes = await readFile(join(macRoot, ...part.path.split("/")));
+      assert.equal(bytes.byteLength, part.size, `${part.path} byte count`);
+      assert.equal(sha256(bytes), part.sha256, `${part.path} SHA-256`);
+      return bytes;
+    }),
+  );
+  const archive = Buffer.concat(chunks);
+  assert.equal(archive.byteLength, manifest.totalSize);
+  assert.equal(sha256(archive), manifest.sha256);
+  await writeFile(destination, archive);
+  return manifest;
+}
 
 test("Mac download page offers Apple silicon and Intel packages", () => {
   const html = readFileSync(join(macRoot, "index.html"), "utf8");
@@ -69,8 +107,18 @@ test("Hub workflow builds and verifies both Mac architectures before publishing"
   assert.match(workflow, /needs:\s*build-macos/);
   assert.match(workflow, /manifest-arm64\.json/);
   assert.match(workflow, /manifest-x64\.json/);
-  assert.match(workflow, /git pull --rebase origin/);
+  assert.match(workflow, /activate-codex-confirmation-bar-macos\.mjs/);
+  assert.match(workflow, /git fetch --no-tags origin "\$\{GITHUB_REF_NAME\}"/);
+  assert.match(workflow, /remote_tip="\$\(git rev-parse FETCH_HEAD\)"/);
+  assert.match(workflow, /"\$\{remote_tip\}" != "\$\{GITHUB_SHA\}"/);
+  assert.match(workflow, /refusing to publish stale artifacts/i);
+  assert.doesNotMatch(workflow, /git pull --rebase/);
   assert.doesNotMatch(workflow, /git push[^\n]+--force/);
+  assert.ok(
+    workflow.indexOf('remote_tip="$(git rev-parse FETCH_HEAD)"')
+      < workflow.indexOf("git commit -m"),
+    "the remote tip gate must run before the bot creates its publication commit",
+  );
   assert.equal(
     existsSync(
       join(
@@ -84,6 +132,138 @@ test("Hub workflow builds and verifies both Mac architectures before publishing"
     ),
     true,
   );
+});
+
+test("Mac manifests are either both absent or both publish verified v2.3.3 bundles", async (context) => {
+  const architectures = ["arm64", "x64"];
+  const present = architectures.map((architecture) =>
+    existsSync(join(macRoot, `manifest-${architecture}.json`))
+  );
+  assert.equal(
+    new Set(present).size,
+    1,
+    "the two architecture manifests must be published atomically",
+  );
+
+  if (!present[0]) {
+    for (const architecture of architectures) {
+      assert.equal(
+        existsSync(join(macRoot, "parts", architecture)),
+        false,
+        `stale ${architecture} parts must not remain while its manifest is unavailable`,
+      );
+    }
+    context.diagnostic("Mac downloads are fail-closed until the real runners publish both architectures.");
+    return;
+  }
+
+  const temporaryRoot = await mkdtemp(join(tmpdir(), "confirmation-bar-mac-release-"));
+  try {
+    for (const architecture of architectures) {
+      const archivePath = join(temporaryRoot, `${architecture}.app.zip`);
+      const extractionRoot = join(temporaryRoot, architecture);
+      const manifest = await reconstructPublishedArchive(architecture, archivePath);
+      assert.equal(
+        manifest.fileName,
+        `CodexConfirmationBar-macOS-${architecture}.app.zip`,
+      );
+      extractValidatedZip(
+        archivePath,
+        readZipEntries(archivePath),
+        extractionRoot,
+        { maxEntryBytes: 256 * 1024 * 1024, maxTotalBytes: 512 * 1024 * 1024 },
+      );
+      const plist = await readFile(
+        join(
+          extractionRoot,
+          "CodexConfirmationBar.app",
+          "Contents",
+          "Info.plist",
+        ),
+        "utf8",
+      );
+      assert.equal(plistString(plist, "CFBundleShortVersionString"), "2.3.3");
+      assert.equal(plistString(plist, "CFBundleVersion"), "2.3.3");
+      assert.equal(
+        plistString(plist, "CFBundleIdentifier"),
+        "dev.wthpein010.codex-confirmation-bar",
+      );
+    }
+  } finally {
+    await rm(temporaryRoot, { recursive: true, force: true });
+  }
+});
+
+test("Mac activation updates the audit manifest from both verified architecture manifests", async () => {
+  const temporaryRoot = await mkdtemp(join(tmpdir(), "confirmation-bar-mac-activation-"));
+  const downloadDirectory = join(temporaryRoot, "download", "mac");
+  const auditPath = join(temporaryRoot, "audit.json");
+  const matrixPath = join(temporaryRoot, "matrix.md");
+  const matrixRow = "| `codex-thread-workbench` | old row |";
+  const fixtures = {
+    arm64: Buffer.from("verified arm64 confirmation bar"),
+    x64: Buffer.from("verified x64 confirmation bar"),
+  };
+
+  try {
+    for (const [architecture, bytes] of Object.entries(fixtures)) {
+      const partDirectory = join(downloadDirectory, "parts", architecture);
+      await mkdir(partDirectory, { recursive: true });
+      await writeFile(join(partDirectory, "part-000.bin"), bytes);
+      await writeFile(
+        join(downloadDirectory, `manifest-${architecture}.json`),
+        `${JSON.stringify({
+          version: 1,
+          fileName: `CodexConfirmationBar-macOS-${architecture}.app.zip`,
+          totalSize: bytes.byteLength,
+          chunkSize: 8_388_608,
+          sha256: sha256(bytes),
+          parts: [{
+            index: 0,
+            path: `parts/${architecture}/part-000.bin`,
+            size: bytes.byteLength,
+            sha256: sha256(bytes),
+          }],
+        }, null, 2)}\n`,
+      );
+    }
+    await writeFile(
+      auditPath,
+      `${JSON.stringify({
+        version: 1,
+        downloads: [{
+          id: "codex-thread-workbench",
+          name: "stale",
+          kind: "native",
+          catalogUrl: "https://example.test/stale/",
+          artifacts: {},
+        }],
+      }, null, 2)}\n`,
+    );
+    await writeFile(matrixPath, `# Matrix\n\n${matrixRow}\n`);
+
+    const { activateMacRelease } = await import(pathToFileURL(activator));
+    const record = await activateMacRelease({
+      downloadDirectory,
+      auditPath,
+      matrixPath,
+    });
+    const audit = JSON.parse(await readFile(auditPath, "utf8"));
+    const matrix = await readFile(matrixPath, "utf8");
+
+    assert.deepEqual(audit.downloads.find(({ id }) => id === record.id), record);
+    assert.equal(record.name, "Codex 待确认悬浮助手");
+    assert.equal(record.artifacts.arm64.bytes, fixtures.arm64.byteLength);
+    assert.equal(record.artifacts.arm64.sha256, sha256(fixtures.arm64));
+    assert.equal(record.artifacts.x64.bytes, fixtures.x64.byteLength);
+    assert.equal(record.artifacts.x64.sha256, sha256(fixtures.x64));
+    assert.match(matrix, /codex-thread-workbench[^\n]+arm64\/x64/u);
+    assert.match(matrix, /manifest-arm64\.json/u);
+    assert.match(matrix, /manifest-x64\.json/u);
+    assert.doesNotMatch(matrix, /\| `codex-thread-workbench` \| old row \|/u);
+  } finally {
+    await rm(temporaryRoot, { recursive: true, force: true });
+  }
 });
 
 test("shared downloader accepts Mac app ZIP manifests and validates every part", async () => {

@@ -270,7 +270,17 @@ test("error state is fail-closed and keyboard and mobile controls stay usable", 
   }
 });
 
-test("Mac download page accepts both published Confirmation Bar manifests", async () => {
+test("Mac download page stays fail-closed until both manifests are published", async () => {
+  const manifestsPresent = ["arm64", "x64"].every((architecture) =>
+    existsSync(resolve(
+      root,
+      "projects",
+      "codex-thread-workbench",
+      "download",
+      "mac",
+      `manifest-${architecture}.json`,
+    ))
+  );
   const server = createStaticServer();
   const baseUrl = await startServer(server);
   const browser = await launchBrowser();
@@ -280,6 +290,18 @@ test("Mac download page accepts both published Confirmation Bar manifests", asyn
     await page.goto(`${baseUrl}/projects/codex-thread-workbench/download/mac/index.html`);
 
     const downloadButton = page.locator('[data-role="download-button"]');
+    if (!manifestsPresent) {
+      await page.waitForFunction(() =>
+        document.querySelector('[data-role="status"]')?.textContent?.includes("暂时不可用"),
+        undefined,
+        { timeout: 1_500 },
+      );
+      assert.equal(await downloadButton.isDisabled(), true);
+      assert.equal(await page.locator('[data-role="error"]').isVisible(), true);
+      assert.equal(await page.locator('[data-role="retry-button"]').isVisible(), true);
+      return;
+    }
+
     await page.waitForFunction(() =>
       document.querySelector('[data-role="download-button"]')?.disabled === false,
       undefined,
