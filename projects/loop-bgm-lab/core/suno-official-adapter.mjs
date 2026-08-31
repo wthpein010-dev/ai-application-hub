@@ -80,20 +80,26 @@ export function evaluateOfficialApiReadiness(evidence) {
 }
 
 function isZeroCostPricing(pricing) {
-  return isPlainObject(pricing)
+  if (!isPlainObject(pricing)) return false;
+  const keys = Object.keys(pricing);
+  return keys.length === 3
+    && keys.every(key => ["kind", "currency", "maximumAmount"].includes(key))
     && pricing.kind === "free"
     && typeof pricing.currency === "string"
-    && pricing.currency.length > 0
+    && /^[A-Z]{3}$/.test(pricing.currency)
     && typeof pricing.maximumAmount === "number"
     && Number.isFinite(pricing.maximumAmount)
     && pricing.maximumAmount === 0;
 }
 
 function hasDocumentedContract(contract) {
-  return isPlainObject(contract)
+  if (!isPlainObject(contract)) return false;
+  const keys = Object.keys(contract);
+  return keys.length === 2
+    && keys.every(key => ["source", "version"].includes(key))
     && contract.source === "official-documentation"
     && typeof contract.version === "string"
-    && contract.version.trim().length > 0;
+    && /^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$/.test(contract.version);
 }
 
 export function authorizeOfficialApiAttempt(input) {

@@ -84,15 +84,66 @@ function normalizedUrlPart(value) {
   return decoded.normalize("NFKC").toLowerCase().replace(/[^a-z0-9]+/g, "");
 }
 
+function isNonGlobalIpv4(parts) {
+  const [first, second, third] = parts;
+  return first === 0
+    || first === 10
+    || (first === 100 && second >= 64 && second <= 127)
+    || first === 127
+    || (first === 169 && second === 254)
+    || (first === 172 && second >= 16 && second <= 31)
+    || (first === 192 && (second === 0 || second === 168 || (second === 0 && third === 2)))
+    || (first === 198 && (second === 18 || second === 19 || second === 51 && third === 100))
+    || (first === 203 && second === 0 && third === 113)
+    || first >= 224;
+}
+
+function parseIpv4(hostname) {
+  const parts = hostname.split(".");
+  if (parts.length !== 4 || parts.some(part => !/^\d{1,3}$/.test(part))) return null;
+  const parsed = parts.map(Number);
+  return parsed.every(part => part >= 0 && part <= 255) ? parsed : null;
+}
+
+function parseIpv6(hostname) {
+  const doubleColon = hostname.indexOf("::");
+  if (doubleColon !== hostname.lastIndexOf("::")) return null;
+  const left = doubleColon === -1 ? hostname : hostname.slice(0, doubleColon);
+  const right = doubleColon === -1 ? "" : hostname.slice(doubleColon + 2);
+  const leftParts = left ? left.split(":") : [];
+  const rightParts = right ? right.split(":") : [];
+  if (leftParts.concat(rightParts).some(part => !/^[0-9a-f]{1,4}$/i.test(part))) return null;
+  if (doubleColon === -1 && leftParts.length !== 8) return null;
+  if (doubleColon !== -1 && leftParts.length + rightParts.length >= 8) return null;
+  return [...leftParts, ...Array(8 - leftParts.length - rightParts.length).fill("0"), ...rightParts]
+    .map(part => Number.parseInt(part, 16));
+}
+
+function isNonGlobalIpv6(groups) {
+  if (groups.every(group => group === 0)) return true;
+  if (groups.slice(0, 7).every(group => group === 0) && groups[7] === 1) return true;
+  if ((groups[0] & 0xffc0) === 0xfe80) return true;
+  if ((groups[0] & 0xfe00) === 0xfc00) return true;
+  if ((groups[0] & 0xff00) === 0xff00) return true;
+  if (groups[0] === 0x2001 && groups[1] === 0x0db8) return true;
+  if (groups.slice(0, 5).every(group => group === 0) && groups[5] === 0xffff) {
+    return isNonGlobalIpv4([groups[6] >> 8, groups[6] & 0xff, groups[7] >> 8, groups[7] & 0xff]);
+  }
+  return false;
+}
+
+function isNonGlobalIpLiteral(hostname) {
+  const ipv4 = parseIpv4(hostname);
+  if (ipv4) return isNonGlobalIpv4(ipv4);
+  const ipv6 = parseIpv6(hostname);
+  return ipv6 ? isNonGlobalIpv6(ipv6) : false;
+}
+
 function isLocalHostname(hostname) {
   const normalized = hostname.toLowerCase().replace(/\.+$/, "").replace(/^\[|\]$/g, "");
-  const mappedIpv4 = normalized.match(/^(?:::ffff:|0:0:0:0:0:ffff:)([0-9a-f]{1,4}):([0-9a-f]{1,4})$/i);
   return normalized === "localhost"
     || normalized.endsWith(".localhost")
-    || normalized === "::1"
-    || normalized === "::ffff:127.0.0.1"
-    || (mappedIpv4 !== null && (Number.parseInt(mappedIpv4[1], 16) >> 8) === 127)
-    || /^127(?:\.\d{1,3}){0,3}$/.test(normalized);
+    || isNonGlobalIpLiteral(normalized);
 }
 
 function hasCredentialUrlParameter(parsed) {

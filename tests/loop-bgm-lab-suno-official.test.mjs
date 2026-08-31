@@ -54,6 +54,17 @@ test("only complete official zero-cost evidence authorizes a future attempt desc
   assert.equal(authorizeOfficialApiAttempt({ ...common, origin: "https://example.com" }).allowed, false);
   assert.equal(authorizeOfficialApiAttempt({ ...common, pricing: { kind: "unknown" } }).allowed, false);
   assert.equal(authorizeOfficialApiAttempt({ ...common, pricing: { kind: "paid", currency: "USD", maximumAmount: 1 } }).allowed, false);
+  for (const input of [
+    { ...common, pricing: { ...common.pricing, currency: "Bearer synthetic-private" } },
+    { ...common, contract: { ...common.contract, version: "token=synthetic-private" } },
+    { ...common, contract: { ...common.contract, version: "C:\\private\\contract" } },
+    { ...common, contract: { ...common.contract, authorization: "Bearer synthetic-private" } },
+  ]) {
+    const result = authorizeOfficialApiAttempt(input);
+    assert.equal(result.allowed, false);
+    assert.equal(result.contractVersion, null);
+    assert.equal(result.currency, null);
+  }
 });
 
 test("API runs follow the one-way async lifecycle without retaining secrets", () => {
@@ -145,6 +156,42 @@ test("API runs reject normalized loopback and URL credentials in generic fields"
   for (const field of ["id", "batchId", "error"]) {
     assert.throws(() => createApiRun({ ...createInput, [field]: credentialUrl }), /userinfo|credential|opaque|forbidden|secret/i);
     assert.throws(() => transitionApiRun({ ...generating, [field]: credentialUrl }, "ready", {}), /userinfo|credential|opaque|forbidden|secret/i);
+  }
+});
+
+test("API runs reject non-global IP-literal generation URLs without DNS", () => {
+  const createInput = {
+    id: "api-run-6",
+    batchId: "batch-6",
+    createdAt: "2026-09-01T00:00:00.000Z",
+  };
+  const generating = transitionApiRun(
+    createApiRun(createInput),
+    "generating",
+    { updatedAt: "2026-09-01T00:00:01.000Z" },
+  );
+  for (const generatedUrl of [
+    "https://0.0.0.0/jobs/1",
+    "https://10.0.0.1/jobs/1",
+    "https://100.64.0.1/jobs/1",
+    "https://127.0.0.1/jobs/1",
+    "https://169.254.169.254/jobs/1",
+    "https://172.16.0.1/jobs/1",
+    "https://192.0.2.1/jobs/1",
+    "https://192.168.0.1/jobs/1",
+    "https://198.18.0.1/jobs/1",
+    "https://224.0.0.1/jobs/1",
+    "https://240.0.0.1/jobs/1",
+    "https://[::]/jobs/1",
+    "https://[::1]/jobs/1",
+    "https://[fe80::1]/jobs/1",
+    "https://[fc00::1]/jobs/1",
+    "https://[ff00::1]/jobs/1",
+    "https://[2001:db8::1]/jobs/1",
+    "https://[::ffff:192.168.0.1]/jobs/1",
+  ]) {
+    assert.throws(() => createApiRun({ ...createInput, generatedUrl }), /public|local|global/i);
+    assert.throws(() => transitionApiRun(generating, "ready", { generatedUrl }), /public|local|global/i);
   }
 });
 
