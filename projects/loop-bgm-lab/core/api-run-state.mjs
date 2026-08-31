@@ -46,6 +46,24 @@ const URL_CREDENTIAL_PARTS = Object.freeze([
 const BASE_POLL_DELAY_MS = 2_000;
 const MAX_POLL_DELAY_MS = 30_000;
 const OPAQUE_ID = /^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$/;
+// IANA IPv4/IPv6 Special-Purpose Address registries, last verified 2025-10-09.
+// These are non-globally-reachable or terminated blocks; more-specific global
+// exceptions are checked first. This is literal parsing only and never performs DNS.
+const IANA_IPV4_GLOBAL_EXCEPTIONS = Object.freeze(["192.0.0.9/32", "192.0.0.10/32"]);
+const IANA_IPV4_NON_GLOBAL_CIDRS = Object.freeze([
+  "0.0.0.0/8", "10.0.0.0/8", "100.64.0.0/10", "127.0.0.0/8", "169.254.0.0/16",
+  "172.16.0.0/12", "192.0.0.0/24", "192.0.2.0/24", "192.88.99.0/24", "192.168.0.0/16",
+  "198.18.0.0/15", "198.51.100.0/24", "203.0.113.0/24", "224.0.0.0/4", "240.0.0.0/4",
+]);
+const IANA_IPV6_GLOBAL_EXCEPTIONS = Object.freeze([
+  "2001:1::1/128", "2001:1::2/128", "2001:1::3/128", "2001:3::/32",
+  "2001:4:112::/48", "2001:20::/28", "2001:30::/28",
+]);
+const IANA_IPV6_NON_GLOBAL_CIDRS = Object.freeze([
+  "::/128", "::1/128", "64:ff9b:1::/48", "100::/64", "100:0:0:1::/64",
+  "2001::/23", "2001:2::/48", "2001:10::/28", "2001:db8::/32", "2002::/16",
+  "3fff::/20", "5f00::/16", "fc00::/7", "fe80::/10", "ff00::/8",
+]);
 
 function isPlainObject(value) {
   return value !== null && typeof value === "object" && !Array.isArray(value);
@@ -84,20 +102,6 @@ function normalizedUrlPart(value) {
   return decoded.normalize("NFKC").toLowerCase().replace(/[^a-z0-9]+/g, "");
 }
 
-function isNonGlobalIpv4(parts) {
-  const [first, second, third] = parts;
-  return first === 0
-    || first === 10
-    || (first === 100 && second >= 64 && second <= 127)
-    || first === 127
-    || (first === 169 && second === 254)
-    || (first === 172 && second >= 16 && second <= 31)
-    || (first === 192 && (second === 0 || second === 168 || (second === 0 && third === 2)))
-    || (first === 198 && (second === 18 || second === 19 || second === 51 && third === 100))
-    || (first === 203 && second === 0 && third === 113)
-    || first >= 224;
-}
-
 function parseIpv4(hostname) {
   const parts = hostname.split(".");
   if (parts.length !== 4 || parts.some(part => !/^\d{1,3}$/.test(part))) return null;
@@ -119,17 +123,55 @@ function parseIpv6(hostname) {
     .map(part => Number.parseInt(part, 16));
 }
 
+function matchesIpv4Cidr(parts, cidr) {
+  const [network, prefixText] = cidr.split("/");
+  const networkParts = parseIpv4(network);
+  const prefix = Number(prefixText);
+  if (!networkParts || !Number.isInteger(prefix) || prefix < 0 || prefix > 32) return false;
+  const fullBytes = Math.floor(prefix / 8);
+  const remainder = prefix % 8;
+  for (let index = 0; index < fullBytes; index += 1) {
+    if (parts[index] !== networkParts[index]) return false;
+  }
+  if (remainder === 0) return true;
+  const mask = (0xff << (8 - remainder)) & 0xff;
+  return (parts[fullBytes] & mask) === (networkParts[fullBytes] & mask);
+}
+
+function matchesIpv6Cidr(groups, cidr) {
+  const [network, prefixText] = cidr.split("/");
+  const networkGroups = parseIpv6(network);
+  const prefix = Number(prefixText);
+  if (!networkGroups || !Number.isInteger(prefix) || prefix < 0 || prefix > 128) return false;
+  const fullGroups = Math.floor(prefix / 16);
+  const remainder = prefix % 16;
+  for (let index = 0; index < fullGroups; index += 1) {
+    if (groups[index] !== networkGroups[index]) return false;
+  }
+  if (remainder === 0) return true;
+  const mask = (0xffff << (16 - remainder)) & 0xffff;
+  return (groups[fullGroups] & mask) === (networkGroups[fullGroups] & mask);
+}
+
+function matchesAnyIpv4Cidr(parts, cidrs) {
+  return cidrs.some(cidr => matchesIpv4Cidr(parts, cidr));
+}
+
+function matchesAnyIpv6Cidr(groups, cidrs) {
+  return cidrs.some(cidr => matchesIpv6Cidr(groups, cidr));
+}
+
+function isNonGlobalIpv4(parts) {
+  if (matchesAnyIpv4Cidr(parts, IANA_IPV4_GLOBAL_EXCEPTIONS)) return false;
+  return matchesAnyIpv4Cidr(parts, IANA_IPV4_NON_GLOBAL_CIDRS);
+}
+
 function isNonGlobalIpv6(groups) {
-  if (groups.every(group => group === 0)) return true;
-  if (groups.slice(0, 7).every(group => group === 0) && groups[7] === 1) return true;
-  if ((groups[0] & 0xffc0) === 0xfe80) return true;
-  if ((groups[0] & 0xfe00) === 0xfc00) return true;
-  if ((groups[0] & 0xff00) === 0xff00) return true;
-  if (groups[0] === 0x2001 && groups[1] === 0x0db8) return true;
   if (groups.slice(0, 5).every(group => group === 0) && groups[5] === 0xffff) {
     return isNonGlobalIpv4([groups[6] >> 8, groups[6] & 0xff, groups[7] >> 8, groups[7] & 0xff]);
   }
-  return false;
+  if (matchesAnyIpv6Cidr(groups, IANA_IPV6_GLOBAL_EXCEPTIONS)) return false;
+  return matchesAnyIpv6Cidr(groups, IANA_IPV6_NON_GLOBAL_CIDRS);
 }
 
 function isNonGlobalIpLiteral(hostname) {

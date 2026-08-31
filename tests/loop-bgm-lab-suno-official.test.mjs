@@ -195,6 +195,35 @@ test("API runs reject non-global IP-literal generation URLs without DNS", () => 
   }
 });
 
+test("API runs apply IANA special-purpose IP policy without blocking global literals", () => {
+  const createInput = {
+    id: "api-run-7",
+    batchId: "batch-7",
+    createdAt: "2026-09-01T00:00:00.000Z",
+  };
+  const generating = transitionApiRun(
+    createApiRun(createInput),
+    "generating",
+    { updatedAt: "2026-09-01T00:00:01.000Z" },
+  );
+  for (const generatedUrl of [
+    "https://192.88.99.1/jobs/1",
+    "https://[100::1]/jobs/1",
+    "https://[2001:2::1]/jobs/1",
+    "https://[3fff::1]/jobs/1",
+  ]) {
+    assert.throws(() => createApiRun({ ...createInput, generatedUrl }), /local|public|global/i);
+    assert.throws(() => transitionApiRun(generating, "ready", { generatedUrl }), /local|public|global/i);
+  }
+  for (const generatedUrl of [
+    "https://8.8.8.8/jobs/1",
+    "https://[2606:4700:4700::1111]/jobs/1",
+  ]) {
+    assert.doesNotThrow(() => createApiRun({ ...createInput, generatedUrl }));
+    assert.doesNotThrow(() => transitionApiRun(generating, "ready", { generatedUrl }));
+  }
+});
+
 test("poll scheduling is deterministic, bounded, and honors a valid retry-after", () => {
   const run = transitionApiRun(
     createApiRun({ id: "api-run-2", batchId: "batch-2", createdAt: "2026-09-01T00:00:00.000Z" }),
