@@ -9,7 +9,9 @@ on:
       - ".github/workflows/build-codex-thread-workbench.yml"
       - "build/codex-thread-workbench/**"
       - "scripts/activate-codex-confirmation-bar-macos.mjs"
+      - "scripts/publish-codex-confirmation-bar-macos.sh"
       - "scripts/split-workbench-mac.mjs"
+      - "scripts/test-codex-confirmation-bar-macos-package.sh"
       - "tests/codex-thread-workbench-mac-download.test.mjs"
 
 permissions:
@@ -43,6 +45,8 @@ jobs:
           ref: ${{ github.sha }}
           sparse-checkout: |
             build/codex-thread-workbench
+            scripts/publish-codex-confirmation-bar-macos.sh
+            scripts/test-codex-confirmation-bar-macos-package.sh
           sparse-checkout-cone-mode: false
 
       - name: Set up .NET 8
@@ -65,9 +69,11 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          chmod +x scripts/publish-macos.sh scripts/test-macos-package.sh
-          scripts/publish-macos.sh "${{ matrix.runtime }}"
-          scripts/test-macos-package.sh \
+          chmod +x \
+            ../../scripts/publish-codex-confirmation-bar-macos.sh \
+            ../../scripts/test-codex-confirmation-bar-macos-package.sh
+          ../../scripts/publish-codex-confirmation-bar-macos.sh "${{ matrix.runtime }}"
+          ../../scripts/test-codex-confirmation-bar-macos-package.sh \
             "artifacts/release/CodexConfirmationBar-macOS-${{ matrix.architecture }}.app.zip" \
             "${{ matrix.runtime }}"
           shasum -a 256 \

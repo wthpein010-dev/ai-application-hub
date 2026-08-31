@@ -96,6 +96,11 @@ test("Hub workflow builds and verifies both Mac architectures before publishing"
     join(root, ".github", "workflows", "build-codex-thread-workbench.yml"),
     "utf8",
   );
+  const publisherPath = join(
+    root,
+    "scripts",
+    "publish-codex-confirmation-bar-macos.sh",
+  );
 
   assert.match(workflow, /runtime:\s*osx-arm64\s+runner:\s*macos-14/);
   assert.match(workflow, /runtime:\s*osx-x64\s+runner:\s*macos-15-intel/);
@@ -103,7 +108,12 @@ test("Hub workflow builds and verifies both Mac architectures before publishing"
   assert.match(workflow, /ref:\s*\$\{\{ github\.sha \}\}/);
   assert.match(workflow, /CodexConfirmationBar-macOS-arm64\.app\.zip/);
   assert.match(workflow, /CodexConfirmationBar-macOS-x64\.app\.zip/);
-  assert.equal((workflow.match(/scripts\/test-macos-package\.sh/g) || []).length, 2);
+  assert.match(workflow, /scripts\/publish-codex-confirmation-bar-macos\.sh/);
+  assert.match(workflow, /scripts\/test-codex-confirmation-bar-macos-package\.sh/);
+  assert.doesNotMatch(
+    workflow.slice(0, workflow.indexOf("  publish-pages-parts:")),
+    /build\/codex-thread-workbench\/scripts\/(?:publish-macos|test-macos-package)\.sh/,
+  );
   assert.match(workflow, /needs:\s*build-macos/);
   assert.match(workflow, /manifest-arm64\.json/);
   assert.match(workflow, /manifest-x64\.json/);
@@ -132,6 +142,24 @@ test("Hub workflow builds and verifies both Mac architectures before publishing"
     ),
     true,
   );
+
+  const publisher = readFileSync(publisherPath, "utf8");
+  assert.match(publisher, /CodexConfirmationBar-macOS-arm64\.app\.zip/);
+  assert.match(publisher, /CodexConfirmationBar-macOS-x64\.app\.zip/);
+  assert.match(
+    publisher,
+    /mv "\$\{macos_directory\}\/CodexThreadWorkbench" "\$\{macos_directory\}\/CodexConfirmationBar"/,
+  );
+  assert.doesNotMatch(publisher, /-p:AssemblyName=/);
+  assert.match(publisher, /CodexConfirmationBar\.app/);
+  assert.match(publisher, /Contents\/MacOS\/CodexConfirmationBar|macos_directory\}\/CodexConfirmationBar/);
+  assert.match(publisher, /<string>Codex 待确认悬浮助手<\/string>/);
+  assert.match(publisher, /<string>dev\.wthpein010\.codex-confirmation-bar<\/string>/);
+  assert.match(publisher, /<string>\$\{project_version\}<\/string>/);
+  assert.match(publisher, /codesign --force --deep --sign -/);
+  assert.match(publisher, /ditto -c -k --sequesterRsrc --keepParent/);
+  assert.doesNotMatch(publisher, /CodexThreadWorkbench\.app/);
+  assert.doesNotMatch(publisher, /dev\.wthpein010\.codex-thread-workbench/);
 });
 
 test("Mac manifests are either both absent or both publish verified v2.3.3 bundles", async (context) => {
