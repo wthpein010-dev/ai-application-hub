@@ -245,24 +245,41 @@ git commit -m "test: lock future API secret rejection"
 - Consumes: `CURRENT_OFFICIAL_API_EVIDENCE` and `evaluateOfficialApiReadiness` from Task 1.
 - Produces DOM selectors: `#suno-api-readiness`, `#suno-api-status`, `#suno-api-checklist`, `#suno-api-action`, and `#suno-platform-link`.
 - Does not consume `api-run-state.mjs` yet because no official transport exists.
+- Adds no Suno or remote transport primitive. The pre-existing `fetch("./assets/demo-reference.wav")` remains allowed solely for the same-origin bundled demo asset; tests must distinguish it from a Suno/remote request instead of asserting that the whole application contains zero `fetch` calls.
+- Readiness and blocker data remain module constants only: they do not enter `loop-bgm-lab-v1`, JSON export, or Markdown export.
 
 - [ ] **Step 1: Add failing page and browser behavior tests**
 
-In `loop-bgm-lab-page.test.mjs`, add a contract test that parses the checked-in page and coordinator and verifies the five selectors, exact platform URL, effective date `2026-09-03`, official FAQ URL, unchanged `connect-src 'self'`, and absence of password/API-key inputs or Suno request calls.
+In `loop-bgm-lab-page.test.mjs`, add a contract test that parses the checked-in page, coordinator, and stylesheet and verifies:
 
-In `loop-bgm-lab-browser-smoke.mjs`, after the existing page-ready wait, assert:
+- all five selectors, with `#suno-api-readiness` nested inside `#daily-queue` after `.queue-summary` and before `#batch-list`;
+- exact platform URL, effective date `2026-09-03`, and official FAQ URL;
+- `app.js` statically imports and calls `CURRENT_OFFICIAL_API_EVIDENCE` and `evaluateOfficialApiReadiness` rather than hard-coding 0/6;
+- the parsed CSP has exactly `connect-src 'self'` for its connection directive, without `https:`, `*`, or a Suno origin;
+- the only allowed existing `fetch` call remains the same-origin bundled demo asset, with no Suno/remote fetch, XHR, WebSocket, or EventSource;
+- no password/API-key input, visible or scripted;
+- card CSS includes `min-width: 0`, a visible `:disabled` rule, an overflow-safe platform link, and a scoped `@media (max-width: 760px)` collapse without hiding the card.
+
+In `loop-bgm-lab-browser-smoke.mjs`, import the Task 1 readiness module for expected values. After the existing page-ready wait, assert:
 
 ```js
 assert.equal(await page.locator("#suno-api-status").textContent(), "0/6 项已证实，官方 API 自动生成未启用");
-assert.equal(await page.locator("#suno-api-checklist li").count(), 6);
+assert.deepEqual(
+  await page.locator("#suno-api-checklist li").allTextContents(),
+  evaluateOfficialApiReadiness(CURRENT_OFFICIAL_API_EVIDENCE).blockers.map(blocker => `未证实：${blocker}`),
+);
 assert.equal(await page.locator("#suno-api-action").isDisabled(), true);
 assert.equal(await page.locator("#suno-platform-link").getAttribute("href"), "https://platform.suno.com/");
+assert.equal(await page.locator("#daily-queue #suno-api-readiness").count(), 1);
+assert.equal(await page.locator("#suno-api-readiness").isVisible(), true);
 assert.equal(await page.locator("main > section").count(), 6);
 ```
 
-After JSON and Markdown export, assert neither output contains `officialApiEvidence`, `apiRun`, `authorization`, `apiSecret`, `platform.suno.com/docs`, or any existing secret/path patterns.
+For each of the four viewport passes, also assert that the card and exact status are visible before checking horizontal overflow. At wide width, verify the card uses multiple grid tracks; at `760px` and below, verify it collapses to one track without `display: none`.
 
-The production mutations caught are enabling the action, persisting readiness data, deleting a blocker, changing the platform origin, adding a seventh main section, or adding a remote connection source.
+After local persistence, JSON export, and Markdown export, assert none contains `platform.suno.com`, `officialApiEvidence`, `apiRun`, `authorization`, `apiSecret`, or any existing credential/path pattern. Preserve the existing validated project-schema round trip so a renamed readiness field cannot evade only a blacklist assertion.
+
+The production mutations caught are enabling the action, persisting readiness data, hard-coding or deleting a blocker, moving the card outside the batch section, changing the platform origin, adding a seventh main section, hiding the card on mobile, weakening `connect-src`, or adding a Suno/remote transport call.
 
 - [ ] **Step 2: Run page and browser tests and verify red**
 
@@ -294,11 +311,11 @@ Insert this card inside the existing batch section after the plan summary:
 </aside>
 ```
 
-Import the Task 1 policy module in `app.js`, evaluate `CURRENT_OFFICIAL_API_EVIDENCE` once, render the exact status, and create six `<li>` elements with `textContent`. Do not attach a click listener to the disabled button and do not add any network primitive.
+Place the card after `.queue-summary` and before `#batch-list`. Import the Task 1 policy module in `app.js`, evaluate `CURRENT_OFFICIAL_API_EVIDENCE` once, render the exact status, and create six `<li>` elements with `textContent` in the exact form `未证实：${blocker}`. Do not attach a click listener to the disabled button and do not add a Suno or remote network primitive; leave the existing same-origin demo-asset fetch unchanged.
 
 Add a dated paragraph linking `https://help.suno.com/en/articles/13614785`: “Suno 公告称消费者下载限制将于 2026-09-03 生效；这不是 API 下载契约，使用前请复核官方页面。”
 
-Style the card with the existing palette, visible disabled state, keyboard-visible link focus, a responsive grid that collapses below 760 px, and no new animation.
+Style the card with the existing palette, `min-width: 0`, visible disabled state, keyboard-visible link focus, `overflow-wrap: anywhere` for the platform link, a scoped responsive grid that collapses at `max-width: 760px`, and no new animation. The responsive rule must not hide the card.
 
 - [ ] **Step 4: Run Task 3 tests and verify green**
 
