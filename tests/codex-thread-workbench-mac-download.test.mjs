@@ -96,6 +96,7 @@ test("Hub workflow builds and verifies both Mac architectures before publishing"
     join(root, ".github", "workflows", "build-codex-thread-workbench.yml"),
     "utf8",
   );
+  const publishJob = workflow.slice(workflow.indexOf("  publish-pages-parts:"));
   const publisherPath = join(
     root,
     "scripts",
@@ -118,6 +119,11 @@ test("Hub workflow builds and verifies both Mac architectures before publishing"
   assert.match(workflow, /manifest-arm64\.json/);
   assert.match(workflow, /manifest-x64\.json/);
   assert.match(workflow, /activate-codex-confirmation-bar-macos\.mjs/);
+  assert.match(
+    publishJob,
+    /^\s+app-20260706-restore-games\.js\s*$/m,
+    "the publication checkout must include the app catalog used by the Mac manifest audit",
+  );
   assert.match(workflow, /git fetch --no-tags origin "\$\{GITHUB_REF_NAME\}"/);
   assert.match(workflow, /remote_tip="\$\(git rev-parse FETCH_HEAD\)"/);
   assert.match(workflow, /"\$\{remote_tip\}" != "\$\{GITHUB_SHA\}"/);
