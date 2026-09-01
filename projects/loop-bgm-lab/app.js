@@ -109,6 +109,7 @@ const appError = element("#app-error");
 const officialApiReadiness = evaluateOfficialApiReadiness(CURRENT_OFFICIAL_API_EVIDENCE);
 
 let project;
+let storageWriteBlocked = false;
 let referenceFailures = [];
 const referenceSessions = new Map();
 let candidateSession = null;
@@ -166,22 +167,45 @@ function showStorageFailure() {
   storageWarning.textContent = "本地存储不可用；当前会话仍可继续，请及时导出 JSON 以便恢复。";
 }
 
+function showStorageQuarantine() {
+  storageWarning.hidden = false;
+  storageWarning.textContent = "本地存储中的项目状态无效，已隔离保留；请导入有效的 JSON 或 Markdown 项目以恢复。";
+}
+
+function clearStorageWarning() {
+  storageWarning.textContent = "";
+  storageWarning.hidden = true;
+}
+
 function loadProject() {
+  let stored;
   try {
-    const stored = localStorage.getItem(STORAGE_KEY);
-    if (!stored) return defaultProject();
-    return importProjectJson(stored);
+    stored = localStorage.getItem(STORAGE_KEY);
   } catch {
     showStorageFailure();
+    return defaultProject();
+  }
+  if (!stored) return defaultProject();
+  try {
+    return importProjectJson(stored);
+  } catch (error) {
+    storageWriteBlocked = true;
+    showStorageQuarantine(error);
     return defaultProject();
   }
 }
 
 function persistProject() {
+  if (storageWriteBlocked) {
+    showStorageQuarantine();
+    return false;
+  }
   try {
     localStorage.setItem(STORAGE_KEY, exportProjectJson(project));
+    return true;
   } catch {
     showStorageFailure();
+    return false;
   }
 }
 
@@ -1415,7 +1439,8 @@ importInput.addEventListener("change", async () => {
     releaseAllAudio();
     referenceFailures = [];
     rememberProjectIds(project);
-    persistProject();
+    storageWriteBlocked = false;
+    if (persistProject()) clearStorageWarning();
     renderAll();
     importStatus.textContent = `已完整导入 ${result.format === "markdown" ? "Markdown" : "JSON"} 并替换当前项目；音频仍需在本机重新选择。`;
   } catch (error) {

@@ -821,6 +821,54 @@ try {
   assert.equal(await markdownHandoffPage.evaluate(() => JSON.parse(localStorage.getItem("loop-bgm-lab-v1")).version), 2);
   await assertNoObservedErrors(markdownHandoffPage, markdownHandoffErrors);
   await markdownHandoffContext.close();
+
+  // Regression: startup must not replace the only readable future/invalid payload
+  // before an explicit JSON or Markdown import has validated and rendered.
+  const quarantinedStorageContext = await browser.newContext({ viewport: { width: 1024, height: 768 } });
+  const quarantinedStoragePage = await quarantinedStorageContext.newPage();
+  const quarantinedStorageErrors = observeErrors(quarantinedStoragePage);
+  await quarantinedStoragePage.addInitScript(() => {
+    localStorage.setItem("loop-bgm-lab-v1", JSON.stringify({ version: 99, preserved: "future-state" }));
+  });
+  await installInterceptors(quarantinedStoragePage, quarantinedStorageErrors);
+  await quarantinedStoragePage.goto(`${origin}/projects/loop-bgm-lab/index.html`, { waitUntil: "networkidle" });
+  await quarantinedStoragePage.locator("body[data-ready='true']").waitFor();
+  const protectedPayload = JSON.stringify({ version: 99, preserved: "future-state" });
+  await quarantinedStoragePage.locator("#style-key").fill("D major");
+  await quarantinedStoragePage.locator("#style-form").press("Enter");
+  assert.equal(
+    await quarantinedStoragePage.evaluate(() => localStorage.getItem("loop-bgm-lab-v1")),
+    protectedPayload,
+    "ordinary edits must not overwrite a readable but invalid/future stored payload"
+  );
+  assert.match(await quarantinedStoragePage.locator("#storage-warning").textContent(), /本地存储中的项目状态无效/);
+  assert.doesNotMatch(await quarantinedStoragePage.locator("#storage-warning").textContent(), /不可用/);
+
+  const corruptedMarkdown = labelledMarkdown.replace(/sha256=[a-f0-9]{64}/, `sha256=${"0".repeat(64)}`);
+  assert.notEqual(corruptedMarkdown, labelledMarkdown, "test fixture must corrupt the Task 1 Markdown checksum");
+  await quarantinedStoragePage.locator("#import-project").setInputFiles({
+    name: "corrupted-loop-bgm-lab-handoff.md",
+    mimeType: "text/markdown",
+    buffer: Buffer.from(corruptedMarkdown)
+  });
+  await quarantinedStoragePage.waitForFunction(() => document.querySelector("#import-status")?.textContent.includes("导入失败"));
+  assert.equal(
+    await quarantinedStoragePage.evaluate(() => localStorage.getItem("loop-bgm-lab-v1")),
+    protectedPayload,
+    "a failed Markdown import must leave protected stored bytes untouched"
+  );
+
+  await quarantinedStoragePage.locator("#import-project").setInputFiles({
+    name: "valid-loop-bgm-lab-handoff.md",
+    mimeType: "text/markdown",
+    buffer: Buffer.from(labelledMarkdown)
+  });
+  await quarantinedStoragePage.waitForFunction(() => document.querySelector("#import-status")?.textContent.includes("已完整导入 Markdown"));
+  assert.equal(await quarantinedStoragePage.evaluate(() => JSON.parse(localStorage.getItem("loop-bgm-lab-v1")).version), 2);
+  assert.equal(await quarantinedStoragePage.locator("#storage-warning").isHidden(), true);
+  await assertNoObservedErrors(quarantinedStoragePage, quarantinedStorageErrors);
+  await quarantinedStorageContext.close();
+
   await assertNoOverflow(page, "1440x900");
   await assertNoObservedErrors(page, errors);
   await page.close();
