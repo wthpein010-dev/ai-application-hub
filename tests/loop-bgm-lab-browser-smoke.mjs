@@ -157,16 +157,14 @@ async function installInterceptors(page, observation, {
       return true;
     };
     window.__failNextProjectStorageWrite = failNextProjectStorageWrite;
-    if (failStorage || failNextProjectStorageWrite) {
-      const originalSet = Storage.prototype.setItem;
-      Storage.prototype.setItem = function setItem(key) {
-        if (key === "loop-bgm-lab-v1" && (failStorage || window.__failNextProjectStorageWrite)) {
-          window.__failNextProjectStorageWrite = false;
-          throw new DOMException("quota blocked", "QuotaExceededError");
-        }
-        return originalSet.call(this, ...arguments);
-      };
-    }
+    const originalSet = Storage.prototype.setItem;
+    Storage.prototype.setItem = function setItem(key) {
+      if (key === "loop-bgm-lab-v1" && (failStorage || window.__failNextProjectStorageWrite)) {
+        window.__failNextProjectStorageWrite = false;
+        throw new DOMException("quota blocked", "QuotaExceededError");
+      }
+      return originalSet.call(this, ...arguments);
+    };
   }, { clearOnce, failStorage, failNextProjectStorageWrite });
 }
 
@@ -873,6 +871,51 @@ try {
   await assertNoObservedErrors(quarantinedStoragePage, quarantinedStorageErrors);
   await quarantinedStorageContext.close();
 
+  // Regression: an existing empty string is invalid stored state, not a missing key.
+  const emptyStorageContext = await browser.newContext({ viewport: { width: 1024, height: 768 } });
+  const emptyStoragePage = await emptyStorageContext.newPage();
+  const emptyStorageErrors = observeErrors(emptyStoragePage);
+  await emptyStoragePage.addInitScript(() => {
+    localStorage.setItem("loop-bgm-lab-v1", "");
+  });
+  await installInterceptors(emptyStoragePage, emptyStorageErrors);
+  await emptyStoragePage.goto(`${origin}/projects/loop-bgm-lab/index.html`, { waitUntil: "networkidle" });
+  await emptyStoragePage.locator("body[data-ready='true']").waitFor();
+  assert.equal(
+    await emptyStoragePage.evaluate(() => localStorage.getItem("loop-bgm-lab-v1")),
+    "",
+    "startup must quarantine an existing empty string byte-for-byte"
+  );
+  assert.match(await emptyStoragePage.locator("#storage-warning").textContent(), /本地存储中的项目状态无效/);
+  await emptyStoragePage.locator("#style-key").fill("E minor");
+  await emptyStoragePage.locator("#style-form").press("Enter");
+  assert.equal(
+    await emptyStoragePage.evaluate(() => localStorage.getItem("loop-bgm-lab-v1")),
+    "",
+    "ordinary edits must preserve a quarantined empty string"
+  );
+  await emptyStoragePage.locator("#import-project").setInputFiles({
+    name: "corrupted-empty-storage-handoff.md",
+    mimeType: "text/markdown",
+    buffer: Buffer.from(corruptedMarkdown)
+  });
+  await emptyStoragePage.waitForFunction(() => document.querySelector("#import-status")?.textContent.includes("导入失败"));
+  assert.equal(
+    await emptyStoragePage.evaluate(() => localStorage.getItem("loop-bgm-lab-v1")),
+    "",
+    "a failed import must preserve a quarantined empty string"
+  );
+  await emptyStoragePage.locator("#import-project").setInputFiles({
+    name: "valid-empty-storage-handoff.md",
+    mimeType: "text/markdown",
+    buffer: Buffer.from(labelledMarkdown)
+  });
+  await emptyStoragePage.waitForFunction(() => document.querySelector("#import-status")?.textContent.includes("已完整导入 Markdown"));
+  assert.equal(await emptyStoragePage.evaluate(() => JSON.parse(localStorage.getItem("loop-bgm-lab-v1")).version), 2);
+  assert.equal(await emptyStoragePage.locator("#storage-warning").isHidden(), true);
+  await assertNoObservedErrors(emptyStoragePage, emptyStorageErrors);
+  await emptyStorageContext.close();
+
   // Regression: a failed explicit-import write must retain quarantine after storage recovers.
   const failedQuarantinedImportContext = await browser.newContext({ viewport: { width: 1024, height: 768 } });
   const failedQuarantinedImportPage = await failedQuarantinedImportContext.newPage();
@@ -905,6 +948,78 @@ try {
   assert.match(await failedQuarantinedImportPage.locator("#import-status").textContent(), /导入失败/);
   await assertNoObservedErrors(failedQuarantinedImportPage, failedQuarantinedImportErrors);
   await failedQuarantinedImportContext.close();
+
+  // Regression: staged validation must not pause or reset live playback when persistence rejects the import.
+  const failedPlaybackImportContext = await browser.newContext({ viewport: { width: 1024, height: 768 }, acceptDownloads: true });
+  const failedPlaybackImportPage = await failedPlaybackImportContext.newPage();
+  const failedPlaybackImportErrors = observeErrors(failedPlaybackImportPage);
+  await installInterceptors(failedPlaybackImportPage, failedPlaybackImportErrors, { clearOnce: true });
+  await failedPlaybackImportPage.goto(`${origin}/projects/loop-bgm-lab/index.html`, { waitUntil: "networkidle" });
+  await failedPlaybackImportPage.locator("body[data-ready='true']").waitFor();
+  await failedPlaybackImportPage.locator("#load-demo-reference").click();
+  await failedPlaybackImportPage.waitForFunction(() => {
+    const audio = document.querySelector("#reference-player");
+    return audio?.src.startsWith("blob:") && audio.readyState >= HTMLMediaElement.HAVE_METADATA;
+  }, null, { timeout: 45_000 });
+  const playbackBeforeFailedImport = await failedPlaybackImportPage.evaluate(async () => {
+    const audio = document.querySelector("#reference-player");
+    audio.muted = true;
+    audio.loop = true;
+    audio.playbackRate = 0.25;
+    audio.currentTime = Math.min(0.2, audio.duration / 4);
+    await audio.play();
+    await new Promise(resolve => setTimeout(resolve, 80));
+    return {
+      src: audio.src,
+      currentTime: audio.currentTime,
+      paused: audio.paused,
+      stored: localStorage.getItem("loop-bgm-lab-v1"),
+      styleKey: document.querySelector("#style-key").value,
+      referenceCount: document.querySelectorAll("#reference-list [data-analysis-state='ready']").length,
+      revokedUrls: [...window.__revokedObjectUrls]
+    };
+  });
+  assert.equal(playbackBeforeFailedImport.paused, false, "the regression fixture must begin with active playback");
+  assert.ok(playbackBeforeFailedImport.currentTime > 0, "the regression fixture must begin beyond time zero");
+  await failedPlaybackImportPage.evaluate(() => { window.__failNextProjectStorageWrite = true; });
+  await failedPlaybackImportPage.locator("#import-project").setInputFiles({
+    name: "write-fails-during-playback.md",
+    mimeType: "text/markdown",
+    buffer: Buffer.from(labelledMarkdown)
+  });
+  await failedPlaybackImportPage.waitForFunction(() => document.querySelector("#import-status")?.textContent.includes("导入失败"));
+  const playbackAfterFailedImport = await failedPlaybackImportPage.evaluate(() => {
+    const audio = document.querySelector("#reference-player");
+    return {
+      src: audio.src,
+      currentTime: audio.currentTime,
+      paused: audio.paused,
+      stored: localStorage.getItem("loop-bgm-lab-v1"),
+      styleKey: document.querySelector("#style-key").value,
+      referenceCount: document.querySelectorAll("#reference-list [data-analysis-state='ready']").length,
+      revokedUrls: [...window.__revokedObjectUrls]
+    };
+  });
+  assert.equal(playbackAfterFailedImport.src, playbackBeforeFailedImport.src, "failed import must preserve the active audio source");
+  assert.equal(playbackAfterFailedImport.paused, false, "failed import must preserve the playing state");
+  assert.ok(
+    playbackAfterFailedImport.currentTime >= playbackBeforeFailedImport.currentTime - 0.02,
+    "failed import must not reset the playback position"
+  );
+  assert.ok(
+    playbackAfterFailedImport.currentTime - playbackBeforeFailedImport.currentTime < 0.5,
+    "playback position may advance naturally but must not jump during failed import"
+  );
+  assert.deepEqual(playbackAfterFailedImport.revokedUrls, playbackBeforeFailedImport.revokedUrls, "failed import must not revoke object URLs");
+  assert.equal(playbackAfterFailedImport.stored, playbackBeforeFailedImport.stored, "failed import must preserve local storage");
+  assert.equal(playbackAfterFailedImport.styleKey, playbackBeforeFailedImport.styleKey, "failed import must restore the active project fields");
+  assert.equal(playbackAfterFailedImport.referenceCount, playbackBeforeFailedImport.referenceCount, "failed import must restore the active project references");
+  const failedPlaybackJsonPromise = failedPlaybackImportPage.waitForEvent("download");
+  await failedPlaybackImportPage.locator("#export-json").click();
+  const failedPlaybackJson = await readFile(await (await failedPlaybackJsonPromise).path(), "utf8");
+  assert.equal(failedPlaybackJson, playbackBeforeFailedImport.stored, "failed import must leave the complete in-memory project unchanged");
+  await assertNoObservedErrors(failedPlaybackImportPage, failedPlaybackImportErrors);
+  await failedPlaybackImportContext.close();
 
   await assertNoOverflow(page, "1440x900");
   await assertNoObservedErrors(page, errors);

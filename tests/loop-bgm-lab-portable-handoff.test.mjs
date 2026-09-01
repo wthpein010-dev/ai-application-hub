@@ -168,19 +168,36 @@ test("preserves the embedded state when readable prose is edited and CRLF is use
   assert.deepEqual(restored.project, completeProject());
 });
 
-test("rejects missing, duplicate, reordered, unknown, malformed, and trailing envelope content", async () => {
+test("rejects missing, duplicate, unknown, malformed, and trailing envelope content", async () => {
   const markdown = await exportProjectHandoffMarkdown(completeProject());
   const envelopeStart = markdown.indexOf(BEGIN);
   const envelope = markdown.slice(envelopeStart);
   await assert.rejects(() => importProjectDocument(markdown.slice(0, envelopeStart)), /envelope|marker/i);
   await assert.rejects(() => importProjectDocument(`${markdown}${envelope}`), /exactly one|duplicate|marker/i);
-  await assert.rejects(() => importProjectDocument(`${END}\n${envelope}`), /order|marker/i);
   await assert.rejects(() => importProjectDocument(envelope.replace("version=1", "version=9")), /version/i);
   await assert.rejects(() => importProjectDocument(envelope.replace("encoding=base64url", "encoding=base64")), /encoding/i);
   await assert.rejects(() => importProjectDocument(envelope.replace("sha256=", "unknown=x\nsha256=")), /metadata|key|unknown/i);
   const payloadCorrupted = envelope.replace(/(\n```loop-bgm-lab-state\n)([^\n])/, "$1=$2");
   await assert.rejects(() => importProjectDocument(payloadCorrupted), /base64|canonical|padding/i);
   await assert.rejects(() => importProjectDocument(`${markdown}non-whitespace`), /trailing|envelope/i);
+});
+
+test("rejects one begin/end marker pair when its order is reversed", async () => {
+  const markdown = await exportProjectHandoffMarkdown(completeProject());
+  const envelope = markdown.slice(markdown.indexOf(BEGIN));
+  const endStart = envelope.indexOf(END);
+  const reversedEnvelope = `${END}${envelope.slice(BEGIN.length, endStart)}${BEGIN}${envelope.slice(endStart + END.length)}`;
+  assert.equal((reversedEnvelope.match(/LOOP-BGM-LAB-PORTABLE-STATE-BEGIN/g) || []).length, 1);
+  assert.equal((reversedEnvelope.match(/LOOP-BGM-LAB-PORTABLE-STATE-END/g) || []).length, 1);
+  await assert.rejects(() => importProjectDocument(reversedEnvelope), /order|marker/i);
+});
+
+test("rejects terminal equals-sign padding in the base64url payload", async () => {
+  const markdown = await exportProjectHandoffMarkdown(completeProject());
+  const envelope = markdown.slice(markdown.indexOf(BEGIN));
+  const terminallyPaddedPayload = envelope.replace(`\n\`\`\`\n${END}`, `=\n\`\`\`\n${END}`);
+  assert.notEqual(terminallyPaddedPayload, envelope, "test fixture must append terminal base64 padding");
+  await assert.rejects(() => importProjectDocument(terminallyPaddedPayload), /base64|canonical|padding/i);
 });
 
 test("rejects invalid UTF-8, mismatched length, mismatched digest, and oversized embedded state", async () => {

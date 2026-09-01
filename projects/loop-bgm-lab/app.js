@@ -185,7 +185,7 @@ function loadProject() {
     showStorageFailure();
     return defaultProject();
   }
-  if (!stored) return defaultProject();
+  if (stored === null) return defaultProject();
   try {
     return importProjectJson(stored);
   } catch (error) {
@@ -361,7 +361,7 @@ function updateDisplayName(kind, id, nextValue) {
   }
 }
 
-function renderReferences() {
+function renderReferences({ staging = false } = {}) {
   referenceList.replaceChildren();
   for (const [index, record] of (project.references || []).entries()) {
     const session = referenceSessions.get(record.id);
@@ -397,7 +397,7 @@ function renderReferences() {
     referenceList.append(item);
   }
   const playable = (project.references || []).map(record => referenceSessions.get(record.id)).find(Boolean);
-  setAudioElement(referencePlayer, playable?.url || null);
+  if (!staging) setAudioElement(referencePlayer, playable?.url || null);
   renderAggregate();
 }
 
@@ -693,7 +693,7 @@ function componentDetail(name, component) {
   return formatNumber(component.delta, 3);
 }
 
-function renderComparison() {
+function renderComparison({ staging = false } = {}) {
   const candidate = project.candidates.find(item => item.id === selectedCandidateId) || project.candidates.at(-1);
   comparisonBody.replaceChildren();
   if (!candidate?.comparison) {
@@ -703,7 +703,7 @@ function renderComparison() {
     similarityClass.textContent = "等待候选";
     nextAdvice.textContent = "导入参考和候选后，这里只给出一个变量轴的下一轮建议。";
     removeCandidateButton.hidden = !candidateSession;
-    setAudioElement(candidatePlayer, null);
+    if (!staging) setAudioElement(candidatePlayer, null);
     return;
   }
   comparisonResult.dataset.analysisState = "ready";
@@ -715,7 +715,7 @@ function renderComparison() {
     comparisonSimilarity.textContent = "—";
     nextAdvice.textContent = candidate.advice.message;
     removeCandidateButton.hidden = !candidateSession;
-    setAudioElement(candidatePlayer, candidateSession?.candidateId === candidate.id ? candidateSession.url : null);
+    if (!staging) setAudioElement(candidatePlayer, candidateSession?.candidateId === candidate.id ? candidateSession.url : null);
     return;
   }
   for (const [name, component] of Object.entries(candidate.comparison.components)) {
@@ -733,7 +733,7 @@ function renderComparison() {
     ? advice.message
     : `${advice.reason} ${advice.adjustment}`;
   removeCandidateButton.hidden = !candidateSession;
-  setAudioElement(candidatePlayer, candidateSession?.candidateId === candidate.id ? candidateSession.url : null);
+  if (!staging) setAudioElement(candidatePlayer, candidateSession?.candidateId === candidate.id ? candidateSession.url : null);
 }
 
 function updateCandidateReview(candidateId, batchPatch) {
@@ -960,11 +960,11 @@ function renderOfficialApiReadiness() {
   }
 }
 
-function renderAll() {
+function renderAll({ staging = false } = {}) {
   renderStyle();
-  renderReferences();
+  renderReferences({ staging });
   renderBatches();
-  renderComparison();
+  renderComparison({ staging });
   renderCandidateHistory();
   renderLicenses();
 }
@@ -975,11 +975,11 @@ function stageProjectRender(stagedProject, stagedSelectedCandidateId) {
   project = stagedProject;
   selectedCandidateId = stagedSelectedCandidateId;
   try {
-    renderAll();
+    renderAll({ staging: true });
   } finally {
     project = activeProject;
     selectedCandidateId = activeSelectedCandidateId;
-    renderAll();
+    renderAll({ staging: true });
   }
 }
 
