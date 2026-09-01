@@ -59,30 +59,47 @@ const context = await browser.newContext({
 });
 const page = await context.newPage();
 const video = page.video();
+const browserErrors = [];
+page.on("console", (message) => {
+  if (message.type() === "error") browserErrors.push(`console: ${message.text()}`);
+});
+page.on("pageerror", (error) => browserErrors.push(`page: ${error.message}`));
+page.on("response", (response) => {
+  if (response.status() >= 400) browserErrors.push(`${response.status()} ${response.url()}`);
+});
 
 try {
   await page.goto(`http://127.0.0.1:${port}/projects/brick-character-copy-preview/index.html`, { waitUntil: "networkidle" });
   await page.evaluate(() => document.fonts.ready);
-  await page.evaluate(() => window.scrollTo({ top: 90, behavior: "instant" }));
-  await page.waitForTimeout(250);
+  await page.waitForTimeout(1_100);
   await page.screenshot({ path: posterPath, type: "jpeg", quality: 90 });
 
+  await page.waitForTimeout(3_500);
+  await page.locator(".character-card").first().click();
+  await page.waitForTimeout(4_500);
+  await page.locator("#detail-next").click();
   await page.waitForTimeout(4_000);
-  await page.locator("#preview-next").click();
-  await page.waitForTimeout(4_000);
-  await page.locator("#preview-favorite").click();
-  await page.waitForTimeout(4_000);
-  await page.locator('tr[data-index="7"]').click();
-  await page.waitForTimeout(4_000);
-  await page.locator('tr[data-index="15"]').click();
-  await page.waitForTimeout(4_000);
-  await page.locator("#search").fill("程序员");
-  await page.waitForTimeout(4_000);
-  await page.locator('tr[data-index="6"]').click();
-  await page.waitForTimeout(4_000);
-  await page.locator("#search").fill("");
-  await page.locator('tr[data-index="19"]').click();
-  await page.waitForTimeout(4_000);
+  await page.locator("#detail-favorite").click();
+  await page.waitForTimeout(3_500);
+  await page.locator("#detail-close").click();
+  await page.waitForTimeout(2_500);
+  await page.locator("#page-next").click();
+  await page.waitForTimeout(3_500);
+  await page.locator("#gallery-search").fill("毛线架构师");
+  await page.waitForTimeout(3_500);
+  await page.locator(".character-card").click();
+  await page.waitForTimeout(4_500);
+  await page.locator("#detail-close").click();
+  await page.waitForTimeout(2_000);
+  await page.locator('a[href="./copy-review.html"]').click();
+  await page.waitForLoadState("networkidle");
+  await page.waitForTimeout(3_500);
+  await page.goBack({ waitUntil: "networkidle" });
+  await page.waitForTimeout(2_000);
+  await page.locator('a[href="../trinket-market/index.html"]').click();
+  await page.waitForLoadState("networkidle");
+  await page.waitForTimeout(4_500);
+  if (browserErrors.length) throw new Error(`Browser recording errors:\n${browserErrors.join("\n")}`);
 } finally {
   await page.close();
   await context.close();

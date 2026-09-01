@@ -260,13 +260,13 @@ globalThis.HUB_PROJECT_MEDIA = Object.freeze({
     visualKind: "media",
   }),
   "brick-character-copy-preview": Object.freeze({
-    src: "./assets/hub-showcase/brick-character-copy-preview.webp?v=20260827-hub-visual-polish",
-    alt: "砖块角色文案预览功能画面",
+    src: "./assets/hub-showcase/brick-character-copy-preview.webp?v=20260901-brick-previews",
+    alt: "砖块小人图鉴与文案校对功能画面",
     position: "center",
     layout: "wide",
-    fallback: "砖块角色文案预览",
-    feature: "角色文案在砖块界面中实时预览",
-    accent: "#84cc16",
+    fallback: "砖块小人图鉴与文案校对",
+    feature: "45 个正式角色的游戏式详情与真实换行检查",
+    accent: "#63e6b4",
     visualKind: "game",
   }),
   "gamespec-relay": Object.freeze({

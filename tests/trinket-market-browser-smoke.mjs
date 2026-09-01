@@ -78,6 +78,8 @@ try {
     page.on("requestfailed", (request) => errors.push(`request: ${request.url()} ${request.failure()?.errorText}`));
     await page.addInitScript(() => localStorage.clear());
     await page.goto(`${origin}/projects/trinket-market/index.html`, { waitUntil: "networkidle" });
+    assert.equal(await page.locator('.market-header a[href="../brick-character-copy-preview/index.html"]').isVisible(), true);
+    assert.equal((await page.locator('.market-header a[href="../brick-character-copy-preview/index.html"]').textContent()).trim(), "砖块小人图鉴");
     await page.locator("body[data-ready='true']").waitFor();
 
     assert.equal(await page.title(), "随身小物交易市场");
@@ -209,29 +211,142 @@ try {
     window.__gridObserver.observe(grid, { childList: true });
   });
   const cards = page.locator(".item-card");
+  const draggedId = await cards.nth(0).getAttribute("data-id");
   const first = await cards.nth(0).boundingBox();
   const ninth = await cards.nth(8).boundingBox();
   await page.mouse.move(first.x + first.width / 2, first.y + first.height / 2);
   await page.mouse.down();
-  await page.mouse.move(ninth.x + ninth.width * 0.25, ninth.y + ninth.height / 2, { steps: 1 });
-  await page.waitForTimeout(120);
-  const during = await page.evaluate(() => ({
-    active: document.querySelector("#item-grid").classList.contains("is-drag-active"),
-    ghost: Boolean(document.querySelector(".drag-ghost")),
-    sourceHidden: Number(getComputedStyle(document.querySelector(".item-card.is-dragging .item-card-content")).opacity) === 0,
-    mutations: window.__gridMutations,
+  const pickup = await page.evaluate(() => ({
+    ghostCount: document.querySelectorAll(".drag-ghost").length,
+    sourceOpacity: Number(getComputedStyle(document.querySelector(".item-card.is-dragging .item-card-content")).opacity),
   }));
+  assert.equal(pickup.ghostCount, 1);
+  assert.equal(pickup.sourceOpacity, 0);
+  await page.mouse.move(ninth.x + ninth.width * 0.25, ninth.y + ninth.height / 2, { steps: 1 });
+  await page.waitForTimeout(140);
+  const during = await page.evaluate(async () => {
+    const ghost = document.querySelector(".drag-ghost");
+    const wiggle = ghost?.querySelector(".drag-ghost-wiggle");
+    const firstTransform = wiggle ? getComputedStyle(wiggle).transform : "missing";
+    await new Promise((resolve) => setTimeout(resolve, 70));
+    const secondTransform = wiggle ? getComputedStyle(wiggle).transform : "missing";
+    return {
+      active: document.querySelector("#item-grid").classList.contains("is-drag-active"),
+      ghostCount: document.querySelectorAll(".drag-ghost").length,
+      sourceHidden: Number(getComputedStyle(document.querySelector(".item-card.is-dragging .item-card-content")).opacity) === 0,
+      compositorTracked: getComputedStyle(ghost).willChange.split(",").map((value) => value.trim()).includes("transform"),
+      wobbleMoves: firstTransform !== "missing" && firstTransform !== secondTransform,
+      mutations: window.__gridMutations,
+    };
+  });
+  const ghostBox = await page.locator(".drag-ghost").boundingBox();
+  const expectedGhostLeft = ninth.x + ninth.width * 0.25 - first.width / 2;
+  const expectedGhostTop = ninth.y + ninth.height / 2 - first.height / 2;
   assert.equal(during.active, true);
-  assert.equal(during.ghost, true);
+  assert.equal(during.ghostCount, 1);
   assert.equal(during.sourceHidden, true);
+  assert.equal(during.compositorTracked, true);
+  assert.equal(during.wobbleMoves, true);
+  assert.ok(Math.abs(ghostBox.x - expectedGhostLeft) <= 2, `drag ghost lagged horizontally by ${ghostBox.x - expectedGhostLeft}px`);
+  assert.ok(Math.abs(ghostBox.y - expectedGhostTop) <= 2, `drag ghost lagged vertically by ${ghostBox.y - expectedGhostTop}px`);
   assert.ok(during.mutations <= 2, `cross-row drag used ${during.mutations} child mutations`);
   await page.mouse.up();
-  await page.waitForTimeout(260);
+  await page.waitForTimeout(20);
+  const settling = await page.evaluate((id) => ({
+    ghostCount: document.querySelectorAll(".drag-ghost").length,
+    settling: document.querySelector(".drag-ghost")?.classList.contains("is-settling"),
+    sourceHidden: Number(getComputedStyle(document.querySelector(`.item-card[data-id="${id}"] .item-card-content`)).opacity) === 0,
+  }), draggedId);
+  assert.equal(settling.ghostCount, 1);
+  assert.equal(settling.settling, true);
+  assert.equal(settling.sourceHidden, true);
+  await page.waitForTimeout(175);
+  const landed = await page.evaluate((id) => {
+    const ghostRect = document.querySelector(".drag-ghost").getBoundingClientRect();
+    const targetRect = document.querySelector(`.item-card[data-id="${id}"]`).getBoundingClientRect();
+    return Math.max(Math.abs(ghostRect.left - targetRect.left), Math.abs(ghostRect.top - targetRect.top));
+  }, draggedId);
+  assert.ok(landed <= 2, `drag ghost stopped ${landed}px away from its destination`);
+  await page.waitForTimeout(80);
   assert.equal(await page.locator(".drag-ghost").count(), 0);
   assert.equal(await page.locator(".item-card.is-dragging").count(), 0);
   assert.match(await page.locator("#drag-status").textContent(), /已移动到第/);
   assert.deepEqual(errors, []);
   await page.close();
+
+  const pointerPage = await browser.newPage({ viewport: { width: 1024, height: 1000 } });
+  await pointerPage.addInitScript(() => localStorage.clear());
+  await pointerPage.goto(`${origin}/projects/trinket-market/index.html`, { waitUntil: "networkidle" });
+  await pointerPage.locator("body[data-ready='true']").waitFor();
+  await pointerPage.locator("#sort-mode").selectOption("manual");
+  const competingPointer = await pointerPage.evaluate(() => {
+    const cards = [...document.querySelectorAll(".item-card")];
+    const firstRect = cards[0].getBoundingClientRect();
+    const secondRect = cards[1].getBoundingClientRect();
+    cards[0].setPointerCapture = undefined;
+    cards[1].setPointerCapture = undefined;
+    const dispatch = (target, type, pointerId, x, y) => target.dispatchEvent(new PointerEvent(type, {
+      bubbles: true,
+      button: 0,
+      buttons: type === "pointerup" ? 0 : 1,
+      clientX: x,
+      clientY: y,
+      pointerId,
+      pointerType: "touch",
+    }));
+    dispatch(cards[0], "pointerdown", 101, firstRect.left + firstRect.width / 2, firstRect.top + firstRect.height / 2);
+    const before = getComputedStyle(document.querySelector(".drag-ghost")).transform;
+    dispatch(cards[1], "pointerdown", 202, secondRect.left + secondRect.width / 2, secondRect.top + secondRect.height / 2);
+    dispatch(window, "pointermove", 202, secondRect.right, secondRect.bottom);
+    const afterCompetingMove = getComputedStyle(document.querySelector(".drag-ghost")).transform;
+    dispatch(window, "pointerup", 202, secondRect.right, secondRect.bottom);
+    return {
+      ghostCount: document.querySelectorAll(".drag-ghost").length,
+      hiddenSourceCount: document.querySelectorAll(".item-card.is-dragging").length,
+      initiatingGhostStayedPut: before === afterCompetingMove,
+      initiatingDragStillActive: !document.querySelector(".drag-ghost")?.classList.contains("is-settling"),
+    };
+  });
+  assert.equal(competingPointer.ghostCount, 1);
+  assert.equal(competingPointer.hiddenSourceCount, 1);
+  assert.equal(competingPointer.initiatingGhostStayedPut, true);
+  assert.equal(competingPointer.initiatingDragStillActive, true);
+  const initiatingPointer = await pointerPage.evaluate(() => {
+    const ghost = document.querySelector(".drag-ghost");
+    const targetRect = document.querySelectorAll(".item-card")[8].getBoundingClientRect();
+    const before = getComputedStyle(ghost).transform;
+    const move = new PointerEvent("pointermove", { bubbles: true, buttons: 1, clientX: targetRect.left, clientY: targetRect.top, pointerId: 101, pointerType: "touch" });
+    window.dispatchEvent(move);
+    const after = getComputedStyle(ghost).transform;
+    window.dispatchEvent(new PointerEvent("pointerup", { bubbles: true, button: 0, buttons: 0, clientX: targetRect.left, clientY: targetRect.top, pointerId: 101, pointerType: "touch" }));
+    return { moved: before !== after, settling: ghost.classList.contains("is-settling") };
+  });
+  assert.equal(initiatingPointer.moved, true);
+  assert.equal(initiatingPointer.settling, true);
+  await pointerPage.waitForTimeout(260);
+  assert.equal(await pointerPage.locator(".drag-ghost").count(), 0);
+  assert.equal(await pointerPage.locator(".item-card.is-dragging").count(), 0);
+  await pointerPage.close();
+
+  const reducedPage = await browser.newPage({ viewport: { width: 1024, height: 1000 } });
+  await reducedPage.emulateMedia({ reducedMotion: "reduce" });
+  await reducedPage.addInitScript(() => localStorage.clear());
+  await reducedPage.goto(`${origin}/projects/trinket-market/index.html`, { waitUntil: "networkidle" });
+  await reducedPage.locator("body[data-ready='true']").waitFor();
+  await reducedPage.locator("#sort-mode").selectOption("manual");
+  const reducedCards = reducedPage.locator(".item-card");
+  const reducedFirst = await reducedCards.nth(0).boundingBox();
+  const reducedNinth = await reducedCards.nth(8).boundingBox();
+  await reducedPage.mouse.move(reducedFirst.x + reducedFirst.width / 2, reducedFirst.y + reducedFirst.height / 2);
+  await reducedPage.mouse.down();
+  await reducedPage.mouse.move(reducedNinth.x + reducedNinth.width / 2, reducedNinth.y + reducedNinth.height / 2);
+  await reducedPage.waitForTimeout(20);
+  assert.equal(await reducedPage.locator(".drag-ghost-wiggle").evaluate((element) => getComputedStyle(element).animationName), "none");
+  await reducedPage.mouse.up();
+  await reducedPage.waitForTimeout(40);
+  assert.equal(await reducedPage.locator(".drag-ghost").count(), 0);
+  assert.equal(await reducedPage.locator(".item-card.is-dragging").count(), 0);
+  await reducedPage.close();
 
   const editPage = await browser.newPage({ viewport: { width: 1024, height: 1000 }, acceptDownloads: true });
   const editErrors = [];

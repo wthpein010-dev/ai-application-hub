@@ -1,0 +1,667 @@
+[
+  {
+    "id": 1,
+    "blockId": 100001,
+    "sequence": 1,
+    "name": "原皮战神",
+    "unlockDesc": "不加配饰自在生长，基础但绝不普通",
+    "galleryDesc": "没有配饰也敢直接出场，原皮才是最强皮肤。",
+    "layers": {
+      "block": "block_1",
+      "body": "body_1",
+      "head": "",
+      "dress": ""
+    }
+  },
+  {
+    "id": 14,
+    "blockId": 100014,
+    "sequence": 2,
+    "name": "黑帽快客",
+    "unlockDesc": "风才准备起步，快件已抵达终点",
+    "galleryDesc": "早市还在等天亮，白菜还没睡醒就已经被放在家门口。",
+    "layers": {
+      "block": "block_6",
+      "body": "body_6",
+      "head": "head_13",
+      "dress": "dress_13"
+    },
+    "preview": "assets/preview/14.png"
+  },
+  {
+    "id": 29,
+    "blockId": 100029,
+    "sequence": 3,
+    "name": "白了个白兔",
+    "unlockDesc": "可爱是天生的，清醒也是",
+    "galleryDesc": "外表软乎乎，主意却一直很清楚。喜欢可以温柔，底线必须明白。",
+    "layers": {
+      "block": "block_2",
+      "body": "body_18",
+      "head": "head_28",
+      "dress": "dress_28"
+    },
+    "preview": "assets/preview/29.png"
+  },
+  {
+    "id": 31,
+    "blockId": 100031,
+    "sequence": 4,
+    "name": "堡堡店长",
+    "unlockDesc": "这一晚，快乐重新加满",
+    "galleryDesc": "快乐没有复杂配方，趁热吃正好。",
+    "layers": {
+      "block": "block_5",
+      "body": "body_19",
+      "head": "head_30",
+      "dress": "dress_30"
+    },
+    "preview": "assets/preview/31.png"
+  },
+  {
+    "id": 5,
+    "blockId": 100005,
+    "sequence": 5,
+    "name": "草场从容哥",
+    "unlockDesc": "绿帽压着青草，松弛感铺满草场",
+    "galleryDesc": "出门太急拿错了那顶，回头率却直接拉满；小尴尬也算限定装扮。",
+    "layers": {
+      "block": "block_1",
+      "body": "body_8",
+      "head": "head_8",
+      "dress": ""
+    }
+  },
+  {
+    "id": 9,
+    "blockId": 100009,
+    "sequence": 6,
+    "name": "超前毛线团",
+    "unlockDesc": "粉镜配毛线团，也能走出时尚秀",
+    "galleryDesc": "粉色镜框镇住混乱，纠缠半天反而织出了高级感。",
+    "layers": {
+      "block": "block_15",
+      "body": "body_4",
+      "head": "head_4",
+      "dress": ""
+    }
+  },
+  {
+    "id": 26,
+    "blockId": 100026,
+    "sequence": 7,
+    "name": "拆家能手",
+    "unlockDesc": "自从我来，家具都有了我的签名",
+    "galleryDesc": "据不完全统计，家里的每声巨响都与本犬毫无关系。",
+    "layers": {
+      "block": "block_10",
+      "body": "body_15",
+      "head": "head_25",
+      "dress": "dress_25"
+    },
+    "preview": "assets/preview/26.png"
+  },
+  {
+    "id": 38,
+    "blockId": 100038,
+    "sequence": 8,
+    "name": "刺身店学徒",
+    "unlockDesc": "今晚的鲜，切得很讲究",
+    "galleryDesc": "他总说少放芥末。转头忘光了。",
+    "layers": {
+      "block": "block_7",
+      "body": "body_22",
+      "head": "head_37",
+      "dress": "dress_37"
+    },
+    "preview": "assets/preview/38.png"
+  },
+  {
+    "id": 3,
+    "blockId": 100003,
+    "sequence": 9,
+    "name": "冬帽草团子",
+    "unlockDesc": "帽檐压住寒风，没压住一脸小脾气",
+    "galleryDesc": "红色暖帽裹住嫩青草，疲惫感瞬间被自然气息治愈。",
+    "layers": {
+      "block": "block_1",
+      "body": "body_5",
+      "head": "head_5",
+      "dress": ""
+    }
+  },
+  {
+    "id": 11,
+    "blockId": 100011,
+    "sequence": 10,
+    "name": "袋鼠专员",
+    "unlockDesc": "别问多快，地图上的小黄点正朝你贴脸",
+    "galleryDesc": "刚刚下单，门铃便响起。袋鼠不跳远，只跳准时达。",
+    "layers": {
+      "block": "block_1",
+      "body": "body_1",
+      "head": "head_10",
+      "dress": "dress_10"
+    },
+    "preview": "assets/preview/11.png"
+  },
+  {
+    "id": 12,
+    "blockId": 100012,
+    "sequence": 11,
+    "name": "F1车手",
+    "unlockDesc": "快到没毛病，头盔只是仪式感",
+    "galleryDesc": "他的任务很简单：让每一份馋意，都在冰块融化前得到满足。",
+    "layers": {
+      "block": "block_5",
+      "body": "body_6",
+      "head": "head_11",
+      "dress": "dress_11"
+    },
+    "preview": "assets/preview/12.png"
+  },
+  {
+    "id": 18,
+    "blockId": 100018,
+    "sequence": 12,
+    "name": "粉拳家政师",
+    "unlockDesc": "柔弱的外表下藏着一颗坚强的心",
+    "galleryDesc": "她端来的不只晚餐，还有一句恰到好处的慢用和全天份好心情。",
+    "layers": {
+      "block": "block_7",
+      "body": "body_9",
+      "head": "",
+      "dress": "dress_17"
+    },
+    "preview": "assets/preview/18.png"
+  },
+  {
+    "id": 30,
+    "blockId": 100030,
+    "sequence": 13,
+    "name": "福气小猪",
+    "unlockDesc": "大事慢慢来，先把今夜过好",
+    "galleryDesc": "世界偶尔皱眉。乐天派照样把寻常日子过成圆的。",
+    "layers": {
+      "block": "block_6",
+      "body": "body_18",
+      "head": "head_29",
+      "dress": "dress_29"
+    },
+    "preview": "assets/preview/30.png"
+  },
+  {
+    "id": 10,
+    "blockId": 100010,
+    "sequence": 14,
+    "name": "黑镜麦霸总",
+    "unlockDesc": "墨镜一戴气场全开，麦穗也当霸总",
+    "galleryDesc": "别的庄稼迎风弯腰，他扶了扶墨镜，静候秋天亲自递上分红。",
+    "layers": {
+      "block": "block_16",
+      "body": "body_1",
+      "head": "head_1",
+      "dress": ""
+    },
+    "preview": "assets/preview/10.png"
+  },
+  {
+    "id": 13,
+    "blockId": 100013,
+    "sequence": 15,
+    "name": "红帽亿点快",
+    "unlockDesc": "红帽不误事，包裹准时出门",
+    "galleryDesc": "红帽兄弟抱稳纸箱，敲门只比下单快亿点点。",
+    "layers": {
+      "block": "block_9",
+      "body": "body_6",
+      "head": "head_12",
+      "dress": "dress_12"
+    },
+    "preview": "assets/preview/13.png"
+  },
+  {
+    "id": 21,
+    "blockId": 100021,
+    "sequence": 16,
+    "name": "哈吉米",
+    "unlockDesc": "哈基米南北绿豆",
+    "galleryDesc": "哈基米哦南北绿豆。阿西嘎哈椰果奶龙。",
+    "layers": {
+      "block": "block_15",
+      "body": "body_10",
+      "head": "head_20",
+      "dress": "dress_20"
+    },
+    "preview": "assets/preview/21.png"
+  },
+  {
+    "id": 34,
+    "blockId": 100034,
+    "sequence": 17,
+    "name": "海风配送员",
+    "unlockDesc": "海风签收，鲜味到家",
+    "galleryDesc": "海风吹了很久，这一网没落空。",
+    "layers": {
+      "block": "block_12",
+      "body": "body_2",
+      "head": "head_33",
+      "dress": "dress_33"
+    },
+    "preview": "assets/preview/34.png"
+  },
+  {
+    "id": 36,
+    "blockId": 100036,
+    "sequence": 18,
+    "name": "火辣辣",
+    "unlockDesc": "这一碗，暖到心口",
+    "galleryDesc": "平凡日子煮开以后，香气便有了新故事。",
+    "layers": {
+      "block": "block_14",
+      "body": "body_21",
+      "head": "head_35",
+      "dress": "dress_35"
+    },
+    "preview": "assets/preview/36.png"
+  },
+  {
+    "id": 28,
+    "blockId": 100028,
+    "sequence": 19,
+    "name": "卷毛阿灰",
+    "unlockDesc": "小眼睛一转，歪主意从脑海中浮现",
+    "galleryDesc": "作为家里的孩子王，他总能用不同的办法惹大人生气。",
+    "layers": {
+      "block": "block_5",
+      "body": "body_17",
+      "head": "head_27",
+      "dress": "dress_27"
+    },
+    "preview": "assets/preview/28.png"
+  },
+  {
+    "id": 7,
+    "blockId": 100007,
+    "sequence": 20,
+    "name": "枯木逢春",
+    "unlockDesc": "并非不开心，笑容冬眠中，开春再加载",
+    "galleryDesc": "身体还是老木桩，头顶已经偷偷把春天更新到最新版。",
+    "layers": {
+      "block": "block_4",
+      "body": "body_2",
+      "head": "head_2",
+      "dress": ""
+    }
+  },
+  {
+    "id": 2,
+    "blockId": 100002,
+    "sequence": 21,
+    "name": "邻家甜妹",
+    "unlockDesc": "甜妹能量满格，烦恼暂不接待",
+    "galleryDesc": "少女能量上线，专治阴天、困倦和隔壁那位的坏心情。",
+    "layers": {
+      "block": "block_1",
+      "body": "body_3",
+      "head": "head_3",
+      "dress": ""
+    }
+  },
+  {
+    "id": 6,
+    "blockId": 100006,
+    "sequence": 22,
+    "name": "萝卜界甜心",
+    "unlockDesc": "蓝蝴蝶结晃一下，甜妹能量满格",
+    "galleryDesc": "蓝蝶结搭配橙色胡萝卜，甜妹能量已经全部补充完毕。",
+    "layers": {
+      "block": "block_2",
+      "body": "body_7",
+      "head": "head_7",
+      "dress": ""
+    }
+  },
+  {
+    "id": 15,
+    "blockId": 100015,
+    "sequence": 23,
+    "name": "练习生",
+    "unlockDesc": "篮球只是爱好，运镜才是强项",
+    "galleryDesc": "音乐一响，篮球便有了舞步，练习生也找回两年半的手感。",
+    "layers": {
+      "block": "block_16",
+      "body": "body_3",
+      "head": "",
+      "dress": "dress_14"
+    },
+    "preview": "assets/preview/15.png"
+  },
+  {
+    "id": 17,
+    "blockId": 100017,
+    "sequence": 24,
+    "name": "萝卜工头",
+    "unlockDesc": "砖纹丝未动，意见先码了三层",
+    "galleryDesc": "安全帽专管点头，图纸承包背锅，流汗的另有其砖。",
+    "layers": {
+      "block": "block_2",
+      "body": "body_2",
+      "head": "head_16",
+      "dress": "dress_16"
+    },
+    "preview": "assets/preview/17.png"
+  },
+  {
+    "id": 27,
+    "blockId": 100027,
+    "sequence": 25,
+    "name": "李旺财",
+    "unlockDesc": "金窝银窝不如自己的狗窝",
+    "galleryDesc": "曾经有个人想用一百万换我的狗窝，我没换。",
+    "layers": {
+      "block": "block_2",
+      "body": "body_16",
+      "head": "head_26",
+      "dress": "dress_26"
+    },
+    "preview": "assets/preview/27.png"
+  },
+  {
+    "id": 37,
+    "blockId": 100037,
+    "sequence": 26,
+    "name": "龙虾天妇罗",
+    "unlockDesc": "大红好运终于上桌",
+    "galleryDesc": "它从海边赶来赴约。红着脸也不肯迟到。",
+    "layers": {
+      "block": "block_14",
+      "body": "body_3",
+      "head": "head_36",
+      "dress": "dress_36"
+    },
+    "preview": "assets/preview/37.png"
+  },
+  {
+    "id": 43,
+    "blockId": 100043,
+    "sequence": 27,
+    "name": "流苏灯娘",
+    "unlockDesc": "胡萝卜藏在灯下，连做梦都带点香甜。",
+    "galleryDesc": "流苏轻晃，把困意挡在外面。",
+    "layers": {
+      "block": "block_2",
+      "body": "body_26",
+      "head": "head_42",
+      "dress": ""
+    },
+    "preview": "assets/preview/43.png"
+  },
+  {
+    "id": 4,
+    "blockId": 100004,
+    "sequence": 28,
+    "name": "满眼心动",
+    "unlockDesc": "爱心镜片映出主角，快乐这回不用向外借",
+    "galleryDesc": "粉红滤镜只认本人，所有温柔最后都回到自己身上。",
+    "layers": {
+      "block": "block_1",
+      "body": "body_6",
+      "head": "head_6",
+      "dress": ""
+    }
+  },
+  {
+    "id": 8,
+    "blockId": 100008,
+    "sequence": 29,
+    "name": "咩羊姐",
+    "unlockDesc": "一不留神，棉花怎么突然长出羊脸了！",
+    "galleryDesc": "只要没人说破，她就同时保持棉花和小羊两种状态。",
+    "layers": {
+      "block": "block_7",
+      "body": "body_6",
+      "head": "head_9",
+      "dress": ""
+    }
+  },
+  {
+    "id": 19,
+    "blockId": 100019,
+    "sequence": 30,
+    "name": "毛线架构师",
+    "unlockDesc": "一个结是Bug，一团结就能上线",
+    "galleryDesc": "代码缠成这样还能运行，说明每根线都处在不可替代的岗位上。",
+    "layers": {
+      "block": "block_15",
+      "body": "body_8",
+      "head": "head_18",
+      "dress": "dress_18"
+    },
+    "preview": "assets/preview/19.png"
+  },
+  {
+    "id": 33,
+    "blockId": 100033,
+    "sequence": 31,
+    "name": "奶油云朵",
+    "unlockDesc": "熬到现在，甜头来了",
+    "galleryDesc": "樱桃在高处，像给今天盖了章。",
+    "layers": {
+      "block": "block_7",
+      "body": "body_18",
+      "head": "head_32",
+      "dress": "dress_32"
+    },
+    "preview": "assets/preview/33.png"
+  },
+  {
+    "id": 35,
+    "blockId": 100035,
+    "sequence": 32,
+    "name": "清汤达人",
+    "unlockDesc": "忙了许久，先吃口热的",
+    "galleryDesc": "面里没大道理，吃饱明天再想。",
+    "layers": {
+      "block": "block_6",
+      "body": "body_20",
+      "head": "head_34",
+      "dress": "dress_34"
+    },
+    "preview": "assets/preview/35.png"
+  },
+  {
+    "id": 40,
+    "blockId": 100040,
+    "sequence": 33,
+    "name": "热量收藏家",
+    "unlockDesc": "热量很高，快乐更高",
+    "galleryDesc": "热量表看了沉默。嘴角却很诚实。",
+    "layers": {
+      "block": "block_14",
+      "body": "body_23",
+      "head": "head_39",
+      "dress": "dress_39"
+    },
+    "preview": "assets/preview/40.png"
+  },
+  {
+    "id": 44,
+    "blockId": 100044,
+    "sequence": 34,
+    "name": "融化甜心",
+    "unlockDesc": "谁说融化就是失去？它只是换个姿势，把热闹继续留在人间。",
+    "galleryDesc": "外表在融化，热情依然满格。",
+    "layers": {
+      "block": "block_14",
+      "body": "body_27",
+      "head": "head_43",
+      "dress": "dress_43"
+    },
+    "preview": "assets/preview/44.png"
+  },
+  {
+    "id": 23,
+    "blockId": 100023,
+    "sequence": 35,
+    "name": "神游小龙",
+    "unlockDesc": "天大的事，也得等他睡醒再说",
+    "galleryDesc": "世界催得很急，他却把脚步放轻。能看清沿途，也是一种本事。",
+    "layers": {
+      "block": "block_1",
+      "body": "body_12",
+      "head": "head_22",
+      "dress": "dress_22"
+    },
+    "preview": "assets/preview/23.png"
+  },
+  {
+    "id": 32,
+    "blockId": 100032,
+    "sequence": 36,
+    "name": "薯条二重奏",
+    "unlockDesc": "两份快乐，今晚同台",
+    "galleryDesc": "一份解决嘴馋，另一份以防万一。",
+    "layers": {
+      "block": "block_5",
+      "body": "body_19",
+      "head": "head_31",
+      "dress": "dress_31"
+    },
+    "preview": "assets/preview/32.png"
+  },
+  {
+    "id": 24,
+    "blockId": 100024,
+    "sequence": 37,
+    "name": "桃之夭夭",
+    "unlockDesc": "我以为你再也不会选我了……",
+    "galleryDesc": "勇敢的人先享受世界，我希望成为这样的人。",
+    "layers": {
+      "block": "block_15",
+      "body": "body_13",
+      "head": "head_23",
+      "dress": "dress_23"
+    },
+    "preview": "assets/preview/24.png"
+  },
+  {
+    "id": 42,
+    "blockId": 100042,
+    "sequence": 38,
+    "name": "停播先生",
+    "unlockDesc": "画面不够清楚，故事却很耐看。那些慢慢长大的日子，正在重播。",
+    "galleryDesc": "别催更新，主角正在发呆。",
+    "layers": {
+      "block": "block_4",
+      "body": "body_25",
+      "head": "",
+      "dress": ""
+    },
+    "preview": "assets/preview/42.png"
+  },
+  {
+    "id": 20,
+    "blockId": 100020,
+    "sequence": 39,
+    "name": "维特先生",
+    "unlockDesc": "大部分人以为他只是个服务生……",
+    "galleryDesc": "晚餐渐渐散场，他替最后一位客人，留着刚好的热汤。",
+    "layers": {
+      "block": "block_7",
+      "body": "body_8",
+      "head": "head_19",
+      "dress": "dress_19"
+    },
+    "preview": "assets/preview/20.png"
+  },
+  {
+    "id": 16,
+    "blockId": 100016,
+    "sequence": 40,
+    "name": "野生总裁",
+    "unlockDesc": "会议可以推迟，发型绝不能乱",
+    "galleryDesc": "他沉默三秒，全公司将沉默理解为新的战略方向。",
+    "layers": {
+      "block": "block_1",
+      "body": "body_6",
+      "head": "",
+      "dress": "dress_15"
+    },
+    "preview": "assets/preview/16.png"
+  },
+  {
+    "id": 39,
+    "blockId": 100039,
+    "sequence": 41,
+    "name": "鱼子酱小姐",
+    "unlockDesc": "鱼子酱到场，精致加满",
+    "galleryDesc": "她轻声细语，出场费却按颗算。",
+    "layers": {
+      "block": "block_7",
+      "body": "body_22",
+      "head": "head_38",
+      "dress": ""
+    },
+    "preview": "assets/preview/39.png"
+  },
+  {
+    "id": 45,
+    "blockId": 100045,
+    "sequence": 42,
+    "name": "银壶和事佬",
+    "unlockDesc": "它不判断谁对谁错，只把杯子推到中间。茶凉之前，谁都别说狠话。",
+    "galleryDesc": "火气先放下，茶已经沏好。",
+    "layers": {
+      "block": "block_8",
+      "body": "body_28",
+      "head": "head_44",
+      "dress": "dress_44"
+    }
+  },
+  {
+    "id": 22,
+    "blockId": 100022,
+    "sequence": 43,
+    "name": "嘴硬喵",
+    "unlockDesc": "她把傲娇写在脸上，心却很软",
+    "galleryDesc": "偶尔闹脾气，嘴上嫌麻烦，你一皱眉，她先乱了分寸。",
+    "layers": {
+      "block": "block_7",
+      "body": "body_11",
+      "head": "head_21",
+      "dress": "dress_21"
+    },
+    "preview": "assets/preview/22.png"
+  },
+  {
+    "id": 25,
+    "blockId": 100025,
+    "sequence": 44,
+    "name": "直爽虎姐",
+    "unlockDesc": "能一句说清，绝不让你猜三天",
+    "galleryDesc": "她不擅长弯弯绕绕，却很擅长真诚。答案摆在明面，关系反而更轻松。",
+    "layers": {
+      "block": "block_9",
+      "body": "body_14",
+      "head": "head_24",
+      "dress": "dress_24"
+    },
+    "preview": "assets/preview/25.png"
+  },
+  {
+    "id": 41,
+    "blockId": 100041,
+    "sequence": 45,
+    "name": "早安先锋",
+    "unlockDesc": "两个铃铛轮流值班，谁也别想把早晨按掉。",
+    "galleryDesc": "眼睛还没睁，铃声先开工。",
+    "layers": {
+      "block": "block_2",
+      "body": "body_24",
+      "head": "head_40",
+      "dress": "dress_40"
+    },
+    "preview": "assets/preview/41.png"
+  }
+]

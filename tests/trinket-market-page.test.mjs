@@ -16,6 +16,8 @@ test("market page owns the approved public title and Hub return shell", () => {
   assert.match(html, /\.\.\/\.\.\/assets\/subpage-shell\.css/);
   assert.match(html, /id="item-grid"/);
   assert.match(html, /id="value-toggle"/);
+  assert.match(html, /class="gallery-link" href="\.\.\/brick-character-copy-preview\/index\.html"/);
+  assert.match(html, />砖块小人图鉴<\/a>/);
 });
 
 test("daylight skin control lives in the market header", () => {
