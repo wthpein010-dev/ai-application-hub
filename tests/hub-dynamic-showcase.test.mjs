@@ -65,7 +65,7 @@ test("project media registry covers every production id without loading ClickFlo
   assert.equal(media.clickflow.src, "");
   assert.equal(media.clickflow.fallback, "ClickFlow 鼠标自动化");
   for (const app of apps.filter(({ id }) => id !== "clickflow")) {
-    assert.match(media[app.id].src, /^\.\/assets\/hub-showcase\/[a-z0-9-]+\.(?:webp|jpg|png)\?v=20260827-hub-visual-polish$/u);
+    assert.match(media[app.id].src, /^\.\/assets\/hub-showcase\/[a-z0-9-]+\.(?:webp|jpg|png)\?v=\d{8}-[a-z0-9-]+$/u);
     const assetPath = join(root, media[app.id].src.split("?")[0]);
     assert.ok(existsSync(assetPath));
     assert.ok(statSync(assetPath).size <= 750 * 1024);
@@ -75,6 +75,11 @@ test("project media registry covers every production id without loading ClickFlo
     assert.match(media[app.id].accent, /^#[0-9a-f]{6}$/u);
     assert.ok(["product", "data", "game", "media"].includes(media[app.id].visualKind));
   }
+  assert.notEqual(
+    new URLSearchParams(media["brick-character-copy-preview"].src.split("?")[1]).get("v"),
+    "20260827-hub-visual-polish",
+    "the replaced brick-gallery showcase must not reuse the historical cache key",
+  );
 });
 
 test("the multi-thread Workbench is appended with a dedicated showcase image", () => {

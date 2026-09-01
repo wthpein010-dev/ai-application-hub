@@ -78,6 +78,8 @@ try {
     page.on("requestfailed", (request) => errors.push(`request: ${request.url()} ${request.failure()?.errorText}`));
     await page.addInitScript(() => localStorage.clear());
     await page.goto(`${origin}/projects/trinket-market/index.html`, { waitUntil: "networkidle" });
+    assert.equal(await page.locator('.market-header a[href="../brick-character-copy-preview/index.html"]').isVisible(), true);
+    assert.equal((await page.locator('.market-header a[href="../brick-character-copy-preview/index.html"]').textContent()).trim(), "砖块小人图鉴");
     await page.locator("body[data-ready='true']").waitFor();
 
     assert.equal(await page.title(), "随身小物交易市场");

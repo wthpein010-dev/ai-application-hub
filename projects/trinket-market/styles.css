@@ -129,6 +129,7 @@ a { color: inherit; }
 .market-nav { display: flex; gap: 4px; }
 .market-nav a { padding: 8px 11px; border-radius: 7px; color: var(--muted); font-size: 12px; text-decoration: none; }
 .market-nav a:hover, .market-nav a:focus-visible { color: var(--ink); background: var(--surface-3); }
+.market-nav .gallery-link { border: 1px solid color-mix(in srgb, var(--accent) 44%, var(--line)); color: var(--accent); font-weight: 800; }
 
 .live-state {
   margin-left: auto;
