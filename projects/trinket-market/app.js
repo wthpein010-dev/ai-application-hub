@@ -65,6 +65,8 @@ const state = {
   previewUrl: "",
 };
 
+let activeDrag = null;
+
 function formatNumber(value) {
   return new Intl.NumberFormat("zh-CN").format(value);
 }
@@ -413,7 +415,13 @@ function animateGridMove(before) {
 
 function beginDrag(event, card) {
   if (event.button !== 0 || state.query || event.target.closest("button, a, input, select, textarea, label")) return;
+  if (activeDrag) {
+    event.preventDefault();
+    return;
+  }
   event.preventDefault();
+  const dragContext = { pointerId: event.pointerId };
+  activeDrag = dragContext;
   const rect = card.getBoundingClientRect();
   const reduceMotion = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
   const offsetX = event.clientX - rect.left;
@@ -438,6 +446,7 @@ function beginDrag(event, card) {
   card.setPointerCapture?.(event.pointerId);
 
   function move(pointerEvent) {
+    if (pointerEvent.pointerId !== dragContext.pointerId || activeDrag !== dragContext) return;
     ghost.style.setProperty("--drag-x", `${pointerEvent.clientX - offsetX - rect.left}px`);
     ghost.style.setProperty("--drag-y", `${pointerEvent.clientY - offsetY - rect.top}px`);
     const target = document.elementFromPoint(pointerEvent.clientX, pointerEvent.clientY)?.closest(".item-card");
@@ -452,7 +461,8 @@ function beginDrag(event, card) {
     animateGridMove(before);
   }
 
-  function end() {
+  function end(pointerEvent) {
+    if (pointerEvent.pointerId !== dragContext.pointerId || activeDrag !== dragContext) return;
     window.removeEventListener("pointermove", move);
     window.removeEventListener("pointerup", end);
     window.removeEventListener("pointercancel", end);
@@ -469,12 +479,13 @@ function beginDrag(event, card) {
       ghost.remove();
       card.classList.remove("is-dragging");
       grid.classList.remove("is-drag-active");
+      if (activeDrag === dragContext) activeDrag = null;
     }, reduceMotion ? 0 : 230);
   }
 
   window.addEventListener("pointermove", move);
-  window.addEventListener("pointerup", end, { once: true });
-  window.addEventListener("pointercancel", end, { once: true });
+  window.addEventListener("pointerup", end);
+  window.addEventListener("pointercancel", end);
 }
 
 grid.addEventListener("pointerdown", (event) => {

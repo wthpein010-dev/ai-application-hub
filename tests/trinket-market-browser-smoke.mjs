@@ -214,6 +214,12 @@ try {
   const ninth = await cards.nth(8).boundingBox();
   await page.mouse.move(first.x + first.width / 2, first.y + first.height / 2);
   await page.mouse.down();
+  const pickup = await page.evaluate(() => ({
+    ghostCount: document.querySelectorAll(".drag-ghost").length,
+    sourceOpacity: Number(getComputedStyle(document.querySelector(".item-card.is-dragging .item-card-content")).opacity),
+  }));
+  assert.equal(pickup.ghostCount, 1);
+  assert.equal(pickup.sourceOpacity, 0);
   await page.mouse.move(ninth.x + ninth.width * 0.25, ninth.y + ninth.height / 2, { steps: 1 });
   await page.waitForTimeout(140);
   const during = await page.evaluate(async () => {
@@ -265,6 +271,60 @@ try {
   assert.match(await page.locator("#drag-status").textContent(), /已移动到第/);
   assert.deepEqual(errors, []);
   await page.close();
+
+  const pointerPage = await browser.newPage({ viewport: { width: 1024, height: 1000 } });
+  await pointerPage.addInitScript(() => localStorage.clear());
+  await pointerPage.goto(`${origin}/projects/trinket-market/index.html`, { waitUntil: "networkidle" });
+  await pointerPage.locator("body[data-ready='true']").waitFor();
+  await pointerPage.locator("#sort-mode").selectOption("manual");
+  const competingPointer = await pointerPage.evaluate(() => {
+    const cards = [...document.querySelectorAll(".item-card")];
+    const firstRect = cards[0].getBoundingClientRect();
+    const secondRect = cards[1].getBoundingClientRect();
+    cards[0].setPointerCapture = undefined;
+    cards[1].setPointerCapture = undefined;
+    const dispatch = (target, type, pointerId, x, y) => target.dispatchEvent(new PointerEvent(type, {
+      bubbles: true,
+      button: 0,
+      buttons: type === "pointerup" ? 0 : 1,
+      clientX: x,
+      clientY: y,
+      pointerId,
+      pointerType: "touch",
+    }));
+    dispatch(cards[0], "pointerdown", 101, firstRect.left + firstRect.width / 2, firstRect.top + firstRect.height / 2);
+    const before = getComputedStyle(document.querySelector(".drag-ghost")).transform;
+    dispatch(cards[1], "pointerdown", 202, secondRect.left + secondRect.width / 2, secondRect.top + secondRect.height / 2);
+    dispatch(window, "pointermove", 202, secondRect.right, secondRect.bottom);
+    const afterCompetingMove = getComputedStyle(document.querySelector(".drag-ghost")).transform;
+    dispatch(window, "pointerup", 202, secondRect.right, secondRect.bottom);
+    return {
+      ghostCount: document.querySelectorAll(".drag-ghost").length,
+      hiddenSourceCount: document.querySelectorAll(".item-card.is-dragging").length,
+      initiatingGhostStayedPut: before === afterCompetingMove,
+      initiatingDragStillActive: !document.querySelector(".drag-ghost")?.classList.contains("is-settling"),
+    };
+  });
+  assert.equal(competingPointer.ghostCount, 1);
+  assert.equal(competingPointer.hiddenSourceCount, 1);
+  assert.equal(competingPointer.initiatingGhostStayedPut, true);
+  assert.equal(competingPointer.initiatingDragStillActive, true);
+  const initiatingPointer = await pointerPage.evaluate(() => {
+    const ghost = document.querySelector(".drag-ghost");
+    const targetRect = document.querySelectorAll(".item-card")[8].getBoundingClientRect();
+    const before = getComputedStyle(ghost).transform;
+    const move = new PointerEvent("pointermove", { bubbles: true, buttons: 1, clientX: targetRect.left, clientY: targetRect.top, pointerId: 101, pointerType: "touch" });
+    window.dispatchEvent(move);
+    const after = getComputedStyle(ghost).transform;
+    window.dispatchEvent(new PointerEvent("pointerup", { bubbles: true, button: 0, buttons: 0, clientX: targetRect.left, clientY: targetRect.top, pointerId: 101, pointerType: "touch" }));
+    return { moved: before !== after, settling: ghost.classList.contains("is-settling") };
+  });
+  assert.equal(initiatingPointer.moved, true);
+  assert.equal(initiatingPointer.settling, true);
+  await pointerPage.waitForTimeout(260);
+  assert.equal(await pointerPage.locator(".drag-ghost").count(), 0);
+  assert.equal(await pointerPage.locator(".item-card.is-dragging").count(), 0);
+  await pointerPage.close();
 
   const reducedPage = await browser.newPage({ viewport: { width: 1024, height: 1000 } });
   await reducedPage.emulateMedia({ reducedMotion: "reduce" });
