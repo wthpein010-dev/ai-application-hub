@@ -85,9 +85,13 @@ function observeErrors(page) {
   return observation;
 }
 
-async function installInterceptors(page, observation, { clearOnce = false, failStorage = false } = {}) {
+async function installInterceptors(page, observation, {
+  clearOnce = false,
+  failStorage = false,
+  failNextProjectStorageWrite = false
+} = {}) {
   await page.exposeFunction("__reportRevokedObjectUrl", url => observation.revokedUrls.add(String(url)));
-  await page.addInitScript(({ clearOnce, failStorage }) => {
+  await page.addInitScript(({ clearOnce, failStorage, failNextProjectStorageWrite }) => {
     if (clearOnce && !sessionStorage.getItem("loop-bgm-smoke-ready")) {
       localStorage.clear();
       sessionStorage.setItem("loop-bgm-smoke-ready", "true");
@@ -152,18 +156,18 @@ async function installInterceptors(page, observation, { clearOnce = false, failS
       window.__copiedText = document.activeElement?.value || String(window.getSelection() || "");
       return true;
     };
-    if (failStorage) {
-      const originalGet = Storage.prototype.getItem;
-      Storage.prototype.getItem = function getItem(key) {
-        if (key === "loop-bgm-lab-v1") return originalGet.call(this, key);
-        return originalGet.call(this, key);
-      };
+    window.__failNextProjectStorageWrite = failNextProjectStorageWrite;
+    if (failStorage || failNextProjectStorageWrite) {
+      const originalSet = Storage.prototype.setItem;
       Storage.prototype.setItem = function setItem(key) {
-        if (key === "loop-bgm-lab-v1") throw new DOMException("quota blocked", "QuotaExceededError");
-        return undefined;
+        if (key === "loop-bgm-lab-v1" && (failStorage || window.__failNextProjectStorageWrite)) {
+          window.__failNextProjectStorageWrite = false;
+          throw new DOMException("quota blocked", "QuotaExceededError");
+        }
+        return originalSet.call(this, ...arguments);
       };
     }
-  }, { clearOnce, failStorage });
+  }, { clearOnce, failStorage, failNextProjectStorageWrite });
 }
 
 async function assertNoObservedErrors(page, observation) {
@@ -868,6 +872,39 @@ try {
   assert.equal(await quarantinedStoragePage.locator("#storage-warning").isHidden(), true);
   await assertNoObservedErrors(quarantinedStoragePage, quarantinedStorageErrors);
   await quarantinedStorageContext.close();
+
+  // Regression: a failed explicit-import write must retain quarantine after storage recovers.
+  const failedQuarantinedImportContext = await browser.newContext({ viewport: { width: 1024, height: 768 } });
+  const failedQuarantinedImportPage = await failedQuarantinedImportContext.newPage();
+  const failedQuarantinedImportErrors = observeErrors(failedQuarantinedImportPage);
+  await failedQuarantinedImportPage.addInitScript(() => {
+    localStorage.setItem("loop-bgm-lab-v1", JSON.stringify({ version: 99, preserved: "future-state" }));
+  });
+  await installInterceptors(failedQuarantinedImportPage, failedQuarantinedImportErrors, { failNextProjectStorageWrite: true });
+  await failedQuarantinedImportPage.goto(`${origin}/projects/loop-bgm-lab/index.html`, { waitUntil: "networkidle" });
+  await failedQuarantinedImportPage.locator("body[data-ready='true']").waitFor();
+  const failedCommitProtectedPayload = JSON.stringify({ version: 99, preserved: "future-state" });
+  await failedQuarantinedImportPage.locator("#import-project").setInputFiles({
+    name: "write-fails-loop-bgm-lab-handoff.md",
+    mimeType: "text/markdown",
+    buffer: Buffer.from(labelledMarkdown)
+  });
+  await failedQuarantinedImportPage.waitForFunction(() => document.querySelector("#import-status")?.textContent !== "尚未导入项目。");
+  assert.equal(
+    await failedQuarantinedImportPage.evaluate(() => localStorage.getItem("loop-bgm-lab-v1")),
+    failedCommitProtectedPayload,
+    "a failed explicit-import write must retain the original quarantined bytes"
+  );
+  await failedQuarantinedImportPage.locator("#style-key").fill("A major");
+  await failedQuarantinedImportPage.locator("#style-form").press("Enter");
+  assert.equal(
+    await failedQuarantinedImportPage.evaluate(() => localStorage.getItem("loop-bgm-lab-v1")),
+    failedCommitProtectedPayload,
+    "after writes recover, an ordinary edit must still respect the failed import quarantine"
+  );
+  assert.match(await failedQuarantinedImportPage.locator("#import-status").textContent(), /导入失败/);
+  await assertNoObservedErrors(failedQuarantinedImportPage, failedQuarantinedImportErrors);
+  await failedQuarantinedImportContext.close();
 
   await assertNoOverflow(page, "1440x900");
   await assertNoObservedErrors(page, errors);

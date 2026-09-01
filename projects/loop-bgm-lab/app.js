@@ -195,8 +195,8 @@ function loadProject() {
   }
 }
 
-function persistProject() {
-  if (storageWriteBlocked) {
+function persistProject({ allowBlockedWrite = false } = {}) {
+  if (storageWriteBlocked && !allowBlockedWrite) {
     showStorageQuarantine();
     return false;
   }
@@ -1431,16 +1431,24 @@ importInput.addEventListener("change", async () => {
     const result = await importProjectDocument(await file.text());
     const imported = result.project;
     const importedSelectedCandidateId = imported.candidates.at(-1)?.id || null;
+    const activeProject = project;
+    const activeSelectedCandidateId = selectedCandidateId;
     stageProjectRender(imported, importedSelectedCandidateId);
-    referenceGeneration += 1;
-    candidateGeneration += 1;
     project = imported;
     selectedCandidateId = importedSelectedCandidateId;
+    if (!persistProject({ allowBlockedWrite: true })) {
+      project = activeProject;
+      selectedCandidateId = activeSelectedCandidateId;
+      importStatus.textContent = "导入失败：本地存储不可用，当前状态未被替换。";
+      return;
+    }
+    storageWriteBlocked = false;
+    clearStorageWarning();
+    referenceGeneration += 1;
+    candidateGeneration += 1;
     releaseAllAudio();
     referenceFailures = [];
     rememberProjectIds(project);
-    storageWriteBlocked = false;
-    if (persistProject()) clearStorageWarning();
     renderAll();
     importStatus.textContent = `已完整导入 ${result.format === "markdown" ? "Markdown" : "JSON"} 并替换当前项目；音频仍需在本机重新选择。`;
   } catch (error) {
