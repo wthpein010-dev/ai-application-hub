@@ -219,13 +219,13 @@
         <div>
           <p class="section-kicker">PORTABLE HANDOFF</p>
           <h2 id="handoff-title">可迁移交接</h2>
-          <p>JSON 可在另一台电脑完整恢复状态，Markdown 便于人工或 Codex 阅读。两者都不包含音频、秘密、绝对路径或个人文件名。</p>
+          <p>JSON 与 Markdown 都可在另一台电脑完整恢复状态；Markdown 也便于人工或 Codex 阅读。两者都不包含音频、秘密、绝对路径或个人文件名。</p>
         </div>
       </div>
       <div class="handoff-actions">
         <button id="export-json" class="primary-button" type="button">导出 JSON</button>
         <button id="export-markdown" class="secondary-button" type="button">导出 Markdown</button>
-        <label class="file-picker compact" for="import-project"><strong>导入 JSON</strong><span>先完整校验，成功后才替换当前状态。</span><input id="import-project" class="visually-hidden" type="file" accept=".json,application/json"></label>
+        <label class="file-picker compact" for="import-project"><strong>导入 JSON 或 Markdown</strong><span>先完整校验，成功后才替换当前状态。</span><input id="import-project" class="visually-hidden" type="file" accept=".json,.md,application/json,text/markdown"></label>
       </div>
       <p id="import-status" class="live-box" role="status" aria-live="polite">尚未导入项目。</p>
       <p id="storage-warning" class="warning-box" role="status" aria-live="polite" hidden></p>

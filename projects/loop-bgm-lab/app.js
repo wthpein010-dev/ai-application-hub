@@ -3,7 +3,6 @@ import { createDailyPlan } from "./core/prompt-engine.mjs";
 import {
   bindExperimentOutput,
   exportProjectJson,
-  exportProjectMarkdown,
   importProjectJson,
   rebuildPromptQueue,
   recordCreateRun,
@@ -12,6 +11,11 @@ import {
   updateRunOutputs,
   validateProject
 } from "./core/project-state.mjs";
+import {
+  MAX_PROJECT_DOCUMENT_BYTES,
+  exportProjectHandoffMarkdown,
+  importProjectDocument
+} from "./core/portable-handoff.mjs";
 import {
   classifySimilarity,
   compareCandidate,
@@ -97,6 +101,7 @@ const licenseForm = element("#license-form");
 const licenseFormError = element("#license-form-error");
 const licenseList = element("#license-list");
 const importInput = element("#import-project");
+const markdownExportButton = element("#export-markdown");
 const importStatus = element("#import-status");
 const storageWarning = element("#storage-warning");
 const appLive = element("#app-live");
@@ -104,6 +109,7 @@ const appError = element("#app-error");
 const officialApiReadiness = evaluateOfficialApiReadiness(CURRENT_OFFICIAL_API_EVIDENCE);
 
 let project;
+let storageWriteBlocked = false;
 let referenceFailures = [];
 const referenceSessions = new Map();
 let candidateSession = null;
@@ -161,22 +167,45 @@ function showStorageFailure() {
   storageWarning.textContent = "本地存储不可用；当前会话仍可继续，请及时导出 JSON 以便恢复。";
 }
 
+function showStorageQuarantine() {
+  storageWarning.hidden = false;
+  storageWarning.textContent = "本地存储中的项目状态无效，已隔离保留；请导入有效的 JSON 或 Markdown 项目以恢复。";
+}
+
+function clearStorageWarning() {
+  storageWarning.textContent = "";
+  storageWarning.hidden = true;
+}
+
 function loadProject() {
+  let stored;
   try {
-    const stored = localStorage.getItem(STORAGE_KEY);
-    if (!stored) return defaultProject();
-    return importProjectJson(stored);
+    stored = localStorage.getItem(STORAGE_KEY);
   } catch {
     showStorageFailure();
     return defaultProject();
   }
+  if (stored === null) return defaultProject();
+  try {
+    return importProjectJson(stored);
+  } catch (error) {
+    storageWriteBlocked = true;
+    showStorageQuarantine(error);
+    return defaultProject();
+  }
 }
 
-function persistProject() {
+function persistProject({ allowBlockedWrite = false } = {}) {
+  if (storageWriteBlocked && !allowBlockedWrite) {
+    showStorageQuarantine();
+    return false;
+  }
   try {
     localStorage.setItem(STORAGE_KEY, exportProjectJson(project));
+    return true;
   } catch {
     showStorageFailure();
+    return false;
   }
 }
 
@@ -332,7 +361,7 @@ function updateDisplayName(kind, id, nextValue) {
   }
 }
 
-function renderReferences() {
+function renderReferences({ staging = false } = {}) {
   referenceList.replaceChildren();
   for (const [index, record] of (project.references || []).entries()) {
     const session = referenceSessions.get(record.id);
@@ -368,7 +397,7 @@ function renderReferences() {
     referenceList.append(item);
   }
   const playable = (project.references || []).map(record => referenceSessions.get(record.id)).find(Boolean);
-  setAudioElement(referencePlayer, playable?.url || null);
+  if (!staging) setAudioElement(referencePlayer, playable?.url || null);
   renderAggregate();
 }
 
@@ -664,7 +693,7 @@ function componentDetail(name, component) {
   return formatNumber(component.delta, 3);
 }
 
-function renderComparison() {
+function renderComparison({ staging = false } = {}) {
   const candidate = project.candidates.find(item => item.id === selectedCandidateId) || project.candidates.at(-1);
   comparisonBody.replaceChildren();
   if (!candidate?.comparison) {
@@ -674,7 +703,7 @@ function renderComparison() {
     similarityClass.textContent = "等待候选";
     nextAdvice.textContent = "导入参考和候选后，这里只给出一个变量轴的下一轮建议。";
     removeCandidateButton.hidden = !candidateSession;
-    setAudioElement(candidatePlayer, null);
+    if (!staging) setAudioElement(candidatePlayer, null);
     return;
   }
   comparisonResult.dataset.analysisState = "ready";
@@ -686,7 +715,7 @@ function renderComparison() {
     comparisonSimilarity.textContent = "—";
     nextAdvice.textContent = candidate.advice.message;
     removeCandidateButton.hidden = !candidateSession;
-    setAudioElement(candidatePlayer, candidateSession?.candidateId === candidate.id ? candidateSession.url : null);
+    if (!staging) setAudioElement(candidatePlayer, candidateSession?.candidateId === candidate.id ? candidateSession.url : null);
     return;
   }
   for (const [name, component] of Object.entries(candidate.comparison.components)) {
@@ -704,7 +733,7 @@ function renderComparison() {
     ? advice.message
     : `${advice.reason} ${advice.adjustment}`;
   removeCandidateButton.hidden = !candidateSession;
-  setAudioElement(candidatePlayer, candidateSession?.candidateId === candidate.id ? candidateSession.url : null);
+  if (!staging) setAudioElement(candidatePlayer, candidateSession?.candidateId === candidate.id ? candidateSession.url : null);
 }
 
 function updateCandidateReview(candidateId, batchPatch) {
@@ -931,11 +960,11 @@ function renderOfficialApiReadiness() {
   }
 }
 
-function renderAll() {
+function renderAll({ staging = false } = {}) {
   renderStyle();
-  renderReferences();
+  renderReferences({ staging });
   renderBatches();
-  renderComparison();
+  renderComparison({ staging });
   renderCandidateHistory();
   renderLicenses();
 }
@@ -946,11 +975,11 @@ function stageProjectRender(stagedProject, stagedSelectedCandidateId) {
   project = stagedProject;
   selectedCandidateId = stagedSelectedCandidateId;
   try {
-    renderAll();
+    renderAll({ staging: true });
   } finally {
     project = activeProject;
     selectedCandidateId = activeSelectedCandidateId;
-    renderAll();
+    renderAll({ staging: true });
   }
 }
 
@@ -1378,12 +1407,15 @@ element("#export-json").addEventListener("click", () => {
   }
 });
 
-element("#export-markdown").addEventListener("click", () => {
+markdownExportButton.addEventListener("click", async () => {
+  markdownExportButton.disabled = true;
   try {
-    downloadText(exportProjectMarkdown(project), "loop-bgm-lab-handoff.md", "text/markdown;charset=utf-8");
-    showLive("已导出不含音频、路径、个人文件名或秘密的 Markdown。 ");
+    downloadText(await exportProjectHandoffMarkdown(project), "loop-bgm-lab-handoff.md", "text/markdown;charset=utf-8");
+    showLive("已导出可完整恢复且不含音频、路径、个人文件名或秘密的 Markdown。");
   } catch (error) {
     showError(error instanceof Error ? error.message : "Markdown 导出失败。");
+  } finally {
+    markdownExportButton.disabled = false;
   }
 });
 
@@ -1393,21 +1425,34 @@ importInput.addEventListener("change", async () => {
   if (!file) return;
   clearError();
   try {
-    const imported = importProjectJson(await file.text());
+    if (file.size > MAX_PROJECT_DOCUMENT_BYTES) {
+      throw new TypeError("项目交接文件超过 48 MiB 限制。");
+    }
+    const result = await importProjectDocument(await file.text());
+    const imported = result.project;
     const importedSelectedCandidateId = imported.candidates.at(-1)?.id || null;
+    const activeProject = project;
+    const activeSelectedCandidateId = selectedCandidateId;
     stageProjectRender(imported, importedSelectedCandidateId);
-    referenceGeneration += 1;
-    candidateGeneration += 1;
     project = imported;
     selectedCandidateId = importedSelectedCandidateId;
+    if (!persistProject({ allowBlockedWrite: true })) {
+      project = activeProject;
+      selectedCandidateId = activeSelectedCandidateId;
+      importStatus.textContent = "导入失败：本地存储不可用，当前状态未被替换。";
+      return;
+    }
+    storageWriteBlocked = false;
+    clearStorageWarning();
+    referenceGeneration += 1;
+    candidateGeneration += 1;
     releaseAllAudio();
     referenceFailures = [];
     rememberProjectIds(project);
-    persistProject();
     renderAll();
-    importStatus.textContent = "已完整导入并替换当前项目；音频仍需在本机重新选择。";
+    importStatus.textContent = `已完整导入 ${result.format === "markdown" ? "Markdown" : "JSON"} 并替换当前项目；音频仍需在本机重新选择。`;
   } catch (error) {
-    importStatus.textContent = `导入失败：${error instanceof Error ? error.message : "项目 JSON 无效"}。当前状态未被替换。`;
+    importStatus.textContent = `导入失败：${error instanceof Error ? error.message : "项目交接文件无效"}。当前状态未被替换。`;
   }
 });
 

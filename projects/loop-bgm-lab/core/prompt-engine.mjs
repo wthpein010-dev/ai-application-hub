@@ -145,7 +145,7 @@ export function createDailyPlan(options = {}) {
   assertPortableValue(extensions, "extensions");
   return {
     version: 2,
-    toolVersion: typeof options.toolVersion === "string" ? options.toolVersion : "loop-bgm-lab/1.1.0",
+    toolVersion: typeof options.toolVersion === "string" ? options.toolVersion : "loop-bgm-lab/1.2.0",
     ruleCheckedAt: typeof options.ruleCheckedAt === "string" ? options.ruleCheckedAt : "2026-08-30",
     styleSpec,
     credits: { planned: 50, perBatch: 10, batchCount: 5 },
