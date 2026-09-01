@@ -62,7 +62,11 @@ try {
     assert.equal((await page.locator("#gallery-page").textContent()).trim(), "1/4");
     assert.equal(await page.locator(".character-card").count(), 12);
     assert.equal(await page.locator(".character-card.is-locked").count(), 0);
-    assert.equal(await page.locator(".character-card .character-layer").count() > 12, true);
+    assert.equal(await page.locator(".character-card .character-layer").count() > 0, true);
+    assert.equal(await page.locator('.character-card[data-block-id="100001"] .character-preview').count(), 0);
+    assert.equal(await page.locator('.character-card[data-block-id="100001"] .character-layer').count() > 0, true);
+    assert.equal(await page.locator('.character-card[data-block-id="100014"] .character-preview').count(), 1);
+    assert.equal(await page.locator('.character-card[data-block-id="100014"] .character-layer').count(), 0);
     assert.equal(await page.locator(".character-card").first().getAttribute("data-name"), "原皮战神");
     assert.equal(await page.locator(".character-card").nth(1).getAttribute("data-name"), "黑帽快客");
     assert.equal(await page.locator('a[href="./copy-review.html"]').count(), 1);
@@ -78,6 +82,22 @@ try {
     if (viewport.width === 1440) {
       assert.ok(Math.abs(cardGeometry[0].width - 170) < 1);
       assert.ok(Math.abs(cardGeometry[0].height - 180) < 1);
+      const previewGeometry = await page.locator('.character-card[data-block-id="100014"] .character-preview').evaluate((image) => {
+        const imageRect = image.getBoundingClientRect();
+        const figureRect = image.parentElement.getBoundingClientRect();
+        const computed = getComputedStyle(image);
+        return {
+          objectFit: computed.objectFit,
+          naturalWidth: image.naturalWidth,
+          naturalHeight: image.naturalHeight,
+          centerDeltaX: Math.abs((imageRect.left + imageRect.width / 2) - (figureRect.left + figureRect.width / 2)),
+          centerDeltaY: Math.abs((imageRect.top + imageRect.height / 2) - (figureRect.top + figureRect.height / 2)),
+        };
+      });
+      assert.equal(previewGeometry.objectFit, "contain");
+      assert.deepEqual([previewGeometry.naturalWidth, previewGeometry.naturalHeight], [140, 181]);
+      assert.ok(previewGeometry.centerDeltaX < 1);
+      assert.ok(previewGeometry.centerDeltaY < 1);
     }
 
     const historyLengthBeforeDetail = await page.evaluate(() => history.length);
@@ -141,8 +161,12 @@ try {
     await page.locator("#detail-next").click();
     assert.equal(await page.locator("#detail-name").textContent(), "黑帽快客");
     assert.equal((await page.locator("#detail-position").textContent()).trim(), "2 / 45");
+    assert.equal(await page.locator("#detail-character .character-preview").count(), 1);
+    assert.equal(await page.locator("#detail-character .character-layer").count(), 0);
     await page.locator("#detail-prev").click();
     assert.equal(await page.locator("#detail-name").textContent(), "原皮战神");
+    assert.equal(await page.locator("#detail-character .character-preview").count(), 0);
+    assert.equal(await page.locator("#detail-character .character-layer").count() > 0, true);
 
     await page.locator("#detail-favorite").click();
     assert.equal(await page.locator("#detail-favorite").getAttribute("aria-pressed"), "true");
@@ -169,6 +193,8 @@ try {
       assert.equal(await page.locator("#detail-description").textContent(), expected.galleryDesc);
       assert.equal((await page.locator("#detail-position").textContent()).trim(), `${index + 1} / 45`);
       await page.waitForFunction(() => Array.from(document.querySelectorAll("#detail-character img")).every((image) => image.complete && image.naturalWidth > 0));
+      assert.equal(await page.locator("#detail-character .character-preview").count(), expected.preview ? 1 : 0);
+      assert.equal(await page.locator("#detail-character .character-layer").count() > 0, !expected.preview);
       if (index < expectedCharacters.length - 1) await page.locator("#detail-next").click();
     }
     await page.locator("#detail-close").click();

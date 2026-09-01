@@ -1,15 +1,68 @@
 import test from "node:test";
 import assert from "node:assert/strict";
+import { spawnSync } from "node:child_process";
 import { existsSync, readFileSync } from "node:fs";
 import { mkdir, mkdtemp, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { dirname, join, resolve } from "node:path";
-import { fileURLToPath } from "node:url";
+import { fileURLToPath, pathToFileURL } from "node:url";
+import { deflateSync } from "node:zlib";
 import { buildBrickGalleryData, syncBrickGallery } from "../scripts/sync-brick-gallery-from-unity.mjs";
 
 const root = dirname(dirname(fileURLToPath(import.meta.url)));
 const projectRoot = join(root, "projects", "brick-character-copy-preview");
 const unityRoot = process.env.PAWS_HOME_CLIENT_ROOT;
+const previewSyncScript = join(root, "scripts", "sync-brick-character-previews.mjs");
+const transparentPng = Buffer.from(
+  "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=",
+  "base64",
+);
+const malformedPngs = [
+  ["signature-valid truncated PNG", Buffer.concat([transparentPng.subarray(0, 8), Buffer.alloc(8)])],
+  ["CRC-corrupted PNG", (() => {
+    const corrupted = Buffer.from(transparentPng);
+    const idatOffset = corrupted.indexOf(Buffer.from("IDAT", "ascii"));
+    corrupted[idatOffset + 4] ^= 0xff;
+    return corrupted;
+  })()],
+  ["PNG without IEND", transparentPng.subarray(0, -12)],
+];
+
+function fixtureCrc32(bytes) {
+  let crc = 0xffffffff;
+  for (const byte of bytes) {
+    crc ^= byte;
+    for (let bit = 0; bit < 8; bit += 1) crc = (crc >>> 1) ^ (0xedb88320 & -(crc & 1));
+  }
+  return (crc ^ 0xffffffff) >>> 0;
+}
+
+function fixturePngChunk(type, data) {
+  const typeBytes = Buffer.from(type, "ascii");
+  const chunk = Buffer.alloc(12 + data.length);
+  chunk.writeUInt32BE(data.length, 0);
+  typeBytes.copy(chunk, 4);
+  data.copy(chunk, 8);
+  chunk.writeUInt32BE(fixtureCrc32(Buffer.concat([typeBytes, data])), 8 + data.length);
+  return chunk;
+}
+
+function createResourceHeavyPng() {
+  const width = 2048;
+  const height = 2048;
+  const header = Buffer.alloc(13);
+  header.writeUInt32BE(width, 0);
+  header.writeUInt32BE(height, 4);
+  header[8] = 8;
+  header[9] = 6;
+  const scanlines = Buffer.alloc(height * ((width * 4) + 1));
+  return Buffer.concat([
+    transparentPng.subarray(0, 8),
+    fixturePngChunk("IHDR", header),
+    fixturePngChunk("IDAT", deflateSync(scanlines, { level: 9 })),
+    fixturePngChunk("IEND", Buffer.alloc(0)),
+  ]);
+}
 const expectedUiAssets = [
   "save1.png", "save2.png", "save_btn1.png", "save_btn2.png", "tujian_btn_bright.png",
   "tujian_btn_dark.png", "tujian_btn_turn.png", "tujian_jues_save1.png", "tujian_jues_save2.png",
@@ -65,6 +118,18 @@ async function createSyntheticUnityFixture({ firstBody = "", firstName = "角色
   return { tempRoot, syntheticUnityRoot, syntheticProjectRoot };
 }
 
+function runPreviewSync(previewRoot, syntheticProjectRoot) {
+  return spawnSync(process.execPath, [previewSyncScript], {
+    cwd: root,
+    encoding: "utf8",
+    env: {
+      ...process.env,
+      BRICK_CHARACTER_PREVIEW_ROOT: previewRoot,
+      BRICK_GALLERY_PROJECT_ROOT: syntheticProjectRoot,
+    },
+  });
+}
+
 test("Unity join produces exactly the 45 approved visible characters in display order", { skip: !unityRoot }, async () => {
   const characters = await buildBrickGalleryData({ unityRoot });
 
@@ -106,7 +171,260 @@ test("generated public catalog contains the approved order and every referenced 
 test("generated public catalog mirrors the current Unity checkout", { skip: !unityRoot }, async () => {
   const generated = JSON.parse(readFileSync(join(projectRoot, "data", "characters.json"), "utf8"));
   const source = await buildBrickGalleryData({ unityRoot });
-  assert.deepEqual(generated, source);
+  assert.deepEqual(generated.map(({ preview, ...character }) => character), source);
+});
+
+test("preview synchronizer publishes stable character IDs without leaking the source path", async () => {
+  const fixture = await createSyntheticUnityFixture();
+  const previewRoot = join(fixture.tempRoot, "character-previews");
+  const publishedPreviewRoot = join(fixture.syntheticProjectRoot, "assets", "preview");
+  try {
+    await syncBrickGallery({ unityRoot: fixture.syntheticUnityRoot, projectRoot: fixture.syntheticProjectRoot });
+    await mkdir(previewRoot, { recursive: true });
+    await mkdir(publishedPreviewRoot, { recursive: true });
+    await Promise.all([
+      writeFile(join(previewRoot, "10角色甲.png"), transparentPng),
+      writeFile(join(previewRoot, "44角色乙.png"), transparentPng),
+      writeFile(join(previewRoot, "说明.txt"), "ignore", "utf8"),
+      writeFile(join(publishedPreviewRoot, "9.png"), transparentPng),
+      writeFile(join(publishedPreviewRoot, "notes.txt"), "keep", "utf8"),
+    ]);
+
+    const result = runPreviewSync(previewRoot, fixture.syntheticProjectRoot);
+    assert.equal(result.status, 0, result.stderr || result.stdout);
+
+    const rawCatalog = readFileSync(join(fixture.syntheticProjectRoot, "data", "characters.json"), "utf8");
+    const catalog = JSON.parse(rawCatalog);
+    assert.equal(catalog.find(({ id }) => id === 10).preview, "assets/preview/10.png");
+    assert.equal(catalog.find(({ id }) => id === 44).preview, "assets/preview/44.png");
+    assert.equal("preview" in catalog.find(({ id }) => id === 9), false);
+    assert.equal(existsSync(join(publishedPreviewRoot, "10.png")), true);
+    assert.equal(existsSync(join(publishedPreviewRoot, "44.png")), true);
+    assert.equal(existsSync(join(publishedPreviewRoot, "9.png")), false);
+    assert.equal(existsSync(join(publishedPreviewRoot, "notes.txt")), true);
+    assert.equal(rawCatalog.includes(previewRoot), false);
+  } finally {
+    await rm(fixture.tempRoot, { recursive: true, force: true, maxRetries: 5, retryDelay: 20 });
+  }
+});
+
+test("preview synchronizer rejects two files for the same character ID", async () => {
+  const fixture = await createSyntheticUnityFixture();
+  const previewRoot = join(fixture.tempRoot, "duplicate-previews");
+  try {
+    await syncBrickGallery({ unityRoot: fixture.syntheticUnityRoot, projectRoot: fixture.syntheticProjectRoot });
+    await mkdir(previewRoot, { recursive: true });
+    await Promise.all([
+      writeFile(join(previewRoot, "10版本甲.png"), transparentPng),
+      writeFile(join(previewRoot, "10版本乙.png"), transparentPng),
+    ]);
+
+    const result = runPreviewSync(previewRoot, fixture.syntheticProjectRoot);
+    assert.notEqual(result.status, 0);
+    assert.match(result.stderr, /Duplicate preview ID 10/u);
+  } finally {
+    await rm(fixture.tempRoot, { recursive: true, force: true, maxRetries: 5, retryDelay: 20 });
+  }
+});
+
+test("preview synchronizer rejects an ID outside the published character catalog", async () => {
+  const fixture = await createSyntheticUnityFixture();
+  const previewRoot = join(fixture.tempRoot, "unknown-preview");
+  try {
+    await syncBrickGallery({ unityRoot: fixture.syntheticUnityRoot, projectRoot: fixture.syntheticProjectRoot });
+    await mkdir(previewRoot, { recursive: true });
+    await writeFile(join(previewRoot, "46未配置.png"), transparentPng);
+
+    const result = runPreviewSync(previewRoot, fixture.syntheticProjectRoot);
+    assert.notEqual(result.status, 0);
+    assert.match(result.stderr, /Unknown preview ID 46/u);
+  } finally {
+    await rm(fixture.tempRoot, { recursive: true, force: true, maxRetries: 5, retryDelay: 20 });
+  }
+});
+
+test("preview synchronizer refuses an empty source before pruning published art", async () => {
+  const fixture = await createSyntheticUnityFixture();
+  const previewRoot = join(fixture.tempRoot, "empty-previews");
+  const publishedPreviewRoot = join(fixture.syntheticProjectRoot, "assets", "preview");
+  try {
+    await syncBrickGallery({ unityRoot: fixture.syntheticUnityRoot, projectRoot: fixture.syntheticProjectRoot });
+    await mkdir(previewRoot, { recursive: true });
+    await mkdir(publishedPreviewRoot, { recursive: true });
+    await writeFile(join(publishedPreviewRoot, "10.png"), transparentPng);
+
+    const result = runPreviewSync(previewRoot, fixture.syntheticProjectRoot);
+    assert.notEqual(result.status, 0);
+    assert.match(result.stderr, /No character preview PNG files found/u);
+    assert.equal(existsSync(join(publishedPreviewRoot, "10.png")), true);
+  } finally {
+    await rm(fixture.tempRoot, { recursive: true, force: true, maxRetries: 5, retryDelay: 20 });
+  }
+});
+
+test("preview synchronizer rejects invalid PNG bytes before changing published art", async () => {
+  const fixture = await createSyntheticUnityFixture();
+  const previewRoot = join(fixture.tempRoot, "invalid-previews");
+  const publishedPreviewRoot = join(fixture.syntheticProjectRoot, "assets", "preview");
+  try {
+    await syncBrickGallery({ unityRoot: fixture.syntheticUnityRoot, projectRoot: fixture.syntheticProjectRoot });
+    await mkdir(previewRoot, { recursive: true });
+    await mkdir(publishedPreviewRoot, { recursive: true });
+    await writeFile(join(previewRoot, "10损坏.png"), "not-a-png", "utf8");
+    await writeFile(join(publishedPreviewRoot, "10.png"), transparentPng);
+
+    const result = runPreviewSync(previewRoot, fixture.syntheticProjectRoot);
+    assert.notEqual(result.status, 0);
+    assert.match(result.stderr, /Invalid PNG preview/u);
+    assert.equal(readFileSync(join(publishedPreviewRoot, "10.png")).equals(transparentPng), true);
+  } finally {
+    await rm(fixture.tempRoot, { recursive: true, force: true, maxRetries: 5, retryDelay: 20 });
+  }
+});
+
+test("preview synchronizer rejects structurally damaged PNGs before changing published art or catalog", async (t) => {
+  for (const [label, damagedPng] of malformedPngs) {
+    await t.test(label, async () => {
+      const fixture = await createSyntheticUnityFixture();
+      const previewRoot = join(fixture.tempRoot, "damaged-previews");
+      const publishedPreviewRoot = join(fixture.syntheticProjectRoot, "assets", "preview");
+      try {
+        await syncBrickGallery({ unityRoot: fixture.syntheticUnityRoot, projectRoot: fixture.syntheticProjectRoot });
+        await mkdir(previewRoot, { recursive: true });
+        await mkdir(publishedPreviewRoot, { recursive: true });
+        await writeFile(join(previewRoot, "10损坏.png"), damagedPng);
+        await writeFile(join(publishedPreviewRoot, "10.png"), transparentPng);
+        await syncBrickGallery({ unityRoot: fixture.syntheticUnityRoot, projectRoot: fixture.syntheticProjectRoot });
+        const catalogPath = join(fixture.syntheticProjectRoot, "data", "characters.json");
+        const catalogBefore = readFileSync(catalogPath);
+
+        const result = runPreviewSync(previewRoot, fixture.syntheticProjectRoot);
+        assert.notEqual(result.status, 0);
+        assert.match(result.stderr, /Invalid PNG preview/u);
+        assert.equal(readFileSync(join(publishedPreviewRoot, "10.png")).equals(transparentPng), true);
+        assert.equal(readFileSync(catalogPath).equals(catalogBefore), true);
+      } finally {
+        await rm(fixture.tempRoot, { recursive: true, force: true, maxRetries: 5, retryDelay: 20 });
+      }
+    });
+  }
+});
+
+test("preview synchronizer rejects PNG input and decompressed pixels above resource limits", async (t) => {
+  const cases = [
+    ["oversized source file", () => Buffer.concat([transparentPng, Buffer.alloc((8 * 1024 * 1024) + 1)])],
+    ["compressed pixels above the decode budget", createResourceHeavyPng],
+  ];
+  for (const [label, createPng] of cases) {
+    await t.test(label, async () => {
+      const fixture = await createSyntheticUnityFixture();
+      const previewRoot = join(fixture.tempRoot, "resource-heavy-previews");
+      const publishedPreviewRoot = join(fixture.syntheticProjectRoot, "assets", "preview");
+      try {
+        await syncBrickGallery({ unityRoot: fixture.syntheticUnityRoot, projectRoot: fixture.syntheticProjectRoot });
+        await mkdir(previewRoot, { recursive: true });
+        await mkdir(publishedPreviewRoot, { recursive: true });
+        await writeFile(join(previewRoot, "10超限.png"), createPng());
+        await writeFile(join(publishedPreviewRoot, "10.png"), transparentPng);
+        await syncBrickGallery({ unityRoot: fixture.syntheticUnityRoot, projectRoot: fixture.syntheticProjectRoot });
+        const catalogPath = join(fixture.syntheticProjectRoot, "data", "characters.json");
+        const catalogBefore = readFileSync(catalogPath);
+
+        const result = runPreviewSync(previewRoot, fixture.syntheticProjectRoot);
+        assert.notEqual(result.status, 0);
+        assert.match(result.stderr, /PNG resource limit exceeded/u);
+        assert.equal(readFileSync(join(publishedPreviewRoot, "10.png")).equals(transparentPng), true);
+        assert.equal(readFileSync(catalogPath).equals(catalogBefore), true);
+      } finally {
+        await rm(fixture.tempRoot, { recursive: true, force: true, maxRetries: 5, retryDelay: 20 });
+      }
+    });
+  }
+});
+
+test("preview synchronizer reserves IDs 1 through 9 and 45 for Unity layered rendering", async (t) => {
+  for (const id of [1, 9, 45]) {
+    await t.test(`ID ${id}`, async () => {
+      const fixture = await createSyntheticUnityFixture();
+      const previewRoot = join(fixture.tempRoot, `reserved-preview-${id}`);
+      const publishedPreviewRoot = join(fixture.syntheticProjectRoot, "assets", "preview");
+      try {
+        await syncBrickGallery({ unityRoot: fixture.syntheticUnityRoot, projectRoot: fixture.syntheticProjectRoot });
+        await mkdir(previewRoot, { recursive: true });
+        await mkdir(publishedPreviewRoot, { recursive: true });
+        await writeFile(join(previewRoot, `${id}不应发布.png`), transparentPng);
+        await writeFile(join(publishedPreviewRoot, "10.png"), transparentPng);
+        await syncBrickGallery({ unityRoot: fixture.syntheticUnityRoot, projectRoot: fixture.syntheticProjectRoot });
+        const catalogPath = join(fixture.syntheticProjectRoot, "data", "characters.json");
+        const catalogBefore = readFileSync(catalogPath);
+
+        const result = runPreviewSync(previewRoot, fixture.syntheticProjectRoot);
+        assert.notEqual(result.status, 0);
+        assert.match(result.stderr, new RegExp(`Preview ID ${id} must use Unity layered rendering`, "u"));
+        assert.equal(existsSync(join(publishedPreviewRoot, `${id}.png`)), false);
+        assert.equal(readFileSync(join(publishedPreviewRoot, "10.png")).equals(transparentPng), true);
+        assert.equal(readFileSync(catalogPath).equals(catalogBefore), true);
+      } finally {
+        await rm(fixture.tempRoot, { recursive: true, force: true, maxRetries: 5, retryDelay: 20 });
+      }
+    });
+  }
+});
+
+test("preview transaction restores published art and catalog when a commit step fails", async () => {
+  const fixture = await createSyntheticUnityFixture();
+  const assetsRoot = join(fixture.syntheticProjectRoot, "assets");
+  const publishedPreviewRoot = join(assetsRoot, "preview");
+  const stagedPreviewRoot = join(assetsRoot, ".preview-staging-rollback-test");
+  const catalogPath = join(fixture.syntheticProjectRoot, "data", "characters.json");
+  const missingStagedCatalogPath = join(fixture.syntheticProjectRoot, "data", ".characters-missing.json");
+  try {
+    await syncBrickGallery({ unityRoot: fixture.syntheticUnityRoot, projectRoot: fixture.syntheticProjectRoot });
+    await mkdir(publishedPreviewRoot, { recursive: true });
+    await mkdir(stagedPreviewRoot, { recursive: true });
+    await writeFile(join(publishedPreviewRoot, "10.png"), transparentPng);
+    await writeFile(join(stagedPreviewRoot, "10.png"), Buffer.from(transparentPng).fill(0, 40, 41));
+    const catalogBefore = readFileSync(catalogPath);
+    const previewBefore = readFileSync(join(publishedPreviewRoot, "10.png"));
+    const module = await import(pathToFileURL(previewSyncScript).href);
+
+    assert.equal(typeof module.commitCharacterPreviewTransaction, "function");
+    await assert.rejects(
+      module.commitCharacterPreviewTransaction({
+        publishedRoot: publishedPreviewRoot,
+        stagedRoot: stagedPreviewRoot,
+        dataPath: catalogPath,
+        stagedDataPath: missingStagedCatalogPath,
+        transactionId: "rollback-test",
+      }),
+      /ENOENT|no such file or directory/iu,
+    );
+    assert.equal(readFileSync(join(publishedPreviewRoot, "10.png")).equals(previewBefore), true);
+    assert.equal(readFileSync(catalogPath).equals(catalogBefore), true);
+  } finally {
+    await rm(fixture.tempRoot, { recursive: true, force: true, maxRetries: 5, retryDelay: 20 });
+  }
+});
+
+test("Unity synchronization preserves references to already published preview PNGs", async () => {
+  const fixture = await createSyntheticUnityFixture();
+  const publishedPreviewRoot = join(fixture.syntheticProjectRoot, "assets", "preview");
+  try {
+    await mkdir(publishedPreviewRoot, { recursive: true });
+    await writeFile(join(publishedPreviewRoot, "10.png"), transparentPng);
+
+    const result = await syncBrickGallery({
+      unityRoot: fixture.syntheticUnityRoot,
+      projectRoot: fixture.syntheticProjectRoot,
+    });
+    const catalog = JSON.parse(readFileSync(join(fixture.syntheticProjectRoot, "data", "characters.json"), "utf8"));
+
+    assert.equal(result.find(({ id }) => id === 10).preview, "assets/preview/10.png");
+    assert.equal(catalog.find(({ id }) => id === 10).preview, "assets/preview/10.png");
+    assert.equal("preview" in catalog.find(({ id }) => id === 9), false);
+  } finally {
+    await rm(fixture.tempRoot, { recursive: true, force: true, maxRetries: 5, retryDelay: 20 });
+  }
 });
 
 test("public catalog contains no unresolved localization keys or local source paths", () => {

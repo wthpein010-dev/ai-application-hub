@@ -260,7 +260,7 @@ globalThis.HUB_PROJECT_MEDIA = Object.freeze({
     visualKind: "media",
   }),
   "brick-character-copy-preview": Object.freeze({
-    src: "./assets/hub-showcase/brick-character-copy-preview.webp?v=20260901-brick-gallery",
+    src: "./assets/hub-showcase/brick-character-copy-preview.webp?v=20260901-brick-previews",
     alt: "砖块小人图鉴与文案校对功能画面",
     position: "center",
     layout: "wide",

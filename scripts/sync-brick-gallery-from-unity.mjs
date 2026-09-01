@@ -1,6 +1,7 @@
 import { copyFile, mkdir, readFile, readdir, rm, writeFile } from "node:fs/promises";
 import { basename, dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
+import { withPublishedCharacterPreviews } from "./sync-brick-character-previews.mjs";
 
 const repositoryRoot = resolve(fileURLToPath(new URL("..", import.meta.url)));
 const defaultProjectRoot = join(repositoryRoot, "projects", "brick-character-copy-preview");
@@ -124,9 +125,10 @@ export async function syncBrickGallery({
   if (!unityRoot) throw new Error("Set PAWS_HOME_CLIENT_ROOT to the local Unity project root");
   const resolvedUnityRoot = resolve(unityRoot);
   const resolvedProjectRoot = resolve(projectRoot);
-  const characters = await buildBrickGalleryData({ unityRoot: resolvedUnityRoot });
-  await copyReferencedLayers(characters, resolvedUnityRoot, resolvedProjectRoot);
+  const sourceCharacters = await buildBrickGalleryData({ unityRoot: resolvedUnityRoot });
+  await copyReferencedLayers(sourceCharacters, resolvedUnityRoot, resolvedProjectRoot);
   await copyUiAssets(resolvedUnityRoot, resolvedProjectRoot);
+  const characters = await withPublishedCharacterPreviews(sourceCharacters, resolvedProjectRoot);
   const dataPath = join(resolvedProjectRoot, "data", "characters.json");
   await mkdir(dirname(dataPath), { recursive: true });
   await writeFile(dataPath, `${JSON.stringify(characters, null, 2)}\n`, "utf8");

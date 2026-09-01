@@ -170,6 +170,7 @@ test("video page uses the shared player and a 45-character H.264 walkthrough", (
   assert.match(page, /45 个正式角色/);
   assert.match(page, /打开图鉴/);
   assert.match(tutorial, /真实换行诊断/);
+  assert.match(tutorial, /完整角色预览图/);
   assert.match(tutorial, /随身小物交易市场/);
   assert.equal(existsSync(mediaPath), true);
 
@@ -187,6 +188,7 @@ test("video page uses the shared player and a 45-character H.264 walkthrough", (
   assert.equal(cues.length, 6);
   assert.equal(cues.every((cue) => cue.text.length === 1), true);
   assert.match(captions, /四十五个正式角色/);
+  assert.match(captions, /完整角色预览图/);
   assert.match(captions, /真实换行/);
   assert.match(captions, /随身小物交易市场/);
   assert.ok(cues.at(-1).end <= media.duration);

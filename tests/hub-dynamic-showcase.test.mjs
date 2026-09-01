@@ -80,6 +80,10 @@ test("project media registry covers every production id without loading ClickFlo
     "20260827-hub-visual-polish",
     "the replaced brick-gallery showcase must not reuse the historical cache key",
   );
+  assert.equal(
+    new URLSearchParams(media["brick-character-copy-preview"].src.split("?")[1]).get("v"),
+    "20260901-brick-previews",
+  );
 });
 
 test("the multi-thread Workbench is appended with a dedicated showcase image", () => {
@@ -231,7 +235,7 @@ test("stage fallback is hidden after successful media load and restored on image
 
 test("browser smoke owns an independent literal catalog order oracle", () => {
   const expected = {
-    apps: ["hub", "gamepulse-mini-radar", "codex-quota-bar", "codex-thread-workbench", "web-media-collector", "minigame-project-simulator", "ai-game-requirements-workshop", "planner-daily-quiz", "travel-generator", "feishu-downloader", "codex-reviewer", "codex-habit-tool", "wanhuatong", "pureshrink", "planmap", "simuai", "gamespec-relay", "x-ai-codex-radar", "codex-multi-thread-workbench"],
+    apps: ["hub", "gamepulse-mini-radar", "codex-quota-bar", "codex-thread-workbench", "web-media-collector", "minigame-project-simulator", "ai-game-requirements-workshop", "planner-daily-quiz", "travel-generator", "feishu-downloader", "codex-reviewer", "codex-habit-tool", "wanhuatong", "pureshrink", "planmap", "simuai", "gamespec-relay", "x-ai-codex-radar", "loop-bgm-lab", "codex-multi-thread-workbench"],
     games: ["zhuanglege-sha", "xiang-le-ge-xiang", "fill-what", "nang-keng-pai-pai-xiang", "icecream"],
     engineering: ["vita-mahjong", "paws-home-client", "paws-level-editor", "brick-light-motion-lab", "brick-character-copy-preview", "trinket-market"],
   };
@@ -241,13 +245,14 @@ test("browser smoke owns an independent literal catalog order oracle", () => {
     assert.deepEqual(Array.from(literal.matchAll(/"([a-z0-9-]+)"/gu), ([, id]) => id), ids);
   }
   for (const expectation of [
-    "cardCount, 30",
-    "imageCount, 30",
-    "featureCount, 30",
-    ".count() === 30",
+    "cardCount, expectedCardCount",
+    "imageCount, expectedCardCount",
+    "featureCount, expectedCardCount",
+    ".count() === expectedCardCount",
   ]) assert.match(browserSmoke, new RegExp(expectation.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "u"));
-  assert.doesNotMatch(browserSmoke, /cardCount, 29|imageCount, 29|featureCount, 29|\.count\(\) === 29/u);
+  assert.doesNotMatch(browserSmoke, /cardCount, (?:29|30|31)|imageCount, (?:29|30|31)|featureCount, (?:29|30|31)|\.count\(\) === (?:29|30|31)/u);
   assert.match(browserSmoke, /const expectedNavigationIds = \[\s*\.\.\.expectedCollectionIds\.apps,\s*\.\.\.expectedCollectionIds\.games,\s*\.\.\.expectedCollectionIds\.engineering,\s*\];/u);
+  assert.match(browserSmoke, /const expectedCardCount = expectedNavigationIds\.length;/u);
   assert.doesNotMatch(browserSmoke, /loadDefaultAppsFromRuntime|readFileSync\(join\(root, "app-20260706-restore-games\.js"\)/u);
 });
 

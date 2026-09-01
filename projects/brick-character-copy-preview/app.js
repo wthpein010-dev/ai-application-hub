@@ -75,6 +75,17 @@ function createCharacterFigure(character) {
   const figure = document.createElement("div");
   figure.className = "character-figure";
   figure.setAttribute("aria-hidden", "true");
+
+  if (character.preview) {
+    const preview = document.createElement("img");
+    preview.className = "character-preview";
+    preview.src = `./${character.preview}`;
+    preview.alt = "";
+    preview.draggable = false;
+    figure.append(preview);
+    return figure;
+  }
+
   const limbs = document.createElement("span");
   limbs.className = "character-limbs";
   figure.append(limbs);
