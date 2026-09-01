@@ -190,6 +190,9 @@ function validateSources(apps, sources) {
     if (source.captureTime !== undefined && (!Number.isFinite(source.captureTime) || source.captureTime < 0)) {
       throw new Error(`Invalid capture time for ${id}`);
     }
+    if (source.cacheVersion !== undefined && !/^\d{8}-[a-z0-9-]+$/u.test(source.cacheVersion)) {
+      throw new Error(`Invalid cache version for ${id}`);
+    }
   }
 }
 
@@ -417,7 +420,7 @@ function registrySource(apps, sources) {
       }];
     }
     return [app.id, {
-      src: `./assets/hub-showcase/${app.id}.webp?v=${SHOWCASE_CACHE_VERSION}`,
+      src: `./assets/hub-showcase/${app.id}.webp?v=${sources[app.id].cacheVersion || SHOWCASE_CACHE_VERSION}`,
       alt: app.id === "hub" ? "AI 应用方案整理器功能画面" : `${app.name}功能画面`,
       position: "center",
       layout: sources[app.id].layout,

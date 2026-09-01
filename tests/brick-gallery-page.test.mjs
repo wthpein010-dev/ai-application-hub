@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { readFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -23,6 +23,26 @@ test("brick preview now defaults to the game-style 45-character gallery", () => 
   assert.match(app, /copy-diagnostics\.js/);
   assert.match(app, /data\/characters\.json/);
   assert.equal(data.length, 45);
+});
+
+test("gallery catalog publishes complete preview art for the available character ID range", () => {
+  const dataPath = join(projectRoot, "data", "characters.json");
+  const source = readFileSync(dataPath, "utf8");
+  const data = JSON.parse(source);
+  const previewCharacters = data.filter(({ preview }) => preview);
+
+  assert.deepEqual(
+    previewCharacters.map(({ id }) => id).sort((left, right) => left - right),
+    Array.from({ length: 35 }, (_, index) => index + 10),
+  );
+  for (const character of previewCharacters) {
+    assert.equal(
+      existsSync(join(projectRoot, character.preview)),
+      true,
+      `${character.name} should bundle ${character.preview}`,
+    );
+  }
+  assert.doesNotMatch(source, /[A-Z]:\\/iu);
 });
 
 test("gallery CSS preserves the formal 3-by-4 card and detail text geometry", () => {

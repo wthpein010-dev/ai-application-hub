@@ -25,7 +25,8 @@
       "body": "body_6",
       "head": "head_13",
       "dress": "dress_13"
-    }
+    },
+    "preview": "assets/preview/14.png"
   },
   {
     "id": 29,
@@ -39,7 +40,8 @@
       "body": "body_18",
       "head": "head_28",
       "dress": "dress_28"
-    }
+    },
+    "preview": "assets/preview/29.png"
   },
   {
     "id": 31,
@@ -53,7 +55,8 @@
       "body": "body_19",
       "head": "head_30",
       "dress": "dress_30"
-    }
+    },
+    "preview": "assets/preview/31.png"
   },
   {
     "id": 5,
@@ -95,7 +98,8 @@
       "body": "body_15",
       "head": "head_25",
       "dress": "dress_25"
-    }
+    },
+    "preview": "assets/preview/26.png"
   },
   {
     "id": 38,
@@ -109,7 +113,8 @@
       "body": "body_22",
       "head": "head_37",
       "dress": "dress_37"
-    }
+    },
+    "preview": "assets/preview/38.png"
   },
   {
     "id": 3,
@@ -137,7 +142,8 @@
       "body": "body_1",
       "head": "head_10",
       "dress": "dress_10"
-    }
+    },
+    "preview": "assets/preview/11.png"
   },
   {
     "id": 12,
@@ -151,7 +157,8 @@
       "body": "body_6",
       "head": "head_11",
       "dress": "dress_11"
-    }
+    },
+    "preview": "assets/preview/12.png"
   },
   {
     "id": 18,
@@ -165,7 +172,8 @@
       "body": "body_9",
       "head": "",
       "dress": "dress_17"
-    }
+    },
+    "preview": "assets/preview/18.png"
   },
   {
     "id": 30,
@@ -179,7 +187,8 @@
       "body": "body_18",
       "head": "head_29",
       "dress": "dress_29"
-    }
+    },
+    "preview": "assets/preview/30.png"
   },
   {
     "id": 10,
@@ -193,7 +202,8 @@
       "body": "body_1",
       "head": "head_1",
       "dress": ""
-    }
+    },
+    "preview": "assets/preview/10.png"
   },
   {
     "id": 13,
@@ -207,7 +217,8 @@
       "body": "body_6",
       "head": "head_12",
       "dress": "dress_12"
-    }
+    },
+    "preview": "assets/preview/13.png"
   },
   {
     "id": 21,
@@ -221,7 +232,8 @@
       "body": "body_10",
       "head": "head_20",
       "dress": "dress_20"
-    }
+    },
+    "preview": "assets/preview/21.png"
   },
   {
     "id": 34,
@@ -235,7 +247,8 @@
       "body": "body_2",
       "head": "head_33",
       "dress": "dress_33"
-    }
+    },
+    "preview": "assets/preview/34.png"
   },
   {
     "id": 36,
@@ -249,7 +262,8 @@
       "body": "body_21",
       "head": "head_35",
       "dress": "dress_35"
-    }
+    },
+    "preview": "assets/preview/36.png"
   },
   {
     "id": 28,
@@ -263,7 +277,8 @@
       "body": "body_17",
       "head": "head_27",
       "dress": "dress_27"
-    }
+    },
+    "preview": "assets/preview/28.png"
   },
   {
     "id": 7,
@@ -319,7 +334,8 @@
       "body": "body_3",
       "head": "",
       "dress": "dress_14"
-    }
+    },
+    "preview": "assets/preview/15.png"
   },
   {
     "id": 17,
@@ -333,7 +349,8 @@
       "body": "body_2",
       "head": "head_16",
       "dress": "dress_16"
-    }
+    },
+    "preview": "assets/preview/17.png"
   },
   {
     "id": 27,
@@ -347,7 +364,8 @@
       "body": "body_16",
       "head": "head_26",
       "dress": "dress_26"
-    }
+    },
+    "preview": "assets/preview/27.png"
   },
   {
     "id": 37,
@@ -361,7 +379,8 @@
       "body": "body_3",
       "head": "head_36",
       "dress": "dress_36"
-    }
+    },
+    "preview": "assets/preview/37.png"
   },
   {
     "id": 43,
@@ -375,7 +394,8 @@
       "body": "body_26",
       "head": "head_42",
       "dress": ""
-    }
+    },
+    "preview": "assets/preview/43.png"
   },
   {
     "id": 4,
@@ -417,7 +437,8 @@
       "body": "body_8",
       "head": "head_18",
       "dress": "dress_18"
-    }
+    },
+    "preview": "assets/preview/19.png"
   },
   {
     "id": 33,
@@ -431,7 +452,8 @@
       "body": "body_18",
       "head": "head_32",
       "dress": "dress_32"
-    }
+    },
+    "preview": "assets/preview/33.png"
   },
   {
     "id": 35,
@@ -445,7 +467,8 @@
       "body": "body_20",
       "head": "head_34",
       "dress": "dress_34"
-    }
+    },
+    "preview": "assets/preview/35.png"
   },
   {
     "id": 40,
@@ -459,7 +482,8 @@
       "body": "body_23",
       "head": "head_39",
       "dress": "dress_39"
-    }
+    },
+    "preview": "assets/preview/40.png"
   },
   {
     "id": 44,
@@ -473,7 +497,8 @@
       "body": "body_27",
       "head": "head_43",
       "dress": "dress_43"
-    }
+    },
+    "preview": "assets/preview/44.png"
   },
   {
     "id": 23,
@@ -487,7 +512,8 @@
       "body": "body_12",
       "head": "head_22",
       "dress": "dress_22"
-    }
+    },
+    "preview": "assets/preview/23.png"
   },
   {
     "id": 32,
@@ -501,7 +527,8 @@
       "body": "body_19",
       "head": "head_31",
       "dress": "dress_31"
-    }
+    },
+    "preview": "assets/preview/32.png"
   },
   {
     "id": 24,
@@ -515,7 +542,8 @@
       "body": "body_13",
       "head": "head_23",
       "dress": "dress_23"
-    }
+    },
+    "preview": "assets/preview/24.png"
   },
   {
     "id": 42,
@@ -529,7 +557,8 @@
       "body": "body_25",
       "head": "",
       "dress": ""
-    }
+    },
+    "preview": "assets/preview/42.png"
   },
   {
     "id": 20,
@@ -543,7 +572,8 @@
       "body": "body_8",
       "head": "head_19",
       "dress": "dress_19"
-    }
+    },
+    "preview": "assets/preview/20.png"
   },
   {
     "id": 16,
@@ -557,7 +587,8 @@
       "body": "body_6",
       "head": "",
       "dress": "dress_15"
-    }
+    },
+    "preview": "assets/preview/16.png"
   },
   {
     "id": 39,
@@ -571,7 +602,8 @@
       "body": "body_22",
       "head": "head_38",
       "dress": ""
-    }
+    },
+    "preview": "assets/preview/39.png"
   },
   {
     "id": 45,
@@ -599,7 +631,8 @@
       "body": "body_11",
       "head": "head_21",
       "dress": "dress_21"
-    }
+    },
+    "preview": "assets/preview/22.png"
   },
   {
     "id": 25,
@@ -613,7 +646,8 @@
       "body": "body_14",
       "head": "head_24",
       "dress": "dress_24"
-    }
+    },
+    "preview": "assets/preview/25.png"
   },
   {
     "id": 41,
@@ -627,6 +661,7 @@
       "body": "body_24",
       "head": "head_40",
       "dress": "dress_40"
-    }
+    },
+    "preview": "assets/preview/41.png"
   }
 ]
