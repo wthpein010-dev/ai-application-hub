@@ -144,7 +144,7 @@ export function createDailyPlan(options = {}) {
   const extensions = options.extensions && typeof options.extensions === "object" ? options.extensions : {};
   assertPortableValue(extensions, "extensions");
   return {
-    version: 2,
+    version: 3,
     toolVersion: typeof options.toolVersion === "string" ? options.toolVersion : "loop-bgm-lab/1.2.0",
     ruleCheckedAt: typeof options.ruleCheckedAt === "string" ? options.ruleCheckedAt : "2026-08-30",
     styleSpec,

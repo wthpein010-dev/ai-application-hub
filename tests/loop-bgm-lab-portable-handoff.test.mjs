@@ -84,6 +84,7 @@ function completeProject() {
     comparison: comparisonFixture(),
     similarityClass: "too-close",
     advice: adviceFixture(),
+    candidateSource: { kind: "legacy-unknown", legacyRunId: run.id },
   };
   const experiment = {
     id: "experiment-1",

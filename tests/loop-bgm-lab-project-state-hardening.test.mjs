@@ -110,6 +110,7 @@ function completeProject() {
       comparison: candidateComparison,
       similarityClass: "too-close",
       advice: candidateAdvice,
+      candidateSource: { kind: "legacy-unknown", legacyRunId: plan.runs[0].id },
     }],
     runs: [{
       ...plan.runs[0],
@@ -287,7 +288,7 @@ test("schema v1 migration preserves runs and reviews without inventing output bi
   delete legacy.experiments[0].outputIndex;
 
   const restored = importProjectJson(JSON.stringify(legacy));
-  assert.equal(restored.version, 2);
+  assert.equal(restored.version, 3);
   assert.equal(restored.styleSpec.version, 1);
   assert.deepEqual(restored.runs[0].outputs[0], {
     generatedUrl: "https://suno.com/song/example",
@@ -346,7 +347,7 @@ test("portable safety rejects normalized secret-key variants and HTTPS userinfo 
   }
 });
 
-test("schema version 2 validates every known persisted structure and cross-field identity invariant", () => {
+test("schema version 3 validates every known persisted structure and cross-field identity invariant", () => {
   const project = completeProject();
   assert.deepEqual(importProjectJson(exportProjectJson(project)), validateProject(project));
 

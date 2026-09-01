@@ -8,7 +8,7 @@ import {
 import { assertHttpsUrl, assertPortableValue, isPlainObject } from "./portable-safety.mjs";
 import { createPromptVariants, normalizeStyleSpec } from "./prompt-engine.mjs";
 
-const PROJECT_VERSION = 2;
+const PROJECT_VERSION = 3;
 const STYLE_SPEC_VERSION = 1;
 const STATUS_VALUES = new Set(["planned", "submitted", "downloaded", "reviewed", "rejected"]);
 const TRANSITIONS = {
@@ -36,7 +36,14 @@ const TEMPO_KEYS = new Set(["target", "min", "max"]);
 const STRUCTURE_KEYS = new Set(["bars", "loopable", "intro", "outro"]);
 const CREDIT_KEYS = new Set(["planned", "perBatch", "batchCount"]);
 const REFERENCE_KEYS = new Set(["id", "displayName", "hash", "analysis"]);
-const CANDIDATE_KEYS = new Set(["id", "displayName", "batchId", "hash", "analysis", "referenceBasis", "comparison", "similarityClass", "advice"]);
+const CANDIDATE_KEYS = new Set(["id", "displayName", "batchId", "hash", "analysis", "referenceBasis", "comparison", "similarityClass", "advice", "candidateSource"]);
+const CANDIDATE_SOURCE_KINDS = new Set(["suno", "external", "local-original", "legacy-unknown"]);
+const CANDIDATE_SOURCE_KEYS = Object.freeze({
+  suno: new Set(["kind", "runId", "outputIndex"]),
+  external: new Set(["kind", "licenseId", "fileSha256"]),
+  "local-original": new Set(["kind", "licenseId", "fileSha256"]),
+  "legacy-unknown": new Set(["kind", "legacyRunId"]),
+});
 const RUN_KEYS = new Set(["id", "sourceUrl", "status", "outputs", "generationConditions"]);
 const RUN_OUTPUT_KEYS = new Set(["generatedUrl", "subjectiveScore", "reviewNote", "disposition"]);
 const EXPERIMENT_KEYS = new Set([
@@ -474,10 +481,27 @@ function validateReference(value, index) {
   validateAnalysis(value.analysis, `${field}.analysis`);
 }
 
+function validateCandidateSource(value, field) {
+  if (!isPlainObject(value)) fail(`${field} must be an object`);
+  if (!CANDIDATE_SOURCE_KINDS.has(value.kind)) fail(`${field}.kind is unsupported`);
+  const keys = CANDIDATE_SOURCE_KEYS[value.kind];
+  assertKnownKeys(value, keys, field);
+  assertRequiredKeys(value, new Set([...keys].filter(key => key !== "legacyRunId")), field);
+  if (value.kind === "suno") {
+    assertId(value.runId, `${field}.runId`);
+    assertInteger(value.outputIndex, `${field}.outputIndex`, { minimum: 0, maximum: 1 });
+  } else if (value.kind === "external" || value.kind === "local-original") {
+    assertId(value.licenseId, `${field}.licenseId`);
+    assertHash(value.fileSha256, `${field}.fileSha256`);
+  } else if (Object.hasOwn(value, "legacyRunId")) {
+    assertId(value.legacyRunId, `${field}.legacyRunId`);
+  }
+}
+
 function validateCandidate(value, index, batchIds) {
   const field = `candidates[${index}]`;
   assertKnownKeys(value, CANDIDATE_KEYS, field);
-  assertRequiredKeys(value, new Set(["id", "batchId", "hash", "analysis", "referenceBasis", "comparison", "similarityClass", "advice"]), field);
+  assertRequiredKeys(value, new Set(["id", "batchId", "hash", "analysis", "referenceBasis", "comparison", "similarityClass", "advice", "candidateSource"]), field);
   assertId(value.id, `${field}.id`);
   if (Object.hasOwn(value, "displayName")) assertDisplayName(value.displayName, `${field}.displayName`);
   assertId(value.batchId, `${field}.batchId`);
@@ -500,6 +524,7 @@ function validateCandidate(value, index, batchIds) {
   if (value.analysis.key.confidence < 0.10 && value.comparison.components.key.available) {
     fail(`${field}.comparison key cannot be available below the analyzer confidence threshold`);
   }
+  validateCandidateSource(value.candidateSource, `${field}.candidateSource`);
 }
 
 function validateRun(value, index, batchesById) {
@@ -522,13 +547,21 @@ function validateExperiment(value, index, candidatesById, batchesById, runsById)
   assertKnownKeys(value, EXPERIMENT_KEYS, field);
   assertRequiredKeys(value, EXPERIMENT_REQUIRED_KEYS, field);
   assertId(value.id, `${field}.id`);
-  assertId(value.runId, `${field}.runId`);
   assertId(value.batchId, `${field}.batchId`);
   assertId(value.candidateId, `${field}.candidateId`);
   const batch = batchesById.get(value.batchId);
   if (!batch) fail(`${field}.batchId must reference an existing batch`);
   const candidate = candidatesById.get(value.candidateId);
   if (!candidate) fail(`${field}.candidateId must reference an existing candidate`);
+  const sourceKind = candidate.candidateSource.kind;
+  const isExternal = sourceKind === "external" || sourceKind === "local-original";
+  if (isExternal) {
+    for (const nullableField of ["runId", "outputIndex", "generatedUrl", "generationConditions"]) {
+      if (value[nullableField] !== null) fail(`${field}.${nullableField} must be null for ${sourceKind} candidates`);
+    }
+  } else {
+    assertId(value.runId, `${field}.runId`);
+  }
   assertHash(value.candidateHash, `${field}.candidateHash`);
   if (candidate.batchId !== value.batchId || candidate.hash !== value.candidateHash) fail(`${field} identity fields are inconsistent`);
   assertNullableHttpsUrl(value.generatedUrl, `${field}.generatedUrl`);
@@ -541,9 +574,9 @@ function validateExperiment(value, index, candidatesById, batchesById, runsById)
   validateComparison(value.comparison, `${field}.comparison`);
   validateDerivedComparison(value.referenceBasis, candidate, value.comparison, `${field}.comparison`);
   validateAdvice(value.advice, `${field}.advice`);
-  const run = runsById.get(value.runId);
-  if (!run) fail(`${field}.runId must reference an existing run`);
-  if (Object.hasOwn(value, "outputIndex") && value.outputIndex !== null) {
+  const run = value.runId === null ? null : runsById.get(value.runId);
+  if (!isExternal && !run) fail(`${field}.runId must reference an existing run`);
+  if (!isExternal && Object.hasOwn(value, "outputIndex") && value.outputIndex !== null) {
     assertInteger(value.outputIndex, `${field}.outputIndex`, { minimum: 0, maximum: 1 });
     const output = run.outputs[value.outputIndex];
     if (!output) fail(`${field}.outputIndex must reference an existing run output`);
@@ -553,9 +586,15 @@ function validateExperiment(value, index, candidatesById, batchesById, runsById)
       }
     }
   }
-  if (run.generationConditions.batchId !== value.batchId
-    || stableStringify(value.generationConditions) !== stableStringify(run.generationConditions)) {
-    fail(`${field}.generationConditions must match its own frozen run conditions`);
+  if (!isExternal) {
+    if (run.generationConditions.batchId !== value.batchId
+      || stableStringify(value.generationConditions) !== stableStringify(run.generationConditions)) {
+      fail(`${field}.generationConditions must match its own frozen run conditions`);
+    }
+    if (sourceKind === "suno"
+      && (value.runId !== candidate.candidateSource.runId || value.outputIndex !== candidate.candidateSource.outputIndex)) {
+      fail(`${field} must match its Suno candidateSource runId and outputIndex`);
+    }
   }
   if (stableStringify(value.referenceBasis) !== stableStringify(candidate.referenceBasis)
     || stableStringify(value.comparison) !== stableStringify(candidate.comparison)
@@ -594,7 +633,7 @@ export function validateProject(input) {
   if (!isPlainObject(input)) fail("project must be an object");
   assertPortableValue(input);
   assertRequiredKeys(input, PROJECT_KEYS, "project");
-  if (input.version !== PROJECT_VERSION) fail("project.version must be 2");
+  if (input.version !== PROJECT_VERSION) fail("project.version must be 3");
   assertString(input.toolVersion, "toolVersion", { nonEmpty: true });
   assertDate(input.ruleCheckedAt, "ruleCheckedAt");
   validateStyleSpec(input.styleSpec);
@@ -633,6 +672,33 @@ export function validateProject(input) {
   const runsById = new Map(input.runs.map(run => [run.id, run]));
   input.experiments.forEach((experiment, index) => validateExperiment(experiment, index, candidatesById, batchesById, runsById));
   const validatedLicenses = input.licenses.map(validateLicenseEntry);
+  const licensesById = new Map(validatedLicenses.map(license => [license.id, license]));
+
+  for (const candidate of input.candidates) {
+    const source = candidate.candidateSource;
+    if (source.kind === "external" || source.kind === "local-original") {
+      const license = licensesById.get(source.licenseId);
+      if (!license) fail(`candidate ${candidate.id} candidateSource.licenseId must reference an existing license`);
+      if (source.fileSha256.toLowerCase() !== license.fileSha256.toLowerCase()
+        || source.fileSha256.toLowerCase() !== candidate.hash.toLowerCase()) {
+        fail(`candidate ${candidate.id} candidateSource.fileSha256 must exactly match its candidate and license hashes`);
+      }
+    } else if (source.kind === "suno") {
+      const run = runsById.get(source.runId);
+      if (!run) fail(`candidate ${candidate.id} candidateSource.runId must reference an existing run`);
+      if (!run.outputs[source.outputIndex]) {
+        fail(`candidate ${candidate.id} candidateSource.outputIndex must reference an existing run output`);
+      }
+      const experiment = input.experiments.find(item => item.candidateId === candidate.id);
+      if (!experiment
+        || experiment.runId !== source.runId
+        || experiment.outputIndex !== source.outputIndex) {
+        fail(`candidate ${candidate.id} candidateSource must match its experiment runId and outputIndex`);
+      }
+    } else if (Object.hasOwn(source, "legacyRunId") && !runsById.has(source.legacyRunId)) {
+      fail(`candidate ${candidate.id} candidateSource.legacyRunId must reference an existing legacy run`);
+    }
+  }
 
   for (const batch of input.batches) {
     if (batch.currentRunId !== null) {
@@ -648,6 +714,10 @@ export function validateProject(input) {
       || matchingCandidate.batchId !== batch.id
       || matchingCandidate.hash !== batch.candidateHash) {
       fail(`batch ${batch.id} currentCandidateId or candidateHash is inconsistent with its current candidate`);
+    }
+    if (matchingCandidate.candidateSource.kind === "external"
+      || matchingCandidate.candidateSource.kind === "local-original") {
+      fail(`batch ${batch.id} cannot use an external or local-original candidate as Suno batch state`);
     }
     const matchingExperiment = input.experiments.find(experiment => (
       experiment.candidateId === matchingCandidate.id && experiment.runId === batch.currentRunId
@@ -985,7 +1055,7 @@ function legacyOutputFromEvidence(evidence, generatedUrl) {
 function migrateLegacyVersionOne(input) {
   if (!isPlainObject(input) || input.version !== 1) return input;
   const migrated = Object.hasOwn(input, "runs") ? cloneJson(input) : addMissingLegacyRuns(input);
-  migrated.version = PROJECT_VERSION;
+  migrated.version = 2;
   const experimentsByRun = new Map();
   for (const experiment of migrated.experiments || []) {
     if (!experimentsByRun.has(experiment.runId)) experimentsByRun.set(experiment.runId, []);
@@ -1031,6 +1101,43 @@ function migrateLegacyVersionOne(input) {
   return migrated;
 }
 
+function migrateLegacyVersionTwo(input) {
+  if (!isPlainObject(input) || input.version !== 2) return input;
+  const migrated = cloneJson(input);
+  migrated.version = PROJECT_VERSION;
+  const experimentsByCandidate = new Map();
+  for (const experiment of migrated.experiments || []) {
+    if (!experimentsByCandidate.has(experiment.candidateId)) experimentsByCandidate.set(experiment.candidateId, []);
+    experimentsByCandidate.get(experiment.candidateId).push(experiment);
+  }
+  migrated.candidates = (migrated.candidates || []).map(candidate => {
+    const runIds = [...new Set((experimentsByCandidate.get(candidate.id) || [])
+      .map(experiment => experiment.runId)
+      .filter(runId => typeof runId === "string"))];
+    return {
+      ...candidate,
+      candidateSource: {
+        kind: "legacy-unknown",
+        ...(runIds.length === 1 ? { legacyRunId: runIds[0] } : {}),
+      },
+    };
+  });
+  migrated.licenses = (migrated.licenses || []).map(license => {
+    const {
+      category: ignoredCategory,
+      licenseFlags: ignoredLicenseFlags,
+      useWarning: ignoredUseWarning,
+      attributionWarning: ignoredAttributionWarning,
+      publicationBlocked: ignoredPublicationBlocked,
+      publicationBlockers: ignoredPublicationBlockers,
+      previewOnly: ignoredPreviewOnly,
+      ...evidence
+    } = license;
+    return evidence;
+  });
+  return migrated;
+}
+
 export function importProjectJson(text) {
   if (typeof text !== "string") fail("project JSON must be text");
   let parsed;
@@ -1039,7 +1146,7 @@ export function importProjectJson(text) {
   } catch {
     fail("project JSON is invalid");
   }
-  return validateProject(migrateLegacyVersionOne(parsed));
+  return validateProject(migrateLegacyVersionTwo(migrateLegacyVersionOne(parsed)));
 }
 
 export function exportProjectMarkdown(project) {

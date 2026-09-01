@@ -206,13 +206,48 @@ export function createExperimentRecord(input) {
   return detachAndFreeze(input);
 }
 
-function licenseFacts(license) {
+function licenseFacts(license, previewOnly = false) {
   const normalized = license.trim().toLowerCase();
   const cc0 = /^cc0(?:\b|\s|-)/.test(normalized);
   const by = !cc0 && (/\bcc\s*-?\s*by\b/.test(normalized) || /\battribution\b/.test(normalized));
   const nc = !cc0 && (/\bby\s*-?\s*nc\b/.test(normalized) || /\bnon\s*-?commercial\b/.test(normalized) || /\bnc\b/.test(normalized));
-  const category = cc0 ? "cc0" : by && nc ? "cc-by-nc" : by ? "cc-by" : nc ? "nc" : "unknown";
-  return { category, licenseFlags: { by, nc, cc0 } };
+  const sa = !cc0 && (/\b(?:by|nc)\s*-?\s*sa\b/.test(normalized) || /\bshare\s*-?alike\b/.test(normalized));
+  const nd = !cc0 && (/\b(?:by|nc)\s*-?\s*nd\b/.test(normalized) || /\bno\s*-?derivatives?\b/.test(normalized));
+  const category = cc0
+    ? "cc0"
+    : by && nc && sa
+      ? "cc-by-nc-sa"
+      : by && nc && nd
+        ? "cc-by-nc-nd"
+        : by && nc
+          ? "cc-by-nc"
+          : by && sa
+            ? "cc-by-sa"
+            : by && nd
+              ? "cc-by-nd"
+              : by
+                ? "cc-by"
+                : nc
+                  ? "nc"
+                  : sa
+                    ? "sa"
+                    : nd
+                      ? "nd"
+                      : "unknown";
+  const unknown = category === "unknown";
+  const publicationBlockers = [
+    ...(nc ? ["noncommercial"] : []),
+    ...(sa ? ["share-alike"] : []),
+    ...(nd ? ["no-derivatives"] : []),
+    ...(previewOnly ? ["preview-only"] : []),
+    ...(unknown ? ["unknown-license"] : []),
+  ];
+  return {
+    category,
+    licenseFlags: { by, nc, sa, nd, cc0, previewOnly, unknown },
+    publicationBlocked: publicationBlockers.length > 0,
+    publicationBlockers,
+  };
 }
 
 function assertRequiredString(value, field) {
@@ -223,7 +258,8 @@ export function validateLicenseEntry(entry) {
   if (!isPlainObject(entry)) fail("license entry must be an object");
   const allowed = new Set([
     "id", "source", "sourceUrl", "license", "fileSha256", "fileHash", "attributionText", "author",
-    "downloadedAt", "category", "licenseFlags", "useWarning", "attributionWarning"
+    "downloadedAt", "previewOnly", "category", "licenseFlags", "publicationBlocked", "publicationBlockers",
+    "useWarning", "attributionWarning"
   ]);
   for (const key of Object.keys(entry)) {
     if (!allowed.has(key)) fail(`Unsupported license field: ${key}`);
@@ -242,7 +278,11 @@ export function validateLicenseEntry(entry) {
     && entry.fileSha256.toLowerCase() !== entry.fileHash.toLowerCase()) {
     fail("license hash fields are inconsistent");
   }
-  const { category, licenseFlags } = licenseFacts(entry.license);
+  if (Object.hasOwn(entry, "previewOnly") && typeof entry.previewOnly !== "boolean") {
+    fail("license.previewOnly must be boolean");
+  }
+  const previewOnly = entry.previewOnly === true;
+  const { category, licenseFlags, publicationBlocked, publicationBlockers } = licenseFacts(entry.license, previewOnly);
   assertRequiredString(entry.author, "license.author");
   assertRequiredString(entry.downloadedAt, "license.downloadedAt");
   const dateMatch = entry.downloadedAt.match(/^(\d{4})-(\d{2})-(\d{2})$/);
@@ -266,6 +306,22 @@ export function validateLicenseEntry(entry) {
       useWarning: "CC-BY-NC 同时要求署名并限制非商业使用，不应作为商业游戏素材使用。",
       attributionWarning: "必须保留作者与署名文本；NC 限制仍独立生效。"
     },
+    "cc-by-sa": {
+      useWarning: "CC-BY-SA 要求署名并履行相同方式共享；完成兼容性审核前阻止发布。",
+      attributionWarning: "必须保留作者、署名文本、许可证和相同方式共享要求。"
+    },
+    "cc-by-nc-sa": {
+      useWarning: "CC-BY-NC-SA 含非商业与相同方式共享限制，不应作为商业游戏素材发布。",
+      attributionWarning: "必须保留作者与署名文本；NC 与 SA 限制仍独立生效。"
+    },
+    "cc-by-nd": {
+      useWarning: "CC-BY-ND 禁止发布改编版本；完成成品使用方式审核前阻止发布。",
+      attributionWarning: "必须保留作者与署名文本，并核对是否构成改编。"
+    },
+    "cc-by-nc-nd": {
+      useWarning: "CC-BY-NC-ND 同时限制商业使用与改编，不应作为商业游戏素材发布。",
+      attributionWarning: "必须保留作者与署名文本；NC 与 ND 限制仍独立生效。"
+    },
     nc: {
       useWarning: "含 NC（非商业）限制，不应作为商业游戏素材使用。",
       attributionWarning: "即使需要署名，也不能忽略非商业限制。"
@@ -273,6 +329,14 @@ export function validateLicenseEntry(entry) {
     unknown: {
       useWarning: "授权类型未知，不应按可商用素材处理。",
       attributionWarning: "请补充来源许可和署名要求后再决定用途。"
+    },
+    sa: {
+      useWarning: "许可证含相同方式共享要求；完成许可证兼容性审核前阻止发布。",
+      attributionWarning: "请补齐署名与相同方式共享要求。"
+    },
+    nd: {
+      useWarning: "许可证含禁止改编要求；完成成品使用方式审核前阻止发布。",
+      attributionWarning: "请补齐署名要求并核对是否构成改编。"
     }
   }[category];
   const output = {
@@ -283,6 +347,9 @@ export function validateLicenseEntry(entry) {
     fileSha256,
     category,
     licenseFlags,
+    previewOnly,
+    publicationBlocked,
+    publicationBlockers,
     useWarning: warnings.useWarning,
     attributionWarning: warnings.attributionWarning,
     author: entry.author,
@@ -293,10 +360,17 @@ export function validateLicenseEntry(entry) {
   if (Object.hasOwn(entry, "licenseFlags")) {
     const supplied = entry.licenseFlags;
     if (!isPlainObject(supplied)
-      || supplied.by !== licenseFlags.by || supplied.nc !== licenseFlags.nc || supplied.cc0 !== licenseFlags.cc0
-      || Object.keys(supplied).some(key => !new Set(["by", "nc", "cc0"]).has(key))) {
+      || Object.keys(licenseFlags).some(key => supplied[key] !== licenseFlags[key])
+      || Object.keys(supplied).some(key => !Object.hasOwn(licenseFlags, key))) {
       fail("license.licenseFlags are inconsistent with license text");
     }
+  }
+  if (Object.hasOwn(entry, "publicationBlocked") && entry.publicationBlocked !== publicationBlocked) {
+    fail("license.publicationBlocked is inconsistent with license restrictions");
+  }
+  if (Object.hasOwn(entry, "publicationBlockers")
+    && JSON.stringify(entry.publicationBlockers) !== JSON.stringify(publicationBlockers)) {
+    fail("license.publicationBlockers are inconsistent with license restrictions");
   }
   return output;
 }

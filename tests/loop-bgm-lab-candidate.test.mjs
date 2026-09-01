@@ -214,9 +214,9 @@ test("validateLicenseEntry preserves HTTPS sources and distinguishes CC0, CC-BY,
   assert.equal(ccBy.category, "cc-by");
   assert.equal(nc.category, "cc-by-nc");
   assert.equal(unknown.category, "unknown");
-  assert.deepEqual(cc0.licenseFlags, { by: false, nc: false, cc0: true });
-  assert.deepEqual(ccBy.licenseFlags, { by: true, nc: false, cc0: false });
-  assert.deepEqual(nc.licenseFlags, { by: true, nc: true, cc0: false });
+  assert.deepEqual(cc0.licenseFlags, { by: false, nc: false, sa: false, nd: false, cc0: true, previewOnly: false, unknown: false });
+  assert.deepEqual(ccBy.licenseFlags, { by: true, nc: false, sa: false, nd: false, cc0: false, previewOnly: false, unknown: false });
+  assert.deepEqual(nc.licenseFlags, { by: true, nc: true, sa: false, nd: false, cc0: false, previewOnly: false, unknown: false });
   for (const entry of [cc0, ccBy, nc, unknown]) {
     assert.match(entry.useWarning, /[\u3400-\u9fff]/);
     assert.match(entry.attributionWarning, /[\u3400-\u9fff]/);
@@ -292,7 +292,8 @@ test("experiment records are detached and deeply immutable while project validat
       referenceBasis: structuredClone(reference),
       comparison: candidateComparison,
       similarityClass: "too-close",
-      advice: candidateAdvice
+      advice: candidateAdvice,
+      candidateSource: { kind: "legacy-unknown", legacyRunId: plan.runs[0].id }
     }],
     experiments: [experiment],
     licenses: [{
