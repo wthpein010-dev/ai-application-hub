@@ -80,9 +80,12 @@ try {
       assert.ok(Math.abs(cardGeometry[0].height - 180) < 1);
     }
 
+    const historyLengthBeforeDetail = await page.evaluate(() => history.length);
     const firstCard = page.locator(".character-card").first();
     await firstCard.click();
     assert.equal(await page.locator("#detail-dialog").getAttribute("aria-hidden"), "false");
+    assert.equal(await page.evaluate(() => history.length), historyLengthBeforeDetail + 1);
+    assert.equal(new URL(page.url()).searchParams.get("character"), "100001");
     assert.equal(await page.locator("#detail-name").textContent(), "原皮战神");
     assert.equal(await page.locator("#detail-unlock").textContent(), "不加配饰自在生长，基础但绝不普通");
     assert.equal(await page.locator("#detail-description").textContent(), "没有配饰也敢直接出场，原皮才是最强皮肤。");
@@ -100,6 +103,40 @@ try {
     });
     if (viewport.width === 1440) assert.ok(Math.abs(detailGeometry.width - 420) < 1);
     assert.equal(detailGeometry.horizontalOverflow, false);
+
+    if (viewport.width === 1440) {
+      assert.equal(await page.locator(".gallery-layout").evaluate((element) => element.inert), true);
+      await page.locator("#detail-close").focus();
+      await page.keyboard.press("Shift+Tab");
+      assert.equal(await page.evaluate(() => document.activeElement?.id), "detail-share");
+      await page.keyboard.press("Tab");
+      assert.equal(await page.evaluate(() => document.activeElement?.id), "detail-close");
+
+      const renderedBeforeResize = await page.locator("#diagnostic-rendered-lines").textContent();
+      await page.locator("#detail-description").evaluate((element) => { element.style.width = "210px"; });
+      await page.waitForFunction(
+        (before) => document.querySelector("#diagnostic-rendered-lines")?.textContent !== before,
+        renderedBeforeResize,
+      );
+      assert.notEqual(await page.locator("#diagnostic-rendered-lines").textContent(), renderedBeforeResize);
+      await page.locator("#detail-description").evaluate((element) => { element.style.removeProperty("width"); });
+      await page.waitForFunction(
+        (before) => document.querySelector("#diagnostic-rendered-lines")?.textContent === before,
+        renderedBeforeResize,
+      );
+
+      await page.locator("#detail-next").click();
+      assert.equal(await page.locator("#detail-name").textContent(), "黑帽快客");
+      await page.goBack();
+      await page.waitForFunction(() => document.querySelector("#detail-name")?.textContent === "原皮战神");
+      await page.goBack();
+      await page.waitForFunction(() => document.querySelector("#detail-dialog")?.getAttribute("aria-hidden") === "true");
+      assert.equal(new URL(page.url()).searchParams.has("character"), false);
+      assert.equal(await page.locator(".gallery-layout").evaluate((element) => element.inert), false);
+      await page.goForward();
+      await page.waitForFunction(() => document.querySelector("#detail-dialog")?.getAttribute("aria-hidden") === "false");
+      assert.equal(await page.locator("#detail-name").textContent(), "原皮战神");
+    }
 
     await page.locator("#detail-next").click();
     assert.equal(await page.locator("#detail-name").textContent(), "黑帽快客");

@@ -1,5 +1,5 @@
-import { copyFile, mkdir, readFile, writeFile } from "node:fs/promises";
-import { dirname, join, resolve } from "node:path";
+import { copyFile, mkdir, readFile, readdir, rm, writeFile } from "node:fs/promises";
+import { basename, dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const repositoryRoot = resolve(fileURLToPath(new URL("..", import.meta.url)));
@@ -39,7 +39,16 @@ function requiredText(language, key, label) {
   if (typeof value !== "string" || !value.trim()) {
     throw new Error(`Missing ${label} localization for ${key}`);
   }
-  return value.trim();
+  return value;
+}
+
+function safeAssetName(value, kind, blockId) {
+  const asset = String(value || "");
+  if (!asset) return "";
+  if (basename(asset) !== asset || !/^[A-Za-z0-9][A-Za-z0-9_-]*$/u.test(asset)) {
+    throw new Error(`Unsafe ${kind} asset name for block ${blockId}: ${asset}`);
+  }
+  return asset;
 }
 
 export async function buildBrickGalleryData({ unityRoot = process.env.PAWS_HOME_CLIENT_ROOT } = {}) {
@@ -70,7 +79,7 @@ export async function buildBrickGalleryData({ unityRoot = process.env.PAWS_HOME_
       name: requiredText(language, skin.blockname, "name"),
       unlockDesc: requiredText(language, skin.UnlockDesc, "unlock description"),
       galleryDesc: requiredText(language, skin.GalleryDesc, "gallery description"),
-      layers: Object.fromEntries(layerKinds.map((kind) => [kind, String(block[kind] || "")])),
+      layers: Object.fromEntries(layerKinds.map((kind) => [kind, safeAssetName(block[kind], kind, block.id)])),
     };
   });
 
@@ -84,21 +93,28 @@ async function copyReferencedLayers(characters, unityRoot, projectRoot) {
     const targetDirectory = join(projectRoot, "assets", "skin", kind);
     await mkdir(targetDirectory, { recursive: true });
     const assets = [...new Set(characters.map((character) => character.layers[kind]).filter(Boolean))].sort();
-    for (const asset of assets) {
-      await copyFile(
-        join(unityRoot, skinRoot, kind, `${asset}.png`),
-        join(targetDirectory, `${asset}.png`),
-      );
-    }
+    const desiredFiles = assets.map((asset) => `${asset}.png`);
+    await Promise.all(assets.map((asset) => copyFile(
+      join(unityRoot, skinRoot, kind, `${asset}.png`),
+      join(targetDirectory, `${asset}.png`),
+    )));
+    await pruneManagedPngs(targetDirectory, desiredFiles);
   }
+}
+
+async function pruneManagedPngs(targetDirectory, desiredFiles) {
+  const desired = new Set(desiredFiles);
+  const entries = await readdir(targetDirectory, { withFileTypes: true });
+  await Promise.all(entries
+    .filter((entry) => entry.isFile() && /\.png$/iu.test(entry.name) && !desired.has(entry.name))
+    .map((entry) => rm(join(targetDirectory, entry.name), { force: true })));
 }
 
 async function copyUiAssets(unityRoot, projectRoot) {
   const targetDirectory = join(projectRoot, "assets", "ui");
   await mkdir(targetDirectory, { recursive: true });
-  for (const asset of uiAssets) {
-    await copyFile(join(unityRoot, atlasRoot, asset), join(targetDirectory, asset));
-  }
+  await Promise.all(uiAssets.map((asset) => copyFile(join(unityRoot, atlasRoot, asset), join(targetDirectory, asset))));
+  await pruneManagedPngs(targetDirectory, uiAssets);
 }
 
 export async function syncBrickGallery({
@@ -109,10 +125,8 @@ export async function syncBrickGallery({
   const resolvedUnityRoot = resolve(unityRoot);
   const resolvedProjectRoot = resolve(projectRoot);
   const characters = await buildBrickGalleryData({ unityRoot: resolvedUnityRoot });
-  await Promise.all([
-    copyReferencedLayers(characters, resolvedUnityRoot, resolvedProjectRoot),
-    copyUiAssets(resolvedUnityRoot, resolvedProjectRoot),
-  ]);
+  await copyReferencedLayers(characters, resolvedUnityRoot, resolvedProjectRoot);
+  await copyUiAssets(resolvedUnityRoot, resolvedProjectRoot);
   const dataPath = join(resolvedProjectRoot, "data", "characters.json");
   await mkdir(dirname(dataPath), { recursive: true });
   await writeFile(dataPath, `${JSON.stringify(characters, null, 2)}\n`, "utf8");

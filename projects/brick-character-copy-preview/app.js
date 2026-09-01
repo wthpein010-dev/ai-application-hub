@@ -38,6 +38,11 @@ const elements = {
   renderedLines: document.querySelector("#diagnostic-rendered-lines"),
   diagnosticIssues: document.querySelector("#diagnostic-issues"),
 };
+const modalBackground = [
+  document.querySelector(".hub-home-link"),
+  document.querySelector(".gallery-topbar"),
+  document.querySelector(".gallery-layout"),
+].filter(Boolean);
 
 let characters = [];
 let currentPage = 1;
@@ -45,6 +50,8 @@ let selectedIndex = 0;
 let lastTriggerBlockId = null;
 let searchTerm = "";
 let showFavoritesOnly = false;
+let diagnosticFrame = 0;
+let detailResizeObserver = null;
 const favorites = new Set(loadFavorites());
 
 function loadFavorites() {
@@ -227,6 +234,50 @@ function renderedMetrics() {
   };
 }
 
+function detailIsOpen() {
+  return elements.detail.getAttribute("aria-hidden") === "false";
+}
+
+function scheduleRenderedDiagnostics() {
+  cancelAnimationFrame(diagnosticFrame);
+  diagnosticFrame = requestAnimationFrame(() => {
+    if (!detailIsOpen()) return;
+    const character = characters[selectedIndex];
+    if (character) updateInspector(character, renderedMetrics());
+  });
+}
+
+function setModalBackgroundInert(inert) {
+  modalBackground.forEach((element) => { element.inert = inert; });
+}
+
+function detailFocusableControls() {
+  return Array.from(elements.detail.querySelectorAll("button:not([disabled]), a[href], input:not([disabled]), [tabindex]:not([tabindex='-1'])"))
+    .filter((element) => !element.hidden && element.getAttribute("aria-hidden") !== "true");
+}
+
+function trapDetailFocus(event) {
+  if (event.key !== "Tab" || !detailIsOpen()) return;
+  const focusable = detailFocusableControls();
+  if (!focusable.length) return;
+  const first = focusable[0];
+  const last = focusable.at(-1);
+  if (event.shiftKey && (document.activeElement === first || !elements.detail.contains(document.activeElement))) {
+    event.preventDefault();
+    last.focus();
+  } else if (!event.shiftKey && (document.activeElement === last || !elements.detail.contains(document.activeElement))) {
+    event.preventDefault();
+    first.focus();
+  }
+}
+
+function updateDetailHistory(blockId, mode) {
+  const url = new URL(location.href);
+  if (blockId === null) url.searchParams.delete("character");
+  else url.searchParams.set("character", String(blockId));
+  history[`${mode}State`]({ brickGalleryCharacter: blockId }, "", url);
+}
+
 function updateDetail() {
   const character = characters[selectedIndex];
   if (!character) return;
@@ -242,45 +293,51 @@ function updateDetail() {
     ? "./assets/ui/tujian_jues_save2.png"
     : "./assets/ui/tujian_jues_save1.png";
   updateInspector(character);
-  requestAnimationFrame(() => updateInspector(character, renderedMetrics()));
+  scheduleRenderedDiagnostics();
 }
 
-function openDetail(blockId) {
+function openDetail(blockId, { historyMode = "push", focusClose = true } = {}) {
   const index = characterIndex(blockId);
   if (index < 0) return;
   selectedIndex = index;
   currentPage = Math.floor(index / PAGE_SIZE) + 1;
-  lastTriggerBlockId = characters[index].blockId;
+  if (!detailIsOpen()) lastTriggerBlockId = characters[index].blockId;
   renderGallery();
   updateDetail();
   elements.detail.setAttribute("aria-hidden", "false");
   document.body.classList.add("detail-open");
-  const url = new URL(location.href);
-  url.searchParams.set("character", String(characters[index].blockId));
-  history.replaceState(null, "", url);
-  elements.detailClose.focus({ preventScroll: true });
+  setModalBackgroundInert(true);
+  if (historyMode) updateDetailHistory(characters[index].blockId, historyMode);
+  if (focusClose) elements.detailClose.focus({ preventScroll: true });
+  scheduleRenderedDiagnostics();
 }
 
-function closeDetail() {
-  if (elements.detail.getAttribute("aria-hidden") === "true") return;
+function closeDetail({ historyMode = "push", restoreFocus = true } = {}) {
+  if (!detailIsOpen()) return;
   elements.detail.setAttribute("aria-hidden", "true");
   document.body.classList.remove("detail-open");
-  const url = new URL(location.href);
-  url.searchParams.delete("character");
-  history.replaceState(null, "", url);
+  setModalBackgroundInert(false);
+  if (historyMode) updateDetailHistory(null, historyMode);
+  if (!restoreFocus) return;
   const trigger = elements.grid.querySelector(`[data-block-id="${lastTriggerBlockId}"]`);
-  trigger?.focus({ preventScroll: true });
+  (trigger || elements.search).focus({ preventScroll: true });
 }
 
-function moveDetail(delta) {
+function moveDetail(delta, { historyMode = "push" } = {}) {
   selectedIndex = (selectedIndex + delta + characters.length) % characters.length;
   currentPage = Math.floor(selectedIndex / PAGE_SIZE) + 1;
-  lastTriggerBlockId = characters[selectedIndex].blockId;
   renderGallery();
   updateDetail();
-  const url = new URL(location.href);
-  url.searchParams.set("character", String(characters[selectedIndex].blockId));
-  history.replaceState(null, "", url);
+  if (historyMode) updateDetailHistory(characters[selectedIndex].blockId, historyMode);
+}
+
+function applyDetailFromLocation() {
+  const requestedBlockId = Number(new URL(location.href).searchParams.get("character"));
+  if (characterIndex(requestedBlockId) >= 0) {
+    openDetail(requestedBlockId, { historyMode: null });
+  } else {
+    closeDetail({ historyMode: null });
+  }
 }
 
 function toggleCurrentFavorite() {
@@ -335,11 +392,19 @@ function bindEvents() {
   elements.detailShare.addEventListener("click", shareCurrent);
   document.querySelector("[data-home]").addEventListener("click", () => { location.href = "../../index.html#engineering"; });
   window.addEventListener("keydown", (event) => {
-    if (elements.detail.getAttribute("aria-hidden") === "true") return;
+    if (!detailIsOpen()) return;
+    trapDetailFocus(event);
     if (event.key === "Escape") closeDetail();
-    if (event.key === "ArrowLeft") moveDetail(-1);
-    if (event.key === "ArrowRight") moveDetail(1);
+    if (event.key === "ArrowLeft") { event.preventDefault(); moveDetail(-1); }
+    if (event.key === "ArrowRight") { event.preventDefault(); moveDetail(1); }
   });
+  window.addEventListener("popstate", applyDetailFromLocation);
+  window.addEventListener("resize", scheduleRenderedDiagnostics, { passive: true });
+  if (typeof ResizeObserver === "function") {
+    detailResizeObserver = new ResizeObserver(scheduleRenderedDiagnostics);
+    detailResizeObserver.observe(elements.detailDescription);
+  }
+  document.fonts?.ready.then(scheduleRenderedDiagnostics);
 }
 
 async function start() {
@@ -356,7 +421,7 @@ async function start() {
   bindEvents();
   renderGallery();
   updateInspector(characters[selectedIndex]);
-  if (requestedIndex >= 0) openDetail(requestedBlockId);
+  if (requestedIndex >= 0) openDetail(requestedBlockId, { historyMode: null });
 }
 
 start().catch((error) => {
