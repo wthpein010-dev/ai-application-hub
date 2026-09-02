@@ -42,7 +42,18 @@ const mime = new Map([
   [".wav", "audio/wav"]
 ]);
 
-const server = createServer(async (request, response) => {
+const remoteBaseUrlInput = process.env.LOOP_BGM_BASE_URL?.trim() || "";
+let remoteBaseUrl = "";
+if (remoteBaseUrlInput) {
+  const parsedBaseUrl = new URL(remoteBaseUrlInput);
+  if (parsedBaseUrl.protocol !== "https:") throw new TypeError("LOOP_BGM_BASE_URL must use HTTPS");
+  if (parsedBaseUrl.username || parsedBaseUrl.password || parsedBaseUrl.search || parsedBaseUrl.hash) {
+    throw new TypeError("LOOP_BGM_BASE_URL cannot contain credentials, query parameters, or a fragment");
+  }
+  remoteBaseUrl = parsedBaseUrl.href.replace(/\/+$/, "");
+}
+
+const server = remoteBaseUrl ? null : createServer(async (request, response) => {
   try {
     if ((request.url || "").split("?", 1)[0] === "/__response-monitor-redirect") {
       response.writeHead(302, { location: "/projects/loop-bgm-lab/index.html" }).end();
@@ -60,7 +71,7 @@ const server = createServer(async (request, response) => {
   }
 });
 
-await new Promise(resolveListen => server.listen(0, "127.0.0.1", resolveListen));
+if (server) await new Promise(resolveListen => server.listen(0, "127.0.0.1", resolveListen));
 const browserExecutable = [
   process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE,
   "C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe",
@@ -68,7 +79,7 @@ const browserExecutable = [
   chromium.executablePath()
 ].find(candidate => candidate && existsSync(candidate));
 const browser = await chromium.launch({ headless: true, executablePath: browserExecutable });
-const origin = `http://127.0.0.1:${server.address().port}`;
+const origin = remoteBaseUrl || `http://127.0.0.1:${server.address().port}`;
 
 function observeErrors(page) {
   const observation = { errors: [], blobAborts: [], revokedUrls: new Set() };
@@ -357,14 +368,16 @@ function versionTwoLegacyFixture(project) {
 }
 
 try {
-  const responseProbePage = await browser.newPage();
-  const responseProbeErrors = observeErrors(responseProbePage);
-  await responseProbePage.goto(`${origin}/__response-monitor-redirect`, { waitUntil: "networkidle" });
-  assert.ok(
-    responseProbeErrors.errors.some(error => error === `response: ${origin}/__response-monitor-redirect 302`),
-    "the browser error collector must flag controlled 3xx responses"
-  );
-  await responseProbePage.close();
+  if (!remoteBaseUrl) {
+    const responseProbePage = await browser.newPage();
+    const responseProbeErrors = observeErrors(responseProbePage);
+    await responseProbePage.goto(`${origin}/__response-monitor-redirect`, { waitUntil: "networkidle" });
+    assert.ok(
+      responseProbeErrors.errors.some(error => error === `response: ${origin}/__response-monitor-redirect 302`),
+      "the browser error collector must flag controlled 3xx responses"
+    );
+    await responseProbePage.close();
+  }
 
   const page = await browser.newPage({ viewport: { width: 1440, height: 900 }, acceptDownloads: true });
   const errors = observeErrors(page);
@@ -1852,7 +1865,7 @@ try {
   await storagePage.close();
 } finally {
   await browser.close();
-  server.close();
+  server?.close();
 }
 
 console.log("Verified Loop BGM Lab workflow, persistence, import/export, licensing, privacy, reduced motion, and 4 responsive viewports with zero browser errors.");

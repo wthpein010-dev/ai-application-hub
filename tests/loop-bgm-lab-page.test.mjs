@@ -221,6 +221,18 @@ test("README preserves the cross-computer provenance and release-boundary contra
   assert.match(readme, /不会从链接、文件名或历史自动猜测/);
 });
 
+test("browser smoke supports an explicit HTTPS Pages base without weakening local coverage", () => {
+  const smoke = readFileSync(join(root, "tests", "loop-bgm-lab-browser-smoke.mjs"), "utf8");
+  assert.match(smoke, /process\.env\.LOOP_BGM_BASE_URL/);
+  assert.match(smoke, /protocol\s*!==\s*["']https:["']/);
+  assert.match(smoke, /parsedBaseUrl\.username[\s\S]{0,160}parsedBaseUrl\.password[\s\S]{0,160}parsedBaseUrl\.search[\s\S]{0,160}parsedBaseUrl\.hash/);
+  assert.match(smoke, /remoteBaseUrl\s*=\s*parsedBaseUrl\.href\.replace/);
+  assert.match(smoke, /remoteBaseUrl[^\n]*\?[^\n]*null[^\n]*createServer/);
+  assert.match(smoke, /if \(!remoteBaseUrl\)[\s\S]{0,500}__response-monitor-redirect/);
+  assert.match(smoke, /`\$\{origin\}\/projects\/loop-bgm-lab\/index\.html`/);
+  assert.match(smoke, /server\?\.close\(\)/);
+});
+
 test("candidate markup exposes an explicit batch association, durable history, and playback-only cleanup", () => {
   // Break caught: selecting another candidate destroys the only persisted candidate/experiment and silently marks it best.
   const html = readProjectFile("index.html");
