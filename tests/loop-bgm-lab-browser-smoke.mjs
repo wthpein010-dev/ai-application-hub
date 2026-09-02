@@ -104,8 +104,15 @@ async function installInterceptors(page, observation, {
     window.__decodeStarted = 0;
     window.__decodeCompleted = 0;
     window.__delayNextDecode = false;
+    window.__delayNextDecodeMs = 300;
     window.__returnOversizedDecodedBuffer = false;
     window.__sampleExtractions = 0;
+    window.__fileTextReads = 0;
+    const originalFileText = File.prototype.text;
+    File.prototype.text = function countedFileText(...args) {
+      window.__fileTextReads += 1;
+      return originalFileText.apply(this, args);
+    };
     const createObjectUrl = URL.createObjectURL.bind(URL);
     const revokeObjectUrl = URL.revokeObjectURL.bind(URL);
     URL.createObjectURL = value => {
@@ -142,7 +149,7 @@ async function installInterceptors(page, observation, {
         }
         window.__delayNextDecode = false;
         return new Promise((resolveDecode, rejectDecode) => {
-          window.setTimeout(() => Promise.resolve(decode()).then(resolveDecode, rejectDecode), 300);
+          window.setTimeout(() => Promise.resolve(decode()).then(resolveDecode, rejectDecode), window.__delayNextDecodeMs);
         }).finally(() => { window.__decodeCompleted += 1; });
       };
     }
@@ -257,6 +264,80 @@ async function addLicense(page, {
   await page.locator("#license-author").fill(`Synthetic Fixture ${suffix}`);
   await page.locator("#license-date").fill("2026-08-30");
   await page.locator("#license-form button[type='submit']").click();
+}
+
+function licensePackageEntry({
+  id = "license-package-a",
+  hash = "a".repeat(64),
+  author = "Package Fixture",
+  rightsChainStatus = "source-declaration-only",
+} = {}) {
+  return {
+    id,
+    source: "OpenGameArt",
+    sourceUrl: "https://opengameart.org/content/package-fixture",
+    license: "CC0 1.0",
+    licenseIdentifier: "CC0-1.0",
+    licenseUrl: "https://creativecommons.org/publicdomain/zero/1.0/",
+    evidenceUrl: "https://opengameart.org/content/package-fixture",
+    evidenceCheckedAt: "2026-09-01",
+    deliveryStatus: "original",
+    scopeNote: "Exact analyzed bytes only.",
+    rightsChainStatus,
+    fileSha256: hash,
+    attributionText: "Package Fixture — CC0 1.0",
+    author,
+    downloadedAt: "2026-09-01",
+  };
+}
+
+function licensePackageDocument(entries = [licensePackageEntry()]) {
+  return JSON.stringify({
+    format: "loop-bgm-license-package",
+    version: 1,
+    createdAt: "2026-09-02",
+    entries,
+  });
+}
+
+function externalManifestDocument({ hash = "d".repeat(64) } = {}) {
+  return JSON.stringify({
+    schemaVersion: 3,
+    verifiedDate: "2026-09-01",
+    collection: {
+      workCount: 1,
+      fileCount: 1,
+      originalAttachmentCount: 1,
+      auditionPreviewCount: 0,
+    },
+    analysis: { schemaVersion: 3 },
+    licenseReferences: { "CC0-1.0": "https://creativecommons.org/publicdomain/zero/1.0/" },
+    licenseReview: {
+      scope: "Exact analyzed bytes only.",
+      rightsChainAssurance: "source-declaration-only",
+    },
+    privacyReview: {
+      userReferenceAudioIncluded: false,
+      absoluteLocalPathsIncluded: false,
+      cookiesTokensOrCredentialsIncluded: false,
+    },
+    works: [{
+      workId: "manifest-fixture",
+      title: "Manifest Fixture",
+      author: "Manifest Author",
+      sourcePage: "https://opengameart.org/content/manifest-fixture",
+      assetLicense: {
+        identifier: "CC0-1.0",
+        evidenceUrl: "https://opengameart.org/content/manifest-fixture",
+        verifiedDate: "2026-09-01",
+        scopeNote: "Exact source attachment.",
+      },
+      files: [{
+        sha256: hash,
+        deliveryStatus: "original-attachment",
+      }],
+    }],
+  });
 }
 
 try {
@@ -1143,6 +1224,210 @@ try {
   await assertNoObservedErrors(externalPage, externalErrors);
   await externalContext.close();
 
+  const packageContext = await browser.newContext({ viewport: { width: 1024, height: 768 }, acceptDownloads: true });
+  const packagePage = await packageContext.newPage();
+  const packageErrors = observeErrors(packagePage);
+  const packageHttpRequests = [];
+  let observePackageNetwork = false;
+  packagePage.on("request", request => {
+    if (observePackageNetwork && /^https?:/i.test(request.url())) packageHttpRequests.push(request.url());
+  });
+  await installInterceptors(packagePage, packageErrors);
+  await packagePage.goto(`${origin}/projects/loop-bgm-lab/index.html`, { waitUntil: "networkidle" });
+  await packagePage.locator("body[data-ready='true']").waitFor();
+  observePackageNetwork = true;
+  assert.equal(await packagePage.locator("#license-package-file").getAttribute("accept"), ".json,application/json");
+  assert.equal(await packagePage.locator("#license-package-apply").isDisabled(), true);
+
+  const emptyPackageDownloadPromise = packagePage.waitForEvent("download");
+  await packagePage.locator("#license-package-export").click();
+  const emptyPackageText = await readFile(await (await emptyPackageDownloadPromise).path(), "utf8");
+  const emptyPackageExport = JSON.parse(emptyPackageText);
+  assert.equal(emptyPackageExport.format, "loop-bgm-license-package");
+  assert.equal(emptyPackageExport.version, 1);
+  assert.match(emptyPackageExport.createdAt, /^\d{4}-\d{2}-\d{2}$/);
+  assert.deepEqual(emptyPackageExport.entries, []);
+  assert.doesNotMatch(emptyPackageText, /originalFile|downloadUrl|finalUrl|\.wav|\.mp3|[A-Z]:\\|\/Users\//i);
+
+  const initialPackageStorage = await packagePage.evaluate(() => localStorage.getItem("loop-bgm-lab-v1"));
+  const initialTextReads = await packagePage.evaluate(() => window.__fileTextReads);
+  await packagePage.locator("#license-package-file").setInputFiles({
+    name: "licenses.zip",
+    mimeType: "application/zip",
+    buffer: Buffer.from("PK fake archive"),
+  });
+  await packagePage.waitForFunction(() => document.querySelector("#license-package-status")?.textContent.includes("ZIP"));
+  assert.equal(await packagePage.evaluate(() => window.__fileTextReads), initialTextReads, "ZIP must be rejected before File.text()");
+  assert.equal(await packagePage.evaluate(() => localStorage.getItem("loop-bgm-lab-v1")), initialPackageStorage);
+
+  await packagePage.locator("#license-package-file").setInputFiles({
+    name: "too-large.json",
+    mimeType: "application/json",
+    buffer: Buffer.alloc(1_048_577, 0x20),
+  });
+  await packagePage.waitForFunction(() => /1 MiB|1048576|过大/.test(document.querySelector("#license-package-status")?.textContent || ""));
+  assert.equal(await packagePage.evaluate(() => window.__fileTextReads), initialTextReads, "oversized JSON must be rejected before File.text()");
+  assert.equal(await packagePage.evaluate(() => localStorage.getItem("loop-bgm-lab-v1")), initialPackageStorage);
+
+  await packagePage.locator("#license-package-file").setInputFiles({
+    name: "bad.json",
+    mimeType: "application/json",
+    buffer: Buffer.from("{"),
+  });
+  await packagePage.waitForFunction(() => document.querySelector("#license-package-status")?.textContent.includes("JSON"));
+  assert.equal(await packagePage.evaluate(() => window.__fileTextReads), initialTextReads + 1);
+  assert.equal(await packagePage.locator("#license-package-apply").isDisabled(), true);
+  assert.equal(await packagePage.evaluate(() => localStorage.getItem("loop-bgm-lab-v1")), initialPackageStorage);
+
+  assert.deepEqual(packageHttpRequests, [], "invalid preflight and empty export must make zero HTTP requests");
+  observePackageNetwork = false;
+  await packagePage.locator("#load-demo-reference").click();
+  await packagePage.waitForFunction(() => JSON.parse(localStorage.getItem("loop-bgm-lab-v1")).references.length === 1, null, { timeout: 45_000 });
+  await packagePage.locator(".batch-card[data-axis='baseline'] .record-create-run").click();
+  const packageRunId = await packagePage.evaluate(() => JSON.parse(localStorage.getItem("loop-bgm-lab-v1")).batches[0].currentRunId);
+  const packageRunPanel = packagePage.locator(`.create-run-panel[data-run-id='${packageRunId}']`);
+  await packageRunPanel.locator(".create-output-url").first().fill("https://suno.com/song/package-playback");
+  await packageRunPanel.locator(".create-output-url").first().press("Tab");
+  await packagePage.waitForFunction(runId => JSON.parse(localStorage.getItem("loop-bgm-lab-v1")).runs.find(run => run.id === runId)?.outputs.length === 1, packageRunId);
+  await packagePage.locator("#candidate-run").selectOption(packageRunId);
+  await packagePage.locator("#candidate-output").selectOption("0");
+  await packagePage.locator("#candidate-file").setInputFiles(demoFile);
+  await packagePage.waitForFunction(() => JSON.parse(localStorage.getItem("loop-bgm-lab-v1")).candidates.length === 1, null, { timeout: 45_000 });
+  await packagePage.waitForFunction(() => [...document.querySelectorAll("audio")].every(audio => Number.isFinite(audio.duration) && audio.duration > 3));
+  await packagePage.evaluate(() => {
+    const reference = document.querySelector("#reference-player");
+    const candidate = document.querySelector("#candidate-player");
+    reference.pause();
+    candidate.pause();
+    reference.currentTime = 1.25;
+    candidate.currentTime = 2.5;
+  });
+
+  await packagePage.evaluate(() => {
+    window.__delayNextDecode = true;
+    window.__delayNextDecodeMs = 2_000;
+  });
+  const decodeStartedBeforePackageApply = await packagePage.evaluate(() => window.__decodeStarted);
+  await packagePage.locator("#candidate-file").setInputFiles(differentFile);
+  await packagePage.waitForFunction(started => window.__decodeStarted > started, decodeStartedBeforePackageApply);
+  packageHttpRequests.length = 0;
+  observePackageNetwork = true;
+  const packagePreflightSnapshot = await packagePage.evaluate(() => ({
+    storage: localStorage.getItem("loop-bgm-lab-v1"),
+    createdUrls: [...window.__createdObjectUrls],
+    revokedUrls: [...window.__revokedObjectUrls],
+    players: [...document.querySelectorAll("audio")].map(audio => ({ src: audio.getAttribute("src"), currentTime: audio.currentTime, paused: audio.paused })),
+  }));
+  const validPackageText = licensePackageDocument();
+  await packagePage.locator("#license-package-file").setInputFiles({
+    name: "licenses.json",
+    mimeType: "application/json",
+    buffer: Buffer.from(validPackageText),
+  });
+  await packagePage.waitForFunction(() => document.querySelector("#license-package-preview")?.dataset.state === "ready");
+  assert.deepEqual(await packagePage.evaluate(() => ({
+    storage: localStorage.getItem("loop-bgm-lab-v1"),
+    createdUrls: [...window.__createdObjectUrls],
+    revokedUrls: [...window.__revokedObjectUrls],
+    players: [...document.querySelectorAll("audio")].map(audio => ({ src: audio.getAttribute("src"), currentTime: audio.currentTime, paused: audio.paused })),
+  })), packagePreflightSnapshot, "preflight must not mutate project storage, object URLs, or playback");
+  assert.equal(await packagePage.locator("#license-package-additions").textContent(), "1");
+  assert.equal(await packagePage.locator("#license-package-skips").textContent(), "0");
+  assert.equal(await packagePage.locator("#license-package-conflicts").textContent(), "0");
+  assert.equal(await packagePage.locator("#license-package-blockers").textContent(), "1");
+  assert.match(await packagePage.locator("#license-package-details").textContent(), /license-package-a.*rights-chain-review-required/);
+  assert.match(await packagePage.locator("#license-package-status").textContent(), /研究证据.*不等于.*发布.*清白/);
+  assert.equal(await packagePage.locator("#license-package-apply").isDisabled(), false);
+
+  await packagePage.locator("#license-package-apply").click();
+  await packagePage.waitForFunction(() => JSON.parse(localStorage.getItem("loop-bgm-lab-v1")).licenses.length === 1);
+  await packagePage.waitForFunction(started => window.__decodeCompleted >= started + 1, decodeStartedBeforePackageApply);
+  assert.equal(await packagePage.evaluate(() => JSON.parse(localStorage.getItem("loop-bgm-lab-v1")).candidates.length), 1, "successful apply must cancel in-flight candidate analysis");
+  const packagePlaybackAfterApply = await packagePage.evaluate(() => [...document.querySelectorAll("audio")].map(audio => ({
+    src: audio.getAttribute("src"), currentTime: audio.currentTime, paused: audio.paused,
+  })));
+  assert.deepEqual(packagePlaybackAfterApply.map(item => [item.src, item.paused]), packagePreflightSnapshot.players.map(item => [item.src, item.paused]));
+  assert.ok(packagePlaybackAfterApply.every((item, index) => Math.abs(item.currentTime - packagePreflightSnapshot.players[index].currentTime) < 0.05));
+
+  const appliedPackageDownloadPromise = packagePage.waitForEvent("download");
+  await packagePage.locator("#license-package-export").click();
+  const appliedPackageText = await readFile(await (await appliedPackageDownloadPromise).path(), "utf8");
+  const appliedPackage = JSON.parse(appliedPackageText);
+  assert.deepEqual(appliedPackage.entries.map(entry => entry.id), ["license-package-a"]);
+  assert.match(appliedPackage.createdAt, /^\d{4}-\d{2}-\d{2}$/);
+  assert.doesNotMatch(appliedPackageText, /originalFile|downloadUrl|finalUrl|\.wav|\.mp3|[A-Z]:\\|\/Users\//i);
+
+  await packagePage.locator("#license-package-file").setInputFiles({ name: "same.json", mimeType: "application/json", buffer: Buffer.from(validPackageText) });
+  await packagePage.waitForFunction(() => document.querySelector("#license-package-preview")?.dataset.state === "ready");
+  assert.equal(await packagePage.locator("#license-package-additions").textContent(), "0");
+  assert.equal(await packagePage.locator("#license-package-skips").textContent(), "1");
+  assert.equal(await packagePage.locator("#license-package-conflicts").textContent(), "0");
+
+  const storageBeforeConflict = await packagePage.evaluate(() => localStorage.getItem("loop-bgm-lab-v1"));
+  await packagePage.locator("#license-package-file").setInputFiles({
+    name: "conflict.json",
+    mimeType: "application/json",
+    buffer: Buffer.from(licensePackageDocument([licensePackageEntry({ author: "Conflicting Author" })])),
+  });
+  await packagePage.waitForFunction(() => document.querySelector("#license-package-preview")?.dataset.state === "conflict");
+  assert.equal(await packagePage.locator("#license-package-conflicts").textContent(), "1");
+  assert.equal(await packagePage.locator("#license-package-apply").isDisabled(), true);
+  assert.match(await packagePage.locator("#license-package-details").textContent(), /conflict|冲突/i);
+  assert.equal(await packagePage.evaluate(() => localStorage.getItem("loop-bgm-lab-v1")), storageBeforeConflict);
+
+  const referenceId = await packagePage.evaluate(() => JSON.parse(localStorage.getItem("loop-bgm-lab-v1")).references[0].id);
+  await packagePage.locator("#license-package-file").setInputFiles({
+    name: "global-id-conflict.json",
+    mimeType: "application/json",
+    buffer: Buffer.from(licensePackageDocument([licensePackageEntry({ id: referenceId, hash: "c".repeat(64), rightsChainStatus: "independently-verified" })])),
+  });
+  await packagePage.waitForFunction(() => document.querySelector("#license-package-preview")?.dataset.state === "conflict");
+  assert.equal(await packagePage.locator("#license-package-conflicts").textContent(), "1");
+  assert.equal(await packagePage.locator("#license-package-apply").isDisabled(), true, "full-project dry-run must catch global ID collision");
+  assert.match(await packagePage.locator("#license-package-details").textContent(), /ID|id|unique|冲突/);
+  assert.equal(await packagePage.evaluate(() => localStorage.getItem("loop-bgm-lab-v1")), storageBeforeConflict);
+
+  await packagePage.locator("#license-package-file").setInputFiles({
+    name: "external-manifest-v3.json",
+    mimeType: "application/json",
+    buffer: Buffer.from(externalManifestDocument()),
+  });
+  await packagePage.waitForFunction(() => document.querySelector("#license-package-preview")?.dataset.state === "ready");
+  assert.equal(await packagePage.locator("#license-package-additions").textContent(), "1");
+  assert.match(await packagePage.locator("#license-package-status").textContent(), /schemaVersion 3.*预检/);
+  assert.match(await packagePage.locator("#license-package-details").textContent(), new RegExp(`license-${"d".repeat(64)}`));
+  assert.equal(await packagePage.evaluate(() => localStorage.getItem("loop-bgm-lab-v1")), storageBeforeConflict, "manifest preflight must not persist adapted entries");
+
+  const stalePackageText = licensePackageDocument([licensePackageEntry({ id: "license-stale", hash: "e".repeat(64), rightsChainStatus: "independently-verified" })]);
+  await packagePage.locator("#license-package-file").setInputFiles({ name: "stale.json", mimeType: "application/json", buffer: Buffer.from(stalePackageText) });
+  await packagePage.waitForFunction(() => document.querySelector("#license-package-preview")?.dataset.state === "ready");
+  assert.equal(await packagePage.locator("#license-package-apply").isDisabled(), false);
+  await addLicense(packagePage, { suffix: "stale-change", hash: "f".repeat(64) });
+  assert.equal(await packagePage.locator("#license-package-apply").isDisabled(), true);
+  assert.match(await packagePage.locator("#license-package-status").textContent(), /预检已失效|重新预检/);
+  assert.equal(await packagePage.evaluate(() => JSON.parse(localStorage.getItem("loop-bgm-lab-v1")).licenses.some(entry => entry.id === "license-stale")), false);
+  assert.deepEqual(packageHttpRequests, [], "license package preview/apply/export must make zero HTTP requests");
+  await assertNoObservedErrors(packagePage, packageErrors);
+  await packageContext.close();
+
+  const packageStorageFailureContext = await browser.newContext({ viewport: { width: 1024, height: 768 } });
+  const packageStorageFailurePage = await packageStorageFailureContext.newPage();
+  const packageStorageFailureErrors = observeErrors(packageStorageFailurePage);
+  await installInterceptors(packageStorageFailurePage, packageStorageFailureErrors);
+  await packageStorageFailurePage.goto(`${origin}/projects/loop-bgm-lab/index.html`, { waitUntil: "networkidle" });
+  await packageStorageFailurePage.locator("body[data-ready='true']").waitFor();
+  await packageStorageFailurePage.locator("#license-package-file").setInputFiles({ name: "storage-failure.json", mimeType: "application/json", buffer: Buffer.from(validPackageText) });
+  await packageStorageFailurePage.waitForFunction(() => document.querySelector("#license-package-preview")?.dataset.state === "ready");
+  const beforePackageStorageFailure = await packageStorageFailurePage.evaluate(() => localStorage.getItem("loop-bgm-lab-v1"));
+  await packageStorageFailurePage.evaluate(() => { window.__failNextProjectStorageWrite = true; });
+  await packageStorageFailurePage.locator("#license-package-apply").click();
+  await packageStorageFailurePage.waitForFunction(() => /存储|保存|写入/.test(document.querySelector("#license-package-status")?.textContent || ""));
+  assert.equal(await packageStorageFailurePage.evaluate(() => localStorage.getItem("loop-bgm-lab-v1")), beforePackageStorageFailure);
+  assert.equal(await packageStorageFailurePage.locator("#license-list .license-entry").count(), 0);
+  assert.equal(await packageStorageFailurePage.locator("#license-package-apply").isDisabled(), false, "failed persistence keeps a retryable unchanged plan");
+  await assertNoObservedErrors(packageStorageFailurePage, packageStorageFailureErrors);
+  await packageStorageFailureContext.close();
+
   const raceContext = await browser.newContext({ viewport: { width: 1024, height: 768 } });
   const racePage = await raceContext.newPage();
   const raceErrors = observeErrors(racePage);
@@ -1196,6 +1481,8 @@ try {
     await responsivePage.locator("body[data-ready='true']").waitFor();
     await assertOfficialReadinessCard(responsivePage, { singleColumn: viewport.width <= 760 });
     assert.equal(await responsivePage.locator("main > section").count(), 6);
+    assert.equal(await responsivePage.locator("label[for='license-package-file']").isVisible(), true);
+    assert.equal(await responsivePage.locator("#license-package-export").isVisible(), true);
     await assertNoOverflow(responsivePage, `${viewport.width}x${viewport.height}`);
     const motion = await responsivePage.locator(".primary-button").first().evaluate(element => {
       const toSeconds = value => value.endsWith("ms") ? Number.parseFloat(value) / 1000 : Number.parseFloat(value);

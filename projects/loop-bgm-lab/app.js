@@ -23,6 +23,16 @@ import {
 } from "./core/candidate-score.mjs";
 import { deriveCandidatePublicationState } from "./core/candidate-publication.mjs";
 import {
+  LICENSE_PACKAGE_FORMAT,
+  LICENSE_PACKAGE_VERSION,
+  MAX_LICENSE_PACKAGE_BYTES,
+  adaptExternalManifestV3,
+  applyLicensePackageImport,
+  exportLicensePackageJson,
+  parseLicensePackageJson,
+  planLicensePackageImport
+} from "./core/license-package.mjs";
+import {
   aggregateReferenceStyle,
   assertDecodedAudioBudget,
   assertPredecodeAudioBudget,
@@ -114,6 +124,16 @@ const removeCandidateButton = element("#remove-candidate");
 const licenseForm = element("#license-form");
 const licenseFormError = element("#license-form-error");
 const licenseList = element("#license-list");
+const licensePackageInput = element("#license-package-file");
+const licensePackageApplyButton = element("#license-package-apply");
+const licensePackageExportButton = element("#license-package-export");
+const licensePackageStatus = element("#license-package-status");
+const licensePackagePreview = element("#license-package-preview");
+const licensePackageAdditions = element("#license-package-additions");
+const licensePackageSkips = element("#license-package-skips");
+const licensePackageConflicts = element("#license-package-conflicts");
+const licensePackageBlockers = element("#license-package-blockers");
+const licensePackageDetails = element("#license-package-details");
 const importInput = element("#import-project");
 const markdownExportButton = element("#export-markdown");
 const importStatus = element("#import-status");
@@ -138,6 +158,8 @@ const allocatedIds = {
 };
 let referenceGeneration = 0;
 let candidateGeneration = 0;
+let licensePackageGeneration = 0;
+let pendingLicensePackageImport = null;
 
 function allocateId(prefix, entries = []) {
   const id = nextMonotonicId([...entries, ...allocatedIds[prefix]], prefix);
@@ -176,6 +198,22 @@ function clearError() {
   appError.hidden = true;
 }
 
+function clearLicensePackagePreview({ message = "", onlyIfActive = false } = {}) {
+  const hadPendingPlan = pendingLicensePackageImport !== null;
+  if (onlyIfActive && !hadPendingPlan) return;
+  pendingLicensePackageImport = null;
+  licensePackageGeneration += 1;
+  licensePackageApplyButton.disabled = true;
+  licensePackagePreview.hidden = true;
+  licensePackagePreview.dataset.state = "empty";
+  licensePackageAdditions.textContent = "0";
+  licensePackageSkips.textContent = "0";
+  licensePackageConflicts.textContent = "0";
+  licensePackageBlockers.textContent = "0";
+  licensePackageDetails.replaceChildren();
+  if (message) licensePackageStatus.textContent = message;
+}
+
 function showStorageFailure() {
   storageWarning.hidden = false;
   storageWarning.textContent = "本地存储不可用；当前会话仍可继续，请及时导出 JSON 以便恢复。";
@@ -209,7 +247,13 @@ function loadProject() {
   }
 }
 
-function persistProject({ allowBlockedWrite = false } = {}) {
+function persistProject({ allowBlockedWrite = false, preserveLicensePackagePreview = false } = {}) {
+  if (!preserveLicensePackagePreview) {
+    clearLicensePackagePreview({
+      message: "许可证包预检已失效：项目已变更，请重新预检。",
+      onlyIfActive: true
+    });
+  }
   if (storageWriteBlocked && !allowBlockedWrite) {
     showStorageQuarantine();
     return false;
@@ -1384,6 +1428,165 @@ function buildSearchUrl(source, query) {
   return `https://freesound.org/search/?q=${encoded}`;
 }
 
+function parseIncomingLicenseDocument(text) {
+  let parsed;
+  try {
+    parsed = JSON.parse(text);
+  } catch (error) {
+    throw new TypeError(`许可证 JSON 无效：${error instanceof Error ? error.message : "解析失败"}`);
+  }
+  if (parsed?.format === LICENSE_PACKAGE_FORMAT) {
+    return { package: parseLicensePackageJson(text), sourceLabel: "loop-bgm-license-package v1" };
+  }
+  if (parsed?.schemaVersion === 3) {
+    return { package: adaptExternalManifestV3(parsed), sourceLabel: "schemaVersion 3 外部清单" };
+  }
+  throw new TypeError("只接受 loop-bgm-license-package v1 或 schemaVersion 3 外部清单 JSON。");
+}
+
+function blockerCount(summary) {
+  return Object.values(summary?.reasonCounts || {}).reduce((sum, count) => sum + count, 0);
+}
+
+function renderLicensePackagePlan({ plan, sourceLabel, dryRunError = null }) {
+  const conflicts = [
+    ...plan.conflicts,
+    ...(dryRunError ? [{ reason: `完整项目 dry-run 冲突：${dryRunError}` }] : [])
+  ];
+  const totalBlockers = blockerCount(plan.blockingSummary);
+  const canApply = plan.canCommit && conflicts.length === 0;
+  licensePackagePreview.hidden = false;
+  licensePackagePreview.dataset.state = canApply ? "ready" : "conflict";
+  licensePackageAdditions.textContent = String(plan.additions.length);
+  licensePackageSkips.textContent = String(plan.skipped.length);
+  licensePackageConflicts.textContent = String(conflicts.length);
+  licensePackageBlockers.textContent = String(totalBlockers);
+  licensePackageDetails.replaceChildren();
+  for (const entry of plan.additions) {
+    licensePackageDetails.append(createElement("li", {
+      text: `新增 ${entry.id} · ${entry.licenseIdentifier} · ${entry.publicationBlockers.length ? entry.publicationBlockers.join(", ") : "无记录阻断项"}`
+    }));
+  }
+  for (const entry of plan.skipped) {
+    licensePackageDetails.append(createElement("li", { text: `跳过 ${entry.id} · 同 SHA-256 与规范证据已存在` }));
+  }
+  for (const conflict of conflicts) {
+    const identity = conflict.identity?.id || conflict.identity?.fileSha256 || "完整项目";
+    const fields = conflict.differingFields?.length ? ` · 字段 ${conflict.differingFields.join(", ")}` : "";
+    licensePackageDetails.append(createElement("li", { text: `冲突 ${identity} · ${conflict.reason}${fields}` }));
+  }
+  for (const entry of plan.blockingSummary.entries) {
+    if (plan.additions.some(addition => addition.id === entry.id)) continue;
+    licensePackageDetails.append(createElement("li", { text: `记录阻断 ${entry.id} · ${entry.reasons.join(", ")}` }));
+  }
+  licensePackageApplyButton.disabled = !canApply;
+  licensePackageStatus.textContent = `${sourceLabel} 预检完成：新增 ${plan.additions.length}、跳过 ${plan.skipped.length}、冲突 ${conflicts.length}、阻断项 ${totalBlockers}。blockers 不妨碍作为研究证据导入，但不等于发布权利清白。`;
+  return canApply;
+}
+
+async function preflightLicensePackage(file) {
+  clearError();
+  clearLicensePackagePreview();
+  const generation = ++licensePackageGeneration;
+  licensePackageStatus.textContent = "正在本地预检许可证 JSON；尚未修改项目。";
+  if (!(file instanceof File)) {
+    licensePackageStatus.textContent = "未收到有效的许可证 JSON 文件。";
+    return;
+  }
+  if (/\.zip$/i.test(file.name) || /(?:^|\/)zip$/i.test(file.type) || file.type === "application/zip") {
+    licensePackageStatus.textContent = "明确拒绝 ZIP：请把许可证 JSON 与音频文件分开选择。";
+    return;
+  }
+  if (file.size > MAX_LICENSE_PACKAGE_BYTES) {
+    licensePackageStatus.textContent = "许可证 JSON 过大：读取前已拒绝，最大允许 1 MiB（1048576 字节）。";
+    return;
+  }
+  if (!/\.json$/i.test(file.name) && file.type !== "application/json") {
+    licensePackageStatus.textContent = "只接受独立的 JSON 许可证据文件。";
+    return;
+  }
+  const sourceProject = project;
+  try {
+    const text = await file.text();
+    if (generation !== licensePackageGeneration) return;
+    if (project !== sourceProject) {
+      licensePackageStatus.textContent = "读取期间项目已变更，本次预检已失效；请重新预检。";
+      return;
+    }
+    const incoming = parseIncomingLicenseDocument(text);
+    const plan = planLicensePackageImport(project.licenses, incoming.package);
+    let dryRunError = null;
+    if (plan.canCommit) {
+      try {
+        applyLicensePackageImport(project, plan);
+      } catch (error) {
+        dryRunError = error instanceof Error ? error.message : "完整项目校验失败";
+      }
+    }
+    const projectBaseline = exportProjectJson(project);
+    const canApply = renderLicensePackagePlan({ plan, sourceLabel: incoming.sourceLabel, dryRunError });
+    pendingLicensePackageImport = { plan, projectBaseline, sourceLabel: incoming.sourceLabel, canApply };
+  } catch (error) {
+    if (generation !== licensePackageGeneration) return;
+    clearLicensePackagePreview();
+    licensePackageStatus.textContent = `预检失败：${error instanceof Error ? error.message : "许可证 JSON 无效"}`;
+  }
+}
+
+function applyPendingLicensePackage() {
+  clearError();
+  const pending = pendingLicensePackageImport;
+  if (!pending?.canApply || licensePackageApplyButton.disabled) {
+    licensePackageStatus.textContent = "没有可应用的无冲突预检；请重新预检。";
+    return;
+  }
+  if (exportProjectJson(project) !== pending.projectBaseline) {
+    clearLicensePackagePreview({ message: "许可证包预检已失效：项目已变更，请重新预检。" });
+    return;
+  }
+  let stagedProject;
+  try {
+    stagedProject = applyLicensePackageImport(project, pending.plan);
+  } catch (error) {
+    clearLicensePackagePreview({ message: `许可证包预检已失效：${error instanceof Error ? error.message : "项目已变更"}，请重新预检。` });
+    return;
+  }
+  const activeProject = project;
+  project = stagedProject;
+  if (!persistProject({ preserveLicensePackagePreview: true })) {
+    project = activeProject;
+    renderLicenses();
+    renderCandidateHistory();
+    licensePackageStatus.textContent = "许可证包保存失败；项目与本地存储保持原样，可重试当前预检。";
+    return;
+  }
+  candidateGeneration += 1;
+  const addedCount = pending.plan.additions.length;
+  const skippedCount = pending.plan.skipped.length;
+  clearLicensePackagePreview();
+  renderLicenses();
+  renderCandidateHistory();
+  licensePackageStatus.textContent = `已原子应用许可证包：新增 ${addedCount}、跳过 ${skippedCount}。现有播放器和临时音频保持不变。`;
+  showLive("许可证据包已保存；在途候选分析已取消，既有播放状态保持不变。");
+}
+
+function exportCurrentLicensePackage() {
+  clearError();
+  try {
+    const createdAt = new Date().toISOString().slice(0, 10);
+    const text = exportLicensePackageJson({
+      format: LICENSE_PACKAGE_FORMAT,
+      version: LICENSE_PACKAGE_VERSION,
+      createdAt,
+      entries: project.licenses
+    });
+    downloadText(text, "loop-bgm-license-package.json", "application/json;charset=utf-8");
+    licensePackageStatus.textContent = `已导出 ${project.licenses.length} 条规范许可证据；文件不含音频、路径、文件名或下载 transport。`;
+  } catch (error) {
+    licensePackageStatus.textContent = `许可证包导出失败：${error instanceof Error ? error.message : "未知错误"}`;
+  }
+}
+
 function downloadText(text, fileName, type) {
   const blob = new Blob([text], { type });
   const url = URL.createObjectURL(blob);
@@ -1526,6 +1729,15 @@ for (const link of document.querySelectorAll(".search-link")) {
   });
 }
 
+licensePackageInput.addEventListener("change", () => {
+  const [file] = licensePackageInput.files;
+  licensePackageInput.value = "";
+  if (file) preflightLicensePackage(file);
+});
+
+licensePackageApplyButton.addEventListener("click", applyPendingLicensePackage);
+licensePackageExportButton.addEventListener("click", exportCurrentLicensePackage);
+
 licenseForm.addEventListener("submit", event => {
   event.preventDefault();
   licenseFormError.textContent = "";
@@ -1621,6 +1833,7 @@ importInput.addEventListener("change", async () => {
 window.addEventListener("beforeunload", () => {
   referenceGeneration += 1;
   candidateGeneration += 1;
+  licensePackageGeneration += 1;
   releaseAllAudio();
   for (const url of downloadUrls) URL.revokeObjectURL(url);
   downloadUrls.clear();

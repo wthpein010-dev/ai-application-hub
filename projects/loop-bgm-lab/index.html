@@ -206,6 +206,27 @@
           <a class="search-link" data-source="Freesound" href="https://freesound.org/search/" target="_blank" rel="noopener noreferrer">Freesound</a>
         </div>
       </div>
+      <section class="license-package-panel" aria-labelledby="license-package-title">
+        <div>
+          <h3 id="license-package-title">许可证据包</h3>
+          <p>只接受独立 JSON：可预检 loop-bgm-license-package v1 或兼容的 schemaVersion 3 外部清单。带 blockers 的条目仍可作为研究证据导入，但不等于发布权利清白。</p>
+        </div>
+        <div class="license-package-actions">
+          <label class="file-picker compact" for="license-package-file"><strong>选择许可证 JSON 并预检</strong><span>最大 1 MiB；不接受 ZIP、音频或项目交接 Markdown。</span><input id="license-package-file" class="visually-hidden" type="file" accept=".json,application/json"></label>
+          <button id="license-package-apply" class="primary-button" type="button" disabled>应用本次预检</button>
+          <button id="license-package-export" class="secondary-button" type="button">导出规范许可证包</button>
+        </div>
+        <p id="license-package-status" class="live-box" role="status" aria-live="polite">尚未选择许可证 JSON。</p>
+        <div id="license-package-preview" class="license-package-preview" data-state="empty" hidden>
+          <div class="license-package-summary" aria-label="许可证包预检统计">
+            <p><span>新增</span><strong id="license-package-additions">0</strong></p>
+            <p><span>跳过</span><strong id="license-package-skips">0</strong></p>
+            <p><span>冲突</span><strong id="license-package-conflicts">0</strong></p>
+            <p><span>阻断项</span><strong id="license-package-blockers">0</strong></p>
+          </div>
+          <ul id="license-package-details" class="license-package-details" aria-label="许可证包预检明细"></ul>
+        </div>
+      </section>
       <form id="license-form" class="license-form">
         <label>来源
           <select id="license-source" required>

@@ -177,6 +177,37 @@ test("candidate markup exposes an explicit batch association, durable history, a
   assert.match(css, /\.candidate-publication-badge\[data-status="blocked"\]/);
 });
 
+test("license-package controls keep JSON evidence separate from project handoff and expose atomic preflight", () => {
+  const html = readProjectFile("index.html");
+  const app = readProjectFile("app.js");
+  const css = readProjectFile("styles.css");
+
+  assert.match(html, /<input id="license-package-file"[^>]*accept="\.json,application\/json"/);
+  assert.doesNotMatch(html, /id="license-package-file"[^>]*\.zip|id="license-package-file"[^>]*\.md/);
+  assert.match(html, /id="license-package-apply"[^>]*\bdisabled\b/);
+  assert.match(html, /id="license-package-export"/);
+  assert.match(html, /id="license-package-preview"/);
+  assert.match(html, /id="license-package-additions"/);
+  assert.match(html, /id="license-package-skips"/);
+  assert.match(html, /id="license-package-conflicts"/);
+  assert.match(html, /id="license-package-blockers"/);
+  assert.match(html, /研究证据[^<]*不等于[^<]*发布[^<]*清白/);
+  assert.match(app, /from "\.\/core\/license-package\.mjs"/);
+  for (const name of [
+    "adaptExternalManifestV3",
+    "applyLicensePackageImport",
+    "exportLicensePackageJson",
+    "MAX_LICENSE_PACKAGE_BYTES",
+    "parseLicensePackageJson",
+    "planLicensePackageImport"
+  ]) assert.match(app, new RegExp(`\\b${name}\\b`));
+  assert.match(app, /file\.size\s*>\s*MAX_LICENSE_PACKAGE_BYTES/);
+  assert.match(app, /\.zip\$/i);
+  assert.match(css, /\.license-package-panel/);
+  assert.match(css, /\.license-package-summary/);
+  assert.match(css, /@media \(max-width: 720px\)[\s\S]*\.license-package-actions/);
+});
+
 test("browser workflow exposes explicit portable display-name editors and keeps computed hashes read-only", () => {
   // Break caught: local private filenames become durable labels, or a hand-edited hash changes candidate identity.
   const app = readProjectFile("app.js");
