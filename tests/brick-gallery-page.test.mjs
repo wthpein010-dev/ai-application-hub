@@ -7,17 +7,28 @@ import { fileURLToPath } from "node:url";
 const root = dirname(dirname(fileURLToPath(import.meta.url)));
 const projectRoot = join(root, "projects", "brick-character-copy-preview");
 
-test("brick preview now defaults to the game-style 45-character gallery", () => {
+test("brick preview now defaults to a landscape dual atlas workbench", () => {
   const html = readFileSync(join(projectRoot, "index.html"), "utf8");
   const app = readFileSync(join(projectRoot, "app.js"), "utf8");
   const data = JSON.parse(readFileSync(join(projectRoot, "data", "characters.json"), "utf8"));
 
-  assert.match(html, /<title>砖块小人图鉴与文案校对<\/title>/);
+  assert.match(html, /<title>砖块小人与随身小物图鉴<\/title>/);
+  assert.match(html, /id="atlas-workbench"/);
+  assert.match(html, /id="atlas-list-panel"/);
+  assert.match(html, /id="atlas-detail-panel"/);
+  assert.match(html, /role="tablist"/);
+  assert.match(html, /id="tab-characters"/);
+  assert.match(html, /id="tab-trinkets"/);
   assert.match(html, /id="character-grid"/);
+  assert.match(html, /id="trinket-grid"/);
   assert.match(html, /id="gallery-count"/);
-  assert.match(html, /id="detail-dialog"/);
+  assert.match(html, /id="detail-empty"/);
+  assert.match(html, /id="character-detail"/);
+  assert.match(html, /id="trinket-detail"/);
   assert.match(html, /id="detail-description"/);
   assert.match(html, /id="copy-diagnostics"/);
+  assert.doesNotMatch(html, /detail-dialog|detail-scrim|aria-modal="true"/);
+  assert.doesNotMatch(app, /setModalBackgroundInert|trapDetailFocus|detailIsOpen/);
   assert.match(html, /href="\.\/copy-review\.html"/);
   assert.match(html, /href="\.\.\/trinket-market\/index\.html"/);
   assert.match(app, /copy-diagnostics\.js/);
@@ -45,9 +56,12 @@ test("gallery catalog publishes complete preview art for the available character
   assert.doesNotMatch(source, /[A-Z]:\\/iu);
 });
 
-test("gallery CSS preserves the formal 3-by-4 card and detail text geometry", () => {
+test("gallery CSS preserves the formal card geometry inside a responsive landscape workbench", () => {
   const css = readFileSync(join(projectRoot, "styles.css"), "utf8");
 
+  assert.match(css, /\.atlas-workbench\s*\{[^}]*grid-template-columns:\s*minmax\(0,\s*720px\)\s+minmax\(520px,\s*1fr\)/s);
+  assert.match(css, /@media\s*\(max-width:\s*1099px\)/);
+  assert.match(css, /\.atlas-detail-panel\s*\{[^}]*position:\s*sticky/s);
   assert.match(css, /grid-template-columns:\s*repeat\(3,\s*170px\)/);
   assert.match(css, /\.character-card\s*\{[^}]*width:\s*170px[^}]*height:\s*180px/s);
   assert.match(css, /\.character-name\s*\{[^}]*font-size:\s*22px/s);
