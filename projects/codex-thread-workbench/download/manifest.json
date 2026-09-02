@@ -1,39 +1,39 @@
 {
   "version": 1,
   "fileName": "CodexConfirmationBar-Windows-x64.zip",
-  "totalSize": 41563039,
+  "totalSize": 41562042,
   "chunkSize": 8388608,
-  "sha256": "0F33CFB41181E2AAAF2F4C01A5153894D6CE2256F22F9F6AE2C12503AA90F9BB",
+  "sha256": "E7D1928EA27BCAE0737F9CFF14CEE5D909154BCABCA693610616357ADE7A11A7",
   "parts": [
     {
       "index": 0,
-      "path": "parts/v2.3.3-4b7c0b8/part-000.bin",
+      "path": "parts/v2.3.3-confirmation-overlay-e7d1928/part-000.bin",
       "size": 8388608,
-      "sha256": "D946D2906E22BCF4F333757CAB5217B098FA9683CB3858AFF868BB7D3C85AC56"
+      "sha256": "14353740713DF862A06159F97B0DFFC9B391A346D00C99FC57848DB3EE7A7ADB"
     },
     {
       "index": 1,
-      "path": "parts/v2.3.3-4b7c0b8/part-001.bin",
+      "path": "parts/v2.3.3-confirmation-overlay-e7d1928/part-001.bin",
       "size": 8388608,
-      "sha256": "9410859E3DA7C709FADE2BA731057B6938A522CC3539CF055ED70DD72682C89D"
+      "sha256": "9E7D68A7728B0F0A7D3094BB90F3F28062C195D613658C78743EFD4DED978B81"
     },
     {
       "index": 2,
-      "path": "parts/v2.3.3-4b7c0b8/part-002.bin",
+      "path": "parts/v2.3.3-confirmation-overlay-e7d1928/part-002.bin",
       "size": 8388608,
-      "sha256": "69665E11D04116589A8B9649B4FC7F3CAABC68F1E73AAFE3AE2845A9994DF01D"
+      "sha256": "0CF05142036883C4B05246421C3DEE3F50DCCC34F03E416F2C1557DCBC420A05"
     },
     {
       "index": 3,
-      "path": "parts/v2.3.3-4b7c0b8/part-003.bin",
+      "path": "parts/v2.3.3-confirmation-overlay-e7d1928/part-003.bin",
       "size": 8388608,
-      "sha256": "0048CF7C035BB04139A8E6C3267D49B99854BB79C99A3B5F7553DD908FC6F6A7"
+      "sha256": "017F4717B18FDD1D591B0390B39E720ED38CB0E0E05661F62E4861AC07987BD6"
     },
     {
       "index": 4,
-      "path": "parts/v2.3.3-4b7c0b8/part-004.bin",
-      "size": 8008607,
-      "sha256": "F64B69950E5653FDD0E39227237B68FC5275D177B60B0BC9C71A0C40154C2E2B"
+      "path": "parts/v2.3.3-confirmation-overlay-e7d1928/part-004.bin",
+      "size": 8007610,
+      "sha256": "72EC071C25C69DBAE819E7C060C19B7B034E65A9565675C5F2B80A034EE72AF4"
     }
   ]
 }

@@ -102,6 +102,31 @@ test("hub registers the Confirmation Bar demo, video, Windows, Mac, and iOS acti
   );
 });
 
+test("hub gives the confirmation helper and multi-thread workbench distinct identities", async () => {
+  const source = await read("../app-20260706-restore-games.js");
+  const recordFor = id => {
+    const start = source.indexOf(`id: "${id}"`);
+    const end = source.indexOf("id:", start + 1);
+    return start < 0 || end < 0 ? "" : source.slice(start, end);
+  };
+  const confirmationRecord = recordFor("codex-thread-workbench");
+  const workbenchRecord = recordFor("codex-multi-thread-workbench");
+
+  assert.ok(confirmationRecord, "confirmation helper catalog record must exist");
+  assert.ok(workbenchRecord, "multi-thread workbench catalog record must exist");
+  assert.match(confirmationRecord, /name:\s*"Codex 待确认悬浮助手"/);
+  assert.match(confirmationRecord, /badge:\s*"待确认助手"/);
+  assert.match(confirmationRecord, /待确认提醒/);
+  assert.match(confirmationRecord, /projects\/codex-thread-workbench\/download\//);
+  assert.match(confirmationRecord, /projects\/codex-thread-workbench\/download\/mac\//);
+  assert.match(workbenchRecord, /name:\s*"Codex 多线程工作台"/);
+  assert.match(workbenchRecord, /badge:\s*"桌面工作台"/);
+  assert.match(workbenchRecord, /多线程操作/);
+  assert.match(workbenchRecord, /projects\/codex-multi-thread-workbench\/download\//);
+  assert.match(workbenchRecord, /projects\/codex-multi-thread-workbench\/download\/mac\//);
+  assert.notEqual(confirmationRecord, workbenchRecord);
+});
+
 test("project page presents the confirmation overlay workflow and every release path", async () => {
   const html = await read("../projects/codex-thread-workbench/index.html");
   const windowsDownloadPage =

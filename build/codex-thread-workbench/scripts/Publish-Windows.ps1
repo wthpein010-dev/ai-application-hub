@@ -1,6 +1,8 @@
 param(
     [string]$Configuration = "Release",
     [string]$Runtime = "win-x64",
+    [ValidateSet("Workbench", "ConfirmationBar")]
+    [string]$Profile = "Workbench",
     [string]$OutputRoot = ""
 )
 
@@ -44,8 +46,23 @@ if ([string]::IsNullOrWhiteSpace($OutputRoot)) {
 }
 
 $project = Join-Path $repositoryRoot "src\CodexThreadWorkbench\CodexThreadWorkbench.csproj"
-$publishDirectory = Join-Path $OutputRoot "CodexThreadWorkbench-Windows-x64"
-$archivePath = Join-Path $OutputRoot "CodexThreadWorkbench-Windows-x64.zip"
+$isConfirmationBar = $Profile -eq "ConfirmationBar"
+$distributionName = if ($isConfirmationBar) { "CodexConfirmationBar" } else { "CodexThreadWorkbench" }
+$publishDirectory = Join-Path $OutputRoot "$distributionName-Windows-x64"
+$archivePath = Join-Path $OutputRoot "$distributionName-Windows-x64.zip"
+$executableName = "$distributionName.exe"
+$readmePath = if ($isConfirmationBar) {
+    Join-Path $repositoryRoot "README.confirmation-bar.md"
+}
+else {
+    Join-Path $repositoryRoot "README.md"
+}
+$recoveryScriptName = if ($isConfirmationBar) {
+    "Install-ConfirmationBarRecovery.ps1"
+}
+else {
+    "Install-WindowsRecoveryTask.ps1"
+}
 
 if (Test-Path -LiteralPath $publishDirectory) {
     Remove-Item -LiteralPath $publishDirectory -Recurse -Force
@@ -71,16 +88,25 @@ if ($LASTEXITCODE -ne 0) {
     throw "dotnet publish failed with exit code $LASTEXITCODE."
 }
 
-$executablePath = Join-Path $publishDirectory "CodexThreadWorkbench.exe"
-if (-not (Test-Path -LiteralPath $executablePath -PathType Leaf) -or
-    (Get-Item -LiteralPath $executablePath).Length -le 0) {
-    throw "Published executable is missing or empty: $executablePath"
+$publishedExecutablePath = Join-Path $publishDirectory "CodexThreadWorkbench.exe"
+if (-not (Test-Path -LiteralPath $publishedExecutablePath -PathType Leaf) -or
+    (Get-Item -LiteralPath $publishedExecutablePath).Length -le 0) {
+    throw "Published executable is missing or empty: $publishedExecutablePath"
 }
 
-Copy-Item -LiteralPath (Join-Path $repositoryRoot "README.md") `
+$executablePath = Join-Path $publishDirectory $executableName
+if ($publishedExecutablePath -ne $executablePath) {
+    Rename-Item -LiteralPath $publishedExecutablePath -NewName $executableName
+}
+
+Copy-Item -LiteralPath $readmePath `
     -Destination (Join-Path $publishDirectory "README.md")
 Copy-Item -LiteralPath (Join-Path $repositoryRoot "scripts\Install-WindowsRecoveryTask.ps1") `
-    -Destination (Join-Path $publishDirectory "Install-WindowsRecoveryTask.ps1")
+    -Destination (Join-Path $publishDirectory $recoveryScriptName)
+
+@{
+    defaultMode = if ($isConfirmationBar) { "confirmation-overlay" } else { "workbench" }
+} | ConvertTo-Json | Set-Content -LiteralPath (Join-Path $publishDirectory "codex-launch-profile.json") -Encoding utf8
 
 $compressionError = $null
 for ($attempt = 1; $attempt -le 3; $attempt++) {
@@ -112,10 +138,11 @@ if ($null -ne $compressionError) {
 $archive = [System.IO.Compression.ZipFile]::OpenRead($archivePath)
 try {
     $archiveEntries = @($archive.Entries | ForEach-Object FullName)
-    if ($archiveEntries -notcontains "CodexThreadWorkbench.exe" -or
+    if ($archiveEntries -notcontains $executableName -or
         $archiveEntries -notcontains "README.md" -or
-        $archiveEntries -notcontains "Install-WindowsRecoveryTask.ps1") {
-        throw "Windows package is missing the executable, recovery installer, or README."
+        $archiveEntries -notcontains $recoveryScriptName -or
+        $archiveEntries -notcontains "codex-launch-profile.json") {
+        throw "Windows package is missing the executable, launch profile, recovery installer, or README."
     }
 }
 finally {

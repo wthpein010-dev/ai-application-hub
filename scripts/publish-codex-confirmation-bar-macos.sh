@@ -68,7 +68,10 @@ test -s "${publish_directory}/CodexThreadWorkbench"
 cp -R "${publish_directory}/." "${macos_directory}/"
 mv "${macos_directory}/CodexThreadWorkbench" "${macos_directory}/CodexConfirmationBar"
 chmod +x "${macos_directory}/CodexConfirmationBar"
-cp "${workbench_root}/README.md" "${resources_directory}/README.md"
+cp "${workbench_root}/README.confirmation-bar.md" "${resources_directory}/README.md"
+cat > "${resources_directory}/codex-launch-profile.json" <<PROFILE
+{"defaultMode":"confirmation-overlay"}
+PROFILE
 
 cat > "${contents_directory}/Info.plist" <<PLIST
 <?xml version="1.0" encoding="UTF-8"?>
