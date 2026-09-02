@@ -1,0 +1,629 @@
+import test from "node:test";
+import assert from "node:assert/strict";
+
+import {
+  LICENSE_PACKAGE_FORMAT,
+  LICENSE_PACKAGE_VERSION,
+  MAX_LICENSE_PACKAGE_BYTES,
+  MAX_LICENSE_PACKAGE_ENTRIES,
+  adaptExternalManifestV3,
+  applyLicensePackageImport,
+  exportLicensePackageJson,
+  normalizeLicensePackage,
+  parseLicensePackageJson,
+  planLicensePackageImport,
+} from "../projects/loop-bgm-lab/core/license-package.mjs";
+import { validateLicenseEntry } from "../projects/loop-bgm-lab/core/candidate-score.mjs";
+import { validateProject } from "../projects/loop-bgm-lab/core/project-state.mjs";
+import { createDailyPlan } from "../projects/loop-bgm-lab/core/prompt-engine.mjs";
+
+const HASH_A = "a".repeat(64);
+const HASH_B = "b".repeat(64);
+const HASH_C = "c".repeat(64);
+const HASH_D = "d".repeat(64);
+const EVIDENCE_HASH = "e".repeat(64);
+
+function entryFixture(overrides = {}) {
+  return {
+    id: "license-happy-clappy",
+    source: "OpenGameArt",
+    sourceUrl: "https://opengameart.org/content/happy-clappy-loop",
+    license: "CC0 1.0",
+    licenseIdentifier: "CC0-1.0",
+    licenseUrl: "https://creativecommons.org/publicdomain/zero/1.0/",
+    evidenceUrl: "https://opengameart.org/content/happy-clappy-loop",
+    evidenceCheckedAt: "2026-09-01",
+    deliveryStatus: "original",
+    scopeNote: "Exact listed source attachment only.",
+    rightsChainStatus: "source-declaration-only",
+    fileSha256: HASH_A,
+    attributionText: "Happy Clappy Loop — OwlishMedia — CC0 1.0",
+    author: "OwlishMedia",
+    downloadedAt: "2026-09-01",
+    ...overrides,
+  };
+}
+
+function packageFixture(entries = [entryFixture()], overrides = {}) {
+  return {
+    format: LICENSE_PACKAGE_FORMAT,
+    version: LICENSE_PACKAGE_VERSION,
+    createdAt: "2026-09-02",
+    entries,
+    ...overrides,
+  };
+}
+
+function fileFixture(overrides = {}) {
+  return {
+    path: "audio/source-a.wav",
+    originalFile: { type: "WAV", downloadRequiresLogin: false },
+    downloadUrl: "https://cdn.example.test/source-a.wav",
+    finalUrl: "https://cdn.example.test/source-a.wav",
+    etag: "public-etag",
+    lastModifiedHttp: "Wed, 27 Aug 2025 10:00:00 GMT",
+    httpContentType: "audio/wav",
+    sha256: HASH_A.toUpperCase(),
+    deliveryStatus: "original-attachment",
+    modificationNote: "No audio edits were made.",
+    ...overrides,
+  };
+}
+
+function externalManifestFixture() {
+  return {
+    schemaVersion: 3,
+    verifiedDate: "2026-09-01",
+    collection: {
+      workCount: 2,
+      fileCount: 2,
+      originalAttachmentCount: 1,
+      auditionPreviewCount: 1,
+      notClearedForCommercialDeployment: true,
+    },
+    analysis: { path: "analysis.json", schemaVersion: 3, sha256: "f".repeat(64) },
+    licenseReferences: {
+      "CC0-1.0": "https://creativecommons.org/publicdomain/zero/1.0/",
+      "CC-BY-4.0": "https://creativecommons.org/licenses/by/4.0/",
+    },
+    licenseReview: {
+      scope: "Only the exact files listed in this manifest are covered.",
+      rightsChainAssurance: "Source-page declarations only; uploader ownership and third-party rights were not independently verified.",
+      commercialReleaseGate: "Human review is required before release.",
+      previewRule: "Preview files must be replaced before production.",
+    },
+    privacyReview: {
+      userReferenceAudioIncluded: false,
+      absoluteLocalPathsIncluded: false,
+      cookiesTokensOrCredentialsIncluded: false,
+    },
+    works: [
+      {
+        workId: "happy-clappy-loop",
+        title: "Happy Clappy Loop",
+        author: "OwlishMedia",
+        sourcePage: "https://opengameart.org/content/happy-clappy-loop",
+        assetLicense: {
+          identifier: "CC0-1.0",
+          evidenceUrl: "https://opengameart.org/content/happy-clappy-loop",
+          verifiedDate: "2026-08-31",
+          attributionRequired: false,
+          scopeNote: "The separate paid asset pack is excluded.",
+          evidenceSha256: EVIDENCE_HASH.toUpperCase(),
+          suggestedCredit: "Happy Clappy Loop — OwlishMedia — https://opengameart.org/content/happy-clappy-loop — CC0 1.0",
+        },
+        files: [fileFixture()],
+      },
+      {
+        workId: "pompelo-110",
+        title: "pompelo_110",
+        author: "fonoskop",
+        sourcePage: "https://freesound.org/people/fonoskop/sounds/849565/",
+        assetLicense: {
+          identifier: "CC-BY-4.0",
+          evidenceUrl: "https://freesound.org/people/fonoskop/sounds/849565/",
+          verifiedDate: "2026-09-01",
+          attributionRequired: true,
+          suggestedCredit: "pompelo_110 by fonoskop — https://freesound.org/people/fonoskop/sounds/849565/ — CC BY 4.0 — https://creativecommons.org/licenses/by/4.0/",
+        },
+        files: [fileFixture({
+          path: "audio/pompelo-preview.mp3",
+          originalFile: { type: "WAV", downloadRequiresLogin: true },
+          downloadUrl: "https://cdn.example.test/pompelo-preview.mp3",
+          finalUrl: "https://cdn.example.test/pompelo-preview.mp3",
+          httpContentType: "audio/mpeg",
+          sha256: HASH_B,
+          deliveryStatus: "audition-only-public-hq-preview",
+          modificationNote: undefined,
+        })],
+      },
+    ],
+  };
+}
+
+test("v1 package normalization requires a dated envelope and emits canonical project-license entries", () => {
+  const input = packageFixture([
+    entryFixture({ fileSha256: HASH_B.toUpperCase(), id: "license-b" }),
+    entryFixture({ fileSha256: HASH_A, id: "license-a" }),
+  ]);
+  const normalized = normalizeLicensePackage(input);
+
+  assert.equal(normalized.createdAt, "2026-09-02");
+  assert.deepEqual(normalized.entries.map(entry => [entry.id, entry.fileSha256]), [
+    ["license-a", HASH_A],
+    ["license-b", HASH_B],
+  ]);
+  assert.deepEqual(normalized.entries[0], validateLicenseEntry(entryFixture({ id: "license-a" })));
+  assert.deepEqual(normalized.blockingSummary.entries, [
+    { id: "license-a", fileSha256: HASH_A, reasons: ["rights-chain-review-required"] },
+    { id: "license-b", fileSha256: HASH_B, reasons: ["rights-chain-review-required"] },
+  ]);
+  input.entries[0].license = "changed later";
+  assert.equal(normalized.entries[1].license, "CC0 1.0");
+
+  assert.throws(() => normalizeLicensePackage({ ...packageFixture(), version: 2 }), /version/i);
+  assert.throws(() => normalizeLicensePackage({ ...packageFixture(), extra: true }), /unsupported|unknown/i);
+  assert.throws(() => normalizeLicensePackage({ format: LICENSE_PACKAGE_FORMAT, version: 1, entries: [] }), /createdAt/i);
+});
+
+test("normalization rejects duplicate stable IDs and duplicate hashes independently", () => {
+  assert.throws(() => normalizeLicensePackage(packageFixture([
+    entryFixture({ id: "license-same", fileSha256: HASH_A }),
+    entryFixture({ id: "license-same", fileSha256: HASH_B }),
+  ])), /id.*unique|duplicate.*id/i);
+  assert.throws(() => normalizeLicensePackage(packageFixture([
+    entryFixture({ id: "license-a", fileSha256: HASH_A }),
+    entryFixture({ id: "license-b", fileSha256: HASH_A }),
+  ])), /hash|SHA-256.*unique|duplicate/i);
+});
+
+test("strict JSON boundaries enforce byte and entry limits", () => {
+  const text = exportLicensePackageJson(packageFixture());
+  assert.deepEqual(parseLicensePackageJson(text), normalizeLicensePackage(packageFixture()));
+  assert.throws(() => parseLicensePackageJson("{"), /JSON/i);
+  assert.throws(() => parseLicensePackageJson(" ".repeat(MAX_LICENSE_PACKAGE_BYTES + 1)), /byte|size|large/i);
+  assert.throws(
+    () => normalizeLicensePackage(packageFixture(Array.from({ length: MAX_LICENSE_PACKAGE_ENTRIES + 1 }, (_, index) => (
+      entryFixture({ id: `license-${index}`, fileSha256: index.toString(16).padStart(64, "0") })
+    )))),
+    /entries|limit|many/i,
+  );
+});
+
+test("public evidence URLs reject media files and signed download parameters", () => {
+  const forbiddenUrls = [
+    "https://cdn.example.test/master.mp3",
+    "https://cdn.example.test/%ZZ/audio/master%2Emp3",
+    "https://cdn.example.test/master%2Ewav",
+    "https://cdn.example.test/download",
+    "https://cdn.example.test/object?Expires=999999",
+    "https://cdn.example.test/object?Signature=abc",
+    "https://storage.example.test/blob?sv=2024-11-04&se=2026-09-02T10%3A00Z&sp=r&sig=abc",
+    "https://storage.example.test/blob#sig=abc",
+    "https://storage.example.test/blob?redirect=sig%3Dabc",
+    "https://cdn.example.test/object?Key-Pair-Id=K",
+    "https://cdn.example.test/object?X-Amz-Credential=abc",
+    "https://cdn.example.test/object#Signature=abc",
+    "https://cdn.example.test/object?Signature%3Dabc",
+    "https://cdn.example.test/object#Signature%3Dabc",
+    "https://cdn.example.test/object?redirect=Signature%3Dabc",
+    "https://cdn.example.test/object#redirect=Signature%3Dabc",
+    "https://cdn.example.test/object?note=ok%3BSignature%3Dabc",
+    "https://cdn.example.test/object#note=ok%3BSignature%3Dabc",
+  ];
+  for (const field of ["sourceUrl", "evidenceUrl", "licenseUrl"]) {
+    for (const url of forbiddenUrls) {
+      assert.throws(
+        () => normalizeLicensePackage(packageFixture([entryFixture({ [field]: url })])),
+        /public evidence page|media|signed|download|encoding/i,
+        `${field}: ${url}`,
+      );
+    }
+  }
+});
+
+test("public evidence URLs reject private hosts and unsafe decoded parameter values", () => {
+  const encodedLocalPath = encodeURIComponent(["Z:", "portable-test", "sample.mp3"].join("\\"));
+  const nestedMediaUrl = encodeURIComponent("https://cdn.example.test/audio/master.mp3");
+  const forbiddenUrls = [
+    "https://localhost/evidence",
+    "https://localhost../evidence",
+    "https://127.0.0.1/evidence",
+    "https://10.20.30.40/evidence",
+    "https://172.16.4.2/evidence",
+    "https://192.168.10.2/evidence",
+    "https://[::1]/evidence",
+    "https://[fc00::1]/evidence",
+    "https://[fe80::1]/evidence",
+    "https://[::ffff:192.168.10.2]/evidence",
+    `https://example.test/evidence?source=${encodedLocalPath}`,
+    `https://example.test/evidence#source=${encodedLocalPath}`,
+    `https://example.test/evidence?redirect=${nestedMediaUrl}`,
+    "https://example.test/evidence?redirect=https%3A%2F%2Fexample.test%2Fpublic-evidence",
+    "https://example.test/evidence?payload=data%3Aaudio%2Fmpeg%3Bbase64%2CAAAA",
+    "https://example.test/evidence?payload=da%09ta%3Aaudio%2Fmpeg%3Bbase64%2CAAAA",
+    "https://example.test/evidence?payload=dat%0Aa%3Aaudio%2Fmpeg%3Bbase64%2CAAAA",
+    "https://example.test/evidence?payload=%2500data%253Aaudio%252Fmpeg%253Bbase64%252CAAAA",
+    "https://example.test/evidence?payload=ok%2Fjavascript%3Aalert(1)",
+    "https://example.test/evidence?payload=ok%5Cjavascript%3Aalert(1)",
+    "https://example.test/evidence?payload=%5Bjavascript%3Aalert(1)%5D",
+    "https://example.test/evidence?payload=%7Bdata%3Atext%2Fplain%2Cx%7D",
+    "https://example.test/evidence?next=javascript%3Aalert(1)",
+    "https://example.test/evidence?next=java%09script%3Aalert(1)",
+    "https://example.test/evidence?next=vbscr%0Dipt%3Aalert(1)",
+    "https://example.test/evidence?contact=mailto%3Aartist%40example.test",
+    "https://example.test/evidence?mirror=ftp%3A%2F%2Fexample.test%2Fitem",
+    "https://example.test/evidence?mirror=ftp%3Aexample.test%2Fitem",
+    "https://example.test/evidence?next=http%3Aexample.org%2Fpath",
+    "https://example.test/evidence?next=https%3Aexample.org%2Fpath",
+    "https://example.test/evidence?contact=mailto%3Apostmaster",
+    "https://example.test/evidence?contact=mailto%3A%3Fsubject%3Dtest",
+    "https://example.test/evidence?payload=data%3Aaudio%2Fx*custom%2CAAAA",
+    "https://example.test/evidence?payload=data%3Atext%2Fplain%3Bfoo%3Dbar%20baz%2CAAAA",
+    "https://example.test/evidence?payload=data%3Ax%2CAAAA",
+    "https://example.test/evidence?identifier=urn%3Auuid%3A1234",
+    "https://example.test/evidence?identifier=u%09rn%3Auuid%3A1234",
+    "https://example.test/evidence?q=%FF",
+    "https://example.test/evidence?%FF=value",
+    "https://example.test/evidence?ok=1%C0%AFsig%3Dabc",
+    "https://example.test/evidence?q=javascript%C0%BAalert%281%29",
+    "https://example.test/evidence?source=Z%253A%255Cprivate%255Csample%252Emp3%25ZZ",
+  ];
+
+  for (const field of ["sourceUrl", "evidenceUrl", "licenseUrl"]) {
+    for (const url of forbiddenUrls) {
+      assert.throws(
+        () => normalizeLicensePackage(packageFixture([entryFixture({ [field]: url })])),
+        /public evidence page|media|download|local|private|path|nested|scheme|encoding/i,
+        `${field}: ${url}`,
+      );
+    }
+  }
+});
+
+test("public evidence URLs normalize surrounding whitespace before persistence", () => {
+  const normalized = normalizeLicensePackage(packageFixture([entryFixture({
+    sourceUrl: "  https://example.test/source/page  ",
+    licenseUrl: "  https://creativecommons.org/publicdomain/zero/1.0/  ",
+    evidenceUrl: "  https://example.test/evidence/page  ",
+  })])).entries[0];
+
+  assert.equal(normalized.sourceUrl, "https://example.test/source/page");
+  assert.equal(normalized.licenseUrl, "https://creativecommons.org/publicdomain/zero/1.0/");
+  assert.equal(normalized.evidenceUrl, "https://example.test/evidence/page");
+});
+
+test("portable safety rejects dangerous keys, local paths, file-name fields, and secret URLs", () => {
+  const dangerous = JSON.stringify(packageFixture()).replace(
+    '"entries":[',
+    '"__proto__":{"polluted":true},"entries":[',
+  );
+  assert.throws(() => parseLicensePackageJson(dangerous), /dangerous|proto/i);
+
+  const syntheticAbsolutePath = ["C:", "synthetic", "source.mp3"].join("\\");
+  for (const entry of [
+    entryFixture({ attributionText: syntheticAbsolutePath }),
+    entryFixture({ scopeNote: "embedded data:audio/mpeg;base64,AAAA" }),
+    entryFixture({ scopeNote: "embedded da\tta:audio/mpeg;base64,AAAA" }),
+    entryFixture({ scopeNote: "embedded dat\na:audio/mpeg;base64,AAAA" }),
+    entryFixture({ scopeNote: "embedded \u0000data:audio/mpeg;base64,AAAA" }),
+    entryFixture({ scopeNote: "embedded data%3Aaudio%2Fmpeg%3Bbase64%2CAAAA" }),
+    entryFixture({ scopeNote: "ok/javascript:alert(1)" }),
+    entryFixture({ attributionText: "javascript:alert(1)" }),
+    entryFixture({ attributionText: "java\tscript:alert(1)" }),
+    entryFixture({ attributionText: "vbscr\ript:alert(1)" }),
+    entryFixture({ attributionText: "javascript%3Aalert(1)" }),
+    entryFixture({ scopeNote: "http:example.org/path" }),
+    entryFixture({ scopeNote: "ftp:example.org/path" }),
+    entryFixture({ scopeNote: "mailto:postmaster" }),
+    entryFixture({ scopeNote: "data:audio/x*custom,AAAA" }),
+    entryFixture({ sourceUrl: "https://example.com/source?api_key=private" }),
+    { ...entryFixture(), recoveryToken: "private" },
+    { ...entryFixture(), originalFile: "master.wav" },
+  ]) {
+    assert.throws(() => normalizeLicensePackage(packageFixture([entry])), /path|file name|secret|URI|scheme|unsupported/i);
+  }
+
+  assert.doesNotThrow(() => normalizeLicensePackage(packageFixture([entryFixture({
+    scopeNote: "Reference data: quality review pending; HTTP: evidence page checked.",
+    attributionText: "notjavascript: label; x-javascript: label",
+  })])));
+});
+
+test("public evidence URLs accept valid literal-percent encoding without weakening inspection", () => {
+  for (const url of [
+    "https://example.test/evidence/%25-complete",
+    "https://example.test/evidence?progress=%25",
+    "https://example.test/evidence#progress=%25",
+  ]) {
+    assert.equal(
+      normalizeLicensePackage(packageFixture([entryFixture({ sourceUrl: url })])).entries[0].sourceUrl,
+      url,
+    );
+  }
+});
+
+test("blocker summary delegates all release decisions to the canonical validator", () => {
+  const entries = [
+    entryFixture({ id: "license-source", fileSha256: HASH_A }),
+    entryFixture({ id: "license-attribution", fileSha256: HASH_B, license: "CC BY 4.0", licenseIdentifier: "CC-BY-4.0", attributionText: null, rightsChainStatus: "independently-verified" }),
+    entryFixture({ id: "license-preview", fileSha256: HASH_C, deliveryStatus: "preview-only", rightsChainStatus: "independently-verified" }),
+    entryFixture({ id: "license-sa", fileSha256: HASH_D, license: "CC BY-SA 4.0", licenseIdentifier: "CC-BY-SA-4.0", attributionText: "Required credit", rightsChainStatus: "independently-verified" }),
+    entryFixture({ id: "license-nd", fileSha256: "1".repeat(64), license: "CC BY-ND 4.0", licenseIdentifier: "CC-BY-ND-4.0", attributionText: "Required credit", rightsChainStatus: "independently-verified" }),
+    entryFixture({ id: "license-nc", fileSha256: "2".repeat(64), license: "CC BY-NC 4.0", licenseIdentifier: "CC-BY-NC-4.0", attributionText: "Required credit", rightsChainStatus: "independently-verified" }),
+  ];
+  const summary = normalizeLicensePackage(packageFixture(entries)).blockingSummary;
+
+  assert.equal(summary.blocked, true);
+  assert.deepEqual(summary.reasonCounts, {
+    "unknown-license": 0,
+    "missing-evidence": 0,
+    "preview-only": 1,
+    noncommercial: 1,
+    "share-alike-review-required": 1,
+    "no-derivatives-review-required": 1,
+    "missing-attribution": 1,
+    "rights-chain-review-required": 1,
+  });
+  assert.deepEqual(summary.entries.map(item => [item.id, item.reasons]), [
+    ["license-nd", ["no-derivatives-review-required"]],
+    ["license-nc", ["noncommercial"]],
+    ["license-source", ["rights-chain-review-required"]],
+    ["license-attribution", ["missing-attribution"]],
+    ["license-preview", ["preview-only"]],
+    ["license-sa", ["share-alike-review-required"]],
+  ]);
+
+  const reorderedSummary = {
+    entries: summary.entries.map(({ id, fileSha256, reasons }) => ({ reasons, fileSha256, id })),
+    reasonCounts: Object.fromEntries(Object.entries(summary.reasonCounts).reverse()),
+    blocked: summary.blocked,
+  };
+  assert.doesNotThrow(() => normalizeLicensePackage({
+    ...packageFixture(entries),
+    blockingSummary: reorderedSummary,
+  }));
+  assert.throws(() => normalizeLicensePackage({
+    ...packageFixture(entries),
+    blockingSummary: {
+      ...summary,
+      reasonCounts: { ...summary.reasonCounts, "preview-only": 0 },
+    },
+  }), /stale|inconsistent/i);
+});
+
+test("import planning is idempotent and blocks both same-hash and same-ID conflicts", () => {
+  const existing = [validateLicenseEntry(entryFixture())];
+  const addition = entryFixture({ id: "license-new", fileSha256: HASH_B, sourceUrl: "https://example.com/source/new", evidenceUrl: "https://example.com/source/new" });
+  const ok = planLicensePackageImport(existing, packageFixture([entryFixture(), addition]));
+  assert.equal(ok.canCommit, true);
+  assert.deepEqual(ok.skipped, [{ id: "license-happy-clappy", fileSha256: HASH_A }]);
+  assert.deepEqual(ok.conflicts, []);
+  assert.equal(ok.additions[0].id, "license-new");
+
+  const hashConflict = planLicensePackageImport(existing, packageFixture([
+    entryFixture({ license: "Custom license", licenseIdentifier: "LicenseRef-Unknown" }), addition,
+  ]));
+  assert.equal(hashConflict.canCommit, false);
+  assert.deepEqual(hashConflict.additions, []);
+  assert.deepEqual(hashConflict.conflicts[0].identity, { id: "license-happy-clappy", fileSha256: HASH_A });
+
+  const idConflict = planLicensePackageImport(existing, packageFixture([entryFixture({ fileSha256: HASH_B })]));
+  assert.equal(idConflict.canCommit, false);
+  assert.deepEqual(idConflict.additions, []);
+  assert.match(idConflict.conflicts[0].reason, /id/i);
+});
+
+test("atomic apply returns a newly validated project only for a successful plan", () => {
+  const project = createDailyPlan();
+  const beforeProject = structuredClone(project);
+  const plan = planLicensePackageImport(project.licenses, packageFixture());
+  const beforePlan = structuredClone(plan);
+
+  const applied = applyLicensePackageImport(project, plan);
+  assert.deepEqual(project, beforeProject);
+  assert.deepEqual(plan, beforePlan);
+  assert.notEqual(applied, project);
+  assert.equal(applied.licenses.length, 1);
+  assert.deepEqual(applied, validateProject(applied));
+
+  const conflict = planLicensePackageImport(applied.licenses, packageFixture([
+    entryFixture({ license: "Custom license", licenseIdentifier: "LicenseRef-Unknown" }),
+  ]));
+  const beforeApplied = structuredClone(applied);
+  assert.throws(() => applyLicensePackageImport(applied, conflict), /conflict|commit/i);
+  assert.deepEqual(applied, beforeApplied);
+});
+
+test("apply locks only the normalized license baseline between preflight and commit", () => {
+  const project = createDailyPlan();
+  const plan = planLicensePackageImport(project.licenses, packageFixture());
+  const unrelatedEdit = validateProject({
+    ...project,
+    extensions: { reviewNote: "Unrelated project metadata changed after preflight." },
+  });
+  const applied = applyLicensePackageImport(unrelatedEdit, plan);
+  assert.equal(applied.extensions.reviewNote, "Unrelated project metadata changed after preflight.");
+  assert.equal(applied.licenses.length, 1);
+
+  const changedLicenses = validateProject({
+    ...project,
+    licenses: [entryFixture({ id: "license-concurrent" })],
+  });
+  const beforeProject = structuredClone(changedLicenses);
+  const beforePlan = structuredClone(plan);
+  assert.throws(() => applyLicensePackageImport(changedLicenses, plan), /stale.*plan|license.*baseline/i);
+  assert.deepEqual(changedLicenses, beforeProject);
+  assert.deepEqual(plan, beforePlan);
+});
+
+test("apply rejects missing or forged license baselines without mutation", () => {
+  const project = createDailyPlan();
+  const plan = planLicensePackageImport(project.licenses, packageFixture());
+  const malformedPlans = [
+    (() => {
+      const missing = structuredClone(plan);
+      delete missing.existingLicensesBaseline;
+      return missing;
+    })(),
+    { ...structuredClone(plan), existingLicensesBaseline: "forged-baseline" },
+  ];
+
+  for (const malformedPlan of malformedPlans) {
+    const beforeProject = structuredClone(project);
+    const beforePlan = structuredClone(malformedPlan);
+    assert.throws(() => applyLicensePackageImport(project, malformedPlan), /stale.*plan|license.*baseline/i);
+    assert.deepEqual(project, beforeProject);
+    assert.deepEqual(malformedPlan, beforePlan);
+  }
+});
+
+test("apply rejects a license import plan whose reviewed additions were mutated", () => {
+  const project = createDailyPlan();
+  const plan = planLicensePackageImport(project.licenses, packageFixture());
+  const beforeProject = structuredClone(project);
+  plan.additions[0].source = "Tampered after preflight";
+
+  assert.throws(
+    () => applyLicensePackageImport(project, plan),
+    /stale|invalid|integrity|preflight|plan/i,
+  );
+  assert.deepEqual(project, beforeProject);
+});
+
+test("apply rejects accessor-based plan changes without reading unreviewed additions", () => {
+  const project = createDailyPlan();
+  const plan = planLicensePackageImport(project.licenses, packageFixture());
+  const reviewedAdditions = plan.additions;
+  const unreviewedAdditions = [validateLicenseEntry(entryFixture({
+    id: "license-unreviewed",
+    fileSha256: HASH_B,
+    sourceUrl: "https://example.test/source/unreviewed",
+    evidenceUrl: "https://example.test/source/unreviewed",
+  }))];
+  let reads = 0;
+  Object.defineProperty(plan, "additions", {
+    configurable: true,
+    enumerable: true,
+    get() {
+      reads += 1;
+      return reads === 1 ? reviewedAdditions : unreviewedAdditions;
+    },
+  });
+  const beforeProject = structuredClone(project);
+
+  assert.throws(
+    () => applyLicensePackageImport(project, plan),
+    /stale|invalid|integrity|preflight|plan/i,
+  );
+  assert.deepEqual(project, beforeProject);
+});
+
+test("schema-v3 adapter preserves canonical public evidence and strips transport identity", () => {
+  const adapted = adaptExternalManifestV3(externalManifestFixture());
+  const original = adapted.entries.find(entry => entry.fileSha256 === HASH_A);
+  const preview = adapted.entries.find(entry => entry.fileSha256 === HASH_B);
+
+  assert.equal(adapted.createdAt, "2026-09-01");
+  assert.equal(original.id, `license-${HASH_A}`);
+  assert.equal(original.source, "OpenGameArt");
+  assert.equal(original.licenseIdentifier, "CC0-1.0");
+  assert.equal(original.licenseUrl, "https://creativecommons.org/publicdomain/zero/1.0/");
+  assert.equal(original.evidenceUrl, "https://opengameart.org/content/happy-clappy-loop");
+  assert.equal(original.evidenceCheckedAt, "2026-08-31");
+  assert.equal(original.evidenceSha256, EVIDENCE_HASH);
+  assert.match(original.scopeNote, /Only the exact files listed/);
+  assert.match(original.scopeNote, /paid asset pack is excluded/);
+  assert.equal(original.modificationNote, "No audio edits were made.");
+  assert.deepEqual(original.publicationBlockers, ["rights-chain-review-required"]);
+  assert.equal(preview.source, "Freesound");
+  assert.equal(preview.deliveryStatus, "preview-only");
+  assert.deepEqual(preview.publicationBlockers, ["preview-only", "rights-chain-review-required"]);
+
+  const serialized = JSON.stringify(adapted);
+  for (const forbidden of ["path", "downloadUrl", "finalUrl", "originalFile", "etag", "lastModifiedHttp", "httpContentType", "source-a.wav", "pompelo-preview.mp3", "cdn.example.test"]) {
+    assert.equal(serialized.includes(forbidden), false, forbidden);
+  }
+});
+
+test("schema-v3 adapter accepts only exact canonical rights-chain enums", () => {
+  for (const [value, expected] of [
+    ["source-declaration-only", "source-declaration-only"],
+    ["independently-verified", "independently-verified"],
+  ]) {
+    const manifest = externalManifestFixture();
+    manifest.licenseReview.rightsChainAssurance = value;
+    assert.equal(adaptExternalManifestV3(manifest).entries[0].rightsChainStatus, expected);
+  }
+});
+
+test("schema-v3 adapter preserves preview semantics for any audition or preview delivery label", () => {
+  for (const deliveryStatus of ["public-audition-stream", "high-quality-preview-copy"]) {
+    const manifest = externalManifestFixture();
+    manifest.works[1].files[0].deliveryStatus = deliveryStatus;
+    const adapted = adaptExternalManifestV3(manifest);
+    const preview = adapted.entries.find(entry => entry.fileSha256 === HASH_B);
+    assert.equal(preview.deliveryStatus, "preview-only", deliveryStatus);
+    assert.ok(preview.publicationBlockers.includes("preview-only"), deliveryStatus);
+  }
+});
+
+test("schema-v3 adapter creates a portable label for unrecognized public source hosts", () => {
+  const manifest = externalManifestFixture();
+  manifest.works[0].sourcePage = "https://www.pixabay.com/music/example-track/";
+  manifest.works[0].assetLicense.evidenceUrl = "https://www.pixabay.com/service/license-summary/";
+
+  const adapted = adaptExternalManifestV3(manifest);
+  const entry = adapted.entries.find(candidate => candidate.fileSha256 === HASH_A);
+
+  assert.equal(entry.source, "www · pixabay · com");
+  assert.equal(entry.sourceUrl, "https://www.pixabay.com/music/example-track/");
+});
+
+test("schema-v3 adapter recognizes known source hosts with a legal trailing DNS dot", () => {
+  const manifest = externalManifestFixture();
+  manifest.works[0].sourcePage = "https://opengameart.org./content/example-track/";
+  manifest.works[0].assetLicense.evidenceUrl = "https://opengameart.org./content/example-track/";
+
+  const adapted = adaptExternalManifestV3(manifest);
+  const entry = adapted.entries.find(candidate => candidate.fileSha256 === HASH_A);
+
+  assert.equal(entry.source, "OpenGameArt");
+});
+
+test("schema-v3 adapter does not promote negated original attachment labels", () => {
+  const manifest = externalManifestFixture();
+  manifest.works[0].files[0].deliveryStatus = "not-original-attachment";
+  manifest.collection.originalAttachmentCount = 0;
+  const adapted = adaptExternalManifestV3(manifest);
+  const unknown = adapted.entries.find(entry => entry.fileSha256 === HASH_A);
+
+  assert.equal(unknown.deliveryStatus, "unknown");
+  assert.ok(unknown.publicationBlockers.includes("missing-evidence"));
+});
+
+test("schema-v3 adapter never promotes ambiguous or negated rights-chain prose", () => {
+  const exactSource = externalManifestFixture();
+  assert.equal(adaptExternalManifestV3(exactSource).entries[0].rightsChainStatus, "source-declaration-only");
+
+  for (const ambiguous of ["No file was independently verified.", "Some files were independently verified.", "Independently verified, except where noted."]) {
+    const manifest = externalManifestFixture();
+    manifest.licenseReview.rightsChainAssurance = ambiguous;
+    const adapted = adaptExternalManifestV3(manifest);
+    assert.equal(adapted.entries[0].rightsChainStatus, "unknown", ambiguous);
+    assert.ok(adapted.entries[0].publicationBlockers.includes("rights-chain-review-required"), ambiguous);
+  }
+});
+
+test("schema-v3 adapter rejects structural drift, inconsistent counts, and non-page URLs", () => {
+  assert.throws(() => adaptExternalManifestV3({ ...externalManifestFixture(), schemaVersion: 4 }), /schemaVersion/i);
+  assert.throws(() => adaptExternalManifestV3({ ...externalManifestFixture(), unexpected: true }), /unsupported|unknown/i);
+
+  const wrongCount = externalManifestFixture();
+  wrongCount.collection.fileCount = 99;
+  assert.throws(() => adaptExternalManifestV3(wrongCount), /fileCount|count/i);
+
+  const directEvidence = externalManifestFixture();
+  directEvidence.works[0].assetLicense.evidenceUrl = "https://cdn.example.test/evidence.pdf?Expires=9&Signature=x";
+  assert.throws(() => adaptExternalManifestV3(directEvidence), /public evidence page|signed|download/i);
+});

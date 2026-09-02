@@ -83,6 +83,7 @@ function attachCandidate(project, {
     comparison: comparison(),
     similarityClass: "too-close",
     advice: ADVICE,
+    candidateSource: { kind: "legacy-unknown", legacyRunId: run.id },
   };
   const experiment = {
     id: experimentId,

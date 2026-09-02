@@ -175,6 +175,13 @@ test("validateLicenseEntry preserves HTTPS sources and distinguishes CC0, CC-BY,
     source: "Freesound",
     sourceUrl: "https://freesound.org/sounds/1",
     license: "CC0",
+    licenseIdentifier: "CC0-1.0",
+    licenseUrl: "https://creativecommons.org/publicdomain/zero/1.0/",
+    evidenceUrl: "https://freesound.org/sounds/1",
+    evidenceCheckedAt: "2026-08-30",
+    deliveryStatus: "original",
+    scopeNote: "Covers the exact downloaded audio bytes.",
+    rightsChainStatus: "independently-verified",
     fileSha256: "a".repeat(64),
     author: "Fixture Author",
     downloadedAt: "2026-08-30"
@@ -184,6 +191,13 @@ test("validateLicenseEntry preserves HTTPS sources and distinguishes CC0, CC-BY,
     source: "OpenGameArt",
     sourceUrl: "https://opengameart.org/content/a",
     license: "CC-BY 4.0",
+    licenseIdentifier: "CC-BY-4.0",
+    licenseUrl: "https://creativecommons.org/licenses/by/4.0/",
+    evidenceUrl: "https://opengameart.org/content/a",
+    evidenceCheckedAt: "2026-08-30",
+    deliveryStatus: "original",
+    scopeNote: "Covers the exact downloaded audio bytes.",
+    rightsChainStatus: "independently-verified",
     fileSha256: "b".repeat(64),
     attributionText: "Example Artist — CC BY 4.0",
     author: "Example Artist",
@@ -194,6 +208,13 @@ test("validateLicenseEntry preserves HTTPS sources and distinguishes CC0, CC-BY,
     source: "Example",
     sourceUrl: "https://example.test/nc",
     license: "CC BY-NC 4.0",
+    licenseIdentifier: "CC-BY-NC-4.0",
+    licenseUrl: "https://creativecommons.org/licenses/by-nc/4.0/",
+    evidenceUrl: "https://example.test/nc",
+    evidenceCheckedAt: "2026-08-30",
+    deliveryStatus: "original",
+    scopeNote: "Covers the exact downloaded audio bytes.",
+    rightsChainStatus: "independently-verified",
     fileSha256: "c".repeat(64),
     attributionText: "NC Artist — CC BY-NC 4.0",
     author: "NC Artist",
@@ -204,6 +225,13 @@ test("validateLicenseEntry preserves HTTPS sources and distinguishes CC0, CC-BY,
     source: "Example",
     sourceUrl: "https://example.test/unknown",
     license: "Custom license",
+    licenseIdentifier: "LicenseRef-Unknown",
+    licenseUrl: null,
+    evidenceUrl: "https://example.test/unknown",
+    evidenceCheckedAt: "2026-08-30",
+    deliveryStatus: "original",
+    scopeNote: "Covers the exact downloaded audio bytes.",
+    rightsChainStatus: "independently-verified",
     fileSha256: "d".repeat(64),
     author: "Unknown Licensor",
     downloadedAt: "2026-08-30"
@@ -214,16 +242,29 @@ test("validateLicenseEntry preserves HTTPS sources and distinguishes CC0, CC-BY,
   assert.equal(ccBy.category, "cc-by");
   assert.equal(nc.category, "cc-by-nc");
   assert.equal(unknown.category, "unknown");
-  assert.deepEqual(cc0.licenseFlags, { by: false, nc: false, cc0: true });
-  assert.deepEqual(ccBy.licenseFlags, { by: true, nc: false, cc0: false });
-  assert.deepEqual(nc.licenseFlags, { by: true, nc: true, cc0: false });
+  assert.deepEqual(cc0.licenseFlags, { by: false, nc: false, sa: false, nd: false, cc0: true, previewOnly: false, unknown: false });
+  assert.deepEqual(ccBy.licenseFlags, { by: true, nc: false, sa: false, nd: false, cc0: false, previewOnly: false, unknown: false });
+  assert.deepEqual(nc.licenseFlags, { by: true, nc: true, sa: false, nd: false, cc0: false, previewOnly: false, unknown: false });
   for (const entry of [cc0, ccBy, nc, unknown]) {
     assert.match(entry.useWarning, /[\u3400-\u9fff]/);
     assert.match(entry.attributionWarning, /[\u3400-\u9fff]/);
     assert.doesNotMatch(`${entry.useWarning} ${entry.attributionWarning}`, /法律保证|侵权免责|已获法律许可/);
   }
   assert.throws(() => validateLicenseEntry({ ...cc0, sourceUrl: "http://example.test" }), /HTTPS/);
-  assert.throws(() => validateLicenseEntry({ ...ccBy, attributionText: "" }), /attribution/i);
+  const {
+    category: ignoredCategory,
+    licenseFlags: ignoredFlags,
+    previewOnly: ignoredPreviewOnly,
+    publicationBlocked: ignoredPublicationBlocked,
+    publicationBlockers: ignoredPublicationBlockers,
+    useWarning: ignoredUseWarning,
+    attributionWarning: ignoredAttributionWarning,
+    ...ccByEvidence
+  } = ccBy;
+  assert.deepEqual(
+    validateLicenseEntry({ ...ccByEvidence, attributionText: "" }).publicationBlockers,
+    ["missing-attribution"],
+  );
   assert.throws(() => validateLicenseEntry({ ...cc0, fileSha256: "not-a-hash" }), /SHA-256/);
   assert.throws(() => validateLicenseEntry({ ...cc0, author: "" }), /author/i);
   assert.throws(() => validateLicenseEntry({ ...cc0, downloadedAt: "" }), /downloadedAt/i);
@@ -292,7 +333,8 @@ test("experiment records are detached and deeply immutable while project validat
       referenceBasis: structuredClone(reference),
       comparison: candidateComparison,
       similarityClass: "too-close",
-      advice: candidateAdvice
+      advice: candidateAdvice,
+      candidateSource: { kind: "legacy-unknown", legacyRunId: plan.runs[0].id }
     }],
     experiments: [experiment],
     licenses: [{
@@ -300,6 +342,13 @@ test("experiment records are detached and deeply immutable while project validat
       source: "Freesound",
       sourceUrl: "https://freesound.org/sounds/1",
       license: "CC0",
+      licenseIdentifier: "CC0-1.0",
+      licenseUrl: "https://creativecommons.org/publicdomain/zero/1.0/",
+      evidenceUrl: "https://freesound.org/sounds/1",
+      evidenceCheckedAt: "2026-08-30",
+      deliveryStatus: "original",
+      scopeNote: "Covers the exact downloaded audio bytes.",
+      rightsChainStatus: "independently-verified",
       fileSha256: "a".repeat(64),
       author: "Fixture Author",
       downloadedAt: "2026-08-30"

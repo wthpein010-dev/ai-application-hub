@@ -8,7 +8,10 @@ import { spawnSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
 import { createDailyPlan } from "../projects/loop-bgm-lab/core/prompt-engine.mjs";
 import { exportProjectJson } from "../projects/loop-bgm-lab/core/project-state.mjs";
-import { importProjectDocument } from "../projects/loop-bgm-lab/core/portable-handoff.mjs";
+import {
+  exportProjectHandoffMarkdown,
+  importProjectDocument
+} from "../projects/loop-bgm-lab/core/portable-handoff.mjs";
 
 const root = dirname(dirname(fileURLToPath(import.meta.url)));
 const projectRoot = join(root, "projects", "loop-bgm-lab");
@@ -81,15 +84,25 @@ test("markup is CSP-safe, credential-free, and exposes only the approved file an
   assert.doesNotMatch(source, /\.innerHTML\b|insertAdjacentHTML|outerHTML\s*=/);
 });
 
-test("manual Create registration and multi-candidate import expose explicit accessible controls", () => {
+test("source-aware candidate import exposes explicit accessible source, run, and output controls", () => {
   const html = readProjectFile("index.html");
   const source = readProjectFile("app.js");
 
+  assert.match(html, /<select id="candidate-source-kind"[^>]*aria-label="候选来源类型"/);
+  assert.match(html, /<option value="suno"[^>]*>Suno 结果<\/option>/);
+  assert.match(html, /<option value="external"[^>]*>外部音乐<\/option>/);
+  assert.match(html, /<option value="local-original"[^>]*>本地原创<\/option>/);
+  assert.doesNotMatch(html, /<option value="legacy-unknown"/);
   assert.match(html, /<select id="candidate-run"[^>]*aria-label="候选关联生成运行"/);
+  assert.match(html, /<select id="candidate-output"[^>]*aria-label="候选关联生成结果"/);
   assert.match(html, /<input id="candidate-file"[^>]*\bmultiple\b/);
-  assert.match(html, /一次最多 8 个[^<]*同一次选择共用一个 run/);
+  assert.match(html, /研究最佳[^<]*不代表可发布/);
   assert.match(source, /请选择一次已登记的 Create/);
-  assert.match(source, /candidateInput\.disabled = selectableRunId === ""/);
+  assert.match(source, /candidateSourceKind/);
+  assert.match(source, /candidateOutput/);
+  assert.match(source, /sourceKind === "suno"/);
+  assert.match(source, /sourceKind === "external"/);
+  assert.match(source, /sourceKind === "local-original"/);
   assert.match(source, /className: "batch-action record-create-run"/);
   assert.match(source, /className: "create-output-url"/);
   assert.match(source, /className: "create-output-score"/);
@@ -97,6 +110,51 @@ test("manual Create registration and multi-candidate import expose explicit acce
   assert.match(source, /className: "create-output-disposition"/);
   assert.match(source, /aria-label[^\n]*结果 1/);
   assert.match(source, /aria-label[^\n]*结果 2/);
+});
+
+test("legacy candidate provenance is confirmed through one explicit fail-closed dialog", () => {
+  const html = readProjectFile("index.html");
+  const source = readProjectFile("app.js");
+  const css = readProjectFile("styles.css");
+
+  assert.equal((html.match(/<dialog\b[^>]*id="legacy-source-dialog"/g) || []).length, 1);
+  assert.match(html, /<select id="legacy-source-kind"[^>]*>/);
+  assert.match(html, /<option value=""[^>]*>请选择确认来源<\/option>/);
+  assert.match(html, /<option value="suno"[^>]*>Suno 结果<\/option>/);
+  assert.match(html, /<option value="external"[^>]*>外部音乐<\/option>/);
+  assert.match(html, /<option value="local-original"[^>]*>本地原创<\/option>/);
+  assert.doesNotMatch(html, /id="legacy-source-kind"[\s\S]*?<option value="legacy-unknown"/);
+  for (const id of [
+    "legacy-source-candidate-id",
+    "legacy-source-batch-id",
+    "legacy-source-hash",
+    "legacy-source-context",
+    "legacy-source-suno-fields",
+    "legacy-source-run",
+    "legacy-source-output",
+    "legacy-source-license-fields",
+    "legacy-source-license",
+    "legacy-source-error",
+    "legacy-source-cancel",
+    "legacy-source-submit"
+  ]) assert.match(html, new RegExp(`id="${id}"`));
+  assert.match(html, /id="legacy-source-suno-fields"[^>]*\bhidden\b[^>]*\bdisabled\b|id="legacy-source-suno-fields"[^>]*\bdisabled\b[^>]*\bhidden\b/);
+  assert.match(html, /id="legacy-source-license-fields"[^>]*\bhidden\b[^>]*\bdisabled\b|id="legacy-source-license-fields"[^>]*\bdisabled\b[^>]*\bhidden\b/);
+  assert.match(html, /legacyRunId[^\n]*(?:历史上下文|不代表已确认)|(?:历史上下文|不代表已确认)[^\n]*legacyRunId/);
+
+  assert.match(source, /\bconfirmLegacyCandidateSource\b/);
+  assert.match(source, /from "\.\/core\/project-state\.mjs"/);
+  assert.equal((source.match(/confirmLegacyCandidateSource\s*\(/g) || []).length, 1, "UI must use the existing core confirmation boundary exactly once");
+  assert.match(source, /candidate\.candidateSource\.kind === "legacy-unknown"/);
+  assert.match(source, /className: "text-button legacy-source-confirm"/);
+  assert.match(source, /旧记录·待确认/);
+  assert.match(source, /\.generationConditions\.batchId === candidate\.batchId/);
+  assert.match(source, /license\.fileSha256\.toLowerCase\(\) === candidate\.hash\.toLowerCase\(\)/);
+  assert.match(source, /rightsChainStatus !== "user-declared-original"/);
+  assert.match(source, /rightsChainStatus === "user-declared-original"/);
+  assert.match(css, /#legacy-source-dialog/);
+  assert.match(css, /\.legacy-source-identity/);
+  assert.match(css, /@media \(max-width: 720px\)[\s\S]*#legacy-source-dialog/);
 });
 
 test("browser coordinator imports the analysis, plan/state, and candidate-scoring boundaries", () => {
@@ -112,6 +170,8 @@ test("browser coordinator imports the analysis, plan/state, and candidate-scorin
   assert.match(source, /\bcompareCandidate\b/);
   assert.match(source, /\bclassifySimilarity\b/);
   assert.match(source, /\brecommendNextVariant\b/);
+  assert.match(source, /from "\.\/core\/candidate-publication\.mjs"/);
+  assert.match(source, /\bderiveCandidatePublicationState\b/);
   assert.match(source, /from "\.\/core\/browser-policy\.mjs"/);
   assert.match(source, /\baggregateReferenceStyle\b/);
   assert.match(source, /\bassertDecodedAudioBudget\b/);
@@ -131,13 +191,46 @@ test("portable handoff picker accepts both complete recovery formats", () => {
   assert.match(html, /JSON[^<]*Markdown[^<]*完整恢复/);
 });
 
-test("new plans identify the Markdown-handoff tool version without rewriting imported versions", async () => {
-  // Break caught: a newly created project advertises the pre-handoff tool version, or import rewrites an older project identity.
+test("new plans use tool 1.3.0 without rewriting JSON, Markdown, or migrated v2 identities", async () => {
+  // Break caught: a new project advertises the pre-provenance tool version, or import rewrites an older project identity.
   const created = createDailyPlan();
-  assert.equal(created.toolVersion, "loop-bgm-lab/1.2.0");
+  assert.equal(created.toolVersion, "loop-bgm-lab/1.3.0");
 
-  const imported = await importProjectDocument(exportProjectJson({ ...created, toolVersion: "loop-bgm-lab/1.1.0" }));
-  assert.equal(imported.project.toolVersion, "loop-bgm-lab/1.1.0");
+  const older = { ...created, toolVersion: "loop-bgm-lab/1.1.0" };
+  const importedJson = await importProjectDocument(exportProjectJson(older));
+  assert.equal(importedJson.project.toolVersion, "loop-bgm-lab/1.1.0");
+
+  const importedMarkdown = await importProjectDocument(await exportProjectHandoffMarkdown(older));
+  assert.equal(importedMarkdown.project.toolVersion, "loop-bgm-lab/1.1.0");
+
+  const importedV2 = await importProjectDocument(JSON.stringify({ ...older, version: 2 }));
+  assert.equal(importedV2.project.version, 3);
+  assert.equal(importedV2.project.toolVersion, "loop-bgm-lab/1.1.0");
+});
+
+test("README preserves the cross-computer provenance and release-boundary contract", () => {
+  const readme = readProjectFile("README.md");
+  for (const sourceKind of ["suno", "external", "local-original", "legacy-unknown"]) {
+    assert.ok(readme.includes("`" + sourceKind + "`"));
+  }
+  assert.match(readme, /SHA-256[^\n]*(?:身份|完整性)[^\n]*不证明/);
+  assert.match(readme, /preview-only[^\n]*新 SHA-256[^\n]*新候选/);
+  assert.match(readme, /研究最佳[^\n]*不等于发布资料完整/);
+  assert.match(readme, /许可证据包[^\n]*独立的 JSON/);
+  assert.match(readme, /项目 JSON\/Markdown/);
+  assert.match(readme, /不会从链接、文件名或历史自动猜测/);
+});
+
+test("browser smoke supports an explicit HTTPS Pages base without weakening local coverage", () => {
+  const smoke = readFileSync(join(root, "tests", "loop-bgm-lab-browser-smoke.mjs"), "utf8");
+  assert.match(smoke, /process\.env\.LOOP_BGM_BASE_URL/);
+  assert.match(smoke, /protocol\s*!==\s*["']https:["']/);
+  assert.match(smoke, /parsedBaseUrl\.username[\s\S]{0,160}parsedBaseUrl\.password[\s\S]{0,160}parsedBaseUrl\.search[\s\S]{0,160}parsedBaseUrl\.hash/);
+  assert.match(smoke, /remoteBaseUrl\s*=\s*parsedBaseUrl\.href\.replace/);
+  assert.match(smoke, /remoteBaseUrl[^\n]*\?[^\n]*null[^\n]*createServer/);
+  assert.match(smoke, /if \(!remoteBaseUrl\)[\s\S]{0,500}__response-monitor-redirect/);
+  assert.match(smoke, /`\$\{origin\}\/projects\/loop-bgm-lab\/index\.html`/);
+  assert.match(smoke, /server\?\.close\(\)/);
 });
 
 test("candidate markup exposes an explicit batch association, durable history, and playback-only cleanup", () => {
@@ -154,7 +247,46 @@ test("candidate markup exposes an explicit batch association, durable history, a
   assert.match(app, /candidate-review-note/);
   assert.match(app, /candidate-disposition/);
   assert.match(app, /candidate-best/);
+  assert.match(app, /candidate-source-badge/);
+  assert.match(app, /candidate-publication-badge/);
+  assert.match(app, /candidate-blocker-badge/);
+  assert.match(app, /记录门禁通过（非法律清白）/);
+  assert.doesNotMatch(app, /ready:\s*["']可发布["']/);
   assert.match(app, /来源核验日期/);
+  const css = readProjectFile("styles.css");
+  assert.match(css, /\.candidate-meta-badges/);
+  assert.match(css, /\.candidate-publication-badge\[data-status="blocked"\]/);
+});
+
+test("license-package controls keep JSON evidence separate from project handoff and expose atomic preflight", () => {
+  const html = readProjectFile("index.html");
+  const app = readProjectFile("app.js");
+  const css = readProjectFile("styles.css");
+
+  assert.match(html, /<input id="license-package-file"[^>]*accept="\.json,application\/json"/);
+  assert.doesNotMatch(html, /id="license-package-file"[^>]*\.zip|id="license-package-file"[^>]*\.md/);
+  assert.match(html, /id="license-package-apply"[^>]*\bdisabled\b/);
+  assert.match(html, /id="license-package-export"/);
+  assert.match(html, /id="license-package-preview"/);
+  assert.match(html, /id="license-package-additions"/);
+  assert.match(html, /id="license-package-skips"/);
+  assert.match(html, /id="license-package-conflicts"/);
+  assert.match(html, /id="license-package-blockers"/);
+  assert.match(html, /研究证据[^<]*不等于[^<]*发布[^<]*清白/);
+  assert.match(app, /from "\.\/core\/license-package\.mjs"/);
+  for (const name of [
+    "adaptExternalManifestV3",
+    "applyLicensePackageImport",
+    "exportLicensePackageJson",
+    "MAX_LICENSE_PACKAGE_BYTES",
+    "parseLicensePackageJson",
+    "planLicensePackageImport"
+  ]) assert.match(app, new RegExp(`\\b${name}\\b`));
+  assert.match(app, /file\.size\s*>\s*MAX_LICENSE_PACKAGE_BYTES/);
+  assert.match(app, /\.zip\$/i);
+  assert.match(css, /\.license-package-panel/);
+  assert.match(css, /\.license-package-summary/);
+  assert.match(css, /@media \(max-width: 720px\)[\s\S]*\.license-package-actions/);
 });
 
 test("browser workflow exposes explicit portable display-name editors and keeps computed hashes read-only", () => {

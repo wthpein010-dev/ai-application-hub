@@ -1,4 +1,4 @@
-import { assertHttpsUrl, assertPortableValue, isPlainObject } from "./portable-safety.mjs";
+import { assertPublicEvidencePageUrl, assertPortableValue, isPlainObject } from "./portable-safety.mjs";
 
 const WEIGHTS = Object.freeze({
   tempo: 0.25,
@@ -206,53 +206,177 @@ export function createExperimentRecord(input) {
   return detachAndFreeze(input);
 }
 
-function licenseFacts(license) {
-  const normalized = license.trim().toLowerCase();
-  const cc0 = /^cc0(?:\b|\s|-)/.test(normalized);
-  const by = !cc0 && (/\bcc\s*-?\s*by\b/.test(normalized) || /\battribution\b/.test(normalized));
-  const nc = !cc0 && (/\bby\s*-?\s*nc\b/.test(normalized) || /\bnon\s*-?commercial\b/.test(normalized) || /\bnc\b/.test(normalized));
-  const category = cc0 ? "cc0" : by && nc ? "cc-by-nc" : by ? "cc-by" : nc ? "nc" : "unknown";
-  return { category, licenseFlags: { by, nc, cc0 } };
+const DELIVERY_STATUSES = new Set(["original", "preview-only", "unknown"]);
+const RIGHTS_CHAIN_STATUSES = new Set([
+  "user-declared-original",
+  "source-declaration-only",
+  "independently-verified",
+  "unknown",
+]);
+const LICENSE_CATEGORY_BY_IDENTIFIER = new Map([
+  ["CC0-1.0", "cc0"],
+  ["CC-BY-3.0", "cc-by"],
+  ["CC-BY-4.0", "cc-by"],
+  ["CC-BY-SA-3.0", "cc-by-sa"],
+  ["CC-BY-SA-4.0", "cc-by-sa"],
+  ["CC-BY-NC-3.0", "cc-by-nc"],
+  ["CC-BY-NC-4.0", "cc-by-nc"],
+  ["CC-BY-ND-3.0", "cc-by-nd"],
+  ["CC-BY-ND-4.0", "cc-by-nd"],
+  ["CC-BY-NC-SA-3.0", "cc-by-nc-sa"],
+  ["CC-BY-NC-SA-4.0", "cc-by-nc-sa"],
+  ["CC-BY-NC-ND-3.0", "cc-by-nc-nd"],
+  ["CC-BY-NC-ND-4.0", "cc-by-nc-nd"],
+]);
+
+function licenseFacts(licenseIdentifier, evidence) {
+  const category = LICENSE_CATEGORY_BY_IDENTIFIER.get(licenseIdentifier) ?? "unknown";
+  const cc0 = category === "cc0";
+  const by = category.startsWith("cc-by");
+  const nc = category.includes("-nc");
+  const sa = category.endsWith("-sa");
+  const nd = category.endsWith("-nd");
+  const unknown = category === "unknown";
+  const previewOnly = evidence.deliveryStatus === "preview-only";
+  const missingEvidence = evidence.deliveryStatus === "unknown"
+    || evidence.licenseUrl === null
+    || evidence.evidenceUrl === null
+    || evidence.evidenceCheckedAt === null
+    || evidence.scopeNote === null;
+  const missingAttribution = by && evidence.attributionText === null;
+  const rightsReviewRequired = evidence.rightsChainStatus === "source-declaration-only"
+    || evidence.rightsChainStatus === "unknown";
+  const publicationBlockers = [
+    ...(nc ? ["noncommercial"] : []),
+    ...(sa ? ["share-alike-review-required"] : []),
+    ...(nd ? ["no-derivatives-review-required"] : []),
+    ...(previewOnly ? ["preview-only"] : []),
+    ...(unknown ? ["unknown-license"] : []),
+    ...(missingEvidence ? ["missing-evidence"] : []),
+    ...(missingAttribution ? ["missing-attribution"] : []),
+    ...(rightsReviewRequired ? ["rights-chain-review-required"] : []),
+  ];
+  return {
+    category,
+    licenseFlags: { by, nc, sa, nd, cc0, previewOnly, unknown },
+    publicationBlocked: publicationBlockers.length > 0,
+    publicationBlockers,
+  };
 }
 
 function assertRequiredString(value, field) {
   if (typeof value !== "string" || value.trim().length === 0) fail(`${field} must be a non-empty string`);
 }
 
+function normalizeNullableString(value, field) {
+  if (value === null) return null;
+  if (typeof value !== "string") fail(`${field} must be a string or null`);
+  const normalized = value.trim();
+  return normalized.length > 0 ? normalized : null;
+}
+
+function normalizeNullableHttpsUrl(value, field) {
+  if (value === null) return null;
+  return assertPublicEvidencePageUrl(value, field);
+}
+
+function normalizeDate(value, field, { nullable = false } = {}) {
+  if (nullable && value === null) return null;
+  assertRequiredString(value, field);
+  const dateOnly = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value);
+  if (dateOnly) {
+    const [year, month, day] = dateOnly.slice(1).map(Number);
+    const date = new Date(Date.UTC(year, month - 1, day));
+    if (date.getUTCFullYear() === year && date.getUTCMonth() === month - 1 && date.getUTCDate() === day) {
+      return value;
+    }
+  }
+  const timestamp = nullable
+    ? /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2}):(\d{2})(?:\.(\d{1,3}))?Z$/.exec(value)
+    : null;
+  const timestampValue = timestamp ? Date.parse(value) : Number.NaN;
+  const parsedTimestamp = Number.isFinite(timestampValue) ? new Date(timestampValue) : null;
+  const milliseconds = timestamp?.[7] ? Number(timestamp[7].padEnd(3, "0")) : 0;
+  if (!timestamp
+    || !parsedTimestamp
+    || parsedTimestamp.getUTCFullYear() !== Number(timestamp[1])
+    || parsedTimestamp.getUTCMonth() + 1 !== Number(timestamp[2])
+    || parsedTimestamp.getUTCDate() !== Number(timestamp[3])
+    || parsedTimestamp.getUTCHours() !== Number(timestamp[4])
+    || parsedTimestamp.getUTCMinutes() !== Number(timestamp[5])
+    || parsedTimestamp.getUTCSeconds() !== Number(timestamp[6])
+    || parsedTimestamp.getUTCMilliseconds() !== milliseconds) {
+    fail(`${field} must be a valid ISO date${nullable ? " or UTC timestamp" : ""}`);
+  }
+  return value;
+}
+
+function assertHash(value, field) {
+  if (typeof value !== "string" || !/^[a-fA-F0-9]{64}$/.test(value)) fail(`${field} must be a SHA-256 hash`);
+  return value.toLowerCase();
+}
+
 export function validateLicenseEntry(entry) {
   if (!isPlainObject(entry)) fail("license entry must be an object");
   const allowed = new Set([
     "id", "source", "sourceUrl", "license", "fileSha256", "fileHash", "attributionText", "author",
-    "downloadedAt", "category", "licenseFlags", "useWarning", "attributionWarning"
+    "downloadedAt", "previewOnly", "category", "licenseFlags", "publicationBlocked", "publicationBlockers",
+    "useWarning", "attributionWarning", "licenseIdentifier", "licenseUrl", "evidenceUrl", "evidenceCheckedAt",
+    "deliveryStatus", "scopeNote", "rightsChainStatus", "evidenceSha256", "modificationNote"
   ]);
   for (const key of Object.keys(entry)) {
     if (!allowed.has(key)) fail(`Unsupported license field: ${key}`);
   }
-  assertHttpsUrl(entry.sourceUrl, "sourceUrl");
+  const sourceUrl = assertPublicEvidencePageUrl(entry.sourceUrl, "sourceUrl");
   assertPortableValue(entry);
   assertRequiredString(entry.id, "license.id");
   if (!/^[a-z][a-z0-9-]{0,79}$/i.test(entry.id)) fail("license.id must be a portable identifier");
   assertRequiredString(entry.source, "license.source");
   assertRequiredString(entry.license, "license.license");
-  const fileSha256 = entry.fileSha256 ?? entry.fileHash;
-  if (typeof fileSha256 !== "string" || !/^[a-fA-F0-9]{64}$/.test(fileSha256)) {
-    fail("license.fileSha256 must be a SHA-256 hash");
+  for (const requiredField of [
+    "licenseIdentifier", "licenseUrl", "evidenceUrl", "evidenceCheckedAt", "deliveryStatus", "scopeNote",
+    "rightsChainStatus",
+  ]) {
+    if (!Object.hasOwn(entry, requiredField)) fail(`license.${requiredField} is required`);
   }
+  assertRequiredString(entry.licenseIdentifier, "license.licenseIdentifier");
+  if (entry.licenseIdentifier !== entry.licenseIdentifier.trim()) {
+    fail("license.licenseIdentifier must not contain surrounding whitespace");
+  }
+  const licenseUrl = normalizeNullableHttpsUrl(entry.licenseUrl, "license.licenseUrl");
+  const evidenceUrl = normalizeNullableHttpsUrl(entry.evidenceUrl, "license.evidenceUrl");
+  const evidenceCheckedAt = normalizeDate(entry.evidenceCheckedAt, "license.evidenceCheckedAt", { nullable: true });
+  if (!DELIVERY_STATUSES.has(entry.deliveryStatus)) fail("license.deliveryStatus is unsupported");
+  const scopeNote = normalizeNullableString(entry.scopeNote, "license.scopeNote");
+  if (!RIGHTS_CHAIN_STATUSES.has(entry.rightsChainStatus)) fail("license.rightsChainStatus is unsupported");
+  const fileSha256 = entry.fileSha256 ?? entry.fileHash;
+  const normalizedFileSha256 = assertHash(fileSha256, "license.fileSha256");
   if (typeof entry.fileSha256 === "string" && typeof entry.fileHash === "string"
     && entry.fileSha256.toLowerCase() !== entry.fileHash.toLowerCase()) {
     fail("license hash fields are inconsistent");
   }
-  const { category, licenseFlags } = licenseFacts(entry.license);
+  const attributionText = Object.hasOwn(entry, "attributionText")
+    ? normalizeNullableString(entry.attributionText, "license.attributionText")
+    : null;
+  const evidenceSha256 = Object.hasOwn(entry, "evidenceSha256")
+    ? assertHash(entry.evidenceSha256, "license.evidenceSha256")
+    : null;
+  const modificationNote = Object.hasOwn(entry, "modificationNote")
+    ? normalizeNullableString(entry.modificationNote, "license.modificationNote")
+    : null;
+  const derived = licenseFacts(entry.licenseIdentifier, {
+    licenseUrl,
+    evidenceUrl,
+    evidenceCheckedAt,
+    deliveryStatus: entry.deliveryStatus,
+    scopeNote,
+    rightsChainStatus: entry.rightsChainStatus,
+    attributionText,
+  });
+  const { category, licenseFlags, publicationBlocked, publicationBlockers } = derived;
+  const previewOnly = licenseFlags.previewOnly;
   assertRequiredString(entry.author, "license.author");
-  assertRequiredString(entry.downloadedAt, "license.downloadedAt");
-  const dateMatch = entry.downloadedAt.match(/^(\d{4})-(\d{2})-(\d{2})$/);
-  if (!dateMatch) fail("license.downloadedAt must be a valid YYYY-MM-DD date");
-  const [, year, month, day] = dateMatch.map(Number);
-  const date = new Date(Date.UTC(year, month - 1, day));
-  if (date.getUTCFullYear() !== year || date.getUTCMonth() !== month - 1 || date.getUTCDate() !== day) {
-    fail("license.downloadedAt must be a valid YYYY-MM-DD date");
-  }
-  if (licenseFlags.by) assertRequiredString(entry.attributionText, "license.attributionText");
+  const downloadedAt = normalizeDate(entry.downloadedAt, "license.downloadedAt");
   const warnings = {
     cc0: {
       useWarning: "标记为 CC0；仍请核对来源页面与实际使用范围。",
@@ -266,6 +390,22 @@ export function validateLicenseEntry(entry) {
       useWarning: "CC-BY-NC 同时要求署名并限制非商业使用，不应作为商业游戏素材使用。",
       attributionWarning: "必须保留作者与署名文本；NC 限制仍独立生效。"
     },
+    "cc-by-sa": {
+      useWarning: "CC-BY-SA 要求署名并履行相同方式共享；完成兼容性审核前阻止发布。",
+      attributionWarning: "必须保留作者、署名文本、许可证和相同方式共享要求。"
+    },
+    "cc-by-nc-sa": {
+      useWarning: "CC-BY-NC-SA 含非商业与相同方式共享限制，不应作为商业游戏素材发布。",
+      attributionWarning: "必须保留作者与署名文本；NC 与 SA 限制仍独立生效。"
+    },
+    "cc-by-nd": {
+      useWarning: "CC-BY-ND 禁止发布改编版本；完成成品使用方式审核前阻止发布。",
+      attributionWarning: "必须保留作者与署名文本，并核对是否构成改编。"
+    },
+    "cc-by-nc-nd": {
+      useWarning: "CC-BY-NC-ND 同时限制商业使用与改编，不应作为商业游戏素材发布。",
+      attributionWarning: "必须保留作者与署名文本；NC 与 ND 限制仍独立生效。"
+    },
     nc: {
       useWarning: "含 NC（非商业）限制，不应作为商业游戏素材使用。",
       attributionWarning: "即使需要署名，也不能忽略非商业限制。"
@@ -273,30 +413,66 @@ export function validateLicenseEntry(entry) {
     unknown: {
       useWarning: "授权类型未知，不应按可商用素材处理。",
       attributionWarning: "请补充来源许可和署名要求后再决定用途。"
+    },
+    sa: {
+      useWarning: "许可证含相同方式共享要求；完成许可证兼容性审核前阻止发布。",
+      attributionWarning: "请补齐署名与相同方式共享要求。"
+    },
+    nd: {
+      useWarning: "许可证含禁止改编要求；完成成品使用方式审核前阻止发布。",
+      attributionWarning: "请补齐署名要求并核对是否构成改编。"
     }
   }[category];
   const output = {
     id: entry.id,
     source: entry.source,
-    sourceUrl: entry.sourceUrl,
+    sourceUrl,
     license: entry.license,
-    fileSha256,
+    licenseIdentifier: entry.licenseIdentifier,
+    licenseUrl,
+    evidenceUrl,
+    evidenceCheckedAt,
+    deliveryStatus: entry.deliveryStatus,
+    scopeNote,
+    rightsChainStatus: entry.rightsChainStatus,
+    fileSha256: normalizedFileSha256,
     category,
     licenseFlags,
+    previewOnly,
+    publicationBlocked,
+    publicationBlockers,
     useWarning: warnings.useWarning,
     attributionWarning: warnings.attributionWarning,
     author: entry.author,
-    downloadedAt: entry.downloadedAt
+    downloadedAt,
   };
-  if (typeof entry.attributionText === "string" && entry.attributionText.length > 0) output.attributionText = entry.attributionText;
+  if (attributionText !== null) output.attributionText = attributionText;
+  if (evidenceSha256 !== null) output.evidenceSha256 = evidenceSha256;
+  if (modificationNote !== null) output.modificationNote = modificationNote;
   if (Object.hasOwn(entry, "category") && entry.category !== category) fail("license.category is inconsistent with license text");
   if (Object.hasOwn(entry, "licenseFlags")) {
     const supplied = entry.licenseFlags;
     if (!isPlainObject(supplied)
-      || supplied.by !== licenseFlags.by || supplied.nc !== licenseFlags.nc || supplied.cc0 !== licenseFlags.cc0
-      || Object.keys(supplied).some(key => !new Set(["by", "nc", "cc0"]).has(key))) {
+      || Object.keys(licenseFlags).some(key => supplied[key] !== licenseFlags[key])
+      || Object.keys(supplied).some(key => !Object.hasOwn(licenseFlags, key))) {
       fail("license.licenseFlags are inconsistent with license text");
     }
+  }
+  if (Object.hasOwn(entry, "publicationBlocked") && entry.publicationBlocked !== publicationBlocked) {
+    fail("license.publicationBlocked is inconsistent with license restrictions");
+  }
+  if (Object.hasOwn(entry, "previewOnly") && entry.previewOnly !== previewOnly) {
+    fail("license.previewOnly is inconsistent with license.deliveryStatus");
+  }
+  if (Object.hasOwn(entry, "publicationBlockers")
+    && JSON.stringify(entry.publicationBlockers) !== JSON.stringify(publicationBlockers)) {
+    fail("license.publicationBlockers are inconsistent with license restrictions");
+  }
+  if (Object.hasOwn(entry, "useWarning") && entry.useWarning !== output.useWarning) {
+    fail("license.useWarning is inconsistent with license restrictions");
+  }
+  if (Object.hasOwn(entry, "attributionWarning") && entry.attributionWarning !== output.attributionWarning) {
+    fail("license.attributionWarning is inconsistent with license restrictions");
   }
   return output;
 }

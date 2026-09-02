@@ -110,6 +110,7 @@ function completeProject() {
       comparison: candidateComparison,
       similarityClass: "too-close",
       advice: candidateAdvice,
+      candidateSource: { kind: "legacy-unknown", legacyRunId: plan.runs[0].id },
     }],
     runs: [{
       ...plan.runs[0],
@@ -141,6 +142,13 @@ function completeProject() {
       source: "Freesound",
       sourceUrl: "https://freesound.org/s/1/",
       license: "CC BY-NC 4.0",
+      licenseIdentifier: "CC-BY-NC-4.0",
+      licenseUrl: "https://creativecommons.org/licenses/by-nc/4.0/",
+      evidenceUrl: "https://freesound.org/s/1/",
+      evidenceCheckedAt: "2026-08-30",
+      deliveryStatus: "original",
+      scopeNote: "Covers the exact downloaded audio bytes.",
+      rightsChainStatus: "independently-verified",
       fileSha256: "c".repeat(64),
       author: "Example Artist",
       downloadedAt: "2026-08-30",
@@ -287,7 +295,7 @@ test("schema v1 migration preserves runs and reviews without inventing output bi
   delete legacy.experiments[0].outputIndex;
 
   const restored = importProjectJson(JSON.stringify(legacy));
-  assert.equal(restored.version, 2);
+  assert.equal(restored.version, 3);
   assert.equal(restored.styleSpec.version, 1);
   assert.deepEqual(restored.runs[0].outputs[0], {
     generatedUrl: "https://suno.com/song/example",
@@ -346,7 +354,7 @@ test("portable safety rejects normalized secret-key variants and HTTPS userinfo 
   }
 });
 
-test("schema version 2 validates every known persisted structure and cross-field identity invariant", () => {
+test("schema version 3 validates every known persisted structure and cross-field identity invariant", () => {
   const project = completeProject();
   assert.deepEqual(importProjectJson(exportProjectJson(project)), validateProject(project));
 

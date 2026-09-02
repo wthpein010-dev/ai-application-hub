@@ -84,6 +84,7 @@ function completeProject() {
     comparison: comparisonFixture(),
     similarityClass: "too-close",
     advice: adviceFixture(),
+    candidateSource: { kind: "legacy-unknown", legacyRunId: run.id },
   };
   const experiment = {
     id: "experiment-1",
@@ -119,6 +120,13 @@ function completeProject() {
       source: "Example",
       sourceUrl: "https://example.test/license",
       license: "CC0",
+      licenseIdentifier: "CC0-1.0",
+      licenseUrl: "https://creativecommons.org/publicdomain/zero/1.0/",
+      evidenceUrl: "https://example.test/license",
+      evidenceCheckedAt: "2026-08-30",
+      deliveryStatus: "original",
+      scopeNote: "Covers the exact downloaded audio bytes.",
+      rightsChainStatus: "independently-verified",
       fileSha256: "c".repeat(64),
       author: "作者 🎧",
       downloadedAt: "2026-08-30",

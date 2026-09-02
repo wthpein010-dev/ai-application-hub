@@ -105,6 +105,7 @@ function candidateFixture({ id = "candidate-1", displayName = "欢乐版本 A", 
     comparison: comparisonFixture(),
     similarityClass: "too-close",
     advice: adviceFixture(),
+    candidateSource: { kind: "legacy-unknown" },
   };
 }
 
@@ -191,7 +192,7 @@ test("32-bar style plans survive validated JSON round trips with prompts tied to
 test("creates a five-batch 50-credit daily plan without treating it as account balance", () => {
   const plan = createDailyPlan({ ruleCheckedAt: "2026-08-30" });
 
-  assert.equal(plan.version, 2);
+  assert.equal(plan.version, 3);
   assert.equal(plan.styleSpec.version, 1);
   assert.equal(plan.ruleCheckedAt, "2026-08-30");
   assert.deepEqual(plan.credits, { planned: 50, perBatch: 10, batchCount: 5 });
@@ -316,7 +317,7 @@ test("imports schema v1 runs and deterministically migrates a legacy generated U
   legacyEmpty.runs[0].generatedUrl = null;
   delete legacyEmpty.runs[0].outputs;
   const restoredEmpty = importProjectJson(JSON.stringify(legacyEmpty));
-  assert.equal(restoredEmpty.version, 2);
+  assert.equal(restoredEmpty.version, 3);
   assert.equal(restoredEmpty.styleSpec.version, 1);
   assert.deepEqual(restoredEmpty.runs[0].outputs, []);
   assert.equal(Object.hasOwn(restoredEmpty.runs[0], "generatedUrl"), false);
@@ -431,6 +432,13 @@ test("portable project validation rejects duplicate imported license IDs", () =>
     source: "Freesound",
     sourceUrl: "https://freesound.org/s/7/",
     license: "CC0",
+    licenseIdentifier: "CC0-1.0",
+    licenseUrl: "https://creativecommons.org/publicdomain/zero/1.0/",
+    evidenceUrl: "https://freesound.org/s/7/",
+    evidenceCheckedAt: "2026-08-30",
+    deliveryStatus: "original",
+    scopeNote: "Covers the exact downloaded audio bytes.",
+    rightsChainStatus: "independently-verified",
     fileSha256: "a".repeat(64),
     author: "Fixture Author",
     downloadedAt: "2026-08-30"
@@ -556,6 +564,13 @@ test("round-trips validated project JSON losslessly and keeps Markdown free of p
       source: "Example",
       sourceUrl: "https://example.test/license",
       license: "CC0",
+      licenseIdentifier: "CC0-1.0",
+      licenseUrl: "https://creativecommons.org/publicdomain/zero/1.0/",
+      evidenceUrl: "https://example.test/license",
+      evidenceCheckedAt: "2026-08-30",
+      deliveryStatus: "original",
+      scopeNote: "Covers the exact downloaded audio bytes.",
+      rightsChainStatus: "independently-verified",
       fileSha256: "c".repeat(64),
       author: "Example Artist",
       downloadedAt: "2026-08-30"

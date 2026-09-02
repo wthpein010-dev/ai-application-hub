@@ -143,16 +143,27 @@
         </div>
       </div>
       <div class="candidate-toolbar">
+        <label>候选来源
+          <select id="candidate-source-kind" aria-label="候选来源类型">
+            <option value="suno">Suno 结果</option>
+            <option value="external">外部音乐</option>
+            <option value="local-original">本地原创</option>
+          </select>
+        </label>
         <label>关联提示词批次
           <select id="candidate-batch" aria-label="候选关联批次"></select>
         </label>
         <label>关联生成运行
           <select id="candidate-run" aria-label="候选关联生成运行"></select>
         </label>
-        <label class="file-picker compact" for="candidate-file"><strong>选择候选音频</strong><span>一次最多 8 个；同一次选择共用一个 run，单个失败不影响其余文件。</span><input id="candidate-file" class="visually-hidden" type="file" multiple accept=".mp3,.wav,.m4a,.ogg,audio/mpeg,audio/wav,audio/mp4,audio/ogg"></label>
+        <label>关联生成结果
+          <select id="candidate-output" aria-label="候选关联生成结果"></select>
+        </label>
+        <label class="file-picker compact" for="candidate-file"><strong>选择候选音频</strong><span>一次最多 8 个；导入时会冻结上方来源选择，单个失败不影响其余文件。</span><input id="candidate-file" class="visually-hidden" type="file" multiple accept=".mp3,.wav,.m4a,.ogg,audio/mpeg,audio/wav,audio/mp4,audio/ogg"></label>
         <button id="remove-candidate" class="text-button" type="button" hidden>清除临时播放</button>
       </div>
-      <p id="candidate-progress" class="live-box" role="status" aria-live="polite">先在批次卡登记一次 Create，再选择对应 run 和候选文件。</p>
+      <p id="candidate-source-help" class="candidate-source-help">Suno 候选必须先选择已登记的 Create 运行和其中一个已有结果，再导入对应下载文件。</p>
+      <p id="candidate-progress" class="live-box" role="status" aria-live="polite">先在批次卡登记一次 Create、填写结果链接，再选择对应运行、结果和候选文件。</p>
       <div class="players" aria-label="参考与候选播放器">
         <label><span>参考 A</span><audio id="reference-player" controls preload="metadata"></audio></label>
         <label><span>候选 B</span><audio id="candidate-player" controls preload="metadata"></audio></label>
@@ -173,7 +184,7 @@
       </div>
       <div class="candidate-history-panel">
         <h3>候选历史与人工复盘</h3>
-        <p>候选历史会保留；生成链接、评分、复核理由、处置和最佳候选都需要你明确填写或选择。</p>
+        <p>候选历史会保留；评分、复核理由和处置需要你明确填写。研究最佳（不代表可发布）与发布门禁彼此独立。</p>
         <div id="candidate-history" class="candidate-history" aria-live="polite"></div>
       </div>
     </section>
@@ -195,6 +206,27 @@
           <a class="search-link" data-source="Freesound" href="https://freesound.org/search/" target="_blank" rel="noopener noreferrer">Freesound</a>
         </div>
       </div>
+      <section class="license-package-panel" aria-labelledby="license-package-title">
+        <div>
+          <h3 id="license-package-title">许可证据包</h3>
+          <p>只接受独立 JSON：可预检 loop-bgm-license-package v1 或兼容的 schemaVersion 3 外部清单。带 blockers 的条目仍可作为研究证据导入，但不等于发布权利清白。</p>
+        </div>
+        <div class="license-package-actions">
+          <label class="file-picker compact" for="license-package-file"><strong>选择许可证 JSON 并预检</strong><span>最大 1 MiB；不接受 ZIP、音频或项目交接 Markdown。</span><input id="license-package-file" class="visually-hidden" type="file" accept=".json,application/json"></label>
+          <button id="license-package-apply" class="primary-button" type="button" disabled>应用本次预检</button>
+          <button id="license-package-export" class="secondary-button" type="button">导出规范许可证包</button>
+        </div>
+        <p id="license-package-status" class="live-box" role="status" aria-live="polite">尚未选择许可证 JSON。</p>
+        <div id="license-package-preview" class="license-package-preview" data-state="empty" hidden>
+          <div class="license-package-summary" aria-label="许可证包预检统计">
+            <p><span>新增</span><strong id="license-package-additions">0</strong></p>
+            <p><span>跳过</span><strong id="license-package-skips">0</strong></p>
+            <p><span>冲突</span><strong id="license-package-conflicts">0</strong></p>
+            <p><span>阻断项</span><strong id="license-package-blockers">0</strong></p>
+          </div>
+          <ul id="license-package-details" class="license-package-details" aria-label="许可证包预检明细"></ul>
+        </div>
+      </section>
       <form id="license-form" class="license-form">
         <label>来源
           <select id="license-source" required>
@@ -203,9 +235,29 @@
         </label>
         <label>来源 URL<input id="license-url" type="url" inputmode="url" placeholder="https://…" required></label>
         <label>原始许可证<input id="license-name" placeholder="例如 CC0 / CC-BY 4.0" required></label>
+        <label>规范许可证标识<input id="license-identifier" placeholder="例如 CC0-1.0 / CC-BY-4.0" required></label>
+        <label>许可证 URL<input id="license-license-url" type="url" inputmode="url" placeholder="https://…"></label>
+        <label>证据 URL<input id="license-evidence-url" type="url" inputmode="url" placeholder="https://…"></label>
+        <label>证据核验日期<input id="license-evidence-date" type="date"></label>
         <label>文件 SHA-256<input id="license-hash" minlength="64" maxlength="64" spellcheck="false" required></label>
         <label>作者<input id="license-author" autocomplete="off" required></label>
         <label>下载日期<input id="license-date" type="date" required></label>
+        <label>交付状态
+          <select id="license-delivery-status" required>
+            <option value="original">原始文件</option>
+            <option value="preview-only">仅预览</option>
+            <option value="unknown">未知</option>
+          </select>
+        </label>
+        <label>权利链状态
+          <select id="license-rights-chain-status" required>
+            <option value="source-declaration-only">仅来源声明</option>
+            <option value="independently-verified">已独立核验</option>
+            <option value="user-declared-original">本人声明原创</option>
+            <option value="unknown">未知</option>
+          </select>
+        </label>
+        <label class="wide-field">适用范围说明<input id="license-scope-note" autocomplete="off" placeholder="例如：允许用于游戏成品发布"></label>
         <label class="wide-field">署名文本<input id="license-attribution" autocomplete="off" placeholder="CC-BY 时必填"></label>
         <button class="primary-button" type="submit">加入授权台账</button>
       </form>
@@ -235,6 +287,53 @@
       </div>
     </section>
   </main>
+
+  <dialog id="legacy-source-dialog" aria-labelledby="legacy-source-title" aria-describedby="legacy-source-description">
+    <form id="legacy-source-form">
+      <div class="legacy-source-heading">
+        <div>
+          <p class="section-kicker">LEGACY PROVENANCE REVIEW</p>
+          <h2 id="legacy-source-title">确认旧候选来源</h2>
+        </div>
+        <button id="legacy-source-close" class="text-button" type="button" aria-label="关闭旧候选来源确认">关闭</button>
+      </div>
+      <p id="legacy-source-description">这一步不会猜测来源。请按现有运行结果或同一文件哈希的许可证据明确确认；legacyRunId 只作为历史上下文展示，不代表已确认。</p>
+      <dl class="legacy-source-identity" aria-label="待确认旧候选身份">
+        <div><dt>候选 ID</dt><dd id="legacy-source-candidate-id"></dd></div>
+        <div><dt>批次</dt><dd id="legacy-source-batch-id"></dd></div>
+        <div><dt>完整 SHA-256</dt><dd id="legacy-source-hash"></dd></div>
+        <div id="legacy-source-context-row"><dt>历史上下文</dt><dd id="legacy-source-context"></dd></div>
+      </dl>
+      <label class="legacy-source-kind-field">确认来源
+        <select id="legacy-source-kind" required>
+          <option value="">请选择确认来源</option>
+          <option value="suno">Suno 结果</option>
+          <option value="external">外部音乐</option>
+          <option value="local-original">本地原创</option>
+        </select>
+      </label>
+      <fieldset id="legacy-source-suno-fields" disabled hidden>
+        <legend>Suno 精确结果</legend>
+        <label>同批次运行
+          <select id="legacy-source-run"><option value="">请选择同批次运行</option></select>
+        </label>
+        <label>已有结果
+          <select id="legacy-source-output"><option value="">请选择已有结果</option></select>
+        </label>
+      </fieldset>
+      <fieldset id="legacy-source-license-fields" disabled hidden>
+        <legend>同哈希许可证据</legend>
+        <label>许可证记录
+          <select id="legacy-source-license"><option value="">请选择同 SHA-256 许可证</option></select>
+        </label>
+      </fieldset>
+      <p id="legacy-source-error" class="field-error" role="alert"></p>
+      <div class="legacy-source-actions">
+        <button id="legacy-source-cancel" class="secondary-button" type="button">取消</button>
+        <button id="legacy-source-submit" class="primary-button" type="submit" disabled>确认并保存来源</button>
+      </div>
+    </form>
+  </dialog>
 
   <footer class="page-footer">
     <p>本页是 local-first 的创作工作台。Hub 卡片仅提供“演示 / 视频”入口，不提供 Windows 或 macOS 空下载按钮。</p>
