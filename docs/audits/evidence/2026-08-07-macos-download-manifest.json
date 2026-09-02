@@ -22,14 +22,14 @@
       "artifacts": {
         "arm64": {
           "url": "https://wthpein010-dev.github.io/ai-application-hub/projects/codex-thread-workbench/download/mac/",
-          "bytes": 40729351,
-          "sha256": "00E4B31C5411B8D390B1FAC7FC1D6991CAE3D0C1BF55558C2A0AF62D650CABD8",
+          "bytes": 40729526,
+          "sha256": "31E4B36087B55D02C8821BDD55847EAC069789D81C336C6B01A957176B062E4C",
           "manifestUrl": "https://wthpein010-dev.github.io/ai-application-hub/projects/codex-thread-workbench/download/mac/manifest-arm64.json"
         },
         "x64": {
           "url": "https://wthpein010-dev.github.io/ai-application-hub/projects/codex-thread-workbench/download/mac/",
-          "bytes": 42096948,
-          "sha256": "1B2CA69D12F7A7776661E817E964B2D4DA58C8D714898575F4F546DBEA40E042",
+          "bytes": 42097170,
+          "sha256": "E3F60CADCEFC0B301E0C28EC86FEB82FD2E2D0E2321A563E703222DEB75342FC",
           "manifestUrl": "https://wthpein010-dev.github.io/ai-application-hub/projects/codex-thread-workbench/download/mac/manifest-x64.json"
         }
       }
