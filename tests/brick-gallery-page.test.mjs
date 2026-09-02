@@ -81,10 +81,10 @@ test("the former 20-role copy table remains available as a secondary review page
   assert.match(html, /href="\.\/index\.html"/);
 });
 
-test("Hub showcase capture source describes the upgraded 45-character experience", () => {
+test("Hub showcase capture source describes the dual atlas experience", () => {
   const sources = readFileSync(join(root, "scripts", "hub-showcase-media-sources.json"), "utf8");
   const media = readFileSync(join(root, "hub-project-media.js"), "utf8");
 
-  assert.match(sources, /"brick-character-copy-preview"[^\n]+"feature":\s*"45 个正式角色的游戏式详情与真实换行检查"/);
-  assert.match(media, /"brick-character-copy-preview"[\s\S]*45 个正式角色的游戏式详情与真实换行检查/);
+  assert.match(sources, /"brick-character-copy-preview"[^\n]+"feature":\s*"45 个角色与 11 件随身小物的右侧详情和换装检查"/);
+  assert.match(media, /"brick-character-copy-preview"[\s\S]*45 个角色与 11 件随身小物的右侧详情和换装检查/);
 });
