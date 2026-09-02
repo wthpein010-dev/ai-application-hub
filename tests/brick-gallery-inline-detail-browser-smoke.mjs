@@ -48,6 +48,7 @@ try {
     await page.goto(`${origin}/projects/brick-character-copy-preview/index.html`, { waitUntil: "networkidle" });
 
     assert.equal(await page.title(), "砖块小人与随身小物图鉴");
+    assert.equal(await page.locator("#reward-preview").isVisible(), true);
     assert.equal(await page.locator("#atlas-list-panel").isVisible(), true);
     assert.equal(await page.locator("#atlas-detail-panel").isVisible(), true);
     assert.equal(await page.locator("#detail-empty").isVisible(), true);
@@ -59,7 +60,8 @@ try {
     assert.equal(await page.locator("#character-detail").isVisible(), true);
     assert.equal(await page.locator("#detail-empty").isVisible(), false);
     assert.equal(await page.locator("#atlas-list-panel").isVisible(), true);
-    assert.match(await page.locator("#detail-name").textContent(), /./);
+    assert.equal((await page.locator("#detail-name").textContent()).trim(), "黑帽快客");
+    assert.equal((await page.locator("#reward-name").textContent()).trim(), "黑帽快客");
 
     const before = await page.locator("#detail-name").textContent();
     await page.locator("#detail-next").click();
@@ -67,13 +69,21 @@ try {
 
     const layout = await page.evaluate(() => ({
       overflow: document.documentElement.scrollWidth > document.documentElement.clientWidth,
+      reward: document.querySelector("#reward-preview").getBoundingClientRect().toJSON(),
       list: document.querySelector("#atlas-list-panel").getBoundingClientRect().toJSON(),
       detail: document.querySelector("#atlas-detail-panel").getBoundingClientRect().toJSON(),
+      stage: document.querySelector("#detail-character").getBoundingClientRect().toJSON(),
+      figure: document.querySelector("#detail-character .character-figure").getBoundingClientRect().toJSON(),
       inert: document.querySelector("main")?.inert ?? false,
     }));
     assert.equal(layout.overflow, false, `${viewport.width}px should not overflow`);
     assert.equal(layout.inert, false);
-    if (viewport.width >= 1100) assert.ok(layout.list.right <= layout.detail.left + 1, "desktop panels must sit side by side");
+    if (viewport.width >= 1100) {
+      assert.ok(layout.reward.right <= layout.list.left + 1, "reward and catalog must sit side by side");
+      assert.ok(layout.list.right <= layout.detail.left + 1, "catalog and detail must sit side by side");
+      assert.ok(layout.figure.left >= layout.stage.left - 1 && layout.figure.right <= layout.stage.right + 1, "character figure must stay within the compact stage");
+      assert.ok(layout.figure.top >= layout.stage.top - 1 && layout.figure.bottom <= layout.stage.bottom + 1, "character figure must stay within the compact stage");
+    }
     if (viewport.width < 1100) assert.ok(layout.list.bottom <= layout.detail.top, "narrow panels must stack without overlap");
     assert.deepEqual(errors, []);
     await page.close();

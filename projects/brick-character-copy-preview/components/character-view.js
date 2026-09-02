@@ -30,13 +30,22 @@ export function createCharacterFigure(character) {
   return figure;
 }
 
-export function renderCharacterGrid({ characters, selectedId, favorites, grid, onSelect }) {
+export function renderRewardPreview({ character, elements }) {
+  if (!character) return;
+  elements.name.textContent = character.name;
+  elements.description.textContent = character.galleryDesc;
+  elements.unowned.textContent = character.unownedDesc || character.unlockDesc;
+  elements.figure.replaceChildren(createCharacterFigure(character));
+}
+
+export function renderCharacterGrid({ characters, selectedId, equippedId, newId, favorites, grid, onSelect }) {
   const cards = characters.map((character, index) => {
     const card = document.createElement("button");
     card.className = "character-card";
     card.type = "button";
     card.dataset.blockId = String(character.blockId);
     card.dataset.name = character.name;
+    card.dataset.state = character.blockId === equippedId ? "equipped" : character.blockId === newId ? "new" : "owned";
     card.style.setProperty("--appear-index", String(index));
     card.setAttribute("aria-label", `查看${character.name}详情`);
     card.setAttribute("aria-current", String(character.blockId === selectedId));
@@ -48,6 +57,12 @@ export function renderCharacterGrid({ characters, selectedId, favorites, grid, o
     name.className = "character-name";
     name.textContent = character.name;
     card.append(art, name);
+    if (card.dataset.state !== "owned") {
+      const state = document.createElement("span");
+      state.className = "character-state";
+      state.textContent = card.dataset.state === "equipped" ? "装扮中" : "新";
+      card.append(state);
+    }
     if (favorites.has(character.blockId)) {
       const favorite = document.createElement("img");
       favorite.className = "favorite-mark";
@@ -64,7 +79,7 @@ export function renderCharacterGrid({ characters, selectedId, favorites, grid, o
 export function renderCharacterDetail({ character, index, total, favorites, elements }) {
   elements.name.textContent = character.name;
   elements.description.textContent = character.galleryDesc;
-  elements.unlock.textContent = character.unlockDesc;
+  elements.unlock.textContent = character.unownedDesc || character.unlockDesc;
   elements.position.textContent = `${index + 1} / ${total}`;
   elements.figure.replaceChildren(createCharacterFigure(character));
   const favorite = favorites.has(character.blockId);

@@ -11,7 +11,7 @@ import {
 } from "./core/atlas-state.js";
 import { createTrinketDraft, discardDraft, hasUnsavedDraft, randomizeDraft, saveDraft, toggleDraftItem } from "./core/trinket-draft.js";
 import { applyGiftPreview, availableGiftCount, ownedTrinkets, sortTrinkets } from "./core/trinket-inventory.js";
-import { createCharacterFigure, renderCharacterDetail, renderCharacterGrid } from "./components/character-view.js";
+import { createCharacterFigure, renderCharacterDetail, renderCharacterGrid, renderRewardPreview } from "./components/character-view.js";
 import { renderEquippedPreview, renderTrinketDetail, renderTrinketGrid, trinketImagePath } from "./components/trinket-view.js";
 import { closeInlineFlow, giftNodes, saveConfirmNodes, showInlineFlow, successNodes, warehouseNodes } from "./components/trinket-flow.js";
 
@@ -77,6 +77,10 @@ const elements = {
   warehouse: document.querySelector("#open-warehouse"),
   gift: document.querySelector("#open-gift"),
   inlineFlow: document.querySelector("#trinket-inline-flow"),
+  rewardCharacter: document.querySelector("#reward-character"),
+  rewardName: document.querySelector("#reward-name"),
+  rewardDescription: document.querySelector("#reward-description"),
+  rewardUnowned: document.querySelector("#reward-unowned"),
 };
 
 let atlas = createAtlasState();
@@ -88,6 +92,7 @@ let diagnosticFrame = 0;
 let detailResizeObserver = null;
 let flowTrigger = null;
 let deferredNavigation = null;
+let equippedCharacterId = null;
 const characterFavorites = new Set(loadArray(CHARACTER_FAVORITES_KEY).map(Number).filter(Number.isInteger));
 let preview = loadTrinketPreview();
 const trinketFavorites = new Set(preview.favoriteItemIds);
@@ -207,6 +212,8 @@ function renderCharacterList(announcement = "") {
   renderCharacterGrid({
     characters: visible,
     selectedId: atlas.characters.selection,
+    equippedId: equippedCharacterId,
+    newId: 100014,
     favorites: characterFavorites,
     grid: elements.characterGrid,
     onSelect: (blockId, trigger) => requestCharacter(blockId, trigger),
@@ -332,6 +339,9 @@ function renderCharacterPanel() {
       favorite: elements.detailFavorite,
     },
   });
+  const isEquipped = character.blockId === equippedCharacterId;
+  elements.detailEquip.textContent = isEquipped ? "装扮中" : "装扮";
+  elements.detailEquip.setAttribute("aria-pressed", String(isEquipped));
   updateInspector(character);
   scheduleRenderedDiagnostics();
 }
@@ -367,10 +377,23 @@ function renderActivePanel() {
   else setDetail("empty");
 }
 
+function renderRewardPanel() {
+  renderRewardPreview({
+    character: previewCharacter(),
+    elements: {
+      figure: elements.rewardCharacter,
+      name: elements.rewardName,
+      description: elements.rewardDescription,
+      unowned: elements.rewardUnowned,
+    },
+  });
+}
+
 function render() {
   renderTabs();
   renderCharacterList();
   renderTrinketList();
+  renderRewardPanel();
   renderActivePanel();
 }
 
@@ -560,6 +583,14 @@ function randomTrial() {
   render();
 }
 
+function equipCurrentCharacter() {
+  const character = selectedCharacter();
+  if (!character) return;
+  equippedCharacterId = character.blockId;
+  render();
+  elements.status.textContent = `${character.name}已设为当前装扮`;
+}
+
 async function shareCurrent() {
   const character = selectedCharacter();
   if (!character) return;
@@ -616,7 +647,7 @@ function bindEvents() {
   elements.detailPrev.addEventListener("click", () => moveCharacter(-1));
   elements.detailNext.addEventListener("click", () => moveCharacter(1));
   elements.detailFavorite.addEventListener("click", toggleCharacterFavorite);
-  elements.detailEquip.addEventListener("click", () => { if (selectedCharacter()) elements.status.textContent = `${selectedCharacter().name}已设为装扮排版预览`; });
+  elements.detailEquip.addEventListener("click", equipCurrentCharacter);
   elements.detailShare.addEventListener("click", shareCurrent);
   elements.trinketFavorite.addEventListener("click", toggleTrinketFavorite);
   elements.trinketToggleDraft.addEventListener("click", toggleTrial);
@@ -646,6 +677,7 @@ async function start() {
   const catalog = await trinketsResponse.json();
   if (!Array.isArray(characters) || characters.length !== 45) throw new Error("角色图鉴数据必须包含 45 个角色");
   if (!Array.isArray(catalog) || catalog.length < 1) throw new Error("随身小物目录为空");
+  equippedCharacterId = characters[0].blockId;
   trinkets = catalog.map((item) => ({ ...item, ownedCount: preview.ownedCountByItemId[String(item.id)] ?? item.ownedCount }));
   bindEvents();
   applyLocation();
