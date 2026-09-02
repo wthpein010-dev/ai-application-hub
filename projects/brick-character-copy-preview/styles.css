@@ -1,5 +1,6 @@
 :root { color-scheme: dark; --ink:#171b18; --paper:#fff; --red:#f42f2f; --yellow:#ffd900; --green:#55c67a; --panel-shadow:0 22px 70px rgb(0 0 0 / 48%); }
 * { box-sizing:border-box; }
+[hidden] { display:none !important; }
 html { min-width:320px; background:#07100d; }
 body { min-width:320px; min-height:100vh; margin:0; overflow-x:hidden; color:#f6faf7; background:radial-gradient(circle at 18% 15%,rgb(55 194 162 / 16%),transparent 30rem),radial-gradient(circle at 82% 30%,rgb(246 55 112 / 12%),transparent 28rem),#07100d; font-family:"Microsoft YaHei","PingFang SC",system-ui,sans-serif; }
 button,input,select { font:inherit; } button,a { -webkit-tap-highlight-color:transparent; } button { cursor:pointer; } button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible { outline:3px solid #1a77e8; outline-offset:3px; }
