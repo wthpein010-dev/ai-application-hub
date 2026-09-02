@@ -7,7 +7,8 @@ public static class Program
     [STAThread]
     public static int Main(string[] args)
     {
-        var mode = DesktopLaunchOptions.FromArgs(args).Mode;
+        var launchArgs = AddPackagedLaunchProfile(args);
+        var mode = DesktopLaunchOptions.FromArgs(launchArgs).Mode;
         ConfirmationOverlayDiagnostics.Write(
             $"process:start:pid={Environment.ProcessId}:mode={mode}");
         AppDomain.CurrentDomain.ProcessExit += (_, _) =>
@@ -20,7 +21,7 @@ public static class Program
             ConfirmationOverlayDiagnostics.Write(
                 $"process:unobserved-task:{FormatException(eventArgs.Exception)}");
 
-        if (args.Contains("--smoke-test", StringComparer.Ordinal))
+        if (launchArgs.Contains("--smoke-test", StringComparer.Ordinal))
         {
             try
             {
@@ -51,7 +52,7 @@ public static class Program
 
         using (instanceLock)
         {
-            var exitCode = BuildAvaloniaApp().StartWithClassicDesktopLifetime(args);
+            var exitCode = BuildAvaloniaApp().StartWithClassicDesktopLifetime(launchArgs);
             ConfirmationOverlayDiagnostics.Write(
                 $"process:lifetime-returned:code={exitCode}");
             return exitCode;
@@ -66,6 +67,21 @@ public static class Program
 
     public static string FormatSmokeTestFailure(Exception error) =>
         $"Codex Confirmation Bar smoke test failed: {error.Message}";
+
+    private static string[] AddPackagedLaunchProfile(string[] args)
+    {
+        if (args.Any(value => value.StartsWith(
+            DesktopLaunchOptions.LaunchProfileSwitchPrefix,
+            StringComparison.OrdinalIgnoreCase)))
+        {
+            return args;
+        }
+
+        var profilePath = Path.Combine(AppContext.BaseDirectory, "codex-launch-profile.json");
+        return File.Exists(profilePath)
+            ? [.. args, $"{DesktopLaunchOptions.LaunchProfileSwitchPrefix}{profilePath}"]
+            : args;
+    }
 
     private static string FormatException(object? value) => value switch
     {

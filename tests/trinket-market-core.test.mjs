@@ -24,6 +24,9 @@ test("canonical catalog keeps 11 stable IDs with one bundled image each", () => 
   assert.equal(new Set(items.map((item) => item.image)).size, 11);
   assert.equal(items.every((item) => existsSync(resolve(projectRoot, item.image))), true);
   assert.equal(items.every((item) => item.name && item.pinyin && item.rarity), true);
+  assert.equal(canonical.every((item) => item.slot === "hand" && Number.isInteger(item.ownedCount) && item.ownedCount > 0), true);
+  assert.equal(canonical.find((item) => item.id === 10).giftable, false);
+  assert.equal(canonical.filter((item) => item.isNew).map((item) => item.id).join(","), "4,10,11");
 });
 
 test("validation rejects duplicate IDs and invalid market values", () => {

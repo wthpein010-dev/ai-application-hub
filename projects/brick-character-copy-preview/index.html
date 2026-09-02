@@ -3,160 +3,118 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="description" content="复刻游戏图鉴排版，查看 45 个砖块小人的正式名字、获取文案、图鉴描述和真实换行诊断。">
-  <title>砖块小人图鉴与文案校对</title>
+  <meta name="description" content="查看 45 个砖块小人与随身小物，检查游戏内文案的真实换行，并体验小物换装。">
+  <title>砖块小人与随身小物图鉴</title>
   <link rel="icon" href="data:,">
   <link rel="stylesheet" href="../../assets/subpage-shell.css">
   <link rel="stylesheet" href="./styles.css">
 </head>
 <body class="hub-subpage">
-  <a class="hub-home-link" href="../../index.html#engineering">
-    <span class="hub-home-link__icon" aria-hidden="true">←</span>
-    返回主页
-  </a>
+  <a class="hub-home-link" href="../../index.html#engineering"><span class="hub-home-link__icon" aria-hidden="true">←</span>返回主页</a>
 
   <header class="gallery-topbar">
     <div class="gallery-topbar__inner">
-      <div class="gallery-brand">
-        <span class="gallery-brand__eyebrow">PAWS HOME · ATLAS CHECK</span>
-        <strong>砖块小人图鉴与文案校对</strong>
-      </div>
+      <div class="gallery-brand"><span class="gallery-brand__eyebrow">PAWS HOME · ATLAS CHECK</span><strong>砖块小人与随身小物图鉴</strong></div>
       <nav class="gallery-nav" aria-label="图鉴工具导航">
-        <a class="is-current" href="./index.html" aria-current="page">砖块小人图鉴</a>
+        <a class="is-current" href="./index.html" aria-current="page">双图鉴工作台</a>
         <a href="./copy-review.html">文案校对（旧版）</a>
         <a href="../trinket-market/index.html">随身小物交易市场</a>
       </nav>
-      <span class="sync-badge"><i aria-hidden="true"></i> Unity 正式配置 · 45 个</span>
+      <span class="sync-badge"><i aria-hidden="true"></i>Unity 正式配置 · 45 个角色 / 11 件小物</span>
     </div>
   </header>
 
-  <main class="gallery-layout">
-    <section class="game-column" aria-labelledby="gallery-heading">
-      <div class="game-stage">
-        <div class="stage-truss" aria-hidden="true"></div>
-        <div class="stage-light stage-light--pink" aria-hidden="true"></div>
-        <div class="stage-light stage-light--blue" aria-hidden="true"></div>
-        <div class="stage-crowd" aria-hidden="true"><span></span><span></span><span></span><span></span><span></span></div>
-
-        <section class="atlas-window">
-          <div class="atlas-tabs" aria-hidden="true">
-            <span class="atlas-tab is-active">砖块小人</span>
-            <span class="atlas-tab">随身小物</span>
-          </div>
-
-          <header class="atlas-header">
-            <div>
-              <p class="atlas-kicker">角色收藏图鉴</p>
-              <h1 id="gallery-heading">砖块小人</h1>
-            </div>
-            <button class="game-close" type="button" aria-label="返回 AI Application Hub" title="返回主页" data-home>×</button>
-          </header>
-
-          <div class="atlas-tools">
-            <strong>已收集：<span id="gallery-count">45/45</span></strong>
-            <label class="atlas-search">
-              <span aria-hidden="true">⌕</span>
-              <input id="gallery-search" type="search" placeholder="输入关键词" autocomplete="off">
-            </label>
-            <button class="batch-favorite" id="batch-favorite" type="button">★ 批量收藏本页</button>
-          </div>
-
-          <div class="atlas-filter-row">
-            <label class="favorite-filter"><input id="favorites-only" type="checkbox"> 只显示收藏</label>
-            <span id="gallery-status" role="status" aria-live="polite">全部角色默认解锁，可直接打开详情</span>
-          </div>
-
-          <div class="character-grid" id="character-grid" aria-label="砖块小人列表"></div>
-          <div class="gallery-empty" id="gallery-empty" hidden>
-            <strong>没有找到角色</strong>
-            <span>换个名字或文案关键词试试</span>
-          </div>
-
-          <footer class="atlas-pagination">
-            <button id="page-prev" type="button" aria-label="上一页">◀</button>
-            <span id="gallery-page">1/4</span>
-            <button id="page-next" type="button" aria-label="下一页">▶</button>
-          </footer>
-        </section>
+  <main class="atlas-workbench" id="atlas-workbench">
+    <section class="reward-preview" id="reward-preview" aria-labelledby="reward-title">
+      <a class="atlas-close" id="atlas-close" href="../../index.html#engineering" aria-label="关闭图鉴并返回主页">×</a>
+      <div class="reward-preview__stage">
+        <p class="reward-kicker">恭喜你</p>
+        <h1 id="reward-title">获得新的<br>砖块小人</h1>
+        <div class="reward-burst" aria-hidden="true"></div>
+        <div class="reward-character" id="reward-character" aria-label="获得的砖块小人"></div>
+        <div class="reward-shadow" aria-hidden="true"></div>
+        <p class="reward-dialogue" id="reward-description">新的伙伴已经加入图鉴。</p>
+        <p class="reward-acquisition"><span>获取方式</span><strong id="reward-unowned">常规模式或活动模式通关后获得</strong></p>
+        <p class="reward-name" id="reward-name">原皮战神</p>
+        <div class="reward-footer" aria-hidden="true"><span>已自动加入图鉴</span><span>点击中间卡片查看详情</span></div>
       </div>
     </section>
 
-    <aside class="copy-inspector" id="copy-diagnostics" aria-labelledby="diagnostic-title">
-      <div class="inspector-heading">
-        <div>
-          <span>REAL LAYOUT CHECK</span>
-          <h2 id="diagnostic-title">文案排版检查</h2>
+    <section class="atlas-list-panel" id="atlas-list-panel" aria-labelledby="gallery-heading">
+      <div class="stage-truss" aria-hidden="true"></div>
+      <div class="stage-light stage-light--pink" aria-hidden="true"></div>
+      <div class="stage-light stage-light--blue" aria-hidden="true"></div>
+      <section class="atlas-window">
+        <div class="atlas-tabs" role="tablist" aria-label="换装分类">
+          <button class="atlas-tab is-active" id="tab-characters" type="button" role="tab" aria-selected="true" aria-controls="characters-panel">砖块小人</button>
+          <button class="atlas-tab" id="tab-trinkets" type="button" role="tab" aria-selected="false" aria-controls="trinkets-panel">随身小物</button>
         </div>
-        <span class="inspector-sequence" id="inspector-sequence">01</span>
-      </div>
 
-      <section class="inspector-role">
-        <span>当前角色</span>
-        <strong id="inspector-name">原皮战神</strong>
-        <small id="inspector-block-id">Block 100001</small>
+        <section id="characters-panel" role="tabpanel" aria-labelledby="tab-characters">
+          <header class="atlas-header">
+            <div><p class="atlas-kicker">角色收藏图鉴</p><h1 id="gallery-heading">砖块小人</h1></div>
+            <a class="market-link" href="../trinket-market/index.html">打开交易市场 ↗</a>
+          </header>
+          <div class="atlas-tools">
+            <strong>已收集：<span id="gallery-count">45/45</span></strong>
+            <label class="atlas-search"><span aria-hidden="true">⌕</span><input id="gallery-search" type="search" placeholder="搜索名字或描述" autocomplete="off"></label>
+            <button class="batch-favorite" id="batch-favorite" type="button">★ 批量收藏本页</button>
+          </div>
+          <div class="atlas-filter-row"><label class="favorite-filter"><input id="favorites-only" type="checkbox">只显示收藏</label><span id="gallery-status" role="status" aria-live="polite">全部角色默认解锁，可直接查看右侧详情</span></div>
+          <div class="character-grid" id="character-grid" aria-label="砖块小人列表"></div>
+          <div class="gallery-empty" id="gallery-empty" hidden><strong>没有找到角色</strong><span>换个名字或文案关键词试试</span></div>
+          <footer class="atlas-pagination"><button id="page-prev" type="button" aria-label="上一页">◀</button><span id="gallery-page">1/4</span><button id="page-next" type="button" aria-label="下一页">▶</button></footer>
+        </section>
+
+        <section id="trinkets-panel" role="tabpanel" aria-labelledby="tab-trinkets" hidden>
+          <header class="atlas-header"><div><p class="atlas-kicker">已拥有小物仓库</p><h1>随身小物</h1></div><a class="market-link" href="../trinket-market/index.html">交易市场 ↗</a></header>
+          <div class="trinket-tools">
+            <label class="atlas-search"><span aria-hidden="true">⌕</span><input id="trinket-search" type="search" placeholder="搜索小物名称" autocomplete="off"></label>
+            <label class="trinket-sort-label">排序<select id="trinket-sort"><option value="default">默认（最新优先）</option><option value="recent">最近获得</option><option value="name">名称拼音</option><option value="quantity">拥有数量</option><option value="activity">活动顺序</option></select></label>
+          </div>
+          <p class="trinket-summary" id="trinket-summary" role="status">全部 11 件随身小物均可试穿</p>
+          <div class="trinket-grid" id="trinket-grid" aria-label="随身小物列表"></div>
+          <div class="gallery-empty" id="trinket-empty" hidden><strong>没有找到小物</strong><span>换个名字试试</span></div>
+        </section>
+      </section>
+    </section>
+
+    <aside class="atlas-detail-panel" id="atlas-detail-panel" aria-live="polite">
+      <section class="detail-empty" id="detail-empty"><span aria-hidden="true">✦</span><h2>选择一项开始检查</h2><p>左侧可切换砖块小人或随身小物；右侧会保留详情与文案检查，不遮挡列表。</p></section>
+
+      <section class="character-detail" id="character-detail" hidden>
+        <div class="detail-stage">
+          <div class="detail-spotlight" aria-hidden="true"></div>
+          <div class="detail-ribbon"><h2 id="detail-name">原皮战神</h2></div>
+          <button class="detail-turn detail-turn--prev" id="detail-prev" type="button" aria-label="上一个角色">◀</button>
+          <div class="detail-character" id="detail-character" aria-label="当前角色形象"></div>
+          <button class="detail-turn detail-turn--next" id="detail-next" type="button" aria-label="下一个角色">▶</button>
+          <div class="detail-shadow" aria-hidden="true"></div>
+          <div class="detail-copy-box"><p id="detail-description"></p><small><b>获取：</b><span id="detail-unlock"></span></small></div>
+          <div class="detail-actions"><button class="favorite-action" id="detail-favorite" type="button" aria-pressed="false" aria-label="收藏当前角色"><img src="./assets/ui/tujian_jues_save1.png" alt=""></button><button class="equip-action" id="detail-equip" type="button">装扮预览</button><button class="share-action" id="detail-share" type="button" aria-label="分享当前角色">↗</button></div>
+          <span class="detail-position" id="detail-position">1 / 45</span>
+        </div>
+
+        <section class="copy-inspector" id="copy-diagnostics" aria-labelledby="diagnostic-title">
+          <div class="inspector-heading"><div><span>REAL LAYOUT CHECK</span><h2 id="diagnostic-title">文案排版检查</h2></div><span class="inspector-sequence" id="inspector-sequence">01</span></div>
+          <section class="inspector-role"><span>当前角色</span><strong id="inspector-name">原皮战神</strong><small id="inspector-block-id">Block 100001</small></section>
+          <div class="diagnostic-list"><article class="diagnostic-item" id="diagnostic-name"><div><span>角色名字</span><strong data-diagnostic-value>—</strong></div><p>建议 3–5 个中文视觉位置</p></article><article class="diagnostic-item" id="diagnostic-unlock"><div><span>获取文案</span><strong data-diagnostic-value>—</strong></div><p>最多 15 个视觉位置</p></article><article class="diagnostic-item" id="diagnostic-gallery"><div><span>图鉴描述</span><strong data-diagnostic-value>—</strong></div><p>建议每行 12 位以内，最多 3 行</p></article></div>
+          <section class="rendered-check"><div><span>网页真实渲染</span><strong id="diagnostic-rendered-lines">等待角色选择</strong></div><ul id="diagnostic-issues"><li>点击左侧角色，检查和游戏相同宽度下的换行。</li></ul></section>
+          <section class="copy-snapshot"><label>获取文案</label><p id="inspector-unlock"></p><label>图鉴描述</label><p id="inspector-gallery"></p></section>
+          <p class="inspector-note">这里直接读取 Unity 的 <code>GalleryDesc</code>。红色项目代表文案长度或浏览器真实排版需要复查。</p>
+        </section>
       </section>
 
-      <div class="diagnostic-list">
-        <article class="diagnostic-item" id="diagnostic-name">
-          <div><span>角色名字</span><strong data-diagnostic-value>—</strong></div>
-          <p>建议 3–5 个中文视觉位置</p>
-        </article>
-        <article class="diagnostic-item" id="diagnostic-unlock">
-          <div><span>获取文案</span><strong data-diagnostic-value>—</strong></div>
-          <p>最多 15 个视觉位置</p>
-        </article>
-        <article class="diagnostic-item" id="diagnostic-gallery">
-          <div><span>图鉴描述</span><strong data-diagnostic-value>—</strong></div>
-          <p>建议每行 12 位以内，最多 3 行</p>
-        </article>
-      </div>
-
-      <section class="rendered-check">
-        <div><span>网页真实渲染</span><strong id="diagnostic-rendered-lines">等待打开详情</strong></div>
-        <ul id="diagnostic-issues"><li>点击任一角色，检查与游戏相同宽度下的换行。</li></ul>
+      <section class="trinket-detail" id="trinket-detail" hidden>
+        <div class="trinket-stage"><div class="detail-spotlight" aria-hidden="true"></div><div class="trinket-stage-figure" id="trinket-stage-figure" aria-label="小物试穿预览"></div><div class="trinket-stage-shadow" aria-hidden="true"></div></div>
+        <div class="trinket-detail-copy"><div><span id="trinket-detail-id">HAND-0001</span><h2 id="trinket-detail-name">便携冰水壶</h2><p id="trinket-detail-rarity">常见 · 手持</p></div><button id="trinket-favorite" type="button" aria-pressed="false">☆ 收藏</button></div>
+        <dl class="trinket-meta"><div><dt>拥有数量</dt><dd id="trinket-owned-count">×0</dd></div><div><dt>可赠数量</dt><dd id="trinket-gift-count">×0</dd></div><div><dt>获取方式</dt><dd id="trinket-acquisition">—</dd></div></dl>
+        <div class="trinket-actions"><button id="trinket-toggle-draft" type="button">试穿</button><button id="trinket-randomize" type="button">随机试穿</button><button id="trinket-save" type="button" disabled>保存装扮</button></div>
+        <div class="trinket-secondary-actions"><button id="open-warehouse" type="button">打开仓库</button><button id="open-gift" type="button">本地赠送演示</button></div>
+        <section class="trinket-inline-flow" id="trinket-inline-flow" data-flow="" hidden aria-live="polite"></section>
       </section>
-
-      <section class="copy-snapshot">
-        <label>获取文案</label>
-        <p id="inspector-unlock">不加配饰自在生长，基础但绝不普通</p>
-        <label>图鉴描述</label>
-        <p id="inspector-gallery">没有配饰也敢直接出场，原皮才是最强皮肤。</p>
-      </section>
-
-      <p class="inspector-note">这里直接读取 Unity 的 <code>GalleryDesc</code>。红色项目代表文案长度或浏览器真实排版需要复查。</p>
     </aside>
   </main>
-
-  <section class="detail-dialog" id="detail-dialog" role="dialog" aria-modal="true" aria-labelledby="detail-name" aria-hidden="true">
-    <div class="detail-scrim" data-detail-close></div>
-    <div class="detail-layout">
-      <div class="detail-stage">
-        <div class="detail-spotlight" aria-hidden="true"></div>
-        <button class="detail-close" id="detail-close" type="button" aria-label="关闭角色详情">×</button>
-        <div class="detail-ribbon"><h2 id="detail-name">原皮战神</h2></div>
-        <button class="detail-turn detail-turn--prev" id="detail-prev" type="button" aria-label="上一个角色">◀</button>
-        <div class="detail-character" id="detail-character" aria-label="当前角色形象"></div>
-        <button class="detail-turn detail-turn--next" id="detail-next" type="button" aria-label="下一个角色">▶</button>
-        <div class="detail-shadow" aria-hidden="true"></div>
-
-        <div class="detail-copy-box">
-          <p id="detail-description"></p>
-          <small><b>获取：</b><span id="detail-unlock"></span></small>
-        </div>
-
-        <div class="detail-actions">
-          <button class="favorite-action" id="detail-favorite" type="button" aria-pressed="false" aria-label="收藏当前角色">
-            <img src="./assets/ui/tujian_jues_save1.png" alt="">
-          </button>
-          <button class="equip-action" id="detail-equip" type="button">装扮预览</button>
-          <button class="share-action" id="detail-share" type="button" aria-label="分享当前角色">↗</button>
-        </div>
-        <span class="detail-position" id="detail-position">1 / 45</span>
-        <span class="detail-tip">点击空白处关闭</span>
-      </div>
-    </div>
-  </section>
-
   <script type="module" src="./app.js"></script>
 </body>
 </html>

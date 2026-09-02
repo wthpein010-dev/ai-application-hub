@@ -44,7 +44,7 @@ test("brick copy preview remains immediately before the newer trinket market car
 
   assert.equal(engineering.at(-2).id, project.id);
   assert.equal(engineering.at(-1).id, "trinket-market");
-  assert.equal(project.name, "砖块小人图鉴与文案校对");
+  assert.equal(project.name, "砖块小人与随身小物图鉴");
   assert.equal(project.status, "engineering");
   assert.equal(project.badge, "工程体验");
   assert.equal(project.category, "美术设计参考");
@@ -53,8 +53,9 @@ test("brick copy preview remains immediately before the newer trinket market car
   assert.equal(project.platforms.mac, "");
   assert.equal(project.package, "");
   assert.equal(project.video, "./projects/brick-character-copy-preview/video/index.html");
-  assert.match(project.brief, /45个砖块小人/);
-  assert.deepEqual(Array.from(project.tags), ["45个角色", "文案换行", "图鉴详情", "Unity同步"]);
+  assert.match(project.brief, /45个砖块小人、11件随身小物/);
+  assert.match(project.brief, /右侧详情与换装检查/);
+  assert.deepEqual(Array.from(project.tags), ["双图鉴", "文案换行", "随身小物", "Unity同步"]);
 });
 
 test("stored application metadata migrates into the engineering experience section", () => {
@@ -71,7 +72,7 @@ test("stored application metadata migrates into the engineering experience secti
   assert.equal(normalized.category, "美术设计参考");
   assert.equal(normalized.status, "engineering");
   assert.equal(normalized.badge, "工程体验");
-  assert.match(normalized.brief, /45个砖块小人/);
+  assert.match(normalized.brief, /45个砖块小人、11件随身小物/);
   assert.deepEqual(Array.from(normalized.tags), Array.from(project.tags));
 });
 
@@ -167,17 +168,20 @@ test("video page uses the shared player and a 45-character H.264 walkthrough", (
   assert.match(page, /class="hub-video-home" href="\.\.\/\.\.\/\.\.\/index\.html#engineering"/);
   assert.match(page, /id="loadVideo"/);
   assert.match(page, /preload="none" data-src="\.\/brick-character-copy-preview-demo\.mp4"/);
-  assert.match(page, /45 个正式角色/);
+  assert.match(page, /横版结算图鉴/);
+  assert.match(page, /右侧详情/);
   assert.match(page, /打开图鉴/);
+  assert.match(tutorial, /结算预览/);
   assert.match(tutorial, /真实换行诊断/);
-  assert.match(tutorial, /完整角色预览图/);
-  assert.match(tutorial, /随身小物交易市场/);
+  assert.match(tutorial, /随身小物/);
+  assert.match(tutorial, /试穿/);
+  assert.match(tutorial, /保存/);
   assert.equal(existsSync(mediaPath), true);
 
   const media = inspectMedia(mediaPath);
   assert.equal(media.videoCodec, "h264");
   assert.deepEqual([media.width, media.height], [1280, 720]);
-  assert.ok(media.duration >= 38 && media.duration <= 50);
+  assert.ok(media.duration >= 38 && media.duration <= 55);
 
   const captions = readFileSync(join(videoRoot, "brick-character-copy-preview-demo.vtt"), "utf8");
   const cues = captions.replace(/\r/g, "").trim().split(/\n{2,}/).slice(1).map((block) => {
@@ -185,11 +189,12 @@ test("video page uses the shared player and a 45-character H.264 walkthrough", (
     const timing = lines.find((line) => line.includes(" --> "));
     return { end: seconds(timing.split(" --> ")[1]), text: lines.slice(1).filter(Boolean) };
   });
-  assert.equal(cues.length, 6);
+  assert.ok(cues.length === 6 || cues.length === 7);
   assert.equal(cues.every((cue) => cue.text.length === 1), true);
-  assert.match(captions, /四十五个正式角色/);
-  assert.match(captions, /完整角色预览图/);
+  assert.match(captions, /结算预览/);
+  assert.match(captions, /右侧详情/);
   assert.match(captions, /真实换行/);
-  assert.match(captions, /随身小物交易市场/);
+  assert.match(captions, /随身小物/);
+  assert.match(captions, /保存装扮/);
   assert.ok(cues.at(-1).end <= media.duration);
 });

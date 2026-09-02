@@ -17,6 +17,7 @@ const mime = new Map([
   [".css", "text/css; charset=utf-8"],
   [".html", "text/html; charset=utf-8"],
   [".js", "text/javascript; charset=utf-8"],
+  [".json", "application/json; charset=utf-8"],
   [".jpg", "image/jpeg"],
   [".png", "image/png"],
 ]);
@@ -43,6 +44,7 @@ const server = createServer(async (request, response) => {
   }
 });
 
+await rm(recordingRoot, { recursive: true, force: true });
 await mkdir(recordingRoot, { recursive: true });
 await new Promise((resolveListen) => server.listen(0, "127.0.0.1", resolveListen));
 const port = server.address().port;
@@ -71,34 +73,25 @@ page.on("response", (response) => {
 try {
   await page.goto(`http://127.0.0.1:${port}/projects/brick-character-copy-preview/index.html`, { waitUntil: "networkidle" });
   await page.evaluate(() => document.fonts.ready);
-  await page.waitForTimeout(1_100);
+  await page.waitForTimeout(1_200);
+  await page.locator('.character-card[data-block-id="100014"]').click();
+  await page.waitForTimeout(5_000);
   await page.screenshot({ path: posterPath, type: "jpeg", quality: 90 });
-
-  await page.waitForTimeout(3_500);
-  await page.locator(".character-card").first().click();
-  await page.waitForTimeout(4_500);
   await page.locator("#detail-next").click();
   await page.waitForTimeout(4_000);
-  await page.locator("#detail-favorite").click();
-  await page.waitForTimeout(3_500);
-  await page.locator("#detail-close").click();
+  await page.locator("#tab-trinkets").click();
+  await page.waitForTimeout(4_500);
+  await page.locator('.trinket-card[data-item-id="4"]').click();
+  await page.waitForTimeout(4_000);
+  await page.locator("#trinket-toggle-draft").click();
+  await page.waitForTimeout(4_000);
+  await page.locator("#trinket-save").click();
   await page.waitForTimeout(2_500);
-  await page.locator("#page-next").click();
-  await page.waitForTimeout(3_500);
-  await page.locator("#gallery-search").fill("毛线架构师");
-  await page.waitForTimeout(3_500);
-  await page.locator(".character-card").click();
+  await page.locator("#confirm-save").click();
   await page.waitForTimeout(4_500);
-  await page.locator("#detail-close").click();
-  await page.waitForTimeout(2_000);
-  await page.locator('a[href="./copy-review.html"]').click();
+  await page.locator('.gallery-topbar a[href="../trinket-market/index.html"]').click();
   await page.waitForLoadState("networkidle");
-  await page.waitForTimeout(3_500);
-  await page.goBack({ waitUntil: "networkidle" });
-  await page.waitForTimeout(2_000);
-  await page.locator('a[href="../trinket-market/index.html"]').click();
-  await page.waitForLoadState("networkidle");
-  await page.waitForTimeout(4_500);
+  await page.waitForTimeout(10_000);
   if (browserErrors.length) throw new Error(`Browser recording errors:\n${browserErrors.join("\n")}`);
 } finally {
   await page.close();

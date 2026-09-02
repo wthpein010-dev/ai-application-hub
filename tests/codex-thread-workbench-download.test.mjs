@@ -1,7 +1,11 @@
 import assert from "node:assert/strict";
 import { createHash } from "node:crypto";
-import { readFile } from "node:fs/promises";
+import { mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import test from "node:test";
+import { dirname, join } from "node:path";
+import { tmpdir } from "node:os";
+import { fileURLToPath } from "node:url";
+import { extractValidatedZip, readZipEntries } from "./helpers/zip-central-directory.mjs";
 
 const coreUrl = new URL(
   "../projects/codex-thread-workbench/download/download-core.js",
@@ -15,6 +19,7 @@ const pageUrl = new URL(
   "../projects/codex-thread-workbench/download/index.html",
   import.meta.url
 );
+const downloadRoot = dirname(fileURLToPath(manifestUrl));
 
 const sha256 = bytes =>
   createHash("sha256").update(bytes).digest("hex").toUpperCase();
@@ -46,12 +51,12 @@ const makeManifest = (chunks, overrides = {}) => {
   };
 };
 
-test("published manifest fixes the 2.3.3 archive contract and ordered five-part layout", async () => {
+test("published manifest fixes the confirmation-overlay archive contract and ordered five-part layout", async () => {
   const manifest = JSON.parse(await readFile(manifestUrl, "utf8"));
 
   assert.equal(manifest.version, 1);
   assert.equal(manifest.fileName, "CodexConfirmationBar-Windows-x64.zip");
-  assert.equal(manifest.totalSize, 41_563_039);
+  assert.equal(manifest.totalSize, 41_562_042);
   assert.equal(manifest.chunkSize, 8_388_608);
   assert.equal(manifest.parts.length, 5);
   assert.deepEqual(
@@ -62,7 +67,7 @@ test("published manifest fixes the 2.3.3 archive contract and ordered five-part 
     manifest.parts.map(part => part.path),
     Array.from(
       { length: 5 },
-      (_, index) => `parts/v2.3.3-4b7c0b8/part-${String(index).padStart(3, "0")}.bin`
+      (_, index) => `parts/v2.3.3-confirmation-overlay-e7d1928/part-${String(index).padStart(3, "0")}.bin`
     )
   );
   assert.deepEqual(
@@ -72,7 +77,7 @@ test("published manifest fixes the 2.3.3 archive contract and ordered five-part 
       8_388_608,
       8_388_608,
       8_388_608,
-      8_008_607
+      8_007_610
     ]
   );
   assert.equal(
@@ -81,7 +86,7 @@ test("published manifest fixes the 2.3.3 archive contract and ordered five-part 
   );
   assert.equal(
     manifest.sha256,
-    "0F33CFB41181E2AAAF2F4C01A5153894D6CE2256F22F9F6AE2C12503AA90F9BB"
+    "E7D1928EA27BCAE0737F9CFF14CEE5D909154BCABCA693610616357ADE7A11A7"
   );
 });
 
@@ -93,7 +98,45 @@ test("Windows download page identifies the Confirmation Bar v2 release", async (
   assert.match(html, /CodexConfirmationBar-Windows-x64\.zip/);
   assert.match(html, /41\.6 MB/);
   assert.match(html, /5 个/);
-  assert.match(html, /0F33CFB41181E2AAAF2F4C01A5153894D6CE2256F22F9F6AE2C12503AA90F9BB/);
+  assert.match(html, /E7D1928EA27BCAE0737F9CFF14CEE5D909154BCABCA693610616357ADE7A11A7/);
+});
+
+test("published Windows helper archive defaults to the confirmation overlay", async () => {
+  const manifest = JSON.parse(await readFile(manifestUrl, "utf8"));
+  const temporaryRoot = await mkdtemp(join(tmpdir(), "confirmation-bar-windows-release-"));
+  const archivePath = join(temporaryRoot, manifest.fileName);
+  const extractionRoot = join(temporaryRoot, "extract");
+
+  try {
+    const archive = Buffer.concat(await Promise.all(
+      manifest.parts.map(({ path }) => readFile(join(downloadRoot, path))),
+    ));
+    assert.equal(sha256(archive), manifest.sha256);
+    await writeFile(archivePath, archive);
+
+    const entries = readZipEntries(archivePath);
+    const names = entries.map(({ name }) => name);
+    assert.ok(names.includes("CodexConfirmationBar.exe"));
+    assert.ok(names.includes("README.md"));
+    assert.ok(names.includes("Install-ConfirmationBarRecovery.ps1"));
+    assert.ok(names.includes("codex-launch-profile.json"));
+    assert.equal(names.includes("CodexThreadWorkbench.exe"), false);
+
+    extractValidatedZip(archivePath, entries, extractionRoot, {
+      maxEntryBytes: 256 * 1024 * 1024,
+      maxTotalBytes: 512 * 1024 * 1024,
+    });
+    assert.deepEqual(
+      JSON.parse(await readFile(join(extractionRoot, "codex-launch-profile.json"), "utf8")),
+      { defaultMode: "confirmation-overlay" },
+    );
+    assert.match(
+      await readFile(join(extractionRoot, "README.md"), "utf8"),
+      /Codex 待确认悬浮助手/,
+    );
+  } finally {
+    await rm(temporaryRoot, { recursive: true, force: true });
+  }
 });
 
 test("validateManifest accepts a complete manifest and rejects broken ordering", async () => {

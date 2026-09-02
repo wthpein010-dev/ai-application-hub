@@ -82,7 +82,7 @@ test("project media registry covers every production id without loading ClickFlo
   );
   assert.equal(
     new URLSearchParams(media["brick-character-copy-preview"].src.split("?")[1]).get("v"),
-    "20260901-brick-previews",
+    "20260902-reference-atlas",
   );
 });
 

@@ -2,6 +2,7 @@ import { copyFile, mkdir, readFile, readdir, rm, writeFile } from "node:fs/promi
 import { basename, dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { withPublishedCharacterPreviews } from "./sync-brick-character-previews.mjs";
+import { buildBrickGalleryDataFromSpreadsheets } from "./sync-brick-gallery-from-spreadsheets.mjs";
 
 const repositoryRoot = resolve(fileURLToPath(new URL("..", import.meta.url)));
 const defaultProjectRoot = join(repositoryRoot, "projects", "brick-character-copy-preview");
@@ -78,8 +79,15 @@ export async function buildBrickGalleryData({ unityRoot = process.env.PAWS_HOME_
       blockId: Number(skin.blockid),
       sequence,
       name: requiredText(language, skin.blockname, "name"),
+      unownedDesc: requiredText(language, skin.UnownedDesc, "unowned description"),
       unlockDesc: requiredText(language, skin.UnlockDesc, "unlock description"),
       galleryDesc: requiredText(language, skin.GalleryDesc, "gallery description"),
+      sourceKeys: {
+        name: skin.blockname,
+        unowned: skin.UnownedDesc,
+        unlock: skin.UnlockDesc,
+        gallery: skin.GalleryDesc,
+      },
       layers: Object.fromEntries(layerKinds.map((kind) => [kind, safeAssetName(block[kind], kind, block.id)])),
     };
   });
@@ -87,6 +95,19 @@ export async function buildBrickGalleryData({ unityRoot = process.env.PAWS_HOME_
   if (new Set(characters.map(({ id }) => id)).size !== characters.length) throw new Error("Duplicate skin IDs");
   if (new Set(characters.map(({ blockId }) => blockId)).size !== characters.length) throw new Error("Duplicate block IDs");
   return characters;
+}
+
+async function attachUnityLayers(characters, unityRoot) {
+  const blocks = await readJson(join(unityRoot, configRoot, "cfg_gdblock.json"));
+  const blocksById = new Map(blocks.map((block) => [Number(block.id), block]));
+  return characters.map((character) => {
+    const block = blocksById.get(character.blockId);
+    if (!block) throw new Error(`Missing block configuration ${character.blockId}`);
+    return {
+      ...character,
+      layers: Object.fromEntries(layerKinds.map((kind) => [kind, safeAssetName(block[kind], kind, block.id)])),
+    };
+  });
 }
 
 async function copyReferencedLayers(characters, unityRoot, projectRoot) {
@@ -120,12 +141,15 @@ async function copyUiAssets(unityRoot, projectRoot) {
 
 export async function syncBrickGallery({
   unityRoot = process.env.PAWS_HOME_CLIENT_ROOT,
+  dataRoot = process.env.PAWS_HOME_DATA_ROOT,
   projectRoot = defaultProjectRoot,
 } = {}) {
   if (!unityRoot) throw new Error("Set PAWS_HOME_CLIENT_ROOT to the local Unity project root");
   const resolvedUnityRoot = resolve(unityRoot);
   const resolvedProjectRoot = resolve(projectRoot);
-  const sourceCharacters = await buildBrickGalleryData({ unityRoot: resolvedUnityRoot });
+  const sourceCharacters = dataRoot
+    ? await attachUnityLayers(await buildBrickGalleryDataFromSpreadsheets({ dataRoot }), resolvedUnityRoot)
+    : await buildBrickGalleryData({ unityRoot: resolvedUnityRoot });
   await copyReferencedLayers(sourceCharacters, resolvedUnityRoot, resolvedProjectRoot);
   await copyUiAssets(resolvedUnityRoot, resolvedProjectRoot);
   const characters = await withPublishedCharacterPreviews(sourceCharacters, resolvedProjectRoot);
