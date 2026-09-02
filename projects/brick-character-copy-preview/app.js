@@ -1,22 +1,48 @@
 import { diagnoseCopy } from "./core/copy-diagnostics.js";
+import {
+  createAtlasState,
+  formatAtlasLocation,
+  parseAtlasLocation,
+  selectAtlasItem,
+  setAtlasPage,
+  setAtlasQuery,
+  setAtlasSort,
+  setAtlasTab,
+} from "./core/atlas-state.js";
+import { createTrinketDraft, discardDraft, hasUnsavedDraft, randomizeDraft, saveDraft, toggleDraftItem } from "./core/trinket-draft.js";
+import { applyGiftPreview, availableGiftCount, ownedTrinkets, sortTrinkets } from "./core/trinket-inventory.js";
+import { createCharacterFigure, renderCharacterDetail, renderCharacterGrid } from "./components/character-view.js";
+import { renderEquippedPreview, renderTrinketDetail, renderTrinketGrid, trinketImagePath } from "./components/trinket-view.js";
+import { closeInlineFlow, giftNodes, saveConfirmNodes, showInlineFlow, successNodes, warehouseNodes } from "./components/trinket-flow.js";
 
-const PAGE_SIZE = 12;
-const FAVORITES_KEY = "brick-gallery-favorites-v1";
-const layerOrder = ["body", "block", "dress", "head"];
+const CHARACTER_PAGE_SIZE = 12;
+const CHARACTER_FAVORITES_KEY = "brick-gallery-favorites-v1";
+const TRINKET_PREVIEW_KEY = "brick-gallery-trinket-preview-v1";
 
 const elements = {
-  grid: document.querySelector("#character-grid"),
-  empty: document.querySelector("#gallery-empty"),
+  tabs: document.querySelector("[role='tablist']"),
+  tabCharacters: document.querySelector("#tab-characters"),
+  tabTrinkets: document.querySelector("#tab-trinkets"),
+  charactersPanel: document.querySelector("#characters-panel"),
+  trinketsPanel: document.querySelector("#trinkets-panel"),
+  characterGrid: document.querySelector("#character-grid"),
+  trinketGrid: document.querySelector("#trinket-grid"),
+  characterEmpty: document.querySelector("#gallery-empty"),
+  trinketEmpty: document.querySelector("#trinket-empty"),
   count: document.querySelector("#gallery-count"),
   page: document.querySelector("#gallery-page"),
   status: document.querySelector("#gallery-status"),
-  search: document.querySelector("#gallery-search"),
+  characterSearch: document.querySelector("#gallery-search"),
+  trinketSearch: document.querySelector("#trinket-search"),
+  trinketSort: document.querySelector("#trinket-sort"),
+  trinketSummary: document.querySelector("#trinket-summary"),
   favoritesOnly: document.querySelector("#favorites-only"),
   batchFavorite: document.querySelector("#batch-favorite"),
   pagePrev: document.querySelector("#page-prev"),
   pageNext: document.querySelector("#page-next"),
-  detail: document.querySelector("#detail-dialog"),
-  detailClose: document.querySelector("#detail-close"),
+  empty: document.querySelector("#detail-empty"),
+  characterDetail: document.querySelector("#character-detail"),
+  trinketDetail: document.querySelector("#trinket-detail"),
   detailName: document.querySelector("#detail-name"),
   detailCharacter: document.querySelector("#detail-character"),
   detailDescription: document.querySelector("#detail-description"),
@@ -37,149 +63,187 @@ const elements = {
   diagnosticGallery: document.querySelector("#diagnostic-gallery"),
   renderedLines: document.querySelector("#diagnostic-rendered-lines"),
   diagnosticIssues: document.querySelector("#diagnostic-issues"),
+  trinketStage: document.querySelector("#trinket-stage-figure"),
+  trinketId: document.querySelector("#trinket-detail-id"),
+  trinketName: document.querySelector("#trinket-detail-name"),
+  trinketRarity: document.querySelector("#trinket-detail-rarity"),
+  trinketFavorite: document.querySelector("#trinket-favorite"),
+  trinketOwned: document.querySelector("#trinket-owned-count"),
+  trinketGiftCount: document.querySelector("#trinket-gift-count"),
+  trinketAcquisition: document.querySelector("#trinket-acquisition"),
+  trinketToggleDraft: document.querySelector("#trinket-toggle-draft"),
+  trinketRandomize: document.querySelector("#trinket-randomize"),
+  trinketSave: document.querySelector("#trinket-save"),
+  warehouse: document.querySelector("#open-warehouse"),
+  gift: document.querySelector("#open-gift"),
+  inlineFlow: document.querySelector("#trinket-inline-flow"),
 };
-const modalBackground = [
-  document.querySelector(".hub-home-link"),
-  document.querySelector(".gallery-topbar"),
-  document.querySelector(".gallery-layout"),
-].filter(Boolean);
 
+let atlas = createAtlasState();
 let characters = [];
-let currentPage = 1;
-let selectedIndex = 0;
-let lastTriggerBlockId = null;
-let searchTerm = "";
-let showFavoritesOnly = false;
+let trinkets = [];
+let draft = createTrinketDraft();
+let favoritesOnly = false;
 let diagnosticFrame = 0;
 let detailResizeObserver = null;
-const favorites = new Set(loadFavorites());
+let flowTrigger = null;
+let deferredNavigation = null;
+const characterFavorites = new Set(loadArray(CHARACTER_FAVORITES_KEY).map(Number).filter(Number.isInteger));
+let preview = loadTrinketPreview();
+const trinketFavorites = new Set(preview.favoriteItemIds);
 
-function loadFavorites() {
+function loadArray(key) {
   try {
-    const stored = JSON.parse(localStorage.getItem(FAVORITES_KEY) || "[]");
-    return Array.isArray(stored) ? stored.map(Number).filter(Number.isInteger) : [];
+    const value = JSON.parse(localStorage.getItem(key) || "[]");
+    return Array.isArray(value) ? value : [];
   } catch {
     return [];
   }
 }
 
-function saveFavorites() {
+function loadTrinketPreview() {
   try {
-    localStorage.setItem(FAVORITES_KEY, JSON.stringify([...favorites].sort((left, right) => left - right)));
+    const stored = JSON.parse(localStorage.getItem(TRINKET_PREVIEW_KEY) || "null");
+    if (!stored || stored.version !== 1) throw new Error("No compatible preview state");
+    const equippedByCharacter = Object.fromEntries(Object.entries(stored.equippedByCharacter || {})
+      .filter(([key, value]) => Number.isInteger(Number(key)) && Number(key) > 0 && (value === null || (Number.isInteger(value) && value > 0))));
+    const ownedCountByItemId = Object.fromEntries(Object.entries(stored.ownedCountByItemId || {})
+      .filter(([key, value]) => Number.isInteger(Number(key)) && Number(key) > 0 && Number.isInteger(value) && value >= 0));
+    return {
+      equippedByCharacter,
+      ownedCountByItemId,
+      favoriteItemIds: (Array.isArray(stored.favoriteItemIds) ? stored.favoriteItemIds : []).filter((id) => Number.isInteger(id) && id > 0),
+    };
   } catch {
-    // The gallery remains usable when browser storage is unavailable.
+    return { equippedByCharacter: {}, ownedCountByItemId: {}, favoriteItemIds: [] };
   }
 }
 
-function createCharacterFigure(character) {
-  const figure = document.createElement("div");
-  figure.className = "character-figure";
-  figure.setAttribute("aria-hidden", "true");
-
-  if (character.preview) {
-    const preview = document.createElement("img");
-    preview.className = "character-preview";
-    preview.src = `./${character.preview}`;
-    preview.alt = "";
-    preview.draggable = false;
-    figure.append(preview);
-    return figure;
+function savePreview() {
+  try {
+    localStorage.setItem(TRINKET_PREVIEW_KEY, JSON.stringify({
+      version: 1,
+      equippedByCharacter: preview.equippedByCharacter,
+      ownedCountByItemId: preview.ownedCountByItemId,
+      favoriteItemIds: [...trinketFavorites].sort((left, right) => left - right),
+    }));
+  } catch {
+    elements.trinketSummary.textContent = "浏览器存储不可用，本次试穿仅在当前页面生效";
   }
+}
 
-  const limbs = document.createElement("span");
-  limbs.className = "character-limbs";
-  figure.append(limbs);
-
-  for (const kind of layerOrder) {
-    const asset = character.layers[kind];
-    if (!asset) continue;
-    const image = document.createElement("img");
-    image.className = `character-layer character-layer--${kind}`;
-    image.src = `./assets/skin/${kind}/${asset}.png`;
-    image.alt = "";
-    image.draggable = false;
-    figure.append(image);
+function saveCharacterFavorites() {
+  try {
+    localStorage.setItem(CHARACTER_FAVORITES_KEY, JSON.stringify([...characterFavorites].sort((left, right) => left - right)));
+  } catch {
+    elements.status.textContent = "浏览器存储不可用，收藏仅在当前页面生效";
   }
-  return figure;
+}
+
+function selectedCharacter() {
+  return characters.find((character) => character.blockId === atlas.characters.selection) || null;
+}
+
+function selectedTrinket() {
+  return trinkets.find((item) => item.id === atlas.trinkets.selection) || null;
+}
+
+function previewCharacter() {
+  return selectedCharacter() || characters[0] || null;
+}
+
+function equippedFor(character) {
+  const itemId = preview.equippedByCharacter[String(character?.blockId)] ?? null;
+  return trinkets.find((item) => item.id === itemId) || null;
 }
 
 function filteredCharacters() {
-  const keyword = searchTerm.trim().toLocaleLowerCase("zh-CN");
+  const term = atlas.characters.query.trim().toLocaleLowerCase("zh-CN");
   return characters.filter((character) => {
-    if (showFavoritesOnly && !favorites.has(character.blockId)) return false;
-    if (!keyword) return true;
-    return [character.name, character.unlockDesc, character.galleryDesc, character.blockId]
-      .join(" ")
-      .toLocaleLowerCase("zh-CN")
-      .includes(keyword);
+    if (favoritesOnly && !characterFavorites.has(character.blockId)) return false;
+    if (!term) return true;
+    return [character.name, character.unlockDesc, character.galleryDesc, character.blockId].join(" ").toLocaleLowerCase("zh-CN").includes(term);
   });
 }
 
-function pageCharacters() {
-  const filtered = filteredCharacters();
-  const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
-  currentPage = Math.min(Math.max(currentPage, 1), totalPages);
-  const start = (currentPage - 1) * PAGE_SIZE;
-  return { filtered, totalPages, visible: filtered.slice(start, start + PAGE_SIZE) };
+function characterPage() {
+  const matches = filteredCharacters();
+  const totalPages = Math.max(1, Math.ceil(matches.length / CHARACTER_PAGE_SIZE));
+  const current = Math.min(atlas.characters.page, totalPages);
+  if (current !== atlas.characters.page) atlas = setAtlasPage(atlas, "characters", current);
+  const start = (current - 1) * CHARACTER_PAGE_SIZE;
+  return { matches, totalPages, visible: matches.slice(start, start + CHARACTER_PAGE_SIZE) };
 }
 
-function createCard(character, indexOnPage) {
-  const card = document.createElement("button");
-  card.className = "character-card";
-  card.type = "button";
-  card.dataset.blockId = String(character.blockId);
-  card.dataset.name = character.name;
-  card.style.setProperty("--appear-index", String(indexOnPage));
-  card.setAttribute("aria-label", `打开${character.name}详情`);
-  card.setAttribute("aria-current", String(characters[selectedIndex]?.blockId === character.blockId));
-
-  const art = document.createElement("span");
-  art.className = "character-art";
-  art.append(createCharacterFigure(character));
-  const name = document.createElement("span");
-  name.className = "character-name";
-  name.textContent = character.name;
-  card.append(art, name);
-
-  if (favorites.has(character.blockId)) {
-    const favorite = document.createElement("img");
-    favorite.className = "favorite-mark";
-    favorite.src = "./assets/ui/tujian_save_xiao.png";
-    favorite.alt = "已收藏";
-    card.append(favorite);
-  }
-
-  card.addEventListener("click", () => openDetail(character.blockId));
-  return card;
+function visibleTrinkets() {
+  const term = atlas.trinkets.query.trim().toLocaleLowerCase("zh-CN");
+  return sortTrinkets(trinkets.filter((item) => [item.name, item.pinyin, item.id].join(" ").toLocaleLowerCase("zh-CN").includes(term)), atlas.trinkets.sort);
 }
 
-function renderGallery(announcement = "") {
-  const { filtered, totalPages, visible } = pageCharacters();
-  elements.grid.replaceChildren(...visible.map(createCard));
-  elements.empty.hidden = visible.length !== 0;
-  elements.grid.hidden = visible.length === 0;
+function updateLocation(mode = "push") {
+  const url = new URL(location.href);
+  url.search = formatAtlasLocation(atlas);
+  history[`${mode}State`]({ dualAtlas: atlas.tab }, "", url);
+}
+
+function setDetail(kind) {
+  elements.empty.hidden = kind !== "empty";
+  elements.characterDetail.hidden = kind !== "character";
+  elements.trinketDetail.hidden = kind !== "trinket";
+}
+
+function renderTabs() {
+  const charactersActive = atlas.tab === "characters";
+  elements.tabCharacters.classList.toggle("is-active", charactersActive);
+  elements.tabTrinkets.classList.toggle("is-active", !charactersActive);
+  elements.tabCharacters.setAttribute("aria-selected", String(charactersActive));
+  elements.tabTrinkets.setAttribute("aria-selected", String(!charactersActive));
+  elements.charactersPanel.hidden = !charactersActive;
+  elements.trinketsPanel.hidden = charactersActive;
+}
+
+function renderCharacterList(announcement = "") {
+  const { matches, totalPages, visible } = characterPage();
+  renderCharacterGrid({
+    characters: visible,
+    selectedId: atlas.characters.selection,
+    favorites: characterFavorites,
+    grid: elements.characterGrid,
+    onSelect: (blockId, trigger) => requestCharacter(blockId, trigger),
+  });
+  elements.characterEmpty.hidden = visible.length !== 0;
+  elements.characterGrid.hidden = visible.length === 0;
   elements.count.textContent = `${characters.length}/${characters.length}`;
-  elements.page.textContent = `${currentPage}/${totalPages}`;
-  elements.pagePrev.disabled = currentPage <= 1;
-  elements.pageNext.disabled = currentPage >= totalPages;
-  const allVisibleFavorited = visible.length > 0 && visible.every(({ blockId }) => favorites.has(blockId));
-  elements.batchFavorite.textContent = allVisibleFavorited ? "☆ 取消本页收藏" : "★ 批量收藏本页";
+  elements.page.textContent = `${atlas.characters.page}/${totalPages}`;
+  elements.pagePrev.disabled = atlas.characters.page <= 1;
+  elements.pageNext.disabled = atlas.characters.page >= totalPages;
+  const allFavorited = visible.length > 0 && visible.every((item) => characterFavorites.has(item.blockId));
+  elements.batchFavorite.textContent = allFavorited ? "☆ 取消本页收藏" : "★ 批量收藏本页";
   elements.batchFavorite.disabled = visible.length === 0;
-  elements.status.textContent = announcement || (filtered.length === characters.length
-    ? "全部角色默认解锁，可直接打开详情"
-    : `筛选结果 ${filtered.length} 个角色`);
+  elements.status.textContent = announcement || (matches.length === characters.length ? "全部角色默认解锁，可直接查看右侧详情" : `筛选结果 ${matches.length} 个角色`);
 }
 
-function characterIndex(blockId) {
-  return characters.findIndex((character) => character.blockId === Number(blockId));
+function renderTrinketList() {
+  const items = visibleTrinkets();
+  renderTrinketGrid({
+    items,
+    selectedId: atlas.trinkets.selection,
+    draft,
+    grid: elements.trinketGrid,
+    onSelect: (itemId, trigger) => selectTrinket(itemId, trigger),
+  });
+  elements.trinketEmpty.hidden = items.length !== 0;
+  elements.trinketGrid.hidden = items.length === 0;
+  elements.trinketSort.value = atlas.trinkets.sort;
+  elements.trinketSummary.textContent = items.length === trinkets.length ? `全部 ${trinkets.length} 件随身小物均可试穿` : `搜索到 ${items.length} 件随身小物`;
 }
 
 function measureRenderedLines(element) {
   const textNode = element.firstChild;
   if (!textNode || textNode.nodeType !== Node.TEXT_NODE) return [];
-  const text = textNode.textContent || "";
-  const grouped = [];
   const range = document.createRange();
+  const grouped = [];
+  const text = textNode.textContent || "";
   for (let index = 0; index < text.length; index += 1) {
     range.setStart(textNode, index);
     range.setEnd(textNode, index + 1);
@@ -194,43 +258,7 @@ function measureRenderedLines(element) {
     line.text += text[index];
   }
   range.detach?.();
-  return grouped.sort((left, right) => left.top - right.top).map(({ text: value }) => value);
-}
-
-function setDiagnosticItem(element, ok, value) {
-  element.classList.toggle("is-warning", !ok);
-  element.querySelector("[data-diagnostic-value]").textContent = value;
-}
-
-function updateInspector(character, renderedMetrics) {
-  const diagnostic = diagnoseCopy(character, renderedMetrics);
-  elements.inspectorSequence.textContent = String(character.sequence).padStart(2, "0");
-  elements.inspectorName.textContent = character.name;
-  elements.inspectorBlockId.textContent = `Block ${character.blockId}`;
-  elements.inspectorUnlock.textContent = character.unlockDesc;
-  elements.inspectorGallery.textContent = character.galleryDesc;
-  setDiagnosticItem(elements.diagnosticName, diagnostic.name.ok, `${diagnostic.name.positions} / 3–5`);
-  setDiagnosticItem(elements.diagnosticUnlock, diagnostic.unlock.ok, `${diagnostic.unlock.positions} / 15`);
-  setDiagnosticItem(elements.diagnosticGallery, diagnostic.gallery.ok, `${diagnostic.gallery.plannedLineCount} / 3 行`);
-
-  const sourceLabel = renderedMetrics ? "真实" : "规则预估";
-  elements.renderedLines.textContent = `${diagnostic.gallery.renderedLineCount} 行 · ${sourceLabel}`;
-  const issues = [];
-  if (diagnostic.gallery.horizontalOverflow) issues.push("描述出现横向溢出");
-  if (diagnostic.gallery.verticalOverflow) issues.push("描述超出 Unity 默认 126 高度，文案框会向下扩展");
-  for (const issue of diagnostic.gallery.awkwardBreaks) {
-    if (issue.type === "leading-punctuation") issues.push(`第 ${issue.line} 行以标点开头`);
-    if (issue.type === "trailing-opening-punctuation") issues.push(`第 ${issue.line} 行以左括号或左引号结尾`);
-    if (issue.type === "orphan-line") issues.push(`第 ${issue.line} 行只有一个视觉位置`);
-  }
-  if (diagnostic.gallery.plannedLineCount > 3) issues.push("按每行 12 位规则会超过 3 行");
-  if (!issues.length) issues.push("当前排版未发现溢出或明显坏换行");
-  elements.diagnosticIssues.replaceChildren(...issues.map((message, index) => {
-    const item = document.createElement("li");
-    item.textContent = message;
-    item.classList.toggle("is-warning", diagnostic.gallery.ok === false && index < issues.length);
-    return item;
-  }));
+  return grouped.sort((left, right) => left.top - right.top).map((entry) => entry.text);
 }
 
 function renderedMetrics() {
@@ -245,124 +273,296 @@ function renderedMetrics() {
   };
 }
 
-function detailIsOpen() {
-  return elements.detail.getAttribute("aria-hidden") === "false";
+function setDiagnosticItem(element, ok, value) {
+  element.classList.toggle("is-warning", !ok);
+  element.querySelector("[data-diagnostic-value]").textContent = value;
+}
+
+function updateInspector(character, metrics) {
+  const diagnostic = diagnoseCopy(character, metrics);
+  elements.inspectorSequence.textContent = String(character.sequence).padStart(2, "0");
+  elements.inspectorName.textContent = character.name;
+  elements.inspectorBlockId.textContent = `Block ${character.blockId}`;
+  elements.inspectorUnlock.textContent = character.unlockDesc;
+  elements.inspectorGallery.textContent = character.galleryDesc;
+  setDiagnosticItem(elements.diagnosticName, diagnostic.name.ok, `${diagnostic.name.positions} / 3–5`);
+  setDiagnosticItem(elements.diagnosticUnlock, diagnostic.unlock.ok, `${diagnostic.unlock.positions} / 15`);
+  setDiagnosticItem(elements.diagnosticGallery, diagnostic.gallery.ok, `${diagnostic.gallery.plannedLineCount} / 3 行`);
+  elements.renderedLines.textContent = `${diagnostic.gallery.renderedLineCount} 行 · ${metrics ? "真实" : "规则预估"}`;
+  const issues = [];
+  if (diagnostic.gallery.horizontalOverflow) issues.push("描述出现横向溢出");
+  if (diagnostic.gallery.verticalOverflow) issues.push("描述超出 Unity 默认 126 高度，文案框会向下扩展");
+  for (const issue of diagnostic.gallery.awkwardBreaks) {
+    if (issue.type === "leading-punctuation") issues.push(`第 ${issue.line} 行以标点开头`);
+    if (issue.type === "trailing-opening-punctuation") issues.push(`第 ${issue.line} 行以左括号或左引号结尾`);
+    if (issue.type === "orphan-line") issues.push(`第 ${issue.line} 行只有一个视觉位置`);
+  }
+  if (!issues.length) issues.push("当前排版未发现溢出或明显坏换行");
+  elements.diagnosticIssues.replaceChildren(...issues.map((message) => {
+    const item = document.createElement("li");
+    item.textContent = message;
+    item.classList.toggle("is-warning", !diagnostic.gallery.ok);
+    return item;
+  }));
 }
 
 function scheduleRenderedDiagnostics() {
   cancelAnimationFrame(diagnosticFrame);
-  diagnosticFrame = requestAnimationFrame(() => {
-    if (!detailIsOpen()) return;
-    const character = characters[selectedIndex];
-    if (character) updateInspector(character, renderedMetrics());
+  diagnosticFrame = requestAnimationFrame(() => requestAnimationFrame(() => {
+    const character = selectedCharacter();
+    if (atlas.tab === "characters" && character && !elements.characterDetail.hidden) updateInspector(character, renderedMetrics());
+  }));
+}
+
+function renderCharacterPanel() {
+  const character = selectedCharacter();
+  if (atlas.tab !== "characters" || !character) return;
+  setDetail("character");
+  renderCharacterDetail({
+    character,
+    index: characters.findIndex((item) => item.blockId === character.blockId),
+    total: characters.length,
+    favorites: characterFavorites,
+    elements: {
+      name: elements.detailName,
+      description: elements.detailDescription,
+      unlock: elements.detailUnlock,
+      position: elements.detailPosition,
+      figure: elements.detailCharacter,
+      favorite: elements.detailFavorite,
+    },
   });
-}
-
-function setModalBackgroundInert(inert) {
-  modalBackground.forEach((element) => { element.inert = inert; });
-}
-
-function detailFocusableControls() {
-  return Array.from(elements.detail.querySelectorAll("button:not([disabled]), a[href], input:not([disabled]), [tabindex]:not([tabindex='-1'])"))
-    .filter((element) => !element.hidden && element.getAttribute("aria-hidden") !== "true");
-}
-
-function trapDetailFocus(event) {
-  if (event.key !== "Tab" || !detailIsOpen()) return;
-  const focusable = detailFocusableControls();
-  if (!focusable.length) return;
-  const first = focusable[0];
-  const last = focusable.at(-1);
-  if (event.shiftKey && (document.activeElement === first || !elements.detail.contains(document.activeElement))) {
-    event.preventDefault();
-    last.focus();
-  } else if (!event.shiftKey && (document.activeElement === last || !elements.detail.contains(document.activeElement))) {
-    event.preventDefault();
-    first.focus();
-  }
-}
-
-function updateDetailHistory(blockId, mode) {
-  const url = new URL(location.href);
-  if (blockId === null) url.searchParams.delete("character");
-  else url.searchParams.set("character", String(blockId));
-  history[`${mode}State`]({ brickGalleryCharacter: blockId }, "", url);
-}
-
-function updateDetail() {
-  const character = characters[selectedIndex];
-  if (!character) return;
-  elements.detailName.textContent = character.name;
-  elements.detailDescription.textContent = character.galleryDesc;
-  elements.detailUnlock.textContent = character.unlockDesc;
-  elements.detailPosition.textContent = `${selectedIndex + 1} / ${characters.length}`;
-  elements.detailCharacter.replaceChildren(createCharacterFigure(character));
-  const isFavorite = favorites.has(character.blockId);
-  elements.detailFavorite.setAttribute("aria-pressed", String(isFavorite));
-  elements.detailFavorite.setAttribute("aria-label", isFavorite ? `取消收藏${character.name}` : `收藏${character.name}`);
-  elements.detailFavorite.querySelector("img").src = isFavorite
-    ? "./assets/ui/tujian_jues_save2.png"
-    : "./assets/ui/tujian_jues_save1.png";
   updateInspector(character);
   scheduleRenderedDiagnostics();
 }
 
-function openDetail(blockId, { historyMode = "push", focusClose = true } = {}) {
-  const index = characterIndex(blockId);
+function renderTrinketPanel() {
+  const item = selectedTrinket();
+  if (atlas.tab !== "trinkets" || !item) return;
+  setDetail("trinket");
+  const character = previewCharacter();
+  renderEquippedPreview({ character: character ? createCharacterFigure(character) : null, item: trinkets.find((entry) => entry.id === draft.draftItemId) || null, stage: elements.trinketStage });
+  renderTrinketDetail({
+    item,
+    draft,
+    favoriteIds: trinketFavorites,
+    equippedItemId: equippedFor(character)?.id || null,
+    elements: {
+      id: elements.trinketId,
+      name: elements.trinketName,
+      rarity: elements.trinketRarity,
+      favorite: elements.trinketFavorite,
+      ownedCount: elements.trinketOwned,
+      giftCount: elements.trinketGiftCount,
+      acquisition: elements.trinketAcquisition,
+      toggleDraft: elements.trinketToggleDraft,
+      save: elements.trinketSave,
+    },
+  });
+}
+
+function renderActivePanel() {
+  if (atlas.tab === "characters" && selectedCharacter()) renderCharacterPanel();
+  else if (atlas.tab === "trinkets" && selectedTrinket()) renderTrinketPanel();
+  else setDetail("empty");
+}
+
+function render() {
+  renderTabs();
+  renderCharacterList();
+  renderTrinketList();
+  renderActivePanel();
+}
+
+function refreshDraftFor(character) {
+  draft = createTrinketDraft(equippedFor(character)?.id || null);
+}
+
+function changeCharacter(blockId, trigger, historyMode = "push") {
+  const index = characters.findIndex((item) => item.blockId === Number(blockId));
   if (index < 0) return;
-  selectedIndex = index;
-  currentPage = Math.floor(index / PAGE_SIZE) + 1;
-  if (!detailIsOpen()) lastTriggerBlockId = characters[index].blockId;
-  renderGallery();
-  updateDetail();
-  elements.detail.setAttribute("aria-hidden", "false");
-  document.body.classList.add("detail-open");
-  setModalBackgroundInert(true);
-  if (historyMode) updateDetailHistory(characters[index].blockId, historyMode);
-  if (focusClose) elements.detailClose.focus({ preventScroll: true });
-  scheduleRenderedDiagnostics();
+  atlas = selectAtlasItem(atlas, "characters", characters[index].blockId);
+  atlas = setAtlasPage(atlas, "characters", Math.floor(index / CHARACTER_PAGE_SIZE) + 1);
+  refreshDraftFor(characters[index]);
+  closeCurrentFlow(false);
+  if (historyMode) updateLocation(historyMode);
+  render();
+  if (trigger?.isConnected) trigger.setAttribute("aria-current", "true");
 }
 
-function closeDetail({ historyMode = "push", restoreFocus = true } = {}) {
-  if (!detailIsOpen()) return;
-  elements.detail.setAttribute("aria-hidden", "true");
-  document.body.classList.remove("detail-open");
-  setModalBackgroundInert(false);
-  if (historyMode) updateDetailHistory(null, historyMode);
-  if (!restoreFocus) return;
-  const trigger = elements.grid.querySelector(`[data-block-id="${lastTriggerBlockId}"]`);
-  (trigger || elements.search).focus({ preventScroll: true });
+function openUnsavedFlow(continueAction, trigger) {
+  deferredNavigation = continueAction;
+  flowTrigger = trigger || document.activeElement;
+  const copy = document.createElement("p");
+  copy.textContent = "当前试穿尚未保存。你可以保存并继续，或放弃这次试穿。";
+  const actions = document.createElement("div");
+  actions.className = "flow-actions";
+  const saveAndContinue = document.createElement("button");
+  saveAndContinue.type = "button";
+  saveAndContinue.textContent = "保存并继续";
+  saveAndContinue.addEventListener("click", () => {
+    commitDraft();
+    closeCurrentFlow(false);
+    deferredNavigation?.();
+    deferredNavigation = null;
+  });
+  const discardAndContinue = document.createElement("button");
+  discardAndContinue.type = "button";
+  discardAndContinue.textContent = "放弃修改";
+  discardAndContinue.addEventListener("click", () => {
+    draft = discardDraft(draft);
+    closeCurrentFlow(false);
+    deferredNavigation?.();
+    deferredNavigation = null;
+  });
+  const keepEditing = document.createElement("button");
+  keepEditing.type = "button";
+  keepEditing.textContent = "继续编辑";
+  keepEditing.addEventListener("click", () => closeCurrentFlow());
+  actions.append(saveAndContinue, discardAndContinue, keepEditing);
+  const title = document.createElement("h3");
+  title.tabIndex = -1;
+  title.textContent = "未保存的试穿";
+  showInlineFlow(elements.inlineFlow, "unsaved", [title, copy, actions]);
 }
 
-function moveDetail(delta, { historyMode = "push" } = {}) {
-  selectedIndex = (selectedIndex + delta + characters.length) % characters.length;
-  currentPage = Math.floor(selectedIndex / PAGE_SIZE) + 1;
-  renderGallery();
-  updateDetail();
-  if (historyMode) updateDetailHistory(characters[selectedIndex].blockId, historyMode);
-}
-
-function applyDetailFromLocation() {
-  const requestedBlockId = Number(new URL(location.href).searchParams.get("character"));
-  if (characterIndex(requestedBlockId) >= 0) {
-    openDetail(requestedBlockId, { historyMode: null });
-  } else {
-    closeDetail({ historyMode: null });
+function requestCharacter(blockId, trigger) {
+  if (selectedCharacter()?.blockId !== Number(blockId) && hasUnsavedDraft(draft)) {
+    openUnsavedFlow(() => changeCharacter(blockId, trigger), trigger);
+    return;
   }
+  changeCharacter(blockId, trigger);
 }
 
-function toggleCurrentFavorite() {
-  const character = characters[selectedIndex];
+function selectTrinket(itemId, trigger, historyMode = "push") {
+  const item = trinkets.find((entry) => entry.id === Number(itemId));
+  if (!item) return;
+  atlas = setAtlasTab(atlas, "trinkets");
+  atlas = selectAtlasItem(atlas, "trinkets", item.id);
+  closeCurrentFlow(false);
+  if (historyMode) updateLocation(historyMode);
+  render();
+  if (trigger?.isConnected) trigger.setAttribute("aria-current", "true");
+}
+
+function selectTab(tab, trigger, historyMode = "push") {
+  if (atlas.tab === tab) return;
+  const proceed = () => {
+    atlas = setAtlasTab(atlas, tab);
+    closeCurrentFlow(false);
+    if (historyMode) updateLocation(historyMode);
+    render();
+  };
+  if (hasUnsavedDraft(draft)) openUnsavedFlow(proceed, trigger);
+  else proceed();
+}
+
+function commitDraft() {
+  const character = previewCharacter();
   if (!character) return;
-  if (favorites.has(character.blockId)) favorites.delete(character.blockId);
-  else favorites.add(character.blockId);
-  saveFavorites();
-  renderGallery(`${character.name}${favorites.has(character.blockId) ? "已收藏" : "已取消收藏"}`);
-  updateDetail();
+  draft = saveDraft(draft);
+  preview.equippedByCharacter[String(character.blockId)] = draft.savedItemId;
+  savePreview();
+  render();
+}
+
+function closeCurrentFlow(restoreFocus = true) {
+  closeInlineFlow(elements.inlineFlow, restoreFocus ? flowTrigger : null);
+  flowTrigger = null;
+}
+
+function openSaveFlow(trigger) {
+  flowTrigger = trigger || document.activeElement;
+  const item = trinkets.find((entry) => entry.id === draft.draftItemId) || null;
+  showInlineFlow(elements.inlineFlow, "save", saveConfirmNodes({
+    itemName: item?.name,
+    onConfirm: () => {
+      commitDraft();
+      showInlineFlow(elements.inlineFlow, "success", successNodes("保存成功", () => closeCurrentFlow()));
+    },
+    onClose: () => closeCurrentFlow(),
+  }));
+}
+
+function openWarehouse(trigger) {
+  flowTrigger = trigger || document.activeElement;
+  showInlineFlow(elements.inlineFlow, "warehouse", warehouseNodes({
+    items: ownedTrinkets(sortTrinkets(trinkets, atlas.trinkets.sort)),
+    imageFor: trinketImagePath,
+    onPick: (itemId, card) => {
+      closeCurrentFlow(false);
+      selectTrinket(itemId, card);
+    },
+    onClose: () => closeCurrentFlow(),
+  }));
+}
+
+function openGift(trigger) {
+  const item = selectedTrinket();
+  if (!item) return;
+  flowTrigger = trigger || document.activeElement;
+  const character = previewCharacter();
+  const count = availableGiftCount(item, equippedFor(character)?.id || null);
+  if (!item.giftable || count < 1) {
+    showInlineFlow(elements.inlineFlow, "gift", successNodes(item.giftable ? "当前没有可赠送的副本" : "该小物不可参与本地赠送演示", () => closeCurrentFlow()));
+    return;
+  }
+  showInlineFlow(elements.inlineFlow, "gift", giftNodes({
+    itemName: item.name,
+    onConfirm: () => {
+      trinkets = applyGiftPreview(trinkets, item.id);
+      preview.ownedCountByItemId[String(item.id)] = trinkets.find((entry) => entry.id === item.id)?.ownedCount || 0;
+      savePreview();
+      render();
+      showInlineFlow(elements.inlineFlow, "success", successNodes("赠送成功", () => closeCurrentFlow()));
+    },
+    onClose: () => closeCurrentFlow(),
+  }));
+}
+
+function moveCharacter(delta) {
+  const current = selectedCharacter();
+  if (!current) return;
+  const index = characters.findIndex((item) => item.blockId === current.blockId);
+  const next = characters[(index + delta + characters.length) % characters.length];
+  changeCharacter(next.blockId, null);
+}
+
+function toggleCharacterFavorite() {
+  const character = selectedCharacter();
+  if (!character) return;
+  if (characterFavorites.has(character.blockId)) characterFavorites.delete(character.blockId);
+  else characterFavorites.add(character.blockId);
+  saveCharacterFavorites();
+  render();
+}
+
+function toggleTrinketFavorite() {
+  const item = selectedTrinket();
+  if (!item) return;
+  if (trinketFavorites.has(item.id)) trinketFavorites.delete(item.id);
+  else trinketFavorites.add(item.id);
+  savePreview();
+  render();
+}
+
+function toggleTrial() {
+  const item = selectedTrinket();
+  if (!item) return;
+  draft = toggleDraftItem(draft, item);
+  closeCurrentFlow(false);
+  render();
+}
+
+function randomTrial() {
+  draft = randomizeDraft(draft, trinkets);
+  closeCurrentFlow(false);
+  render();
 }
 
 async function shareCurrent() {
-  const character = characters[selectedIndex];
+  const character = selectedCharacter();
+  if (!character) return;
   const text = `${character.name}：${character.galleryDesc}`;
   try {
     if (navigator.share) await navigator.share({ title: `${character.name}角色图鉴`, text, url: location.href });
@@ -373,43 +573,63 @@ async function shareCurrent() {
   }
 }
 
+function applyLocation(historyMode = null) {
+  const locationState = parseAtlasLocation(location.href);
+  atlas = setAtlasTab(createAtlasState(), locationState.tab);
+  if (locationState.characterId && characters.some((item) => item.blockId === locationState.characterId)) {
+    atlas = selectAtlasItem(atlas, "characters", locationState.characterId);
+    const index = characters.findIndex((item) => item.blockId === locationState.characterId);
+    atlas = setAtlasPage(atlas, "characters", Math.floor(index / CHARACTER_PAGE_SIZE) + 1);
+    refreshDraftFor(characters[index]);
+  }
+  if (locationState.itemId && trinkets.some((item) => item.id === locationState.itemId)) atlas = selectAtlasItem(atlas, "trinkets", locationState.itemId);
+  if (historyMode) updateLocation(historyMode);
+  render();
+}
+
 function bindEvents() {
-  elements.search.addEventListener("input", (event) => {
-    searchTerm = event.target.value;
-    currentPage = 1;
-    renderGallery();
+  elements.tabCharacters.addEventListener("click", (event) => selectTab("characters", event.currentTarget));
+  elements.tabTrinkets.addEventListener("click", (event) => selectTab("trinkets", event.currentTarget));
+  elements.tabs.addEventListener("keydown", (event) => {
+    if (!["ArrowLeft", "ArrowRight", "Home", "End"].includes(event.key)) return;
+    event.preventDefault();
+    const controls = [elements.tabCharacters, elements.tabTrinkets];
+    const current = controls.indexOf(document.activeElement);
+    const next = event.key === "Home" ? 0 : event.key === "End" ? controls.length - 1 : (current + (event.key === "ArrowLeft" ? -1 : 1) + controls.length) % controls.length;
+    controls[next].focus();
+    selectTab(next === 0 ? "characters" : "trinkets", controls[next]);
   });
-  elements.favoritesOnly.addEventListener("change", (event) => {
-    showFavoritesOnly = event.target.checked;
-    currentPage = 1;
-    renderGallery();
-  });
-  elements.pagePrev.addEventListener("click", () => { currentPage -= 1; renderGallery(); });
-  elements.pageNext.addEventListener("click", () => { currentPage += 1; renderGallery(); });
+  elements.characterSearch.addEventListener("input", (event) => { atlas = setAtlasQuery(atlas, "characters", event.target.value); renderCharacterList(); });
+  elements.trinketSearch.addEventListener("input", (event) => { atlas = setAtlasQuery(atlas, "trinkets", event.target.value); renderTrinketList(); });
+  elements.trinketSort.addEventListener("change", (event) => { atlas = setAtlasSort(atlas, event.target.value); renderTrinketList(); });
+  elements.favoritesOnly.addEventListener("change", (event) => { favoritesOnly = event.target.checked; atlas = setAtlasPage(atlas, "characters", 1); renderCharacterList(); });
+  elements.pagePrev.addEventListener("click", () => { atlas = setAtlasPage(atlas, "characters", atlas.characters.page - 1); renderCharacterList(); });
+  elements.pageNext.addEventListener("click", () => { atlas = setAtlasPage(atlas, "characters", atlas.characters.page + 1); renderCharacterList(); });
   elements.batchFavorite.addEventListener("click", () => {
-    const { visible } = pageCharacters();
-    const remove = visible.length > 0 && visible.every(({ blockId }) => favorites.has(blockId));
-    visible.forEach(({ blockId }) => remove ? favorites.delete(blockId) : favorites.add(blockId));
-    saveFavorites();
-    renderGallery(remove ? "已取消本页收藏" : "本页角色已全部收藏");
-    updateDetail();
+    const { visible } = characterPage();
+    const remove = visible.length > 0 && visible.every((item) => characterFavorites.has(item.blockId));
+    visible.forEach((item) => remove ? characterFavorites.delete(item.blockId) : characterFavorites.add(item.blockId));
+    saveCharacterFavorites();
+    render();
+    elements.status.textContent = remove ? "已取消本页收藏" : "本页角色已全部收藏";
   });
-  elements.detailClose.addEventListener("click", closeDetail);
-  document.querySelector("[data-detail-close]").addEventListener("click", closeDetail);
-  elements.detailPrev.addEventListener("click", () => moveDetail(-1));
-  elements.detailNext.addEventListener("click", () => moveDetail(1));
-  elements.detailFavorite.addEventListener("click", toggleCurrentFavorite);
-  elements.detailEquip.addEventListener("click", () => { elements.status.textContent = `${characters[selectedIndex].name}已设为装扮排版预览`; });
+  elements.detailPrev.addEventListener("click", () => moveCharacter(-1));
+  elements.detailNext.addEventListener("click", () => moveCharacter(1));
+  elements.detailFavorite.addEventListener("click", toggleCharacterFavorite);
+  elements.detailEquip.addEventListener("click", () => { if (selectedCharacter()) elements.status.textContent = `${selectedCharacter().name}已设为装扮排版预览`; });
   elements.detailShare.addEventListener("click", shareCurrent);
-  document.querySelector("[data-home]").addEventListener("click", () => { location.href = "../../index.html#engineering"; });
+  elements.trinketFavorite.addEventListener("click", toggleTrinketFavorite);
+  elements.trinketToggleDraft.addEventListener("click", toggleTrial);
+  elements.trinketRandomize.addEventListener("click", randomTrial);
+  elements.trinketSave.addEventListener("click", (event) => openSaveFlow(event.currentTarget));
+  elements.warehouse.addEventListener("click", (event) => openWarehouse(event.currentTarget));
+  elements.gift.addEventListener("click", (event) => openGift(event.currentTarget));
   window.addEventListener("keydown", (event) => {
-    if (!detailIsOpen()) return;
-    trapDetailFocus(event);
-    if (event.key === "Escape") closeDetail();
-    if (event.key === "ArrowLeft") { event.preventDefault(); moveDetail(-1); }
-    if (event.key === "ArrowRight") { event.preventDefault(); moveDetail(1); }
+    if (atlas.tab !== "characters" || !selectedCharacter()) return;
+    if (event.key === "ArrowLeft") { event.preventDefault(); moveCharacter(-1); }
+    if (event.key === "ArrowRight") { event.preventDefault(); moveCharacter(1); }
   });
-  window.addEventListener("popstate", applyDetailFromLocation);
+  window.addEventListener("popstate", () => applyLocation());
   window.addEventListener("resize", scheduleRenderedDiagnostics, { passive: true });
   if (typeof ResizeObserver === "function") {
     detailResizeObserver = new ResizeObserver(scheduleRenderedDiagnostics);
@@ -419,24 +639,20 @@ function bindEvents() {
 }
 
 async function start() {
-  const response = await fetch("./data/characters.json");
-  if (!response.ok) throw new Error(`角色数据加载失败（${response.status}）`);
-  characters = await response.json();
+  const [charactersResponse, trinketsResponse] = await Promise.all([fetch("./data/characters.json"), fetch("../trinket-market/data/items.json")]);
+  if (!charactersResponse.ok) throw new Error(`角色数据加载失败（${charactersResponse.status}）`);
+  if (!trinketsResponse.ok) throw new Error(`随身小物数据加载失败（${trinketsResponse.status}）`);
+  characters = await charactersResponse.json();
+  const catalog = await trinketsResponse.json();
   if (!Array.isArray(characters) || characters.length !== 45) throw new Error("角色图鉴数据必须包含 45 个角色");
-  const requestedBlockId = Number(new URL(location.href).searchParams.get("character"));
-  const requestedIndex = characterIndex(requestedBlockId);
-  if (requestedIndex >= 0) {
-    selectedIndex = requestedIndex;
-    currentPage = Math.floor(requestedIndex / PAGE_SIZE) + 1;
-  }
+  if (!Array.isArray(catalog) || catalog.length < 1) throw new Error("随身小物目录为空");
+  trinkets = catalog.map((item) => ({ ...item, ownedCount: preview.ownedCountByItemId[String(item.id)] ?? item.ownedCount }));
   bindEvents();
-  renderGallery();
-  updateInspector(characters[selectedIndex]);
-  if (requestedIndex >= 0) openDetail(requestedBlockId, { historyMode: null });
+  applyLocation();
 }
 
 start().catch((error) => {
-  elements.status.textContent = error instanceof Error ? error.message : "角色图鉴加载失败";
+  elements.status.textContent = error instanceof Error ? error.message : "图鉴加载失败";
   elements.status.style.color = "#b00020";
   console.error(error);
 });

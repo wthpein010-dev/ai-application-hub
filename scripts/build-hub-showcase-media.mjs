@@ -256,7 +256,8 @@ export function resolveSafeCaptureUrl(id, source, baseUrl) {
     url = source.entry;
   } else if (typeof source.entry === "string") {
     const relativeEntry = source.entry.replace(/^\.\//u, "");
-    if (existsSync(sourcePath(relativeEntry))) url = new URL(relativeEntry, `${baseUrl}/`).href;
+    const localPath = relativeEntry.split(/[?#]/u, 1)[0];
+    if (existsSync(sourcePath(localPath))) url = new URL(relativeEntry, `${baseUrl}/`).href;
   }
   if (!url && typeof source.publicEntry === "string") url = source.publicEntry;
   if (!url) throw new Error(`Missing capture source for ${id}`);
