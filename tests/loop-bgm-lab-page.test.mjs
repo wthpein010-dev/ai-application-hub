@@ -81,15 +81,25 @@ test("markup is CSP-safe, credential-free, and exposes only the approved file an
   assert.doesNotMatch(source, /\.innerHTML\b|insertAdjacentHTML|outerHTML\s*=/);
 });
 
-test("manual Create registration and multi-candidate import expose explicit accessible controls", () => {
+test("source-aware candidate import exposes explicit accessible source, run, and output controls", () => {
   const html = readProjectFile("index.html");
   const source = readProjectFile("app.js");
 
+  assert.match(html, /<select id="candidate-source-kind"[^>]*aria-label="候选来源类型"/);
+  assert.match(html, /<option value="suno"[^>]*>Suno 结果<\/option>/);
+  assert.match(html, /<option value="external"[^>]*>外部音乐<\/option>/);
+  assert.match(html, /<option value="local-original"[^>]*>本地原创<\/option>/);
+  assert.doesNotMatch(html, /<option value="legacy-unknown"/);
   assert.match(html, /<select id="candidate-run"[^>]*aria-label="候选关联生成运行"/);
+  assert.match(html, /<select id="candidate-output"[^>]*aria-label="候选关联生成结果"/);
   assert.match(html, /<input id="candidate-file"[^>]*\bmultiple\b/);
-  assert.match(html, /一次最多 8 个[^<]*同一次选择共用一个 run/);
+  assert.match(html, /研究最佳[^<]*不代表可发布/);
   assert.match(source, /请选择一次已登记的 Create/);
-  assert.match(source, /candidateInput\.disabled = selectableRunId === ""/);
+  assert.match(source, /candidateSourceKind/);
+  assert.match(source, /candidateOutput/);
+  assert.match(source, /sourceKind === "suno"/);
+  assert.match(source, /sourceKind === "external"/);
+  assert.match(source, /sourceKind === "local-original"/);
   assert.match(source, /className: "batch-action record-create-run"/);
   assert.match(source, /className: "create-output-url"/);
   assert.match(source, /className: "create-output-score"/);
@@ -112,6 +122,8 @@ test("browser coordinator imports the analysis, plan/state, and candidate-scorin
   assert.match(source, /\bcompareCandidate\b/);
   assert.match(source, /\bclassifySimilarity\b/);
   assert.match(source, /\brecommendNextVariant\b/);
+  assert.match(source, /from "\.\/core\/candidate-publication\.mjs"/);
+  assert.match(source, /\bderiveCandidatePublicationState\b/);
   assert.match(source, /from "\.\/core\/browser-policy\.mjs"/);
   assert.match(source, /\baggregateReferenceStyle\b/);
   assert.match(source, /\bassertDecodedAudioBudget\b/);
@@ -154,7 +166,15 @@ test("candidate markup exposes an explicit batch association, durable history, a
   assert.match(app, /candidate-review-note/);
   assert.match(app, /candidate-disposition/);
   assert.match(app, /candidate-best/);
+  assert.match(app, /candidate-source-badge/);
+  assert.match(app, /candidate-publication-badge/);
+  assert.match(app, /candidate-blocker-badge/);
+  assert.match(app, /记录门禁通过（非法律清白）/);
+  assert.doesNotMatch(app, /ready:\s*["']可发布["']/);
   assert.match(app, /来源核验日期/);
+  const css = readProjectFile("styles.css");
+  assert.match(css, /\.candidate-meta-badges/);
+  assert.match(css, /\.candidate-publication-badge\[data-status="blocked"\]/);
 });
 
 test("browser workflow exposes explicit portable display-name editors and keeps computed hashes read-only", () => {

@@ -1,7 +1,6 @@
 import { analyzePcm } from "./core/audio-analysis.mjs";
 import { createDailyPlan } from "./core/prompt-engine.mjs";
 import {
-  bindExperimentOutput,
   exportProjectJson,
   importProjectJson,
   rebuildPromptQueue,
@@ -22,6 +21,7 @@ import {
   recommendNextVariant,
   validateLicenseEntry
 } from "./core/candidate-score.mjs";
+import { deriveCandidatePublicationState } from "./core/candidate-publication.mjs";
 import {
   aggregateReferenceStyle,
   assertDecodedAudioBudget,
@@ -68,6 +68,17 @@ const CLASS_LABELS = {
   review: "人工复核",
   distinct: "差异充分"
 };
+const SOURCE_LABELS = {
+  suno: "Suno 结果",
+  external: "外部音乐",
+  "local-original": "本地原创",
+  "legacy-unknown": "旧候选（来源待确认）"
+};
+const PUBLICATION_LABELS = {
+  ready: "记录门禁通过（非法律清白）",
+  review: "记录待复核",
+  blocked: "记录门禁受阻"
+};
 
 const element = selector => document.querySelector(selector);
 const referenceInput = element("#reference-files");
@@ -84,8 +95,11 @@ const sunoApiStatus = element("#suno-api-status");
 const sunoApiChecklist = element("#suno-api-checklist");
 const batchList = element("#batch-list");
 const candidateInput = element("#candidate-file");
+const candidateSourceKind = element("#candidate-source-kind");
 const candidateBatch = element("#candidate-batch");
 const candidateRun = element("#candidate-run");
+const candidateOutput = element("#candidate-output");
+const candidateSourceHelp = element("#candidate-source-help");
 const candidateProgress = element("#candidate-progress");
 const candidateHistory = element("#candidate-history");
 const comparisonResult = element("#comparison-result");
@@ -457,10 +471,16 @@ function runsForBatch(batchId) {
   return project.runs.filter(run => run.generationConditions.batchId === batchId);
 }
 
-function renderCandidateRunOptions(preferredRunId = candidateRun.value) {
+function renderCandidateSourceControls({
+  preferredRunId = candidateRun.value,
+  preferredOutputIndex = candidateOutput.value
+} = {}) {
+  const sourceKind = candidateSourceKind.value;
   const batch = project.batches.find(item => item.id === candidateBatch.value);
   const runs = batch ? [...runsForBatch(batch.id)].reverse() : [];
-  const selectableRunId = runs.some(run => run.id === preferredRunId) ? preferredRunId : "";
+  const selectableRunId = sourceKind === "suno" && runs.some(run => run.id === preferredRunId)
+    ? preferredRunId
+    : "";
   candidateRun.replaceChildren();
   const placeholder = createElement("option", { text: runs.length ? "请选择一次已登记的 Create" : "请先登记本次 Create" });
   placeholder.value = "";
@@ -474,10 +494,44 @@ function renderCandidateRunOptions(preferredRunId = candidateRun.value) {
     option.selected = run.id === selectableRunId;
     candidateRun.append(option);
   }
-  candidateRun.disabled = runs.length === 0;
-  candidateInput.disabled = selectableRunId === "";
+  candidateOutput.replaceChildren();
+  const selectedRun = runs.find(run => run.id === selectableRunId);
+  const outputIndex = preferredOutputIndex === "" ? null : Number(preferredOutputIndex);
+  const selectableOutputIndex = Number.isInteger(outputIndex) && selectedRun?.outputs[outputIndex]
+    ? outputIndex
+    : null;
+  const outputPlaceholder = createElement("option", {
+    text: selectedRun?.outputs.length ? "请选择该运行的一个已有结果" : "请先保存该运行的结果链接"
+  });
+  outputPlaceholder.value = "";
+  outputPlaceholder.selected = selectableOutputIndex === null;
+  candidateOutput.append(outputPlaceholder);
+  for (const [index, output] of (selectedRun?.outputs || []).entries()) {
+    const option = createElement("option", { text: `结果 ${index + 1} · ${output.generatedUrl}` });
+    option.value = String(index);
+    option.selected = index === selectableOutputIndex;
+    candidateOutput.append(option);
+  }
+
+  const isSuno = sourceKind === "suno";
+  candidateRun.disabled = !isSuno || runs.length === 0;
+  candidateOutput.disabled = !isSuno || !selectedRun?.outputs.length;
+  const canImport = Boolean(batch) && (!isSuno || (selectableRunId && selectableOutputIndex !== null));
+  candidateInput.disabled = !canImport;
   const picker = candidateInput.closest(".file-picker");
-  if (picker) picker.dataset.disabled = String(selectableRunId === "");
+  if (picker) picker.dataset.disabled = String(!canImport);
+
+  if (sourceKind === "external") {
+    candidateSourceHelp.textContent = "外部音乐无需关联 Suno 运行；必须恰好一条授权记录匹配分析得到的 SHA-256，且权利链不能是“本人声明原创”。零条或多条都会逐文件拒绝且不保存。";
+  } else if (sourceKind === "local-original") {
+    candidateSourceHelp.textContent = "本地原创不依赖 Suno 运行；分析 SHA-256 后，必须恰好匹配一条同哈希且权利链为“本人声明原创（user-declared-original）”的授权记录。";
+  } else if (!selectableRunId) {
+    candidateSourceHelp.textContent = "Suno 候选必须先选择一次已登记的 Create 运行，再选择该运行中已保存的具体结果。";
+  } else if (selectableOutputIndex === null) {
+    candidateSourceHelp.textContent = "请先在对应 Create 运行中保存结果链接，再选择确切结果；文件尚不会开始解码。";
+  } else {
+    candidateSourceHelp.textContent = `将绑定 ${selectableRunId} 的结果 ${selectableOutputIndex + 1}；链接、生成条件和复盘字段会与该结果严格同步。`;
+  }
 }
 
 function outputDispositionSelect(output, outputLabel) {
@@ -527,6 +581,7 @@ function saveRunOutputs(runId, container) {
     if (run && panelStatus) panelStatus.textContent = `${STATUS_LABELS[run.status]} · 条件已冻结 · ${run.outputs.length}/2 个结果`;
     const runOption = [...candidateRun.options].find(option => option.value === runId);
     if (run && runOption) runOption.textContent = `${run.id} · ${STATUS_LABELS[run.status]} · ${run.outputs.length} 个结果`;
+    renderCandidateSourceControls({ preferredRunId: candidateRun.value, preferredOutputIndex: candidateOutput.value });
     renderCandidateHistory();
     showLive(`运行 ${runId} 的结果链接与复盘已保存。`);
   } catch (error) {
@@ -612,6 +667,7 @@ function registerCreateRun(batchId, batchNumber) {
 function renderBatches() {
   const selectedBatchId = candidateBatch.value;
   const selectedRunId = candidateRun.value;
+  const selectedOutputIndex = candidateOutput.value;
   candidateBatch.replaceChildren();
   batchList.replaceChildren();
   project.batches.forEach((batch, index) => {
@@ -664,7 +720,10 @@ function renderBatches() {
     if (runList.childElementCount) card.append(runList);
     batchList.append(card);
   });
-  renderCandidateRunOptions(selectedRunId);
+  renderCandidateSourceControls({
+    preferredRunId: selectedRunId,
+    preferredOutputIndex: selectedOutputIndex
+  });
 }
 
 function changeBatchStatus(batchId, nextStatus) {
@@ -756,24 +815,6 @@ function updateCandidateReview(candidateId, batchPatch) {
   }
 }
 
-function bindCandidateOutput(candidateId, value) {
-  clearError();
-  try {
-    const candidate = project.candidates.find(item => item.id === candidateId);
-    if (!candidate) throw new TypeError(`未知候选：${candidateId}`);
-    const experiment = project.experiments.find(item => item.candidateId === candidate.id);
-    if (!experiment) throw new TypeError(`候选关联的实验不存在：${candidate.id}`);
-    project = bindExperimentOutput(project, experiment.id, value === "" ? null : Number(value));
-    selectedCandidateId = candidate.id;
-    persistProject();
-    renderAll();
-    showLive(value === "" ? "候选已取消结果绑定。" : `候选已明确绑定到结果 ${Number(value) + 1}。`);
-  } catch (error) {
-    renderAll();
-    showError(error instanceof Error ? error.message : "候选结果绑定失败。");
-  }
-}
-
 function setBestCandidate(candidateId, checked) {
   clearError();
   try {
@@ -803,6 +844,41 @@ function labelledField(labelText, control) {
   return label;
 }
 
+function appendCandidateMetaBadges(container, candidate, publication) {
+  const badges = createElement("div", { className: "candidate-meta-badges" });
+  badges.append(createElement("span", {
+    className: "candidate-source-badge",
+    text: `来源：${SOURCE_LABELS[candidate.candidateSource.kind] || candidate.candidateSource.kind}`
+  }));
+  if (candidate.candidateSource.kind === "suno") {
+    badges.append(createElement("span", {
+      className: "candidate-license-badge",
+      text: `输出：${candidate.candidateSource.runId} / 结果 ${candidate.candidateSource.outputIndex + 1}`
+    }));
+  } else if (candidate.candidateSource.kind === "external" || candidate.candidateSource.kind === "local-original") {
+    const license = project.licenses.find(item => item.id === candidate.candidateSource.licenseId);
+    badges.append(createElement("span", {
+      className: "candidate-license-badge",
+      text: license
+        ? `许可证：${license.licenseIdentifier} · ${license.category} · ${license.deliveryStatus} · ${license.evidenceUrl ? "证据已记录" : "证据缺失"} · 核验 ${license.evidenceCheckedAt || "未记录"} · ${license.rightsChainStatus}`
+        : `许可证记录缺失：${candidate.candidateSource.licenseId}`
+    }));
+  }
+  const status = createElement("span", {
+    className: "candidate-publication-badge",
+    text: `发布资料：${PUBLICATION_LABELS[publication.status] || publication.status}`
+  });
+  status.dataset.status = publication.status;
+  badges.append(status);
+  for (const blocker of publication.blockers) {
+    badges.append(createElement("span", { className: "candidate-blocker-badge", text: blocker }));
+  }
+  for (const reason of publication.reviewReasons) {
+    badges.append(createElement("span", { className: "candidate-review-reason-badge", text: reason }));
+  }
+  container.append(badges);
+}
+
 function renderCandidateHistory() {
   candidateHistory.replaceChildren();
   if (!project.candidates.length) {
@@ -812,6 +888,7 @@ function renderCandidateHistory() {
   for (const [index, candidate] of [...project.candidates].reverse().entries()) {
     const batch = project.batches.find(item => item.id === candidate.batchId);
     const experiment = project.experiments.find(item => item.candidateId === candidate.id);
+    const publication = deriveCandidatePublicationState(project, candidate.id);
     const isBatchCurrent = batch?.currentCandidateId === candidate.id;
     const card = createElement("article", { className: "candidate-history-item" });
     card.dataset.candidateId = candidate.id;
@@ -830,6 +907,7 @@ function renderCandidateHistory() {
       renderCandidateHistory();
     });
     heading.append(view);
+    appendCandidateMetaBadges(heading, candidate, publication);
 
     const candidateDisplayName = createElement("input", { className: "candidate-display-name" });
     candidateDisplayName.type = "text";
@@ -850,7 +928,12 @@ function renderCandidateHistory() {
     const run = project.runs.find(item => item.id === experiment?.runId);
     const outputBinding = createElement("select", { className: "candidate-output-binding" });
     outputBinding.setAttribute("aria-label", `${candidate.displayName || candidate.id} 关联生成结果`);
-    const unbound = createElement("option", { text: "未绑定结果" });
+    outputBinding.disabled = true;
+    const unbound = createElement("option", {
+      text: candidate.candidateSource.kind === "external" || candidate.candidateSource.kind === "local-original"
+        ? "不适用：独立来源"
+        : "旧候选：结果未确认"
+    });
     unbound.value = "";
     unbound.selected = !Number.isInteger(experiment?.outputIndex);
     outputBinding.append(unbound);
@@ -860,7 +943,6 @@ function renderCandidateHistory() {
       option.selected = experiment?.outputIndex === outputIndex;
       outputBinding.append(option);
     }
-    outputBinding.addEventListener("change", () => bindCandidateOutput(candidate.id, outputBinding.value));
 
     const generatedUrl = createElement("input", { className: "candidate-generated-url" });
     generatedUrl.type = "url";
@@ -900,7 +982,7 @@ function renderCandidateHistory() {
     best.type = "checkbox";
     best.checked = project.currentBestCandidate?.candidateId === candidate.id;
     best.addEventListener("change", () => setBestCandidate(candidate.id, best.checked));
-    const bestLabel = labelledField("当前最佳", best);
+    const bestLabel = labelledField("研究最佳（不代表可发布）", best);
     bestLabel.className = "candidate-best-field";
 
     const fields = createElement("div", { className: "candidate-review-grid" });
@@ -942,10 +1024,21 @@ function renderLicenses() {
     const remove = createElement("button", { className: "text-button", text: "移除" });
     remove.type = "button";
     remove.addEventListener("click", () => {
-      project = validateProject({ ...project, licenses: project.licenses.filter(candidate => candidate.id !== entry.id) });
-      persistProject();
-      renderLicenses();
-      showLive("已移除授权记录。");
+      clearError();
+      try {
+        const referenced = project.candidates.some(candidate => (
+          (candidate.candidateSource.kind === "external" || candidate.candidateSource.kind === "local-original")
+          && candidate.candidateSource.licenseId === entry.id
+        ));
+        if (referenced) throw new TypeError("该授权记录仍被候选引用，不能移除；请先保留完整来源证据。");
+        project = validateProject({ ...project, licenses: project.licenses.filter(candidate => candidate.id !== entry.id) });
+        persistProject();
+        renderLicenses();
+        showLive("已移除授权记录。");
+      } catch (error) {
+        renderLicenses();
+        showError(error instanceof Error ? error.message : "授权记录不能移除。");
+      }
     });
     item.append(copy, remove);
     licenseList.append(item);
@@ -1112,17 +1205,32 @@ async function processCandidateFiles(files) {
     showError(`一次最多选择 ${MAX_CANDIDATE_FILES} 个候选文件；本次没有开始解码。`);
     return;
   }
+  const sourceKind = candidateSourceKind.value;
   const batchId = candidateBatch.value;
-  const runId = candidateRun.value;
+  const runId = sourceKind === "suno" ? candidateRun.value : null;
+  const selectedOutputIndex = sourceKind === "suno" && candidateOutput.value !== ""
+    ? Number(candidateOutput.value)
+    : null;
   const selectedBatch = project.batches.find(batch => batch.id === batchId);
   if (!selectedBatch) {
     showError("请先选择候选对应的提示词批次。 ");
     return;
   }
-  const selectedRun = project.runs.find(run => run.id === runId);
-  if (!selectedRun || selectedRun.generationConditions.batchId !== batchId) {
-    showError("请先在该批次登记并明确选择一次 Create 运行。 ");
+  if (!Object.hasOwn(SOURCE_LABELS, sourceKind) || sourceKind === "legacy-unknown") {
+    showError("请选择 Suno 结果、外部音乐或本地原创作为新候选来源。");
     return;
+  }
+  const selectedRun = sourceKind === "suno" ? project.runs.find(run => run.id === runId) : null;
+  const selectedOutput = selectedRun?.outputs[selectedOutputIndex];
+  if (sourceKind === "suno") {
+    if (!selectedRun || selectedRun.generationConditions.batchId !== batchId) {
+      showError("请先在该批次登记并明确选择一次 Create 运行。");
+      return;
+    }
+    if (!Number.isInteger(selectedOutputIndex) || !selectedOutput) {
+      showError("请在解码前明确选择该运行中一个已经保存的生成结果。");
+      return;
+    }
   }
   const reference = aggregateReferences();
   if (!reference) {
@@ -1152,9 +1260,28 @@ async function processCandidateFiles(files) {
       const comparison = compareCandidate(reference, result.analysis);
       const similarityClassValue = classifySimilarity(comparison);
       const advice = recommendNextVariant(comparison);
-      const run = workingProject.runs.find(item => item.id === runId);
-      if (!run || run.generationConditions.batchId !== batchId) {
-        throw new TypeError("所选 Create 运行已失效，请重新选择。 ");
+      const run = sourceKind === "suno" ? workingProject.runs.find(item => item.id === runId) : null;
+      const output = run?.outputs[selectedOutputIndex];
+      if (sourceKind === "suno" && (!run || run.generationConditions.batchId !== batchId || !output)) {
+        throw new TypeError("所选 Create 运行或结果已失效，请重新选择。");
+      }
+      let matchingLicense = null;
+      if (sourceKind === "external" || sourceKind === "local-original") {
+        const eligibleLicenses = workingProject.licenses.filter(license => (
+          license.fileSha256.toLowerCase() === result.hash.toLowerCase()
+          && (sourceKind === "external"
+            ? license.rightsChainStatus !== "user-declared-original"
+            : license.rightsChainStatus === "user-declared-original")
+        ));
+        if (eligibleLicenses.length === 0) {
+          throw new TypeError(sourceKind === "external"
+            ? "没有恰好一条同 SHA-256 且权利链不是本人原创声明的许可证记录。"
+            : "没有恰好一条同 SHA-256 且 rightsChainStatus 为 user-declared-original 的许可证记录。");
+        }
+        if (eligibleLicenses.length > 1) {
+          throw new TypeError(`同 SHA-256 找到 ${eligibleLicenses.length} 条可匹配许可证；必须恰好一条。`);
+        }
+        [matchingLicense] = eligibleLicenses;
       }
       const candidateId = allocateId("candidate", workingProject.candidates || []);
       const record = {
@@ -1165,25 +1292,28 @@ async function processCandidateFiles(files) {
         referenceBasis: structuredClone(reference),
         comparison,
         similarityClass: similarityClassValue,
-        advice
+        advice,
+        candidateSource: sourceKind === "suno"
+          ? { kind: "suno", runId, outputIndex: selectedOutputIndex }
+          : { kind: sourceKind, licenseId: matchingLicense.id, fileSha256: result.hash }
       };
       const experiment = {
         id: allocateId("experiment", workingProject.experiments || []),
-        runId,
+        runId: sourceKind === "suno" ? runId : null,
         batchId,
         candidateId,
         candidateHash: result.hash,
-        generatedUrl: null,
-        subjectiveScore: null,
-        reviewNote: "",
-        disposition: "unrated",
+        generatedUrl: sourceKind === "suno" ? output.generatedUrl : null,
+        subjectiveScore: sourceKind === "suno" ? output.subjectiveScore : null,
+        reviewNote: sourceKind === "suno" ? output.reviewNote : "",
+        disposition: sourceKind === "suno" ? output.disposition : "unrated",
         referenceBasis: structuredClone(reference),
         comparison,
         advice,
-        generationConditions: structuredClone(run.generationConditions),
-        outputIndex: null
+        generationConditions: sourceKind === "suno" ? structuredClone(run.generationConditions) : null,
+        outputIndex: sourceKind === "suno" ? selectedOutputIndex : null
       };
-      const batches = workingProject.batches.map(batch => batch.id === batchId
+      const batches = sourceKind === "suno" ? workingProject.batches.map(batch => batch.id === batchId
         ? {
           ...batch,
           status: "downloaded",
@@ -1191,13 +1321,15 @@ async function processCandidateFiles(files) {
           generationConditions: structuredClone(run.generationConditions),
           currentCandidateId: candidateId,
           candidateHash: result.hash,
-          generatedUrl: null,
-          subjectiveScore: null,
-          reviewNote: "",
-          disposition: "unrated"
+          generatedUrl: output.generatedUrl,
+          subjectiveScore: output.subjectiveScore,
+          reviewNote: output.reviewNote,
+          disposition: output.disposition
         }
-        : batch);
-      const runs = workingProject.runs.map(item => item.id === runId ? { ...item, status: "downloaded" } : item);
+        : batch) : workingProject.batches;
+      const runs = sourceKind === "suno"
+        ? workingProject.runs.map(item => item.id === runId ? { ...item, status: "downloaded" } : item)
+        : workingProject.runs;
       workingProject = validateProject({
         ...workingProject,
         batches,
@@ -1217,7 +1349,9 @@ async function processCandidateFiles(files) {
     const failureDetail = failures.map(item => ` ${item.name}：${item.message}`).join("");
     candidateProgress.textContent = `完成：0 个成功，${failures.length} 个失败。${failureDetail}`;
     renderComparison();
-    showError(`所选候选全部分析失败；已登记的 Create 运行仍保留。${failureDetail}`);
+    showError(sourceKind === "suno"
+      ? `所选候选全部分析失败；已登记的 Create 运行仍保留。${failureDetail}`
+      : `所选候选全部分析失败；没有候选写入项目。${failureDetail}`);
     return;
   }
   const latest = successes.at(-1);
@@ -1238,7 +1372,9 @@ async function processCandidateFiles(files) {
   renderAll();
   const failureDetail = failures.map(item => ` ${item.name}：${item.message}`).join("");
   candidateProgress.textContent = `完成：${successes.length} 个成功，${failures.length} 个失败。${failureDetail}`;
-  showLive(`已把 ${successes.length} 个候选追加到同一运行 ${runId}；文件名不会写入持久状态或导出。`);
+  showLive(sourceKind === "suno"
+    ? `已把 ${successes.length} 个候选绑定到 ${runId} 的结果 ${selectedOutputIndex + 1}；文件名不会写入持久状态或导出。`
+    : `已把 ${successes.length} 个${SOURCE_LABELS[sourceKind]}候选与唯一同哈希授权记录绑定；文件名不会写入持久状态或导出。`);
 }
 
 function buildSearchUrl(source, query) {
@@ -1319,20 +1455,39 @@ styleForm.addEventListener("submit", event => {
   showLive("已按更新后的画像重新生成 5 个单变量批次。 ");
 });
 
+candidateSourceKind.addEventListener("change", () => {
+  candidateGeneration += 1;
+  renderCandidateSourceControls({ preferredRunId: "", preferredOutputIndex: "" });
+  candidateProgress.textContent = candidateSourceKind.value === "suno"
+    ? "请选择已登记的 Create 运行及其中一个已有结果。"
+    : `已选择${SOURCE_LABELS[candidateSourceKind.value]}；导入后将按 SHA-256 唯一匹配授权记录。`;
+});
+
 candidateBatch.addEventListener("change", () => {
-  renderCandidateRunOptions("");
-  candidateProgress.textContent = candidateRun.value
-    ? `已选择 ${candidateRun.value}；可一次导入最多 ${MAX_CANDIDATE_FILES} 个候选。`
-    : "该批次尚无 Create 运行，请先在批次卡登记。";
+  candidateGeneration += 1;
+  renderCandidateSourceControls({ preferredRunId: "", preferredOutputIndex: "" });
+  candidateProgress.textContent = candidateSourceKind.value === "suno"
+    ? "请为该批次选择 Create 运行及其中一个已有结果。"
+    : `已选择批次；${SOURCE_LABELS[candidateSourceKind.value]}不需要 Suno 运行。`;
 });
 
 candidateRun.addEventListener("change", () => {
-  candidateInput.disabled = candidateRun.value === "";
-  const picker = candidateInput.closest(".file-picker");
-  if (picker) picker.dataset.disabled = String(candidateRun.value === "");
+  candidateGeneration += 1;
+  renderCandidateSourceControls({ preferredRunId: candidateRun.value, preferredOutputIndex: "" });
   candidateProgress.textContent = candidateRun.value
-    ? `已选择 ${candidateRun.value}；所有本次导入成功的候选都会绑定此运行。`
+    ? `已选择 ${candidateRun.value}；请再选择一个已有结果。`
     : "请先登记并选择 Create 运行。";
+});
+
+candidateOutput.addEventListener("change", () => {
+  candidateGeneration += 1;
+  renderCandidateSourceControls({
+    preferredRunId: candidateRun.value,
+    preferredOutputIndex: candidateOutput.value
+  });
+  candidateProgress.textContent = candidateOutput.value === ""
+    ? "请选择该运行中一个已有结果。"
+    : `已冻结 ${candidateRun.value} 的结果 ${Number(candidateOutput.value) + 1}；现在可选择对应文件。`;
 });
 
 candidateInput.addEventListener("change", () => {
@@ -1381,6 +1536,13 @@ licenseForm.addEventListener("submit", event => {
       source: element("#license-source").value,
       sourceUrl: element("#license-url").value.trim(),
       license: element("#license-name").value.trim(),
+      licenseIdentifier: element("#license-identifier").value.trim(),
+      licenseUrl: element("#license-license-url").value.trim() || null,
+      evidenceUrl: element("#license-evidence-url").value.trim() || null,
+      evidenceCheckedAt: element("#license-evidence-date").value || null,
+      deliveryStatus: element("#license-delivery-status").value,
+      rightsChainStatus: element("#license-rights-chain-status").value,
+      scopeNote: element("#license-scope-note").value.trim() || null,
       fileSha256: element("#license-hash").value.trim(),
       author: element("#license-author").value.trim(),
       downloadedAt: element("#license-date").value

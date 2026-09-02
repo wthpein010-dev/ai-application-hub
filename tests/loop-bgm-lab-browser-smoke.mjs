@@ -233,10 +233,26 @@ async function assertOfficialReadinessCard(page, { singleColumn }) {
   assert.equal(layout.tracks === 1, singleColumn, `unexpected readiness grid at this viewport: ${JSON.stringify(layout)}`);
 }
 
-async function addLicense(page, { suffix, license = "CC0", hash = expectedWavSha256 }) {
-  await page.locator("#license-source").selectOption("Freesound");
-  await page.locator("#license-url").fill(`https://freesound.org/s/${suffix}/`);
+async function addLicense(page, {
+  suffix,
+  license = "CC0 1.0",
+  licenseIdentifier = "CC0-1.0",
+  licenseUrl = "https://creativecommons.org/publicdomain/zero/1.0/",
+  hash = expectedWavSha256,
+  rightsChainStatus = "independently-verified",
+  source = "Freesound",
+} = {}) {
+  const sourceUrl = `https://freesound.org/s/${suffix}/`;
+  await page.locator("#license-source").selectOption(source);
+  await page.locator("#license-url").fill(sourceUrl);
   await page.locator("#license-name").fill(license);
+  await page.locator("#license-identifier").fill(licenseIdentifier);
+  await page.locator("#license-license-url").fill(licenseUrl);
+  await page.locator("#license-evidence-url").fill(sourceUrl);
+  await page.locator("#license-evidence-date").fill("2026-08-30");
+  await page.locator("#license-delivery-status").selectOption("original");
+  await page.locator("#license-rights-chain-status").selectOption(rightsChainStatus);
+  await page.locator("#license-scope-note").fill("Covers the exact analyzed audio bytes.");
   await page.locator("#license-hash").fill(hash);
   await page.locator("#license-author").fill(`Synthetic Fixture ${suffix}`);
   await page.locator("#license-date").fill("2026-08-30");
@@ -260,6 +276,11 @@ try {
   assert.equal(response?.status(), 200);
   await page.locator("body[data-ready='true']").waitFor();
 
+  assert.deepEqual(await page.locator("#candidate-source-kind option").evaluateAll(options => options.map(option => option.value)), [
+    "suno", "external", "local-original"
+  ]);
+  assert.equal(await page.locator("#candidate-source-kind").inputValue(), "suno");
+
   assert.equal(await page.title(), "循环乐工房");
   await assertOfficialReadinessCard(page, { singleColumn: false });
   assertNoOfficialApiState(await page.evaluate(() => localStorage.getItem("loop-bgm-lab-v1")), "initial localStorage");
@@ -273,7 +294,7 @@ try {
   await assertPickerKeyboardFocus(page, ".rights-card a[href='https://suno.com/terms']", "reference-files");
   await page.locator(".batch-card:last-child .record-create-run").focus();
   await page.keyboard.press("Tab");
-  assert.equal(await page.evaluate(() => document.activeElement?.id), "candidate-batch");
+  assert.equal(await page.evaluate(() => document.activeElement?.id), "candidate-source-kind");
   await assertPickerKeyboardFocus(page, "#export-markdown", "import-project");
 
   await page.locator("#reference-files").setInputFiles([demoWav, demoWav]);
@@ -409,7 +430,7 @@ try {
   await page.locator(".batch-card[data-axis='baseline'] .record-create-run").click();
   await page.waitForFunction(() => {
     const stored = JSON.parse(localStorage.getItem("loop-bgm-lab-v1"));
-    return stored.version === 2
+    return stored.version === 3
       && stored.runs?.length === 1
       && stored.batches[0].currentRunId === stored.runs[0].id
       && stored.runs[0].outputs.length === 0
@@ -464,19 +485,34 @@ try {
   await page.locator("#candidate-batch").selectOption("batch-1");
   assert.equal(await page.locator("#candidate-file").isDisabled(), true, "candidate input must stay disabled until a run is explicitly selected");
   await page.locator("#candidate-run").selectOption(secondRecordedRun.id);
+  assert.equal(await page.locator("#candidate-file").isDisabled(), true, "Suno input must stay disabled until an existing output is selected");
+  await page.locator("#candidate-output").selectOption("0");
   assert.equal(await page.locator("#candidate-file").isDisabled(), false);
   await page.locator("#candidate-batch").focus();
   await page.keyboard.press("Tab");
   assert.equal(await page.evaluate(() => document.activeElement?.id), "candidate-run");
-  await assertPickerKeyboardFocus(page, "#candidate-run", "candidate-file");
-  await page.locator("#candidate-file").setInputFiles([differentFile, demoFile]);
+  await page.locator("#candidate-file").setInputFiles(differentFile);
+  await page.waitForFunction(runId => {
+    const stored = JSON.parse(localStorage.getItem("loop-bgm-lab-v1"));
+    return stored.candidates.length === 1
+      && stored.candidates[0].candidateSource?.kind === "suno"
+      && stored.candidates[0].candidateSource?.runId === runId
+      && stored.candidates[0].candidateSource?.outputIndex === 0
+      && stored.experiments[0].outputIndex === 0
+      && stored.experiments[0].generatedUrl === "https://suno.com/song/browser-smoke-a";
+  }, secondRecordedRun.id, { timeout: 45_000 });
+  await page.locator("#candidate-output").selectOption("1");
+  await assertPickerKeyboardFocus(page, "#candidate-output", "candidate-file");
+  await page.locator("#candidate-file").setInputFiles(demoFile);
   await page.waitForFunction(runId => {
     const stored = JSON.parse(localStorage.getItem("loop-bgm-lab-v1"));
     return stored.candidates.length === 2
       && stored.experiments.length === 2
       && stored.runs.length === 2
       && stored.experiments.every(experiment => experiment.runId === runId)
-      && stored.experiments.every(experiment => experiment.outputIndex === null);
+      && stored.experiments[0].outputIndex === 0
+      && stored.experiments[1].outputIndex === 1
+      && stored.candidates[1].candidateSource?.outputIndex === 1;
   }, secondRecordedRun.id, { timeout: 45_000 });
   await page.locator("#comparison-result[data-analysis-state='ready']").waitFor({ timeout: 45_000 });
   assert.equal(await page.locator("#comparison-components tbody tr").count(), 6);
@@ -504,6 +540,9 @@ try {
   assert.equal(await page.evaluate(() => Object.hasOwn(JSON.parse(localStorage.getItem("loop-bgm-lab-v1")).candidates[0], "displayName")), false);
 
   const firstHistory = page.locator(`.candidate-history-item[data-candidate-id='${firstCandidate.id}']`);
+  assert.match(await firstHistory.locator(".candidate-source-badge").textContent(), /Suno/);
+  assert.equal(await firstHistory.locator(".candidate-publication-badge").getAttribute("data-status"), "blocked");
+  assert.match(await firstHistory.locator(".candidate-blocker-badge").allTextContents().then(values => values.join(" ")), /missing-license-evidence/);
   const candidateNameEditor = firstHistory.locator(".candidate-display-name");
   assert.match(await candidateNameEditor.evaluate(input => input.labels?.[0]?.textContent || ""), /导出显示名/);
   await candidateNameEditor.fill("欢乐版本 A");
@@ -511,12 +550,8 @@ try {
   await page.waitForFunction(candidateId => JSON.parse(localStorage.getItem("loop-bgm-lab-v1")).candidates.find(item => item.id === candidateId)?.displayName === "欢乐版本 A", firstCandidate.id);
   assert.doesNotMatch(await page.evaluate(() => localStorage.getItem("loop-bgm-lab-v1")), /different-reference\.wav/);
   assert.equal(await firstHistory.locator(".candidate-generated-url").evaluate(input => input.readOnly), true);
-  await firstHistory.locator(".candidate-output-binding").selectOption("0");
-  await page.waitForFunction(candidateId => {
-    const stored = JSON.parse(localStorage.getItem("loop-bgm-lab-v1"));
-    const experiment = stored.experiments.find(item => item.candidateId === candidateId);
-    return experiment?.outputIndex === 0 && experiment.generatedUrl === "https://suno.com/song/browser-smoke-a";
-  }, firstCandidate.id);
+  assert.equal(await firstHistory.locator(".candidate-output-binding").isDisabled(), true);
+  assert.equal(await firstHistory.locator(".candidate-output-binding").inputValue(), "0");
   await firstHistory.locator(".candidate-subjective-score").selectOption("4");
   await firstHistory.locator(".candidate-review-note").fill("旋律动机和编曲层次仍与参考过近，拒绝本轮。");
   await firstHistory.locator(".candidate-review-note").press("Tab");
@@ -538,7 +573,8 @@ try {
   }, firstCandidate.id);
 
   const secondHistory = page.locator(`.candidate-history-item[data-candidate-id='${secondCandidateId}']`);
-  await secondHistory.locator(".candidate-output-binding").selectOption("1");
+  assert.equal(await secondHistory.locator(".candidate-output-binding").isDisabled(), true);
+  assert.equal(await secondHistory.locator(".candidate-output-binding").inputValue(), "1");
   await secondHistory.locator(".candidate-subjective-score").selectOption("5");
   await secondHistory.locator(".candidate-review-note").fill("循环衔接更自然，保留本轮。");
   await secondHistory.locator(".candidate-review-note").press("Tab");
@@ -564,7 +600,9 @@ try {
       && stored.experiments.length === 3
       && stored.runs.length === 2
       && stored.candidates.at(-1).hash === hash
-      && stored.experiments.at(-1).runId === runId;
+      && stored.experiments.at(-1).runId === runId
+      && stored.experiments.at(-1).outputIndex === 1
+      && stored.candidates.at(-1).candidateSource?.outputIndex === 1;
   }, { hash: expectedDifferentSha256, runId: secondRecordedRun.id }, { timeout: 45_000 });
   assert.match(await page.locator("#candidate-progress").textContent(), /1 个成功，1 个失败.*broken-candidate\.txt/);
   const candidateHistory = await page.evaluate(() => {
@@ -597,6 +635,7 @@ try {
       currentCandidateId: stored.batches[0].currentCandidateId,
       bestCandidateId: stored.currentBestCandidate.candidateId,
       experimentRunIds: stored.experiments.map(experiment => experiment.runId),
+      experimentOutputIndexes: stored.experiments.map(experiment => experiment.outputIndex),
       runIds: stored.runs.map(run => run.id),
     };
   }), {
@@ -604,6 +643,7 @@ try {
     currentCandidateId: thirdCandidateId,
     bestCandidateId: firstCandidate.id,
     experimentRunIds: [secondRecordedRun.id, secondRecordedRun.id, secondRecordedRun.id],
+    experimentOutputIndexes: [0, 1, 1],
     runIds: [firstRecordedRun.id, secondRecordedRun.id],
   });
   assert.doesNotMatch(await page.evaluate(() => localStorage.getItem("loop-bgm-lab-v1")), /broken-candidate\.txt|different-reference\.wav|demo-reference\.wav/);
@@ -676,16 +716,16 @@ try {
   const jsonDownload = await jsonDownloadPromise;
   const exportedText = await readFile(await jsonDownload.path(), "utf8");
   const exported = JSON.parse(exportedText);
-  assert.equal(exported.version, 2);
+  assert.equal(exported.version, 3);
   assert.equal(exported.batches[0].status, "downloaded");
   assert.equal(exported.references[0].hash, expectedDifferentSha256);
   assert.equal(exported.licenses[0].category, "cc0");
   assert.equal(exported.candidates.length, 3);
   assert.equal(exported.experiments.length, 3);
-  assert.equal(exported.batches[0].generatedUrl, null);
+  assert.equal(exported.batches[0].generatedUrl, "https://suno.com/song/browser-smoke-b");
   assert.equal(exported.experiments[0].generatedUrl, "https://suno.com/song/browser-smoke-a");
   assert.equal(exported.experiments[1].generatedUrl, "https://suno.com/song/browser-smoke-b");
-  assert.equal(exported.experiments[2].outputIndex, null);
+  assert.equal(exported.experiments[2].outputIndex, 1);
   assert.equal(exported.runs.length, 2);
   assert.equal(exported.runs[0].id, firstRecordedRun.id);
   assert.equal(exported.runs[0].outputs[0].generatedUrl, "https://suno.com/song/browser-smoke-link-only");
@@ -820,7 +860,7 @@ try {
   });
   await markdownHandoffPage.waitForFunction(() => document.querySelector("#import-status")?.textContent.includes("Markdown"));
   assert.match(await markdownHandoffPage.locator("#candidate-history").textContent(), /欢乐版本 A/);
-  assert.equal(await markdownHandoffPage.evaluate(() => JSON.parse(localStorage.getItem("loop-bgm-lab-v1")).version), 2);
+  assert.equal(await markdownHandoffPage.evaluate(() => JSON.parse(localStorage.getItem("loop-bgm-lab-v1")).version), 3);
   await assertNoObservedErrors(markdownHandoffPage, markdownHandoffErrors);
   await markdownHandoffContext.close();
 
@@ -866,7 +906,7 @@ try {
     buffer: Buffer.from(labelledMarkdown)
   });
   await quarantinedStoragePage.waitForFunction(() => document.querySelector("#import-status")?.textContent.includes("已完整导入 Markdown"));
-  assert.equal(await quarantinedStoragePage.evaluate(() => JSON.parse(localStorage.getItem("loop-bgm-lab-v1")).version), 2);
+  assert.equal(await quarantinedStoragePage.evaluate(() => JSON.parse(localStorage.getItem("loop-bgm-lab-v1")).version), 3);
   assert.equal(await quarantinedStoragePage.locator("#storage-warning").isHidden(), true);
   await assertNoObservedErrors(quarantinedStoragePage, quarantinedStorageErrors);
   await quarantinedStorageContext.close();
@@ -911,7 +951,7 @@ try {
     buffer: Buffer.from(labelledMarkdown)
   });
   await emptyStoragePage.waitForFunction(() => document.querySelector("#import-status")?.textContent.includes("已完整导入 Markdown"));
-  assert.equal(await emptyStoragePage.evaluate(() => JSON.parse(localStorage.getItem("loop-bgm-lab-v1")).version), 2);
+  assert.equal(await emptyStoragePage.evaluate(() => JSON.parse(localStorage.getItem("loop-bgm-lab-v1")).version), 3);
   assert.equal(await emptyStoragePage.locator("#storage-warning").isHidden(), true);
   await assertNoObservedErrors(emptyStoragePage, emptyStorageErrors);
   await emptyStorageContext.close();
@@ -1025,6 +1065,84 @@ try {
   await assertNoObservedErrors(page, errors);
   await page.close();
 
+  const externalContext = await browser.newContext({ viewport: { width: 1024, height: 768 } });
+  const externalPage = await externalContext.newPage();
+  const externalErrors = observeErrors(externalPage);
+  await installInterceptors(externalPage, externalErrors);
+  await externalPage.goto(`${origin}/projects/loop-bgm-lab/index.html`, { waitUntil: "networkidle" });
+  await externalPage.locator("body[data-ready='true']").waitFor();
+  await externalPage.locator("#load-demo-reference").click();
+  await externalPage.waitForFunction(() => JSON.parse(localStorage.getItem("loop-bgm-lab-v1")).references.length === 1, null, { timeout: 45_000 });
+  await externalPage.locator("#candidate-source-kind").selectOption("external");
+  assert.equal(await externalPage.locator("#candidate-run").isDisabled(), true);
+  assert.equal(await externalPage.locator("#candidate-output").isDisabled(), true);
+  assert.equal(await externalPage.locator("#candidate-file").isDisabled(), false);
+  assert.match(await externalPage.locator("#candidate-source-help").textContent(), /无需.*Suno.*恰好一条.*SHA-256/);
+
+  const beforeMissingLicense = await externalPage.evaluate(() => localStorage.getItem("loop-bgm-lab-v1"));
+  await externalPage.locator("#candidate-file").setInputFiles(demoFile);
+  await externalPage.waitForFunction(() => document.querySelector("#candidate-progress")?.textContent.includes("0 个成功，1 个失败"), null, { timeout: 45_000 });
+  assert.equal(await externalPage.evaluate(() => localStorage.getItem("loop-bgm-lab-v1")), beforeMissingLicense, "zero matching licenses must not persist a candidate");
+  assert.match(await externalPage.locator("#candidate-progress").textContent(), /没有.*许可证|0 条|恰好一条/);
+
+  await addLicense(externalPage, { suffix: "external-exact" });
+  const beforeExternalImport = await externalPage.evaluate(() => {
+    const stored = JSON.parse(localStorage.getItem("loop-bgm-lab-v1"));
+    return { batches: structuredClone(stored.batches), runs: structuredClone(stored.runs) };
+  });
+  await externalPage.locator("#candidate-file").setInputFiles(demoFile);
+  await externalPage.waitForFunction(hash => {
+    const stored = JSON.parse(localStorage.getItem("loop-bgm-lab-v1"));
+    const candidate = stored.candidates[0];
+    const experiment = stored.experiments[0];
+    return stored.candidates.length === 1
+      && candidate.hash === hash
+      && candidate.candidateSource?.kind === "external"
+      && candidate.candidateSource?.fileSha256 === hash
+      && candidate.candidateSource?.licenseId === stored.licenses[0].id
+      && experiment.runId === null
+      && experiment.outputIndex === null
+      && experiment.generatedUrl === null
+      && experiment.generationConditions === null;
+  }, expectedWavSha256, { timeout: 45_000 });
+  assert.deepEqual(await externalPage.evaluate(() => {
+    const stored = JSON.parse(localStorage.getItem("loop-bgm-lab-v1"));
+    return { batches: stored.batches, runs: stored.runs };
+  }), beforeExternalImport, "external candidate analysis must not mutate Suno batches or runs");
+  const externalHistory = externalPage.locator("#candidate-history .candidate-history-item").first();
+  assert.match(await externalHistory.locator(".candidate-source-badge").textContent(), /外部音乐/);
+  assert.match(await externalHistory.locator(".candidate-license-badge").textContent(), /CC0-1\.0/);
+  assert.match(await externalHistory.locator(".candidate-license-badge").textContent(), /cc0.*original.*证据已记录.*2026-08-30/);
+  assert.equal(await externalHistory.locator(".candidate-publication-badge").getAttribute("data-status"), "review");
+  const beforeReferencedLicenseRemoval = await externalPage.evaluate(() => localStorage.getItem("loop-bgm-lab-v1"));
+  await externalPage.locator("#license-list .license-entry").first().locator("button").click();
+  await externalPage.locator("#app-error:not([hidden])").waitFor({ timeout: 1_000 });
+  assert.match(await externalPage.locator("#app-error").textContent(), /候选引用|不能移除/);
+  assert.equal(await externalPage.evaluate(() => localStorage.getItem("loop-bgm-lab-v1")), beforeReferencedLicenseRemoval, "a referenced license removal must preserve persisted state");
+  assert.equal(await externalPage.locator("#license-list .license-entry").count(), 1);
+  await externalHistory.locator(".candidate-best").check();
+  assert.equal(await externalHistory.locator(".candidate-publication-badge").getAttribute("data-status"), "review", "research favorite must not change publication state");
+  await externalHistory.locator(".candidate-disposition").selectOption("accepted");
+  await externalPage.waitForFunction(() => document.querySelector(".candidate-publication-badge")?.dataset.status === "ready");
+  assert.match(await externalHistory.locator(".candidate-publication-badge").textContent(), /记录门禁通过.*非法律清白/);
+  assert.match(await externalPage.locator("#candidate-history").textContent(), /研究最佳.*不代表可发布/);
+
+  await addLicense(externalPage, { suffix: "ambiguous-a", hash: expectedDifferentSha256 });
+  await addLicense(externalPage, { suffix: "ambiguous-b", hash: expectedDifferentSha256 });
+  const beforeAmbiguousLicense = await externalPage.evaluate(() => localStorage.getItem("loop-bgm-lab-v1"));
+  await externalPage.locator("#candidate-file").setInputFiles(differentFile);
+  await externalPage.waitForFunction(() => document.querySelector("#candidate-progress")?.textContent.includes("0 个成功，1 个失败"), null, { timeout: 45_000 });
+  assert.equal(await externalPage.evaluate(() => localStorage.getItem("loop-bgm-lab-v1")), beforeAmbiguousLicense, "multiple matching licenses must not persist a candidate");
+  assert.match(await externalPage.locator("#candidate-progress").textContent(), /多条|多个|恰好一条/);
+
+  await externalPage.locator("#candidate-source-kind").selectOption("local-original");
+  assert.equal(await externalPage.locator("#candidate-run").isDisabled(), true);
+  assert.equal(await externalPage.locator("#candidate-output").isDisabled(), true);
+  assert.equal(await externalPage.locator("#candidate-file").isDisabled(), false);
+  assert.match(await externalPage.locator("#candidate-source-help").textContent(), /user-declared-original|本人原创/);
+  await assertNoObservedErrors(externalPage, externalErrors);
+  await externalContext.close();
+
   const raceContext = await browser.newContext({ viewport: { width: 1024, height: 768 } });
   const racePage = await raceContext.newPage();
   const raceErrors = observeErrors(racePage);
@@ -1035,11 +1153,20 @@ try {
   await racePage.waitForFunction(() => JSON.parse(localStorage.getItem("loop-bgm-lab-v1")).references.length === 1, null, { timeout: 45_000 });
   await racePage.locator(".batch-card[data-axis='baseline'] .record-create-run").click();
   const raceRunId = await racePage.evaluate(() => JSON.parse(localStorage.getItem("loop-bgm-lab-v1")).batches[0].currentRunId);
+  const raceRunPanel = racePage.locator(`.create-run-panel[data-run-id='${raceRunId}']`);
+  await raceRunPanel.locator(".create-output-url").first().fill("https://suno.com/song/race-output");
+  await raceRunPanel.locator(".create-output-url").first().press("Tab");
+  await racePage.waitForFunction(runId => JSON.parse(localStorage.getItem("loop-bgm-lab-v1")).runs.find(run => run.id === runId)?.outputs.length === 1, raceRunId);
   await racePage.locator("#candidate-run").selectOption(raceRunId);
+  await racePage.locator("#candidate-output").selectOption("0");
   const candidateRaceStart = await racePage.evaluate(() => ({ started: window.__decodeStarted, completed: window.__decodeCompleted }));
   await racePage.evaluate(() => { window.__delayNextDecode = true; });
   await racePage.locator("#candidate-file").setInputFiles(demoWav);
   await racePage.waitForFunction(started => window.__decodeStarted > started, candidateRaceStart.started);
+  await racePage.locator("#candidate-source-kind").selectOption("external");
+  await racePage.locator("#candidate-source-kind").selectOption("suno");
+  await racePage.locator("#candidate-run").selectOption(raceRunId);
+  await racePage.locator("#candidate-output").selectOption("0");
   await racePage.locator("#candidate-file").setInputFiles(differentFile);
   await racePage.waitForFunction(completed => window.__decodeCompleted >= completed + 2, candidateRaceStart.completed, { timeout: 45_000 });
   await racePage.waitForFunction(({ hash, runId }) => {
@@ -1047,7 +1174,9 @@ try {
     return stored.candidates.length === 1
       && stored.candidates[0].hash === hash
       && stored.runs.length === 1
-      && stored.experiments[0].runId === runId;
+      && stored.experiments[0].runId === runId
+      && stored.experiments[0].outputIndex === 0
+      && stored.candidates[0].candidateSource?.outputIndex === 0;
   }, { hash: expectedDifferentSha256, runId: raceRunId });
   assert.doesNotMatch(await racePage.evaluate(() => localStorage.getItem("loop-bgm-lab-v1")), /demo-reference\.wav|different-reference\.wav/);
   await assertNoObservedErrors(racePage, raceErrors);
