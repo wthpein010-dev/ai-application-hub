@@ -8,7 +8,10 @@ import { spawnSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
 import { createDailyPlan } from "../projects/loop-bgm-lab/core/prompt-engine.mjs";
 import { exportProjectJson } from "../projects/loop-bgm-lab/core/project-state.mjs";
-import { importProjectDocument } from "../projects/loop-bgm-lab/core/portable-handoff.mjs";
+import {
+  exportProjectHandoffMarkdown,
+  importProjectDocument
+} from "../projects/loop-bgm-lab/core/portable-handoff.mjs";
 
 const root = dirname(dirname(fileURLToPath(import.meta.url)));
 const projectRoot = join(root, "projects", "loop-bgm-lab");
@@ -188,13 +191,34 @@ test("portable handoff picker accepts both complete recovery formats", () => {
   assert.match(html, /JSON[^<]*Markdown[^<]*完整恢复/);
 });
 
-test("new plans identify the Markdown-handoff tool version without rewriting imported versions", async () => {
-  // Break caught: a newly created project advertises the pre-handoff tool version, or import rewrites an older project identity.
+test("new plans use tool 1.3.0 without rewriting JSON, Markdown, or migrated v2 identities", async () => {
+  // Break caught: a new project advertises the pre-provenance tool version, or import rewrites an older project identity.
   const created = createDailyPlan();
-  assert.equal(created.toolVersion, "loop-bgm-lab/1.2.0");
+  assert.equal(created.toolVersion, "loop-bgm-lab/1.3.0");
 
-  const imported = await importProjectDocument(exportProjectJson({ ...created, toolVersion: "loop-bgm-lab/1.1.0" }));
-  assert.equal(imported.project.toolVersion, "loop-bgm-lab/1.1.0");
+  const older = { ...created, toolVersion: "loop-bgm-lab/1.1.0" };
+  const importedJson = await importProjectDocument(exportProjectJson(older));
+  assert.equal(importedJson.project.toolVersion, "loop-bgm-lab/1.1.0");
+
+  const importedMarkdown = await importProjectDocument(await exportProjectHandoffMarkdown(older));
+  assert.equal(importedMarkdown.project.toolVersion, "loop-bgm-lab/1.1.0");
+
+  const importedV2 = await importProjectDocument(JSON.stringify({ ...older, version: 2 }));
+  assert.equal(importedV2.project.version, 3);
+  assert.equal(importedV2.project.toolVersion, "loop-bgm-lab/1.1.0");
+});
+
+test("README preserves the cross-computer provenance and release-boundary contract", () => {
+  const readme = readProjectFile("README.md");
+  for (const sourceKind of ["suno", "external", "local-original", "legacy-unknown"]) {
+    assert.ok(readme.includes("`" + sourceKind + "`"));
+  }
+  assert.match(readme, /SHA-256[^\n]*(?:身份|完整性)[^\n]*不证明/);
+  assert.match(readme, /preview-only[^\n]*新 SHA-256[^\n]*新候选/);
+  assert.match(readme, /研究最佳[^\n]*不等于发布资料完整/);
+  assert.match(readme, /许可证据包[^\n]*独立的 JSON/);
+  assert.match(readme, /项目 JSON\/Markdown/);
+  assert.match(readme, /不会从链接、文件名或历史自动猜测/);
 });
 
 test("candidate markup exposes an explicit batch association, durable history, and playback-only cleanup", () => {
