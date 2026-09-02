@@ -683,6 +683,12 @@ export function validateProject(input) {
         || source.fileSha256.toLowerCase() !== candidate.hash.toLowerCase()) {
         fail(`candidate ${candidate.id} candidateSource.fileSha256 must exactly match its candidate and license hashes`);
       }
+      if (source.kind === "local-original" && license.rightsChainStatus !== "user-declared-original") {
+        fail(`candidate ${candidate.id} local-original license must use rightsChainStatus user-declared-original`);
+      }
+      if (source.kind === "external" && license.rightsChainStatus === "user-declared-original") {
+        fail(`candidate ${candidate.id} external license cannot use rightsChainStatus user-declared-original`);
+      }
     } else if (source.kind === "suno") {
       const run = runsById.get(source.runId);
       if (!run) fail(`candidate ${candidate.id} candidateSource.runId must reference an existing run`);
@@ -1130,10 +1136,19 @@ function migrateLegacyVersionTwo(input) {
       attributionWarning: ignoredAttributionWarning,
       publicationBlocked: ignoredPublicationBlocked,
       publicationBlockers: ignoredPublicationBlockers,
-      previewOnly: ignoredPreviewOnly,
+      previewOnly: legacyPreviewOnly,
       ...evidence
     } = license;
-    return evidence;
+    return {
+      ...evidence,
+      licenseIdentifier: evidence.license,
+      licenseUrl: null,
+      evidenceUrl: null,
+      evidenceCheckedAt: null,
+      deliveryStatus: legacyPreviewOnly === true ? "preview-only" : "unknown",
+      scopeNote: null,
+      rightsChainStatus: "unknown",
+    };
   });
   return migrated;
 }

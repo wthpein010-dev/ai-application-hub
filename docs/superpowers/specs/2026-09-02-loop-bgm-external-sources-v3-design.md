@@ -56,7 +56,7 @@ The v3 license record retains the current stable ID, public source label, source
   evidenceCheckedAt,
   deliveryStatus: "original" | "preview-only" | "unknown",
   scopeNote,
-  rightsChainStatus: "user-declared-original" | "source-page-declaration" | "verified-rights-chain" | "unknown",
+  rightsChainStatus: "user-declared-original" | "source-declaration-only" | "independently-verified" | "unknown",
   evidenceSha256?,
   modificationNote?
 }

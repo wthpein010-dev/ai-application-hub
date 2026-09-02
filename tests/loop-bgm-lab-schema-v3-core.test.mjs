@@ -94,6 +94,13 @@ function licenseFixture(overrides = {}) {
     source: "OpenGameArt",
     sourceUrl: "https://opengameart.org/content/example",
     license: "CC BY 4.0",
+    licenseIdentifier: "CC-BY-4.0",
+    licenseUrl: "https://creativecommons.org/licenses/by/4.0/",
+    evidenceUrl: "https://opengameart.org/content/example",
+    evidenceCheckedAt: "2026-09-02",
+    deliveryStatus: "original",
+    scopeNote: "Covers the exact downloaded audio bytes.",
+    rightsChainStatus: "independently-verified",
     fileSha256: LICENSE_HASH,
     attributionText: "Example by Example Author, CC BY 4.0",
     author: "Example Author",
@@ -104,7 +111,9 @@ function licenseFixture(overrides = {}) {
 
 function externalProject(kind = "external") {
   const project = createDailyPlan();
-  const license = licenseFixture();
+  const license = licenseFixture(kind === "local-original"
+    ? { rightsChainStatus: "user-declared-original" }
+    : {});
   const candidate = candidateFixture({
     kind,
     licenseId: license.id,
@@ -222,13 +231,13 @@ test("Suno candidates bind exactly to their experiment run and output", () => {
 
 test("license derivation distinguishes ShareAlike and blocks SA, ND, preview-only, unknown, and NC publication", () => {
   const fixtures = [
-    ["CC0 1.0", {}, "cc0", [], false],
-    ["CC BY 4.0", {}, "cc-by", [], false],
-    ["CC BY-SA 4.0", {}, "cc-by-sa", ["share-alike"], true],
-    ["CC BY-NC-SA 4.0", {}, "cc-by-nc-sa", ["noncommercial", "share-alike"], true],
-    ["CC BY-ND 4.0", {}, "cc-by-nd", ["no-derivatives"], true],
-    ["CC BY 4.0", { previewOnly: true }, "cc-by", ["preview-only"], true],
-    ["Custom License", {}, "unknown", ["unknown-license"], true],
+    ["CC0 1.0", { licenseIdentifier: "CC0-1.0", licenseUrl: "https://creativecommons.org/publicdomain/zero/1.0/" }, "cc0", [], false],
+    ["CC BY 4.0", { licenseIdentifier: "CC-BY-4.0" }, "cc-by", [], false],
+    ["CC BY-SA 4.0", { licenseIdentifier: "CC-BY-SA-4.0", licenseUrl: "https://creativecommons.org/licenses/by-sa/4.0/" }, "cc-by-sa", ["share-alike-review-required"], true],
+    ["CC BY-NC-SA 4.0", { licenseIdentifier: "CC-BY-NC-SA-4.0", licenseUrl: "https://creativecommons.org/licenses/by-nc-sa/4.0/" }, "cc-by-nc-sa", ["noncommercial", "share-alike-review-required"], true],
+    ["CC BY-ND 4.0", { licenseIdentifier: "CC-BY-ND-4.0", licenseUrl: "https://creativecommons.org/licenses/by-nd/4.0/" }, "cc-by-nd", ["no-derivatives-review-required"], true],
+    ["CC BY 4.0", { licenseIdentifier: "CC-BY-4.0", deliveryStatus: "preview-only" }, "cc-by", ["preview-only"], true],
+    ["Custom License", { licenseIdentifier: "LicenseRef-Unknown", licenseUrl: null }, "unknown", ["unknown-license", "missing-evidence"], true],
   ];
 
   for (const [license, extra, category, blockers, publicationBlocked] of fixtures) {
@@ -236,8 +245,8 @@ test("license derivation distinguishes ShareAlike and blocks SA, ND, preview-onl
     assert.equal(entry.category, category, license);
     assert.deepEqual(entry.publicationBlockers, blockers, license);
     assert.equal(entry.publicationBlocked, publicationBlocked, license);
-    assert.equal(entry.licenseFlags.sa, blockers.includes("share-alike"), license);
-    assert.equal(entry.licenseFlags.nd, blockers.includes("no-derivatives"), license);
+    assert.equal(entry.licenseFlags.sa, blockers.includes("share-alike-review-required"), license);
+    assert.equal(entry.licenseFlags.nd, blockers.includes("no-derivatives-review-required"), license);
     assert.equal(entry.licenseFlags.previewOnly, blockers.includes("preview-only"), license);
   }
 });
