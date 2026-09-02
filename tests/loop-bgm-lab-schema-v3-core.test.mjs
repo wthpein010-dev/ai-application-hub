@@ -2,6 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 
 import {
+  confirmLegacyCandidateSource,
   exportProjectJson,
   importProjectJson,
   recordCreateRun,
@@ -162,6 +163,15 @@ function sunoProject() {
   };
 }
 
+function legacyProject() {
+  const project = sunoProject();
+  project.candidates[0].candidateSource = {
+    kind: "legacy-unknown",
+    legacyRunId: project.runs[0].id,
+  };
+  return validateProject(project);
+}
+
 test("new projects use schema v3 and strict candidateSource variants survive JSON and Markdown round trips", async () => {
   assert.equal(createDailyPlan().version, 3);
 
@@ -278,4 +288,106 @@ test("external experiments allow null Suno evidence and review updates never mut
     invalid.experiments[0][field] = value;
     assert.throws(() => validateProject(invalid), /external|local-original|must be null/i, field);
   }
+});
+
+test("explicit legacy confirmation can bind an exact Suno run output without mutating its input", () => {
+  const original = legacyProject();
+  const snapshot = structuredClone(original);
+  const run = original.runs[0];
+
+  const confirmed = confirmLegacyCandidateSource(original, "candidate-1", {
+    kind: "suno",
+    runId: run.id,
+    outputIndex: 0,
+  });
+
+  assert.deepEqual(original, snapshot);
+  assert.deepEqual(confirmed.candidates[0].candidateSource, {
+    kind: "suno",
+    runId: run.id,
+    outputIndex: 0,
+  });
+  assert.equal(confirmed.experiments[0].runId, run.id);
+  assert.equal(confirmed.experiments[0].outputIndex, 0);
+  assert.equal(confirmed.experiments[0].generatedUrl, run.outputs[0].generatedUrl);
+  assert.deepEqual(confirmed.experiments[0].generationConditions, run.generationConditions);
+  assert.equal(confirmed.batches[0].currentRunId, run.id);
+  assert.equal(confirmed.batches[0].currentCandidateId, "candidate-1");
+});
+
+test("explicit legacy confirmation can convert to external or local evidence and clears only current Suno mirrors", () => {
+  for (const kind of ["external", "local-original"]) {
+    const original = legacyProject();
+    original.licenses.push(licenseFixture(kind === "local-original"
+      ? { rightsChainStatus: "user-declared-original" }
+      : {}));
+    const validated = validateProject(original);
+    const snapshot = structuredClone(validated);
+
+    const confirmed = confirmLegacyCandidateSource(validated, "candidate-1", {
+      kind,
+      licenseId: "license-1",
+      fileSha256: CANDIDATE_HASH,
+    });
+
+    assert.deepEqual(validated, snapshot, `${kind} input mutation`);
+    assert.deepEqual(confirmed.candidates[0].candidateSource, {
+      kind,
+      licenseId: "license-1",
+      fileSha256: CANDIDATE_HASH,
+    });
+    assert.deepEqual(
+      Object.fromEntries(["runId", "outputIndex", "generatedUrl", "generationConditions"]
+        .map(field => [field, confirmed.experiments[0][field]])),
+      { runId: null, outputIndex: null, generatedUrl: null, generationConditions: null },
+    );
+    assert.equal(confirmed.experiments[0].subjectiveScore, 4);
+    assert.equal(confirmed.experiments[0].disposition, "accepted");
+    assert.deepEqual(confirmed.runs, validated.runs);
+    assert.equal(confirmed.batches[0].status, "planned");
+    assert.equal(confirmed.batches[0].currentRunId, null);
+    assert.equal(confirmed.batches[0].currentCandidateId, null);
+    assert.equal(confirmed.batches[0].candidateHash, null);
+    assert.equal(confirmed.batches[0].generatedUrl, null);
+    assert.equal(confirmed.batches[0].subjectiveScore, null);
+    assert.equal(confirmed.batches[0].reviewNote, "");
+    assert.equal(confirmed.batches[0].disposition, "unrated");
+  }
+});
+
+test("legacy confirmation rejects guessed, mismatched, or repeated provenance with zero input mutation", () => {
+  const project = legacyProject();
+  project.licenses.push(licenseFixture());
+  const validated = validateProject(project);
+
+  const invalidConfirmations = [
+    { kind: "suno", runId: "run-missing", outputIndex: 0 },
+    { kind: "suno", runId: validated.runs[0].id, outputIndex: 1 },
+    { kind: "external", licenseId: "license-1", fileSha256: "c".repeat(64) },
+    { kind: "external", licenseId: "license-missing", fileSha256: CANDIDATE_HASH },
+    { kind: "legacy-unknown", legacyRunId: validated.runs[0].id },
+  ];
+
+  for (const confirmation of invalidConfirmations) {
+    const snapshot = structuredClone(validated);
+    assert.throws(
+      () => confirmLegacyCandidateSource(validated, "candidate-1", confirmation),
+      /confirmation|candidateSource|run|output|license|hash|legacy/i,
+    );
+    assert.deepEqual(validated, snapshot);
+  }
+
+  const once = confirmLegacyCandidateSource(validated, "candidate-1", {
+    kind: "external",
+    licenseId: "license-1",
+    fileSha256: CANDIDATE_HASH,
+  });
+  assert.throws(
+    () => confirmLegacyCandidateSource(once, "candidate-1", {
+      kind: "external",
+      licenseId: "license-1",
+      fileSha256: CANDIDATE_HASH,
+    }),
+    /only legacy-unknown|already confirmed/i,
+  );
 });

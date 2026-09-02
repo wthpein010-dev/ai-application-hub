@@ -942,6 +942,93 @@ export function updateExperimentReview(project, experimentId, patch = {}) {
   return validateProject(validated);
 }
 
+export function confirmLegacyCandidateSource(project, candidateId, confirmation) {
+  const validated = validateProject(project);
+  assertId(candidateId, "candidateId");
+  if (!isPlainObject(confirmation)) fail("candidate source confirmation must be an object");
+  if (confirmation.kind === "legacy-unknown") {
+    fail("candidate source confirmation cannot remain legacy-unknown");
+  }
+  validateCandidateSource(confirmation, "candidate source confirmation");
+
+  const candidateIndex = validated.candidates.findIndex(candidate => candidate.id === candidateId);
+  if (candidateIndex < 0) fail(`Unknown candidate: ${candidateId}`);
+  const candidate = validated.candidates[candidateIndex];
+  if (candidate.candidateSource.kind !== "legacy-unknown") {
+    fail(`Only legacy-unknown candidates can be confirmed; ${candidateId} is already confirmed`);
+  }
+
+  if (confirmation.kind === "suno") {
+    const run = validated.runs.find(item => item.id === confirmation.runId);
+    if (!run) fail(`candidate source confirmation run does not exist: ${confirmation.runId}`);
+    const output = run.outputs[confirmation.outputIndex];
+    if (!output) fail(`candidate source confirmation output does not exist: ${confirmation.outputIndex}`);
+    if (run.generationConditions.batchId !== candidate.batchId) {
+      fail("candidate source confirmation run belongs to a different batch");
+    }
+    const experimentIndexes = validated.experiments
+      .map((experiment, index) => experiment.candidateId === candidateId ? index : -1)
+      .filter(index => index >= 0);
+    if (experimentIndexes.length === 0) {
+      fail("candidate source confirmation requires an existing experiment");
+    }
+
+    validated.candidates[candidateIndex] = {
+      ...candidate,
+      candidateSource: cloneJson(confirmation),
+    };
+    for (const experimentIndex of experimentIndexes) {
+      validated.experiments[experimentIndex] = {
+        ...validated.experiments[experimentIndex],
+        runId: run.id,
+        outputIndex: confirmation.outputIndex,
+        generatedUrl: output.generatedUrl,
+        subjectiveScore: output.subjectiveScore,
+        reviewNote: output.reviewNote,
+        disposition: output.disposition,
+        generationConditions: cloneJson(run.generationConditions),
+      };
+    }
+    validated.batches = validated.batches.map(batch => batch.currentCandidateId === candidateId
+      ? {
+        ...batch,
+        currentRunId: run.id,
+        generationConditions: cloneJson(run.generationConditions),
+        candidateHash: candidate.hash,
+        generatedUrl: output.generatedUrl,
+        subjectiveScore: output.subjectiveScore,
+        reviewNote: output.reviewNote,
+        disposition: output.disposition,
+      }
+      : batch);
+    return validateProject(validated);
+  }
+
+  if (confirmation.fileSha256.toLowerCase() !== candidate.hash.toLowerCase()) {
+    fail("candidate source confirmation hash must match the candidate hash");
+  }
+  validated.candidates[candidateIndex] = {
+    ...candidate,
+    candidateSource: {
+      ...cloneJson(confirmation),
+      fileSha256: candidate.hash,
+    },
+  };
+  validated.experiments = validated.experiments.map(experiment => experiment.candidateId === candidateId
+    ? {
+      ...experiment,
+      runId: null,
+      outputIndex: null,
+      generatedUrl: null,
+      generationConditions: null,
+    }
+    : experiment);
+  validated.batches = validated.batches.map(batch => batch.currentCandidateId === candidateId
+    ? clearCurrentProgress(batch)
+    : batch);
+  return validateProject(validated);
+}
+
 export function transitionBatch(plan, batchId, status, patch = {}) {
   const validated = validateProject(plan);
   if (!STATUS_VALUES.has(status)) fail(`Unsupported batch status: ${status}`);
