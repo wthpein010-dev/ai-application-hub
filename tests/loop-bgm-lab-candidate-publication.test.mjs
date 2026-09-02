@@ -7,6 +7,7 @@ import {
   validateLicenseEntry,
 } from "../projects/loop-bgm-lab/core/candidate-score.mjs";
 import {
+  exportProjectJson,
   importProjectJson,
   recordCreateRun,
   updateRunOutputs,
@@ -331,6 +332,106 @@ test("license v3 rejects stale caller-supplied derived classification and blocke
   assert.throws(
     () => validateLicenseEntry({ ...normalized, attributionWarning: "Stale warning" }),
     /attributionWarning.*inconsistent/i,
+  );
+});
+
+test("project license validation rejects transport URLs, private hosts, and encoded local identity", () => {
+  const encodeLayers = (value, count) => Array.from({ length: count })
+    .reduce(encoded => encodeURIComponent(encoded), value);
+  const encodedLocalPath = encodeURIComponent(["Z:", "portable-test", "sample.mp3"].join("\\"));
+  const deeplyEncodedLocalPath = encodeLayers("Z%3A%5Cportable-test%5Csample%2Emp3", 4);
+  const deeplyEncodedMediaSuffix = encodeLayers("%2Emp3", 3);
+  const deeplyEncodedSignature = encodeLayers("%53ignature", 4);
+  const nestedMediaUrl = encodeURIComponent("https://cdn.example.test/audio/master.mp3");
+  const forbiddenUrls = [
+    "https://cdn.example.test/audio/master.mp3",
+    "https://cdn.example.test/%ZZ/audio/master%2Emp3",
+    `https://cdn.example.test/audio/master${deeplyEncodedMediaSuffix}`,
+    "https://cdn.example.test/download/master",
+    "https://cdn.example.test/object?Signature=abc",
+    "https://storage.example.test/blob?sv=2024-11-04&se=2026-09-02T10%3A00Z&sp=r&sig=abc",
+    "https://storage.example.test/blob#sig=abc",
+    "https://storage.example.test/blob?redirect=sig%3Dabc",
+    "https://cdn.example.test/object#Signature=abc",
+    "https://cdn.example.test/object?Signature%3Dabc",
+    "https://cdn.example.test/object#Signature%3Dabc",
+    "https://cdn.example.test/object?redirect=Signature%3Dabc",
+    "https://cdn.example.test/object#redirect=Signature%3Dabc",
+    "https://cdn.example.test/object?note=ok%3BSignature%3Dabc",
+    "https://cdn.example.test/object#note=ok%3BSignature%3Dabc",
+    "https://example.test/evidence?payload=data%3Aaudio%2Fmpeg%3Bbase64%2CAAAA",
+    "https://example.test/evidence?payload=da%09ta%3Aaudio%2Fmpeg%3Bbase64%2CAAAA",
+    "https://example.test/evidence?payload=dat%0Aa%3Aaudio%2Fmpeg%3Bbase64%2CAAAA",
+    "https://example.test/evidence?payload=%2500data%253Aaudio%252Fmpeg%253Bbase64%252CAAAA",
+    "https://example.test/evidence?payload=ok%2Fjavascript%3Aalert(1)",
+    "https://example.test/evidence?payload=ok%5Cjavascript%3Aalert(1)",
+    "https://example.test/evidence?payload=%5Bjavascript%3Aalert(1)%5D",
+    "https://example.test/evidence?payload=%7Bdata%3Atext%2Fplain%2Cx%7D",
+    "https://example.test/evidence?next=javascript%3Aalert(1)",
+    "https://example.test/evidence?next=java%09script%3Aalert(1)",
+    "https://example.test/evidence?next=vbscr%0Dipt%3Aalert(1)",
+    "https://example.test/evidence?contact=mailto%3Aartist%40example.test",
+    "https://example.test/evidence?mirror=ftp%3A%2F%2Fexample.test%2Fitem",
+    "https://example.test/evidence?mirror=ftp%3Aexample.test%2Fitem",
+    "https://example.test/evidence?next=http%3Aexample.org%2Fpath",
+    "https://example.test/evidence?next=https%3Aexample.org%2Fpath",
+    "https://example.test/evidence?contact=mailto%3Apostmaster",
+    "https://example.test/evidence?contact=mailto%3A%3Fsubject%3Dtest",
+    "https://example.test/evidence?payload=data%3Aaudio%2Fx*custom%2CAAAA",
+    "https://example.test/evidence?payload=data%3Atext%2Fplain%3Bfoo%3Dbar%20baz%2CAAAA",
+    "https://example.test/evidence?payload=data%3Ax%2CAAAA",
+    "https://example.test/evidence?identifier=urn%3Auuid%3A1234",
+    "https://example.test/evidence?identifier=u%09rn%3Auuid%3A1234",
+    "https://example.test/evidence?q=%FF",
+    "https://example.test/evidence?%FF=value",
+    "https://example.test/evidence?ok=1%C0%AFsig%3Dabc",
+    "https://example.test/evidence?q=javascript%C0%BAalert%281%29",
+    `https://example.test/evidence?source=${encodedLocalPath}`,
+    `https://example.test/evidence?source=${deeplyEncodedLocalPath}`,
+    "https://example.test/evidence?source=Z%253A%255Cprivate%255Csample%252Emp3%25ZZ",
+    `https://example.test/evidence?${deeplyEncodedSignature}=abc`,
+    `https://example.test/evidence#source=${encodedLocalPath}`,
+    `https://example.test/evidence?redirect=${nestedMediaUrl}`,
+    "https://localhost/evidence",
+    "https://localhost../evidence",
+    "https://127.0.0.1/evidence",
+    "https://192.168.1.20/evidence",
+    "https://[::1]/evidence",
+    "https://[fc00::1]/evidence",
+    "https://[fe80::1]/evidence",
+    "https://[::ffff:192.168.1.20]/evidence",
+    "https://198.51.100.20/evidence",
+    "https://203.0.113.20/evidence",
+    "https://[2001:db8::1]/evidence",
+    "https://[fec0::1]/evidence",
+    "https://[ff02::1]/evidence",
+  ];
+
+  for (const field of ["sourceUrl", "licenseUrl", "evidenceUrl"]) {
+    for (const url of forbiddenUrls) {
+      const project = licensedProject({ license: licenseFixture({ [field]: url }) });
+      assert.throws(
+        () => validateProject(project),
+        /public evidence page|media|download|signed|local|private|path|nested|scheme|encoding/i,
+        `${field}: ${url}`,
+      );
+      assert.throws(
+        () => exportProjectJson(project),
+        /public evidence page|media|download|signed|local|private|path|nested|scheme|encoding/i,
+        `export ${field}: ${url}`,
+      );
+    }
+  }
+});
+
+test("license evidence timestamps reject nonexistent UTC calendar dates", () => {
+  assert.throws(
+    () => validateLicenseEntry(licenseFixture({ evidenceCheckedAt: "2026-02-30T00:00:00Z" })),
+    /valid ISO date|UTC timestamp/i,
+  );
+  assert.equal(
+    validateLicenseEntry(licenseFixture({ evidenceCheckedAt: "2024-02-29T23:59:59.123Z" })).evidenceCheckedAt,
+    "2024-02-29T23:59:59.123Z",
   );
 });
 

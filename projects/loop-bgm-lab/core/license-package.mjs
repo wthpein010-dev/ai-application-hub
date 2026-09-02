@@ -1,6 +1,6 @@
 import { validateLicenseEntry } from "./candidate-score.mjs";
 import {
-  assertHttpsUrl,
+  assertPublicEvidencePageUrl,
   assertPortableValue,
   isPlainObject,
   normalizePortableKey,
@@ -24,11 +24,6 @@ const SECRET_KEY_PARTS = ["cookie", "token", "apikey", "recoverykey", "session",
 const SECRET_VALUE = /(?:^|[?&#;\s("'`])(?:cookie|token|api(?:[_-]?key)|recovery(?:[_-]?key)|session|password|secret)\s*[:=]/i;
 const HASH_PATTERN = /^[a-fA-F0-9]{64}$/;
 const DATE_PATTERN = /^(\d{4})-(\d{2})-(\d{2})$/;
-const MEDIA_PATH = /\.(?:aac|aif|aiff|flac|m4a|mp3|oga|ogg|opus|wav|wma|zip)$/i;
-const DOWNLOAD_PATH = /\/(?:attachments?|downloads?|files?)(?:\/|$)/i;
-const SIGNED_PARAMETER_NAMES = new Set([
-  "expires", "signature", "keypairid", "policy", "download", "responsecontentdisposition",
-]);
 const BLOCKER_ORDER = [
   "unknown-license",
   "missing-evidence",
@@ -111,40 +106,6 @@ function normalizeDate(value, field) {
   return normalized;
 }
 
-function decodeRepeatedly(value) {
-  let decoded = value;
-  for (let index = 0; index < 3; index += 1) {
-    try {
-      const next = decodeURIComponent(decoded);
-      if (next === decoded) break;
-      decoded = next;
-    } catch {
-      break;
-    }
-  }
-  return decoded;
-}
-
-function assertPublicEvidencePageUrl(value, field, { nullable = false } = {}) {
-  if (nullable && value === null) return null;
-  const normalized = normalizeRequiredString(value, field);
-  assertHttpsUrl(normalized, field);
-  const parsed = new URL(normalized);
-  const decodedPath = decodeRepeatedly(parsed.pathname);
-  if (MEDIA_PATH.test(decodedPath) || DOWNLOAD_PATH.test(decodedPath)) {
-    fail(`${field} must be a public evidence page, not a media or download URL`);
-  }
-  for (const parameterName of parsed.searchParams.keys()) {
-    const normalizedName = normalizePortableKey(decodeRepeatedly(parameterName));
-    if (SIGNED_PARAMETER_NAMES.has(normalizedName)
-      || normalizedName.startsWith("xamz")
-      || normalizedName.startsWith("xgoog")) {
-      fail(`${field} must be a public evidence page without signed download parameters`);
-    }
-  }
-  return normalized;
-}
-
 function assertBoundedStrings(value, field, seen = new WeakSet()) {
   if (typeof value === "string") {
     if (value.length > MAX_FIELD_LENGTH) fail(`${field} is too long`);
@@ -211,6 +172,19 @@ function stableJson(value) {
   return JSON.stringify(value);
 }
 
+function assertDataPropertiesOnly(value, field = "license import plan", seen = new WeakSet()) {
+  if (value === null || typeof value !== "object") return;
+  if (seen.has(value)) fail(`${field} must not contain circular values`);
+  seen.add(value);
+  for (const [key, descriptor] of Object.entries(Object.getOwnPropertyDescriptors(value))) {
+    if (typeof descriptor.get === "function" || typeof descriptor.set === "function") {
+      fail(`${field}.${key} must be a plain data property`);
+    }
+    assertDataPropertiesOnly(descriptor.value, `${field}.${key}`, seen);
+  }
+  seen.delete(value);
+}
+
 export function normalizeLicensePackage(input) {
   assertNoDangerousOrSecretValues(input);
   assertStrictObject(input, "license package");
@@ -270,6 +244,8 @@ function licensesBaseline(entries) {
   return `canonical-license-json-v1:${stableJson(entries)}`;
 }
 
+const LICENSE_IMPORT_PLAN_SNAPSHOTS = new WeakMap();
+
 export function planLicensePackageImport(existingEntries, incomingPackage) {
   const existing = normalizeEntries(existingEntries, "existingEntries");
   const incoming = normalizeLicensePackage(incomingPackage);
@@ -303,7 +279,7 @@ export function planLicensePackageImport(existingEntries, incomingPackage) {
     }
   }
 
-  return {
+  const plan = {
     canCommit: conflicts.length === 0,
     existingLicensesBaseline: licensesBaseline(existing),
     additions: conflicts.length === 0 ? additions : [],
@@ -311,18 +287,33 @@ export function planLicensePackageImport(existingEntries, incomingPackage) {
     conflicts,
     blockingSummary: incoming.blockingSummary,
   };
+  const snapshot = JSON.parse(JSON.stringify(plan));
+  LICENSE_IMPORT_PLAN_SNAPSHOTS.set(plan, { snapshot, fingerprint: stableJson(snapshot) });
+  return plan;
 }
 
 export function applyLicensePackageImport(project, plan) {
   assertStrictObject(plan, "license import plan");
-  if (plan.canCommit !== true || !Array.isArray(plan.conflicts) || plan.conflicts.length !== 0) {
+  const issued = LICENSE_IMPORT_PLAN_SNAPSHOTS.get(plan);
+  let currentFingerprint = null;
+  try {
+    assertDataPropertiesOnly(plan);
+    currentFingerprint = stableJson(plan);
+  } catch {
+    currentFingerprint = null;
+  }
+  if (!issued || issued.fingerprint !== currentFingerprint) {
+    fail("stale license import plan: preflight data changed or the plan is invalid");
+  }
+  const reviewedPlan = issued.snapshot;
+  if (reviewedPlan.canCommit !== true || !Array.isArray(reviewedPlan.conflicts) || reviewedPlan.conflicts.length !== 0) {
     fail("license import plan has conflicts and cannot commit");
   }
-  const additions = normalizeEntries(plan.additions, "license import plan.additions");
+  const additions = normalizeEntries(reviewedPlan.additions, "license import plan.additions");
   const validated = validateProject(project);
   const currentBaseline = licensesBaseline(normalizeEntries(validated.licenses, "project.licenses"));
-  if (typeof plan.existingLicensesBaseline !== "string"
-    || plan.existingLicensesBaseline !== currentBaseline) {
+  if (typeof reviewedPlan.existingLicensesBaseline !== "string"
+    || reviewedPlan.existingLicensesBaseline !== currentBaseline) {
     fail("license import plan is stale because the license baseline changed");
   }
   return validateProject({
@@ -332,8 +323,9 @@ export function applyLicensePackageImport(project, plan) {
 }
 
 function mapDeliveryStatus(value) {
+  if (typeof value !== "string") return "unknown";
+  if (/audition|preview/i.test(value)) return "preview-only";
   if (value === "original-attachment") return "original";
-  if (value === "audition-only-public-hq-preview") return "preview-only";
   return "unknown";
 }
 
@@ -365,10 +357,10 @@ function nullableTrimmedString(value) {
 }
 
 function sourceLabel(sourceUrl) {
-  const hostname = new URL(sourceUrl).hostname.toLowerCase();
+  const hostname = new URL(sourceUrl).hostname.toLowerCase().replace(/\.+$/, "");
   if (hostname === "opengameart.org" || hostname.endsWith(".opengameart.org")) return "OpenGameArt";
   if (hostname === "freesound.org" || hostname.endsWith(".freesound.org")) return "Freesound";
-  return hostname;
+  return hostname.replace(/\./g, " · ");
 }
 
 function combinedScope(manifestScope, assetScope) {
@@ -389,10 +381,10 @@ function validateManifestCounts(manifest) {
   }
   const fileCount = manifest.works.reduce((sum, work) => sum + (Array.isArray(work.files) ? work.files.length : 0), 0);
   const originalCount = manifest.works.reduce((sum, work) => sum + (Array.isArray(work.files)
-    ? work.files.filter(file => file?.deliveryStatus === "original-attachment").length
+    ? work.files.filter(file => mapDeliveryStatus(file?.deliveryStatus) === "original").length
     : 0), 0);
   const previewCount = manifest.works.reduce((sum, work) => sum + (Array.isArray(work.files)
-    ? work.files.filter(file => file?.deliveryStatus === "audition-only-public-hq-preview").length
+    ? work.files.filter(file => mapDeliveryStatus(file?.deliveryStatus) === "preview-only").length
     : 0), 0);
   if (manifest.collection.workCount !== manifest.works.length) fail("external manifest.collection.workCount is inconsistent");
   if (manifest.collection.fileCount !== fileCount) fail("external manifest.collection.fileCount is inconsistent");

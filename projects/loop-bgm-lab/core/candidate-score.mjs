@@ -1,4 +1,4 @@
-import { assertHttpsUrl, assertPortableValue, isPlainObject } from "./portable-safety.mjs";
+import { assertPublicEvidencePageUrl, assertPortableValue, isPlainObject } from "./portable-safety.mjs";
 
 const WEIGHTS = Object.freeze({
   tempo: 0.25,
@@ -277,8 +277,7 @@ function normalizeNullableString(value, field) {
 
 function normalizeNullableHttpsUrl(value, field) {
   if (value === null) return null;
-  assertHttpsUrl(value, field);
-  return value;
+  return assertPublicEvidencePageUrl(value, field);
 }
 
 function normalizeDate(value, field, { nullable = false } = {}) {
@@ -292,8 +291,21 @@ function normalizeDate(value, field, { nullable = false } = {}) {
       return value;
     }
   }
-  if (!nullable || !/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d{1,3})?Z$/.test(value)
-    || !Number.isFinite(Date.parse(value))) {
+  const timestamp = nullable
+    ? /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2}):(\d{2})(?:\.(\d{1,3}))?Z$/.exec(value)
+    : null;
+  const timestampValue = timestamp ? Date.parse(value) : Number.NaN;
+  const parsedTimestamp = Number.isFinite(timestampValue) ? new Date(timestampValue) : null;
+  const milliseconds = timestamp?.[7] ? Number(timestamp[7].padEnd(3, "0")) : 0;
+  if (!timestamp
+    || !parsedTimestamp
+    || parsedTimestamp.getUTCFullYear() !== Number(timestamp[1])
+    || parsedTimestamp.getUTCMonth() + 1 !== Number(timestamp[2])
+    || parsedTimestamp.getUTCDate() !== Number(timestamp[3])
+    || parsedTimestamp.getUTCHours() !== Number(timestamp[4])
+    || parsedTimestamp.getUTCMinutes() !== Number(timestamp[5])
+    || parsedTimestamp.getUTCSeconds() !== Number(timestamp[6])
+    || parsedTimestamp.getUTCMilliseconds() !== milliseconds) {
     fail(`${field} must be a valid ISO date${nullable ? " or UTC timestamp" : ""}`);
   }
   return value;
@@ -315,7 +327,7 @@ export function validateLicenseEntry(entry) {
   for (const key of Object.keys(entry)) {
     if (!allowed.has(key)) fail(`Unsupported license field: ${key}`);
   }
-  assertHttpsUrl(entry.sourceUrl, "sourceUrl");
+  const sourceUrl = assertPublicEvidencePageUrl(entry.sourceUrl, "sourceUrl");
   assertPortableValue(entry);
   assertRequiredString(entry.id, "license.id");
   if (!/^[a-z][a-z0-9-]{0,79}$/i.test(entry.id)) fail("license.id must be a portable identifier");
@@ -414,7 +426,7 @@ export function validateLicenseEntry(entry) {
   const output = {
     id: entry.id,
     source: entry.source,
-    sourceUrl: entry.sourceUrl,
+    sourceUrl,
     license: entry.license,
     licenseIdentifier: entry.licenseIdentifier,
     licenseUrl,

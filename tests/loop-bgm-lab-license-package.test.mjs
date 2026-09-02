@@ -193,22 +193,104 @@ test("strict JSON boundaries enforce byte and entry limits", () => {
 test("public evidence URLs reject media files and signed download parameters", () => {
   const forbiddenUrls = [
     "https://cdn.example.test/master.mp3",
+    "https://cdn.example.test/%ZZ/audio/master%2Emp3",
     "https://cdn.example.test/master%2Ewav",
     "https://cdn.example.test/download",
     "https://cdn.example.test/object?Expires=999999",
     "https://cdn.example.test/object?Signature=abc",
+    "https://storage.example.test/blob?sv=2024-11-04&se=2026-09-02T10%3A00Z&sp=r&sig=abc",
+    "https://storage.example.test/blob#sig=abc",
+    "https://storage.example.test/blob?redirect=sig%3Dabc",
     "https://cdn.example.test/object?Key-Pair-Id=K",
     "https://cdn.example.test/object?X-Amz-Credential=abc",
+    "https://cdn.example.test/object#Signature=abc",
+    "https://cdn.example.test/object?Signature%3Dabc",
+    "https://cdn.example.test/object#Signature%3Dabc",
+    "https://cdn.example.test/object?redirect=Signature%3Dabc",
+    "https://cdn.example.test/object#redirect=Signature%3Dabc",
+    "https://cdn.example.test/object?note=ok%3BSignature%3Dabc",
+    "https://cdn.example.test/object#note=ok%3BSignature%3Dabc",
   ];
   for (const field of ["sourceUrl", "evidenceUrl", "licenseUrl"]) {
     for (const url of forbiddenUrls) {
       assert.throws(
         () => normalizeLicensePackage(packageFixture([entryFixture({ [field]: url })])),
-        /public evidence page|media|signed|download/i,
+        /public evidence page|media|signed|download|encoding/i,
         `${field}: ${url}`,
       );
     }
   }
+});
+
+test("public evidence URLs reject private hosts and unsafe decoded parameter values", () => {
+  const encodedLocalPath = encodeURIComponent(["Z:", "portable-test", "sample.mp3"].join("\\"));
+  const nestedMediaUrl = encodeURIComponent("https://cdn.example.test/audio/master.mp3");
+  const forbiddenUrls = [
+    "https://localhost/evidence",
+    "https://localhost../evidence",
+    "https://127.0.0.1/evidence",
+    "https://10.20.30.40/evidence",
+    "https://172.16.4.2/evidence",
+    "https://192.168.10.2/evidence",
+    "https://[::1]/evidence",
+    "https://[fc00::1]/evidence",
+    "https://[fe80::1]/evidence",
+    "https://[::ffff:192.168.10.2]/evidence",
+    `https://example.test/evidence?source=${encodedLocalPath}`,
+    `https://example.test/evidence#source=${encodedLocalPath}`,
+    `https://example.test/evidence?redirect=${nestedMediaUrl}`,
+    "https://example.test/evidence?redirect=https%3A%2F%2Fexample.test%2Fpublic-evidence",
+    "https://example.test/evidence?payload=data%3Aaudio%2Fmpeg%3Bbase64%2CAAAA",
+    "https://example.test/evidence?payload=da%09ta%3Aaudio%2Fmpeg%3Bbase64%2CAAAA",
+    "https://example.test/evidence?payload=dat%0Aa%3Aaudio%2Fmpeg%3Bbase64%2CAAAA",
+    "https://example.test/evidence?payload=%2500data%253Aaudio%252Fmpeg%253Bbase64%252CAAAA",
+    "https://example.test/evidence?payload=ok%2Fjavascript%3Aalert(1)",
+    "https://example.test/evidence?payload=ok%5Cjavascript%3Aalert(1)",
+    "https://example.test/evidence?payload=%5Bjavascript%3Aalert(1)%5D",
+    "https://example.test/evidence?payload=%7Bdata%3Atext%2Fplain%2Cx%7D",
+    "https://example.test/evidence?next=javascript%3Aalert(1)",
+    "https://example.test/evidence?next=java%09script%3Aalert(1)",
+    "https://example.test/evidence?next=vbscr%0Dipt%3Aalert(1)",
+    "https://example.test/evidence?contact=mailto%3Aartist%40example.test",
+    "https://example.test/evidence?mirror=ftp%3A%2F%2Fexample.test%2Fitem",
+    "https://example.test/evidence?mirror=ftp%3Aexample.test%2Fitem",
+    "https://example.test/evidence?next=http%3Aexample.org%2Fpath",
+    "https://example.test/evidence?next=https%3Aexample.org%2Fpath",
+    "https://example.test/evidence?contact=mailto%3Apostmaster",
+    "https://example.test/evidence?contact=mailto%3A%3Fsubject%3Dtest",
+    "https://example.test/evidence?payload=data%3Aaudio%2Fx*custom%2CAAAA",
+    "https://example.test/evidence?payload=data%3Atext%2Fplain%3Bfoo%3Dbar%20baz%2CAAAA",
+    "https://example.test/evidence?payload=data%3Ax%2CAAAA",
+    "https://example.test/evidence?identifier=urn%3Auuid%3A1234",
+    "https://example.test/evidence?identifier=u%09rn%3Auuid%3A1234",
+    "https://example.test/evidence?q=%FF",
+    "https://example.test/evidence?%FF=value",
+    "https://example.test/evidence?ok=1%C0%AFsig%3Dabc",
+    "https://example.test/evidence?q=javascript%C0%BAalert%281%29",
+    "https://example.test/evidence?source=Z%253A%255Cprivate%255Csample%252Emp3%25ZZ",
+  ];
+
+  for (const field of ["sourceUrl", "evidenceUrl", "licenseUrl"]) {
+    for (const url of forbiddenUrls) {
+      assert.throws(
+        () => normalizeLicensePackage(packageFixture([entryFixture({ [field]: url })])),
+        /public evidence page|media|download|local|private|path|nested|scheme|encoding/i,
+        `${field}: ${url}`,
+      );
+    }
+  }
+});
+
+test("public evidence URLs normalize surrounding whitespace before persistence", () => {
+  const normalized = normalizeLicensePackage(packageFixture([entryFixture({
+    sourceUrl: "  https://example.test/source/page  ",
+    licenseUrl: "  https://creativecommons.org/publicdomain/zero/1.0/  ",
+    evidenceUrl: "  https://example.test/evidence/page  ",
+  })])).entries[0];
+
+  assert.equal(normalized.sourceUrl, "https://example.test/source/page");
+  assert.equal(normalized.licenseUrl, "https://creativecommons.org/publicdomain/zero/1.0/");
+  assert.equal(normalized.evidenceUrl, "https://example.test/evidence/page");
 });
 
 test("portable safety rejects dangerous keys, local paths, file-name fields, and secret URLs", () => {
@@ -221,11 +303,43 @@ test("portable safety rejects dangerous keys, local paths, file-name fields, and
   const syntheticAbsolutePath = ["C:", "synthetic", "source.mp3"].join("\\");
   for (const entry of [
     entryFixture({ attributionText: syntheticAbsolutePath }),
+    entryFixture({ scopeNote: "embedded data:audio/mpeg;base64,AAAA" }),
+    entryFixture({ scopeNote: "embedded da\tta:audio/mpeg;base64,AAAA" }),
+    entryFixture({ scopeNote: "embedded dat\na:audio/mpeg;base64,AAAA" }),
+    entryFixture({ scopeNote: "embedded \u0000data:audio/mpeg;base64,AAAA" }),
+    entryFixture({ scopeNote: "embedded data%3Aaudio%2Fmpeg%3Bbase64%2CAAAA" }),
+    entryFixture({ scopeNote: "ok/javascript:alert(1)" }),
+    entryFixture({ attributionText: "javascript:alert(1)" }),
+    entryFixture({ attributionText: "java\tscript:alert(1)" }),
+    entryFixture({ attributionText: "vbscr\ript:alert(1)" }),
+    entryFixture({ attributionText: "javascript%3Aalert(1)" }),
+    entryFixture({ scopeNote: "http:example.org/path" }),
+    entryFixture({ scopeNote: "ftp:example.org/path" }),
+    entryFixture({ scopeNote: "mailto:postmaster" }),
+    entryFixture({ scopeNote: "data:audio/x*custom,AAAA" }),
     entryFixture({ sourceUrl: "https://example.com/source?api_key=private" }),
     { ...entryFixture(), recoveryToken: "private" },
     { ...entryFixture(), originalFile: "master.wav" },
   ]) {
-    assert.throws(() => normalizeLicensePackage(packageFixture([entry])), /path|file name|secret|unsupported/i);
+    assert.throws(() => normalizeLicensePackage(packageFixture([entry])), /path|file name|secret|URI|scheme|unsupported/i);
+  }
+
+  assert.doesNotThrow(() => normalizeLicensePackage(packageFixture([entryFixture({
+    scopeNote: "Reference data: quality review pending; HTTP: evidence page checked.",
+    attributionText: "notjavascript: label; x-javascript: label",
+  })])));
+});
+
+test("public evidence URLs accept valid literal-percent encoding without weakening inspection", () => {
+  for (const url of [
+    "https://example.test/evidence/%25-complete",
+    "https://example.test/evidence?progress=%25",
+    "https://example.test/evidence#progress=%25",
+  ]) {
+    assert.equal(
+      normalizeLicensePackage(packageFixture([entryFixture({ sourceUrl: url })])).entries[0].sourceUrl,
+      url,
+    );
   }
 });
 
@@ -364,6 +478,47 @@ test("apply rejects missing or forged license baselines without mutation", () =>
   }
 });
 
+test("apply rejects a license import plan whose reviewed additions were mutated", () => {
+  const project = createDailyPlan();
+  const plan = planLicensePackageImport(project.licenses, packageFixture());
+  const beforeProject = structuredClone(project);
+  plan.additions[0].source = "Tampered after preflight";
+
+  assert.throws(
+    () => applyLicensePackageImport(project, plan),
+    /stale|invalid|integrity|preflight|plan/i,
+  );
+  assert.deepEqual(project, beforeProject);
+});
+
+test("apply rejects accessor-based plan changes without reading unreviewed additions", () => {
+  const project = createDailyPlan();
+  const plan = planLicensePackageImport(project.licenses, packageFixture());
+  const reviewedAdditions = plan.additions;
+  const unreviewedAdditions = [validateLicenseEntry(entryFixture({
+    id: "license-unreviewed",
+    fileSha256: HASH_B,
+    sourceUrl: "https://example.test/source/unreviewed",
+    evidenceUrl: "https://example.test/source/unreviewed",
+  }))];
+  let reads = 0;
+  Object.defineProperty(plan, "additions", {
+    configurable: true,
+    enumerable: true,
+    get() {
+      reads += 1;
+      return reads === 1 ? reviewedAdditions : unreviewedAdditions;
+    },
+  });
+  const beforeProject = structuredClone(project);
+
+  assert.throws(
+    () => applyLicensePackageImport(project, plan),
+    /stale|invalid|integrity|preflight|plan/i,
+  );
+  assert.deepEqual(project, beforeProject);
+});
+
 test("schema-v3 adapter preserves canonical public evidence and strips transport identity", () => {
   const adapted = adaptExternalManifestV3(externalManifestFixture());
   const original = adapted.entries.find(entry => entry.fileSha256 === HASH_A);
@@ -400,6 +555,51 @@ test("schema-v3 adapter accepts only exact canonical rights-chain enums", () => 
     manifest.licenseReview.rightsChainAssurance = value;
     assert.equal(adaptExternalManifestV3(manifest).entries[0].rightsChainStatus, expected);
   }
+});
+
+test("schema-v3 adapter preserves preview semantics for any audition or preview delivery label", () => {
+  for (const deliveryStatus of ["public-audition-stream", "high-quality-preview-copy"]) {
+    const manifest = externalManifestFixture();
+    manifest.works[1].files[0].deliveryStatus = deliveryStatus;
+    const adapted = adaptExternalManifestV3(manifest);
+    const preview = adapted.entries.find(entry => entry.fileSha256 === HASH_B);
+    assert.equal(preview.deliveryStatus, "preview-only", deliveryStatus);
+    assert.ok(preview.publicationBlockers.includes("preview-only"), deliveryStatus);
+  }
+});
+
+test("schema-v3 adapter creates a portable label for unrecognized public source hosts", () => {
+  const manifest = externalManifestFixture();
+  manifest.works[0].sourcePage = "https://www.pixabay.com/music/example-track/";
+  manifest.works[0].assetLicense.evidenceUrl = "https://www.pixabay.com/service/license-summary/";
+
+  const adapted = adaptExternalManifestV3(manifest);
+  const entry = adapted.entries.find(candidate => candidate.fileSha256 === HASH_A);
+
+  assert.equal(entry.source, "www · pixabay · com");
+  assert.equal(entry.sourceUrl, "https://www.pixabay.com/music/example-track/");
+});
+
+test("schema-v3 adapter recognizes known source hosts with a legal trailing DNS dot", () => {
+  const manifest = externalManifestFixture();
+  manifest.works[0].sourcePage = "https://opengameart.org./content/example-track/";
+  manifest.works[0].assetLicense.evidenceUrl = "https://opengameart.org./content/example-track/";
+
+  const adapted = adaptExternalManifestV3(manifest);
+  const entry = adapted.entries.find(candidate => candidate.fileSha256 === HASH_A);
+
+  assert.equal(entry.source, "OpenGameArt");
+});
+
+test("schema-v3 adapter does not promote negated original attachment labels", () => {
+  const manifest = externalManifestFixture();
+  manifest.works[0].files[0].deliveryStatus = "not-original-attachment";
+  manifest.collection.originalAttachmentCount = 0;
+  const adapted = adaptExternalManifestV3(manifest);
+  const unknown = adapted.entries.find(entry => entry.fileSha256 === HASH_A);
+
+  assert.equal(unknown.deliveryStatus, "unknown");
+  assert.ok(unknown.publicationBlockers.includes("missing-evidence"));
 });
 
 test("schema-v3 adapter never promotes ambiguous or negated rights-chain prose", () => {
