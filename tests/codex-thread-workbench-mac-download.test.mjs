@@ -222,6 +222,19 @@ test("Mac manifests are either both absent or both publish verified v2.3.3 bundl
         plistString(plist, "CFBundleIdentifier"),
         "dev.wthpein010.codex-confirmation-bar",
       );
+      const launchProfile = JSON.parse(await readFile(
+        join(
+          extractionRoot,
+          "CodexConfirmationBar.app",
+          "Contents",
+          "Resources",
+          "codex-launch-profile.json",
+        ),
+        "utf8",
+      ));
+      assert.deepEqual(launchProfile, {
+        defaultMode: "confirmation-overlay",
+      });
     }
   } finally {
     await rm(temporaryRoot, { recursive: true, force: true });

@@ -5,6 +5,7 @@ on:
   push:
     branches:
       - release/codex-confirmation-v233
+      - fix/codex-product-separation-20260902
     paths:
       - ".github/workflows/build-codex-thread-workbench.yml"
       - "build/codex-thread-workbench/**"

@@ -3,19 +3,40 @@ set -euo pipefail
 
 runtime="${1:-}"
 output_root="${2:-}"
+profile="${3:-Workbench}"
 
-case "${runtime}" in
-  osx-arm64)
+case "${profile}:${runtime}" in
+  Workbench:osx-arm64)
     archive_name="CodexThreadWorkbench-macOS-arm64.app.zip"
     ;;
-  osx-x64)
+  Workbench:osx-x64)
     archive_name="CodexThreadWorkbench-macOS-x64.app.zip"
     ;;
+  ConfirmationBar:osx-arm64)
+    archive_name="CodexConfirmationBar-macOS-arm64.app.zip"
+    ;;
+  ConfirmationBar:osx-x64)
+    archive_name="CodexConfirmationBar-macOS-x64.app.zip"
+    ;;
   *)
-    echo "Usage: $0 <osx-arm64|osx-x64> [output-root]" >&2
+    echo "Usage: $0 <osx-arm64|osx-x64> [output-root] [Workbench|ConfirmationBar]" >&2
     exit 64
     ;;
 esac
+
+if [[ "${profile}" == "ConfirmationBar" ]]; then
+  distribution_name="CodexConfirmationBar"
+  display_name="Codex 待确认悬浮助手"
+  bundle_identifier="dev.wthpein010.codex-confirmation-bar"
+  readme_name="README.confirmation-bar.md"
+  default_mode="confirmation-overlay"
+else
+  distribution_name="CodexThreadWorkbench"
+  display_name="Codex 多线程工作台"
+  bundle_identifier="dev.wthpein010.codex-thread-workbench"
+  readme_name="README.md"
+  default_mode="workbench"
+fi
 
 repository_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 if [[ -z "${output_root}" ]]; then
@@ -43,7 +64,7 @@ if [[ -z "${project_version}" || ! "${project_version}" =~ ^[0-9]+\.[0-9]+\.[0-9
 fi
 
 publish_directory="${output_root}/publish-${runtime}"
-app_directory="${output_root}/CodexThreadWorkbench.app"
+app_directory="${output_root}/${distribution_name}.app"
 contents_directory="${app_directory}/Contents"
 macos_directory="${contents_directory}/MacOS"
 resources_directory="${contents_directory}/Resources"
@@ -65,8 +86,14 @@ dotnet publish "${project}" \
 
 test -s "${publish_directory}/CodexThreadWorkbench"
 cp -R "${publish_directory}/." "${macos_directory}/"
-chmod +x "${macos_directory}/CodexThreadWorkbench"
-cp "${repository_root}/README.md" "${resources_directory}/README.md"
+if [[ "${distribution_name}" != "CodexThreadWorkbench" ]]; then
+  mv "${macos_directory}/CodexThreadWorkbench" "${macos_directory}/${distribution_name}"
+fi
+chmod +x "${macos_directory}/${distribution_name}"
+cp "${repository_root}/${readme_name}" "${resources_directory}/README.md"
+cat > "${resources_directory}/codex-launch-profile.json" <<PROFILE
+{"defaultMode":"${default_mode}"}
+PROFILE
 
 cat > "${contents_directory}/Info.plist" <<PLIST
 <?xml version="1.0" encoding="UTF-8"?>
@@ -76,15 +103,15 @@ cat > "${contents_directory}/Info.plist" <<PLIST
   <key>CFBundleDevelopmentRegion</key>
   <string>zh_CN</string>
   <key>CFBundleDisplayName</key>
-  <string>Codex 多线程工作台</string>
+  <string>${display_name}</string>
   <key>CFBundleExecutable</key>
-  <string>CodexThreadWorkbench</string>
+  <string>${distribution_name}</string>
   <key>CFBundleIdentifier</key>
-  <string>dev.wthpein010.codex-thread-workbench</string>
+  <string>${bundle_identifier}</string>
   <key>CFBundleInfoDictionaryVersion</key>
   <string>6.0</string>
   <key>CFBundleName</key>
-  <string>CodexThreadWorkbench</string>
+  <string>${distribution_name}</string>
   <key>CFBundlePackageType</key>
   <string>APPL</string>
   <key>CFBundleShortVersionString</key>
