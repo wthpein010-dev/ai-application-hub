@@ -168,9 +168,10 @@ test("video page uses the shared player and a 45-character H.264 walkthrough", (
   assert.match(page, /class="hub-video-home" href="\.\.\/\.\.\/\.\.\/index\.html#engineering"/);
   assert.match(page, /id="loadVideo"/);
   assert.match(page, /preload="none" data-src="\.\/brick-character-copy-preview-demo\.mp4"/);
-  assert.match(page, /横版双图鉴/);
+  assert.match(page, /横版结算图鉴/);
   assert.match(page, /右侧详情/);
   assert.match(page, /打开图鉴/);
+  assert.match(tutorial, /结算预览/);
   assert.match(tutorial, /真实换行诊断/);
   assert.match(tutorial, /随身小物/);
   assert.match(tutorial, /试穿/);
@@ -190,7 +191,7 @@ test("video page uses the shared player and a 45-character H.264 walkthrough", (
   });
   assert.ok(cues.length === 6 || cues.length === 7);
   assert.equal(cues.every((cue) => cue.text.length === 1), true);
-  assert.match(captions, /横版双图鉴/);
+  assert.match(captions, /结算预览/);
   assert.match(captions, /右侧详情/);
   assert.match(captions, /真实换行/);
   assert.match(captions, /随身小物/);

@@ -8,10 +8,12 @@ import { dirname, join, resolve } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { deflateSync } from "node:zlib";
 import { buildBrickGalleryData, syncBrickGallery } from "../scripts/sync-brick-gallery-from-unity.mjs";
+import { buildBrickGalleryDataFromSpreadsheets } from "../scripts/sync-brick-gallery-from-spreadsheets.mjs";
 
 const root = dirname(dirname(fileURLToPath(import.meta.url)));
 const projectRoot = join(root, "projects", "brick-character-copy-preview");
 const unityRoot = process.env.PAWS_HOME_CLIENT_ROOT;
+const spreadsheetDataRoot = process.env.PAWS_HOME_DATA_ROOT || "E:/Mahjong/PawsHomeData/data";
 const previewSyncScript = join(root, "scripts", "sync-brick-character-previews.mjs");
 const transparentPng = Buffer.from(
   "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=",
@@ -89,7 +91,7 @@ async function createSyntheticUnityFixture({ firstBody = "", firstName = "角色
 
   const skins = [];
   const blocks = [];
-  const languages = [];
+  const languages = [{ id: "unowned_shared", zh: "未获得说明" }];
   for (let index = 0; index < 45; index += 1) {
     const sequence = index + 1;
     const blockId = 100001 + index;
@@ -99,6 +101,7 @@ async function createSyntheticUnityFixture({ firstBody = "", firstName = "角色
       show: "1",
       stringsequence: sequence,
       blockname: `name_${sequence}`,
+      UnownedDesc: "unowned_shared",
       UnlockDesc: `unlock_${sequence}`,
       GalleryDesc: `gallery_${sequence}`,
     });
@@ -143,12 +146,45 @@ test("Unity join produces exactly the 45 approved visible characters in display 
     blockId: 100001,
     sequence: 1,
     name: "原皮战神",
+    unownedDesc: "常规模式或活动模式通关后获得",
     unlockDesc: "不加配饰自在生长，基础但绝不普通",
     galleryDesc: "没有配饰也敢直接出场，原皮才是最强皮肤。",
+    sourceKeys: {
+      name: "System_text_name_100001",
+      unowned: "System_text_76",
+      unlock: "System_text_100001",
+      gallery: "System_text_100001_1",
+    },
     layers: { block: "block_1", body: "body_1", head: "", dress: "" },
   });
   assert.equal(characters.at(-1).name, "早安先锋");
-  assert.equal(characters.at(-1).galleryDesc, "眼睛还没睁，铃声先开工。");
+  assert.equal(characters.at(-1).galleryDesc, "两个铃铛轮流值班，谁也别想把早晨按掉。");
+});
+
+test("spreadsheet catalog resolves all visible skin copy from blockskin and language", {
+  skip: !existsSync(join(spreadsheetDataRoot, "blockskin.xlsx")) || !existsSync(join(spreadsheetDataRoot, "language.xlsx")),
+}, async () => {
+  const characters = await buildBrickGalleryDataFromSpreadsheets({ dataRoot: spreadsheetDataRoot });
+
+  assert.equal(characters.length, 45);
+  assert.deepEqual(characters.map((character) => character.sequence), Array.from({ length: 45 }, (_, index) => index + 1));
+  assert.deepEqual(characters[0], {
+    id: 1,
+    blockId: 100001,
+    sequence: 1,
+    name: "原皮战神",
+    unownedDesc: "常规模式或活动模式通关后获得",
+    unlockDesc: "不加配饰自在生长，基础但绝不普通",
+    galleryDesc: "没有配饰也敢直接出场，原皮才是最强皮肤。",
+    sourceKeys: {
+      name: "System_text_name_100001",
+      unowned: "System_text_76",
+      unlock: "System_text_100001",
+      gallery: "System_text_100001_1",
+    },
+  });
+  assert.equal(characters.at(-1).name, "早安先锋");
+  assert.equal(characters.every((character) => Object.values(character.sourceKeys).every(Boolean)), true);
 });
 
 test("generated public catalog contains the approved order and every referenced layer exists", () => {
@@ -427,12 +463,15 @@ test("Unity synchronization preserves references to already published preview PN
   }
 });
 
-test("public catalog contains no unresolved localization keys or local source paths", () => {
+test("public catalog exposes spreadsheet source keys without local source paths", () => {
   const source = readFileSync(join(projectRoot, "data", "characters.json"), "utf8");
   const generated = JSON.parse(source);
 
-  assert.doesNotMatch(source, /System_text_|PawsHomeClient|E:\\\\/i);
-  assert.equal(generated.every(({ name, unlockDesc, galleryDesc }) => name && unlockDesc && galleryDesc), true);
+  assert.doesNotMatch(source, /PawsHomeClient|PawsHomeData|E:\\\\/i);
+  assert.equal(generated.every(({ name, unownedDesc, unlockDesc, galleryDesc, sourceKeys }) => (
+    name && unownedDesc && unlockDesc && galleryDesc
+      && sourceKeys?.name && sourceKeys?.unowned && sourceKeys?.unlock && sourceKeys?.gallery
+  )), true);
 });
 
 test("synchronizer rejects traversal-like Unity layer names before copying", async () => {

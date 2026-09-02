@@ -37,6 +37,8 @@ try {
     await page.goto(`${origin}/projects/brick-character-copy-preview/index.html`, { waitUntil: "networkidle" });
 
     assert.equal(await page.title(), "砖块小人与随身小物图鉴");
+    assert.equal(await page.locator("#reward-preview").isVisible(), true);
+    assert.equal((await page.locator("#reward-name").textContent()).trim(), "原皮战神");
     assert.equal((await page.locator("#gallery-count").textContent()).trim(), "45/45");
     assert.equal((await page.locator("#gallery-page").textContent()).trim(), "1/4");
     assert.equal(await page.locator(".character-card").count(), 12);
@@ -47,8 +49,8 @@ try {
     const cardGeometry = await page.locator(".character-card").evaluateAll((cards) => cards.slice(0, 3).map((card) => card.getBoundingClientRect().toJSON()));
     assert.equal(new Set(cardGeometry.map(({ left }) => Math.round(left))).size, 3);
     if (viewport.width >= 1100) {
-      assert.ok(Math.abs(cardGeometry[0].width - 170) < 1);
-      assert.ok(Math.abs(cardGeometry[0].height - 180) < 1);
+      assert.ok(Math.abs(cardGeometry[0].width - 150) < 1);
+      assert.ok(Math.abs(cardGeometry[0].height - 164) < 1);
     }
 
     await page.locator('.character-card[data-block-id="100001"]').click();
@@ -58,10 +60,11 @@ try {
     assert.equal(await page.locator('[aria-modal="true"]').count(), 0);
     assert.equal(new URL(page.url()).searchParams.get("character"), "100001");
     assert.equal(await page.locator("#detail-name").textContent(), "原皮战神");
-    assert.equal(await page.locator("#detail-unlock").textContent(), "不加配饰自在生长，基础但绝不普通");
+    assert.equal(await page.locator("#reward-name").textContent(), "原皮战神");
+    assert.equal(await page.locator("#detail-unlock").textContent(), "常规模式或活动模式通关后获得");
     assert.match(await page.locator("#diagnostic-rendered-lines").textContent(), /行/);
     const detailGeometry = await page.locator("#detail-description").evaluate((element) => ({ width: element.getBoundingClientRect().width, overflow: element.scrollWidth > element.clientWidth + 1 }));
-    if (viewport.width >= 1100) assert.ok(Math.abs(detailGeometry.width - 420) < 1);
+    if (viewport.width >= 1100) assert.ok(detailGeometry.width >= 250 && detailGeometry.width <= 390, "detail copy should stay compact beside the catalog");
     assert.equal(detailGeometry.overflow, false);
 
     await page.locator("#detail-next").click();
