@@ -8,6 +8,11 @@ import { fileURLToPath } from "node:url";
 import { chromium } from "playwright";
 import { compareCandidate, recommendNextVariant } from "../projects/loop-bgm-lab/core/candidate-score.mjs";
 import {
+  recordCreateRun,
+  updateRunOutputs,
+  validateProject,
+} from "../projects/loop-bgm-lab/core/project-state.mjs";
+import {
   CURRENT_OFFICIAL_API_EVIDENCE,
   evaluateOfficialApiReadiness,
 } from "../projects/loop-bgm-lab/core/suno-official-adapter.mjs";
@@ -338,6 +343,17 @@ function externalManifestDocument({ hash = "d".repeat(64) } = {}) {
       }],
     }],
   });
+}
+
+function versionTwoLegacyFixture(project) {
+  const migrated = structuredClone(project);
+  migrated.version = 2;
+  migrated.licenses = [];
+  migrated.candidates = migrated.candidates.map(candidate => {
+    const { candidateSource: _candidateSource, ...legacyCandidate } = candidate;
+    return legacyCandidate;
+  });
+  return migrated;
 }
 
 try {
@@ -1467,6 +1483,314 @@ try {
   await assertNoObservedErrors(racePage, raceErrors);
   await raceContext.close();
 
+  const originalBatchOne = structuredClone(exported.batches.find(batch => batch.id === "batch-1"));
+  let legacyFixtureV3 = recordCreateRun({ ...exported, licenses: [] }, "batch-1");
+  const emptySameBatchRunId = legacyFixtureV3.runs.at(-1).id;
+  legacyFixtureV3 = validateProject({
+    ...legacyFixtureV3,
+    batches: legacyFixtureV3.batches.map(batch => batch.id === "batch-1" ? originalBatchOne : batch),
+  });
+  const originalBatchTwo = structuredClone(legacyFixtureV3.batches.find(batch => batch.id === "batch-2"));
+  legacyFixtureV3 = recordCreateRun(legacyFixtureV3, "batch-2");
+  const crossBatchRunId = legacyFixtureV3.runs.at(-1).id;
+  legacyFixtureV3 = updateRunOutputs(legacyFixtureV3, crossBatchRunId, [{
+    generatedUrl: "https://suno.com/song/legacy-cross-batch",
+    subjectiveScore: 4,
+    reviewNote: "cross-batch fixture",
+    disposition: "accepted",
+  }]);
+  legacyFixtureV3 = validateProject({
+    ...legacyFixtureV3,
+    batches: legacyFixtureV3.batches.map(batch => batch.id === "batch-2" ? originalBatchTwo : batch),
+  });
+  const legacyVersionTwo = versionTwoLegacyFixture(legacyFixtureV3);
+  const legacyVersionTwoJson = JSON.stringify(legacyVersionTwo);
+  const [legacySunoCandidate, legacyExternalCandidate, legacyLocalCandidate] = legacyFixtureV3.candidates;
+  const legacyRunCount = legacyFixtureV3.runs.length;
+  const legacyBestCandidateId = legacyFixtureV3.currentBestCandidate?.candidateId ?? null;
+
+  const legacyContext = await browser.newContext({ viewport: { width: 1024, height: 768 } });
+  const legacyPage = await legacyContext.newPage();
+  const legacyErrors = observeErrors(legacyPage);
+  await installInterceptors(legacyPage, legacyErrors, { clearOnce: true });
+  const legacyHttpRequests = [];
+  let observeLegacyNetwork = false;
+  legacyPage.on("request", request => {
+    if (observeLegacyNetwork && /^https?:/i.test(request.url())) legacyHttpRequests.push(request.url());
+  });
+  await legacyPage.goto(`${origin}/projects/loop-bgm-lab/index.html`, { waitUntil: "networkidle" });
+  await legacyPage.locator("body[data-ready='true']").waitFor();
+  await legacyPage.locator("#import-project").setInputFiles({
+    name: "legacy-v2.json",
+    mimeType: "application/json",
+    buffer: Buffer.from(legacyVersionTwoJson),
+  });
+  await legacyPage.waitForFunction(() => document.querySelector("#import-status")?.textContent.includes("已完整导入"));
+  assert.deepEqual(await legacyPage.evaluate(() => {
+    const stored = JSON.parse(localStorage.getItem("loop-bgm-lab-v1"));
+    return {
+      version: stored.version,
+      sources: stored.candidates.map(candidate => candidate.candidateSource.kind),
+    };
+  }), { version: 3, sources: ["legacy-unknown", "legacy-unknown", "legacy-unknown"] });
+  assert.equal(await legacyPage.locator(".legacy-source-confirm").count(), 3);
+  assert.equal(await legacyPage.locator(".legacy-source-status").count(), 3);
+  assert.deepEqual(await legacyPage.locator(".legacy-source-status").allTextContents(), [
+    "旧记录·待确认", "旧记录·待确认", "旧记录·待确认",
+  ]);
+
+  await legacyPage.locator("#candidate-batch").selectOption("batch-2");
+  await legacyPage.locator("#candidate-run").selectOption(crossBatchRunId);
+  await legacyPage.locator("#candidate-output").selectOption("0");
+  await legacyPage.locator("#candidate-file").setInputFiles(demoFile);
+  await legacyPage.waitForFunction(() => JSON.parse(localStorage.getItem("loop-bgm-lab-v1")).candidates.length === 4, null, { timeout: 45_000 });
+  await legacyPage.waitForFunction(() => Number.isFinite(document.querySelector("#candidate-player")?.duration));
+  await legacyPage.evaluate(() => {
+    const candidate = document.querySelector("#candidate-player");
+    candidate.pause();
+    candidate.currentTime = 1.5;
+  });
+  assert.equal(await legacyPage.locator(".candidate-history-item").count(), 4);
+  assert.equal(await legacyPage.locator(".legacy-source-confirm").count(), 3, "new confirmed candidates must never receive legacy controls");
+
+  const legacyPlaybackSnapshot = await legacyPage.evaluate(() => ({
+    createdUrls: [...window.__createdObjectUrls],
+    revokedUrls: [...window.__revokedObjectUrls],
+    player: {
+      src: document.querySelector("#candidate-player")?.getAttribute("src"),
+      currentTime: document.querySelector("#candidate-player")?.currentTime,
+      paused: document.querySelector("#candidate-player")?.paused,
+    },
+  }));
+  const sunoCard = legacyPage.locator(`.candidate-history-item[data-candidate-id='${legacySunoCandidate.id}']`);
+  const sunoConfirm = sunoCard.locator(".legacy-source-confirm");
+  const beforeKeyboardOpen = await legacyPage.evaluate(() => localStorage.getItem("loop-bgm-lab-v1"));
+  await sunoConfirm.focus();
+  await legacyPage.keyboard.press("Enter");
+  await legacyPage.locator("#legacy-source-dialog").waitFor({ state: "visible" });
+  assert.equal(await legacyPage.evaluate(() => document.activeElement?.id), "legacy-source-kind");
+  assert.equal(await legacyPage.locator("#legacy-source-kind").inputValue(), "");
+  assert.equal(await legacyPage.locator("#legacy-source-run").inputValue(), "");
+  assert.equal(await legacyPage.locator("#legacy-source-output").inputValue(), "");
+  assert.equal(await legacyPage.locator("#legacy-source-candidate-id").textContent(), legacySunoCandidate.id);
+  assert.equal(await legacyPage.locator("#legacy-source-batch-id").textContent(), legacySunoCandidate.batchId);
+  assert.equal(await legacyPage.locator("#legacy-source-hash").textContent(), legacySunoCandidate.hash);
+  const migratedHistoricalRunId = await legacyPage.evaluate(candidateId => {
+    const candidate = JSON.parse(localStorage.getItem("loop-bgm-lab-v1")).candidates.find(item => item.id === candidateId);
+    return candidate.candidateSource.legacyRunId;
+  }, legacySunoCandidate.id);
+  assert.match(await legacyPage.locator("#legacy-source-context").textContent(), new RegExp(`历史上下文.*${migratedHistoricalRunId}.*不代表已确认`));
+  assert.equal(await legacyPage.locator("#legacy-source-suno-fields").isHidden(), true);
+  assert.equal(await legacyPage.locator("#legacy-source-suno-fields").evaluate(fieldset => fieldset.disabled), true);
+  assert.equal(await legacyPage.locator("#legacy-source-license-fields").isHidden(), true);
+  assert.equal(await legacyPage.locator("#legacy-source-license-fields").evaluate(fieldset => fieldset.disabled), true);
+  assert.equal(await legacyPage.evaluate(() => localStorage.getItem("loop-bgm-lab-v1")), beforeKeyboardOpen);
+  await legacyPage.keyboard.press("Escape");
+  await legacyPage.locator("#legacy-source-dialog").waitFor({ state: "hidden" });
+  assert.equal(await legacyPage.evaluate(() => document.activeElement?.classList.contains("legacy-source-confirm")), true);
+  assert.equal(await legacyPage.evaluate(() => localStorage.getItem("loop-bgm-lab-v1")), beforeKeyboardOpen);
+
+  await sunoConfirm.click();
+  await legacyPage.locator("#legacy-source-dialog").waitFor({ state: "visible" });
+  await legacyPage.locator("#legacy-source-cancel").click();
+  await legacyPage.locator("#legacy-source-dialog").waitFor({ state: "hidden" });
+  assert.equal(await legacyPage.evaluate(() => localStorage.getItem("loop-bgm-lab-v1")), beforeKeyboardOpen, "cancel must not mutate the project");
+
+  await sunoConfirm.click();
+  await legacyPage.locator("#legacy-source-kind").selectOption("suno");
+  assert.equal(await legacyPage.locator("#legacy-source-suno-fields").isVisible(), true);
+  assert.equal(await legacyPage.locator("#legacy-source-suno-fields").evaluate(fieldset => fieldset.disabled), false);
+  assert.equal(await legacyPage.locator("#legacy-source-license-fields").isHidden(), true);
+  assert.equal(await legacyPage.locator("#legacy-source-license-fields").evaluate(fieldset => fieldset.disabled), true);
+  assert.equal(await legacyPage.locator("#legacy-source-run").inputValue(), "", "historical context must not preselect a run");
+  const sameBatchRunIds = legacyFixtureV3.runs
+    .filter(run => run.generationConditions.batchId === legacySunoCandidate.batchId)
+    .map(run => run.id);
+  assert.deepEqual(
+    await legacyPage.locator("#legacy-source-run option").evaluateAll(options => options.slice(1).map(option => option.value)),
+    sameBatchRunIds,
+  );
+  assert.equal(await legacyPage.locator(`#legacy-source-run option[value='${crossBatchRunId}']`).count(), 0, "cross-batch runs must not be offered");
+  assert.equal(await legacyPage.locator("#legacy-source-submit").isDisabled(), true);
+  await legacyPage.locator("#legacy-source-run").selectOption(emptySameBatchRunId);
+  assert.equal(await legacyPage.locator("#legacy-source-output").isDisabled(), true, "a run without outputs must remain fail-closed");
+  assert.equal(await legacyPage.locator("#legacy-source-submit").isDisabled(), true);
+  await legacyPage.locator("#legacy-source-run").selectOption(migratedHistoricalRunId);
+  assert.equal(await legacyPage.locator("#legacy-source-output").isDisabled(), false);
+  assert.equal(await legacyPage.locator("#legacy-source-output").inputValue(), "", "an existing output must never be auto-selected");
+  assert.equal(await legacyPage.locator("#legacy-source-submit").isDisabled(), true);
+  await legacyPage.locator("#legacy-source-output").selectOption("0");
+  assert.equal(await legacyPage.locator("#legacy-source-submit").isDisabled(), false);
+  observeLegacyNetwork = true;
+  await legacyPage.locator("#legacy-source-submit").click();
+  await legacyPage.locator("#legacy-source-dialog").waitFor({ state: "hidden" });
+  const sunoConfirmed = await legacyPage.evaluate(candidateId => {
+    const stored = JSON.parse(localStorage.getItem("loop-bgm-lab-v1"));
+    const candidate = stored.candidates.find(item => item.id === candidateId);
+    const experiment = stored.experiments.find(item => item.candidateId === candidateId);
+    return {
+      candidateSource: candidate.candidateSource,
+      experiment: {
+        runId: experiment.runId,
+        outputIndex: experiment.outputIndex,
+        generatedUrl: experiment.generatedUrl,
+      },
+      runCount: stored.runs.length,
+      bestCandidateId: stored.currentBestCandidate?.candidateId ?? null,
+    };
+  }, legacySunoCandidate.id);
+  assert.deepEqual(sunoConfirmed.candidateSource, { kind: "suno", runId: migratedHistoricalRunId, outputIndex: 0 });
+  assert.equal(sunoConfirmed.experiment.runId, migratedHistoricalRunId);
+  assert.equal(sunoConfirmed.experiment.outputIndex, 0);
+  assert.match(sunoConfirmed.experiment.generatedUrl, /^https:\/\/suno\.com\//);
+  assert.equal(sunoConfirmed.runCount, legacyRunCount);
+  assert.equal(sunoConfirmed.bestCandidateId, legacyBestCandidateId);
+  assert.equal(await sunoCard.locator(".legacy-source-confirm").count(), 0);
+  assert.doesNotMatch(await sunoCard.textContent(), /source-unconfirmed|旧记录·待确认/);
+
+  const externalCard = legacyPage.locator(`.candidate-history-item[data-candidate-id='${legacyExternalCandidate.id}']`);
+  await externalCard.locator(".legacy-source-confirm").click();
+  await legacyPage.locator("#legacy-source-kind").selectOption("external");
+  assert.equal(await legacyPage.locator("#legacy-source-license-fields").isVisible(), true);
+  assert.equal(await legacyPage.locator("#legacy-source-license").isDisabled(), true);
+  assert.equal(await legacyPage.locator("#legacy-source-submit").isDisabled(), true);
+  assert.match(await legacyPage.locator("#legacy-source-error").textContent(), /没有.*同 SHA-256.*许可证/);
+  await legacyPage.locator("#legacy-source-cancel").click();
+
+  await addLicense(legacyPage, { suffix: "legacy-external", hash: legacyExternalCandidate.hash });
+  const firstExternalLicenseId = await legacyPage.evaluate(hash => JSON.parse(localStorage.getItem("loop-bgm-lab-v1")).licenses.find(entry => entry.fileSha256 === hash)?.id, legacyExternalCandidate.hash);
+  await externalCard.locator(".legacy-source-confirm").click();
+  await legacyPage.locator("#legacy-source-kind").selectOption("external");
+  assert.equal(await legacyPage.locator("#legacy-source-license").inputValue(), "", "a unique license must not be auto-selected");
+  assert.deepEqual(await legacyPage.locator("#legacy-source-license option").evaluateAll(options => options.slice(1).map(option => option.value)), [firstExternalLicenseId]);
+  await legacyPage.locator("#legacy-source-license").selectOption(firstExternalLicenseId);
+  assert.equal(await legacyPage.locator("#legacy-source-submit").isDisabled(), false);
+  await legacyPage.evaluate(licenseId => {
+    document.querySelector(`.license-entry[data-license-id='${licenseId}'] button`)?.click();
+  }, firstExternalLicenseId);
+  await legacyPage.waitForFunction(licenseId => !JSON.parse(localStorage.getItem("loop-bgm-lab-v1")).licenses.some(entry => entry.id === licenseId), firstExternalLicenseId);
+  const staleLicenseBaseline = await legacyPage.evaluate(() => localStorage.getItem("loop-bgm-lab-v1"));
+  await legacyPage.locator("#legacy-source-submit").click();
+  assert.equal(await legacyPage.locator("#legacy-source-dialog").isVisible(), true, "stale confirmation failure must keep the dialog open");
+  assert.match(await legacyPage.locator("#legacy-source-error").textContent(), /不存在|existing license|许可证/);
+  assert.equal(await legacyPage.evaluate(() => localStorage.getItem("loop-bgm-lab-v1")), staleLicenseBaseline, "stale license failure must be atomic");
+  assert.equal(await legacyPage.evaluate(candidateId => JSON.parse(localStorage.getItem("loop-bgm-lab-v1")).candidates.find(item => item.id === candidateId).candidateSource.kind, legacyExternalCandidate.id), "legacy-unknown");
+  await legacyPage.locator("#legacy-source-cancel").click();
+
+  await addLicense(legacyPage, { suffix: "legacy-external-replacement", hash: legacyExternalCandidate.hash });
+  const externalLicenseId = await legacyPage.evaluate(hash => JSON.parse(localStorage.getItem("loop-bgm-lab-v1")).licenses.find(entry => entry.fileSha256 === hash)?.id, legacyExternalCandidate.hash);
+  await legacyPage.locator(`.candidate-history-item[data-candidate-id='${legacyExternalCandidate.id}'] .legacy-source-confirm`).click();
+  await legacyPage.locator("#legacy-source-kind").selectOption("external");
+  await legacyPage.locator("#legacy-source-license").selectOption(externalLicenseId);
+  await legacyPage.locator("#legacy-source-submit").click();
+  await legacyPage.locator("#legacy-source-dialog").waitFor({ state: "hidden" });
+  const externalConfirmed = await legacyPage.evaluate(candidateId => {
+    const stored = JSON.parse(localStorage.getItem("loop-bgm-lab-v1"));
+    const candidate = stored.candidates.find(item => item.id === candidateId);
+    const experiment = stored.experiments.find(item => item.candidateId === candidateId);
+    return { candidateSource: candidate.candidateSource, experiment, runCount: stored.runs.length };
+  }, legacyExternalCandidate.id);
+  assert.deepEqual(externalConfirmed.candidateSource, {
+    kind: "external",
+    licenseId: externalLicenseId,
+    fileSha256: legacyExternalCandidate.hash,
+  });
+  assert.equal(externalConfirmed.experiment.runId, null);
+  assert.equal(externalConfirmed.experiment.outputIndex, null);
+  assert.equal(externalConfirmed.experiment.generatedUrl, null);
+  assert.equal(externalConfirmed.experiment.generationConditions, null);
+  assert.equal(externalConfirmed.runCount, legacyRunCount);
+
+  await addLicense(legacyPage, {
+    suffix: "legacy-local-wrong-rights",
+    hash: legacyLocalCandidate.hash,
+    rightsChainStatus: "independently-verified",
+  });
+  await addLicense(legacyPage, {
+    suffix: "legacy-local-original",
+    hash: legacyLocalCandidate.hash,
+    rightsChainStatus: "user-declared-original",
+    source: "循环乐工房内置原创合成素材",
+  });
+  const localOriginalLicenseId = await legacyPage.evaluate(hash => JSON.parse(localStorage.getItem("loop-bgm-lab-v1")).licenses.find(entry => (
+    entry.fileSha256 === hash && entry.rightsChainStatus === "user-declared-original"
+  ))?.id, legacyLocalCandidate.hash);
+  await legacyPage.locator(`.candidate-history-item[data-candidate-id='${legacyLocalCandidate.id}'] .legacy-source-confirm`).click();
+  await legacyPage.locator("#legacy-source-kind").selectOption("local-original");
+  assert.equal(await legacyPage.locator("#legacy-source-license").inputValue(), "", "a unique rights-compatible local license must not be auto-selected");
+  assert.deepEqual(await legacyPage.locator("#legacy-source-license option").evaluateAll(options => options.slice(1).map(option => option.value)), [localOriginalLicenseId]);
+  await legacyPage.locator("#legacy-source-license").selectOption(localOriginalLicenseId);
+  const beforeStorageFailure = await legacyPage.evaluate(() => localStorage.getItem("loop-bgm-lab-v1"));
+  await legacyPage.evaluate(() => { window.__failNextProjectStorageWrite = true; });
+  await legacyPage.locator("#legacy-source-submit").click();
+  assert.equal(await legacyPage.locator("#legacy-source-dialog").isVisible(), true, "storage failure must keep the dialog open");
+  assert.match(await legacyPage.locator("#legacy-source-error").textContent(), /存储|保存|写入/);
+  assert.equal(await legacyPage.evaluate(() => localStorage.getItem("loop-bgm-lab-v1")), beforeStorageFailure, "storage failure must not replace the persisted project");
+  assert.equal(await legacyPage.evaluate(candidateId => JSON.parse(localStorage.getItem("loop-bgm-lab-v1")).candidates.find(item => item.id === candidateId).candidateSource.kind, legacyLocalCandidate.id), "legacy-unknown");
+  await legacyPage.locator("#legacy-source-submit").click();
+  await legacyPage.locator("#legacy-source-dialog").waitFor({ state: "hidden" });
+  const localConfirmed = await legacyPage.evaluate(({ candidateId, batchId }) => {
+    const stored = JSON.parse(localStorage.getItem("loop-bgm-lab-v1"));
+    const candidate = stored.candidates.find(item => item.id === candidateId);
+    const experiment = stored.experiments.find(item => item.candidateId === candidateId);
+    const batch = stored.batches.find(item => item.id === batchId);
+    return {
+      candidateSource: candidate.candidateSource,
+      experiment: {
+        runId: experiment.runId,
+        outputIndex: experiment.outputIndex,
+        generatedUrl: experiment.generatedUrl,
+        generationConditions: experiment.generationConditions,
+      },
+      batch: {
+        status: batch.status,
+        currentRunId: batch.currentRunId,
+        currentCandidateId: batch.currentCandidateId,
+        generatedUrl: batch.generatedUrl,
+      },
+      runCount: stored.runs.length,
+      bestCandidateId: stored.currentBestCandidate?.candidateId ?? null,
+    };
+  }, { candidateId: legacyLocalCandidate.id, batchId: legacyLocalCandidate.batchId });
+  assert.deepEqual(localConfirmed.candidateSource, {
+    kind: "local-original",
+    licenseId: localOriginalLicenseId,
+    fileSha256: legacyLocalCandidate.hash,
+  });
+  assert.deepEqual(localConfirmed.experiment, {
+    runId: null,
+    outputIndex: null,
+    generatedUrl: null,
+    generationConditions: null,
+  });
+  assert.deepEqual(localConfirmed.batch, {
+    status: "planned",
+    currentRunId: null,
+    currentCandidateId: null,
+    generatedUrl: null,
+  });
+  assert.equal(localConfirmed.runCount, legacyRunCount);
+  assert.equal(localConfirmed.bestCandidateId, legacyBestCandidateId);
+  assert.equal(await legacyPage.locator(".legacy-source-confirm").count(), 0);
+  assert.equal(await legacyPage.locator(".legacy-source-status").count(), 0);
+  const legacyPlaybackAfter = await legacyPage.evaluate(() => ({
+    createdUrls: [...window.__createdObjectUrls],
+    revokedUrls: [...window.__revokedObjectUrls],
+    player: {
+      src: document.querySelector("#candidate-player")?.getAttribute("src"),
+      currentTime: document.querySelector("#candidate-player")?.currentTime,
+      paused: document.querySelector("#candidate-player")?.paused,
+    },
+  }));
+  assert.deepEqual(legacyPlaybackAfter.createdUrls, legacyPlaybackSnapshot.createdUrls);
+  assert.deepEqual(legacyPlaybackAfter.revokedUrls, legacyPlaybackSnapshot.revokedUrls);
+  assert.equal(legacyPlaybackAfter.player.src, legacyPlaybackSnapshot.player.src);
+  assert.equal(legacyPlaybackAfter.player.paused, legacyPlaybackSnapshot.player.paused);
+  assert.ok(Math.abs(legacyPlaybackAfter.player.currentTime - legacyPlaybackSnapshot.player.currentTime) < 0.05);
+  assert.deepEqual(legacyHttpRequests, [], "legacy confirmation workflow must make zero HTTP requests");
+  await assertNoObservedErrors(legacyPage, legacyErrors);
+  await legacyContext.close();
+
   for (const viewport of [
     { width: 1024, height: 768 },
     { width: 390, height: 844 },
@@ -1483,7 +1807,26 @@ try {
     assert.equal(await responsivePage.locator("main > section").count(), 6);
     assert.equal(await responsivePage.locator("label[for='license-package-file']").isVisible(), true);
     assert.equal(await responsivePage.locator("#license-package-export").isVisible(), true);
+    await responsivePage.locator("#import-project").setInputFiles({
+      name: "legacy-responsive-v2.json",
+      mimeType: "application/json",
+      buffer: Buffer.from(legacyVersionTwoJson),
+    });
+    await responsivePage.waitForFunction(() => document.querySelector("#import-status")?.textContent.includes("已完整导入"));
+    await responsivePage.locator(".legacy-source-confirm").first().click();
+    await responsivePage.locator("#legacy-source-dialog").waitFor({ state: "visible" });
+    const dialogGeometry = await responsivePage.locator("#legacy-source-dialog").evaluate(dialog => ({
+      left: dialog.getBoundingClientRect().left,
+      right: dialog.getBoundingClientRect().right,
+      top: dialog.getBoundingClientRect().top,
+      bottom: dialog.getBoundingClientRect().bottom,
+      viewportWidth: window.innerWidth,
+      viewportHeight: window.innerHeight,
+    }));
+    assert.ok(dialogGeometry.left >= 0 && dialogGeometry.right <= dialogGeometry.viewportWidth, JSON.stringify(dialogGeometry));
+    assert.ok(dialogGeometry.top >= 0 && dialogGeometry.bottom <= dialogGeometry.viewportHeight, JSON.stringify(dialogGeometry));
     await assertNoOverflow(responsivePage, `${viewport.width}x${viewport.height}`);
+    await responsivePage.keyboard.press("Escape");
     const motion = await responsivePage.locator(".primary-button").first().evaluate(element => {
       const toSeconds = value => value.endsWith("ms") ? Number.parseFloat(value) / 1000 : Number.parseFloat(value);
       return {

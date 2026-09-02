@@ -288,6 +288,53 @@
     </section>
   </main>
 
+  <dialog id="legacy-source-dialog" aria-labelledby="legacy-source-title" aria-describedby="legacy-source-description">
+    <form id="legacy-source-form">
+      <div class="legacy-source-heading">
+        <div>
+          <p class="section-kicker">LEGACY PROVENANCE REVIEW</p>
+          <h2 id="legacy-source-title">确认旧候选来源</h2>
+        </div>
+        <button id="legacy-source-close" class="text-button" type="button" aria-label="关闭旧候选来源确认">关闭</button>
+      </div>
+      <p id="legacy-source-description">这一步不会猜测来源。请按现有运行结果或同一文件哈希的许可证据明确确认；legacyRunId 只作为历史上下文展示，不代表已确认。</p>
+      <dl class="legacy-source-identity" aria-label="待确认旧候选身份">
+        <div><dt>候选 ID</dt><dd id="legacy-source-candidate-id"></dd></div>
+        <div><dt>批次</dt><dd id="legacy-source-batch-id"></dd></div>
+        <div><dt>完整 SHA-256</dt><dd id="legacy-source-hash"></dd></div>
+        <div id="legacy-source-context-row"><dt>历史上下文</dt><dd id="legacy-source-context"></dd></div>
+      </dl>
+      <label class="legacy-source-kind-field">确认来源
+        <select id="legacy-source-kind" required>
+          <option value="">请选择确认来源</option>
+          <option value="suno">Suno 结果</option>
+          <option value="external">外部音乐</option>
+          <option value="local-original">本地原创</option>
+        </select>
+      </label>
+      <fieldset id="legacy-source-suno-fields" disabled hidden>
+        <legend>Suno 精确结果</legend>
+        <label>同批次运行
+          <select id="legacy-source-run"><option value="">请选择同批次运行</option></select>
+        </label>
+        <label>已有结果
+          <select id="legacy-source-output"><option value="">请选择已有结果</option></select>
+        </label>
+      </fieldset>
+      <fieldset id="legacy-source-license-fields" disabled hidden>
+        <legend>同哈希许可证据</legend>
+        <label>许可证记录
+          <select id="legacy-source-license"><option value="">请选择同 SHA-256 许可证</option></select>
+        </label>
+      </fieldset>
+      <p id="legacy-source-error" class="field-error" role="alert"></p>
+      <div class="legacy-source-actions">
+        <button id="legacy-source-cancel" class="secondary-button" type="button">取消</button>
+        <button id="legacy-source-submit" class="primary-button" type="submit" disabled>确认并保存来源</button>
+      </div>
+    </form>
+  </dialog>
+
   <footer class="page-footer">
     <p>本页是 local-first 的创作工作台。Hub 卡片仅提供“演示 / 视频”入口，不提供 Windows 或 macOS 空下载按钮。</p>
     <p>当前免费档生成物仅限个人、非商业使用；商业权利需要另行核验。</p>

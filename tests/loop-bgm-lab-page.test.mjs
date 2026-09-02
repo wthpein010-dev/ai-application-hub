@@ -109,6 +109,51 @@ test("source-aware candidate import exposes explicit accessible source, run, and
   assert.match(source, /aria-label[^\n]*结果 2/);
 });
 
+test("legacy candidate provenance is confirmed through one explicit fail-closed dialog", () => {
+  const html = readProjectFile("index.html");
+  const source = readProjectFile("app.js");
+  const css = readProjectFile("styles.css");
+
+  assert.equal((html.match(/<dialog\b[^>]*id="legacy-source-dialog"/g) || []).length, 1);
+  assert.match(html, /<select id="legacy-source-kind"[^>]*>/);
+  assert.match(html, /<option value=""[^>]*>请选择确认来源<\/option>/);
+  assert.match(html, /<option value="suno"[^>]*>Suno 结果<\/option>/);
+  assert.match(html, /<option value="external"[^>]*>外部音乐<\/option>/);
+  assert.match(html, /<option value="local-original"[^>]*>本地原创<\/option>/);
+  assert.doesNotMatch(html, /id="legacy-source-kind"[\s\S]*?<option value="legacy-unknown"/);
+  for (const id of [
+    "legacy-source-candidate-id",
+    "legacy-source-batch-id",
+    "legacy-source-hash",
+    "legacy-source-context",
+    "legacy-source-suno-fields",
+    "legacy-source-run",
+    "legacy-source-output",
+    "legacy-source-license-fields",
+    "legacy-source-license",
+    "legacy-source-error",
+    "legacy-source-cancel",
+    "legacy-source-submit"
+  ]) assert.match(html, new RegExp(`id="${id}"`));
+  assert.match(html, /id="legacy-source-suno-fields"[^>]*\bhidden\b[^>]*\bdisabled\b|id="legacy-source-suno-fields"[^>]*\bdisabled\b[^>]*\bhidden\b/);
+  assert.match(html, /id="legacy-source-license-fields"[^>]*\bhidden\b[^>]*\bdisabled\b|id="legacy-source-license-fields"[^>]*\bdisabled\b[^>]*\bhidden\b/);
+  assert.match(html, /legacyRunId[^\n]*(?:历史上下文|不代表已确认)|(?:历史上下文|不代表已确认)[^\n]*legacyRunId/);
+
+  assert.match(source, /\bconfirmLegacyCandidateSource\b/);
+  assert.match(source, /from "\.\/core\/project-state\.mjs"/);
+  assert.equal((source.match(/confirmLegacyCandidateSource\s*\(/g) || []).length, 1, "UI must use the existing core confirmation boundary exactly once");
+  assert.match(source, /candidate\.candidateSource\.kind === "legacy-unknown"/);
+  assert.match(source, /className: "text-button legacy-source-confirm"/);
+  assert.match(source, /旧记录·待确认/);
+  assert.match(source, /\.generationConditions\.batchId === candidate\.batchId/);
+  assert.match(source, /license\.fileSha256\.toLowerCase\(\) === candidate\.hash\.toLowerCase\(\)/);
+  assert.match(source, /rightsChainStatus !== "user-declared-original"/);
+  assert.match(source, /rightsChainStatus === "user-declared-original"/);
+  assert.match(css, /#legacy-source-dialog/);
+  assert.match(css, /\.legacy-source-identity/);
+  assert.match(css, /@media \(max-width: 720px\)[\s\S]*#legacy-source-dialog/);
+});
+
 test("browser coordinator imports the analysis, plan/state, and candidate-scoring boundaries", () => {
   // Break caught: the UI substitutes ad-hoc scoring or serialization instead of Tasks 1–3.
   const source = readProjectFile("app.js");

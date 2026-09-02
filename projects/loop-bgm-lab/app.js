@@ -3,6 +3,7 @@ import { createDailyPlan } from "./core/prompt-engine.mjs";
 import {
   exportProjectJson,
   importProjectJson,
+  confirmLegacyCandidateSource,
   rebuildPromptQueue,
   recordCreateRun,
   transitionBatch,
@@ -134,6 +135,21 @@ const licensePackageSkips = element("#license-package-skips");
 const licensePackageConflicts = element("#license-package-conflicts");
 const licensePackageBlockers = element("#license-package-blockers");
 const licensePackageDetails = element("#license-package-details");
+const legacySourceDialog = element("#legacy-source-dialog");
+const legacySourceForm = element("#legacy-source-form");
+const legacySourceCandidateId = element("#legacy-source-candidate-id");
+const legacySourceBatchId = element("#legacy-source-batch-id");
+const legacySourceHash = element("#legacy-source-hash");
+const legacySourceContextRow = element("#legacy-source-context-row");
+const legacySourceContext = element("#legacy-source-context");
+const legacySourceKind = element("#legacy-source-kind");
+const legacySourceSunoFields = element("#legacy-source-suno-fields");
+const legacySourceRun = element("#legacy-source-run");
+const legacySourceOutput = element("#legacy-source-output");
+const legacySourceLicenseFields = element("#legacy-source-license-fields");
+const legacySourceLicense = element("#legacy-source-license");
+const legacySourceError = element("#legacy-source-error");
+const legacySourceSubmit = element("#legacy-source-submit");
 const importInput = element("#import-project");
 const markdownExportButton = element("#export-markdown");
 const importStatus = element("#import-status");
@@ -160,6 +176,8 @@ let referenceGeneration = 0;
 let candidateGeneration = 0;
 let licensePackageGeneration = 0;
 let pendingLicensePackageImport = null;
+let legacyConfirmationCandidateId = null;
+let legacyConfirmationOpener = null;
 
 function allocateId(prefix, entries = []) {
   const id = nextMonotonicId([...entries, ...allocatedIds[prefix]], prefix);
@@ -247,7 +265,11 @@ function loadProject() {
   }
 }
 
-function persistProject({ allowBlockedWrite = false, preserveLicensePackagePreview = false } = {}) {
+function persistProject({
+  allowBlockedWrite = false,
+  preserveLicensePackagePreview = false,
+  projectValue = project
+} = {}) {
   if (!preserveLicensePackagePreview) {
     clearLicensePackagePreview({
       message: "许可证包预检已失效：项目已变更，请重新预检。",
@@ -259,7 +281,7 @@ function persistProject({ allowBlockedWrite = false, preserveLicensePackagePrevi
     return false;
   }
   try {
-    localStorage.setItem(STORAGE_KEY, exportProjectJson(project));
+    localStorage.setItem(STORAGE_KEY, exportProjectJson(projectValue));
     return true;
   } catch {
     showStorageFailure();
@@ -888,12 +910,213 @@ function labelledField(labelText, control) {
   return label;
 }
 
+function setLegacySourceGroupState(group, visible) {
+  group.hidden = !visible;
+  group.disabled = !visible;
+}
+
+function resetLegacySelect(select, placeholder) {
+  const option = createElement("option", { text: placeholder });
+  option.value = "";
+  option.selected = true;
+  select.replaceChildren(option);
+  select.value = "";
+}
+
+function activeLegacyCandidate() {
+  return project.candidates.find(candidate => candidate.id === legacyConfirmationCandidateId) || null;
+}
+
+function eligibleLegacyLicenses(candidate, kind) {
+  if (!candidate || (kind !== "external" && kind !== "local-original")) return [];
+  return project.licenses.filter(license => (
+    license.fileSha256.toLowerCase() === candidate.hash.toLowerCase()
+    && (kind === "external"
+      ? license.rightsChainStatus !== "user-declared-original"
+      : license.rightsChainStatus === "user-declared-original")
+  ));
+}
+
+function updateLegacySourceSubmitState() {
+  const candidate = activeLegacyCandidate();
+  const kind = legacySourceKind.value;
+  if (!candidate || candidate.candidateSource.kind !== "legacy-unknown") {
+    legacySourceSubmit.disabled = true;
+    return;
+  }
+  if (kind === "suno") {
+    const run = project.runs.find(item => (
+      item.id === legacySourceRun.value
+      && item.generationConditions.batchId === candidate.batchId
+    ));
+    const outputIndex = legacySourceOutput.value === "" ? null : Number(legacySourceOutput.value);
+    legacySourceSubmit.disabled = !run || !Number.isInteger(outputIndex) || !run.outputs[outputIndex];
+    return;
+  }
+  const license = eligibleLegacyLicenses(candidate, kind)
+    .find(item => item.id === legacySourceLicense.value);
+  legacySourceSubmit.disabled = !license;
+}
+
+function renderLegacyOutputChoices() {
+  const candidate = activeLegacyCandidate();
+  const run = candidate
+    ? project.runs.find(item => (
+      item.id === legacySourceRun.value
+      && item.generationConditions.batchId === candidate.batchId
+    ))
+    : null;
+  resetLegacySelect(legacySourceOutput, run?.outputs.length ? "请选择已有结果" : "该运行没有已保存结果");
+  for (const [outputIndex, output] of (run?.outputs || []).entries()) {
+    const option = createElement("option", { text: `结果 ${outputIndex + 1} · ${output.generatedUrl}` });
+    option.value = String(outputIndex);
+    legacySourceOutput.append(option);
+  }
+  legacySourceOutput.disabled = !run?.outputs.length;
+  legacySourceError.textContent = run && !run.outputs.length
+    ? "该同批次运行没有已保存结果，不能确认来源。"
+    : "";
+  updateLegacySourceSubmitState();
+}
+
+function renderLegacySourceKind() {
+  const candidate = activeLegacyCandidate();
+  const kind = legacySourceKind.value;
+  resetLegacySelect(legacySourceRun, "请选择同批次运行");
+  resetLegacySelect(legacySourceOutput, "请先选择运行");
+  resetLegacySelect(legacySourceLicense, "请选择同 SHA-256 许可证");
+  legacySourceRun.disabled = true;
+  legacySourceOutput.disabled = true;
+  legacySourceLicense.disabled = true;
+  legacySourceError.textContent = "";
+  setLegacySourceGroupState(legacySourceSunoFields, kind === "suno");
+  setLegacySourceGroupState(legacySourceLicenseFields, kind === "external" || kind === "local-original");
+
+  if (!candidate || candidate.candidateSource.kind !== "legacy-unknown") {
+    legacySourceError.textContent = "此候选已不存在或来源已经确认，请关闭后刷新记录。";
+    updateLegacySourceSubmitState();
+    return;
+  }
+  if (kind === "suno") {
+    const runs = project.runs.filter(run => run.generationConditions.batchId === candidate.batchId);
+    for (const run of runs) {
+      const option = createElement("option", {
+        text: `${run.id} · ${STATUS_LABELS[run.status]} · ${run.outputs.length} 个结果`
+      });
+      option.value = run.id;
+      legacySourceRun.append(option);
+    }
+    legacySourceRun.disabled = runs.length === 0;
+    if (!runs.length) legacySourceError.textContent = "没有属于该候选批次的 Create 运行，暂不能确认 Suno 来源。";
+  } else if (kind === "external" || kind === "local-original") {
+    const licenses = eligibleLegacyLicenses(candidate, kind);
+    for (const license of licenses) {
+      const option = createElement("option", {
+        text: `${license.id} · ${license.source} · ${license.licenseIdentifier} · ${license.rightsChainStatus}`
+      });
+      option.value = license.id;
+      legacySourceLicense.append(option);
+    }
+    legacySourceLicense.disabled = licenses.length === 0;
+    if (!licenses.length) {
+      legacySourceError.textContent = kind === "external"
+        ? "没有同 SHA-256 且权利链不是本人原创声明的许可证记录。"
+        : "没有同 SHA-256 且权利链为本人声明原创的许可证记录。";
+    }
+  }
+  updateLegacySourceSubmitState();
+}
+
+function openLegacySourceConfirmation(candidateId, opener) {
+  clearError();
+  const candidate = project.candidates.find(item => item.id === candidateId);
+  if (!candidate || candidate.candidateSource.kind !== "legacy-unknown") {
+    showError("只有来源尚未确认的旧候选可以执行此操作。");
+    return;
+  }
+  legacyConfirmationCandidateId = candidate.id;
+  legacyConfirmationOpener = opener;
+  legacySourceCandidateId.textContent = candidate.id;
+  legacySourceBatchId.textContent = candidate.batchId;
+  legacySourceHash.textContent = candidate.hash;
+  const historicalRunId = candidate.candidateSource.legacyRunId;
+  legacySourceContextRow.hidden = !historicalRunId;
+  legacySourceContext.textContent = historicalRunId
+    ? `历史上下文 legacyRunId：${historicalRunId}；不代表已确认，也不会预选。`
+    : "没有可依赖的历史运行上下文；必须从空值开始明确确认。";
+  legacySourceKind.value = "";
+  renderLegacySourceKind();
+  legacySourceDialog.showModal();
+  legacySourceKind.focus();
+}
+
+function closeLegacySourceConfirmation() {
+  if (legacySourceDialog.open) legacySourceDialog.close("cancel");
+}
+
+function submitLegacySourceConfirmation(event) {
+  event.preventDefault();
+  legacySourceError.textContent = "";
+  const candidateId = legacyConfirmationCandidateId;
+  const candidate = activeLegacyCandidate();
+  try {
+    if (!candidate || candidate.candidateSource.kind !== "legacy-unknown") {
+      throw new TypeError("此候选已不存在或来源已经确认。");
+    }
+    const kind = legacySourceKind.value;
+    let confirmation;
+    if (kind === "suno") {
+      if (legacySourceRun.value === "" || legacySourceOutput.value === "") {
+        throw new TypeError("必须明确选择同批次运行及其中一个已有结果。");
+      }
+      confirmation = {
+        kind,
+        runId: legacySourceRun.value,
+        outputIndex: Number(legacySourceOutput.value),
+      };
+    } else if (kind === "external" || kind === "local-original") {
+      if (legacySourceLicense.value === "") throw new TypeError("必须明确选择一条同哈希许可证记录。");
+      confirmation = {
+        kind,
+        licenseId: legacySourceLicense.value,
+        fileSha256: candidate.hash,
+      };
+    } else {
+      throw new TypeError("请选择 Suno 结果、外部音乐或本地原创。");
+    }
+
+    const confirmedProject = confirmLegacyCandidateSource(project, candidateId, confirmation);
+    if (!persistProject({ projectValue: confirmedProject, preserveLicensePackagePreview: true })) {
+      legacySourceError.textContent = "来源确认保存失败：本地存储不可用，项目与本地存储保持原样。";
+      return;
+    }
+    project = confirmedProject;
+    clearLicensePackagePreview({
+      message: "许可证包预检已失效：项目已变更，请重新预检。",
+      onlyIfActive: true
+    });
+    renderBatches();
+    renderComparison();
+    renderCandidateHistory();
+    legacySourceDialog.close("confirmed");
+    showLive(`旧候选 ${candidateId} 的来源已明确确认；发布资料状态已重新计算。`);
+  } catch (error) {
+    legacySourceError.textContent = error instanceof Error ? error.message : "来源确认失败；项目保持原样。";
+  }
+}
+
 function appendCandidateMetaBadges(container, candidate, publication) {
   const badges = createElement("div", { className: "candidate-meta-badges" });
   badges.append(createElement("span", {
     className: "candidate-source-badge",
     text: `来源：${SOURCE_LABELS[candidate.candidateSource.kind] || candidate.candidateSource.kind}`
   }));
+  if (candidate.candidateSource.kind === "legacy-unknown") {
+    badges.append(createElement("span", {
+      className: "legacy-source-status",
+      text: "旧记录·待确认"
+    }));
+  }
   if (candidate.candidateSource.kind === "suno") {
     badges.append(createElement("span", {
       className: "candidate-license-badge",
@@ -952,6 +1175,15 @@ function renderCandidateHistory() {
     });
     heading.append(view);
     appendCandidateMetaBadges(heading, candidate, publication);
+    if (candidate.candidateSource.kind === "legacy-unknown") {
+      const confirmSource = createElement("button", {
+        className: "text-button legacy-source-confirm",
+        text: "确认旧记录来源"
+      });
+      confirmSource.type = "button";
+      confirmSource.addEventListener("click", () => openLegacySourceConfirmation(candidate.id, confirmSource));
+      heading.append(confirmSource);
+    }
 
     const candidateDisplayName = createElement("input", { className: "candidate-display-name" });
     candidateDisplayName.type = "text";
@@ -1691,6 +1923,23 @@ candidateOutput.addEventListener("change", () => {
   candidateProgress.textContent = candidateOutput.value === ""
     ? "请选择该运行中一个已有结果。"
     : `已冻结 ${candidateRun.value} 的结果 ${Number(candidateOutput.value) + 1}；现在可选择对应文件。`;
+});
+
+legacySourceKind.addEventListener("change", renderLegacySourceKind);
+legacySourceRun.addEventListener("change", renderLegacyOutputChoices);
+legacySourceOutput.addEventListener("change", updateLegacySourceSubmitState);
+legacySourceLicense.addEventListener("change", updateLegacySourceSubmitState);
+legacySourceForm.addEventListener("submit", submitLegacySourceConfirmation);
+element("#legacy-source-close").addEventListener("click", closeLegacySourceConfirmation);
+element("#legacy-source-cancel").addEventListener("click", closeLegacySourceConfirmation);
+legacySourceDialog.addEventListener("cancel", () => {
+  legacySourceError.textContent = "";
+});
+legacySourceDialog.addEventListener("close", () => {
+  const opener = legacyConfirmationOpener;
+  legacyConfirmationCandidateId = null;
+  legacyConfirmationOpener = null;
+  if (opener?.isConnected) opener.focus();
 });
 
 candidateInput.addEventListener("change", () => {
