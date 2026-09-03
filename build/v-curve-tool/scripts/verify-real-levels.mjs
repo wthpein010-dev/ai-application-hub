@@ -70,7 +70,7 @@ function assertScalarMetrics(report, label) {
 }
 
 const imported = await importLevelFiles(await collectFiles(levelsPath));
-assert.equal(imported.levels.length, 25, "当前正式目录应导入 25 个关卡");
+assert.equal(imported.levels.length, 31, "当前正式目录应导入 31 个关卡");
 assert.equal(imported.errors.length, 0, "正式关卡不应包含损坏 JSON");
 assert.equal(imported.selectedLevel?.id, "level_0020", "应默认选择 level_0020");
 
@@ -99,10 +99,10 @@ const level20Summary = {
   fullTypeMax: level20.rules.fullTypeMax,
 };
 assert.deepEqual(level20Summary, {
-  tiles: 280,
-  layers: 22,
+  tiles: 368,
+  layers: 21,
   fullTypeMin: 1,
-  fullTypeMax: 15,
+  fullTypeMax: 19,
 });
 
 const startedAt = performance.now();
