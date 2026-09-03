@@ -175,8 +175,8 @@ test("video page uses the shared player and a 45-character H.264 walkthrough", (
   assert.match(tutorial, /结算预览/);
   assert.match(tutorial, /真实换行诊断/);
   assert.match(tutorial, /随身小物/);
-  assert.match(tutorial, /试穿/);
-  assert.match(tutorial, /保存/);
+  assert.match(tutorial, /点击小物/);
+  assert.match(tutorial, /卸下/);
   assert.equal(existsSync(mediaPath), true);
 
   const media = inspectMedia(mediaPath);
@@ -196,6 +196,9 @@ test("video page uses the shared player and a 45-character H.264 walkthrough", (
   assert.match(captions, /右侧详情/);
   assert.match(captions, /真实换行/);
   assert.match(captions, /随身小物/);
-  assert.match(captions, /保存装扮/);
+  assert.match(captions, /点击小物/);
+  assert.match(captions, /卸下/);
+  assert.match(captions, /00:17\.500 --> 00:25\.000\n点击小物即可装扮右侧角色，也可直接卸下。/);
+  assert.match(page, /data-time="17"[\s\S]*点击装扮与卸下/);
   assert.ok(cues.at(-1).end <= media.duration);
 });

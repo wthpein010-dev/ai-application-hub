@@ -26,16 +26,24 @@ function presentThumbnail(image, item) {
   image.style.setProperty("--trinket-thumb-shift-y", `${((0.5 - presentation.centerY) * presentation.scale * 100).toFixed(2)}%`);
 }
 
-export function renderTrinketGrid({ items, selectedId, draft, grid, onSelect }) {
+function presentRewardArt(image, item) {
+  const presentation = thumbnailPresentation.get(item.id) || { centerX: 0.5, centerY: 0.5 };
+  image.style.setProperty("--trinket-reward-scale", "1");
+  image.style.setProperty("--trinket-reward-shift-x", `${((0.5 - presentation.centerX) * 100).toFixed(2)}%`);
+  image.style.setProperty("--trinket-reward-shift-y", `${((0.5 - presentation.centerY) * 100).toFixed(2)}%`);
+}
+
+export function renderTrinketGrid({ items, selectedId, equippedItemId, grid, onSelect }) {
   const cards = items.map((item) => {
     const card = document.createElement("button");
+    const equipped = equippedItemId === item.id;
     card.className = "trinket-card";
     card.type = "button";
     card.dataset.itemId = String(item.id);
     card.dataset.new = String(Boolean(item.isNew));
-    card.dataset.draftSelected = String(draft?.draftItemId === item.id);
+    card.dataset.equipped = String(equipped);
     card.setAttribute("aria-current", String(item.id === selectedId));
-    card.setAttribute("aria-label", `查看${item.name}`);
+    card.setAttribute("aria-label", equipped ? `${item.name}，已装扮` : `装扮${item.name}`);
     const art = document.createElement("span");
     art.className = "trinket-art";
     const image = document.createElement("img");
@@ -74,7 +82,22 @@ export function renderEquippedPreview({ character, item, stage }) {
   stage.append(rig);
 }
 
-export function renderTrinketDetail({ item, draft, favoriteIds, equippedItemId, elements }) {
+export function renderTrinketRewardPreview({ item, stage }) {
+  stage.replaceChildren();
+  if (!item) return;
+  const art = document.createElement("div");
+  art.className = "trinket-reward-art";
+  art.dataset.itemId = String(item.id);
+  const image = document.createElement("img");
+  image.src = itemImage(item);
+  image.alt = item.name;
+  image.draggable = false;
+  presentRewardArt(image, item);
+  art.append(image);
+  stage.append(art);
+}
+
+export function renderTrinketDetail({ item, favoriteIds, equippedItemId, elements }) {
   const favorite = favoriteIds.has(item.id);
   elements.id.textContent = `HAND-${String(item.id).padStart(4, "0")}`;
   elements.name.textContent = item.name;
@@ -84,10 +107,8 @@ export function renderTrinketDetail({ item, draft, favoriteIds, equippedItemId, 
   elements.ownedCount.textContent = `×${item.ownedCount}`;
   elements.giftCount.textContent = `×${Math.max(0, item.ownedCount - (equippedItemId === item.id ? 1 : 0))}`;
   elements.acquisition.textContent = item.acquisitionText || "获取方式待配置";
-  const chosen = draft?.draftItemId === item.id;
-  elements.toggleDraft.textContent = chosen ? "卸下试穿" : "试穿";
-  elements.toggleDraft.setAttribute("aria-pressed", String(chosen));
-  elements.save.disabled = !draft || draft.savedItemId === draft.draftItemId;
+  elements.remove.disabled = !equippedItemId;
+  elements.remove.setAttribute("aria-label", equippedItemId ? "卸下当前装扮的小物" : "当前没有已装扮的小物");
 }
 
 export function trinketImagePath(item) {

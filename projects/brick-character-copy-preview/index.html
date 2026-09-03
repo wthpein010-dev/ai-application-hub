@@ -28,15 +28,26 @@
     <section class="reward-preview" id="reward-preview" aria-labelledby="reward-title">
       <a class="atlas-close" id="atlas-close" href="../../index.html#engineering" aria-label="关闭图鉴并返回主页">×</a>
       <div class="reward-preview__stage">
-        <p class="reward-kicker">恭喜你</p>
-        <h1 id="reward-title">获得新的<br>砖块小人</h1>
-        <div class="reward-burst" aria-hidden="true"></div>
-        <div class="reward-character" id="reward-character" aria-label="获得的砖块小人"></div>
-        <div class="reward-shadow" aria-hidden="true"></div>
-        <p class="reward-dialogue" id="reward-description">新的伙伴已经加入图鉴。</p>
-        <p class="reward-acquisition"><span>获取方式</span><strong id="reward-unowned">常规模式或活动模式通关后获得</strong></p>
-        <p class="reward-name" id="reward-name">原皮战神</p>
-        <div class="reward-footer" aria-hidden="true"><span>已自动加入图鉴</span><span>点击中间卡片查看详情</span></div>
+        <div id="character-reward-preview">
+          <p class="reward-kicker">恭喜你</p>
+          <h1 id="reward-title">获得新的<br>砖块小人</h1>
+          <div class="reward-burst" aria-hidden="true"></div>
+          <div class="reward-character" id="reward-character" aria-label="获得的砖块小人"></div>
+          <div class="reward-shadow" aria-hidden="true"></div>
+          <p class="reward-dialogue" id="reward-description">新的伙伴已经加入图鉴。</p>
+          <p class="reward-acquisition"><span>获取方式</span><strong id="reward-unowned">常规模式或活动模式通关后获得</strong></p>
+          <p class="reward-name" id="reward-name">原皮战神</p>
+          <div class="reward-footer" aria-hidden="true"><span>已自动加入图鉴</span><span>点击中间卡片查看详情</span></div>
+        </div>
+        <section class="trinket-reward-preview" id="trinket-reward-preview" hidden aria-labelledby="trinket-reward-title">
+          <p class="reward-kicker">随身小物</p>
+          <h1 id="trinket-reward-title">获得新的<br>随身小物</h1>
+          <div class="reward-burst" aria-hidden="true"></div>
+          <div class="trinket-reward-stage" id="trinket-reward-stage" aria-label="当前小物预览"></div>
+          <p class="reward-dialogue">左侧查看小物本体，点击中间卡片即可为右侧角色装扮。</p>
+          <p class="reward-name" id="trinket-reward-name">请选择一个小物</p>
+          <div class="reward-footer" aria-hidden="true"><span>完整小物图</span><span>无需额外试穿或保存</span></div>
+        </section>
       </div>
     </section>
 
@@ -72,7 +83,7 @@
             <label class="atlas-search"><span aria-hidden="true">⌕</span><input id="trinket-search" type="search" placeholder="搜索小物名称" autocomplete="off"></label>
             <label class="trinket-sort-label">排序<select id="trinket-sort"><option value="default">默认（最新优先）</option><option value="recent">最近获得</option><option value="name">名称拼音</option><option value="quantity">拥有数量</option><option value="activity">活动顺序</option></select></label>
           </div>
-          <p class="trinket-summary" id="trinket-summary" role="status">全部 11 件随身小物均可试穿</p>
+          <p class="trinket-summary" id="trinket-summary" role="status">点击小物即可装扮右侧角色</p>
           <div class="trinket-grid" id="trinket-grid" aria-label="随身小物列表"></div>
           <div class="gallery-empty" id="trinket-empty" hidden><strong>没有找到小物</strong><span>换个名字试试</span></div>
         </section>
@@ -106,12 +117,10 @@
       </section>
 
       <section class="trinket-detail" id="trinket-detail" hidden>
-        <div class="trinket-stage"><div class="detail-spotlight" aria-hidden="true"></div><div class="trinket-stage-figure" id="trinket-stage-figure" aria-label="小物试穿预览"></div><div class="trinket-stage-shadow" aria-hidden="true"></div></div>
+        <div class="trinket-stage"><div class="detail-spotlight" aria-hidden="true"></div><div class="trinket-stage-figure" id="trinket-stage-figure" aria-label="角色装扮效果预览"></div><div class="trinket-stage-shadow" aria-hidden="true"></div></div>
         <div class="trinket-detail-copy"><div><span id="trinket-detail-id">HAND-0001</span><h2 id="trinket-detail-name">便携冰水壶</h2><p id="trinket-detail-rarity">常见 · 手持</p></div><button id="trinket-favorite" type="button" aria-pressed="false">☆ 收藏</button></div>
         <dl class="trinket-meta"><div><dt>拥有数量</dt><dd id="trinket-owned-count">×0</dd></div><div><dt>可赠数量</dt><dd id="trinket-gift-count">×0</dd></div><div><dt>获取方式</dt><dd id="trinket-acquisition">—</dd></div></dl>
-        <div class="trinket-actions"><button id="trinket-toggle-draft" type="button">试穿</button><button id="trinket-randomize" type="button">随机试穿</button><button id="trinket-save" type="button" disabled>保存装扮</button></div>
-        <div class="trinket-secondary-actions"><button id="open-warehouse" type="button">打开仓库</button><button id="open-gift" type="button">本地赠送演示</button></div>
-        <section class="trinket-inline-flow" id="trinket-inline-flow" data-flow="" hidden aria-live="polite"></section>
+        <div class="trinket-actions"><button id="trinket-remove" type="button">卸下</button></div>
       </section>
     </aside>
   </main>
