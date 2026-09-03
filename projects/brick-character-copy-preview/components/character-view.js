@@ -8,6 +8,16 @@ const spineLimbOrder = [
   "foot-right",
 ];
 
+export function formatRewardDialogue(text) {
+  const characters = Array.from(String(text ?? "").trim());
+  const visible = characters.length > 18
+    ? [...characters.slice(0, 17), "…"]
+    : characters.slice(0, 18);
+  const firstLine = visible.slice(0, 9).join("");
+  const secondLine = visible.slice(9).join("");
+  return secondLine ? `${firstLine}\n${secondLine}` : firstLine;
+}
+
 function createSpineLimbs() {
   const limbs = document.createElement("span");
   limbs.className = "character-spine-limbs";
@@ -57,7 +67,10 @@ export function createCharacterFigure(character) {
 export function renderRewardPreview({ character, elements }) {
   if (!character) return;
   elements.name.textContent = character.name;
-  elements.description.textContent = character.galleryDesc;
+  const speech = character.unlockDesc || character.unownedDesc || character.galleryDesc;
+  elements.description.textContent = formatRewardDialogue(speech);
+  elements.description.title = speech;
+  elements.description.setAttribute("aria-label", `角色台词：${speech}`);
   elements.unowned.textContent = character.unownedDesc || character.unlockDesc;
   elements.figure.replaceChildren(createCharacterFigure(character));
 }

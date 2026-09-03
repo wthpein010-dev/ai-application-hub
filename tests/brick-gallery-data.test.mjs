@@ -9,6 +9,7 @@ import { fileURLToPath, pathToFileURL } from "node:url";
 import { deflateSync } from "node:zlib";
 import { buildBrickGalleryData, syncBrickGallery } from "../scripts/sync-brick-gallery-from-unity.mjs";
 import { buildBrickGalleryDataFromSpreadsheets } from "../scripts/sync-brick-gallery-from-spreadsheets.mjs";
+import { formatRewardDialogue } from "../projects/brick-character-copy-preview/components/character-view.js";
 
 const root = dirname(dirname(fileURLToPath(import.meta.url)));
 const projectRoot = join(root, "projects", "brick-character-copy-preview");
@@ -29,6 +30,12 @@ const malformedPngs = [
   })()],
   ["PNG without IEND", transparentPng.subarray(0, -12)],
 ];
+
+test("victory speech fixes copy to one or two nine-character lines", () => {
+  assert.equal(formatRewardDialogue("不加配饰自在生长，基础但绝不普通"), "不加配饰自在生长，\n基础但绝不普通");
+  assert.equal(formatRewardDialogue("这是一句短台词"), "这是一句短台词");
+  assert.equal(formatRewardDialogue("一二三四五六七八九一二三四五六七八九十"), "一二三四五六七八九\n一二三四五六七八…");
+});
 
 function fixtureCrc32(bytes) {
   let crc = 0xffffffff;
@@ -86,10 +93,14 @@ async function createSyntheticUnityFixture({ firstBody = "", firstName = "角色
   const syntheticProjectRoot = join(tempRoot, "public-project");
   const configRoot = join(syntheticUnityRoot, "Assets", "GameRes", "Runtime", "ConfigData");
   const atlasRoot = join(syntheticUnityRoot, "Assets", "GameRes", "Runtime", "UI", "AtlasSystem", "Sprites", "Atlas1");
+  const levelWinAtlasRoot = join(syntheticUnityRoot, "Assets", "GameRes", "Runtime", "UI", "LevelWin", "Sprites", "Atlas1");
+  const levelWinIgnoreRoot = join(syntheticUnityRoot, "Assets", "GameRes", "Runtime", "UI", "LevelWin", "Sprites", "AtlasIgnore");
   const spineRoot = join(syntheticUnityRoot, "Assets", "GameRes", "Runtime", "Spine", "Character");
   await Promise.all([
     mkdir(configRoot, { recursive: true }),
     mkdir(atlasRoot, { recursive: true }),
+    mkdir(levelWinAtlasRoot, { recursive: true }),
+    mkdir(levelWinIgnoreRoot, { recursive: true }),
     mkdir(spineRoot, { recursive: true }),
   ]);
 
@@ -122,6 +133,8 @@ async function createSyntheticUnityFixture({ firstBody = "", firstName = "角色
     writeFile(join(configRoot, "cfg_gdlanguage.json"), JSON.stringify(languages), "utf8"),
     writeFile(join(spineRoot, "character.png"), transparentPng),
     ...expectedUiAssets.map((asset) => writeFile(join(atlasRoot, asset), asset, "utf8")),
+    ...["light.png", "public_share_icon.png"].map((asset) => writeFile(join(levelWinAtlasRoot, asset), transparentPng)),
+    ...["shengli_pop1.png", "shengli_pop2.png"].map((asset) => writeFile(join(levelWinIgnoreRoot, asset), transparentPng)),
   ]);
   return { tempRoot, syntheticUnityRoot, syntheticProjectRoot };
 }
@@ -516,6 +529,20 @@ test("Unity synchronization preserves references to already published preview PN
     assert.equal(catalog.find(({ id }) => id === 10).preview, "assets/preview/10.png");
     assert.equal("preview" in catalog.find(({ id }) => id === 9), false);
     assert.equal(existsSync(join(fixture.syntheticProjectRoot, "assets", "spine", "character.png")), true);
+  } finally {
+    await rm(fixture.tempRoot, { recursive: true, force: true, maxRetries: 5, retryDelay: 20 });
+  }
+});
+
+test("Unity synchronization bundles the official victory-result visual assets", async () => {
+  const fixture = await createSyntheticUnityFixture();
+  try {
+    await syncBrickGallery({ unityRoot: fixture.syntheticUnityRoot, projectRoot: fixture.syntheticProjectRoot });
+    for (const asset of ["light.png", "public_share_icon.png", "shengli_pop1.png", "shengli_pop2.png"]) {
+      const output = join(fixture.syntheticProjectRoot, "assets", "win", asset);
+      assert.equal(existsSync(output), true, `${asset} should be copied from the formal LevelWin resources`);
+      assert.equal(readFileSync(output).equals(transparentPng), true);
+    }
   } finally {
     await rm(fixture.tempRoot, { recursive: true, force: true, maxRetries: 5, retryDelay: 20 });
   }

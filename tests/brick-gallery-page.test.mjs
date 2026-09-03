@@ -48,12 +48,15 @@ test("reference atlas keeps a compact reward result beside the catalog and inlin
   assert.match(html, /id="trinket-reward-preview"/);
   assert.match(html, /id="trinket-remove"/);
   assert.doesNotMatch(html, /id="trinket-toggle-draft"|>试穿</);
-  assert.match(html, /id="atlas-close"/);
+  assert.match(html, /class="reward-main-actions"/);
+  assert.match(html, /class="reward-home-action" href="\.\.\/\.\.\/index\.html#engineering">返回首页/);
+  assert.match(html, /id="reward-share"/);
+  assert.doesNotMatch(html, /id="atlas-close"/);
   assert.match(app, /renderRewardPreview/);
   assert.match(app, /renderTrinketRewardPreview/);
   assert.match(view, /export function renderRewardPreview/);
   assert.match(css, /@media\s*\(min-width:\s*1200px\)\s*\{[\s\S]*?\.atlas-workbench\s*\{[^}]*grid-template-columns:\s*repeat\(3,minmax\(0,1fr\)\)/s);
-  assert.match(css, /\.reward-burst\s*\{[^}]*animation:\s*none/s);
+  assert.match(css, /\.reward-light\s*\{[^}]*filter:\s*drop-shadow/s);
   assert.match(css, /\.reward-preview\s*\{[^}]*position:\s*sticky/s);
   assert.match(css, /\.character-figure\s*\{[^}]*max-width:\s*66\.667%[^}]*max-height:\s*66\.667%[^}]*overflow:\s*hidden/s);
 });

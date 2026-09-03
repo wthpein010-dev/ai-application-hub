@@ -26,18 +26,31 @@
 
   <main class="atlas-workbench" id="atlas-workbench">
     <section class="reward-preview" id="reward-preview" aria-labelledby="reward-title">
-      <a class="atlas-close" id="atlas-close" href="../../index.html#engineering" aria-label="关闭图鉴并返回主页">×</a>
       <div class="reward-preview__stage">
         <div id="character-reward-preview">
-          <p class="reward-kicker">恭喜你</p>
-          <h1 id="reward-title">获得新的<br>砖块小人</h1>
-          <div class="reward-burst" aria-hidden="true"></div>
-          <div class="reward-character" id="reward-character" aria-label="获得的砖块小人"></div>
-          <div class="reward-shadow" aria-hidden="true"></div>
-          <p class="reward-dialogue" id="reward-description">新的伙伴已经加入图鉴。</p>
-          <p class="reward-acquisition"><span>获取方式</span><strong id="reward-unowned">常规模式或活动模式通关后获得</strong></p>
-          <p class="reward-name" id="reward-name">原皮战神</p>
-          <div class="reward-footer" aria-hidden="true"><span>已自动加入图鉴</span><span>点击中间卡片查看详情</span></div>
+          <div class="reward-success-card">
+            <p class="reward-success-card__kicker">恭喜你</p>
+            <h1 id="reward-title">挑战成功</h1>
+          </div>
+          <p class="reward-clear-time">通关用时 <strong>10分05秒</strong></p>
+          <div class="reward-hero-zone">
+            <img class="reward-light" src="./assets/win/light.png" alt="" aria-hidden="true">
+            <div class="reward-character" id="reward-character" aria-label="获得的砖块小人"></div>
+            <div class="reward-shadow" aria-hidden="true"></div>
+            <div class="reward-speech" aria-live="polite">
+              <div class="reward-speech__body"><p id="reward-description">新的伙伴已经加入图鉴。</p></div>
+              <img class="reward-speech__tail" src="./assets/win/shengli_pop2.png" alt="" aria-hidden="true">
+            </div>
+          </div>
+          <p class="reward-name sr-only" id="reward-name">原皮战神</p>
+          <p class="reward-acquisition sr-only"><strong id="reward-unowned">常规模式或活动模式通关后获得</strong></p>
+          <div class="reward-main-actions">
+            <a class="reward-home-action" href="../../index.html#engineering">返回首页</a>
+            <div class="reward-share-action">
+              <span class="reward-share-tip" aria-hidden="true">让好友也挑战一下！</span>
+              <button id="reward-share" type="button" aria-label="分享当前结算角色"><img src="./assets/win/public_share_icon.png" alt=""></button>
+            </div>
+          </div>
         </div>
         <section class="trinket-reward-preview" id="trinket-reward-preview" hidden aria-labelledby="trinket-reward-title">
           <p class="reward-kicker">随身小物</p>

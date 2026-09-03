@@ -10,6 +10,8 @@ const configRoot = join("Assets", "GameRes", "Runtime", "ConfigData");
 const skinRoot = join("Assets", "GameRes", "Runtime", "Textures", "Skin");
 const atlasRoot = join("Assets", "GameRes", "Runtime", "UI", "AtlasSystem", "Sprites", "Atlas1");
 const spineRoot = join("Assets", "GameRes", "Runtime", "Spine", "Character");
+const levelWinAtlasRoot = join("Assets", "GameRes", "Runtime", "UI", "LevelWin", "Sprites", "Atlas1");
+const levelWinIgnoreRoot = join("Assets", "GameRes", "Runtime", "UI", "LevelWin", "Sprites", "AtlasIgnore");
 const layerKinds = ["block", "body", "head", "dress"];
 const spineAssets = ["character.png"];
 const uiAssets = [
@@ -32,6 +34,12 @@ const uiAssets = [
   "tujian_save_xiao2.png",
   "tujian_sousuo.png",
   "tujian_xuanzhong.png",
+];
+const victoryResultAssets = [
+  { sourceRoot: levelWinAtlasRoot, file: "light.png" },
+  { sourceRoot: levelWinAtlasRoot, file: "public_share_icon.png" },
+  { sourceRoot: levelWinIgnoreRoot, file: "shengli_pop1.png" },
+  { sourceRoot: levelWinIgnoreRoot, file: "shengli_pop2.png" },
 ];
 
 async function readJson(path) {
@@ -151,6 +159,16 @@ async function copySpineAssets(unityRoot, projectRoot) {
   await pruneManagedPngs(targetDirectory, spineAssets);
 }
 
+async function copyVictoryResultAssets(unityRoot, projectRoot) {
+  const targetDirectory = join(projectRoot, "assets", "win");
+  await mkdir(targetDirectory, { recursive: true });
+  await Promise.all(victoryResultAssets.map(({ sourceRoot, file }) => copyFile(
+    join(unityRoot, sourceRoot, file),
+    join(targetDirectory, file),
+  )));
+  await pruneManagedPngs(targetDirectory, victoryResultAssets.map(({ file }) => file));
+}
+
 export async function syncBrickGallery({
   unityRoot = process.env.PAWS_HOME_CLIENT_ROOT,
   dataRoot = process.env.PAWS_HOME_DATA_ROOT,
@@ -166,6 +184,7 @@ export async function syncBrickGallery({
     copyReferencedLayers(sourceCharacters, resolvedUnityRoot, resolvedProjectRoot),
     copyUiAssets(resolvedUnityRoot, resolvedProjectRoot),
     copySpineAssets(resolvedUnityRoot, resolvedProjectRoot),
+    copyVictoryResultAssets(resolvedUnityRoot, resolvedProjectRoot),
   ]);
   const characters = await withPublishedCharacterPreviews(sourceCharacters, resolvedProjectRoot);
   const dataPath = join(resolvedProjectRoot, "data", "characters.json");

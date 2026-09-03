@@ -513,6 +513,23 @@ async function shareCurrent() {
   }
 }
 
+async function shareRewardCharacter() {
+  const character = previewCharacter();
+  if (!character) return;
+  const text = `${character.name}：${character.unlockDesc}`;
+  if (!navigator.share && !navigator.clipboard?.writeText) {
+    elements.status.textContent = "当前浏览器不支持分享，可直接复制角色台词";
+    return;
+  }
+  try {
+    if (navigator.share) await navigator.share({ title: `${character.name}挑战成功`, text, url: location.href });
+    else await navigator.clipboard.writeText(text);
+    elements.status.textContent = `${character.name}的胜利结算已准备分享`;
+  } catch (error) {
+    elements.status.textContent = error?.name === "AbortError" ? "已取消分享" : "当前浏览器无法分享，可直接复制角色台词";
+  }
+}
+
 function applyLocation(historyMode = null) {
   const locationState = parseAtlasLocation(location.href);
   atlas = setAtlasTab(createAtlasState(), locationState.tab);
@@ -559,6 +576,7 @@ function bindEvents() {
   elements.detailFavorite.addEventListener("click", toggleCharacterFavorite);
   elements.detailEquip.addEventListener("click", equipCurrentCharacter);
   elements.detailShare.addEventListener("click", shareCurrent);
+  document.querySelector("#reward-share").addEventListener("click", shareRewardCharacter);
   elements.trinketFavorite.addEventListener("click", toggleTrinketFavorite);
   elements.trinketRemove.addEventListener("click", removeEquippedTrinket);
   window.addEventListener("keydown", (event) => {
