@@ -96,6 +96,38 @@ try {
   assert.equal(await deepLink.locator("#character-detail").isVisible(), true);
   assert.match(await deepLink.locator("#detail-name").textContent(), /./);
   await deepLink.close();
+
+  for (const [blockId, name] of [[100004, "满眼心动"], [100008, "咩羊姐"]]) {
+    const layered = await browser.newPage({ viewport: { width: 1440, height: 900 } });
+    const layeredErrors = [];
+    layered.on("console", (message) => { if (message.type() === "error") layeredErrors.push(message.text()); });
+    layered.on("pageerror", (error) => layeredErrors.push(error.message));
+    layered.on("response", (response) => { if (response.status() >= 400) layeredErrors.push(`${response.status()} ${response.url()}`); });
+    await layered.goto(`${origin}/projects/brick-character-copy-preview/index.html?tab=characters&character=${blockId}`, { waitUntil: "networkidle" });
+
+    const figure = layered.locator("#detail-character .character-figure");
+    assert.equal((await layered.locator("#detail-name").textContent()).trim(), name);
+    assert.equal(await figure.locator(".character-limbs").count(), 0, `${name} must not receive fabricated CSS legs`);
+    assert.equal(await figure.locator(".character-spine-sprite").count(), 6, `${name} must use four official leg segments and two feet`);
+    const limbBounds = await figure.locator(".character-spine-sprite").evaluateAll((sprites, owner) => {
+      const figureBounds = owner.getBoundingClientRect();
+      return sprites.map((sprite) => {
+        const bounds = sprite.getBoundingClientRect();
+        return {
+          hasPixels: sprite.querySelector("img")?.src.includes("assets/spine/character.png") === true,
+          width: bounds.width,
+          height: bounds.height,
+          inside: bounds.left >= figureBounds.left - 1
+            && bounds.right <= figureBounds.right + 1
+            && bounds.top >= figureBounds.top - 1
+            && bounds.bottom <= figureBounds.bottom + 1,
+        };
+      });
+    }, await figure.elementHandle());
+    assert.equal(limbBounds.every(({ hasPixels, width, height, inside }) => hasPixels && width > 0 && height > 0 && inside), true);
+    assert.deepEqual(layeredErrors, []);
+    await layered.close();
+  }
   console.log("Verified inline 45-character gallery and copy diagnostics.");
 } finally {
   await browser.close();

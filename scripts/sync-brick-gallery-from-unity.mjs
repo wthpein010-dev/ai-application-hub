@@ -9,7 +9,9 @@ const defaultProjectRoot = join(repositoryRoot, "projects", "brick-character-cop
 const configRoot = join("Assets", "GameRes", "Runtime", "ConfigData");
 const skinRoot = join("Assets", "GameRes", "Runtime", "Textures", "Skin");
 const atlasRoot = join("Assets", "GameRes", "Runtime", "UI", "AtlasSystem", "Sprites", "Atlas1");
+const spineRoot = join("Assets", "GameRes", "Runtime", "Spine", "Character");
 const layerKinds = ["block", "body", "head", "dress"];
+const spineAssets = ["character.png"];
 const uiAssets = [
   "save1.png",
   "save2.png",
@@ -139,6 +141,16 @@ async function copyUiAssets(unityRoot, projectRoot) {
   await pruneManagedPngs(targetDirectory, uiAssets);
 }
 
+async function copySpineAssets(unityRoot, projectRoot) {
+  const targetDirectory = join(projectRoot, "assets", "spine");
+  await mkdir(targetDirectory, { recursive: true });
+  await Promise.all(spineAssets.map((asset) => copyFile(
+    join(unityRoot, spineRoot, asset),
+    join(targetDirectory, asset),
+  )));
+  await pruneManagedPngs(targetDirectory, spineAssets);
+}
+
 export async function syncBrickGallery({
   unityRoot = process.env.PAWS_HOME_CLIENT_ROOT,
   dataRoot = process.env.PAWS_HOME_DATA_ROOT,
@@ -150,8 +162,11 @@ export async function syncBrickGallery({
   const sourceCharacters = dataRoot
     ? await attachUnityLayers(await buildBrickGalleryDataFromSpreadsheets({ dataRoot }), resolvedUnityRoot)
     : await buildBrickGalleryData({ unityRoot: resolvedUnityRoot });
-  await copyReferencedLayers(sourceCharacters, resolvedUnityRoot, resolvedProjectRoot);
-  await copyUiAssets(resolvedUnityRoot, resolvedProjectRoot);
+  await Promise.all([
+    copyReferencedLayers(sourceCharacters, resolvedUnityRoot, resolvedProjectRoot),
+    copyUiAssets(resolvedUnityRoot, resolvedProjectRoot),
+    copySpineAssets(resolvedUnityRoot, resolvedProjectRoot),
+  ]);
   const characters = await withPublishedCharacterPreviews(sourceCharacters, resolvedProjectRoot);
   const dataPath = join(resolvedProjectRoot, "data", "characters.json");
   await mkdir(dirname(dataPath), { recursive: true });

@@ -1,4 +1,29 @@
 const layerOrder = ["body", "block", "dress", "head"];
+const spineLimbOrder = [
+  "leg-left-upper",
+  "leg-left-lower",
+  "leg-right-upper",
+  "leg-right-lower",
+  "foot-left",
+  "foot-right",
+];
+
+function createSpineLimbs() {
+  const limbs = document.createElement("span");
+  limbs.className = "character-spine-limbs";
+  for (const part of spineLimbOrder) {
+    const sprite = document.createElement("span");
+    sprite.className = `character-spine-sprite character-spine-sprite--${part}`;
+    const atlas = document.createElement("img");
+    atlas.className = "character-spine-sprite__atlas";
+    atlas.src = "./assets/spine/character.png";
+    atlas.alt = "";
+    atlas.draggable = false;
+    sprite.append(atlas);
+    limbs.append(sprite);
+  }
+  return limbs;
+}
 
 export function createCharacterFigure(character) {
   const figure = document.createElement("div");
@@ -14,9 +39,8 @@ export function createCharacterFigure(character) {
     return figure;
   }
 
-  const limbs = document.createElement("span");
-  limbs.className = "character-limbs";
-  figure.append(limbs);
+  figure.classList.add("character-figure--layered");
+  figure.append(createSpineLimbs());
   for (const kind of layerOrder) {
     const asset = character.layers?.[kind];
     if (!asset) continue;

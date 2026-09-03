@@ -86,8 +86,12 @@ async function createSyntheticUnityFixture({ firstBody = "", firstName = "角色
   const syntheticProjectRoot = join(tempRoot, "public-project");
   const configRoot = join(syntheticUnityRoot, "Assets", "GameRes", "Runtime", "ConfigData");
   const atlasRoot = join(syntheticUnityRoot, "Assets", "GameRes", "Runtime", "UI", "AtlasSystem", "Sprites", "Atlas1");
-  await mkdir(configRoot, { recursive: true });
-  await mkdir(atlasRoot, { recursive: true });
+  const spineRoot = join(syntheticUnityRoot, "Assets", "GameRes", "Runtime", "Spine", "Character");
+  await Promise.all([
+    mkdir(configRoot, { recursive: true }),
+    mkdir(atlasRoot, { recursive: true }),
+    mkdir(spineRoot, { recursive: true }),
+  ]);
 
   const skins = [];
   const blocks = [];
@@ -116,6 +120,7 @@ async function createSyntheticUnityFixture({ firstBody = "", firstName = "角色
     writeFile(join(configRoot, "cfg_gdblockskin.json"), JSON.stringify(skins), "utf8"),
     writeFile(join(configRoot, "cfg_gdblock.json"), JSON.stringify(blocks), "utf8"),
     writeFile(join(configRoot, "cfg_gdlanguage.json"), JSON.stringify(languages), "utf8"),
+    writeFile(join(spineRoot, "character.png"), transparentPng),
     ...expectedUiAssets.map((asset) => writeFile(join(atlasRoot, asset), asset, "utf8")),
   ]);
   return { tempRoot, syntheticUnityRoot, syntheticProjectRoot };
@@ -458,6 +463,7 @@ test("Unity synchronization preserves references to already published preview PN
     assert.equal(result.find(({ id }) => id === 10).preview, "assets/preview/10.png");
     assert.equal(catalog.find(({ id }) => id === 10).preview, "assets/preview/10.png");
     assert.equal("preview" in catalog.find(({ id }) => id === 9), false);
+    assert.equal(existsSync(join(fixture.syntheticProjectRoot, "assets", "spine", "character.png")), true);
   } finally {
     await rm(fixture.tempRoot, { recursive: true, force: true, maxRetries: 5, retryDelay: 20 });
   }
