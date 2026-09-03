@@ -58,7 +58,7 @@ test("reference atlas keeps a compact reward result beside the catalog and inlin
   assert.match(css, /\.character-figure\s*\{[^}]*max-width:\s*66\.667%[^}]*max-height:\s*66\.667%[^}]*overflow:\s*hidden/s);
 });
 
-test("gallery catalog publishes complete preview art for the available character ID range", () => {
+test("gallery catalog publishes only formally name-verified preview art", () => {
   const dataPath = join(projectRoot, "data", "characters.json");
   const source = readFileSync(dataPath, "utf8");
   const data = JSON.parse(source);
@@ -66,7 +66,11 @@ test("gallery catalog publishes complete preview art for the available character
 
   assert.deepEqual(
     previewCharacters.map(({ id }) => id).sort((left, right) => left - right),
-    Array.from({ length: 35 }, (_, index) => index + 10),
+    [10, 11, 12, 13, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30],
+  );
+  assert.deepEqual(
+    data.filter(({ id, preview }) => id >= 10 && id <= 44 && !preview).map(({ id }) => id).sort((left, right) => left - right),
+    [14, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44],
   );
   for (const character of previewCharacters) {
     assert.equal(

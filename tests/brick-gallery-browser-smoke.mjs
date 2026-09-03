@@ -44,7 +44,8 @@ try {
     assert.equal(await page.locator(".character-card").count(), 12);
     assert.equal(await page.locator(".character-card.is-locked").count(), 0);
     assert.equal(await page.locator('.character-card[data-block-id="100001"] .character-layer').count() > 0, true);
-    assert.equal(await page.locator('.character-card[data-block-id="100014"] .character-preview').count(), 1);
+    assert.equal(await page.locator('.character-card[data-block-id="100014"] .character-preview').count(), 0);
+    assert.equal(await page.locator('.character-card[data-block-id="100014"] .character-spine-sprite').count(), 6);
 
     const cardGeometry = await page.locator(".character-card").evaluateAll((cards) => cards.slice(0, 3).map((card) => card.getBoundingClientRect().toJSON()));
     assert.equal(new Set(cardGeometry.map(({ left }) => Math.round(left))).size, 3);

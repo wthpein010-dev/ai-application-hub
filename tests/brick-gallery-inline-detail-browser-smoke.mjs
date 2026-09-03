@@ -62,6 +62,8 @@ try {
     assert.equal(await page.locator("#atlas-list-panel").isVisible(), true);
     assert.equal((await page.locator("#detail-name").textContent()).trim(), "黑帽快客");
     assert.equal((await page.locator("#reward-name").textContent()).trim(), "黑帽快客");
+    assert.equal(await page.locator("#detail-character .character-preview").count(), 0, "mismatched source art must not override 黑帽快客");
+    assert.equal(await page.locator("#detail-character .character-figure--layered").count(), 1, "黑帽快客 must fall back to its formal layered character");
 
     const before = await page.locator("#detail-name").textContent();
     await page.locator("#detail-next").click();

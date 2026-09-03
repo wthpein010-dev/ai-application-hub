@@ -224,8 +224,8 @@ test("preview synchronizer publishes stable character IDs without leaking the so
     await mkdir(previewRoot, { recursive: true });
     await mkdir(publishedPreviewRoot, { recursive: true });
     await Promise.all([
-      writeFile(join(previewRoot, "10角色甲.png"), transparentPng),
-      writeFile(join(previewRoot, "44角色乙.png"), transparentPng),
+      writeFile(join(previewRoot, "10角色10.png"), transparentPng),
+      writeFile(join(previewRoot, "44角色44.png"), transparentPng),
       writeFile(join(previewRoot, "说明.txt"), "ignore", "utf8"),
       writeFile(join(publishedPreviewRoot, "9.png"), transparentPng),
       writeFile(join(publishedPreviewRoot, "notes.txt"), "keep", "utf8"),
@@ -244,6 +244,58 @@ test("preview synchronizer publishes stable character IDs without leaking the so
     assert.equal(existsSync(join(publishedPreviewRoot, "9.png")), false);
     assert.equal(existsSync(join(publishedPreviewRoot, "notes.txt")), true);
     assert.equal(rawCatalog.includes(previewRoot), false);
+  } finally {
+    await rm(fixture.tempRoot, { recursive: true, force: true, maxRetries: 5, retryDelay: 20 });
+  }
+});
+
+test("preview synchronizer skips art whose filename label does not match the formal character name", async () => {
+  const fixture = await createSyntheticUnityFixture();
+  const previewRoot = join(fixture.tempRoot, "mismatched-previews");
+  const publishedPreviewRoot = join(fixture.syntheticProjectRoot, "assets", "preview");
+  try {
+    await syncBrickGallery({ unityRoot: fixture.syntheticUnityRoot, projectRoot: fixture.syntheticProjectRoot });
+    await Promise.all([
+      mkdir(previewRoot, { recursive: true }),
+      mkdir(publishedPreviewRoot, { recursive: true }),
+    ]);
+    await Promise.all([
+      writeFile(join(previewRoot, "10角色10.png"), transparentPng),
+      writeFile(join(previewRoot, "11另一角色.png"), transparentPng),
+      writeFile(join(publishedPreviewRoot, "11.png"), transparentPng),
+    ]);
+
+    const result = runPreviewSync(previewRoot, fixture.syntheticProjectRoot);
+    assert.equal(result.status, 0, result.stderr || result.stdout);
+
+    const catalog = JSON.parse(readFileSync(join(fixture.syntheticProjectRoot, "data", "characters.json"), "utf8"));
+    assert.equal(catalog.find(({ id }) => id === 10).preview, "assets/preview/10.png");
+    assert.equal("preview" in catalog.find(({ id }) => id === 11), false);
+    assert.equal(existsSync(join(publishedPreviewRoot, "10.png")), true);
+    assert.equal(existsSync(join(publishedPreviewRoot, "11.png")), false);
+  } finally {
+    await rm(fixture.tempRoot, { recursive: true, force: true, maxRetries: 5, retryDelay: 20 });
+  }
+});
+
+test("preview synchronizer removes stale art when every source preview label mismatches", async () => {
+  const fixture = await createSyntheticUnityFixture();
+  const previewRoot = join(fixture.tempRoot, "all-mismatched-previews");
+  const publishedPreviewRoot = join(fixture.syntheticProjectRoot, "assets", "preview");
+  try {
+    await syncBrickGallery({ unityRoot: fixture.syntheticUnityRoot, projectRoot: fixture.syntheticProjectRoot });
+    await mkdir(publishedPreviewRoot, { recursive: true });
+    await writeFile(join(publishedPreviewRoot, "10.png"), transparentPng);
+    await syncBrickGallery({ unityRoot: fixture.syntheticUnityRoot, projectRoot: fixture.syntheticProjectRoot });
+    await mkdir(previewRoot, { recursive: true });
+    await writeFile(join(previewRoot, "10另一角色.png"), transparentPng);
+
+    const result = runPreviewSync(previewRoot, fixture.syntheticProjectRoot);
+    assert.equal(result.status, 0, result.stderr || result.stdout);
+
+    const catalog = JSON.parse(readFileSync(join(fixture.syntheticProjectRoot, "data", "characters.json"), "utf8"));
+    assert.equal("preview" in catalog.find(({ id }) => id === 10), false);
+    assert.equal(existsSync(join(publishedPreviewRoot, "10.png")), false);
   } finally {
     await rm(fixture.tempRoot, { recursive: true, force: true, maxRetries: 5, retryDelay: 20 });
   }
@@ -311,7 +363,7 @@ test("preview synchronizer rejects invalid PNG bytes before changing published a
     await syncBrickGallery({ unityRoot: fixture.syntheticUnityRoot, projectRoot: fixture.syntheticProjectRoot });
     await mkdir(previewRoot, { recursive: true });
     await mkdir(publishedPreviewRoot, { recursive: true });
-    await writeFile(join(previewRoot, "10损坏.png"), "not-a-png", "utf8");
+    await writeFile(join(previewRoot, "10角色10.png"), "not-a-png", "utf8");
     await writeFile(join(publishedPreviewRoot, "10.png"), transparentPng);
 
     const result = runPreviewSync(previewRoot, fixture.syntheticProjectRoot);
@@ -333,7 +385,7 @@ test("preview synchronizer rejects structurally damaged PNGs before changing pub
         await syncBrickGallery({ unityRoot: fixture.syntheticUnityRoot, projectRoot: fixture.syntheticProjectRoot });
         await mkdir(previewRoot, { recursive: true });
         await mkdir(publishedPreviewRoot, { recursive: true });
-        await writeFile(join(previewRoot, "10损坏.png"), damagedPng);
+        await writeFile(join(previewRoot, "10角色10.png"), damagedPng);
         await writeFile(join(publishedPreviewRoot, "10.png"), transparentPng);
         await syncBrickGallery({ unityRoot: fixture.syntheticUnityRoot, projectRoot: fixture.syntheticProjectRoot });
         const catalogPath = join(fixture.syntheticProjectRoot, "data", "characters.json");
@@ -365,7 +417,7 @@ test("preview synchronizer rejects PNG input and decompressed pixels above resou
         await syncBrickGallery({ unityRoot: fixture.syntheticUnityRoot, projectRoot: fixture.syntheticProjectRoot });
         await mkdir(previewRoot, { recursive: true });
         await mkdir(publishedPreviewRoot, { recursive: true });
-        await writeFile(join(previewRoot, "10超限.png"), createPng());
+        await writeFile(join(previewRoot, "10角色10.png"), createPng());
         await writeFile(join(publishedPreviewRoot, "10.png"), transparentPng);
         await syncBrickGallery({ unityRoot: fixture.syntheticUnityRoot, projectRoot: fixture.syntheticProjectRoot });
         const catalogPath = join(fixture.syntheticProjectRoot, "data", "characters.json");

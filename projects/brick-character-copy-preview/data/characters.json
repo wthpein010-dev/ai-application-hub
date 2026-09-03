@@ -39,8 +39,7 @@
       "body": "body_6",
       "head": "head_13",
       "dress": "dress_13"
-    },
-    "preview": "assets/preview/14.png"
+    }
   },
   {
     "id": 29,
@@ -83,8 +82,7 @@
       "body": "body_19",
       "head": "head_30",
       "dress": "dress_30"
-    },
-    "preview": "assets/preview/31.png"
+    }
   },
   {
     "id": 5,
@@ -169,8 +167,7 @@
       "body": "body_22",
       "head": "head_37",
       "dress": "dress_37"
-    },
-    "preview": "assets/preview/38.png"
+    }
   },
   {
     "id": 3,
@@ -366,8 +363,7 @@
       "body": "body_2",
       "head": "head_33",
       "dress": "dress_33"
-    },
-    "preview": "assets/preview/34.png"
+    }
   },
   {
     "id": 36,
@@ -388,8 +384,7 @@
       "body": "body_21",
       "head": "head_35",
       "dress": "dress_35"
-    },
-    "preview": "assets/preview/36.png"
+    }
   },
   {
     "id": 28,
@@ -561,8 +556,7 @@
       "body": "body_3",
       "head": "head_36",
       "dress": "dress_36"
-    },
-    "preview": "assets/preview/37.png"
+    }
   },
   {
     "id": 43,
@@ -583,8 +577,7 @@
       "body": "body_26",
       "head": "head_42",
       "dress": ""
-    },
-    "preview": "assets/preview/43.png"
+    }
   },
   {
     "id": 4,
@@ -669,8 +662,7 @@
       "body": "body_18",
       "head": "head_32",
       "dress": "dress_32"
-    },
-    "preview": "assets/preview/33.png"
+    }
   },
   {
     "id": 35,
@@ -691,8 +683,7 @@
       "body": "body_20",
       "head": "head_34",
       "dress": "dress_34"
-    },
-    "preview": "assets/preview/35.png"
+    }
   },
   {
     "id": 40,
@@ -713,8 +704,7 @@
       "body": "body_23",
       "head": "head_39",
       "dress": "dress_39"
-    },
-    "preview": "assets/preview/40.png"
+    }
   },
   {
     "id": 44,
@@ -735,8 +725,7 @@
       "body": "body_27",
       "head": "head_43",
       "dress": "dress_43"
-    },
-    "preview": "assets/preview/44.png"
+    }
   },
   {
     "id": 23,
@@ -779,8 +768,7 @@
       "body": "body_19",
       "head": "head_31",
       "dress": "dress_31"
-    },
-    "preview": "assets/preview/32.png"
+    }
   },
   {
     "id": 24,
@@ -823,8 +811,7 @@
       "body": "body_25",
       "head": "",
       "dress": ""
-    },
-    "preview": "assets/preview/42.png"
+    }
   },
   {
     "id": 20,
@@ -889,8 +876,7 @@
       "body": "body_22",
       "head": "head_38",
       "dress": ""
-    },
-    "preview": "assets/preview/39.png"
+    }
   },
   {
     "id": 45,
@@ -976,7 +962,6 @@
       "body": "body_24",
       "head": "head_40",
       "dress": "dress_40"
-    },
-    "preview": "assets/preview/41.png"
+    }
   }
 ]
