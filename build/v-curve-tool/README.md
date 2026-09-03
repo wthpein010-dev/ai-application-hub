@@ -30,7 +30,7 @@ Get-FileHash -Algorithm SHA256 -LiteralPath '.\release\V曲线对比工具-1.2.0
 
    `E:\Mahjong\PawsHomeClient\Assets\Editor\Res\Config\Gameplay\EditorLevels`
 
-4. 工具会导入 25 个正式关卡并默认选择 `level_0020`；等待进度条结束即可查看与羊 900121 的 V 曲线对比。
+4. 工具会导入 31 个正式关卡并默认选择 `level_0020`；等待进度条结束即可查看与羊 900121 的 V 曲线对比。
 5. 如需改模型，可调整 Seeds（20～2000）、暂存槽（1～2）和策略（贪心前沿/随机决策）。
 6. 使用“导出 PNG”保存完整 2× 报告图，或用“导出 JSON”保存可复算的曲线、指标和诊断数据。
 
