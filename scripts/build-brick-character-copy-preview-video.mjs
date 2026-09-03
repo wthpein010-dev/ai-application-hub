@@ -17,6 +17,7 @@ const mime = new Map([
   [".css", "text/css; charset=utf-8"],
   [".html", "text/html; charset=utf-8"],
   [".js", "text/javascript; charset=utf-8"],
+  [".json", "application/json; charset=utf-8"],
   [".jpg", "image/jpeg"],
   [".png", "image/png"],
 ]);
@@ -43,6 +44,7 @@ const server = createServer(async (request, response) => {
   }
 });
 
+await rm(recordingRoot, { recursive: true, force: true });
 await mkdir(recordingRoot, { recursive: true });
 await new Promise((resolveListen) => server.listen(0, "127.0.0.1", resolveListen));
 const port = server.address().port;
@@ -59,30 +61,38 @@ const context = await browser.newContext({
 });
 const page = await context.newPage();
 const video = page.video();
+const browserErrors = [];
+page.on("console", (message) => {
+  if (message.type() === "error") browserErrors.push(`console: ${message.text()}`);
+});
+page.on("pageerror", (error) => browserErrors.push(`page: ${error.message}`));
+page.on("response", (response) => {
+  if (response.status() >= 400) browserErrors.push(`${response.status()} ${response.url()}`);
+});
 
 try {
   await page.goto(`http://127.0.0.1:${port}/projects/brick-character-copy-preview/index.html`, { waitUntil: "networkidle" });
   await page.evaluate(() => document.fonts.ready);
-  await page.evaluate(() => window.scrollTo({ top: 90, behavior: "instant" }));
-  await page.waitForTimeout(250);
+  await page.waitForTimeout(1_200);
+  await page.locator('.character-card[data-block-id="100014"]').click();
+  await page.waitForTimeout(5_000);
   await page.screenshot({ path: posterPath, type: "jpeg", quality: 90 });
-
+  await page.locator("#detail-next").click();
   await page.waitForTimeout(4_000);
-  await page.locator("#preview-next").click();
+  await page.locator("#tab-trinkets").click();
+  await page.waitForTimeout(4_500);
+  await page.locator('.trinket-card[data-item-id="4"]').click();
   await page.waitForTimeout(4_000);
-  await page.locator("#preview-favorite").click();
+  await page.locator("#trinket-toggle-draft").click();
   await page.waitForTimeout(4_000);
-  await page.locator('tr[data-index="7"]').click();
-  await page.waitForTimeout(4_000);
-  await page.locator('tr[data-index="15"]').click();
-  await page.waitForTimeout(4_000);
-  await page.locator("#search").fill("程序员");
-  await page.waitForTimeout(4_000);
-  await page.locator('tr[data-index="6"]').click();
-  await page.waitForTimeout(4_000);
-  await page.locator("#search").fill("");
-  await page.locator('tr[data-index="19"]').click();
-  await page.waitForTimeout(4_000);
+  await page.locator("#trinket-save").click();
+  await page.waitForTimeout(2_500);
+  await page.locator("#confirm-save").click();
+  await page.waitForTimeout(4_500);
+  await page.locator('.gallery-topbar a[href="../trinket-market/index.html"]').click();
+  await page.waitForLoadState("networkidle");
+  await page.waitForTimeout(10_000);
+  if (browserErrors.length) throw new Error(`Browser recording errors:\n${browserErrors.join("\n")}`);
 } finally {
   await page.close();
   await context.close();

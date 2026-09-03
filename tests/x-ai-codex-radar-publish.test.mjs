@@ -11,11 +11,12 @@ const runtime = readFileSync(join(root, "app-20260706-restore-games.js"), "utf8"
 const apps = loadDefaultAppsFromRuntime(runtime);
 const projectRoot = join(root, "projects", "x-ai-codex-radar");
 
-test("X intelligence forum remains before the Workbench, Trinket, and V curve tail", () => {
+test("X intelligence forum remains before the Lab, Workbench, Trinket, and V curve tail", () => {
   const radar = apps.find((app) => app.id === "x-ai-codex-radar");
 
   assert.ok(radar, "the Radar catalog card should exist");
-  assert.equal(apps.at(-4).id, "x-ai-codex-radar");
+  assert.equal(apps.at(-5).id, "x-ai-codex-radar");
+  assert.equal(apps.at(-4).id, "loop-bgm-lab");
   assert.equal(apps.at(-3).id, "codex-multi-thread-workbench");
   assert.equal(apps.at(-2).id, "trinket-market");
   assert.equal(apps.at(-1).id, "v-curve-tool");

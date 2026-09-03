@@ -12,9 +12,8 @@ on:
       - "scripts/audit-public-macos-downloads.sh"
       - "scripts/macos-download-manifest.mjs"
       - "scripts/test-codex-confirmation-bar-macos-package.sh"
+      - "scripts/test-codex-multi-thread-workbench-macos-package.sh"
       - "tests/helpers/default-apps.mjs"
-      - "build/codex-thread-workbench/scripts/test-macos-package.sh"
-      - "build/codex-thread-workbench/src/CodexThreadWorkbench/CodexThreadWorkbench.csproj"
       - "docs/audits/evidence/2026-08-07-macos-download-manifest.json"
       - "projects/v-curve-tool/release-manifest.json"
       - "downloads/CodexQuotaBar-macOS.zip"
@@ -51,9 +50,8 @@ jobs:
             scripts/audit-public-macos-downloads.sh
             scripts/macos-download-manifest.mjs
             scripts/test-codex-confirmation-bar-macos-package.sh
+            scripts/test-codex-multi-thread-workbench-macos-package.sh
             tests/helpers/default-apps.mjs
-            build/codex-thread-workbench/scripts/test-macos-package.sh
-            build/codex-thread-workbench/src/CodexThreadWorkbench/CodexThreadWorkbench.csproj
             docs/audits/evidence/2026-08-07-macos-download-manifest.json
             projects/v-curve-tool/release-manifest.json
           sparse-checkout-cone-mode: false
@@ -84,7 +82,7 @@ jobs:
           chmod +x \
             scripts/audit-public-macos-downloads.sh \
             scripts/test-codex-confirmation-bar-macos-package.sh \
-            build/codex-thread-workbench/scripts/test-macos-package.sh
+            scripts/test-codex-multi-thread-workbench-macos-package.sh
           scripts/audit-public-macos-downloads.sh \
             --arch "${{ matrix.arch }}" \
             --manifest docs/audits/evidence/2026-08-07-macos-download-manifest.json \

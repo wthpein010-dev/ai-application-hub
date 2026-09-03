@@ -181,6 +181,52 @@ try {
     await context.close();
   }
 
+  {
+    const app = apps.find((candidate) => candidate.id === "loop-bgm-lab");
+    const context = await browser.newContext({ viewport: { width: 1280, height: 800 } });
+    const page = await context.newPage();
+    const mp4Requests = [];
+    const errors = [];
+
+    page.on("request", (request) => {
+      if (new URL(request.url()).pathname.endsWith("/loop-bgm-lab-demo.mp4")) mp4Requests.push(request.url());
+    });
+    page.on("console", (message) => {
+      if (message.type() === "error") errors.push(message.text());
+    });
+    page.on("pageerror", (error) => errors.push(error.message));
+
+    await page.goto(baseUrl + "/" + urlPath(app.video.replace(/^\.\//, "")), { waitUntil: "networkidle" });
+    const beforeLoad = await page.locator("#introVideo").evaluate((video) => ({
+      currentSrc: video.currentSrc,
+      currentTime: video.currentTime,
+      paused: video.paused,
+      src: video.getAttribute("src"),
+    }));
+    assert.deepEqual(beforeLoad, { currentSrc: "", currentTime: 0, paused: true, src: null });
+    assert.equal(mp4Requests.length, 0, "Loop BGM Lab must not request MP4 before an explicit load click");
+
+    await page.locator("#loadVideo").click();
+    await page.waitForFunction(() => document.querySelector("#introVideo").currentSrc.endsWith("/loop-bgm-lab-demo.mp4"));
+    await page.waitForFunction(() => document.querySelector("#introVideo").currentTime > 0.2, null, { timeout: 20_000 });
+    assert.equal(mp4Requests.length, 1, "Loop BGM Lab explicit load should make exactly one MP4 request");
+    assert.match(mp4Requests[0], /\/projects\/loop-bgm-lab\/video\/loop-bgm-lab-demo\.mp4$/u);
+
+    await page.locator(".hub-video-chapter[data-time='47']").click();
+    await page.waitForFunction(() => {
+      const currentTime = document.querySelector("#introVideo").currentTime;
+      return currentTime >= 47 && currentTime < 49;
+    });
+
+    await Promise.all([
+      page.waitForURL((url) => url.pathname.endsWith("/index.html") && url.hash === "#apps"),
+      page.locator(".hub-video-home").click(),
+    ]);
+    assert.equal(new URL(page.url()).hash, "#apps");
+    assert.deepEqual(errors, [], "Loop BGM Lab shared player should remain console/page-error free");
+    await context.close();
+  }
+
   console.log("Verified " + apps.length + " pages at desktop and mobile sizes.");
 } finally {
   await browser.close();

@@ -1,5 +1,5 @@
 :root {
-  color-scheme: dark;
+  color-scheme: dark light;
   font-family: "Microsoft YaHei UI", "PingFang SC", system-ui, sans-serif;
 }
 
@@ -19,6 +19,7 @@ body {
   --accent-ink: #101805;
   --up: #69dd9a;
   --down: #ff7d7d;
+  color-scheme: dark;
   min-width: 320px;
   min-height: 100vh;
   margin: 0;
@@ -53,6 +54,29 @@ body[data-theme="c"] {
   --accent: #ffc85b;
   --accent-soft: rgb(255 200 91 / 14%);
   --accent-ink: #271903;
+}
+
+body[data-theme="d"] {
+  --page: #f2efe6;
+  --surface: #fffdf8;
+  --surface-2: #f8f4ea;
+  --surface-3: #ece7da;
+  --ink: #17231d;
+  --muted: #5c6b62;
+  --line: #d3dcd5;
+  --accent: #4f7d10;
+  --accent-soft: rgb(79 125 16 / 14%);
+  --accent-ink: #fff;
+  --up: #167647;
+  --down: #bc3f4e;
+  color-scheme: light;
+  background:
+    radial-gradient(circle at 18% 0%, rgb(181 213 128 / 28%), transparent 36%),
+    linear-gradient(180deg, #faf8f1, var(--page));
+}
+
+body[data-theme="d"] .market-shell {
+  box-shadow: 0 24px 64px rgb(61 66 55 / 16%);
 }
 
 button, input, select { font: inherit; }
@@ -105,6 +129,7 @@ a { color: inherit; }
 .market-nav { display: flex; gap: 4px; }
 .market-nav a { padding: 8px 11px; border-radius: 7px; color: var(--muted); font-size: 12px; text-decoration: none; }
 .market-nav a:hover, .market-nav a:focus-visible { color: var(--ink); background: var(--surface-3); }
+.market-nav .gallery-link { border: 1px solid color-mix(in srgb, var(--accent) 44%, var(--line)); color: var(--accent); font-weight: 800; }
 
 .live-state {
   margin-left: auto;
@@ -208,7 +233,8 @@ h1, h2, p { margin-top: 0; }
 .control-field { min-width: 128px; display: flex; align-items: center; gap: 7px; padding: 0 9px; color: var(--muted); font-size: 10px; }
 .control-field select { min-width: 0; max-width: 132px; border: 0; outline: 0; color: var(--ink); background: transparent; font-size: 11px; }
 .control-field option { color: #111; background: #fff; }
-.theme-field { margin-left: auto; }
+.theme-field { margin-left: 0; }
+.header-theme { flex: 0 0 auto; min-width: 128px; }
 
 .control-button { padding: 0 11px; display: inline-flex; align-items: center; gap: 6px; color: var(--ink); cursor: pointer; font-size: 10px; }
 .control-button:hover, .control-button:focus-visible { border-color: var(--accent); }
@@ -264,7 +290,7 @@ h1, h2, p { margin-top: 0; }
 .item-card:active { cursor: grabbing; }
 .item-card-content { height: 100%; display: grid; grid-template-rows: 27px 139px minmax(0, 1fr); transition: opacity .12s ease; }
 .item-card.is-dragging { border-style: dashed; border-color: var(--accent); background: var(--accent-soft); box-shadow: inset 0 0 0 1px var(--accent-soft); }
-.item-card.is-dragging .item-card-content { opacity: 0; }
+.item-card.is-dragging .item-card-content { opacity: 0; transition: none; }
 .item-grid.is-drag-active .item-card { will-change: transform; }
 
 .item-card-top { padding: 8px 7px 0; display: flex; align-items: flex-start; justify-content: space-between; gap: 4px; }
@@ -290,16 +316,44 @@ h1, h2, p { margin-top: 0; }
 .drag-ghost {
   position: fixed;
   z-index: 999;
-  overflow: hidden;
   pointer-events: none;
+  opacity: .98;
+  transform: translate3d(var(--drag-x, 0), var(--drag-y, 0), 0);
+  will-change: transform;
+}
+
+.drag-ghost-lift,
+.drag-ghost-wiggle { width: 100%; height: 100%; transform-origin: center; will-change: transform; }
+
+.drag-ghost-lift { animation: trinket-drag-pickup 120ms cubic-bezier(.2, .85, .25, 1) both; }
+
+.drag-ghost-wiggle {
+  overflow: hidden;
   border: 2px solid var(--accent);
   border-radius: 12px;
   background: var(--surface);
   box-shadow: 0 26px 54px rgb(0 0 0 / 40%), 0 0 0 5px var(--accent-soft);
-  opacity: .97;
-  transform: rotate(1.6deg) scale(1.035);
-  transform-origin: center;
-  will-change: left, top;
+  animation: trinket-drag-wiggle 160ms ease-in-out infinite alternate;
+}
+
+.drag-ghost.is-settling { transition: transform 180ms cubic-bezier(.2, .8, .2, 1); }
+.drag-ghost.is-settling .drag-ghost-lift { animation: trinket-drag-drop 220ms cubic-bezier(.2, .8, .2, 1) both; }
+.drag-ghost.is-settling .drag-ghost-wiggle { animation: none; transform: rotate(0); transition: transform 80ms ease-out; }
+
+@keyframes trinket-drag-pickup {
+  from { transform: translateY(0) scale(.985); }
+  to { transform: translateY(-6px) scale(1.045); }
+}
+
+@keyframes trinket-drag-wiggle {
+  from { transform: rotate(-1.4deg); }
+  to { transform: rotate(1.4deg); }
+}
+
+@keyframes trinket-drag-drop {
+  0% { transform: translateY(-6px) scale(1.045); }
+  72% { transform: translateY(1px) scale(.985); }
+  100% { transform: translateY(0) scale(1); }
 }
 
 .empty-state { min-height: 220px; place-content: center; justify-items: center; gap: 7px; color: var(--muted); text-align: center; }
@@ -355,11 +409,13 @@ h1, h2, p { margin-top: 0; }
 
 @media (max-width: 840px) {
   .market-shell { width: min(100% - 16px, 1460px); margin-top: 8px; }
-  .market-header { padding: 70px 14px 12px; flex-wrap: wrap; gap: 12px 18px; }
-  .market-nav { order: 3; width: 100%; }
+  .market-header { padding: 70px 14px 12px; display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 12px; }
+  .market-brand { min-width: 0; }
+  .market-nav { grid-row: 2; grid-column: 1 / -1; width: 100%; }
+  .live-state { grid-row: 3; grid-column: 1 / -1; margin-left: 0; }
+  .header-theme { grid-row: 1; grid-column: 2; justify-self: end; }
   .market-intro { grid-template-columns: 1fr; gap: 18px; }
   .item-grid { grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 7px; }
-  .theme-field { margin-left: 0; }
 }
 
 @media (max-width: 520px) {
@@ -373,6 +429,7 @@ h1, h2, p { margin-top: 0; }
   .search-field { min-width: 0; grid-column: 1 / -1; }
   .control-field, .control-button, .value-toggle { min-width: 0; width: 100%; }
   .control-field select { width: 100%; }
+  .header-theme { width: auto; min-width: 128px; }
   .item-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; }
   .item-card { height: 248px; }
   .item-card-content { grid-template-rows: 27px 134px minmax(0, 1fr); }
@@ -392,4 +449,7 @@ h1, h2, p { margin-top: 0; }
 @media (prefers-reduced-motion: reduce) {
   html { scroll-behavior: auto; }
   *, *::before, *::after { scroll-behavior: auto !important; transition-duration: .001ms !important; animation-duration: .001ms !important; }
+  .drag-ghost-lift,
+  .drag-ghost-wiggle { animation: none !important; transform: none !important; }
+  .drag-ghost.is-settling { transition: none !important; }
 }

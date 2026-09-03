@@ -25,21 +25,30 @@ public partial class ConfirmationOverlayWindow : Window
     private ConfirmationOverlayViewModel? _viewModel;
     private readonly ConfirmationOverlayPlacement _placement = new();
     private readonly ConfirmationPointerActionGate _pointerActionGate = new();
+    private readonly HashSet<Button> _threadNavigationInProgress = [];
+    private readonly ICodexThreadNavigator? _threadNavigator;
     private CancellationTokenSource? _idleCollapseCancellation;
     private CancellationTokenSource? _interactionArmCancellation;
     private CancellationTokenSource? _positionAnimationCancellation;
     private CancellationTokenSource? _attentionCueCancellation;
     private ScaleTransform? _spriteScale;
     private TranslateTransform? _spriteLift;
+    private ScaleTransform? _attentionBadgeScale;
+    private RotateTransform? _attentionBadgeRotation;
     private int _attentionCueGeneration;
     private PixelPoint? _expandedPosition;
     private bool _isIdlePreviewExpanded;
-    private bool _isPointerOverSurface;
+    private bool _isPointerOverWindow;
     private bool _isRetracted;
     private bool _isClosingForShutdown;
 
-    public ConfirmationOverlayWindow()
+    public ConfirmationOverlayWindow() : this(null)
     {
+    }
+
+    public ConfirmationOverlayWindow(ICodexThreadNavigator? threadNavigator)
+    {
+        _threadNavigator = threadNavigator;
         InitializeComponent();
         AddHandler(
             PointerPressedEvent,
@@ -76,7 +85,7 @@ public partial class ConfirmationOverlayWindow : Window
         var width = (int)Math.Round(Width);
         Position = new PixelPoint(
             workingArea.X + ((workingArea.Width - width) / 2),
-            workingArea.Y + 8);
+            workingArea.Y);
     }
 
     public void MarkManuallyPositioned() =>
@@ -254,11 +263,11 @@ public partial class ConfirmationOverlayWindow : Window
         _ = UpdatePresentationAsync(animate: false);
     }
 
-    private void OverlaySurface_OnPointerEntered(
+    private void OverlayRoot_OnPointerEntered(
         object? sender,
         PointerEventArgs e)
     {
-        _isPointerOverSurface = true;
+        _isPointerOverWindow = true;
         CancelIdleCollapse();
         if (_viewModel?.RequiresAttention == true || _isIdlePreviewExpanded)
         {
@@ -269,11 +278,11 @@ public partial class ConfirmationOverlayWindow : Window
         _ = UpdatePresentationAsync();
     }
 
-    private void OverlaySurface_OnPointerExited(
+    private void OverlayRoot_OnPointerExited(
         object? sender,
         PointerEventArgs e)
     {
-        _isPointerOverSurface = false;
+        _isPointerOverWindow = false;
         if (_viewModel?.RequiresAttention == true)
         {
             return;
@@ -357,6 +366,41 @@ public partial class ConfirmationOverlayWindow : Window
         item.IgnoreCommand.Execute(null);
     }
 
+    private async void ViewButton_OnClick(object? sender, RoutedEventArgs e)
+    {
+        if (sender is not Button button ||
+            button.DataContext is not ConfirmationItemViewModel item ||
+            !TryConsumePointerAction(button) ||
+            !_threadNavigationInProgress.Add(button))
+        {
+            return;
+        }
+
+        button.Content = "查看";
+        try
+        {
+            if (_threadNavigator is null)
+            {
+                button.Content = "暂不可用";
+                return;
+            }
+
+            ConfirmationOverlayDiagnostics.Write(
+                $"navigation:open:{item.Candidate.ThreadId}");
+            await _threadNavigator.OpenAsync(item.Candidate.ThreadId);
+        }
+        catch (Exception error)
+        {
+            button.Content = "重试查看";
+            ConfirmationOverlayDiagnostics.Write(
+                $"navigation:error:{error.GetType().Name}:{error.Message}");
+        }
+        finally
+        {
+            _threadNavigationInProgress.Remove(button);
+        }
+    }
+
     private void ConfirmButton_OnClick(object? sender, RoutedEventArgs e)
     {
         if (sender is not Button button ||
@@ -392,7 +436,7 @@ public partial class ConfirmationOverlayWindow : Window
         try
         {
             await Task.Delay(IdleCollapseDelay, cancellationToken);
-            if (_isPointerOverSurface || _viewModel?.RequiresAttention == true)
+            if (_isPointerOverWindow || _viewModel?.RequiresAttention == true)
             {
                 return;
             }
@@ -524,24 +568,22 @@ public partial class ConfirmationOverlayWindow : Window
     {
         var sprite = this.FindControl<Border>("TaskSprite");
         var aura = this.FindControl<Border>("TaskSpriteAura");
-        var banner = this.FindControl<Border>("NewTaskBanner");
+        var badge = this.FindControl<Border>("AttentionBadge");
         var list = this.FindControl<ItemsControl>("ConfirmationList");
         var sparks = new Control?[]
         {
             this.FindControl<Control>("TaskSparkLeft"),
             this.FindControl<Control>("TaskSparkRight")
         };
-        if (sprite is null || aura is null)
+        if (sprite is null || aura is null || badge is null)
         {
             return;
         }
 
         EnsureSpriteTransform(sprite);
+        EnsureAttentionBadgeTransform(badge);
         aura.Opacity = 0.34;
-        if (banner is not null)
-        {
-            banner.Opacity = 0.35;
-        }
+        badge.Opacity = 0.42;
 
         if (list is not null)
         {
@@ -566,6 +608,16 @@ public partial class ConfirmationOverlayWindow : Window
                 _spriteScale.ScaleY = scale;
                 _spriteLift!.Y = -6 * hop;
 
+                var badgePulse = Math.Max(
+                    0,
+                    Math.Sin(progress * Math.PI * 5));
+                _attentionBadgeScale!.ScaleX = 1 + (badgePulse * 0.12);
+                _attentionBadgeScale.ScaleY = 1 + (badgePulse * 0.12);
+                _attentionBadgeRotation!.Angle =
+                    Math.Sin(progress * Math.PI * 8) *
+                    8 *
+                    (1 - progress);
+
                 var pulse = Math.Max(0, Math.Sin(progress * Math.PI * 6));
                 aura.Opacity = (0.24 + (0.5 * pulse)) *
                                Math.Max(0, 1 - (progress * 0.8));
@@ -583,10 +635,7 @@ public partial class ConfirmationOverlayWindow : Window
                 }
 
                 var reveal = 1 - Math.Pow(1 - progress, 3);
-                if (banner is not null)
-                {
-                    banner.Opacity = 0.35 + (0.65 * reveal);
-                }
+                badge.Opacity = 0.42 + (0.58 * reveal);
 
                 if (list is not null)
                 {
@@ -630,6 +679,22 @@ public partial class ConfirmationOverlayWindow : Window
         sprite.RenderTransform = transforms;
     }
 
+    private void EnsureAttentionBadgeTransform(Border badge)
+    {
+        if (_attentionBadgeScale is not null &&
+            _attentionBadgeRotation is not null)
+        {
+            return;
+        }
+
+        _attentionBadgeScale = new ScaleTransform();
+        _attentionBadgeRotation = new RotateTransform();
+        var transforms = new TransformGroup();
+        transforms.Children.Add(_attentionBadgeScale);
+        transforms.Children.Add(_attentionBadgeRotation);
+        badge.RenderTransform = transforms;
+    }
+
     private void CancelAttentionCue(bool resetVisuals)
     {
         _attentionCueGeneration++;
@@ -655,6 +720,17 @@ public partial class ConfirmationOverlayWindow : Window
             _spriteLift.Y = 0;
         }
 
+        if (_attentionBadgeScale is not null)
+        {
+            _attentionBadgeScale.ScaleX = 1;
+            _attentionBadgeScale.ScaleY = 1;
+        }
+
+        if (_attentionBadgeRotation is not null)
+        {
+            _attentionBadgeRotation.Angle = 0;
+        }
+
         if (this.FindControl<Border>("TaskSpriteAura") is { } aura)
         {
             aura.Opacity = 0;
@@ -668,9 +744,9 @@ public partial class ConfirmationOverlayWindow : Window
             }
         }
 
-        if (this.FindControl<Border>("NewTaskBanner") is { } banner)
+        if (this.FindControl<Border>("AttentionBadge") is { } badge)
         {
-            banner.Opacity = 1;
+            badge.Opacity = 1;
         }
 
         if (this.FindControl<ItemsControl>("ConfirmationList") is { } list)

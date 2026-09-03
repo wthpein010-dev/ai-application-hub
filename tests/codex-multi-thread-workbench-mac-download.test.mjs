@@ -25,6 +25,12 @@ const workflowPath = join(
   "workflows",
   "build-codex-multi-thread-workbench.yml",
 );
+const hubVerificationWorkflowPath = join(
+  root,
+  ".github",
+  "workflows",
+  "verify-clickflow-publish.yml",
+);
 const sourceVerifier = join(
   root,
   "scripts",
@@ -310,7 +316,7 @@ test("public Mac audit workflow checks out and enables every selected Workbench 
   ]);
   const verifiers = [
     "scripts/test-codex-confirmation-bar-macos-package.sh",
-    "build/codex-thread-workbench/scripts/test-macos-package.sh",
+    "scripts/test-codex-multi-thread-workbench-macos-package.sh",
   ];
   for (const verifier of verifiers) {
     assert.match(audit, new RegExp(verifier.replaceAll("/", "\\/")));
@@ -322,25 +328,25 @@ test("public Mac audit workflow checks out and enables every selected Workbench 
   }
 });
 
-test("legacy Confirmation Bar workflow builds from its immutable v2.1.8 snapshot", async () => {
+test("Confirmation Bar workflow builds v2.3.3 from the dispatched revision", async () => {
   const workflow = await readFile(
     join(root, ".github", "workflows", "build-codex-thread-workbench.yml"),
     "utf8",
   );
   const buildJob = workflow.slice(0, workflow.indexOf("  publish-pages-parts:"));
   const publicationJob = workflow.slice(workflow.indexOf("  publish-pages-parts:"));
-  assert.match(buildJob, /uses:\s*actions\/checkout@v4[\s\S]*?ref:\s*fb3be183efb7ec195f4ebee426f9fbe679d9c768/);
+  assert.match(buildJob, /uses:\s*actions\/checkout@v4[\s\S]*?ref:\s*\$\{\{ github\.sha \}\}/);
   assert.match(buildJob, /architecture:\s*arm64/);
   assert.match(buildJob, /architecture:\s*x64/);
   assert.match(buildJob, /CodexConfirmationBar-macOS-\$\{\{ matrix\.architecture \}\}\.app\.zip/);
   assert.doesNotMatch(buildJob, /CodexThreadWorkbench-macOS-(?:arm64|x64)\.app\.zip/);
-  assert.doesNotMatch(publicationJob, /ref:\s*fb3be183efb7ec195f4ebee426f9fbe679d9c768/);
+  assert.doesNotMatch(publicationJob, /ref:\s*\$\{\{ github\.sha \}\}/);
 });
 
 test("independent workflow verifies real apps before safely publishing both architectures", async () => {
   const [workflow, packageVerifier, legacyVerifier, publicAudit, project] = await Promise.all([
     readFile(workflowPath, "utf8"),
-    readFile(join(root, "build", "codex-thread-workbench", "scripts", "test-macos-package.sh"), "utf8"),
+    readFile(join(root, "scripts", "test-codex-multi-thread-workbench-macos-package.sh"), "utf8"),
     readFile(join(root, "scripts", "test-codex-confirmation-bar-macos-package.sh"), "utf8"),
     readFile(join(root, "scripts", "audit-public-macos-downloads.sh"), "utf8"),
     readFile(
@@ -355,12 +361,17 @@ test("independent workflow verifies real apps before safely publishing both arch
     /- "scripts\/lib\/validated-workbench-macos-zip\.mjs"/,
     "changes to the ZIP validator must trigger the independent build workflow",
   );
-  assert.match(project, /<Version>2\.3\.0<\/Version>/);
+  assert.match(project, /<Version>2\.3\.3<\/Version>/);
   assert.match(project, /<AssemblyName>CodexThreadWorkbench<\/AssemblyName>/);
   assert.match(
     workflow,
     /WORKBENCH_SOURCE_COMMIT:\s*8e2126ba93a835e2e0e2864d83165b9358d995a1/,
   );
+  assert.match(
+    workflow,
+    /WORKBENCH_HUB_SOURCE_COMMIT:\s*cebe2d589f7b7caa2351374c80d7dee035d1a394/,
+  );
+  assert.match(workflow, /ref:\s*\$\{\{ env\.WORKBENCH_HUB_SOURCE_COMMIT \}\}/);
   assert.match(workflow, /runtime:\s*osx-arm64\s+runner:\s*macos-14/);
   assert.match(workflow, /runtime:\s*osx-x64\s+runner:\s*macos-15-intel/);
   assert.match(workflow, /dotnet test CodexThreadWorkbench\.sln --configuration Release/);
@@ -400,6 +411,8 @@ test("independent workflow verifies real apps before safely publishing both arch
   }
 
   assert.match(packageVerifier, /codesign --verify --deep --strict/);
+  assert.match(packageVerifier, /2\.3\.0/);
+  assert.match(packageVerifier, /CodexThreadWorkbench\.app/);
   assert.match(packageVerifier, /"\$\{executable\}" --smoke-test/);
   assert.match(packageVerifier, /"\$\{executable\}"[^\n]*launch\.log[^\n]*&/);
   assert.match(packageVerifier, /kill -0 "\$\{app_pid\}"/);
@@ -408,22 +421,24 @@ test("independent workflow verifies real apps before safely publishing both arch
   assert.match(legacyVerifier, /Codex 待确认悬浮助手/);
   assert.match(publicAudit, /codex-multi-thread-workbench/);
   assert.match(publicAudit, /test-codex-confirmation-bar-macos-package\.sh/);
-  assert.match(publicAudit, /build\/codex-thread-workbench\/scripts\/test-macos-package\.sh/);
+  assert.match(publicAudit, /test-codex-multi-thread-workbench-macos-package\.sh/);
 });
 
 test("independent workflow executable-verifies the immutable source tree before Release tests", async () => {
   const expectedCommit = "8e2126ba93a835e2e0e2864d83165b9358d995a1";
+  const expectedHubCommit = "cebe2d589f7b7caa2351374c80d7dee035d1a394";
   const expectedTree = "108cc3f9271d83573f010ba8f4c7dd67b70b41b9";
   const helperPath = "scripts/verify-codex-multi-thread-workbench-source.mjs";
   const workflow = await readFile(workflowPath, "utf8");
   const { stdout } = await execFileAsync(
     "git",
-    ["rev-parse", "HEAD:build/codex-thread-workbench"],
+    ["rev-parse", `${expectedHubCommit}:build/codex-thread-workbench`],
     { cwd: root },
   );
   assert.equal(stdout.trim(), expectedTree);
 
   assert.match(workflow, new RegExp(`WORKBENCH_SOURCE_COMMIT:\\s*${expectedCommit}`));
+  assert.match(workflow, new RegExp(`WORKBENCH_HUB_SOURCE_COMMIT:\\s*${expectedHubCommit}`));
   assert.match(workflow, new RegExp(`WORKBENCH_SOURCE_TREE:\\s*${expectedTree}`));
   assert.equal(
     workflow.split(helperPath).length - 1,
@@ -431,7 +446,7 @@ test("independent workflow executable-verifies the immutable source tree before 
     "the verifier must be in trigger paths, build sparse checkout, and the build command",
   );
   const verificationIndex = workflow.indexOf(
-    'node ../../scripts/verify-codex-multi-thread-workbench-source.mjs "${GITHUB_SHA}" "${WORKBENCH_SOURCE_TREE}"',
+    'node ../../scripts/verify-codex-multi-thread-workbench-source.mjs "${WORKBENCH_HUB_SOURCE_COMMIT}" "${WORKBENCH_SOURCE_TREE}"',
   );
   assert.ok(verificationIndex >= 0, "the workflow must execute the source-tree verifier");
   assert.ok(
@@ -441,16 +456,25 @@ test("independent workflow executable-verifies the immutable source tree before 
 
   const { verifyWorkbenchSourceTree } = await import(pathToFileURL(sourceVerifier));
   assert.equal(
-    await verifyWorkbenchSourceTree({ repoRoot: root, commit: "HEAD", expectedTree }),
+    await verifyWorkbenchSourceTree({ repoRoot: root, commit: expectedHubCommit, expectedTree }),
     expectedTree,
   );
   await assert.rejects(
     verifyWorkbenchSourceTree({
       repoRoot: root,
-      commit: "HEAD",
+      commit: expectedHubCommit,
       expectedTree: "0000000000000000000000000000000000000000",
     }),
     /does not match expected tree/i,
+  );
+});
+
+test("full Hub CI fetches history before verifying an immutable Workbench source tree", async () => {
+  const workflow = await readFile(hubVerificationWorkflowPath, "utf8");
+  assert.match(
+    workflow,
+    /- name: Check out the complete Hub\s+uses: actions\/checkout@v4\s+with:\s+fetch-depth: 0/,
+    "the full suite resolves a pinned historical commit and therefore cannot use a shallow checkout",
   );
 });
 

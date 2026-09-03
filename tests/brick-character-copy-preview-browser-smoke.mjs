@@ -57,7 +57,7 @@ try {
     });
     page.on("pageerror", (error) => errors.push(error.message));
 
-    await page.goto(`${origin}/projects/brick-character-copy-preview/index.html`, { waitUntil: "networkidle" });
+    await page.goto(`${origin}/projects/brick-character-copy-preview/copy-review.html`, { waitUntil: "networkidle" });
     assert.equal(await page.title(), "砖块角色文案预览");
     assert.equal(await page.locator("#rows tr").count(), 20);
     assert.equal(await page.locator("#preview-name").textContent(), "袋鼠团长");

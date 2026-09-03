@@ -65,7 +65,7 @@ test("project media registry covers every production id without loading ClickFlo
   assert.equal(media.clickflow.src, "");
   assert.equal(media.clickflow.fallback, "ClickFlow 鼠标自动化");
   for (const app of apps.filter(({ id }) => id !== "clickflow")) {
-    assert.match(media[app.id].src, /^\.\/assets\/hub-showcase\/[a-z0-9-]+\.(?:webp|jpg|png)\?v=20260827-hub-visual-polish$/u);
+    assert.match(media[app.id].src, /^\.\/assets\/hub-showcase\/[a-z0-9-]+\.(?:webp|jpg|png)\?v=\d{8}-[a-z0-9-]+$/u);
     const assetPath = join(root, media[app.id].src.split("?")[0]);
     assert.ok(existsSync(assetPath));
     assert.ok(statSync(assetPath).size <= 750 * 1024);
@@ -75,22 +75,36 @@ test("project media registry covers every production id without loading ClickFlo
     assert.match(media[app.id].accent, /^#[0-9a-f]{6}$/u);
     assert.ok(["product", "data", "game", "media"].includes(media[app.id].visualKind));
   }
+  assert.notEqual(
+    new URLSearchParams(media["brick-character-copy-preview"].src.split("?")[1]).get("v"),
+    "20260827-hub-visual-polish",
+    "the replaced brick-gallery showcase must not reuse the historical cache key",
+  );
+  assert.equal(
+    new URLSearchParams(media["brick-character-copy-preview"].src.split("?")[1]).get("v"),
+    "20260902-reference-atlas",
+  );
 });
 
 test("the multi-thread Workbench is appended with a dedicated showcase image", () => {
   const apps = loadDefaultAppsFromRuntime(runtime);
   const media = loadMediaRegistry(mediaRuntime);
 
-  assert.equal(apps.length, 32);
+  assert.equal(apps.length, 33);
   const radarIndex = apps.findIndex(({ id }) => id === "x-ai-codex-radar");
-  assert.equal(apps.at(radarIndex + 1)?.id, "codex-multi-thread-workbench");
+  assert.equal(apps.at(radarIndex + 1)?.id, "loop-bgm-lab");
+  assert.equal(apps.at(radarIndex + 2)?.id, "codex-multi-thread-workbench");
+  assert.equal(media["loop-bgm-lab"]?.src, "./assets/hub-showcase/loop-bgm-lab.webp?v=20260827-hub-visual-polish");
+  assert.equal(media["loop-bgm-lab"]?.fallback, "循环乐工房");
+  assert.equal(media["loop-bgm-lab"]?.layout, "wide");
+  assert.ok(existsSync(join(root, "assets", "hub-showcase", "loop-bgm-lab.webp")));
   assert.equal(media["codex-multi-thread-workbench"]?.src, "./assets/hub-showcase/codex-multi-thread-workbench.webp?v=20260827-hub-visual-polish");
   assert.equal(media["codex-multi-thread-workbench"]?.fallback, "Codex 多线程工作台");
   assert.equal(media["codex-multi-thread-workbench"]?.layout, "wide");
   assert.ok(existsSync(join(root, "assets", "hub-showcase", "codex-multi-thread-workbench.webp")));
 });
 
-test("Bento metadata preserves order and permits the appended application to occupy a partial final row", () => {
+test("Bento metadata preserves order and closes the final application row", () => {
   const expectedLayouts = {
     "travel-generator": "standard",
     "codex-reviewer": "standard",
@@ -106,10 +120,10 @@ test("Bento metadata preserves order and permits the appended application to occ
   assert.equal(Object.values(mediaSources).filter(({ layout }) => layout === "tall").length, 0);
 
   const collections = [
-    ["hub", "gamepulse-mini-radar", "codex-quota-bar", "codex-thread-workbench", "web-media-collector", "minigame-project-simulator", "ai-game-requirements-workshop", "planner-daily-quiz", "travel-generator", "feishu-downloader", "codex-reviewer", "codex-habit-tool", "wanhuatong", "pureshrink", "planmap", "simuai", "gamespec-relay", "x-ai-codex-radar", "codex-multi-thread-workbench"],
-    ["vita-mahjong", "paws-home-client", "paws-level-editor", "brick-light-motion-lab", "brick-character-copy-preview", "trinket-market"],
+    { ids: ["hub", "gamepulse-mini-radar", "codex-quota-bar", "codex-thread-workbench", "web-media-collector", "minigame-project-simulator", "ai-game-requirements-workshop", "planner-daily-quiz", "travel-generator", "feishu-downloader", "codex-reviewer", "codex-habit-tool", "wanhuatong", "pureshrink", "planmap", "simuai", "gamespec-relay", "x-ai-codex-radar", "loop-bgm-lab", "codex-multi-thread-workbench"], finalSpan: 0 },
+    { ids: ["vita-mahjong", "paws-home-client", "paws-level-editor", "brick-light-motion-lab", "brick-character-copy-preview", "trinket-market"], finalSpan: 2 },
   ];
-  for (const ids of collections) {
+  for (const { ids, finalSpan } of collections) {
     let used = 0;
     for (const id of ids) {
       const span = mediaSources[id].layout === "wide" ? 2 : 1;
@@ -120,7 +134,7 @@ test("Bento metadata preserves order and permits the appended application to occ
       used += span;
       if (used === 4) used = 0;
     }
-    assert.equal(used, 2, "reviewed collections should end with one intentional wide card");
+    assert.equal(used, finalSpan, "reviewed collection should preserve its intentional final Bento span");
   }
 });
 
@@ -221,7 +235,7 @@ test("stage fallback is hidden after successful media load and restored on image
 
 test("browser smoke owns an independent literal catalog order oracle", () => {
   const expected = {
-    apps: ["hub", "gamepulse-mini-radar", "codex-quota-bar", "codex-thread-workbench", "web-media-collector", "minigame-project-simulator", "ai-game-requirements-workshop", "planner-daily-quiz", "travel-generator", "feishu-downloader", "codex-reviewer", "codex-habit-tool", "wanhuatong", "pureshrink", "planmap", "simuai", "gamespec-relay", "x-ai-codex-radar", "codex-multi-thread-workbench"],
+    apps: ["hub", "gamepulse-mini-radar", "codex-quota-bar", "codex-thread-workbench", "web-media-collector", "minigame-project-simulator", "ai-game-requirements-workshop", "planner-daily-quiz", "travel-generator", "feishu-downloader", "codex-reviewer", "codex-habit-tool", "wanhuatong", "pureshrink", "planmap", "simuai", "gamespec-relay", "x-ai-codex-radar", "loop-bgm-lab", "codex-multi-thread-workbench"],
     games: ["zhuanglege-sha", "xiang-le-ge-xiang", "fill-what", "nang-keng-pai-pai-xiang", "icecream"],
     engineering: ["vita-mahjong", "paws-home-client", "paws-level-editor", "brick-light-motion-lab", "brick-character-copy-preview", "trinket-market"],
   };
@@ -231,13 +245,14 @@ test("browser smoke owns an independent literal catalog order oracle", () => {
     assert.deepEqual(Array.from(literal.matchAll(/"([a-z0-9-]+)"/gu), ([, id]) => id), ids);
   }
   for (const expectation of [
-    "cardCount, 30",
-    "imageCount, 30",
-    "featureCount, 30",
-    ".count() === 30",
+    "cardCount, expectedCardCount",
+    "imageCount, expectedCardCount",
+    "featureCount, expectedCardCount",
+    ".count() === expectedCardCount",
   ]) assert.match(browserSmoke, new RegExp(expectation.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "u"));
-  assert.doesNotMatch(browserSmoke, /cardCount, 29|imageCount, 29|featureCount, 29|\.count\(\) === 29/u);
+  assert.doesNotMatch(browserSmoke, /cardCount, (?:29|30|31|32)|imageCount, (?:29|30|31|32)|featureCount, (?:29|30|31|32)|\.count\(\) === (?:29|30|31|32)/u);
   assert.match(browserSmoke, /const expectedNavigationIds = \[\s*\.\.\.expectedCollectionIds\.apps,\s*\.\.\.expectedCollectionIds\.games,\s*\.\.\.expectedCollectionIds\.engineering,\s*\];/u);
+  assert.match(browserSmoke, /const expectedCardCount = expectedNavigationIds\.length;/u);
   assert.doesNotMatch(browserSmoke, /loadDefaultAppsFromRuntime|readFileSync\(join\(root, "app-20260706-restore-games\.js"\)/u);
 });
 

@@ -1,7 +1,7 @@
 # AI Application Hub 平台兼容矩阵
 
-- 日期：2026-08-28
-- 范围：主页当前 32 张公开项目卡片
+- 日期：2026-09-03
+- 范围：主页当前 33 张公开项目卡片
 - 规则：网页、小游戏和工程体验通过现代浏览器覆盖 Windows 与 macOS；只有经过原生构建、架构检查和产物校验的项目显示系统下载。
 - 通用门禁：`tests/hub-entry-pages-browser-smoke.mjs`、`tests/hub-video-pages-browser-smoke.mjs`、`tests/hub-platform-artifacts.test.mjs`。
 
@@ -36,12 +36,13 @@
 | `brick-character-copy-preview` | 砖块角色文案预览 | 工程在线体验 | Windows：现代浏览器 | macOS：现代浏览器 | [网页体验](https://wthpein010-dev.github.io/ai-application-hub/projects/brick-character-copy-preview/index.html)；提供表格审阅、角色形象与游戏内详情同步预览 |
 | `gamespec-relay` | 游戏需求开工台 | 原生双平台 | Windows： [微软版下载](https://github.com/wthpein010-dev/ai-application-hub/releases/download/gamespec-relay-v1.2.0/youxi-xuqiu-kaigongtai-windows-x64.zip)，x64，95,099,625 字节，SHA-256 `D9B82A86BB216E04803D950A4A9E70EFB765DFD9FC0B89A29F22F875CBFE3DA7` | macOS： [苹果电脑版下载](https://github.com/wthpein010-dev/ai-application-hub/releases/download/gamespec-relay-v1.2.0/youxi-xuqiu-kaigongtai-macos.zip)，arm64/x64，254,286,944 字节，SHA-256 `AECE9FCB9FD8D29B3E82E04A44BFDC2FD22601B0E6B3FA116EF773657B8995CC` | [项目页](https://wthpein010-dev.github.io/ai-application-hub/projects/gamespec-relay/index.html)；`.github/workflows/build-gamespec-relay-release.yml` 的 Release Run `33153665572` 完成 Windows x64、macOS arm64/x64 构建、架构核对、临时签名、包校验和真实启动；Mac 公网清单见 `docs/audits/evidence/2026-08-07-macos-download-manifest.json`。 |
 | `x-ai-codex-radar` | AI / Codex 雷达 | 网页跨平台 | Windows：现代浏览器 | macOS：现代浏览器 | [公开演示](https://wthpein010-dev.github.io/ai-application-hub/projects/x-ai-codex-radar/index.html)；无需登录的交互页明确使用示例数据，私有实时采集入口需 ChatGPT 登录；不提供虚假桌面安装包 |
+| `loop-bgm-lab` | 循环乐工房 | 网页跨平台 | Windows：现代浏览器 | macOS：现代浏览器 | [网页体验](https://wthpein010-dev.github.io/ai-application-hub/projects/loop-bgm-lab/index.html)；本地分析原创合成演示，公开教程不包含用户音频或伪系统安装包 |
 | `codex-multi-thread-workbench` | Codex 多线程工作台 | 原生双平台 | Windows： [Wins下载](https://wthpein010-dev.github.io/ai-application-hub/projects/codex-multi-thread-workbench/download/) | macOS： [Mac下载](https://wthpein010-dev.github.io/ai-application-hub/projects/codex-multi-thread-workbench/download/mac/)，arm64/x64 | [项目页](https://wthpein010-dev.github.io/ai-application-hub/projects/codex-multi-thread-workbench/index.html)；`projects/codex-multi-thread-workbench/download/manifest.json`、`projects/codex-multi-thread-workbench/download/mac/manifest-arm64.json`、`projects/codex-multi-thread-workbench/download/mac/manifest-x64.json` |
 | `trinket-market` | 随身小物交易市场 | 工程在线体验 | Windows：现代浏览器 | macOS：现代浏览器 | [网页体验](https://wthpein010-dev.github.io/ai-application-hub/projects/trinket-market/index.html)；访客修改保存在当前浏览器，可导入或导出 JSON，永久修改通过公开 GitHub 仓库提交 |
 | `v-curve-tool` | V曲线对比工具 | 原生双平台 | Windows： [Wins下载](https://github.com/wthpein010-dev/ai-application-hub/releases/download/v-curve-tool-v1.2.0/V-Curve-Comparison-Tool-1.2.0-Windows-x64.zip)，x64，99,701,005 字节，SHA-256 `7AD80A5926FE7B7F110CE4C845B5F466BA0C276D77300790DDFA1C0D3919AB97`，未代码签名 | macOS： [Mac下载](https://github.com/wthpein010-dev/ai-application-hub/releases/download/v-curve-tool-v1.2.0/V-Curve-Comparison-Tool-1.2.0-macOS.zip)，arm64/x64，261,380,371 字节，SHA-256 `A355EEA4BBB98D66E6C976363C970F2ADBAFB4A99D95E5AE72166C8341A793B7` | [项目页](https://wthpein010-dev.github.io/ai-application-hub/projects/v-curve-tool/index.html)；不可变 Release Run [`33163156365`](https://github.com/wthpein010-dev/ai-application-hub/actions/runs/33163156365)（源 `54b0c8765dc079979617bf51670c37dfb1eb3ac0`）完成双架构构建、ad-hoc 深度签名与 62 个随包文件校验；元数据见 `projects/v-curve-tool/release-manifest.json`。 |
 
 ## 结论
 
-- 32 个项目都可在 Windows 与 macOS 上通过网页查看或体验。
+- 33 个项目都可在 Windows 与 macOS 上通过网页查看或体验。
 - 7 个项目提供经过验证的原生 Windows/macOS 成品；Codex 多线程工作台与 V 曲线对比工具均通过 Windows x64 与 macOS arm64/x64 验证，飞书插件提供同一份跨平台浏览器扩展。
 - 其余项目不再显示来源码、Unity 工程、WebGL 压缩包或占位 ZIP 形式的伪系统下载。

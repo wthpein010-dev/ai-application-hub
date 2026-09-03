@@ -13,7 +13,7 @@ import {
 
 const STORAGE_KEY = "trinket-market-v1-preferences";
 const DEFAULT_THEME = "a";
-const THEMES = new Set(["a", "b", "c"]);
+const THEMES = new Set(["a", "b", "c", "d"]);
 const grid = document.querySelector("#item-grid");
 const searchInput = document.querySelector("#search-input");
 const sortMode = document.querySelector("#sort-mode");
@@ -64,6 +64,8 @@ const state = {
   editingId: 0,
   previewUrl: "",
 };
+
+let activeDrag = null;
 
 function formatNumber(value) {
   return new Intl.NumberFormat("zh-CN").format(value);
@@ -413,14 +415,30 @@ function animateGridMove(before) {
 
 function beginDrag(event, card) {
   if (event.button !== 0 || state.query || event.target.closest("button, a, input, select, textarea, label")) return;
+  if (activeDrag) {
+    event.preventDefault();
+    return;
+  }
   event.preventDefault();
+  const dragContext = { pointerId: event.pointerId };
+  activeDrag = dragContext;
   const rect = card.getBoundingClientRect();
+  const reduceMotion = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
   const offsetX = event.clientX - rect.left;
   const offsetY = event.clientY - rect.top;
   const ghost = card.cloneNode(true);
   ghost.className = "drag-ghost";
   ghost.removeAttribute("aria-label");
   Object.assign(ghost.style, { width: `${rect.width}px`, height: `${rect.height}px`, left: `${rect.left}px`, top: `${rect.top}px` });
+  ghost.style.setProperty("--drag-x", "0px");
+  ghost.style.setProperty("--drag-y", "0px");
+  const lift = document.createElement("div");
+  lift.className = "drag-ghost-lift";
+  const wiggle = document.createElement("div");
+  wiggle.className = "drag-ghost-wiggle";
+  wiggle.append(...ghost.childNodes);
+  lift.append(wiggle);
+  ghost.append(lift);
   ghost.querySelectorAll("img").forEach((image) => { image.dataset.centered = "true"; });
   document.body.append(ghost);
   card.classList.add("is-dragging");
@@ -428,8 +446,9 @@ function beginDrag(event, card) {
   card.setPointerCapture?.(event.pointerId);
 
   function move(pointerEvent) {
-    ghost.style.left = `${pointerEvent.clientX - offsetX}px`;
-    ghost.style.top = `${pointerEvent.clientY - offsetY}px`;
+    if (pointerEvent.pointerId !== dragContext.pointerId || activeDrag !== dragContext) return;
+    ghost.style.setProperty("--drag-x", `${pointerEvent.clientX - offsetX - rect.left}px`);
+    ghost.style.setProperty("--drag-y", `${pointerEvent.clientY - offsetY - rect.top}px`);
     const target = document.elementFromPoint(pointerEvent.clientX, pointerEvent.clientY)?.closest(".item-card");
     if (!target || target === card || target.parentElement !== grid) return;
     const before = new Map([...grid.querySelectorAll(".item-card")].map((item) => [item, item.getBoundingClientRect()]));
@@ -442,23 +461,31 @@ function beginDrag(event, card) {
     animateGridMove(before);
   }
 
-  function end() {
+  function end(pointerEvent) {
+    if (pointerEvent.pointerId !== dragContext.pointerId || activeDrag !== dragContext) return;
     window.removeEventListener("pointermove", move);
     window.removeEventListener("pointerup", end);
     window.removeEventListener("pointercancel", end);
-    ghost.remove();
-    card.classList.remove("is-dragging");
-    grid.classList.remove("is-drag-active");
+    const targetRect = card.getBoundingClientRect();
+    ghost.classList.add("is-settling");
+    ghost.style.setProperty("--drag-x", `${targetRect.left - rect.left}px`);
+    ghost.style.setProperty("--drag-y", `${targetRect.top - rect.top}px`);
     state.manualOrder = itemOrderFromGrid();
     savePreferences();
     persistEditableState("拖拽顺序已保存到当前浏览器");
     const position = state.manualOrder.indexOf(Number(card.dataset.id)) + 1;
     dragStatus.textContent = `已移动到第 ${position} 位`;
+    setTimeout(() => {
+      ghost.remove();
+      card.classList.remove("is-dragging");
+      grid.classList.remove("is-drag-active");
+      if (activeDrag === dragContext) activeDrag = null;
+    }, reduceMotion ? 0 : 230);
   }
 
   window.addEventListener("pointermove", move);
-  window.addEventListener("pointerup", end, { once: true });
-  window.addEventListener("pointercancel", end, { once: true });
+  window.addEventListener("pointerup", end);
+  window.addEventListener("pointercancel", end);
 }
 
 grid.addEventListener("pointerdown", (event) => {

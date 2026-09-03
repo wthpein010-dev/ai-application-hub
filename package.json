@@ -11,6 +11,7 @@
     "test:simuai": "node --test tests/simuai-engine.test.mjs tests/simuai-template.test.mjs tests/simuai-presenter.test.mjs tests/simuai-compiler.test.mjs tests/simuai-page.test.mjs tests/simuai-chart.test.mjs",
     "test:simuai-browser": "node tests/simuai-browser-smoke.mjs",
     "test:simuai-publish": "node --test tests/simuai-publish.test.mjs",
+    "test:icecream-browser": "node --test tests/icecream-demo-shell-browser.test.mjs tests/icecream-page.test.mjs tests/hub-subpage-contract.test.mjs && node tests/icecream-demo-shell-real-browser-smoke.mjs",
     "test:paws-browser": "node --test tests/paws-level-editor-static-server.test.mjs && node tests/paws-level-editor-browser-smoke.mjs",
     "verify:paws-ai-corpus": "node scripts/verify-paws-ai-corpus.mjs"
   },

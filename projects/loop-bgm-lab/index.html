@@ -1,0 +1,347 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="在浏览器本地分析参考音乐、编排 Suno 提示词批次、比较候选并维护授权台账。">
+  <meta name="color-scheme" content="light">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data: blob:; media-src 'self' blob:; connect-src 'self'; object-src 'none'; base-uri 'none'; form-action 'self'">
+  <link rel="icon" href="data:,">
+  <title>循环乐工房</title>
+  <link rel="stylesheet" href="../../assets/subpage-shell.css">
+  <link rel="stylesheet" href="./styles.css">
+</head>
+<body class="hub-subpage">
+  <a class="hub-home-link" href="../../index.html#apps">
+    <span aria-hidden="true">←</span>
+    返回 AI 应用
+  </a>
+
+  <header class="hero" aria-labelledby="page-title">
+    <div class="hero-copy">
+      <p class="eyebrow">LOCAL-FIRST LOOP WORKBENCH</p>
+      <h1 id="page-title">循环乐工房</h1>
+      <p class="hero-lead">把参考音乐提炼成可迁移画像，再用一次只改一个变量的方式安排生成、比较候选和记录授权。</p>
+      <div class="trust-strip" aria-label="隐私与规则摘要">
+        <span>文件只留在本机</span>
+        <span>规则核验于 <time datetime="2026-08-30">2026-08-30</time></span>
+        <span>50 credits 是计划，不是实际账户余额</span>
+      </div>
+    </div>
+    <aside class="rights-card" aria-label="使用权提醒">
+      <strong>先确认用途，再带进项目</strong>
+      <p>规则核验于 <time datetime="2026-08-30">2026-08-30</time>：当前免费档生成物仅限个人、非商业使用（Basic），并应在每次使用时注明由 Suno 生成；商业权利需要另行核验，并确认生成时订阅与具体授权状态。这些提醒不提供法律清场。</p>
+      <a id="suno-create-link" href="https://suno.com/create" target="_blank" rel="noopener noreferrer">前往 Suno Create</a>
+      <a href="https://suno.com/terms" target="_blank" rel="noopener noreferrer">查看 Suno 官方条款</a>
+    </aside>
+  </header>
+
+  <main class="workflow" id="loop-bgm-app">
+    <section id="reference-analysis" data-workflow-step="1" aria-labelledby="reference-title">
+      <div class="section-heading">
+        <span class="step-number" aria-hidden="true">01</span>
+        <div>
+          <p class="section-kicker">REFERENCE ANALYSIS</p>
+          <h2 id="reference-title">参考分析</h2>
+          <p>支持 MP3 / WAV / M4A / OGG；单文件最大 80 MB、最多 8 个，始终逐个解码。格式列表只是选择提示，损坏或无法解码的文件会逐个拒绝，不影响其余文件。</p>
+        </div>
+      </div>
+      <div class="panel-grid reference-grid">
+        <div class="upload-panel">
+          <label class="file-picker" for="reference-files">
+            <strong>选择参考音频</strong>
+            <span>多选后会替换当前参考组；原始字节不会持久化。</span>
+            <input id="reference-files" class="visually-hidden" type="file" multiple accept=".mp3,.wav,.m4a,.ogg,audio/mpeg,audio/wav,audio/mp4,audio/ogg">
+          </label>
+          <button id="load-demo-reference" class="secondary-button" type="button">载入原创合成演示 WAV</button>
+          <a href="./assets/demo-reference.LICENSE.md">查看内置合成素材的 CC0-1.0 声明</a>
+          <p id="reference-progress" class="live-box" role="status" aria-live="polite">等待选择文件。</p>
+        </div>
+        <div class="aggregate-card">
+          <h3>聚合听感</h3>
+          <div id="aggregate-summary" class="metric-grid" aria-live="polite">
+            <p>尚未导入参考音频；默认画像保持 D minor / 112 BPM。</p>
+          </div>
+        </div>
+      </div>
+      <ul id="reference-list" class="analysis-list" aria-label="参考音频分析结果"></ul>
+    </section>
+
+    <section id="style-portrait" data-workflow-step="2" aria-labelledby="style-title">
+      <div class="section-heading">
+        <span class="step-number" aria-hidden="true">02</span>
+        <div>
+          <p class="section-kicker">STYLE PORTRAIT</p>
+          <h2 id="style-title">风格画像</h2>
+          <p>已批准基线不复制旋律或编曲；自动分析用于校对，是否覆盖默认目标由你明确决定。</p>
+        </div>
+      </div>
+      <form id="style-form" class="style-form">
+        <label>调性中心
+          <input id="style-key" name="style-key" value="D minor" autocomplete="off">
+        </label>
+        <label>目标速度
+          <span class="input-with-unit"><input id="style-tempo" name="style-tempo" type="number" min="70" max="160" value="112"><span>BPM</span></span>
+        </label>
+        <label>循环长度
+          <select id="style-bars" name="style-bars">
+            <option value="64" selected>64 小节</option>
+            <option value="32">32 小节</option>
+          </select>
+        </label>
+        <button class="primary-button" type="submit">更新 5 批计划</button>
+      </form>
+      <div class="prompt-baseline">
+        <div>
+          <h3>已批准基线提示词</h3>
+          <p id="approved-baseline">Instrumental upbeat casual puzzle game background music, D minor, around 112 BPM, bright melodic synth plucks, springy bass, crisp light electronic percussion, playful and cheeky motif, steady energetic groove, polished wide stereo mix, seamless 64-bar gameplay loop, no intro, no outro, ending matches the opening harmony and energy</p>
+        </div>
+        <div>
+          <h3>默认排除词</h3>
+          <p id="approved-exclusions">vocals, rap, spoken words, cinematic orchestra, epic trailer, long ambient intro, breakdown, dramatic stop, tempo changes, key changes, fade-out, distorted bass, melancholic ballad, lo-fi vinyl noise</p>
+        </div>
+      </div>
+    </section>
+
+    <section id="daily-queue" data-workflow-step="3" aria-labelledby="queue-title">
+      <div class="section-heading">
+        <span class="step-number" aria-hidden="true">03</span>
+        <div>
+          <p class="section-kicker">DAILY 5-BATCH QUEUE</p>
+          <h2 id="queue-title">今日 5 批队列</h2>
+          <p>按 2026-08-30 可公开核验的规则编排 5 × 10 credits；这是本地计划额度，不是实际账户余额，规则随时可能变化。</p>
+        </div>
+      </div>
+      <div class="queue-summary" aria-label="计划额度">
+        <strong>50</strong><span>计划 credits</span><strong>5</strong><span>单变量批次</span>
+      </div>
+      <aside id="suno-api-readiness" class="api-readiness-card" aria-labelledby="suno-api-title">
+        <div>
+          <p class="eyebrow">官方 API 准备度</p>
+          <h3 id="suno-api-title">自动生成安全门禁</h3>
+          <p id="suno-api-status" role="status"></p>
+          <p class="api-verified-at">核验日：<time datetime="2026-09-01">2026-09-01</time></p>
+        </div>
+        <ul id="suno-api-checklist" class="api-readiness-list"></ul>
+        <div class="button-row">
+          <button id="suno-api-action" type="button" disabled>官方 API 尚不可用</button>
+          <a id="suno-platform-link" href="https://platform.suno.com/" target="_blank" rel="noopener noreferrer">查看 Suno Platform</a>
+        </div>
+        <p class="api-download-notice">Suno 公告称消费者下载限制将于 <time datetime="2026-09-03">2026-09-03</time> 生效；这不是 API 下载契约，使用前请复核<a href="https://help.suno.com/en/articles/13614785" target="_blank" rel="noopener noreferrer">官方页面</a>。</p>
+      </aside>
+      <div id="batch-list" class="batch-list" aria-live="polite"></div>
+      <p class="fine-print">复制和打开页面都是明确的用户操作；打开 Suno Create 绝不会自动把批次标为 submitted。</p>
+    </section>
+
+    <section id="candidate-comparison" data-workflow-step="4" aria-labelledby="candidate-title">
+      <div class="section-heading">
+        <span class="step-number" aria-hidden="true">04</span>
+        <div>
+          <p class="section-kicker">CANDIDATE A/B</p>
+          <h2 id="candidate-title">候选比较与 A/B 播放</h2>
+          <p id="comparison-legal-note">相似度只是保守的创作风险提示，不是侵权判断或法律保证；仍需人工听审、版权检索与具体权利核验。</p>
+        </div>
+      </div>
+      <div class="candidate-toolbar">
+        <label>候选来源
+          <select id="candidate-source-kind" aria-label="候选来源类型">
+            <option value="suno">Suno 结果</option>
+            <option value="external">外部音乐</option>
+            <option value="local-original">本地原创</option>
+          </select>
+        </label>
+        <label>关联提示词批次
+          <select id="candidate-batch" aria-label="候选关联批次"></select>
+        </label>
+        <label>关联生成运行
+          <select id="candidate-run" aria-label="候选关联生成运行"></select>
+        </label>
+        <label>关联生成结果
+          <select id="candidate-output" aria-label="候选关联生成结果"></select>
+        </label>
+        <label class="file-picker compact" for="candidate-file"><strong>选择候选音频</strong><span>一次最多 8 个；导入时会冻结上方来源选择，单个失败不影响其余文件。</span><input id="candidate-file" class="visually-hidden" type="file" multiple accept=".mp3,.wav,.m4a,.ogg,audio/mpeg,audio/wav,audio/mp4,audio/ogg"></label>
+        <button id="remove-candidate" class="text-button" type="button" hidden>清除临时播放</button>
+      </div>
+      <p id="candidate-source-help" class="candidate-source-help">Suno 候选必须先选择已登记的 Create 运行和其中一个已有结果，再导入对应下载文件。</p>
+      <p id="candidate-progress" class="live-box" role="status" aria-live="polite">先在批次卡登记一次 Create、填写结果链接，再选择对应运行、结果和候选文件。</p>
+      <div class="players" aria-label="参考与候选播放器">
+        <label><span>参考 A</span><audio id="reference-player" controls preload="metadata"></audio></label>
+        <label><span>候选 B</span><audio id="candidate-player" controls preload="metadata"></audio></label>
+      </div>
+      <div id="comparison-result" class="comparison-result" data-analysis-state="empty">
+        <div class="comparison-summary">
+          <p><span>特征覆盖率</span><strong id="comparison-coverage">—</strong></p>
+          <p><span>综合相似度</span><strong id="comparison-similarity">—</strong></p>
+          <p><span>风险分类</span><strong id="similarity-class">等待候选</strong></p>
+        </div>
+        <div class="table-scroll" tabindex="0" aria-label="候选特征差异表，可横向滚动">
+          <table id="comparison-components">
+            <thead><tr><th scope="col">分量</th><th scope="col">差异</th><th scope="col">分量分数</th><th scope="col">权重</th></tr></thead>
+            <tbody></tbody>
+          </table>
+        </div>
+        <p id="next-advice" class="advice-card">导入参考和候选后，这里只给出一个变量轴的下一轮建议。</p>
+      </div>
+      <div class="candidate-history-panel">
+        <h3>候选历史与人工复盘</h3>
+        <p>候选历史会保留；评分、复核理由和处置需要你明确填写。研究最佳（不代表可发布）与发布门禁彼此独立。</p>
+        <div id="candidate-history" class="candidate-history" aria-live="polite"></div>
+      </div>
+    </section>
+
+    <section id="license-ledger" data-workflow-step="5" aria-labelledby="license-title">
+      <div class="section-heading">
+        <span class="step-number" aria-hidden="true">05</span>
+        <div>
+          <p class="section-kicker">LICENSE LEDGER</p>
+          <h2 id="license-title">授权台账</h2>
+          <p>外部入口只生成搜索链接，不抓取、不自动下载。CC0 仍要核对来源；CC-BY 必须署名；NC 明确排除商业使用；未知授权不得默认可商用。Suno 来源 / provenance 也可明确加入授权台账，记录生成链接、计划档位、条款日期、署名和文件哈希。</p>
+        </div>
+      </div>
+      <div class="search-panel">
+        <label>搜索关键词<input id="asset-query" value="casual puzzle game sound effect" autocomplete="off"></label>
+        <div class="search-links" aria-label="经批准的外部素材搜索入口">
+          <a class="search-link" data-source="Pixabay Music" href="https://pixabay.com/music/search/casual%20puzzle%20game/" target="_blank" rel="noopener noreferrer">Pixabay Music</a>
+          <a class="search-link" data-source="OpenGameArt" href="https://opengameart.org/art-search-advanced" target="_blank" rel="noopener noreferrer">OpenGameArt</a>
+          <a class="search-link" data-source="Freesound" href="https://freesound.org/search/" target="_blank" rel="noopener noreferrer">Freesound</a>
+        </div>
+      </div>
+      <section class="license-package-panel" aria-labelledby="license-package-title">
+        <div>
+          <h3 id="license-package-title">许可证据包</h3>
+          <p>只接受独立 JSON：可预检 loop-bgm-license-package v1 或兼容的 schemaVersion 3 外部清单。带 blockers 的条目仍可作为研究证据导入，但不等于发布权利清白。</p>
+        </div>
+        <div class="license-package-actions">
+          <label class="file-picker compact" for="license-package-file"><strong>选择许可证 JSON 并预检</strong><span>最大 1 MiB；不接受 ZIP、音频或项目交接 Markdown。</span><input id="license-package-file" class="visually-hidden" type="file" accept=".json,application/json"></label>
+          <button id="license-package-apply" class="primary-button" type="button" disabled>应用本次预检</button>
+          <button id="license-package-export" class="secondary-button" type="button">导出规范许可证包</button>
+        </div>
+        <p id="license-package-status" class="live-box" role="status" aria-live="polite">尚未选择许可证 JSON。</p>
+        <div id="license-package-preview" class="license-package-preview" data-state="empty" hidden>
+          <div class="license-package-summary" aria-label="许可证包预检统计">
+            <p><span>新增</span><strong id="license-package-additions">0</strong></p>
+            <p><span>跳过</span><strong id="license-package-skips">0</strong></p>
+            <p><span>冲突</span><strong id="license-package-conflicts">0</strong></p>
+            <p><span>阻断项</span><strong id="license-package-blockers">0</strong></p>
+          </div>
+          <ul id="license-package-details" class="license-package-details" aria-label="许可证包预检明细"></ul>
+        </div>
+      </section>
+      <form id="license-form" class="license-form">
+        <label>来源
+          <select id="license-source" required>
+              <option>循环乐工房内置原创合成素材</option><option>Suno</option><option>Pixabay Music</option><option>OpenGameArt</option><option>Freesound</option>
+          </select>
+        </label>
+        <label>来源 URL<input id="license-url" type="url" inputmode="url" placeholder="https://…" required></label>
+        <label>原始许可证<input id="license-name" placeholder="例如 CC0 / CC-BY 4.0" required></label>
+        <label>规范许可证标识<input id="license-identifier" placeholder="例如 CC0-1.0 / CC-BY-4.0" required></label>
+        <label>许可证 URL<input id="license-license-url" type="url" inputmode="url" placeholder="https://…"></label>
+        <label>证据 URL<input id="license-evidence-url" type="url" inputmode="url" placeholder="https://…"></label>
+        <label>证据核验日期<input id="license-evidence-date" type="date"></label>
+        <label>文件 SHA-256<input id="license-hash" minlength="64" maxlength="64" spellcheck="false" required></label>
+        <label>作者<input id="license-author" autocomplete="off" required></label>
+        <label>下载日期<input id="license-date" type="date" required></label>
+        <label>交付状态
+          <select id="license-delivery-status" required>
+            <option value="original">原始文件</option>
+            <option value="preview-only">仅预览</option>
+            <option value="unknown">未知</option>
+          </select>
+        </label>
+        <label>权利链状态
+          <select id="license-rights-chain-status" required>
+            <option value="source-declaration-only">仅来源声明</option>
+            <option value="independently-verified">已独立核验</option>
+            <option value="user-declared-original">本人声明原创</option>
+            <option value="unknown">未知</option>
+          </select>
+        </label>
+        <label class="wide-field">适用范围说明<input id="license-scope-note" autocomplete="off" placeholder="例如：允许用于游戏成品发布"></label>
+        <label class="wide-field">署名文本<input id="license-attribution" autocomplete="off" placeholder="CC-BY 时必填"></label>
+        <button class="primary-button" type="submit">加入授权台账</button>
+      </form>
+      <p id="license-form-error" class="field-error" role="alert"></p>
+      <ul id="license-list" class="license-list" aria-label="已记录授权"></ul>
+    </section>
+
+    <section id="portable-handoff" data-workflow-step="6" aria-labelledby="handoff-title">
+      <div class="section-heading">
+        <span class="step-number" aria-hidden="true">06</span>
+        <div>
+          <p class="section-kicker">PORTABLE HANDOFF</p>
+          <h2 id="handoff-title">可迁移交接</h2>
+          <p>JSON 与 Markdown 都可在另一台电脑完整恢复状态；Markdown 也便于人工或 Codex 阅读。两者都不包含音频、秘密、绝对路径或个人文件名。</p>
+        </div>
+      </div>
+      <div class="handoff-actions">
+        <button id="export-json" class="primary-button" type="button">导出 JSON</button>
+        <button id="export-markdown" class="secondary-button" type="button">导出 Markdown</button>
+        <label class="file-picker compact" for="import-project"><strong>导入 JSON 或 Markdown</strong><span>先完整校验，成功后才替换当前状态。</span><input id="import-project" class="visually-hidden" type="file" accept=".json,.md,application/json,text/markdown"></label>
+      </div>
+      <p id="import-status" class="live-box" role="status" aria-live="polite">尚未导入项目。</p>
+      <p id="storage-warning" class="warning-box" role="status" aria-live="polite" hidden></p>
+      <div class="privacy-checklist">
+        <strong>导出前自动排除</strong>
+        <span>原始音频与可逆波形</span><span>本机绝对路径与个人文件名</span><span>Cookie、Token、API key、恢复密钥与浏览器会话</span>
+      </div>
+    </section>
+  </main>
+
+  <dialog id="legacy-source-dialog" aria-labelledby="legacy-source-title" aria-describedby="legacy-source-description">
+    <form id="legacy-source-form">
+      <div class="legacy-source-heading">
+        <div>
+          <p class="section-kicker">LEGACY PROVENANCE REVIEW</p>
+          <h2 id="legacy-source-title">确认旧候选来源</h2>
+        </div>
+        <button id="legacy-source-close" class="text-button" type="button" aria-label="关闭旧候选来源确认">关闭</button>
+      </div>
+      <p id="legacy-source-description">这一步不会猜测来源。请按现有运行结果或同一文件哈希的许可证据明确确认；legacyRunId 只作为历史上下文展示，不代表已确认。</p>
+      <dl class="legacy-source-identity" aria-label="待确认旧候选身份">
+        <div><dt>候选 ID</dt><dd id="legacy-source-candidate-id"></dd></div>
+        <div><dt>批次</dt><dd id="legacy-source-batch-id"></dd></div>
+        <div><dt>完整 SHA-256</dt><dd id="legacy-source-hash"></dd></div>
+        <div id="legacy-source-context-row"><dt>历史上下文</dt><dd id="legacy-source-context"></dd></div>
+      </dl>
+      <label class="legacy-source-kind-field">确认来源
+        <select id="legacy-source-kind" required>
+          <option value="">请选择确认来源</option>
+          <option value="suno">Suno 结果</option>
+          <option value="external">外部音乐</option>
+          <option value="local-original">本地原创</option>
+        </select>
+      </label>
+      <fieldset id="legacy-source-suno-fields" disabled hidden>
+        <legend>Suno 精确结果</legend>
+        <label>同批次运行
+          <select id="legacy-source-run"><option value="">请选择同批次运行</option></select>
+        </label>
+        <label>已有结果
+          <select id="legacy-source-output"><option value="">请选择已有结果</option></select>
+        </label>
+      </fieldset>
+      <fieldset id="legacy-source-license-fields" disabled hidden>
+        <legend>同哈希许可证据</legend>
+        <label>许可证记录
+          <select id="legacy-source-license"><option value="">请选择同 SHA-256 许可证</option></select>
+        </label>
+      </fieldset>
+      <p id="legacy-source-error" class="field-error" role="alert"></p>
+      <div class="legacy-source-actions">
+        <button id="legacy-source-cancel" class="secondary-button" type="button">取消</button>
+        <button id="legacy-source-submit" class="primary-button" type="submit" disabled>确认并保存来源</button>
+      </div>
+    </form>
+  </dialog>
+
+  <footer class="page-footer">
+    <p>本页是 local-first 的创作工作台。Hub 卡片仅提供“演示 / 视频”入口，不提供 Windows 或 macOS 空下载按钮。</p>
+    <p>当前免费档生成物仅限个人、非商业使用；商业权利需要另行核验。</p>
+  </footer>
+
+  <p id="app-live" class="global-live" role="status" aria-live="polite"></p>
+  <p id="app-error" class="global-error" role="alert" hidden></p>
+  <script type="module" src="./app.js"></script>
+</body>
+</html>

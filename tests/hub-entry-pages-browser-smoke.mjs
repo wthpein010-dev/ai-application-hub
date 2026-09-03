@@ -108,7 +108,7 @@ const browserPath = [
 ].find((path) => path && existsSync(path));
 
 assert.ok(browserPath, "A system or Playwright Chromium executable is required for browser verification.");
-assert.equal(apps.length, 28, "all local catalog entries are covered");
+assert.equal(apps.length, 30, "all local catalog entries are covered");
 
 const requestedBaseUrl = process.env.HUB_BASE_URL?.replace(/\/+$/, "");
 const server = requestedBaseUrl ? null : createStaticServer();

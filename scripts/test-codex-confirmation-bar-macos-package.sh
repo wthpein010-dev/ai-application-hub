@@ -25,13 +25,16 @@ ditto -x -k "${archive_path}" "${temporary_directory}"
 app_directory="${temporary_directory}/CodexConfirmationBar.app"
 executable="${app_directory}/Contents/MacOS/CodexConfirmationBar"
 info_plist="${app_directory}/Contents/Info.plist"
+launch_profile="${app_directory}/Contents/Resources/codex-launch-profile.json"
 test -f "${info_plist}"
 test -x "${executable}"
+test -f "${launch_profile}"
 
-[[ "$(plutil -extract CFBundleShortVersionString raw -o - "${info_plist}")" == "2.1.8" ]]
-[[ "$(plutil -extract CFBundleVersion raw -o - "${info_plist}")" == "2.1.8" ]]
+[[ "$(plutil -extract CFBundleShortVersionString raw -o - "${info_plist}")" == "2.3.3" ]]
+[[ "$(plutil -extract CFBundleVersion raw -o - "${info_plist}")" == "2.3.3" ]]
 [[ "$(plutil -extract CFBundleIdentifier raw -o - "${info_plist}")" == "dev.wthpein010.codex-confirmation-bar" ]]
 [[ "$(plutil -extract CFBundleDisplayName raw -o - "${info_plist}")" == "Codex 待确认悬浮助手" ]]
+grep -Fq '"defaultMode":"confirmation-overlay"' "${launch_profile}"
 file "${executable}" | grep -q "${expected_architecture}"
 codesign --verify --deep --strict "${app_directory}"
 "${executable}" --smoke-test

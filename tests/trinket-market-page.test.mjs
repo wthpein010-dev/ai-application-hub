@@ -16,6 +16,18 @@ test("market page owns the approved public title and Hub return shell", () => {
   assert.match(html, /\.\.\/\.\.\/assets\/subpage-shell\.css/);
   assert.match(html, /id="item-grid"/);
   assert.match(html, /id="value-toggle"/);
+  assert.match(html, /class="gallery-link" href="\.\.\/brick-character-copy-preview\/index\.html"/);
+  assert.match(html, />砖块小人图鉴<\/a>/);
+});
+
+test("daylight skin control lives in the market header", () => {
+  const html = readFileSync(join(projectRoot, "index.html"), "utf8");
+  const header = html.match(/<header class="market-header">([\s\S]*?)<\/header>/)?.[1] || "";
+  const toolbar = html.match(/<div class="catalog-toolbar">([\s\S]*?)<\/div>/)?.[1] || "";
+
+  assert.match(header, /id="theme-select"/);
+  assert.match(header, /<option value="d">D 白昼集市<\/option>/);
+  assert.doesNotMatch(toolbar, /id="theme-select"/);
 });
 
 test("market runtime exposes the future count bridge and count event", () => {

@@ -110,6 +110,7 @@ test("application cards preserve the public tool taxonomy and engineering collec
       "planmap",
       "simuai",
       "gamespec-relay",
+      "loop-bgm-lab",
     ],
     life: ["wanhuatong"],
     intelligence: ["gamepulse-mini-radar", "x-ai-codex-radar"],

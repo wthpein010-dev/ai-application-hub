@@ -224,13 +224,13 @@ const defaultApps = [
     problem: "小游戏开发者既要扫描可信榜位，也要持续沉淀玩法案例、寻找合作机会，并把公开信息接入自己的工作流。",
     aiUse: "AI 参与榜单清洗、知识摘要、关联推荐和异常回退；投稿审核后公开，站点每天北京时间 07:10 后检查更新。",
     folder: "https://gamepulse-mini-radar.polite-chord-7994.chatgpt.site",
-    entry: "https://gamepulse-mini-radar.polite-chord-7994.chatgpt.site",
+    entry: "./projects/gamepulse-mini-radar/index.html",
     video: "./projects/gamepulse-mini-radar/video/index.html",
     package: "",
     platforms: {
       web: {
-        href: "https://gamepulse-mini-radar.polite-chord-7994.chatgpt.site",
-        label: "演示"
+        href: "./projects/gamepulse-mini-radar/index.html",
+        label: "只读预览"
       },
       windows: "",
       mac: ""
@@ -408,7 +408,8 @@ const defaultApps = [
     name: "Codex 待确认悬浮助手",
     category: "AI 开发桌面工具",
     status: "desktop",
-    brief: "自动扫描等待你确认继续的 Codex 任务；空闲时收进屏幕顶部，有候选时自动弹出，可逐条确认或一键全部确认。",
+    badge: "待确认助手",
+    brief: "自动扫描等待你继续的 Codex 任务；空闲时收进屏幕顶部，顶部悬停稳定展开，可查看原任务，并按需开启自动确认。",
     problem: "多个 Codex 任务并行运行时，等待确认的任务容易埋在任务列表里；频繁切换检查既打断工作，也会拖慢后续执行。",
     aiUse: "桌面端通过本机 codex app-server 和会话日志识别未决确认，不读取凭据；Windows/macOS 负责真实线程操作，iOS 提供可安装的演示伴侣入口。",
     folder: "./projects/codex-thread-workbench/",
@@ -816,13 +817,13 @@ const defaultApps = [
   },
   {
     id: "brick-character-copy-preview",
-    name: "砖块角色文案预览",
+    name: "砖块小人与随身小物图鉴",
     category: "美术设计参考",
     status: "engineering",
     badge: "工程体验",
-    brief: "集中审阅20个砖块角色的形象、命名与图鉴文案，点击任意角色即可同步查看游戏内详情排版。",
-    problem: "角色文案放在表格里容易忽略真实界面的换行、层级和阅读节奏，美术与策划也难以对同一版内容快速确认。",
-    aiUse: "AI 参与角色命名、梗概与短文案打磨、字数校验、图鉴详情预览和响应式网页交付。",
+    brief: "同步 Unity 正式配置的45个砖块小人、11件随身小物，默认全解锁；左侧筛选列表，右侧详情与换装检查同步呈现。",
+    problem: "角色文案放在配置表里难以提前发现详情框换行、溢出和孤行标点，小物资源也需要在不遮挡列表的情况下检查试穿效果。",
+    aiUse: "AI 参与 Unity 配置与贴图同步、角色分层还原、横版双图鉴、视觉位置统计和响应式排版验收。",
     folder: "./projects/brick-character-copy-preview/",
     entry: "./projects/brick-character-copy-preview/index.html",
     video: "./projects/brick-character-copy-preview/video/index.html",
@@ -832,7 +833,7 @@ const defaultApps = [
       windows: "",
       mac: ""
     },
-    tags: ["美术参考", "角色命名", "图鉴预览", "砖块角色"],
+    tags: ["双图鉴", "文案换行", "随身小物", "Unity同步"],
     speed: 10,
     impact: 8,
     risk: 9,
@@ -891,6 +892,30 @@ const defaultApps = [
     },
     tags: ["Tibo", "Codex Token", "X 公开来源", "重置提醒"],
     speed: 10,
+    impact: 9,
+    risk: 9,
+    polish: 9
+  },
+  {
+    id: "loop-bgm-lab",
+    name: "循环乐工房",
+    category: "AI 音乐工作流",
+    status: "assistant",
+    badge: "辅助工具",
+    brief: "在浏览器本地分析参考音乐，编排循环背景音乐提示词批次，并比较候选与维护授权台账。",
+    problem: "制作可循环的游戏背景音乐时，参考特征、单变量尝试、候选对比和授权证据容易分散，难以形成可复核的工作流。",
+    aiUse: "AI 辅助把本地音频特征归纳为风格画像和提示词计划；原始音频、路径与个人文件名不写入可导出项目状态。",
+    folder: "./projects/loop-bgm-lab/",
+    entry: "./projects/loop-bgm-lab/index.html",
+    video: "./projects/loop-bgm-lab/video/index.html",
+    package: "",
+    platforms: {
+      web: { href: "./projects/loop-bgm-lab/index.html", label: "演示" },
+      windows: "",
+      mac: ""
+    },
+    tags: ["循环音乐", "本地分析", "提示词批次", "授权台账"],
+    speed: 9,
     impact: 9,
     risk: 9,
     polish: 9
@@ -2086,6 +2111,9 @@ function normalizeApp(app) {
     };
   }
   if (normalized.id === "gamepulse-mini-radar") {
+    const retiredPreviewUrl = "https://gamepulse-mini-radar.polite-chord-7994.chatgpt.site";
+    const usesRetiredPreview = (value) =>
+      typeof value === "string" && value.replace(/\/+$/, "") === retiredPreviewUrl;
     const legacyName = "GamePulse 小游雷达";
     const legacyBrief = "把国内微信小游戏热门榜、畅销榜与海外 US iOS Casual Top 10 放在同一张开发者工作台上。";
     const legacyTags = ["小游戏排行", "微信小游戏", "iOS Casual", "产品洞察"];
@@ -2104,6 +2132,21 @@ function normalizeApp(app) {
       )
     ) {
       normalized.tags = [...base.tags];
+    }
+    if (usesRetiredPreview(normalized.entry)) {
+      normalized.entry = base.entry;
+    }
+    const storedWeb = normalized.platforms?.web;
+    if (usesRetiredPreview(storedWeb)) {
+      normalized.platforms = {
+        ...(normalized.platforms || {}),
+        web: { ...base.platforms.web },
+      };
+    } else if (storedWeb && typeof storedWeb === "object" && usesRetiredPreview(storedWeb.href)) {
+      normalized.platforms = {
+        ...(normalized.platforms || {}),
+        web: { ...storedWeb, ...base.platforms.web },
+      };
     }
   }
   if (normalized.id === "planner-daily-quiz") {

@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using System.IO.Compression;
 using System.Text.Json;
 
 namespace CodexThreadWorkbench.Tests.Packaging;
@@ -27,6 +28,18 @@ public sealed class PackagingScriptTests
     }
 
     [Fact]
+    public void MacScript_ConfirmationBarProfile_UsesDedicatedArchiveBundleAndLaunchProfile()
+    {
+        var script = Read("scripts", "publish-macos.sh");
+
+        Assert.Contains("ConfirmationBar", script);
+        Assert.Contains("CodexConfirmationBar-macOS-arm64.app.zip", script);
+        Assert.Contains("CodexConfirmationBar-macOS-x64.app.zip", script);
+        Assert.Contains("Codex 待确认悬浮助手", script);
+        Assert.Contains("codex-launch-profile.json", script);
+    }
+
+    [Fact]
     public void MacPackageTest_VerifiesArchitectureSignatureSmokeAndLaunch()
     {
         var script = Read("scripts", "test-macos-package.sh");
@@ -35,7 +48,7 @@ public sealed class PackagingScriptTests
         Assert.Contains("--smoke-test", script);
         Assert.Contains("file \"${executable}\"", script);
         Assert.Contains("kill \"${app_pid}\"", script);
-        Assert.Contains("CodexThreadWorkbench.app", script);
+        Assert.Contains("app_name", script);
         Assert.Contains("CodexThreadWorkbench", script);
         Assert.Contains("dev.wthpein010.codex-thread-workbench", script);
     }
@@ -89,14 +102,150 @@ public sealed class PackagingScriptTests
     }
 
     [Fact]
-    public void WindowsScript_UsesTheDesktopWorkbenchExecutableAndArchive()
+    public async Task WindowsScript_WorkbenchProfile_BuildsDedicatedWorkbenchPackage()
     {
-        var script = Read("scripts", "Publish-Windows.ps1");
+        if (!OperatingSystem.IsWindows())
+        {
+            return;
+        }
 
-        Assert.Contains("CodexThreadWorkbench-Windows-x64", script);
-        Assert.Contains("CodexThreadWorkbench-Windows-x64.zip", script);
-        Assert.Contains("CodexThreadWorkbench.exe", script);
-        Assert.DoesNotContain("CodexConfirmationBar-Windows-x64.zip", script);
+        var outputRoot = Path.Combine(
+            Path.GetTempPath(),
+            $"CodexWorkbenchPackage-{Guid.NewGuid():N}");
+        Directory.CreateDirectory(outputRoot);
+        try
+        {
+            var startInfo = new ProcessStartInfo
+            {
+                FileName = "powershell.exe",
+                RedirectStandardOutput = true,
+                RedirectStandardError = true,
+                UseShellExecute = false,
+                CreateNoWindow = true
+            };
+            startInfo.ArgumentList.Add("-NoProfile");
+            startInfo.ArgumentList.Add("-ExecutionPolicy");
+            startInfo.ArgumentList.Add("Bypass");
+            startInfo.ArgumentList.Add("-File");
+            startInfo.ArgumentList.Add(Path.Combine(
+                RepositoryRoot,
+                "scripts",
+                "Publish-Windows.ps1"));
+            startInfo.ArgumentList.Add("-Profile");
+            startInfo.ArgumentList.Add("Workbench");
+            startInfo.ArgumentList.Add("-OutputRoot");
+            startInfo.ArgumentList.Add(outputRoot);
+
+            using var process = Process.Start(startInfo);
+            Assert.NotNull(process);
+            var output = await process.StandardOutput.ReadToEndAsync();
+            var error = await process.StandardError.ReadToEndAsync();
+            await process.WaitForExitAsync();
+            Assert.True(
+                process.ExitCode == 0,
+                $"Workbench package build exited {process.ExitCode}: {output}\n{error}");
+
+            var archivePath = Path.Combine(
+                outputRoot,
+                "CodexThreadWorkbench-Windows-x64.zip");
+            Assert.True(File.Exists(archivePath), "Workbench package archive was not created.");
+            using var archive = ZipFile.OpenRead(archivePath);
+            Assert.NotNull(archive.GetEntry("CodexThreadWorkbench.exe"));
+            Assert.NotNull(archive.GetEntry("codex-launch-profile.json"));
+
+            var profileEntry = archive.GetEntry("codex-launch-profile.json");
+            Assert.NotNull(profileEntry);
+            using var profileReader = new StreamReader(profileEntry.Open());
+            using var profile = JsonDocument.Parse(await profileReader.ReadToEndAsync());
+            Assert.Equal(
+                "workbench",
+                profile.RootElement.GetProperty("defaultMode").GetString());
+
+            var readmeEntry = archive.GetEntry("README.md");
+            Assert.NotNull(readmeEntry);
+            using var readmeReader = new StreamReader(readmeEntry.Open());
+            Assert.StartsWith(
+                "# Codex 多线程工作台",
+                await readmeReader.ReadToEndAsync());
+        }
+        finally
+        {
+            Directory.Delete(outputRoot, recursive: true);
+        }
+    }
+
+    [Fact]
+    public async Task WindowsScript_ConfirmationBarProfile_BuildsDedicatedOverlayPackage()
+    {
+        if (!OperatingSystem.IsWindows())
+        {
+            return;
+        }
+
+        var outputRoot = Path.Combine(
+            Path.GetTempPath(),
+            $"CodexConfirmationPackage-{Guid.NewGuid():N}");
+        Directory.CreateDirectory(outputRoot);
+        try
+        {
+            var startInfo = new ProcessStartInfo
+            {
+                FileName = "powershell.exe",
+                RedirectStandardOutput = true,
+                RedirectStandardError = true,
+                UseShellExecute = false,
+                CreateNoWindow = true
+            };
+            startInfo.ArgumentList.Add("-NoProfile");
+            startInfo.ArgumentList.Add("-ExecutionPolicy");
+            startInfo.ArgumentList.Add("Bypass");
+            startInfo.ArgumentList.Add("-File");
+            startInfo.ArgumentList.Add(Path.Combine(
+                RepositoryRoot,
+                "scripts",
+                "Publish-Windows.ps1"));
+            startInfo.ArgumentList.Add("-Profile");
+            startInfo.ArgumentList.Add("ConfirmationBar");
+            startInfo.ArgumentList.Add("-OutputRoot");
+            startInfo.ArgumentList.Add(outputRoot);
+
+            using var process = Process.Start(startInfo);
+            Assert.NotNull(process);
+            var output = await process.StandardOutput.ReadToEndAsync();
+            var error = await process.StandardError.ReadToEndAsync();
+            await process.WaitForExitAsync();
+            Assert.True(
+                process.ExitCode == 0,
+                $"Confirmation package build exited {process.ExitCode}: {output}\n{error}");
+
+            var archivePath = Path.Combine(
+                outputRoot,
+                "CodexConfirmationBar-Windows-x64.zip");
+            Assert.True(File.Exists(archivePath), "Confirmation package archive was not created.");
+            using var archive = ZipFile.OpenRead(archivePath);
+            Assert.NotNull(archive.GetEntry("CodexConfirmationBar.exe"));
+            Assert.NotNull(archive.GetEntry("codex-launch-profile.json"));
+            Assert.NotNull(archive.GetEntry("Install-ConfirmationBarRecovery.ps1"));
+
+            var profileEntry = archive.GetEntry("codex-launch-profile.json");
+            Assert.NotNull(profileEntry);
+            using var profileReader = new StreamReader(profileEntry.Open());
+            using var profile = JsonDocument.Parse(await profileReader.ReadToEndAsync());
+            Assert.Equal(
+                "confirmation-overlay",
+                profile.RootElement.GetProperty("defaultMode").GetString());
+
+            var readmeEntry = archive.GetEntry("README.md");
+            Assert.NotNull(readmeEntry);
+            using var readmeReader = new StreamReader(readmeEntry.Open());
+            var readme = await readmeReader.ReadToEndAsync();
+            Assert.Contains("Codex 待确认悬浮助手", readme);
+            Assert.DoesNotContain("Codex 多线程工作台", readme);
+        }
+        finally
+        {
+            Directory.Delete(outputRoot, recursive: true);
+        }
     }
 
     [Fact]

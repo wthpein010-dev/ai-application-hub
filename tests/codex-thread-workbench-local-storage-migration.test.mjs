@@ -135,6 +135,56 @@ test("GamePulse migration preserves user-customized text and tags", () => {
   assert.deepEqual(JSON.parse(JSON.stringify(gamePulse.tags)), customizedGamePulse.tags);
 });
 
+test("GamePulse migration replaces only the retired official preview URL", () => {
+  const defaults = loadDefaultApps();
+  const gamePulseDefault = defaults.find((app) => app.id === "gamepulse-mini-radar");
+  const retiredUrl = "https://gamepulse-mini-radar.polite-chord-7994.chatgpt.site/";
+  const storedGamePulse = {
+    ...gamePulseDefault,
+    folder: retiredUrl,
+    entry: retiredUrl,
+    platforms: {
+      ...gamePulseDefault.platforms,
+      web: { href: retiredUrl, label: "演示" },
+    },
+  };
+
+  const migrated = loadAppsWithStoredValue([storedGamePulse]).find(
+    (app) => app.id === "gamepulse-mini-radar",
+  );
+
+  assert.equal(migrated.entry, "./projects/gamepulse-mini-radar/index.html");
+  assert.deepEqual(
+    JSON.parse(JSON.stringify(migrated.platforms.web)),
+    { href: "./projects/gamepulse-mini-radar/index.html", label: "只读预览" },
+  );
+  assert.equal(migrated.folder, retiredUrl);
+});
+
+test("GamePulse migration preserves a user-customized preview URL", () => {
+  const defaults = loadDefaultApps();
+  const gamePulseDefault = defaults.find((app) => app.id === "gamepulse-mini-radar");
+  const customUrl = "https://example.com/my-game-radar";
+  const storedGamePulse = {
+    ...gamePulseDefault,
+    entry: customUrl,
+    platforms: {
+      ...gamePulseDefault.platforms,
+      web: { href: customUrl, label: "我的镜像" },
+    },
+  };
+
+  const migrated = loadAppsWithStoredValue([storedGamePulse]).find(
+    (app) => app.id === "gamepulse-mini-radar",
+  );
+
+  assert.equal(migrated.entry, customUrl);
+  assert.deepEqual(
+    JSON.parse(JSON.stringify(migrated.platforms.web)),
+    { href: customUrl, label: "我的镜像" },
+  );
+});
+
 test("previous GamePulse defaults migrate to the current community metadata", () => {
   const defaults = loadDefaultApps();
   const gamePulseDefault = defaults.find((app) => app.id === "gamepulse-mini-radar");

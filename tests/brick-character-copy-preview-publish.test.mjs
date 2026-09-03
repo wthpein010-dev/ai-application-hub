@@ -45,7 +45,7 @@ test("brick copy preview preserves the merged engineering tail with truthful act
   assert.equal(engineering.at(-3).id, project.id);
   assert.equal(engineering.at(-2).id, "trinket-market");
   assert.equal(engineering.at(-1).id, "v-curve-tool");
-  assert.equal(project.name, "砖块角色文案预览");
+  assert.equal(project.name, "砖块小人与随身小物图鉴");
   assert.equal(project.status, "engineering");
   assert.equal(project.badge, "工程体验");
   assert.equal(project.category, "美术设计参考");
@@ -54,6 +54,9 @@ test("brick copy preview preserves the merged engineering tail with truthful act
   assert.equal(project.platforms.mac, "");
   assert.equal(project.package, "");
   assert.equal(project.video, "./projects/brick-character-copy-preview/video/index.html");
+  assert.match(project.brief, /45个砖块小人、11件随身小物/);
+  assert.match(project.brief, /右侧详情与换装检查/);
+  assert.deepEqual(Array.from(project.tags), ["双图鉴", "文案换行", "随身小物", "Unity同步"]);
 });
 
 test("stored application metadata migrates into the engineering experience section", () => {
@@ -70,12 +73,12 @@ test("stored application metadata migrates into the engineering experience secti
   assert.equal(normalized.category, "美术设计参考");
   assert.equal(normalized.status, "engineering");
   assert.equal(normalized.badge, "工程体验");
-  assert.match(normalized.brief, /20个砖块角色/);
+  assert.match(normalized.brief, /45个砖块小人、11件随身小物/);
   assert.deepEqual(Array.from(normalized.tags), Array.from(project.tags));
 });
 
 test("page preserves career copy and synchronizes the confirmed Feishu skin content", () => {
-  const html = readFileSync(join(projectRoot, "index.html"), "utf8");
+  const html = readFileSync(join(projectRoot, "copy-review.html"), "utf8");
   const names = Array.from(html.matchAll(/name:\s*"([^"]+)"/g), (match) => match[1]);
   const summaries = Array.from(html.matchAll(/summary:\s*"([^"]+)"/g), (match) => match[1]);
   const copies = Array.from(html.matchAll(/copy:\s*"([^"]+)"/g), (match) => match[1]);
@@ -131,7 +134,7 @@ test("page preserves career copy and synchronizes the confirmed Feishu skin cont
 });
 
 test("brick character preview uses the portrait in-game detail artwork contract", () => {
-  const html = readFileSync(join(projectRoot, "index.html"), "utf8");
+  const html = readFileSync(join(projectRoot, "copy-review.html"), "utf8");
   const requiredAssets = [
     "tujian_juese_title.png",
     "tujian_juese_turn.png",
@@ -157,7 +160,7 @@ test("brick character preview uses the portrait in-game detail artwork contract"
   assert.doesNotMatch(html, /<img[^>]+class="[^\"]*(?:title|turn|save)[^\"]*"[^>]+style="[^"]*(?:width|height):\s*100%/i);
 });
 
-test("video page uses the shared player and a short H.264 walkthrough", () => {
+test("video page uses the shared player and a 45-character H.264 walkthrough", () => {
   const page = readFileSync(join(videoRoot, "index.html"), "utf8");
   const mediaPath = join(videoRoot, "brick-character-copy-preview-demo.mp4");
   const tutorial = readFileSync(join(videoRoot, "tutorial-script.md"), "utf8");
@@ -166,14 +169,20 @@ test("video page uses the shared player and a short H.264 walkthrough", () => {
   assert.match(page, /class="hub-video-home" href="\.\.\/\.\.\/\.\.\/index\.html#engineering"/);
   assert.match(page, /id="loadVideo"/);
   assert.match(page, /preload="none" data-src="\.\/brick-character-copy-preview-demo\.mp4"/);
-  assert.match(page, /竖版图鉴详情/);
-  assert.match(tutorial, /左右切换与收藏状态/);
+  assert.match(page, /横版结算图鉴/);
+  assert.match(page, /右侧详情/);
+  assert.match(page, /打开图鉴/);
+  assert.match(tutorial, /结算预览/);
+  assert.match(tutorial, /真实换行诊断/);
+  assert.match(tutorial, /随身小物/);
+  assert.match(tutorial, /试穿/);
+  assert.match(tutorial, /保存/);
   assert.equal(existsSync(mediaPath), true);
 
   const media = inspectMedia(mediaPath);
   assert.equal(media.videoCodec, "h264");
   assert.deepEqual([media.width, media.height], [1280, 720]);
-  assert.ok(media.duration >= 30 && media.duration <= 40);
+  assert.ok(media.duration >= 38 && media.duration <= 55);
 
   const captions = readFileSync(join(videoRoot, "brick-character-copy-preview-demo.vtt"), "utf8");
   const cues = captions.replace(/\r/g, "").trim().split(/\n{2,}/).slice(1).map((block) => {
@@ -181,8 +190,12 @@ test("video page uses the shared player and a short H.264 walkthrough", () => {
     const timing = lines.find((line) => line.includes(" --> "));
     return { end: seconds(timing.split(" --> ")[1]), text: lines.slice(1).filter(Boolean) };
   });
-  assert.equal(cues.length, 5);
+  assert.ok(cues.length === 6 || cues.length === 7);
   assert.equal(cues.every((cue) => cue.text.length === 1), true);
-  assert.match(captions, /参考游戏内样式/);
+  assert.match(captions, /结算预览/);
+  assert.match(captions, /右侧详情/);
+  assert.match(captions, /真实换行/);
+  assert.match(captions, /随身小物/);
+  assert.match(captions, /保存装扮/);
   assert.ok(cues.at(-1).end <= media.duration);
 });
