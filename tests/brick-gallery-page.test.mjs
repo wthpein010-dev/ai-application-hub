@@ -48,7 +48,8 @@ test("reference atlas keeps a compact reward result beside the catalog and inlin
   assert.match(html, /id="atlas-close"/);
   assert.match(app, /renderRewardPreview/);
   assert.match(view, /export function renderRewardPreview/);
-  assert.match(css, /\.atlas-workbench\s*\{[^}]*grid-template-columns:\s*minmax\(220px,[^;]+\)\s+minmax\(600px,[^;]+\)\s+minmax\(360px,[^;]+\)/s);
+  assert.match(css, /@media\s*\(min-width:\s*1200px\)\s*\{[\s\S]*?\.atlas-workbench\s*\{[^}]*grid-template-columns:\s*repeat\(3,minmax\(0,1fr\)\)/s);
+  assert.match(css, /\.reward-burst\s*\{[^}]*animation:\s*none/s);
   assert.match(css, /\.reward-preview\s*\{[^}]*position:\s*sticky/s);
   assert.match(css, /\.character-figure\s*\{[^}]*max-width:\s*66\.667%[^}]*max-height:\s*66\.667%[^}]*overflow:\s*hidden/s);
 });
@@ -76,11 +77,11 @@ test("gallery catalog publishes complete preview art for the available character
 test("gallery CSS preserves the formal card geometry inside a responsive landscape workbench", () => {
   const css = readFileSync(join(projectRoot, "styles.css"), "utf8");
 
-  assert.match(css, /\.atlas-workbench\s*\{[^}]*grid-template-columns:\s*minmax\(0,\s*720px\)\s+minmax\(520px,\s*1fr\)/s);
+  assert.match(css, /@media\s*\(min-width:\s*1200px\)\s*\{[\s\S]*?\.reward-preview,\.atlas-list-panel,\.atlas-detail-panel\s*\{[^}]*height:\s*760px/s);
   assert.match(css, /@media\s*\(max-width:\s*1099px\)/);
-  assert.match(css, /\.atlas-detail-panel\s*\{[^}]*position:\s*sticky/s);
-  assert.match(css, /grid-template-columns:\s*repeat\(3,\s*150px\)/);
-  assert.match(css, /\.character-card\s*\{[^}]*width:\s*150px[^}]*height:\s*164px/s);
+  assert.match(css, /\.trinket-preview-rig\s*\{[^}]*position:\s*relative/s);
+  assert.match(css, /\.trinket-hand-anchor\s*\{[^}]*position:\s*absolute/s);
+  assert.match(css, /\.trinket-art\s*\{[^}]*overflow:\s*hidden/s);
   assert.match(css, /\.character-name\s*\{[^}]*font-size:\s*22px/s);
   assert.match(css, /\.detail-copy-box\s*\{[^}]*width:\s*464px[^}]*min-height:\s*196px/s);
   assert.match(css, /#detail-description\s*\{[^}]*width:\s*420px[^}]*min-height:\s*126px[^}]*font-size:\s*28px/s);
@@ -102,7 +103,9 @@ test("Hub showcase capture source describes the reference atlas experience", () 
   const sources = readFileSync(join(root, "scripts", "hub-showcase-media-sources.json"), "utf8");
   const media = readFileSync(join(root, "hub-project-media.js"), "utf8");
 
-  assert.match(sources, /"brick-character-copy-preview"[^\n]+"feature":\s*"结算预览、45 个角色与右侧文案检查"/);
+  assert.match(sources, /"brick-character-copy-preview"[^\n]+"cacheVersion":\s*"20260903-hand-preview"/);
+  assert.match(sources, /"brick-character-copy-preview"[^\n]+"feature":\s*"三栏同屏、角色图鉴与小物试穿"/);
   assert.match(sources, /"brick-character-copy-preview"[^\n]+"focusSelector":\s*"#atlas-detail-panel"/);
-  assert.match(media, /"brick-character-copy-preview"[\s\S]*结算预览、45 个角色与右侧文案检查/);
+  assert.match(media, /"brick-character-copy-preview"[\s\S]*20260903-hand-preview/);
+  assert.match(media, /"brick-character-copy-preview"[\s\S]*三栏同屏、角色图鉴与小物试穿/);
 });

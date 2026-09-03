@@ -5,6 +5,7 @@ import { readFile } from "node:fs/promises";
 import { dirname, extname, join, normalize, relative, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { chromium } from "playwright";
+import { listenForFetch } from "./helpers/fetch-safe-listener.mjs";
 
 const root = dirname(dirname(fileURLToPath(import.meta.url)));
 const mime = new Map([
@@ -22,10 +23,9 @@ const server = createServer(async (request, response) => {
   } catch { response.writeHead(404).end(); }
 });
 
-await new Promise((resolveListen) => server.listen(0, "127.0.0.1", resolveListen));
+const origin = await listenForFetch(server);
 const executablePath = [process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE, chromium.executablePath(), "C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe", "C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe"].find((candidate) => candidate && existsSync(candidate));
 const browser = await chromium.launch({ headless: true, executablePath });
-const origin = `http://127.0.0.1:${server.address().port}`;
 
 try {
   const page = await browser.newPage({ viewport: { width: 1440, height: 900 } });
@@ -34,6 +34,11 @@ try {
   page.on("pageerror", (error) => errors.push(error.message));
   await page.addInitScript(() => localStorage.clear());
   await page.goto(`${origin}/projects/brick-character-copy-preview/index.html`, { waitUntil: "networkidle" });
+
+  const desktopPanels = await page.locator("#reward-preview, #atlas-list-panel, #atlas-detail-panel").evaluateAll((panels) => panels.map((panel) => panel.getBoundingClientRect().width));
+  assert.equal(desktopPanels.length, 3);
+  assert.equal(desktopPanels.every((width) => Math.abs(width - desktopPanels[0]) < 2), true, `desktop panels must share one width: ${desktopPanels.join(", ")}`);
+  assert.equal(await page.locator(".reward-burst").evaluate((burst) => getComputedStyle(burst).animationName), "none");
 
   await page.locator("#tab-trinkets").click();
   assert.equal(await page.locator("#tab-trinkets").getAttribute("aria-selected"), "true");
@@ -54,6 +59,28 @@ try {
 
   await page.locator("#trinket-toggle-draft").click();
   assert.equal(await page.locator('.trinket-card[data-item-id="4"]').getAttribute("data-draft-selected"), "true");
+  assert.equal(await page.locator("#trinket-stage-figure .trinket-preview-rig").count(), 1);
+  assert.equal(await page.locator("#trinket-stage-figure .trinket-hand-anchor").count(), 1);
+  const equippedGeometry = await page.locator("#trinket-stage-figure").evaluate((stage) => {
+    const rig = stage.querySelector(".trinket-preview-rig");
+    const anchor = stage.querySelector(".trinket-hand-anchor");
+    const item = anchor?.querySelector("img");
+    if (!rig || !anchor || !item) return null;
+    const rigRect = rig.getBoundingClientRect();
+    const anchorRect = anchor.getBoundingClientRect();
+    const itemRect = item.getBoundingClientRect();
+    return {
+      anchorInsideRig: anchorRect.left >= rigRect.left - 1 && anchorRect.right <= rigRect.right + 1 && anchorRect.top >= rigRect.top - 1 && anchorRect.bottom <= rigRect.bottom + 1,
+      itemInsideAnchor: itemRect.left >= anchorRect.left - 1 && itemRect.right <= anchorRect.right + 1 && itemRect.top >= anchorRect.top - 1 && itemRect.bottom <= anchorRect.bottom + 1,
+      naturalWidth: item.naturalWidth,
+      naturalHeight: item.naturalHeight,
+    };
+  });
+  assert.deepEqual(equippedGeometry && {
+    anchorInsideRig: equippedGeometry.anchorInsideRig,
+    itemInsideAnchor: equippedGeometry.itemInsideAnchor,
+  }, { anchorInsideRig: true, itemInsideAnchor: true });
+  assert.ok((equippedGeometry?.naturalWidth || 0) > 0 && (equippedGeometry?.naturalHeight || 0) > 0);
   assert.equal(await page.locator("#trinket-save").isEnabled(), true);
   await page.locator("#trinket-save").click();
   assert.equal(await page.locator("#trinket-inline-flow").getAttribute("data-flow"), "save");

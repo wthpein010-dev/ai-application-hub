@@ -5,6 +5,7 @@ import { readFile } from "node:fs/promises";
 import { dirname, extname, join, normalize, relative, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { chromium } from "playwright";
+import { listenForFetch } from "./helpers/fetch-safe-listener.mjs";
 
 const root = dirname(dirname(fileURLToPath(import.meta.url)));
 const mime = new Map([
@@ -27,7 +28,7 @@ const server = createServer(async (request, response) => {
   }
 });
 
-await new Promise((resolveListen) => server.listen(0, "127.0.0.1", resolveListen));
+const origin = await listenForFetch(server);
 const executablePath = [
   process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE,
   chromium.executablePath(),
@@ -35,7 +36,6 @@ const executablePath = [
   "C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe",
 ].find((candidate) => candidate && existsSync(candidate));
 const browser = await chromium.launch({ headless: true, executablePath });
-const origin = `http://127.0.0.1:${server.address().port}`;
 
 try {
   for (const viewport of [{ width: 1440, height: 900 }, { width: 390, height: 844 }]) {

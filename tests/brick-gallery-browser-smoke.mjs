@@ -5,6 +5,7 @@ import { readFile } from "node:fs/promises";
 import { dirname, extname, join, normalize, relative, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { chromium } from "playwright";
+import { listenForFetch } from "./helpers/fetch-safe-listener.mjs";
 
 const root = dirname(dirname(fileURLToPath(import.meta.url)));
 const mime = new Map([[".css", "text/css; charset=utf-8"], [".html", "text/html; charset=utf-8"], [".js", "text/javascript; charset=utf-8"], [".json", "application/json; charset=utf-8"], [".png", "image/png"]]);
@@ -21,10 +22,9 @@ const server = createServer(async (request, response) => {
   }
 });
 
-await new Promise((listen) => server.listen(0, "127.0.0.1", listen));
+const origin = await listenForFetch(server);
 const executablePath = [process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE, chromium.executablePath(), "C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe", "C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe"].find((candidate) => candidate && existsSync(candidate));
 const browser = await chromium.launch({ headless: true, executablePath });
-const origin = `http://127.0.0.1:${server.address().port}`;
 
 try {
   for (const viewport of [{ width: 1440, height: 900 }, { width: 750, height: 1334 }, { width: 390, height: 844 }]) {
@@ -49,8 +49,9 @@ try {
     const cardGeometry = await page.locator(".character-card").evaluateAll((cards) => cards.slice(0, 3).map((card) => card.getBoundingClientRect().toJSON()));
     assert.equal(new Set(cardGeometry.map(({ left }) => Math.round(left))).size, 3);
     if (viewport.width >= 1100) {
-      assert.ok(Math.abs(cardGeometry[0].width - 150) < 1);
-      assert.ok(Math.abs(cardGeometry[0].height - 164) < 1);
+      assert.equal(cardGeometry.every((card) => Math.abs(card.width - cardGeometry[0].width) < 1), true);
+      assert.ok(cardGeometry[0].width >= 120 && cardGeometry[0].width <= 135);
+      assert.ok(Math.abs(cardGeometry[0].height / cardGeometry[0].width - (164 / 150)) < 0.02);
     }
 
     await page.locator('.character-card[data-block-id="100001"]').click();
