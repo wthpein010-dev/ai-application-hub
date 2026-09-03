@@ -5,6 +5,7 @@ import { createRequire } from "node:module";
 import { homedir } from "node:os";
 import { dirname, extname, join, normalize, resolve, sep } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
+import { listenForFetch } from "./helpers/fetch-safe-listener.mjs";
 
 const require = createRequire(import.meta.url);
 const playwrightEntry = require.resolve("playwright", {
@@ -56,6 +57,7 @@ const expectedCollectionIds = {
     "brick-light-motion-lab",
     "brick-character-copy-preview",
     "trinket-market",
+    "v-curve-tool",
   ],
 };
 const expectedNavigationIds = [
@@ -138,9 +140,7 @@ function createStaticServer() {
 }
 
 function startServer(server) {
-  return new Promise((resolveServer) => {
-    server.listen(0, "127.0.0.1", () => resolveServer(`http://127.0.0.1:${server.address().port}`));
-  });
+  return listenForFetch(server);
 }
 
 function stopServer(server) {
@@ -629,7 +629,7 @@ try {
     }));
     check(filtered.apps, ["feishu-downloader"], `${viewport.name} category filter affects only matching applications`);
     check(filtered.games, expectedCollectionIds.games, `${viewport.name} category filter retains all five games`);
-    check(filtered.engineering, expectedCollectionIds.engineering, `${viewport.name} category filter retains all six engineering records`);
+    check(filtered.engineering, expectedCollectionIds.engineering, `${viewport.name} category filter retains all seven engineering records`);
     const categoryNavigationIds = [
       "feishu-downloader",
       ...expectedCollectionIds.games,
@@ -652,7 +652,7 @@ try {
     }));
     check(typeFiltered.apps, ["feishu-downloader"], `${viewport.name} type chip affects only matching applications`);
     check(typeFiltered.games, expectedCollectionIds.games, `${viewport.name} type chip retains all five games`);
-    check(typeFiltered.engineering, expectedCollectionIds.engineering, `${viewport.name} type chip retains all six engineering records`);
+    check(typeFiltered.engineering, expectedCollectionIds.engineering, `${viewport.name} type chip retains all seven engineering records`);
     await assertNoEntranceReplay(page, `${viewport.name}/type filter`);
 
     await page.locator('[data-filter-type="all"]').click();

@@ -5,6 +5,7 @@ import test from "node:test";
 import { fileURLToPath } from "node:url";
 import vm from "node:vm";
 import { loadDefaultAppsFromRuntime } from "./helpers/default-apps.mjs";
+import { listenForFetch } from "./helpers/fetch-safe-listener.mjs";
 import * as mediaBuilderModule from "../scripts/build-hub-showcase-media.mjs";
 
 const {
@@ -121,7 +122,7 @@ test("Bento metadata preserves order and closes the final application row", () =
 
   const collections = [
     { ids: ["hub", "gamepulse-mini-radar", "codex-quota-bar", "codex-thread-workbench", "web-media-collector", "minigame-project-simulator", "ai-game-requirements-workshop", "planner-daily-quiz", "travel-generator", "feishu-downloader", "codex-reviewer", "codex-habit-tool", "wanhuatong", "pureshrink", "planmap", "simuai", "gamespec-relay", "x-ai-codex-radar", "loop-bgm-lab", "codex-multi-thread-workbench"], finalSpan: 0 },
-    { ids: ["vita-mahjong", "paws-home-client", "paws-level-editor", "brick-light-motion-lab", "brick-character-copy-preview", "trinket-market"], finalSpan: 2 },
+    { ids: ["vita-mahjong", "paws-home-client", "paws-level-editor", "brick-light-motion-lab", "brick-character-copy-preview", "trinket-market", "v-curve-tool"], finalSpan: 0 },
   ];
   for (const { ids, finalSpan } of collections) {
     let used = 0;
@@ -180,9 +181,9 @@ test("media builder composes authentic context and focal detail into fixed produ
 test("capture server supports valid byte ranges and rejects empty suffix ranges", async () => {
   assert.equal(typeof createStaticServer, "function");
   const server = createStaticServer();
-  await new Promise((resolve) => server.listen(0, "127.0.0.1", resolve));
+  const origin = await listenForFetch(server);
   try {
-    const url = `http://127.0.0.1:${server.address().port}/index.html`;
+    const url = `${origin}/index.html`;
     const invalidResponse = await fetch(url, {
       headers: { Range: "bytes=-0" },
     });
@@ -237,7 +238,7 @@ test("browser smoke owns an independent literal catalog order oracle", () => {
   const expected = {
     apps: ["hub", "gamepulse-mini-radar", "codex-quota-bar", "codex-thread-workbench", "web-media-collector", "minigame-project-simulator", "ai-game-requirements-workshop", "planner-daily-quiz", "travel-generator", "feishu-downloader", "codex-reviewer", "codex-habit-tool", "wanhuatong", "pureshrink", "planmap", "simuai", "gamespec-relay", "x-ai-codex-radar", "loop-bgm-lab", "codex-multi-thread-workbench"],
     games: ["zhuanglege-sha", "xiang-le-ge-xiang", "fill-what", "nang-keng-pai-pai-xiang", "icecream"],
-    engineering: ["vita-mahjong", "paws-home-client", "paws-level-editor", "brick-light-motion-lab", "brick-character-copy-preview", "trinket-market"],
+    engineering: ["vita-mahjong", "paws-home-client", "paws-level-editor", "brick-light-motion-lab", "brick-character-copy-preview", "trinket-market", "v-curve-tool"],
   };
   const oracle = /const expectedCollectionIds = \{([\s\S]*?)\n\};/u.exec(browserSmoke)?.[1] || "";
   for (const [collection, ids] of Object.entries(expected)) {
