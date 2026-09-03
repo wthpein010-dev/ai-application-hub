@@ -9,11 +9,9 @@ import {
   setAtlasSort,
   setAtlasTab,
 } from "./core/atlas-state.js";
-import { createTrinketDraft, discardDraft, hasUnsavedDraft, randomizeDraft, saveDraft, toggleDraftItem } from "./core/trinket-draft.js";
-import { applyGiftPreview, availableGiftCount, ownedTrinkets, sortTrinkets } from "./core/trinket-inventory.js";
+import { sortTrinkets } from "./core/trinket-inventory.js";
 import { createCharacterFigure, renderCharacterDetail, renderCharacterGrid, renderRewardPreview } from "./components/character-view.js";
-import { renderEquippedPreview, renderTrinketDetail, renderTrinketGrid, trinketImagePath } from "./components/trinket-view.js";
-import { closeInlineFlow, giftNodes, saveConfirmNodes, showInlineFlow, successNodes, warehouseNodes } from "./components/trinket-flow.js";
+import { renderEquippedPreview, renderTrinketDetail, renderTrinketGrid, renderTrinketRewardPreview } from "./components/trinket-view.js";
 
 const CHARACTER_PAGE_SIZE = 12;
 const CHARACTER_FAVORITES_KEY = "brick-gallery-favorites-v1";
@@ -36,6 +34,10 @@ const elements = {
   trinketSearch: document.querySelector("#trinket-search"),
   trinketSort: document.querySelector("#trinket-sort"),
   trinketSummary: document.querySelector("#trinket-summary"),
+  characterReward: document.querySelector("#character-reward-preview"),
+  trinketReward: document.querySelector("#trinket-reward-preview"),
+  trinketRewardStage: document.querySelector("#trinket-reward-stage"),
+  trinketRewardName: document.querySelector("#trinket-reward-name"),
   favoritesOnly: document.querySelector("#favorites-only"),
   batchFavorite: document.querySelector("#batch-favorite"),
   pagePrev: document.querySelector("#page-prev"),
@@ -71,12 +73,7 @@ const elements = {
   trinketOwned: document.querySelector("#trinket-owned-count"),
   trinketGiftCount: document.querySelector("#trinket-gift-count"),
   trinketAcquisition: document.querySelector("#trinket-acquisition"),
-  trinketToggleDraft: document.querySelector("#trinket-toggle-draft"),
-  trinketRandomize: document.querySelector("#trinket-randomize"),
-  trinketSave: document.querySelector("#trinket-save"),
-  warehouse: document.querySelector("#open-warehouse"),
-  gift: document.querySelector("#open-gift"),
-  inlineFlow: document.querySelector("#trinket-inline-flow"),
+  trinketRemove: document.querySelector("#trinket-remove"),
   rewardCharacter: document.querySelector("#reward-character"),
   rewardName: document.querySelector("#reward-name"),
   rewardDescription: document.querySelector("#reward-description"),
@@ -86,12 +83,9 @@ const elements = {
 let atlas = createAtlasState();
 let characters = [];
 let trinkets = [];
-let draft = createTrinketDraft();
 let favoritesOnly = false;
 let diagnosticFrame = 0;
 let detailResizeObserver = null;
-let flowTrigger = null;
-let deferredNavigation = null;
 let equippedCharacterId = null;
 const characterFavorites = new Set(loadArray(CHARACTER_FAVORITES_KEY).map(Number).filter(Number.isInteger));
 let preview = loadTrinketPreview();
@@ -160,6 +154,22 @@ function previewCharacter() {
 function equippedFor(character) {
   const itemId = preview.equippedByCharacter[String(character?.blockId)] ?? null;
   return trinkets.find((item) => item.id === itemId) || null;
+}
+
+function establishTrinketPreview() {
+  const character = previewCharacter();
+  if (!character || !trinkets.length) return;
+  const characterKey = String(character.blockId);
+  const equipped = equippedFor(character);
+  if (equipped) {
+    if (selectedTrinket()?.id !== equipped.id) atlas = selectAtlasItem(atlas, "trinkets", equipped.id);
+    return;
+  }
+  if (Object.prototype.hasOwnProperty.call(preview.equippedByCharacter, characterKey)) return;
+  const item = selectedTrinket() || trinkets[0];
+  atlas = selectAtlasItem(atlas, "trinkets", item.id);
+  preview.equippedByCharacter[characterKey] = item.id;
+  savePreview();
 }
 
 function filteredCharacters() {
@@ -232,17 +242,18 @@ function renderCharacterList(announcement = "") {
 
 function renderTrinketList() {
   const items = visibleTrinkets();
+  const character = previewCharacter();
   renderTrinketGrid({
     items,
     selectedId: atlas.trinkets.selection,
-    draft,
+    equippedItemId: equippedFor(character)?.id || null,
     grid: elements.trinketGrid,
     onSelect: (itemId, trigger) => selectTrinket(itemId, trigger),
   });
   elements.trinketEmpty.hidden = items.length !== 0;
   elements.trinketGrid.hidden = items.length === 0;
   elements.trinketSort.value = atlas.trinkets.sort;
-  elements.trinketSummary.textContent = items.length === trinkets.length ? `全部 ${trinkets.length} 件随身小物均可试穿` : `搜索到 ${items.length} 件随身小物`;
+  elements.trinketSummary.textContent = items.length === trinkets.length ? `全部 ${trinkets.length} 件小物可直接装扮右侧角色` : `搜索到 ${items.length} 件随身小物`;
 }
 
 function measureRenderedLines(element) {
@@ -351,10 +362,9 @@ function renderTrinketPanel() {
   if (atlas.tab !== "trinkets" || !item) return;
   setDetail("trinket");
   const character = previewCharacter();
-  renderEquippedPreview({ character: character ? createCharacterFigure(character) : null, item: trinkets.find((entry) => entry.id === draft.draftItemId) || null, stage: elements.trinketStage });
+  renderEquippedPreview({ character: character ? createCharacterFigure(character) : null, item: equippedFor(character), stage: elements.trinketStage });
   renderTrinketDetail({
     item,
-    draft,
     favoriteIds: trinketFavorites,
     equippedItemId: equippedFor(character)?.id || null,
     elements: {
@@ -365,8 +375,7 @@ function renderTrinketPanel() {
       ownedCount: elements.trinketOwned,
       giftCount: elements.trinketGiftCount,
       acquisition: elements.trinketAcquisition,
-      toggleDraft: elements.trinketToggleDraft,
-      save: elements.trinketSave,
+      remove: elements.trinketRemove,
     },
   });
 }
@@ -378,6 +387,15 @@ function renderActivePanel() {
 }
 
 function renderRewardPanel() {
+  const trinketMode = atlas.tab === "trinkets";
+  elements.characterReward.hidden = trinketMode;
+  elements.trinketReward.hidden = !trinketMode;
+  if (trinketMode) {
+    const item = selectedTrinket();
+    renderTrinketRewardPreview({ item, stage: elements.trinketRewardStage });
+    elements.trinketRewardName.textContent = item?.name || "请选择一个小物";
+    return;
+  }
   renderRewardPreview({
     character: previewCharacter(),
     elements: {
@@ -397,63 +415,17 @@ function render() {
   renderActivePanel();
 }
 
-function refreshDraftFor(character) {
-  draft = createTrinketDraft(equippedFor(character)?.id || null);
-}
-
 function changeCharacter(blockId, trigger, historyMode = "push") {
   const index = characters.findIndex((item) => item.blockId === Number(blockId));
   if (index < 0) return;
   atlas = selectAtlasItem(atlas, "characters", characters[index].blockId);
   atlas = setAtlasPage(atlas, "characters", Math.floor(index / CHARACTER_PAGE_SIZE) + 1);
-  refreshDraftFor(characters[index]);
-  closeCurrentFlow(false);
   if (historyMode) updateLocation(historyMode);
   render();
   if (trigger?.isConnected) trigger.setAttribute("aria-current", "true");
 }
 
-function openUnsavedFlow(continueAction, trigger) {
-  deferredNavigation = continueAction;
-  flowTrigger = trigger || document.activeElement;
-  const copy = document.createElement("p");
-  copy.textContent = "当前试穿尚未保存。你可以保存并继续，或放弃这次试穿。";
-  const actions = document.createElement("div");
-  actions.className = "flow-actions";
-  const saveAndContinue = document.createElement("button");
-  saveAndContinue.type = "button";
-  saveAndContinue.textContent = "保存并继续";
-  saveAndContinue.addEventListener("click", () => {
-    commitDraft();
-    closeCurrentFlow(false);
-    deferredNavigation?.();
-    deferredNavigation = null;
-  });
-  const discardAndContinue = document.createElement("button");
-  discardAndContinue.type = "button";
-  discardAndContinue.textContent = "放弃修改";
-  discardAndContinue.addEventListener("click", () => {
-    draft = discardDraft(draft);
-    closeCurrentFlow(false);
-    deferredNavigation?.();
-    deferredNavigation = null;
-  });
-  const keepEditing = document.createElement("button");
-  keepEditing.type = "button";
-  keepEditing.textContent = "继续编辑";
-  keepEditing.addEventListener("click", () => closeCurrentFlow());
-  actions.append(saveAndContinue, discardAndContinue, keepEditing);
-  const title = document.createElement("h3");
-  title.tabIndex = -1;
-  title.textContent = "未保存的试穿";
-  showInlineFlow(elements.inlineFlow, "unsaved", [title, copy, actions]);
-}
-
 function requestCharacter(blockId, trigger) {
-  if (selectedCharacter()?.blockId !== Number(blockId) && hasUnsavedDraft(draft)) {
-    openUnsavedFlow(() => changeCharacter(blockId, trigger), trigger);
-    return;
-  }
   changeCharacter(blockId, trigger);
 }
 
@@ -462,7 +434,11 @@ function selectTrinket(itemId, trigger, historyMode = "push") {
   if (!item) return;
   atlas = setAtlasTab(atlas, "trinkets");
   atlas = selectAtlasItem(atlas, "trinkets", item.id);
-  closeCurrentFlow(false);
+  const character = previewCharacter();
+  if (character) {
+    preview.equippedByCharacter[String(character.blockId)] = item.id;
+    savePreview();
+  }
   if (historyMode) updateLocation(historyMode);
   render();
   if (trigger?.isConnected) trigger.setAttribute("aria-current", "true");
@@ -472,75 +448,14 @@ function selectTab(tab, trigger, historyMode = "push") {
   if (atlas.tab === tab) return;
   const proceed = () => {
     atlas = setAtlasTab(atlas, tab);
-    closeCurrentFlow(false);
+    if (tab === "trinkets" && !selectedTrinket() && trinkets.length) {
+      atlas = selectAtlasItem(atlas, "trinkets", trinkets[0].id);
+    }
+    if (tab === "trinkets") establishTrinketPreview();
     if (historyMode) updateLocation(historyMode);
     render();
   };
-  if (hasUnsavedDraft(draft)) openUnsavedFlow(proceed, trigger);
-  else proceed();
-}
-
-function commitDraft() {
-  const character = previewCharacter();
-  if (!character) return;
-  draft = saveDraft(draft);
-  preview.equippedByCharacter[String(character.blockId)] = draft.savedItemId;
-  savePreview();
-  render();
-}
-
-function closeCurrentFlow(restoreFocus = true) {
-  closeInlineFlow(elements.inlineFlow, restoreFocus ? flowTrigger : null);
-  flowTrigger = null;
-}
-
-function openSaveFlow(trigger) {
-  flowTrigger = trigger || document.activeElement;
-  const item = trinkets.find((entry) => entry.id === draft.draftItemId) || null;
-  showInlineFlow(elements.inlineFlow, "save", saveConfirmNodes({
-    itemName: item?.name,
-    onConfirm: () => {
-      commitDraft();
-      showInlineFlow(elements.inlineFlow, "success", successNodes("保存成功", () => closeCurrentFlow()));
-    },
-    onClose: () => closeCurrentFlow(),
-  }));
-}
-
-function openWarehouse(trigger) {
-  flowTrigger = trigger || document.activeElement;
-  showInlineFlow(elements.inlineFlow, "warehouse", warehouseNodes({
-    items: ownedTrinkets(sortTrinkets(trinkets, atlas.trinkets.sort)),
-    imageFor: trinketImagePath,
-    onPick: (itemId, card) => {
-      closeCurrentFlow(false);
-      selectTrinket(itemId, card);
-    },
-    onClose: () => closeCurrentFlow(),
-  }));
-}
-
-function openGift(trigger) {
-  const item = selectedTrinket();
-  if (!item) return;
-  flowTrigger = trigger || document.activeElement;
-  const character = previewCharacter();
-  const count = availableGiftCount(item, equippedFor(character)?.id || null);
-  if (!item.giftable || count < 1) {
-    showInlineFlow(elements.inlineFlow, "gift", successNodes(item.giftable ? "当前没有可赠送的副本" : "该小物不可参与本地赠送演示", () => closeCurrentFlow()));
-    return;
-  }
-  showInlineFlow(elements.inlineFlow, "gift", giftNodes({
-    itemName: item.name,
-    onConfirm: () => {
-      trinkets = applyGiftPreview(trinkets, item.id);
-      preview.ownedCountByItemId[String(item.id)] = trinkets.find((entry) => entry.id === item.id)?.ownedCount || 0;
-      savePreview();
-      render();
-      showInlineFlow(elements.inlineFlow, "success", successNodes("赠送成功", () => closeCurrentFlow()));
-    },
-    onClose: () => closeCurrentFlow(),
-  }));
+  proceed();
 }
 
 function moveCharacter(delta) {
@@ -569,17 +484,11 @@ function toggleTrinketFavorite() {
   render();
 }
 
-function toggleTrial() {
-  const item = selectedTrinket();
-  if (!item) return;
-  draft = toggleDraftItem(draft, item);
-  closeCurrentFlow(false);
-  render();
-}
-
-function randomTrial() {
-  draft = randomizeDraft(draft, trinkets);
-  closeCurrentFlow(false);
+function removeEquippedTrinket() {
+  const character = previewCharacter();
+  if (!character || !equippedFor(character)) return;
+  preview.equippedByCharacter[String(character.blockId)] = null;
+  savePreview();
   render();
 }
 
@@ -611,9 +520,10 @@ function applyLocation(historyMode = null) {
     atlas = selectAtlasItem(atlas, "characters", locationState.characterId);
     const index = characters.findIndex((item) => item.blockId === locationState.characterId);
     atlas = setAtlasPage(atlas, "characters", Math.floor(index / CHARACTER_PAGE_SIZE) + 1);
-    refreshDraftFor(characters[index]);
   }
   if (locationState.itemId && trinkets.some((item) => item.id === locationState.itemId)) atlas = selectAtlasItem(atlas, "trinkets", locationState.itemId);
+  if (atlas.tab === "trinkets" && !selectedTrinket() && trinkets.length) atlas = selectAtlasItem(atlas, "trinkets", trinkets[0].id);
+  if (atlas.tab === "trinkets") establishTrinketPreview();
   if (historyMode) updateLocation(historyMode);
   render();
 }
@@ -650,11 +560,7 @@ function bindEvents() {
   elements.detailEquip.addEventListener("click", equipCurrentCharacter);
   elements.detailShare.addEventListener("click", shareCurrent);
   elements.trinketFavorite.addEventListener("click", toggleTrinketFavorite);
-  elements.trinketToggleDraft.addEventListener("click", toggleTrial);
-  elements.trinketRandomize.addEventListener("click", randomTrial);
-  elements.trinketSave.addEventListener("click", (event) => openSaveFlow(event.currentTarget));
-  elements.warehouse.addEventListener("click", (event) => openWarehouse(event.currentTarget));
-  elements.gift.addEventListener("click", (event) => openGift(event.currentTarget));
+  elements.trinketRemove.addEventListener("click", removeEquippedTrinket);
   window.addEventListener("keydown", (event) => {
     if (atlas.tab !== "characters" || !selectedCharacter()) return;
     if (event.key === "ArrowLeft") { event.preventDefault(); moveCharacter(-1); }

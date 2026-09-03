@@ -265,7 +265,7 @@ globalThis.HUB_PROJECT_MEDIA = Object.freeze({
     position: "center",
     layout: "wide",
     fallback: "砖块小人与随身小物图鉴",
-    feature: "三栏同屏、角色图鉴与小物试穿",
+    feature: "三栏同屏、角色图鉴与小物点击即装扮",
     accent: "#63e6b4",
     visualKind: "game",
   }),
