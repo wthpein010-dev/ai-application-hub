@@ -1,0 +1,134 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content="离线导入 Paws EditorLevels，与羊了个羊 900121 生成 V 曲线对比报告。" />
+    <title>V 曲线对比工具</title>
+  </head>
+  <body>
+    <div class="ambient ambient-one"></div>
+    <div class="ambient ambient-two"></div>
+    <main class="app-shell" id="app">
+      <header class="hero">
+        <div class="hero-copy">
+          <p class="eyebrow"><span></span> OFFLINE ANALYSIS · CURRENT RUNTIME</p>
+          <h1>V 曲线对比<span>羊了个羊 900121 <i>vs</i> Paws</span></h1>
+          <p class="hero-lede">导入正式关卡文件夹，以当前 Paws 覆盖与侧锁规则，生成双图、分位带、结构河道和可量化诊断。</p>
+        </div>
+        <div class="hero-badge" aria-label="当前分析口径">
+          <strong>V</strong>
+          <span>结构前沿</span>
+          <small>Runtime aligned</small>
+        </div>
+      </header>
+
+      <section class="control-surface" aria-label="关卡导入与参数">
+        <div class="import-panel">
+          <div class="import-icon" aria-hidden="true"><span></span></div>
+          <div class="import-copy">
+            <div class="section-kicker">STEP 01 · IMPORT</div>
+            <h2>选择 EditorLevels 文件夹</h2>
+            <p>推荐路径 <code>E:\Mahjong\PawsHomeClient\Assets\Editor\Res\Config\Gameplay\EditorLevels</code></p>
+            <p class="import-summary" id="import-summary">也可把一个或多个关卡 JSON 拖到此区域</p>
+          </div>
+          <div class="import-actions">
+            <label class="primary-button" for="folder-input">
+              <span>选择文件夹</span><b aria-hidden="true">→</b>
+            </label>
+            <label class="secondary-button" for="file-input">选择 JSON</label>
+          </div>
+          <input id="folder-input" type="file" webkitdirectory directory multiple />
+          <input id="file-input" type="file" accept=".json,application/json" multiple />
+        </div>
+
+        <div class="parameter-panel">
+          <div class="section-kicker">STEP 02 · MODEL</div>
+          <div class="field-grid">
+            <label>关卡<select id="level-select" disabled><option>等待导入关卡</option></select></label>
+            <label>Seeds<input id="seed-input" type="number" min="20" max="2000" value="300" /></label>
+            <label>暂存槽<select id="tray-select"><option value="1">1 槽</option><option value="2">2 槽</option></select></label>
+            <label>策略<select id="policy-select"><option value="greedy">贪心前沿</option><option value="random">随机决策</option></select></label>
+          </div>
+          <div class="status-row" aria-live="polite">
+            <span class="status-dot"></span>
+            <p id="analysis-status">等待导入 · 羊 900121 基准已内置</p>
+            <div class="status-actions">
+              <button type="button" id="cancel-analysis" hidden>取消分析</button>
+              <button type="button" id="export-png" disabled>导出 PNG</button>
+              <button type="button" id="export-json" disabled>导出 JSON</button>
+            </div>
+          </div>
+          <div class="progress-track" id="progress-track" hidden><span id="progress-bar"></span></div>
+        </div>
+        <details class="import-errors" id="import-errors" hidden><summary>查看被跳过的文件</summary><ul></ul></details>
+      </section>
+
+      <section class="report-shell" id="report" aria-label="V 曲线对比报告">
+        <div class="report-heading">
+          <div>
+            <p class="section-kicker">COMPARISON REPORT</p>
+            <h2>结构前沿与消除进度</h2>
+          </div>
+          <div class="legend" aria-label="曲线图例">
+            <span style="--legend:#c878ff">河道上界(max)</span>
+            <span style="--legend:#ff6571">河道下界(min)</span>
+            <span style="--legend:#24cfb2">E[V]近似</span>
+            <span style="--legend:#668f72">MC P90</span>
+            <span style="--legend:#68e68a">MC P50</span>
+            <span style="--legend:#ff8a5b">MC P10</span>
+          </div>
+        </div>
+
+        <div class="charts-grid">
+          <article class="chart-card">
+            <header><div><span class="chart-index">01</span><h3>羊 900121</h3></div><p>N=258 · 23 层 · T=15</p></header>
+            <div class="chart-stage">
+              <canvas id="sheep-chart" aria-label="羊 900121 V 曲线"></canvas>
+              <div class="chart-empty">导入后生成基准曲线</div>
+            </div>
+          </article>
+          <article class="chart-card">
+            <header><div><span class="chart-index">02</span><h3 id="paws-chart-title">Paws 待选关卡</h3></div><p id="paws-chart-meta">等待读取关卡结构</p></header>
+            <div class="chart-stage">
+              <canvas id="paws-chart" aria-label="Paws 关卡 V 曲线"></canvas>
+              <div class="chart-empty">选择文件夹开始分析</div>
+            </div>
+          </article>
+        </div>
+
+        <div class="metrics-card">
+          <div class="metrics-title"><span>关键指标</span><small>同一口径 · 同一纵轴 · 横轴归一化</small></div>
+          <div class="table-scroll">
+            <table>
+              <thead><tr><th>关卡指标</th><th>羊 900121</th><th>Paws 关卡</th><th>对比观察</th></tr></thead>
+              <tbody id="metrics-body">
+                <tr><td>砖数 / 层数 / 图案池</td><td>258 / 23 / 1–15</td><td>—</td><td>等待导入</td></tr>
+                <tr><td>开局 V</td><td>—</td><td>—</td><td>前沿宽度</td></tr>
+                <tr><td>MC @25% <small>MC P90 / MC P50 / MC P10</small></td><td>—</td><td>—</td><td>前段释放</td></tr>
+                <tr><td>MC @50% <small>MC P90 / MC P50 / MC P10</small></td><td>—</td><td>—</td><td>中盘压力</td></tr>
+                <tr><td>无道具清盘率</td><td>—</td><td>—</td><td>指定模型</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <section class="report-warnings" id="report-warnings" hidden>
+          <div class="metrics-title"><span>分析提示</span><small>导入和仿真状态会保留在导出的报告中</small></div>
+          <ul id="report-warning-list"></ul>
+        </section>
+
+        <div class="method-grid">
+          <article><span>01</span><div><h3>实际 V</h3><p>任意正面积上层重叠即覆盖；同层 x±8 两侧同时存在即侧锁。背面砖仍计入可操作前沿。</p></div></article>
+          <article><span>02</span><div><h3>河道边界</h3><p>河道上界(max)与河道下界(min)采用 T=1、无槽、20 次确定性重启；它们是搜索包络，不是数学绝对边界。</p></div></article>
+          <article><span>03</span><div><h3>E[V]近似</h3><p>覆盖 DAG 的 E[V]近似忽略侧锁与合法顺序，只用于理解结构，不等同真人平均。</p></div></article>
+        </div>
+        <section class="diagnostics-section" id="diagnostics-section" hidden>
+          <div class="metrics-title"><span>结构诊断</span><small>每条结论均引用实际曲线数值</small></div>
+          <div class="diagnostics-grid" id="diagnostics-grid"></div>
+        </section>
+      </section>
+    </main>
+    <script type="module" src="/src/app.js"></script>
+  </body>
+</html>

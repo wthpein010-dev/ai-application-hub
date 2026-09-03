@@ -86,7 +86,7 @@ test("the publication workflow runs the full Hub suite and ClickFlow browser acc
   assert.match(workflow, /npm ci/);
   assert.match(workflow, /playwright install --with-deps chromium/);
   assert.match(workflow, /sudo apt-get install -y [^\n]*\bffmpeg\b/);
-  assert.match(workflow, /node --test/);
+  assert.match(workflow, /xvfb-run -a npm test/);
   assert.match(workflow, /npm run audit:hub -- --check-external/);
   assert.match(workflow, /node tests\/hub-video-pages-browser-smoke\.mjs/);
   assert.match(workflow, /node tests\/hub-entry-pages-browser-smoke\.mjs/);

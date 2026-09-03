@@ -105,6 +105,19 @@
           "manifestUrl": "https://wthpein010-dev.github.io/ai-application-hub/projects/codex-multi-thread-workbench/download/mac/manifest-x64.json"
         }
       }
+    },
+    {
+      "id": "v-curve-tool",
+      "name": "V曲线对比工具",
+      "kind": "native",
+      "catalogUrl": "https://github.com/wthpein010-dev/ai-application-hub/releases/download/v-curve-tool-v1.2.0/V-Curve-Comparison-Tool-1.2.0-macOS.zip",
+      "archiveUrl": "https://github.com/wthpein010-dev/ai-application-hub/releases/download/v-curve-tool-v1.2.0/V-Curve-Comparison-Tool-1.2.0-macOS.zip",
+      "bytes": 261380371,
+      "sha256": "A355EEA4BBB98D66E6C976363C970F2ADBAFB4A99D95E5AE72166C8341A793B7",
+      "architectures": [
+        "arm64",
+        "x64"
+      ]
     }
   ]
 }

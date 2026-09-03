@@ -8,6 +8,7 @@ import { dirname, extname, join, normalize } from "node:path";
 import { fileURLToPath } from "node:url";
 import ffmpegPath from "ffmpeg-static";
 import { chromium } from "playwright";
+import { listenForFetch } from "./helpers/fetch-safe-listener.mjs";
 import { inspectMedia } from "./media-inspect.mjs";
 
 const root = dirname(dirname(fileURLToPath(import.meta.url)));
@@ -97,9 +98,9 @@ async function startMediaServer() {
       response.end("Not found");
     }
   });
-  await new Promise((resolve) => server.listen(0, "127.0.0.1", resolve));
+  const origin = await listenForFetch(server);
   return {
-    origin: `http://127.0.0.1:${server.address().port}`,
+    origin,
     rangeRequests,
     close: () => new Promise((resolve) => server.close(resolve)),
   };

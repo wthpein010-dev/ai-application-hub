@@ -1,0 +1,18 @@
+{
+  "id": 20,
+  "name": "第二关模板25",
+  "difficulty": "hard",
+  "gridUnit": "sheep_7x8_mini8",
+  "designerNote": "{\"widthNum\":7,\"heightNum\":8,\"levelKey\":20,\"gameLevelOrder\":2,\"blockTypeCount\":4,\"fullRandomTypeMin\":1,\"fullRandomTypeMax\":15,\"pseudoRandomLimitedMode\":0,\"pseudoRandomFullMode\":0}",
+  "features": {
+    "flipEvery": 0,
+    "monoColor": false
+  },
+  "tiles": [
+    { "x": 0, "y": 0, "layer": 1, "type": -1, "moldType": 1, "metaType": 0, "metaData": 0, "presetColorType": 1 },
+    { "x": 8, "y": 0, "layer": 1, "type": -1, "moldType": 1, "metaType": 0, "metaData": 0, "presetColorType": 1 },
+    { "x": 4, "y": 4, "layer": 2, "type": -1, "moldType": 1, "metaType": 0, "metaData": 0, "presetColorType": 1 },
+    { "x": 12, "y": 4, "layer": 2, "type": -1, "moldType": 1, "metaType": 0, "metaData": 0, "presetColorType": 1 }
+  ],
+  "stacks": []
+}

@@ -3,6 +3,7 @@
   "private": true,
   "type": "module",
   "scripts": {
+    "test": "node --test \"tests/**/*.test.mjs\" \"projects/xiang-le-ge-xiang/tests/**/*.test.mjs\"",
     "audit:hub": "node scripts/hub-publication-audit.mjs",
     "playwright:install": "playwright install chromium",
     "build:simuai-video": "node scripts/build-simuai-tutorial.mjs",

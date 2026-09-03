@@ -1,0 +1,6 @@
+node_modules/
+.vite/
+coverage/
+*.log
+artifacts/.qa-temp/
+release/

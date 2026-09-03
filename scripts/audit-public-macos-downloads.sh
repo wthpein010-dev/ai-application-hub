@@ -470,6 +470,10 @@ audit_combined_native() {
       app="${extracted}/${archive_architecture}/游戏需求开工台.app"
       executable="${app}/Contents/MacOS/游戏需求开工台"
       ;;
+    v-curve-tool)
+      app="${extracted}/${archive_architecture}/V曲线对比工具.app"
+      executable="${app}/Contents/MacOS/V曲线对比工具"
+      ;;
     *)
       die "unsupported native product ${id}"
       ;;
@@ -491,7 +495,7 @@ audit_combined_native() {
   codesign --verify --deep --strict "${app}"
 
   case "${id}" in
-    codex-quota-bar|clickflow)
+    codex-quota-bar|clickflow|v-curve-tool)
       launch_for_five_seconds "${app}" "${executable}"
       ;;
     pureshrink)
@@ -623,6 +627,7 @@ if (!fixtureMode) {
     ["pureshrink", "native"],
     ["gamespec-relay", "native"],
     ["codex-multi-thread-workbench", "native"],
+    ["v-curve-tool", "native"],
   ]);
   if (manifest.downloads.length !== expected.size) {
     throw new Error(`Expected exactly ${expected.size} public Mac downloads`);

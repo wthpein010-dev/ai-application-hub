@@ -1,0 +1,151 @@
+name: Build V Curve comparison tool for macOS
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - feat/v-curve-tool-20260828
+    paths:
+      - ".github/workflows/build-v-curve-tool-release.yml"
+      - "build/v-curve-tool/**"
+      - "tests/v-curve-tool-release-workflow.test.mjs"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: v-curve-tool-macos-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    name: Build and launch (${{ matrix.arch }})
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - arch: arm64
+            runner: macos-14
+            expected-machine: arm64
+          - arch: x64
+            runner: macos-15-intel
+            expected-machine: x86_64
+    runs-on: ${{ matrix.runner }}
+    defaults:
+      run:
+        working-directory: build/v-curve-tool
+    steps:
+      - name: Check out the tracked release source
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+          sparse-checkout: build/v-curve-tool
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+          cache: npm
+          cache-dependency-path: build/v-curve-tool/package-lock.json
+
+      - name: Install locked dependencies
+        run: npm ci
+
+      - name: Run the application suite
+        run: npm test
+
+      - name: Build the native ZIP
+        run: npm run build:mac:${{ matrix.arch }}
+
+      - name: Verify package, bundled levels, signature and launch
+        shell: bash
+        run: |
+          set -euo pipefail
+          archive="release/V曲线对比工具-1.2.0-macOS-${{ matrix.arch }}.zip"
+          test -f "$archive"
+          extract="${RUNNER_TEMP}/v-curve-${{ matrix.arch }}"
+          ditto -x -k "$archive" "$extract"
+          app="$(find "$extract" -maxdepth 2 -type d -name 'V曲线对比工具.app' -print -quit)"
+          test -n "$app"
+          executable="$app/Contents/MacOS/V曲线对比工具"
+          test -x "$executable"
+          plutil -lint "$app/Contents/Info.plist"
+          file "$executable" | grep -q 'Mach-O'
+          file "$executable" | grep -q '${{ matrix.expected-machine }}'
+          codesign --force --deep --sign - "$app"
+          codesign --verify --deep --strict "$app"
+          levels="$app/Contents/Resources/Editorlevel"
+          test "$(find "$levels" -type f | wc -l | tr -d ' ')" = "62"
+          test "$(find "$levels" -type f -name '*.json' | wc -l | tr -d ' ')" = "31"
+          test "$(find "$levels" -type f -name '*.meta' | wc -l | tr -d ' ')" = "31"
+          open -n "$app"
+          sleep 5
+          canonical_executable="$(cd "$(dirname "$executable")" && pwd -P)/$(basename "$executable")"
+          pgrep -f "$canonical_executable"
+          pkill -f "$canonical_executable" || true
+          rm -f "$archive"
+          ditto -c -k --sequesterRsrc --keepParent "$app" "$archive"
+          (cd "$(dirname "$archive")" && shasum -a 256 "$(basename "$archive")") > "$archive.sha256.txt"
+
+      - name: Upload the architecture package
+        uses: actions/upload-artifact@v4
+        with:
+          name: v-curve-tool-macos-${{ matrix.arch }}
+          path: |
+            build/v-curve-tool/release/V曲线对比工具-1.2.0-macOS-${{ matrix.arch }}.zip
+            build/v-curve-tool/release/V曲线对比工具-1.2.0-macOS-${{ matrix.arch }}.zip.sha256.txt
+          if-no-files-found: error
+          retention-days: 14
+
+  assemble:
+    name: Assemble the public dual-architecture archive
+    needs: build
+    runs-on: macos-14
+    steps:
+      - name: Download both verified packages
+        uses: actions/download-artifact@v4
+        with:
+          pattern: v-curve-tool-macos-*
+          path: artifacts
+
+      - name: Assemble and verify the public ZIP
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p stage/arm64 stage/x64
+          ditto -x -k artifacts/v-curve-tool-macos-arm64/V曲线对比工具-1.2.0-macOS-arm64.zip stage/arm64
+          ditto -x -k artifacts/v-curve-tool-macos-x64/V曲线对比工具-1.2.0-macOS-x64.zip stage/x64
+          test -x stage/arm64/V曲线对比工具.app/Contents/MacOS/V曲线对比工具
+          test -x stage/x64/V曲线对比工具.app/Contents/MacOS/V曲线对比工具
+          file stage/arm64/V曲线对比工具.app/Contents/MacOS/V曲线对比工具 | grep -q arm64
+          file stage/x64/V曲线对比工具.app/Contents/MacOS/V曲线对比工具 | grep -q x86_64
+          archive="$GITHUB_WORKSPACE/V-Curve-Comparison-Tool-1.2.0-macOS.zip"
+          (cd stage && zip -qry --symlinks "$archive" arm64 x64)
+          (cd "$(dirname "$archive")" && shasum -a 256 "$(basename "$archive")") > "$archive.sha256.txt"
+          ARCHIVE_PATH="$archive" SOURCE_SHA="$GITHUB_SHA" node - <<'NODE'
+          const { createHash } = require("node:crypto");
+          const { readFileSync, statSync, writeFileSync } = require("node:fs");
+          const archive = process.env.ARCHIVE_PATH;
+          const bytes = statSync(archive).size;
+          const sha256 = createHash("sha256").update(readFileSync(archive)).digest("hex").toUpperCase();
+          writeFileSync("v-curve-tool-macos-release.json", `${JSON.stringify({
+            version: "1.2.0",
+            sourceCommit: process.env.SOURCE_SHA,
+            asset: "V-Curve-Comparison-Tool-1.2.0-macOS.zip",
+            bytes,
+            sha256,
+            architectures: ["arm64", "x64"],
+            bundledFiles: 62,
+          }, null, 2)}\n`);
+          NODE
+
+      - name: Upload the release-ready archive
+        uses: actions/upload-artifact@v4
+        with:
+          name: v-curve-tool-macos-release
+          path: |
+            V-Curve-Comparison-Tool-1.2.0-macOS.zip
+            V-Curve-Comparison-Tool-1.2.0-macOS.zip.sha256.txt
+            v-curve-tool-macos-release.json
+          if-no-files-found: error
+          retention-days: 14

@@ -1,0 +1,32 @@
+{
+  "schemaVersion": "v-curve-tool-release/1",
+  "version": "1.2.0",
+  "releaseWorkflow": {
+    "runId": 33163156365,
+    "sourceCommit": "54b0c8765dc079979617bf51670c37dfb1eb3ac0"
+  },
+  "assets": {
+    "windows": {
+      "file": "V-Curve-Comparison-Tool-1.2.0-Windows-x64.zip",
+      "url": "https://github.com/wthpein010-dev/ai-application-hub/releases/download/v-curve-tool-v1.2.0/V-Curve-Comparison-Tool-1.2.0-Windows-x64.zip",
+      "bytes": 99701005,
+      "sha256": "7AD80A5926FE7B7F110CE4C845B5F466BA0C276D77300790DDFA1C0D3919AB97",
+      "executableSha256": "B0D1C277CDFE1758E7921F4A81BE8BE5B7F67A9F4EE53B2BFE9554459AC964FD",
+      "signature": "NotSigned"
+    },
+    "mac": {
+      "file": "V-Curve-Comparison-Tool-1.2.0-macOS.zip",
+      "url": "https://github.com/wthpein010-dev/ai-application-hub/releases/download/v-curve-tool-v1.2.0/V-Curve-Comparison-Tool-1.2.0-macOS.zip",
+      "bytes": 261380371,
+      "sha256": "A355EEA4BBB98D66E6C976363C970F2ADBAFB4A99D95E5AE72166C8341A793B7",
+      "architectures": [
+        "arm64",
+        "x64"
+      ]
+    }
+  },
+  "bundledLevels": {
+    "files": 62,
+    "playable": 31
+  }
+}

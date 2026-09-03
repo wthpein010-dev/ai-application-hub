@@ -10,7 +10,7 @@ import { extractValidatedZip, readZipEntries, validateZipEntries } from "./helpe
 const root = dirname(dirname(fileURLToPath(import.meta.url)));
 const runtime = readFileSync(join(root, "app-20260706-restore-games.js"), "utf8");
 const apps = loadDefaultAppsFromRuntime(runtime);
-const nativeIds = new Set(["codex-quota-bar", "codex-thread-workbench", "clickflow", "pureshrink", "gamespec-relay", "codex-multi-thread-workbench"]);
+const nativeIds = new Set(["codex-quota-bar", "codex-thread-workbench", "clickflow", "pureshrink", "gamespec-relay", "codex-multi-thread-workbench", "v-curve-tool"]);
 const extensionIds = new Set(["feishu-downloader"]);
 const compatibilityMatrixPath = join(root, "docs", "audits", "2026-08-03-platform-compatibility.md");
 
@@ -28,7 +28,7 @@ function actionTypes(app) {
 }
 
 test("every card exposes actions that match its actual delivery type", () => {
-  assert.equal(apps.length, 32);
+  assert.equal(apps.length, 33);
   for (const app of apps) {
     const expected = nativeIds.has(app.id) || extensionIds.has(app.id)
       ? ["web", "video", "windows", "mac"]
@@ -235,6 +235,7 @@ test("the compatibility matrix covers every public card and its delivery evidenc
       "projects/codex-multi-thread-workbench/download/mac/manifest-arm64.json",
       "projects/codex-multi-thread-workbench/download/mac/manifest-x64.json",
     ],
+    "v-curve-tool": ["projects/v-curve-tool/release-manifest.json"],
   };
 
   for (const [id, paths] of Object.entries(evidence)) {

@@ -1279,5 +1279,55 @@ export const projects = [
       "ink": "#6f2b0d",
       "mark": "随身"
     }
+  },
+  {
+    "id": "v-curve-tool",
+    "index": 31,
+    "name": "V曲线对比工具",
+    "category": "项目开发",
+    "kind": "engineering",
+    "badge": "工程体验",
+    "brief": "导入 Paws JSON 关卡，即可与固定的《羊了个羊》900121 结构并排生成连续 V 曲线、河道上下界与关键诊断。",
+    "problem": "关卡层数和砖量只能说明规模，难以直接判断开局宽度、中盘断崖与后段窄口，也缺少与成熟样本一致口径的对照。",
+    "aiUse": "工具完全离线，按 Paws 两两配对与暂存槽规则执行确定性河道搜索和 Monte Carlo 仿真；Windows 与 macOS 包均内置已确认的 31 个关卡。",
+    "tags": [
+      "V曲线",
+      "关卡分析",
+      "羊了个羊",
+      "Windows",
+      "macOS"
+    ],
+    "actions": [
+      {
+        "type": "web",
+        "label": "网页预览",
+        "href": "./projects/v-curve-tool/index.html",
+        "sourceLabel": "演示"
+      },
+      {
+        "type": "video",
+        "label": "介绍视频",
+        "href": "./projects/v-curve-tool/video/index.html",
+        "sourceLabel": "介绍视频"
+      },
+      {
+        "type": "windows",
+        "label": "Wins下载",
+        "href": "https://github.com/wthpein010-dev/ai-application-hub/releases/download/v-curve-tool-v1.2.0/V-Curve-Comparison-Tool-1.2.0-Windows-x64.zip",
+        "sourceLabel": "Wins下载"
+      },
+      {
+        "type": "mac",
+        "label": "Mac下载",
+        "href": "https://github.com/wthpein010-dev/ai-application-hub/releases/download/v-curve-tool-v1.2.0/V-Curve-Comparison-Tool-1.2.0-macOS.zip",
+        "sourceLabel": "Mac下载"
+      }
+    ],
+    "visual": {
+      "accent": "#0e7a68",
+      "surface": "#dff5ee",
+      "ink": "#093f37",
+      "mark": "V曲"
+    }
   }
 ];

@@ -5,6 +5,7 @@ import { extname, join, normalize } from "node:path";
 import test from "node:test";
 
 import { chromium } from "playwright";
+import { listenForFetch } from "./helpers/fetch-safe-listener.mjs";
 
 const root = process.cwd();
 
@@ -32,10 +33,10 @@ async function startServer() {
     }
   });
 
-  await new Promise(resolve => server.listen(0, "127.0.0.1", resolve));
+  const origin = await listenForFetch(server);
   return {
     server,
-    url: `http://127.0.0.1:${server.address().port}/projects/icecream/index.html`
+    url: `${origin}/projects/icecream/index.html`
   };
 }
 

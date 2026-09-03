@@ -319,4 +319,14 @@ globalThis.HUB_PROJECT_MEDIA = Object.freeze({
     accent: "#f0c75e",
     visualKind: "game",
   }),
+  "v-curve-tool": Object.freeze({
+    src: "./assets/hub-showcase/v-curve-tool.webp?v=20260827-hub-visual-polish",
+    alt: "V曲线对比工具真实关卡分析画面",
+    position: "center",
+    layout: "wide",
+    fallback: "V曲线对比工具",
+    feature: "双图对比关卡河道与结构风险",
+    accent: "#7aa2ff",
+    visualKind: "data",
+  }),
 });

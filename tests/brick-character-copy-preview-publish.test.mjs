@@ -37,13 +37,14 @@ function normalizeStoredProject(stored) {
   return context.globalThis.normalizeApp(stored);
 }
 
-test("brick copy preview remains immediately before the newer trinket market card", () => {
+test("brick copy preview preserves the merged engineering tail with truthful actions", () => {
   const apps = loadDefaultAppsFromRuntime(runtime);
   const project = apps.find((app) => app.id === "brick-character-copy-preview");
   const engineering = apps.filter((app) => ["engineering", "ai"].includes(app.status));
 
-  assert.equal(engineering.at(-2).id, project.id);
-  assert.equal(engineering.at(-1).id, "trinket-market");
+  assert.equal(engineering.at(-3).id, project.id);
+  assert.equal(engineering.at(-2).id, "trinket-market");
+  assert.equal(engineering.at(-1).id, "v-curve-tool");
   assert.equal(project.name, "砖块小人与随身小物图鉴");
   assert.equal(project.status, "engineering");
   assert.equal(project.badge, "工程体验");

@@ -11,6 +11,7 @@ const NATIVE_PROJECTS = new Set([
   "pureshrink",
   "gamespec-relay",
   "codex-multi-thread-workbench",
+  "v-curve-tool",
 ]);
 const EXTENSION_PROJECTS = new Set(["feishu-downloader"]);
 const PLATFORM_KEYS = ["windows", "mac"];

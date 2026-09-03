@@ -6,10 +6,13 @@ import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import vm from "node:vm";
 import { loadDefaultAppsFromRuntime } from "./helpers/default-apps.mjs";
+import { findMediaTool } from "./media-inspect.mjs";
 
 const root = dirname(dirname(fileURLToPath(import.meta.url)));
 const runtime = readFileSync(join(root, "app-20260706-restore-games.js"), "utf8");
 const videoRoot = join(root, "projects", "loop-bgm-lab", "video");
+const ffmpeg = findMediaTool("ffmpeg");
+const ffprobe = findMediaTool("ffprobe");
 
 function timestampToMilliseconds(timestamp) {
   const match = timestamp.match(/(?:(\d{2}):)?(\d{2}):(\d{2})\.(\d{3})/);
@@ -64,7 +67,7 @@ function topLevelMp4Boxes(path) {
 }
 
 function ffprobeJson(path) {
-  const result = spawnSync("ffprobe", [
+  const result = spawnSync(ffprobe, [
     "-v", "error",
     "-show_entries", "format=duration:stream=index,codec_type,codec_name,pix_fmt,width,height,avg_frame_rate,r_frame_rate,nb_frames",
     "-of", "json",
@@ -82,7 +85,7 @@ function loadMediaRegistry() {
 }
 
 function inspectImageVariance(path) {
-  const result = spawnSync("ffmpeg", [
+  const result = spawnSync(ffmpeg, [
     "-v", "error", "-i", path,
     "-vf", "scale=64:40:flags=area,format=rgb24",
     "-f", "rawvideo", "-",
@@ -147,7 +150,7 @@ test("循环乐工房 maps an authentic 1440×900 Hub showcase without local pat
   const assetPath = join(root, "assets", "hub-showcase", "loop-bgm-lab.webp");
   assert.equal(existsSync(assetPath), true);
   assert.ok(statSync(assetPath).size > 30_000, "showcase should be a substantive compressed screenshot");
-  const dimensions = spawnSync("ffprobe", ["-v", "error", "-show_entries", "stream=width,height", "-of", "csv=p=0", assetPath], { encoding: "utf8" });
+  const dimensions = spawnSync(ffprobe, ["-v", "error", "-show_entries", "stream=width,height", "-of", "csv=p=0", assetPath], { encoding: "utf8" });
   assert.equal(dimensions.status, 0, dimensions.stderr);
   assert.equal(dimensions.stdout.trim(), "1440,900");
   inspectImageVariance(assetPath);
@@ -180,7 +183,7 @@ test("循环乐工房 publishes an exact silent fast-start H.264 tutorial", () =
   assert.ok(boxes.includes("ftyp") && boxes.includes("moov") && boxes.includes("mdat"));
   assert.ok(boxes.indexOf("moov") < boxes.indexOf("mdat"), `faststart box order: ${boxes.join(",")}`);
 
-  const decode = spawnSync("ffmpeg", ["-v", "error", "-i", mediaPath, "-f", "null", "-"], { encoding: "utf8" });
+  const decode = spawnSync(ffmpeg, ["-v", "error", "-i", mediaPath, "-f", "null", "-"], { encoding: "utf8" });
   assert.equal(decode.status, 0, decode.stderr || "tutorial should decode cleanly");
   assert.equal(decode.stderr.trim(), "");
 });
@@ -190,7 +193,7 @@ test("循环乐工房 captions and poster fit the complete public tutorial story
   assert.equal(existsSync(posterPath), true, "the tutorial poster should exist");
   const poster = readFileSync(posterPath);
   assert.deepEqual(Array.from(poster.subarray(0, 3)), [0xff, 0xd8, 0xff]);
-  const dimensions = spawnSync("ffprobe", [
+  const dimensions = spawnSync(ffprobe, [
     "-v", "error", "-show_entries", "stream=width,height", "-of", "csv=p=0", posterPath,
   ], { encoding: "utf8" });
   assert.equal(dimensions.status, 0, dimensions.stderr);
