@@ -723,7 +723,10 @@ try {
       window.scrollTo(0, Math.max(0, document.querySelector("#apps").offsetTop - 116));
       html.style.scrollBehavior = previousBehavior;
     });
-    await page.waitForFunction(() => Number(document.querySelector("#scrollProgress")?.getAttribute("aria-valuenow")) > 0);
+    await page.waitForFunction(() => (
+      Number(document.querySelector("#scrollProgress")?.getAttribute("aria-valuenow")) > 0
+      && document.querySelector('.top-nav nav a[aria-current="page"]')?.getAttribute("href") === "#apps"
+    ));
     const catalogNavigation = await page.evaluate(() => ({
       progress: Number(document.querySelector("#scrollProgress")?.getAttribute("aria-valuenow")),
       current: document.querySelector('.top-nav nav a[aria-current="page"]')?.getAttribute("href"),
