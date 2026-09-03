@@ -38,9 +38,9 @@ function managedPreviewId(fileName) {
   return match ? Number(match[1]) : null;
 }
 
-function sourcePreviewId(fileName) {
-  const match = /^(\d+).*\.png$/iu.exec(fileName);
-  return match ? Number(match[1]) : null;
+function sourcePreviewDescriptor(fileName) {
+  const match = /^(\d+)(.*)\.png$/iu.exec(fileName);
+  return match ? { id: Number(match[1]), label: match[2] } : null;
 }
 
 function isPublishedPreviewId(id) {
@@ -289,22 +289,31 @@ export async function syncBrickCharacterPreviews({
   const resolvedPreviewRoot = resolve(previewRoot);
   const resolvedProjectRoot = resolve(projectRoot);
   const characters = await readCatalog(resolvedProjectRoot);
-  const characterIds = new Set(characters.map(({ id }) => Number(id)));
+  const charactersById = new Map(characters.map((character) => [Number(character.id), character]));
   const sourceEntries = await readdir(resolvedPreviewRoot, { withFileTypes: true });
   const previews = new Map();
+  const sourcePreviewsById = new Map();
 
   for (const entry of sourceEntries) {
     if (!entry.isFile() || !/\.png$/iu.test(entry.name)) continue;
-    const id = sourcePreviewId(entry.name);
-    if (!Number.isInteger(id)) throw new Error(`Preview filename must start with a character ID: ${entry.name}`);
-    if (!characterIds.has(id)) throw new Error(`Unknown preview ID ${id}: ${entry.name}`);
+    const sourcePreview = sourcePreviewDescriptor(entry.name);
+    if (!sourcePreview || !Number.isInteger(sourcePreview.id)) {
+      throw new Error(`Preview filename must start with a character ID: ${entry.name}`);
+    }
+    const { id, label } = sourcePreview;
+    const character = charactersById.get(id);
+    if (!character) throw new Error(`Unknown preview ID ${id}: ${entry.name}`);
     if (!isPublishedPreviewId(id)) throw new Error(`Preview ID ${id} must use Unity layered rendering`);
-    if (previews.has(id)) throw new Error(`Duplicate preview ID ${id}: ${previews.get(id).name}, ${entry.name}`);
+    if (sourcePreviewsById.has(id)) {
+      throw new Error(`Duplicate preview ID ${id}: ${sourcePreviewsById.get(id).name}, ${entry.name}`);
+    }
+    sourcePreviewsById.set(id, entry);
+    if (label !== character.name) continue;
     const bytes = await readValidPng(join(resolvedPreviewRoot, entry.name), entry.name);
     previews.set(id, { entry, bytes });
   }
 
-  if (!previews.size) throw new Error("No character preview PNG files found");
+  if (!sourcePreviewsById.size) throw new Error("No character preview PNG files found");
 
   const transactionId = randomUUID();
   const assetsRoot = join(resolvedProjectRoot, "assets");
