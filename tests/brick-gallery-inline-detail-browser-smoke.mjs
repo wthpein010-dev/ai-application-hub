@@ -54,6 +54,14 @@ try {
     assert.equal(await page.locator("#detail-empty").isVisible(), true);
     assert.equal(await page.locator("#detail-dialog").count(), 0);
     assert.equal(await page.locator('[aria-modal="true"]').count(), 0);
+    assert.equal(await page.locator(".reward-success-card").count(), 1);
+    assert.equal(await page.locator(".reward-main-actions").count(), 1);
+    assert.equal(await page.locator("#reward-share").count(), 1);
+    assert.equal((await page.locator("#reward-description").textContent()).trim(), "不加配饰自在生长，\n基础但绝不普通");
+    const initialSpeechSize = await page.locator(".reward-speech__body").evaluate((element) => {
+      const { width, height } = element.getBoundingClientRect();
+      return { width, height };
+    });
     assert.equal(await page.locator(".character-card").count(), 12);
 
     await page.locator('.character-card[data-block-id="100014"]').click();
@@ -62,6 +70,14 @@ try {
     assert.equal(await page.locator("#atlas-list-panel").isVisible(), true);
     assert.equal((await page.locator("#detail-name").textContent()).trim(), "黑帽快客");
     assert.equal((await page.locator("#reward-name").textContent()).trim(), "黑帽快客");
+    assert.equal((await page.locator("#reward-description").textContent()).trim(), "风才准备起步，快件\n已抵达终点");
+    assert.deepEqual(await page.locator(".reward-speech__body").evaluate((element) => {
+      const { width, height } = element.getBoundingClientRect();
+      return { width, height };
+    }), initialSpeechSize, "the victory speech shell must not resize when the character changes");
+    for (const line of (await page.locator("#reward-description").textContent()).trim().split("\n")) {
+      assert.ok(Array.from(line).length <= 9, "each victory speech line must hold at most nine characters");
+    }
     assert.equal(await page.locator("#detail-character .character-preview").count(), 0, "mismatched source art must not override 黑帽快客");
     assert.equal(await page.locator("#detail-character .character-figure--layered").count(), 1, "黑帽快客 must fall back to its formal layered character");
 
@@ -95,6 +111,31 @@ try {
   await deepLink.goto(`${origin}/projects/brick-character-copy-preview/index.html?tab=characters&character=100014`, { waitUntil: "networkidle" });
   assert.equal(await deepLink.locator("#character-detail").isVisible(), true);
   await deepLink.close();
+
+  for (const scenario of [
+    { mode: "success", expected: "原皮战神的胜利结算已准备分享" },
+    { mode: "unavailable", expected: "当前浏览器不支持分享，可直接复制角色台词" },
+    { mode: "abort", expected: "已取消分享" },
+  ]) {
+    const sharePage = await browser.newPage({ viewport: { width: 1440, height: 900 } });
+    await sharePage.addInitScript((mode) => {
+      localStorage.clear();
+      Object.defineProperty(navigator, "clipboard", { configurable: true, value: undefined });
+      Object.defineProperty(navigator, "share", {
+        configurable: true,
+        value: mode === "success"
+          ? async () => undefined
+          : mode === "abort"
+            ? async () => { throw new DOMException("User cancelled", "AbortError"); }
+            : undefined,
+      });
+    }, scenario.mode);
+    await sharePage.goto(`${origin}/projects/brick-character-copy-preview/index.html`, { waitUntil: "networkidle" });
+    await sharePage.locator("#reward-share").click();
+    await sharePage.waitForFunction((expected) => document.querySelector("#gallery-status")?.textContent?.trim() === expected, scenario.expected);
+    assert.equal((await sharePage.locator("#gallery-status").textContent()).trim(), scenario.expected);
+    await sharePage.close();
+  }
 } finally {
   await browser.close();
   server.close();

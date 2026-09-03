@@ -45,7 +45,7 @@ try {
   assert.equal(desktopPanels.every((panel) => Math.abs(panel.width - desktopPanels[0].width) < 2), true, `desktop panels must share one width: ${desktopPanels.map((panel) => panel.width).join(", ")}`);
   assert.equal(desktopPanels.every((panel) => Math.abs(panel.height - desktopPanels[0].height) < 2 && panel.height >= 1000), true, `desktop panels must share an expanded height: ${desktopPanels.map((panel) => panel.height).join(", ")}`);
   assert.equal(desktopPanels.every((panel) => panel.overflowY !== "auto" && panel.scrollHeight <= panel.height + 1), true, "desktop panels must expose their full content without internal scrollbars");
-  assert.equal(await page.locator("#character-reward-preview .reward-burst").evaluate((burst) => getComputedStyle(burst).animationName), "none");
+  assert.equal(await page.locator("#character-reward-preview .reward-light").evaluate((light) => getComputedStyle(light).animationName), "none");
 
   await page.locator("#tab-trinkets").click();
   assert.equal(await page.locator("#tab-trinkets").getAttribute("aria-selected"), "true");
