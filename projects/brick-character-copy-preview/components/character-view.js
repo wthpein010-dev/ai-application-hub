@@ -1,3 +1,5 @@
+import { spineAtlas } from "../assets/spine/character-atlas.js";
+
 const layerOrder = ["body", "block", "dress", "head"];
 const spineLimbOrder = [
   "leg-left-upper",
@@ -7,6 +9,47 @@ const spineLimbOrder = [
   "foot-left",
   "foot-right",
 ];
+const spineLimbRegions = {
+  "leg-left-upper": "leg1",
+  "leg-left-lower": "leg2",
+  "leg-right-upper": "leg1",
+  "leg-right-lower": "leg2",
+  "foot-left": "foot",
+  "foot-right": "foot",
+};
+const spineAtlasSource = new URL("../assets/spine/character.png", import.meta.url).href;
+let spineAtlasImage;
+
+function getSpineAtlasImage() {
+  if (!spineAtlasImage) {
+    spineAtlasImage = new Promise((resolve, reject) => {
+      const image = new Image();
+      image.addEventListener("load", () => resolve(image), { once: true });
+      image.addEventListener("error", () => reject(new Error("Unable to load the formal Character Spine atlas")), { once: true });
+      image.src = spineAtlasSource;
+    });
+  }
+  return spineAtlasImage;
+}
+
+function createSpineAtlasSlice(part) {
+  const region = spineAtlas.regions[spineLimbRegions[part]];
+  const canvas = document.createElement("canvas");
+  canvas.className = "character-spine-sprite__atlas";
+  // Spine's Atlas loader samples a rotated region as x + height by y + width.
+  // Keep this canvas in that packed orientation; the sprite's existing CSS rotation restores display orientation.
+  const width = region.rotated ? region.height : region.width;
+  const height = region.rotated ? region.width : region.height;
+  canvas.width = width;
+  canvas.height = height;
+  getSpineAtlasImage().then((image) => {
+    const context = canvas.getContext("2d");
+    context.imageSmoothingEnabled = false;
+    context.clearRect(0, 0, width, height);
+    context.drawImage(image, region.x, region.y, width, height, 0, 0, width, height);
+  }).catch(() => {});
+  return canvas;
+}
 
 export function formatRewardDialogue(text) {
   const characters = Array.from(String(text ?? "").trim());
@@ -24,12 +67,7 @@ function createSpineLimbs() {
   for (const part of spineLimbOrder) {
     const sprite = document.createElement("span");
     sprite.className = `character-spine-sprite character-spine-sprite--${part}`;
-    const atlas = document.createElement("img");
-    atlas.className = "character-spine-sprite__atlas";
-    atlas.src = "./assets/spine/character.png";
-    atlas.alt = "";
-    atlas.draggable = false;
-    sprite.append(atlas);
+    sprite.append(createSpineAtlasSlice(part));
     limbs.append(sprite);
   }
   return limbs;

@@ -20,6 +20,33 @@ const transparentPng = Buffer.from(
   "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=",
   "base64",
 );
+const syntheticSpineAtlas = `character.png
+size: 729,189
+format: RGBA8888
+filter: Linear,Linear
+repeat: none
+foot
+  rotate: true
+  xy: 681, 19
+  size: 17, 10
+  orig: 19, 12
+  offset: 1, 1
+  index: -1
+leg1
+  rotate: true
+  xy: 697, 75
+  size: 4, 20
+  orig: 6, 22
+  offset: 1, 1
+  index: -1
+leg2
+  rotate: true
+  xy: 697, 75
+  size: 4, 20
+  orig: 6, 22
+  offset: 1, 1
+  index: -1
+`;
 const malformedPngs = [
   ["signature-valid truncated PNG", Buffer.concat([transparentPng.subarray(0, 8), Buffer.alloc(8)])],
   ["CRC-corrupted PNG", (() => {
@@ -132,6 +159,7 @@ async function createSyntheticUnityFixture({ firstBody = "", firstName = "角色
     writeFile(join(configRoot, "cfg_gdblock.json"), JSON.stringify(blocks), "utf8"),
     writeFile(join(configRoot, "cfg_gdlanguage.json"), JSON.stringify(languages), "utf8"),
     writeFile(join(spineRoot, "character.png"), transparentPng),
+    writeFile(join(spineRoot, "character.atlas.txt"), syntheticSpineAtlas, "utf8"),
     ...expectedUiAssets.map((asset) => writeFile(join(atlasRoot, asset), asset, "utf8")),
     ...["light.png", "public_share_icon.png"].map((asset) => writeFile(join(levelWinAtlasRoot, asset), transparentPng)),
     ...["shengli_pop1.png", "shengli_pop2.png"].map((asset) => writeFile(join(levelWinIgnoreRoot, asset), transparentPng)),
@@ -529,6 +557,16 @@ test("Unity synchronization preserves references to already published preview PN
     assert.equal(catalog.find(({ id }) => id === 10).preview, "assets/preview/10.png");
     assert.equal("preview" in catalog.find(({ id }) => id === 9), false);
     assert.equal(existsSync(join(fixture.syntheticProjectRoot, "assets", "spine", "character.png")), true);
+    const atlasModulePath = join(fixture.syntheticProjectRoot, "assets", "spine", "character-atlas.js");
+    const atlas = await import(`${pathToFileURL(atlasModulePath).href}?test=official-limbs`);
+    assert.deepEqual(atlas.spineAtlas, {
+      image: { width: 729, height: 189 },
+      regions: {
+        foot: { x: 681, y: 19, width: 17, height: 10, rotated: true },
+        leg1: { x: 697, y: 75, width: 4, height: 20, rotated: true },
+        leg2: { x: 697, y: 75, width: 4, height: 20, rotated: true },
+      },
+    });
   } finally {
     await rm(fixture.tempRoot, { recursive: true, force: true, maxRetries: 5, retryDelay: 20 });
   }
