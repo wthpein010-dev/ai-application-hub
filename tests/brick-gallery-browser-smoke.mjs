@@ -98,6 +98,27 @@ try {
   assert.match(await deepLink.locator("#detail-name").textContent(), /./);
   await deepLink.close();
 
+  const wideVictory = await browser.newPage({ viewport: { width: 2552, height: 1260 } });
+  await wideVictory.goto(`${origin}/projects/brick-character-copy-preview/index.html?tab=characters&character=100001`, { waitUntil: "networkidle" });
+  const victoryLayout = await wideVictory.evaluate(() => {
+    const panel = document.querySelector("#reward-preview").getBoundingClientRect();
+    const actions = document.querySelector(".reward-main-actions").getBoundingClientRect();
+    const home = document.querySelector(".reward-home-action");
+    const homeRange = document.createRange();
+    homeRange.selectNodeContents(home);
+    return {
+      actionsLeft: (actions.left - panel.left) / panel.width,
+      actionsWidth: actions.width / panel.width,
+      actionsBottom: (panel.bottom - actions.bottom) / panel.height,
+      homeLineCount: homeRange.getClientRects().length,
+    };
+  });
+  assert.ok(victoryLayout.actionsLeft >= 0.28 && victoryLayout.actionsLeft <= 0.34, "wide victory actions should follow the game composition instead of being centered across the panel");
+  assert.ok(victoryLayout.actionsWidth >= 0.55 && victoryLayout.actionsWidth <= 0.61, "wide victory actions should retain the compact game-sized action group");
+  assert.ok(victoryLayout.actionsBottom >= 0.13 && victoryLayout.actionsBottom <= 0.20, "wide victory actions should keep the reference bottom breathing room");
+  assert.equal(victoryLayout.homeLineCount, 1, "the compact game-sized return-home button must keep its label on one line");
+  await wideVictory.close();
+
   for (const [blockId, name] of [[100004, "满眼心动"], [100008, "咩羊姐"]]) {
     const layered = await browser.newPage({ viewport: { width: 1440, height: 900 } });
     const layeredErrors = [];
@@ -110,12 +131,56 @@ try {
     assert.equal((await layered.locator("#detail-name").textContent()).trim(), name);
     assert.equal(await figure.locator(".character-limbs").count(), 0, `${name} must not receive fabricated CSS legs`);
     assert.equal(await figure.locator(".character-spine-sprite").count(), 6, `${name} must use four official leg segments and two feet`);
+    const atlasSlices = await figure.locator("canvas.character-spine-sprite__atlas").evaluateAll(async (canvases) => {
+      const image = await new Promise((resolve, reject) => {
+        const source = new Image();
+        source.addEventListener("load", () => resolve(source), { once: true });
+        source.addEventListener("error", () => reject(new Error("formal Character Spine atlas failed to load")), { once: true });
+        source.src = "./assets/spine/character.png";
+      });
+      const expectedSlices = [
+        { x: 697, y: 75, width: 20, height: 4 },
+        { x: 697, y: 75, width: 20, height: 4 },
+        { x: 697, y: 75, width: 20, height: 4 },
+        { x: 697, y: 75, width: 20, height: 4 },
+        { x: 681, y: 19, width: 10, height: 17 },
+        { x: 681, y: 19, width: 10, height: 17 },
+      ];
+      return canvases.map((canvas, index) => {
+        const expected = expectedSlices[index];
+        const expectedCanvas = document.createElement("canvas");
+        expectedCanvas.width = expected.width;
+        expectedCanvas.height = expected.height;
+        const expectedContext = expectedCanvas.getContext("2d", { willReadFrequently: true });
+        expectedContext.drawImage(image, expected.x, expected.y, expected.width, expected.height, 0, 0, expected.width, expected.height);
+        const actualPixels = canvas.getContext("2d", { willReadFrequently: true }).getImageData(0, 0, canvas.width, canvas.height).data;
+        const expectedPixels = expectedContext.getImageData(0, 0, expected.width, expected.height).data;
+        let mismatchedPixels = actualPixels.length === expectedPixels.length ? 0 : Math.max(actualPixels.length, expectedPixels.length);
+        for (let pixel = 0; pixel < Math.min(actualPixels.length, expectedPixels.length); pixel += 1) {
+          if (actualPixels[pixel] !== expectedPixels[pixel]) mismatchedPixels += 1;
+        }
+        return {
+          width: canvas.width,
+          height: canvas.height,
+          expectedWidth: expected.width,
+          expectedHeight: expected.height,
+          mismatchedPixels,
+        };
+      });
+    });
+    assert.equal(atlasSlices.every(({ width, height, expectedWidth, expectedHeight, mismatchedPixels }) => width === expectedWidth && height === expectedHeight && mismatchedPixels === 0), true, `${name} must sample each rotated formal Atlas rectangle exactly, before its CSS display rotation`);
     const limbBounds = await figure.locator(".character-spine-sprite").evaluateAll((sprites, owner) => {
       const figureBounds = owner.getBoundingClientRect();
       return sprites.map((sprite) => {
         const bounds = sprite.getBoundingClientRect();
+        const atlasCanvas = sprite.querySelector("canvas.character-spine-sprite__atlas");
+        const pixels = atlasCanvas?.getContext("2d")?.getImageData(0, 0, atlasCanvas.width, atlasCanvas.height).data;
+        let opaqueDarkPixels = 0;
+        for (let index = 0; pixels && index < pixels.length; index += 4) {
+          if (pixels[index + 3] > 0 && pixels[index] < 40 && pixels[index + 1] < 40 && pixels[index + 2] < 40) opaqueDarkPixels += 1;
+        }
         return {
-          hasPixels: sprite.querySelector("img")?.src.includes("assets/spine/character.png") === true,
+          hasPixels: opaqueDarkPixels >= 60,
           width: bounds.width,
           height: bounds.height,
           inside: bounds.left >= figureBounds.left - 1
@@ -125,7 +190,7 @@ try {
         };
       });
     }, await figure.elementHandle());
-    assert.equal(limbBounds.every(({ hasPixels, width, height, inside }) => hasPixels && width > 0 && height > 0 && inside), true);
+    assert.equal(limbBounds.every(({ hasPixels, width, height, inside }) => hasPixels && width > 0 && height > 0 && inside), true, `${name} must render the official dark leg and foot pixels, rather than a different atlas region`);
     assert.deepEqual(layeredErrors, []);
     await layered.close();
   }

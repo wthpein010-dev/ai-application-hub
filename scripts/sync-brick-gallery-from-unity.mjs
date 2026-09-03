@@ -42,6 +42,47 @@ const victoryResultAssets = [
   { sourceRoot: levelWinIgnoreRoot, file: "shengli_pop2.png" },
 ];
 
+function parseAtlasPair(value, label) {
+  const pair = String(value || "").split(",").map((part) => Number(part.trim()));
+  if (pair.length !== 2 || pair.some((part) => !Number.isFinite(part))) {
+    throw new Error(`Invalid Spine atlas ${label}: ${value}`);
+  }
+  return pair;
+}
+
+function parseSpineAtlas(atlasSource) {
+  const lines = String(atlasSource).replace(/\r/g, "").split("\n");
+  const imageName = lines.find((line) => line.trim());
+  if (imageName !== "character.png") throw new Error(`Unexpected Spine atlas image: ${imageName || "(missing)"}`);
+  const imageSizeLine = lines.find((line) => /^size:\s*/u.test(line));
+  const [width, height] = parseAtlasPair(imageSizeLine?.slice(imageSizeLine.indexOf(":") + 1), "image size");
+  const parsed = new Map();
+  let regionName = "";
+  for (const line of lines.slice(lines.indexOf(imageName) + 1)) {
+    if (!line.trim() || /^\s/u.test(line)) {
+      if (!regionName || !/^\s/u.test(line)) continue;
+      const match = line.trim().match(/^(rotate|xy|size):\s*(.+)$/u);
+      if (!match) continue;
+      const region = parsed.get(regionName) || {};
+      region[match[1]] = match[2];
+      parsed.set(regionName, region);
+      continue;
+    }
+    if (/^(size|format|filter|repeat):/u.test(line)) continue;
+    regionName = line.trim();
+  }
+  const regions = Object.fromEntries(["foot", "leg1", "leg2"].map((name) => {
+    const region = parsed.get(name);
+    if (!region?.xy || !region?.size || region.rotate !== "true") {
+      throw new Error(`Missing rotated formal Spine atlas region: ${name}`);
+    }
+    const [x, y] = parseAtlasPair(region.xy, `${name} xy`);
+    const [regionWidth, regionHeight] = parseAtlasPair(region.size, `${name} size`);
+    return [name, { x, y, width: regionWidth, height: regionHeight, rotated: true }];
+  }));
+  return { image: { width, height }, regions };
+}
+
 async function readJson(path) {
   return JSON.parse(await readFile(path, "utf8"));
 }
@@ -152,10 +193,15 @@ async function copyUiAssets(unityRoot, projectRoot) {
 async function copySpineAssets(unityRoot, projectRoot) {
   const targetDirectory = join(projectRoot, "assets", "spine");
   await mkdir(targetDirectory, { recursive: true });
-  await Promise.all(spineAssets.map((asset) => copyFile(
-    join(unityRoot, spineRoot, asset),
-    join(targetDirectory, asset),
-  )));
+  const [atlasSource] = await Promise.all([
+    readFile(join(unityRoot, spineRoot, "character.atlas.txt"), "utf8"),
+    ...spineAssets.map((asset) => copyFile(
+      join(unityRoot, spineRoot, asset),
+      join(targetDirectory, asset),
+    )),
+  ]);
+  const atlas = parseSpineAtlas(atlasSource);
+  await writeFile(join(targetDirectory, "character-atlas.js"), `export const spineAtlas = ${JSON.stringify(atlas, null, 2)};\n`, "utf8");
   await pruneManagedPngs(targetDirectory, spineAssets);
 }
 
