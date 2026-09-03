@@ -79,9 +79,9 @@ test("IceCream demo waits for consent, then reports Unity loading progress", asy
   assert.ok(Math.abs(stageRatio - 750 / 1624) < 0.0001, `canvas ratio was ${stageRatio}`);
 
   await page.getByRole("button", { name: "开始体验" }).click();
+  await page.getByText("正在加载资源 42%", { exact: true }).waitFor();
   assert.equal(loaderRequests, 1);
   assert.equal(await page.locator("#loadingPanel").isVisible(), true);
-  await page.getByText("正在加载资源 42%", { exact: true }).waitFor();
   assert.equal(await page.locator("#loadingText").innerText(), "正在加载资源 42%");
 
   await page.evaluate(() => window.__finishIceCreamLoad());
