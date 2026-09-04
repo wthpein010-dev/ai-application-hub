@@ -36,8 +36,8 @@ function createSpineAtlasSlice(part) {
   const region = spineAtlas.regions[spineLimbRegions[part]];
   const canvas = document.createElement("canvas");
   canvas.className = "character-spine-sprite__atlas";
-  // Spine's Atlas loader samples a rotated region as x + height by y + width.
-  // Keep this canvas in that packed orientation; the sprite's existing CSS rotation restores display orientation.
+  // The Atlas stores rotated regions as a physical narrow-by-tall rectangle.
+  // Restore its source orientation first; CSS then applies the attachment rotation.
   const width = region.rotated ? region.height : region.width;
   const height = region.rotated ? region.width : region.height;
   canvas.width = width;
@@ -46,7 +46,13 @@ function createSpineAtlasSlice(part) {
     const context = canvas.getContext("2d");
     context.imageSmoothingEnabled = false;
     context.clearRect(0, 0, width, height);
-    context.drawImage(image, region.x, region.y, width, height, 0, 0, width, height);
+    if (region.rotated) {
+      context.translate(0, height);
+      context.rotate(-Math.PI / 2);
+      context.drawImage(image, region.x, region.y, region.width, region.height, 0, 0, region.width, region.height);
+      return;
+    }
+    context.drawImage(image, region.x, region.y, region.width, region.height, 0, 0, width, height);
   }).catch(() => {});
   return canvas;
 }
