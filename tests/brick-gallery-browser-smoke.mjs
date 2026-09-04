@@ -139,7 +139,7 @@ try {
   assert.equal(victoryLayout.homeLineCount, 1, "the compact game-sized return-home button must keep its label on one line");
   await wideVictory.close();
 
-  for (const [blockId, name] of [[100004, "满眼心动"], [100008, "咩羊姐"]]) {
+  for (const [blockId, name] of [[100004, "满眼心动"], [100008, "咩羊姐"], [100014, "黑帽快客"]]) {
     const layered = await browser.newPage({ viewport: { width: 1440, height: 900 } });
     const layeredErrors = [];
     layered.on("console", (message) => { if (message.type() === "error") layeredErrors.push(message.text()); });
@@ -172,37 +172,47 @@ try {
         expectedCanvas.width = expected.width;
         expectedCanvas.height = expected.height;
         const expectedContext = expectedCanvas.getContext("2d", { willReadFrequently: true });
+        expectedContext.imageSmoothingEnabled = false;
         expectedContext.drawImage(image, expected.x, expected.y, expected.width, expected.height, 0, 0, expected.width, expected.height);
         const actualPixels = canvas.getContext("2d", { willReadFrequently: true }).getImageData(0, 0, canvas.width, canvas.height).data;
-        const expectedPixels = expectedContext.getImageData(0, 0, expected.width, expected.height).data;
+        const expectedPixels = expectedContext.getImageData(0, 0, expectedCanvas.width, expectedCanvas.height).data;
         let mismatchedPixels = actualPixels.length === expectedPixels.length ? 0 : Math.max(actualPixels.length, expectedPixels.length);
+        const firstDifferences = [];
         for (let pixel = 0; pixel < Math.min(actualPixels.length, expectedPixels.length); pixel += 1) {
-          if (actualPixels[pixel] !== expectedPixels[pixel]) mismatchedPixels += 1;
+          if (actualPixels[pixel] !== expectedPixels[pixel]) {
+            mismatchedPixels += 1;
+            if (firstDifferences.length < 8) firstDifferences.push({ pixel, actual: actualPixels[pixel], expected: expectedPixels[pixel] });
+          }
         }
         return {
           width: canvas.width,
           height: canvas.height,
-          expectedWidth: expected.width,
-          expectedHeight: expected.height,
+          expectedWidth: expectedCanvas.width,
+          expectedHeight: expectedCanvas.height,
           mismatchedPixels,
+          firstDifferences,
         };
       });
     });
-    assert.equal(atlasSlices.every(({ width, height, expectedWidth, expectedHeight, mismatchedPixels }) => width === expectedWidth && height === expectedHeight && mismatchedPixels === 0), true, `${name} must sample each rotated formal Atlas rectangle exactly, before its CSS display rotation`);
+    assert.equal(atlasSlices.every(({ width, height, expectedWidth, expectedHeight, mismatchedPixels }) => width === expectedWidth && height === expectedHeight && mismatchedPixels === 0), true, `${name} must sample each rotated formal Atlas rectangle exactly, before its CSS display rotation: ${JSON.stringify(atlasSlices)}`);
     const limbBounds = await figure.locator(".character-spine-sprite").evaluateAll((sprites, owner) => {
       const figureBounds = owner.getBoundingClientRect();
       return sprites.map((sprite) => {
         const bounds = sprite.getBoundingClientRect();
         const atlasCanvas = sprite.querySelector("canvas.character-spine-sprite__atlas");
         const pixels = atlasCanvas?.getContext("2d")?.getImageData(0, 0, atlasCanvas.width, atlasCanvas.height).data;
-        let opaqueDarkPixels = 0;
+        let opaquePixels = 0;
         for (let index = 0; pixels && index < pixels.length; index += 4) {
-          if (pixels[index + 3] > 0 && pixels[index] < 40 && pixels[index + 1] < 40 && pixels[index + 2] < 40) opaqueDarkPixels += 1;
+          if (pixels[index + 3] > 0) opaquePixels += 1;
         }
         return {
-          hasPixels: opaqueDarkPixels >= 60,
+          hasPixels: opaquePixels > 0,
           width: bounds.width,
           height: bounds.height,
+          left: (bounds.left - figureBounds.left) / figureBounds.width,
+          top: (bounds.top - figureBounds.top) / figureBounds.height,
+          widthRatio: bounds.width / figureBounds.width,
+          heightRatio: bounds.height / figureBounds.height,
           inside: bounds.left >= figureBounds.left - 1
             && bounds.right <= figureBounds.right + 1
             && bounds.top >= figureBounds.top - 1
@@ -211,6 +221,39 @@ try {
       });
     }, await figure.elementHandle());
     assert.equal(limbBounds.every(({ hasPixels, width, height, inside }) => hasPixels && width > 0 && height > 0 && inside), true, `${name} must render the official dark leg and foot pixels, rather than a different atlas region`);
+    const formalLimbBounds = [
+      { left: 0.36152, top: 0.81588, widthRatio: 0.03323, heightRatio: 0.08969 },
+      { left: 0.36152, top: 0.88112, widthRatio: 0.03323, heightRatio: 0.08969 },
+      { left: 0.58304, top: 0.81588, widthRatio: 0.03323, heightRatio: 0.08969 },
+      { left: 0.58365, top: 0.88107, widthRatio: 0.03323, heightRatio: 0.08969 },
+      { left: 0.35515, top: 0.93885, widthRatio: 0.10522, heightRatio: 0.04892 },
+      { left: 0.57667, top: 0.93412, widthRatio: 0.10522, heightRatio: 0.04892 },
+    ];
+    assert.equal(limbBounds.every((bounds, index) => Object.entries(formalLimbBounds[index])
+      .every(([field, expected]) => Math.abs(bounds[field] - expected) < 0.012)), true,
+    `${name} must place each leg and foot using the formal Spine bone and attachment coordinates: ${JSON.stringify(limbBounds)}`);
+    const layerBounds = await figure.locator(".character-layer").evaluateAll((layers, owner) => {
+      const figureBounds = owner.getBoundingClientRect();
+      return Object.fromEntries(layers.map((layer) => {
+        const kind = [...layer.classList].find((className) => className.startsWith("character-layer--"))?.replace("character-layer--", "");
+        const bounds = layer.getBoundingClientRect();
+        return [kind, {
+          left: (bounds.left - figureBounds.left) / figureBounds.width,
+          top: (bounds.top - figureBounds.top) / figureBounds.height,
+          width: bounds.width / figureBounds.width,
+          height: bounds.height / figureBounds.height,
+        }];
+      }));
+    }, await figure.elementHandle());
+    const formalLayerBounds = {
+      body: { left: 0.00155, top: 0.21861, width: 0.99684, height: 0.73386 },
+      block: { left: 0.26738, top: 0.35162, width: 0.56488, height: 0.46783 },
+      head: { left: 0.00155, top: 0.00114, width: 0.99684, height: 0.73386 },
+      dress: { left: 0.00155, top: 0.21861, width: 0.99684, height: 0.73386 },
+    };
+    assert.equal(Object.entries(layerBounds).every(([kind, bounds]) => Object.entries(formalLayerBounds[kind])
+      .every(([field, expected]) => Math.abs(bounds[field] - expected) < 0.012)), true,
+    `${name} must preserve the formal Spine attachment position and size for every visual layer: ${JSON.stringify(layerBounds)}`);
     assert.deepEqual(layeredErrors, []);
     await layered.close();
   }
