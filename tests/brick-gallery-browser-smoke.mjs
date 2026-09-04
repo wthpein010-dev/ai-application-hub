@@ -159,22 +159,20 @@ try {
         source.src = "./assets/spine/character.png";
       });
       const expectedSlices = [
-        { x: 697, y: 75, width: 4, height: 20 },
-        { x: 697, y: 75, width: 4, height: 20 },
-        { x: 697, y: 75, width: 4, height: 20 },
-        { x: 697, y: 75, width: 4, height: 20 },
-        { x: 681, y: 19, width: 17, height: 10 },
-        { x: 681, y: 19, width: 17, height: 10 },
+        { x: 697, y: 75, width: 20, height: 4 },
+        { x: 697, y: 75, width: 20, height: 4 },
+        { x: 697, y: 75, width: 20, height: 4 },
+        { x: 697, y: 75, width: 20, height: 4 },
+        { x: 681, y: 19, width: 10, height: 17 },
+        { x: 681, y: 19, width: 10, height: 17 },
       ];
       return canvases.map((canvas, index) => {
         const expected = expectedSlices[index];
         const expectedCanvas = document.createElement("canvas");
-        expectedCanvas.width = expected.height;
-        expectedCanvas.height = expected.width;
+        expectedCanvas.width = expected.width;
+        expectedCanvas.height = expected.height;
         const expectedContext = expectedCanvas.getContext("2d", { willReadFrequently: true });
         expectedContext.imageSmoothingEnabled = false;
-        expectedContext.translate(0, expectedCanvas.height);
-        expectedContext.rotate(-Math.PI / 2);
         expectedContext.drawImage(image, expected.x, expected.y, expected.width, expected.height, 0, 0, expected.width, expected.height);
         const actualPixels = canvas.getContext("2d", { willReadFrequently: true }).getImageData(0, 0, canvas.width, canvas.height).data;
         const expectedPixels = expectedContext.getImageData(0, 0, expectedCanvas.width, expectedCanvas.height).data;
