@@ -41,6 +41,7 @@ test("reference atlas keeps a compact reward result beside the catalog and inlin
   const app = readFileSync(join(projectRoot, "app.js"), "utf8");
   const view = readFileSync(join(projectRoot, "components", "character-view.js"), "utf8");
   const css = readFileSync(join(projectRoot, "styles.css"), "utf8");
+  const characterFrameCss = readFileSync(join(projectRoot, "styles-character-frame.css"), "utf8");
 
   assert.match(html, /id="reward-preview"/);
   assert.match(html, /id="reward-name"/);
@@ -52,13 +53,15 @@ test("reference atlas keeps a compact reward result beside the catalog and inlin
   assert.match(html, /class="reward-home-action" href="\.\.\/\.\.\/index\.html#engineering">返回首页/);
   assert.match(html, /id="reward-share"/);
   assert.doesNotMatch(html, /id="atlas-close"/);
+  assert.match(html, /href="\.\/styles-character-frame\.css"/);
   assert.match(app, /renderRewardPreview/);
   assert.match(app, /renderTrinketRewardPreview/);
   assert.match(view, /export function renderRewardPreview/);
   assert.match(css, /@media\s*\(min-width:\s*1200px\)\s*\{[\s\S]*?\.atlas-workbench\s*\{[^}]*grid-template-columns:\s*repeat\(3,minmax\(0,1fr\)\)/s);
   assert.match(css, /\.reward-light\s*\{[^}]*filter:\s*drop-shadow/s);
   assert.match(css, /\.reward-preview\s*\{[^}]*position:\s*sticky/s);
-  assert.match(css, /\.character-figure\s*\{[^}]*max-width:\s*66\.667%[^}]*max-height:\s*66\.667%[^}]*overflow:\s*hidden/s);
+  assert.match(characterFrameCss, /\.character-figure\s*\{[^}]*aspect-ratio:\s*180\.57\s*\/\s*245\.28[^}]*overflow:\s*visible/s);
+  assert.match(characterFrameCss, /\.trinket-stage-figure\s+\.character-figure,[\s\S]*?\.trinket-preview-rig\s+\.character-figure/s);
 });
 
 test("gallery catalog publishes only formally name-verified preview art", () => {

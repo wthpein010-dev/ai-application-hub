@@ -1,0 +1,54 @@
+/* The official Spine skeleton is 180.57 × 245.28, not a square sprite.
+   Keep one long, uncropped coordinate frame for preview art and layered skins. */
+.character-figure {
+  width:110px;
+  height:auto;
+  max-width:none;
+  max-height:none;
+  aspect-ratio:180.57 / 245.28;
+  overflow:visible;
+}
+
+.character-art .character-figure {
+  width:60.7%;
+  height:auto;
+}
+
+.detail-character .character-figure {
+  width:169.2px;
+  height:auto;
+}
+
+.reward-character .character-figure {
+  width:180px;
+  height:auto;
+}
+
+.trinket-stage-figure .character-figure,
+.trinket-preview-rig .character-figure {
+  width:191.3px;
+  height:auto;
+  max-width:100%;
+}
+
+/* Restore the original detail-divider opacity; it is unrelated to the frame fix. */
+.trinket-meta div { border-color:rgb(255 255 255 / 11%); }
+
+@media (min-width:1200px) {
+  .detail-character .character-figure {
+    width:158.3px;
+    height:auto;
+  }
+}
+
+@media (max-width:680px) {
+  .detail-character .character-figure {
+    width:151px;
+    height:auto;
+  }
+
+  .reward-character .character-figure {
+    width:160.5px;
+    height:auto;
+  }
+}

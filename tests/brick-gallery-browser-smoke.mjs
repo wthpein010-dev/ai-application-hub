@@ -64,6 +64,20 @@ try {
     assert.equal(await page.locator("#detail-name").textContent(), "原皮战神");
     assert.equal(await page.locator("#reward-name").textContent(), "原皮战神");
     assert.equal(await page.locator("#detail-unlock").textContent(), "常规模式或活动模式通关后获得");
+
+    const formalFrameRatio = 1.3584;
+    const assertFormalLayeredFrame = async (selector, scene) => {
+      const frames = await page.locator(selector).evaluateAll((figures) => figures.map((figure) => {
+        const bounds = figure.getBoundingClientRect();
+        return { width: bounds.width, height: bounds.height, ratio: bounds.height / bounds.width };
+      }));
+      assert.ok(frames.length > 0, `${scene} must render the selected layered character`);
+      assert.equal(frames.every(({ width, height, ratio }) => width > 0 && height > width && Math.abs(ratio - formalFrameRatio) < 0.025), true,
+        `${scene} must keep the full 180.57 × 245.28 formal Spine frame instead of cropping it into a square`);
+    };
+    await assertFormalLayeredFrame("#reward-character .character-figure--layered", "victory result");
+    await assertFormalLayeredFrame("#detail-character .character-figure--layered", "character detail");
+
     assert.match(await page.locator("#diagnostic-rendered-lines").textContent(), /行/);
     const detailGeometry = await page.locator("#detail-description").evaluate((element) => ({ width: element.getBoundingClientRect().width, overflow: element.scrollWidth > element.clientWidth + 1 }));
     if (viewport.width >= 1100) assert.ok(detailGeometry.width >= 250 && detailGeometry.width <= 390, "detail copy should stay compact beside the catalog");
@@ -88,6 +102,12 @@ try {
     assert.equal(layout.inert, false);
     if (viewport.width >= 1100) assert.equal(layout.sideBySide, true);
     else assert.equal(layout.stacked, true);
+
+    await page.locator("#tab-trinkets").click();
+    assert.equal(await page.locator("#trinket-detail").isVisible(), true);
+    await assertFormalLayeredFrame("#trinket-stage-figure .character-figure--layered", "equipped trinket preview");
+    await page.locator("#tab-characters").click();
+
     assert.deepEqual(errors, []);
     await page.close();
   }
