@@ -19,11 +19,50 @@ const thumbnailPresentation = new Map([
   [11, { centerX: 0.492, centerY: 0.769, scale: 1.1 }],
 ]);
 
-function presentThumbnail(image, item) {
-  const presentation = thumbnailPresentation.get(item.id) || { centerX: 0.5, centerY: 0.5, scale: 1 };
+function applyThumbnailPresentation(image, presentation) {
   image.style.setProperty("--trinket-thumb-scale", String(presentation.scale));
   image.style.setProperty("--trinket-thumb-shift-x", `${((0.5 - presentation.centerX) * presentation.scale * 100).toFixed(2)}%`);
   image.style.setProperty("--trinket-thumb-shift-y", `${((0.5 - presentation.centerY) * presentation.scale * 100).toFixed(2)}%`);
+}
+
+function paintedCenter(image) {
+  if (!image.naturalWidth || !image.naturalHeight) return null;
+  const canvas = document.createElement("canvas");
+  canvas.width = image.naturalWidth;
+  canvas.height = image.naturalHeight;
+  const context = canvas.getContext("2d", { willReadFrequently: true });
+  if (!context) return null;
+  context.drawImage(image, 0, 0);
+  const { data, width, height } = context.getImageData(0, 0, canvas.width, canvas.height);
+  let minX = width;
+  let maxX = -1;
+  let minY = height;
+  let maxY = -1;
+  for (let y = 0; y < height; y += 1) for (let x = 0; x < width; x += 1) {
+    if (data[(y * width + x) * 4 + 3] > 4) {
+      minX = Math.min(minX, x);
+      maxX = Math.max(maxX, x);
+      minY = Math.min(minY, y);
+      maxY = Math.max(maxY, y);
+    }
+  }
+  if (maxX < minX || maxY < minY) return null;
+  return { centerX: (minX + maxX) / (2 * width), centerY: (minY + maxY) / (2 * height) };
+}
+
+function presentThumbnail(image, item) {
+  const presentation = thumbnailPresentation.get(item.id) || { centerX: 0.5, centerY: 0.5, scale: 1 };
+  applyThumbnailPresentation(image, presentation);
+  const centerPaintedPixels = () => {
+    try {
+      const center = paintedCenter(image);
+      if (center) applyThumbnailPresentation(image, { ...presentation, ...center });
+    } catch {
+      // Keep the authored presentation when a browser refuses canvas sampling.
+    }
+  };
+  if (image.complete) centerPaintedPixels();
+  else image.addEventListener("load", centerPaintedPixels, { once: true });
 }
 
 function presentRewardArt(image, item) {

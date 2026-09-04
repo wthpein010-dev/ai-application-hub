@@ -58,8 +58,49 @@ try {
   });
   assert.equal(firstRow, 4);
   assert.equal(await page.locator('.trinket-card[data-item-id="4"]').getAttribute("data-new"), "true");
+  const initialThumbAlignment = await page.locator(".trinket-card").evaluateAll((cards) => cards.map((card) => {
+    const image = card.querySelector(".trinket-art img");
+    const art = image?.closest(".trinket-art");
+    if (!image || !art) return null;
+    const canvas = document.createElement("canvas");
+    canvas.width = image.naturalWidth;
+    canvas.height = image.naturalHeight;
+    const context = canvas.getContext("2d", { willReadFrequently: true });
+    context.drawImage(image, 0, 0);
+    const { data, width, height } = context.getImageData(0, 0, canvas.width, canvas.height);
+    let minX = width;
+    let maxX = -1;
+    let minY = height;
+    let maxY = -1;
+    for (let y = 0; y < height; y += 1) for (let x = 0; x < width; x += 1) {
+      if (data[(y * width + x) * 4 + 3] > 4) {
+        minX = Math.min(minX, x);
+        maxX = Math.max(maxX, x);
+        minY = Math.min(minY, y);
+        maxY = Math.max(maxY, y);
+      }
+    }
+    const imageRect = image.getBoundingClientRect();
+    const artRect = art.getBoundingClientRect();
+    const sourceRatio = width / height;
+    const renderedRatio = imageRect.width / imageRect.height;
+    const contentWidth = renderedRatio > sourceRatio ? imageRect.height * sourceRatio : imageRect.width;
+    const contentHeight = renderedRatio > sourceRatio ? imageRect.height : imageRect.width / sourceRatio;
+    const contentLeft = imageRect.left + (imageRect.width - contentWidth) / 2;
+    const contentTop = imageRect.top + (imageRect.height - contentHeight) / 2;
+    return {
+      id: card.dataset.itemId,
+      centerOffsetX: contentLeft + (((minX + maxX) / 2) / width) * contentWidth - (artRect.left + artRect.width / 2),
+      centerOffsetY: contentTop + (((minY + maxY) / 2) / height) * contentHeight - (artRect.top + artRect.height / 2),
+    };
+  }));
+  assert.equal(initialThumbAlignment.every((entry) => entry && Math.abs(entry.centerOffsetX) < 3 && Math.abs(entry.centerOffsetY) < 3), true, `each painted small-object thumbnail must be centered in its art slot: ${JSON.stringify(initialThumbAlignment)}`);
 
   await page.locator('.trinket-card[data-item-id="4"]').click();
+  assert.equal(await page.locator('.trinket-card[aria-current="true"]').count(), 1, "choosing another small object must leave exactly one selected card");
+  assert.equal(await page.locator('.trinket-card[data-item-id="1"]').getAttribute("aria-current"), "false", "the initial small object must lose its selected state after choosing another one");
+  assert.equal(await page.locator('.trinket-card[data-equipped="true"]').count(), 1, "choosing another small object must leave exactly one equipped card");
+  assert.equal(await page.locator('.trinket-card[data-item-id="1"]').getAttribute("data-equipped"), "false", "the initial small object must lose its equipped highlight after choosing another one");
   assert.equal(await page.locator("#trinket-detail").isVisible(), true);
   assert.equal(await page.locator("#trinket-detail-name").textContent(), "告白玫瑰");
   assert.match(await page.locator("#trinket-detail-id").textContent(), /HAND-0004/);

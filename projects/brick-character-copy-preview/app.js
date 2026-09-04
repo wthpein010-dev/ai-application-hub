@@ -422,7 +422,6 @@ function changeCharacter(blockId, trigger, historyMode = "push") {
   atlas = setAtlasPage(atlas, "characters", Math.floor(index / CHARACTER_PAGE_SIZE) + 1);
   if (historyMode) updateLocation(historyMode);
   render();
-  if (trigger?.isConnected) trigger.setAttribute("aria-current", "true");
 }
 
 function requestCharacter(blockId, trigger) {
@@ -441,7 +440,6 @@ function selectTrinket(itemId, trigger, historyMode = "push") {
   }
   if (historyMode) updateLocation(historyMode);
   render();
-  if (trigger?.isConnected) trigger.setAttribute("aria-current", "true");
 }
 
 function selectTab(tab, trigger, historyMode = "push") {
