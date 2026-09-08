@@ -79,3 +79,14 @@ test("the Hub thumbnail and reproducible capture metadata are present", () => {
   assert.equal(capture.focusSelector, "canvas");
   assert.match(capture.feature, /低重力|货物|能源/u);
 });
+
+test('the public game includes five Blender models and embedded textures',()=>{
+  const bytes=readFileSync(join(projectRoot,'game','assets','lunar-kit.glb'));
+  assert.equal(bytes.subarray(0,4).toString(),'glTF');
+  assert.equal(bytes.readUInt32LE(4),2);
+  const gltf=JSON.parse(bytes.subarray(20,20+bytes.readUInt32LE(12)).toString());
+  for(const name of ['RoverBody','Wheel','Habitat','NPC','Cargo'])assert.ok(gltf.nodes.some(n=>n.name===name),`missing model ${name}`);
+  assert.ok(gltf.images?.length>0,'textured models require embedded images');
+  assert.ok(gltf.images.every(i=>i.bufferView!==undefined),'the game should not depend on remote textures');
+  assert.ok(gltf.materials.some(m=>m.pbrMetallicRoughness?.baseColorTexture),'atlas must be used by a material');
+});

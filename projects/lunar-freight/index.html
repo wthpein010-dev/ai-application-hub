@@ -2,7 +2,7 @@
 <html lang="zh-CN">
 <head>
   <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-  <meta name="description" content="驾驶实时 3D 六轮月球车，在低重力月面运送三箱设备。支持真实碰撞、掉货拾取、翻车复位和三种镜头，打开即玩。">
+  <meta name="description" content="与月面 NPC 合作完成三段连续委托、五次交付。Blender 工业载具与前哨站、真实碰撞、失联货物回收和运输评级，外网打开即玩。">
   <meta name="theme-color" content="#08101b"><title>月面货运</title>
   <link rel="icon" href="../../assets/app-mark.svg"><link rel="stylesheet" href="../../assets/subpage-shell.css">
   <style>
@@ -12,7 +12,7 @@
 </head>
 <body class="hub-subpage">
   <a class="hub-home-link" href="../../index.html#games" aria-label="返回主页"><span class="hub-home-link__icon" aria-hidden="true">←</span><span>返回主页</span></a>
-  <header class="bar"><h1>月面货运 <small>六轮月球车 · 三站运输</small></h1><div class="links"><a class="direct" href="./game/index.html">独立窗口</a><button id="fullscreen" type="button">全屏驾驶</button></div></header>
+  <header class="bar"><h1>月面货运 <small>NPC 委托 · 五次交付</small></h1><div class="links"><a class="direct" href="./game/index.html">独立窗口</a><button id="fullscreen" type="button">全屏驾驶</button></div></header>
   <iframe id="game" src="./game/index.html" title="月面货运实时 3D 游戏" allow="fullscreen; gamepad" allowfullscreen></iframe>
   <noscript>需要启用 JavaScript 才能驾驶月球车。</noscript>
   <script>document.getElementById('fullscreen').addEventListener('click',async()=>{const game=document.getElementById('game');try{if(game.requestFullscreen)await game.requestFullscreen();else location.href=game.src;game.focus();}catch{location.href=game.src;}});</script>

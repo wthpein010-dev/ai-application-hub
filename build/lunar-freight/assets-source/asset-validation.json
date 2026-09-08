@@ -1,0 +1,119 @@
+{
+  "format": "glTF 2.0 / binary / Y-up",
+  "generator": "Khronos glTF Blender I/O v5.2.40",
+  "glb_bytes": 719376,
+  "mesh_count": 5,
+  "material_count": 4,
+  "embedded_images": 1,
+  "texture_size": [
+    512,
+    512
+  ],
+  "models": {
+    "Cargo": {
+      "bounds_min": [
+        -0.3,
+        -0.31,
+        -0.35
+      ],
+      "bounds_max": [
+        0.3,
+        0.31,
+        0.35
+      ],
+      "dimensions": [
+        0.6,
+        0.62,
+        0.7
+      ],
+      "triangles": 672,
+      "root_transform": "identity"
+    },
+    "Habitat": {
+      "bounds_min": [
+        -0.5,
+        -0.5,
+        -0.5
+      ],
+      "bounds_max": [
+        0.5,
+        0.5,
+        0.5
+      ],
+      "dimensions": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "triangles": 1080,
+      "root_transform": "identity"
+    },
+    "NPC": {
+      "bounds_min": [
+        -0.4375,
+        0.0,
+        -0.218
+      ],
+      "bounds_max": [
+        0.4375,
+        1.8,
+        0.503
+      ],
+      "dimensions": [
+        0.875,
+        1.8,
+        0.721
+      ],
+      "triangles": 2972,
+      "root_transform": "identity"
+    },
+    "RoverBody": {
+      "bounds_min": [
+        -1.15,
+        -0.25,
+        -1.95
+      ],
+      "bounds_max": [
+        1.15,
+        1.5,
+        1.95
+      ],
+      "dimensions": [
+        2.3,
+        1.75,
+        3.9
+      ],
+      "triangles": 1682,
+      "root_transform": "identity"
+    },
+    "Wheel": {
+      "bounds_min": [
+        -0.195,
+        -0.5665,
+        -0.5665
+      ],
+      "bounds_max": [
+        0.195,
+        0.5665,
+        0.5665
+      ],
+      "dimensions": [
+        0.39,
+        1.133,
+        1.133
+      ],
+      "triangles": 2828,
+      "root_transform": "identity"
+    }
+  },
+  "total_triangles": 9234,
+  "checks": [
+    "Five exact root names",
+    "Identity root transforms",
+    "Dimension bounds",
+    "Embedded PNG atlas",
+    "UVs and normals on every primitive",
+    "Finite geometry",
+    "Under 2 MB"
+  ]
+}
