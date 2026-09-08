@@ -2,3 +2,4 @@
 node_modules/
 .superpowers/
 build/gamespec-relay-desktop/dist/
+/artifacts/v-curve-v150/

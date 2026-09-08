@@ -8,7 +8,7 @@ const packageJson = JSON.parse(readFileSync(path.join(root, "package.json"), "ut
 
 describe("Windows portable package contract", () => {
   it("pins the desktop runtime and exposes deterministic scripts", () => {
-    expect(packageJson.version).toBe("1.2.0");
+    expect(packageJson.version).toBe("1.5.0");
     expect(packageJson.main).toBe("desktop/main.cjs");
     expect(packageJson.scripts).toMatchObject({
       desktop: "npm run build && electron desktop/main.cjs",
@@ -52,7 +52,7 @@ describe("Windows portable package contract", () => {
       mac: {
         extraResources: [
           {
-            from: "bundled-levels/Editorlevel",
+            from: "bundled-levels/EditorLevels-v150",
             to: "Editorlevel",
           },
         ],

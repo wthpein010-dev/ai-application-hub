@@ -1,2 +1,4 @@
 /build/v-curve-tool/dist/V曲线对比工具.html text eol=lf
 /projects/v-curve-tool/app/index.html text eol=lf
+/build/v-curve-tool/bundled-levels/EditorLevels-v150/** -text -whitespace
+/build/v-curve-tool/src/data/sheep-game-map.json -text -whitespace

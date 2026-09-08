@@ -1,0 +1,3 @@
+dist/V曲线对比工具.html text eol=lf
+bundled-levels/EditorLevels-v150/** -text -whitespace
+src/data/sheep-game-map.json -text -whitespace

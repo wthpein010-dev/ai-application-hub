@@ -2,11 +2,12 @@ import assert from "node:assert/strict";
 import { readdir, readFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import sheepRaw from "../src/data/sheep-900121.json" with { type: "json" };
+import sheepGameMapRaw from "../src/data/sheep-game-map.json" with { type: "json" };
+import sheep900121Raw from "../src/data/sheep-900121.json" with { type: "json" };
 import { analyzeLevel, compareReports } from "../src/analysis/report.js";
 import { hasValidAverageDeadlockProgress } from "../src/analysis/verification.js";
 import { importLevelFiles } from "../src/io/import-levels.js";
-import { normalizeSheepLevel } from "../src/model/normalize.js";
+import { normalizeSheepLevel, normalizeSheepLibrary } from "../src/model/normalize.js";
 
 const projectRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const defaultLevelsPath = "E:\\Mahjong\\PawsHomeClient\\Assets\\Editor\\Res\\Config\\Gameplay\\EditorLevels";
@@ -70,26 +71,38 @@ function assertScalarMetrics(report, label) {
 }
 
 const imported = await importLevelFiles(await collectFiles(levelsPath));
-assert.equal(imported.levels.length, 31, "当前正式目录应导入 31 个关卡");
+assert.equal(imported.levels.length, 32, "当前正式目录应导入 32 个关卡");
 assert.equal(imported.errors.length, 0, "正式关卡不应包含损坏 JSON");
 assert.equal(imported.selectedLevel?.id, "level_0020", "应默认选择 level_0020");
 
-const sheep = normalizeSheepLevel(sheepRaw);
+const sheepLibrary = normalizeSheepLibrary(sheepGameMapRaw, "sheep-game-map.json");
+assert.equal(sheepLibrary.errors.length, 0, "内置羊关卡库不应包含损坏记录");
+assert.equal(sheepLibrary.levels.length, 36, "内置羊关卡库应保留全部 36 条记录");
+assert.deepEqual(sheepLibrary.duplicateLevelKeys, [
+  "90014", "90017", "90023", "90024", "90025", "90026",
+]);
+assert.equal(new Set(sheepLibrary.levels.map((level) => level.id)).size, 36, "羊关卡版本 ID 必须唯一");
+const sheep900121 = normalizeSheepLevel(sheep900121Raw);
+assert.equal(sheep900121.id, "900121", "900121 备用关卡必须保留");
+
+const sheep = sheepLibrary.levels[0];
 const sheepSummary = {
+  id: sheep.id,
   tiles: sheep.tiles.length,
   layers: new Set(sheep.tiles.map((tile) => tile.layer)).size,
   types: sheep.rules.fullTypeMax,
 };
-assert.deepEqual(sheepSummary, { tiles: 258, layers: 23, types: 15 });
+assert.deepEqual(sheepSummary, { id: "90009", tiles: 252, layers: 22, types: 15 });
 
 const analysisOptions = {
+  model: "runtime",
   seeds: 300,
   traySlots: 1,
   policy: "greedy",
   riverRestarts: 20,
 };
-const sheepReport = analyzeLevel(sheep, analysisOptions);
-assertScalarMetrics(sheepReport, "sheep");
+const leftReport = analyzeLevel(sheep, analysisOptions);
+assertScalarMetrics(leftReport, "left");
 
 const level20 = imported.selectedLevel;
 const level20Summary = {
@@ -116,16 +129,16 @@ for (const metric of ["openingV", "mc25", "mc50", "midRiver", "completionRate", 
 finiteTree(report);
 assertScalarMetrics(report, "level_0020");
 
-const comparison = compareReports(sheepReport, report);
+const comparison = compareReports(leftReport, report);
 const serializedComparison = JSON.stringify(comparison);
 const parsedComparison = JSON.parse(serializedComparison);
-assert.equal(parsedComparison.schemaVersion, "vcurve-comparison/1");
-assert.equal(parsedComparison.sheep.schemaVersion, "vcurve-report/1");
-assert.equal(parsedComparison.paws.schemaVersion, "vcurve-report/1");
-assert.equal(parsedComparison.sheep.level.id, "900121");
-assert.equal(parsedComparison.paws.level.id, "level_0020");
-assertScalarMetrics(parsedComparison.sheep, "comparison.sheep");
-assertScalarMetrics(parsedComparison.paws, "comparison.paws");
+assert.equal(parsedComparison.schemaVersion, "vcurve-comparison/2");
+assert.equal(parsedComparison.left.schemaVersion, "vcurve-report/1");
+assert.equal(parsedComparison.right.schemaVersion, "vcurve-report/1");
+assert.equal(parsedComparison.left.level.id, "90009");
+assert.equal(parsedComparison.right.level.id, "level_0020");
+assertScalarMetrics(parsedComparison.left, "comparison.left");
+assertScalarMetrics(parsedComparison.right, "comparison.right");
 
 console.log(JSON.stringify({
   projectRoot,
@@ -133,6 +146,12 @@ console.log(JSON.stringify({
   imported: imported.levels.length,
   ignored: imported.ignored.length,
   warnings: imported.warningCount,
+  sheepLibrary: {
+    records: sheepLibrary.levels.length,
+    uniqueLevelKeys: sheepLibrary.levels.length - sheepLibrary.duplicateLevelKeys.length,
+    duplicateLevelKeys: sheepLibrary.duplicateLevelKeys,
+    fallback: sheep900121.id,
+  },
   sheep: sheepSummary,
   level20: level20Summary,
   analysis: {

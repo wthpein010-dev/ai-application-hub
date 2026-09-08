@@ -17,22 +17,37 @@ function assertFinite(value, path = "report", seen = new WeakSet()) {
   seen.delete(value);
 }
 
-function safePart(value) {
-  return String(value ?? "level")
+function shortHash(value) {
+  let hash = 0x811c9dc5;
+  for (const character of String(value)) {
+    hash ^= character.codePointAt(0);
+    hash = Math.imul(hash, 0x01000193);
+  }
+  return (hash >>> 0).toString(16).padStart(8, "0");
+}
+
+function safePart(value, maxLength = 64) {
+  const safe = String(value ?? "level")
     .replace(/[<>:"/\\|?*\u0000-\u001f]+/g, "-")
     .replace(/\s+/g, "-")
     .replace(/-+/g, "-")
     .replace(/^-|-$/g, "") || "level";
+  const characters = Array.from(safe);
+  if (characters.length <= maxLength) return safe;
+  return `${characters.slice(0, maxLength - 9).join("")}-${shortHash(safe)}`;
 }
 
 export function buildReportFilename(comparison, extension) {
-  const pawsId = safePart(comparison?.paws?.level?.id);
-  const suffix = safePart(extension).toLowerCase();
-  return `V曲线-900121-vs-${pawsId}.${suffix}`;
+  const partLength = comparison?.model?.id ? 56 : 64;
+  const leftId = safePart(comparison?.left?.level?.id, partLength);
+  const rightId = safePart(comparison?.right?.level?.id, partLength);
+  const suffix = safePart(extension, 8).toLowerCase();
+  const model = comparison?.model?.id ? `-${safePart(comparison.model.id, 16)}` : "";
+  return `V曲线-${leftId}-vs-${rightId}${model}.${suffix}`;
 }
 
 export function serializeReportJson(comparison) {
-  if (comparison?.schemaVersion !== "vcurve-comparison/1") {
+  if (comparison?.schemaVersion !== "vcurve-comparison/2") {
     throw new Error("报告 schemaVersion 无效，无法导出。");
   }
   assertFinite(comparison);

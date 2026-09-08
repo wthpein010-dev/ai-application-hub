@@ -8,6 +8,42 @@ import {
 } from "../../src/model/normalize.js";
 
 describe("level normalization", () => {
+  it("reads the current fun-clear percentage and ignores deprecated pseudo-random modes", () => {
+    const result = parseDesignerRules({ funClearPercent: 40, pseudoRandomLimitedMode: 1, pseudoRandomFullMode: 2 });
+    expect(result.rules).toMatchObject({ funClearPercent: 40, pseudoRandomLimitedMode: 0, pseudoRandomFullMode: 0 });
+    expect(result.warnings.some((warning) => warning.includes("伪随机") && warning.includes("废弃"))).toBe(true);
+  });
+
+  it("uses designerNote levelData before the fallback tiles as the client loader does", () => {
+    const raw = structuredClone(pawsSmall);
+    raw.designerNote = JSON.stringify({
+      levelData: { 2: [{ rolNum: 40, rowNum: 24, layerNum: 2, type: 7 }] },
+    });
+    const level = normalizePawsLevel(raw);
+    expect(level.tiles).toHaveLength(1);
+    expect(level.tiles[0]).toMatchObject({ x: 40, y: 24, layer: 2, type: 7 });
+    expect(level.tileSource).toBe("designerNote.levelData");
+    expect(level.referenceTiles).toEqual(level.tiles);
+  });
+
+  it("retains custom random ranges without mislabeling them as unsupported mechanics", () => {
+    const raw = structuredClone(pawsSmall);
+    raw.tiles.forEach((tile) => { tile.metaType = 12; tile.metaData = 16; });
+    const level = normalizePawsLevel(raw);
+    expect(level.tiles[0]).toMatchObject({ metaType: 12, metaData: 16 });
+    expect(level.modelLimitations).toEqual([]);
+    expect(level.warnings.some((warning) => warning.includes("非零 metaType"))).toBe(false);
+  });
+
+  it("marks first-round random assignment and manual hidden patterns as model limitations", () => {
+    const raw = structuredClone(pawsSmall);
+    raw.designerNote = JSON.stringify({ gameLevelOrder: 1 });
+    raw.tiles[0].presetColorType = 2;
+    const level = normalizePawsLevel(raw);
+    expect(level.modelLimitations.some((reason) => reason.includes("首关"))).toBe(true);
+    expect(level.modelLimitations.some((reason) => reason.includes("背面"))).toBe(true);
+    expect(level.warnings.some((reason) => reason.includes("不完整"))).toBe(true);
+  });
   it("reads current Paws random rules from designerNote", () => {
     const level = normalizePawsLevel(pawsSmall, "level_0020.json");
 
@@ -93,6 +129,10 @@ describe("level normalization", () => {
       [4, 4, 2],
     ]);
     expect(level.rules.fullTypeMax).toBe(2);
+    expect(level.referenceTiles).toHaveLength(level.tiles.length);
+    expect(level.referenceTiles.map(({ x, y, layer }) => [x, y, layer])).toEqual([
+      [0, 0, 1], [4, 4, 2],
+    ]);
   });
 
   it("normalizes the provided Sheep 900121 baseline", () => {
@@ -127,6 +167,6 @@ describe("level normalization", () => {
     const level = normalizePawsLevel(raw, "special.json");
 
     expect(level.warnings).toContain("存在重复的 (x,y,layer) 砖块位置。");
-    expect(level.warnings).toContain("包含动态砖或非零 metaType：结构可分析，但玩法 MC 可能不完整。");
+    expect(level.modelLimitations.some((reason) => reason.includes("动态砖"))).toBe(true);
   });
 });

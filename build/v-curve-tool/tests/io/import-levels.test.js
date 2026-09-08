@@ -1,5 +1,7 @@
 import { describe, expect, it } from "vitest";
 import * as importLevels from "../../src/io/import-levels.js";
+import sheep900121 from "../../src/data/sheep-900121.json";
+import sheepGameMap from "../../src/data/sheep-game-map.json";
 
 const { importLevelFiles } = importLevels;
 
@@ -32,6 +34,36 @@ function fakeFile(name, text, webkitRelativePath = name) {
 }
 
 describe("EditorLevels batch import", () => {
+  it("imports the user's original Sheep levelData file through the shared file entry point", async () => {
+    const result = await importLevelFiles([fakeFile("900121.json", JSON.stringify(sheep900121))]);
+    expect(result.errors).toEqual([]);
+    expect(result.importedCount).toBe(1);
+    expect(result.selectedLevel).toMatchObject({ id: "900121", source: "sheep" });
+    expect(result.selectedLevel.tiles).toHaveLength(258);
+    expect(result.selectedLevel.referenceTiles[16].layer).toBe(10);
+  });
+
+  it("imports all 36 game_map variants without discarding repeated level keys", async () => {
+    const result = await importLevelFiles([fakeFile("game_map.json", JSON.stringify(sheepGameMap))]);
+    expect(result.errors).toEqual([]);
+    expect(result.importedCount).toBe(36);
+    expect(new Set(result.levels.map((level) => level.id)).size).toBe(36);
+    expect(result.levels.filter((level) => level.sheepLevelKey === "90014")).toHaveLength(2);
+    expect(result.selectedLevel.id).toBe("90009");
+  });
+
+  it("keeps valid Sheep-library rows while reporting malformed map_data rows", async () => {
+    const result = await importLevelFiles([fakeFile("game_map.json", JSON.stringify([
+      { map_data: JSON.stringify(sheep900121) },
+      { map_data: "{" },
+    ]))]);
+    expect(result.importedCount).toBe(1);
+    expect(result.errors).toHaveLength(1);
+    expect(result.errors[0]).toMatchObject({ name: "game_map.json" });
+    expect(result.errors[0].message).toContain("game_map.json[1]");
+    expect(result.warningCount).toBe(1);
+  });
+
   it("ignores meta files and every file under _Trash", async () => {
     const result = await importLevelFiles([
       fakeFile("level_0001.json", validLevel("level_0001"), "EditorLevels/level_0001.json"),

@@ -974,19 +974,19 @@ const defaultApps = [
     category: "项目开发",
     status: "engineering",
     badge: "工程体验",
-    brief: "导入 Paws JSON 关卡，即可与固定的《羊了个羊》900121 结构并排生成连续 V 曲线、河道上下界与关键诊断。",
+    brief: "左右独立导入关卡，一键载入羊 900121 与 Paws 0020 示例；切换参考图复现和当前工程规则，对比 V 曲线与河道上下界。",
     problem: "关卡层数和砖量只能说明规模，难以直接判断开局宽度、中盘断崖与后段窄口，也缺少与成熟样本一致口径的对照。",
-    aiUse: "工具完全离线，按 Paws 两两配对与暂存槽规则执行确定性河道搜索和 Monte Carlo 仿真；Windows 与 macOS 包均内置已确认的 31 个关卡。",
+    aiUse: "工具完全离线，内置羊关卡库与 Paws 关卡；1.5 版明确区分参考图算法和当前工程规则，修正侧锁、进度口径与河道显示，支持双侧导入和报告导出。",
     folder: "./projects/v-curve-tool/",
     entry: "./projects/v-curve-tool/index.html",
     video: "./projects/v-curve-tool/video/index.html",
-    package: "https://github.com/wthpein010-dev/ai-application-hub/releases/download/v-curve-tool-v1.2.0/V-Curve-Comparison-Tool-1.2.0-Windows-x64.zip",
+    package: "https://github.com/wthpein010-dev/ai-application-hub/releases/download/v-curve-tool-v1.5.0/V-Curve-Comparison-Tool-1.5.0-Windows-x64.zip",
     platforms: {
       web: { href: "./projects/v-curve-tool/index.html", label: "演示" },
-      windows: { href: "https://github.com/wthpein010-dev/ai-application-hub/releases/download/v-curve-tool-v1.2.0/V-Curve-Comparison-Tool-1.2.0-Windows-x64.zip", label: "Wins下载" },
-      mac: { href: "https://github.com/wthpein010-dev/ai-application-hub/releases/download/v-curve-tool-v1.2.0/V-Curve-Comparison-Tool-1.2.0-macOS.zip", label: "Mac下载" }
+      windows: { href: "https://github.com/wthpein010-dev/ai-application-hub/releases/download/v-curve-tool-v1.5.0/V-Curve-Comparison-Tool-1.5.0-Windows-x64.zip", label: "Wins下载" },
+      mac: { href: "https://github.com/wthpein010-dev/ai-application-hub/releases/download/v-curve-tool-v1.5.0/V-Curve-Comparison-Tool-1.5.0-macOS.zip", label: "Mac下载" }
     },
-    tags: ["V曲线", "关卡分析", "羊了个羊", "Windows", "macOS"],
+    tags: ["V曲线", "双模型", "双侧导入", "Windows", "macOS"],
     speed: 9,
     impact: 9,
     risk: 8,
@@ -2382,6 +2382,24 @@ function normalizeApp(app) {
     normalized.package = base.package;
     normalized.platforms = { ...base.platforms };
     normalized.tags = [...base.tags];
+  }
+  if (normalized.id === "v-curve-tool") {
+    const legacyCopy = {
+      brief: "导入 Paws JSON 关卡，即可与固定的《羊了个羊》900121 结构并排生成连续 V 曲线、河道上下界与关键诊断。",
+      aiUse: "工具完全离线，按 Paws 两两配对与暂存槽规则执行确定性河道搜索和 Monte Carlo 仿真；Windows 与 macOS 包均内置已确认的 31 个关卡。"
+    };
+    Object.entries(legacyCopy).forEach(([field, value]) => {
+      if (normalized[field] === value) normalized[field] = base[field];
+    });
+    const legacyTags = ["V曲线", "关卡分析", "羊了个羊", "Windows", "macOS"];
+    if (normalized.tags.length === legacyTags.length && normalized.tags.every((tag, index) => tag === legacyTags[index])) {
+      normalized.tags = [...base.tags];
+    }
+    normalized.folder = base.folder;
+    normalized.entry = base.entry;
+    normalized.video = base.video;
+    normalized.package = base.package;
+    normalized.platforms = { ...base.platforms };
   }
   const currentPlatforms = normalized.platforms || {};
   normalized.platforms = {

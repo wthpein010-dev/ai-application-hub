@@ -8,6 +8,16 @@ function deferred() {
 }
 
 describe("import coordination", () => {
+  it("invalidates pending imports when a reference sample replaces the selection", async () => {
+    const slow = deferred();
+    const commits = [];
+    const coordinator = createImportCoordinator(() => {});
+    const pending = coordinator.start(() => slow.promise, result => commits.push(result));
+    coordinator.invalidate?.();
+    slow.resolve("obsolete");
+    await pending;
+    expect(commits).toEqual([]);
+  });
   it("cancels active analysis immediately and only commits the latest delayed import", async () => {
     const slow = deferred();
     const fast = deferred();
@@ -22,6 +32,7 @@ describe("import coordination", () => {
     expect(cancelCalls).toBe(2);
     fast.resolve("newer-folder");
     await second;
+    expect(cancelCalls).toBe(3);
     slow.resolve("older-folder");
     await first;
 

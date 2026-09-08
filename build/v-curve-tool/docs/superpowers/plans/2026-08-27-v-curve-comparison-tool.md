@@ -1,5 +1,7 @@
 # V Curve Comparison Tool Implementation Plan
 
+> Archived plan, superseded on 2026-09-08 by v1.5.0 reference/runtime models and independent imports. The original side-lock and runtime-alignment assumptions are no longer valid. Consult README and current tests; do not re-execute this historical plan.
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Build a single-file offline web tool that imports the current Paws `EditorLevels` folder and generates a visually verified V-curve comparison against the bundled Sheep 900121 structure.

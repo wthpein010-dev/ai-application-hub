@@ -29,7 +29,7 @@ const injection = `
   for (const entry of payload) {
     transfer.items.add(new File([entry.text], entry.name, { type: "application/json" }));
   }
-  const input = document.querySelector("#file-input");
+  const input = document.querySelector("#right-file-input");
   Object.defineProperty(input, "files", { configurable: true, value: transfer.files });
   input.dispatchEvent(new Event("change", { bubbles: true }));
 </script>`;

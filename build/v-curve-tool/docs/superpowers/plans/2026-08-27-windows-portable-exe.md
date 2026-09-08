@@ -1,5 +1,7 @@
 # Windows Portable EXE Implementation Plan
 
+> Archived implementation plan. Version 1.5.0 packaging and verification are defined by the current package scripts and README; retain this file as history, not as pending work.
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Package the verified offline V-curve comparison HTML as a single Windows x64 portable EXE without changing its analysis semantics.

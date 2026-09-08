@@ -13,6 +13,12 @@ function reportWithP50(points) {
 }
 
 describe("numeric curve diagnostics", () => {
+  it("uses the same reached reference bucket as summary metrics instead of smoothing tray-state alternation", () => {
+    const report = reportWithP50([[0, 20], [0.19, 20], [0.21, 12], [0.5, 10]]);
+    report.model = { id: "reference" };
+    const note = diagnoseReport(report).find((entry) => entry.code === "early-dive");
+    expect(note).toMatchObject({ evidence: { fromV: 20, toV: 12, sampleProgress: 0.21 } });
+  });
   it("detects an early dive using measured percentages", () => {
     const notes = diagnoseReport(reportWithP50([
       [0, 24],

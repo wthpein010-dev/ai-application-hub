@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   analyzeLevel,
+  analyzeComparisonLevels,
   compareReports,
   summarizeReport,
 } from "../../src/analysis/report.js";
@@ -67,11 +68,43 @@ function fakeBandReport() {
 }
 
 describe("analysis report aggregation", () => {
+  it("reports custom random subranges and fixed patterns together", () => {
+    const fixture = smallLevel([0, 0, -1, -1, 8, 8]);
+    fixture.tiles[0].metaType = 12; fixture.tiles[0].metaData = 17;
+    fixture.tiles[1].metaType = 12; fixture.tiles[1].metaData = 17;
+    fixture.tiles[2].metaType = 3; fixture.tiles[2].metaData = 9;
+    fixture.tiles[3].metaType = 3; fixture.tiles[3].metaData = 9;
+    const report = analyzeLevel(fixture, { model: "runtime", seeds: 3, riverRestarts: 1 });
+    expect(report.level.typePoolLabel).toBe("限定 12–17 + 全随机 3–9 + 固定 8");
+  });
+
+  it("keeps actual sample counts and their progress while interpolating runtime percentile values", () => {
+    const report = fakeBandReport();
+    report.curves.mc = [
+      { progress: 0.2, samples: 20, p10: 10, p50: 12, p90: 14 },
+      { progress: 0.3, samples: 16, p10: 6, p50: 8, p90: 10 },
+    ];
+    expect(summarizeReport(report).mc25).toMatchObject({
+      p10: 8, p50: 10, p90: 12, samples: 16, sampleProgress: 0.3,
+    });
+  });
+
+  it("reports the reached reference bucket without averaging adjacent tray states", () => {
+    const report = fakeBandReport();
+    report.model = { id: "reference" };
+    report.curves.mc = [
+      { progress: 0.24, samples: 30, p10: 10, p50: 12, p90: 14 },
+      { progress: 0.26, samples: 17, p10: 5, p50: 7, p90: 9 },
+    ];
+    expect(summarizeReport(report).mc25).toMatchObject({
+      p10: 5, p50: 7, p90: 9, samples: 17, sampleProgress: 0.26,
+    });
+  });
   it("returns requested percentile bands at 25 and 50 percent", () => {
     const metrics = summarizeReport(fakeBandReport());
 
-    expect(metrics.mc25).toEqual({ p10: 6, p50: 8, p90: 10 });
-    expect(metrics.mc50).toEqual({ p10: 4, p50: 6, p90: 8 });
+    expect(metrics.mc25).toMatchObject({ p10: 6, p50: 8, p90: 10 });
+    expect(metrics.mc50).toMatchObject({ p10: 4, p50: 6, p90: 8 });
     expect(metrics.midRiver).toEqual({ lower: 3, upper: 12 });
   });
 
@@ -123,8 +156,8 @@ describe("analysis report aggregation", () => {
 
   it("marks special mechanics as an incomplete gameplay simulation", () => {
     const special = smallLevel();
-    special.tiles[0].metaType = 2;
-    special.warnings = ["包含动态砖或非零 metaType：结构可分析，但玩法 MC 可能不完整。"];
+    special.modelLimitations = ["包含动态砖：玩法仿真不完整。"];
+    special.warnings = [...special.modelLimitations];
 
     const report = analyzeLevel(special, { seeds: 3, riverRestarts: 1 });
 
@@ -135,23 +168,57 @@ describe("analysis report aggregation", () => {
     expect(report.simulation.incompleteReason).toContain("玩法仿真不完整");
   });
 
-  it("builds a versioned Sheep-versus-Paws comparison", () => {
-    const sheep = analyzeLevel(smallLevel(undefined, "900121"), {
+  it("builds a versioned left-versus-right comparison", () => {
+    const left = analyzeLevel(smallLevel(undefined, "900121"), {
       seeds: 3,
       riverRestarts: 1,
     });
-    const paws = analyzeLevel(smallLevel(undefined, "level_0020"), {
+    const right = analyzeLevel(smallLevel(undefined, "level_0020"), {
       seeds: 3,
       riverRestarts: 1,
     });
 
-    const comparison = compareReports(sheep, paws);
+    const comparison = compareReports(left, right);
 
     expect(comparison).toMatchObject({
-      schemaVersion: "vcurve-comparison/1",
-      sheep: { level: { id: "900121" } },
-      paws: { level: { id: "level_0020" } },
+      schemaVersion: "vcurve-comparison/2",
+      left: { level: { id: "900121" } },
+      right: { level: { id: "level_0020" } },
     });
+  });
+
+  it("keeps same-id warnings distinguishable by comparison side", () => {
+    const left = analyzeLevel({ ...smallLevel(), id: "level_0020", warnings: ["同一告警"] }, {
+      seeds: 3,
+      riverRestarts: 1,
+    });
+    const right = analyzeLevel({ ...smallLevel(), id: "level_0020", warnings: ["同一告警"] }, {
+      seeds: 3,
+      riverRestarts: 1,
+    });
+
+    expect(compareReports(left, right).warnings).toEqual(expect.arrayContaining([
+      "左侧 level_0020：同一告警",
+      "右侧 level_0020：同一告警",
+    ]));
+  });
+
+  it("analyzes both selected levels and labels progress by side", () => {
+    const progress = [];
+
+    const comparison = analyzeComparisonLevels(
+      smallLevel(undefined, "left_0010"),
+      smallLevel(undefined, "right_0020"),
+      { seeds: 3, riverRestarts: 1 },
+      (event) => progress.push(event),
+    );
+
+    expect(comparison.left.level.id).toBe("left_0010");
+    expect(comparison.right.level.id).toBe("right_0020");
+    expect(progress[0]).toMatchObject({ side: "left", payload: { stage: "structure" } });
+    expect(progress.at(-1)).toMatchObject({ side: "right", payload: { stage: "diagnostics" } });
+    expect(progress.filter((event) => event.side === "left")).toHaveLength(6);
+    expect(progress.filter((event) => event.side === "right")).toHaveLength(6);
   });
 
   it("labels Sheep structure-only type zero tiles as the 1–15 baseline pool", () => {

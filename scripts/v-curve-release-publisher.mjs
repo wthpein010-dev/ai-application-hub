@@ -1,6 +1,3 @@
-const releaseId = 378411760;
-const releaseTag = "v-curve-tool-v1.2.0";
-
 function sameJson(left, right) {
   return JSON.stringify(left) === JSON.stringify(right);
 }
@@ -18,8 +15,12 @@ function expectedMacMetadata(manifest, sourceSha) {
 }
 
 function assertReleaseManifest(manifest) {
-  if (manifest?.schemaVersion !== "v-curve-tool-release/1" || manifest.version !== "1.2.0") {
+  if (manifest?.schemaVersion !== "v-curve-tool-release/1" || !/^\d+\.\d+\.\d+$/u.test(manifest.version ?? "")) {
     throw new Error(`unexpected release manifest: ${JSON.stringify(manifest)}`);
+  }
+  if (!Number.isSafeInteger(manifest.release?.id) || manifest.release.id <= 0
+    || manifest.release.tag !== `v-curve-tool-v${manifest.version}`) {
+    throw new Error(`invalid release identity: ${JSON.stringify(manifest.release)}`);
   }
   if (!Number.isSafeInteger(manifest.releaseWorkflow?.runId)
     || manifest.releaseWorkflow.runId <= 0
@@ -28,7 +29,9 @@ function assertReleaseManifest(manifest) {
   }
 }
 
-function assertExactDraftRelease(release) {
+function assertExactDraftRelease(manifest, release) {
+  assertReleaseManifest(manifest);
+  const { id: releaseId, tag: releaseTag } = manifest.release;
   if (release?.id !== releaseId || release.tag_name !== releaseTag || release.draft !== true) {
     throw new Error(`Release is not the expected draft: ${JSON.stringify(release)}`);
   }
@@ -68,10 +71,11 @@ export function assertPortableChecksum({ content, expectedSha, expectedFile, lab
   }
 }
 
-export function createExactReleaseUploadPlan({ release }) {
-  assertExactDraftRelease(release);
+export function createExactReleaseUploadPlan({ manifest, release }) {
+  assertExactDraftRelease(manifest, release);
+  const releaseId = manifest.release.id;
   const uploadUrl = release.upload_url?.replace(/\{.*$/u, "");
-  if (!uploadUrl?.endsWith(`/releases/${releaseId}/assets`)) {
+  if (uploadUrl !== `https://uploads.github.com/repos/wthpein010-dev/ai-application-hub/releases/${releaseId}/assets`) {
     throw new Error(`unexpected Release upload URL: ${release.upload_url}`);
   }
   return { releaseId, uploadUrl };
@@ -90,7 +94,7 @@ export function assertMacArtifactMatchesManifest({ manifest, sourceSha, macArtif
 
 export function createCompleteDraftReleasePlan({ manifest, sourceSha, release, macArtifactMetadata }) {
   assertMacArtifactMatchesManifest({ manifest, sourceSha, macArtifactMetadata });
-  assertExactDraftRelease(release);
+  assertExactDraftRelease(manifest, release);
 
   const expectedAssetNames = [
     manifest.assets.windows.file,
@@ -106,7 +110,7 @@ export function createCompleteDraftReleasePlan({ manifest, sourceSha, release, m
   }
 
   return {
-    releaseId,
+    releaseId: manifest.release.id,
     assets: expectedAssetNames.map((name) => ({ id: assetsByName.get(name).id, name })),
   };
 }
@@ -145,6 +149,7 @@ export async function publishVerifiedDraftRelease({
   if (!sameJson(latestPlan, plan)) {
     throw new Error(`Release asset IDs changed after verification: ${JSON.stringify(latestPlan.assets)}`);
   }
+  const releaseTag = manifest.release.tag;
   const latestTagSha = await loadTagSha(releaseTag);
   if (latestTagSha !== sourceSha) {
     throw new Error(`Release tag source changed after verification: ${latestTagSha}`);

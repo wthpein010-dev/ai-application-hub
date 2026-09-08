@@ -27,6 +27,7 @@ const sourceShaFixture = "a".repeat(40);
 const releaseManifestFixture = {
   schemaVersion: "v-curve-tool-release/1",
   version: "1.2.0",
+  release: { id: 378411760, tag: "v-curve-tool-v1.2.0" },
   releaseWorkflow: {
     runId: 33_163_156_365,
     sourceCommit: sourceShaFixture,
@@ -101,23 +102,23 @@ test("the tracked V curve source builds both native macOS architectures", async 
   assert.ok(existsSync(join(sourceRoot, "package.json")), "missing tracked V curve source snapshot");
   const packageJson = JSON.parse(await readFile(join(sourceRoot, "package.json"), "utf8"));
 
-  assert.equal(packageJson.version, "1.2.0");
+  assert.equal(packageJson.version, "1.5.0");
   assert.equal(packageJson.scripts["build:mac:arm64"], "npm run build && electron-builder --mac zip --arm64");
   assert.equal(packageJson.scripts["build:mac:x64"], "npm run build && electron-builder --mac zip --x64");
-  assert.deepEqual(packageJson.build.mac.extraResources, [{
-    from: "bundled-levels/Editorlevel",
-    to: "Editorlevel",
-  }]);
+  const resources = packageJson.build.mac.extraResources.find((resource) => resource.to === "Editorlevel");
+  assert.match(resources.from, /^bundled-levels\/[\w-]+$/u);
+  assert.ok(existsSync(join(sourceRoot, resources.from)));
 });
 
 test("the tracked source contains the confirmed opening level payload", async () => {
-  const levelsDirectory = join(sourceRoot, "bundled-levels", "Editorlevel");
+  const packageJson = JSON.parse(await readFile(join(sourceRoot, "package.json"), "utf8"));
+  const levelsDirectory = join(sourceRoot, packageJson.build.mac.extraResources.find((resource) => resource.to === "Editorlevel").from);
   assert.ok(existsSync(levelsDirectory), "missing tracked Editorlevel payload");
   const names = await readdir(levelsDirectory);
 
-  assert.equal(names.length, 62);
-  assert.equal(names.filter((name) => name.endsWith(".json")).length, 31);
-  assert.equal(names.filter((name) => name.endsWith(".meta")).length, 31);
+  assert.equal(names.length, 64);
+  assert.equal(names.filter((name) => name.endsWith(".json")).length, 32);
+  assert.equal(names.filter((name) => name.endsWith(".meta")).length, 32);
   assert.ok(names.some((name) => /^level_0020.*\.json$/u.test(name)), "level_0020 must be bundled");
 });
 
@@ -126,13 +127,13 @@ test("the release workflow builds and launches V curve on Apple silicon and Inte
   const workflow = await readFile(workflowPath, "utf8");
 
   assert.match(workflow, /workflow_dispatch:/u);
-  assert.match(workflow, /push:[\s\S]*feat\/v-curve-tool-20260828/u);
+  assert.match(workflow, /push:[\s\S]*feat\/v-curve-tool-\*/u);
   assert.match(workflow, /runner:\s*macos-14/u);
   assert.match(workflow, /runner:\s*macos-15-intel/u);
   assert.match(workflow, /npm run build:mac:\$\{\{ matrix\.arch \}\}/u);
   assert.match(workflow, /codesign --verify --deep --strict/u);
   assert.match(workflow, /open -n/u);
-  assert.match(workflow, /V-Curve-Comparison-Tool-1\.2\.0-macOS\.zip/u);
+  assert.match(workflow, /V-Curve-Comparison-Tool-\$\{PACKAGE_VERSION\}-macOS\.zip/u);
   assert.match(workflow, /actions\/upload-artifact@v4/u);
 });
 
@@ -170,7 +171,7 @@ test("the publisher promotes the exact verified Mac artifact without overwriting
   assert.match(workflow, /ARTIFACT_RUN_ID:\s*\$\{\{ inputs\.artifact_run_id \}\}/u);
   assert.match(workflow, /EXPECTED_SOURCE_SHA:\s*\$\{\{ inputs\.expected_source_sha \}\}/u);
   assert.match(workflow, /ARTIFACT_NAME:\s*v-curve-tool-macos-release/u);
-  assert.match(workflow, /RELEASE_TAG:\s*v-curve-tool-v1\.2\.0/u);
+  assert.match(workflow, /RELEASE_TAG=\$\{manifest\.release\.tag\}/u);
   assert.doesNotMatch(workflow, /EXPECTED_ARCHIVE_BYTES/u);
   assert.doesNotMatch(workflow, /EXPECTED_ARCHIVE_SHA256/u);
   assert.match(workflow, /metadata\.bytes/u);
@@ -191,6 +192,7 @@ test("every V curve publisher Bash step is syntactically executable", async (con
 
   for (const stepName of [
     "Require a current main dispatch before reading the manifest",
+    "Load the exact release identity and filenames from the committed manifest",
     "Download the previously verified artifact",
     "Verify provenance, bytes and digest",
     "Verify the committed Windows asset",
@@ -211,7 +213,7 @@ test("every V curve publisher Bash step is syntactically executable", async (con
 test("the publisher anchors both packages to the committed manifest before explicitly publishing only a complete draft", async () => {
   const workflow = await readFile(publisherWorkflowPath, "utf8");
 
-  assert.match(workflow, /RELEASE_ID:\s*378411760/u);
+  assert.match(workflow, /RELEASE_ID=\$\{manifest\.release\.id\}/u);
   assert.match(workflow, /actions\/checkout@v4/u);
   assert.match(workflow, /ref:\s*\$\{\{ github\.sha \}\}/u);
   assert.doesNotMatch(workflow, /ref:\s*\$\{\{ inputs\.expected_source_sha \}\}/u);
@@ -498,10 +500,26 @@ test("the publisher refuses incomplete or manifest-mismatched draft assets befor
     }),
     /does not equal the current main ref/u,
   );
-  assert.deepEqual(createExactReleaseUploadPlan({ release: draftReleaseFixture() }), {
+  assert.deepEqual(createExactReleaseUploadPlan({ manifest: releaseManifestFixture, release: draftReleaseFixture() }), {
     releaseId: 378411760,
     uploadUrl: "https://uploads.github.com/repos/wthpein010-dev/ai-application-hub/releases/378411760/assets",
   });
+});
+
+test("a new V curve version targets only its manifest-bound draft and rejects the old release", async () => {
+  const { createExactReleaseUploadPlan, createCompleteDraftReleasePlan } = await import("../scripts/v-curve-release-publisher.mjs");
+  const manifest = JSON.parse(JSON.stringify(releaseManifestFixture).replaceAll("1.2.0", "1.5.0"));
+  manifest.release.id = 987654321;
+  const release = JSON.parse(JSON.stringify(draftReleaseFixture()).replaceAll("1.2.0", "1.5.0").replaceAll("378411760", "987654321"));
+  const metadata = JSON.parse(JSON.stringify(macArtifactMetadataFixture).replaceAll("1.2.0", "1.5.0"));
+  assert.deepEqual(createExactReleaseUploadPlan({ manifest, release }), {
+    releaseId: 987654321,
+    uploadUrl: "https://uploads.github.com/repos/wthpein010-dev/ai-application-hub/releases/987654321/assets",
+  });
+  assert.equal(createCompleteDraftReleasePlan({ manifest, sourceSha: sourceShaFixture, release, macArtifactMetadata: metadata }).releaseId, 987654321);
+  assert.throws(() => createExactReleaseUploadPlan({ manifest, release: draftReleaseFixture() }), /expected draft/u);
+  assert.throws(() => createExactReleaseUploadPlan({ manifest, release: { ...release, draft: false } }), /expected draft/u);
+  assert.throws(() => createExactReleaseUploadPlan({ manifest, release: { ...release, upload_url: "https://uploads.github.com/repos/other/repository/releases/987654321/assets" } }), /upload URL/u);
 });
 
 test("the Hub suite includes both root and Xiang Le Ge Xiang Node tests while excluding nested Vitest", async () => {

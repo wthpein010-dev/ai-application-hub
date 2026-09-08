@@ -30,6 +30,6 @@
   "loop-bgm-lab": { "mode": "capture", "entry": "./projects/loop-bgm-lab/index.html", "readySelector": "body[data-ready='true']", "focusMode": "auto", "feature": "本地参考分析、提示词批次与授权台账", "accent": "#7c3aed", "visualKind": "product", "layout": "wide" },
   "codex-multi-thread-workbench": { "mode": "capture", "entry": "./projects/codex-multi-thread-workbench/index.html", "focusMode": "auto", "feature": "多线程会话、消息直发与拖拽布局", "accent": "#0f766e", "visualKind": "product", "layout": "wide" },
   "trinket-market": { "mode": "capture", "entry": "./projects/trinket-market/index.html", "publicEntry": "https://wthpein010-dev.github.io/ai-application-hub/projects/trinket-market/index.html", "readySelector": "body[data-ready='true']", "focusMode": "auto", "feature": "小物目录、数量排行与桌面式拖拽整理", "accent": "#f0c75e", "visualKind": "game", "layout": "wide" },
-  "v-curve-tool": { "mode": "file", "source": "projects/v-curve-tool/video/poster.jpg", "feature": "双图对比关卡河道与结构风险", "accent": "#7aa2ff", "visualKind": "data", "layout": "wide" },
+  "v-curve-tool": { "mode": "file", "source": "projects/v-curve-tool/video/poster.jpg", "feature": "双模型、双侧关卡库与参考图复现", "accent": "#7aa2ff", "visualKind": "data", "layout": "wide", "cacheVersion": "20260908-v150-dual-model" },
   "lunar-freight": { "mode": "capture", "entry": "./projects/lunar-freight/game/index.html", "readySelector": ".launch-button", "clickSelector": ".launch-button", "captureDelay": 1500, "focusSelector": "canvas", "feature": "低重力驾驶、货物装卸与能源管理", "accent": "#d7b56d", "visualKind": "game", "layout": "wide" }
 }

@@ -40,6 +40,17 @@ function recordingCanvas(width = 640, height = 330) {
 }
 
 describe("comparison chart geometry", () => {
+  it("uses independent padded axes only when reference mode requests them", () => {
+    const scales = createComparisonScales([{points:[{y:40}]}], [{points:[{y:36}]}], 700, 360, "independent");
+    expect(scales.sheep.yMax).toBe(43);
+    expect(scales.paws.yMax).toBe(39);
+  });
+
+  it("labels the x axis with the actual model progress definition", () => {
+    const {canvas, calls} = recordingCanvas();
+    new VChart(canvas, {series:[], progressLabel:"离场进度（含暂存）"});
+    expect(calls.some(([name, text]) => name === "fillText" && text === "离场进度（含暂存）")).toBe(true);
+  });
   it("uses the same y maximum for Sheep and Paws charts", () => {
     const sheepSeries = [{ points: [{ progress: 0, y: 33 }, { progress: 1, y: 0 }] }];
     const pawsSeries = [{ points: [{ progress: 0, y: 18 }, { progress: 1, y: 0 }] }];

@@ -1,22 +1,4 @@
-function valueAt(points, progress, field = "p50") {
-  if (!Array.isArray(points) || points.length === 0) return null;
-  const sorted = [...points].sort((left, right) => left.progress - right.progress);
-  if (progress < sorted[0].progress || progress > sorted.at(-1).progress) return null;
-  if (progress === sorted[0].progress) return sorted[0][field] ?? null;
-  if (progress === sorted.at(-1).progress) return sorted.at(-1)[field] ?? null;
-  for (let index = 1; index < sorted.length; index += 1) {
-    const right = sorted[index];
-    if (right.progress < progress) continue;
-    const left = sorted[index - 1];
-    const leftValue = left[field];
-    const rightValue = right[field];
-    if (!Number.isFinite(leftValue) || !Number.isFinite(rightValue)) return null;
-    const span = right.progress - left.progress;
-    const weight = span === 0 ? 0 : (progress - left.progress) / span;
-    return leftValue + (rightValue - leftValue) * weight;
-  }
-  return null;
-}
+import { sampleMonteCarlo } from "./sampling.js";
 
 function shown(value) {
   if (!Number.isFinite(value)) return "—";
@@ -27,10 +9,14 @@ export function diagnoseReport(report) {
   const points = report?.curves?.mc ?? [];
   if (points.length === 0) return [];
   const diagnostics = [];
-  const opening = valueAt(points, 0);
-  const v20 = valueAt(points, 0.2);
-  const v40 = valueAt(points, 0.4);
-  const v60 = valueAt(points, 0.6);
+  const sample = (progress) => sampleMonteCarlo(points, progress, report?.model?.id);
+  const opening = sample(0)?.p50;
+  const at20 = sample(0.2);
+  const at40 = sample(0.4);
+  const at60 = sample(0.6);
+  const v20 = at20?.p50;
+  const v40 = at40?.p50;
+  const v60 = at60?.p50;
 
   const narrowThreshold = Math.max(4, (report?.level?.tiles ?? 0) * 0.03);
   if (Number.isFinite(opening) && opening < narrowThreshold) {
@@ -51,7 +37,7 @@ export function diagnoseReport(report) {
       severity: "warning",
       title: "前 20% 快速跳水",
       message: `MC P50 从开局 ${shown(opening)} 降到 20% 进度的 ${shown(v20)}。`,
-      evidence: { fromProgress: 0, toProgress: 0.2, fromV: opening, toV: v20 },
+      evidence: { fromProgress: 0, toProgress: 0.2, fromV: opening, toV: v20, sampleProgress: at20.sampleProgress },
       action: "拆散前段集中覆盖，补充可并行推进的浅层释放区。",
     });
   }
@@ -63,7 +49,7 @@ export function diagnoseReport(report) {
       severity: "danger",
       title: "40%–60% 中盘断崖",
       message: `MC P50 从 40% 的 ${shown(v40)} 降到 60% 的 ${shown(v60)}。`,
-      evidence: { fromProgress: 0.4, toProgress: 0.6, fromV: v40, toV: v60 },
+      evidence: { fromProgress: 0.4, toProgress: 0.6, fromV: v40, toV: v60, fromSampleProgress: at40.sampleProgress, toSampleProgress: at60.sampleProgress },
       action: "在中盘深塔之间加入独立释放点，降低同一批上层砖同时压住前沿的程度。",
     });
   }
