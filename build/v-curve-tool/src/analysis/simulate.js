@@ -17,7 +17,7 @@ function sideDependents(structure) {
   let cached = sideDependentsCache.get(structure);
   if (cached) return cached;
   cached = Array.from({ length: structure.size }, () => []);
-  for (let id = 0; id < structure.size; id += 1) {
+  for (let id = 0; structure.sideLocks && id < structure.size; id += 1) {
     for (const neighbor of structure.leftNeighbors[id]) cached[neighbor].push(id);
     for (const neighbor of structure.rightNeighbors[id]) cached[neighbor].push(id);
   }
@@ -39,6 +39,7 @@ function isAvailableAfterLeaving(structure, state, id, leaving) {
     if (leaving.has(upperId)) upperLiveCount -= 1;
   }
   if (upperLiveCount !== 0) return false;
+  if (!structure.sideLocks) return true;
   return !(
     hasBoard(state, structure.leftNeighbors[id], leaving)
     && hasBoard(state, structure.rightNeighbors[id], leaving)

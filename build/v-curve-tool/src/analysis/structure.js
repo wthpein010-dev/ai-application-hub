@@ -10,7 +10,7 @@ function positionKey(layer, x, y) {
   return `${layer}|${x}|${y}`;
 }
 
-export function buildStructure(tiles) {
+export function buildStructure(tiles, options = {}) {
   if (!Array.isArray(tiles) || tiles.length === 0) {
     throw new Error("结构至少需要一张砖。");
   }
@@ -58,6 +58,7 @@ export function buildStructure(tiles) {
   return {
     tiles: normalizedTiles,
     size,
+    sideLocks: options.sideLocks === true,
     upperByTile,
     childrenByTile,
     leftNeighbors,
@@ -97,6 +98,7 @@ function hasBoardNeighbor(state, ids) {
 
 export function isAvailable(structure, state, id) {
   if (state.status[id] !== BOARD || state.upperLiveCount[id] !== 0) return false;
+  if (!structure.sideLocks) return true;
   return !(
     hasBoardNeighbor(state, structure.leftNeighbors[id])
     && hasBoardNeighbor(state, structure.rightNeighbors[id])

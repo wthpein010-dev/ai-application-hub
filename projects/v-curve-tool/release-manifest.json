@@ -1,6 +1,10 @@
 {
   "schemaVersion": "v-curve-tool-release/1",
   "version": "1.2.0",
+  "release": {
+    "id": 378411760,
+    "tag": "v-curve-tool-v1.2.0"
+  },
   "releaseWorkflow": {
     "runId": 33163156365,
     "sourceCommit": "54b0c8765dc079979617bf51670c37dfb1eb3ac0"

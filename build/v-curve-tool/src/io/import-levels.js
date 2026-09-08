@@ -1,4 +1,8 @@
-import { normalizePawsLevel } from "../model/normalize.js";
+import {
+  normalizePawsLevel,
+  normalizeSheepLevel,
+  normalizeSheepLibrary,
+} from "../model/normalize.js";
 
 function filePath(file) {
   return String(file?.webkitRelativePath || file?.name || "未知文件");
@@ -42,27 +46,38 @@ export async function importLevelFiles(fileList) {
     const path = filePath(file);
     try {
       const raw = JSON.parse(await file.text());
-      return { level: normalizePawsLevel(raw, file.name || path) };
+      const sourceFile = file.name || path;
+      if (Array.isArray(raw)) {
+        const library = normalizeSheepLibrary(raw, sourceFile);
+        return {
+          levels: library.levels,
+          errors: library.errors.map((message) => ({ name: sourceFile, path, message })),
+        };
+      }
+      const level = raw?.levelData
+        ? normalizeSheepLevel(raw, sourceFile)
+        : normalizePawsLevel(raw, sourceFile);
+      return { levels: [level], errors: [] };
     } catch (error) {
       return {
-        error: {
+        errors: [{
           name: file.name || path,
           path,
           message: error instanceof Error ? error.message : String(error),
-        },
+        }],
       };
     }
   }));
 
   const levels = settled
-    .filter((entry) => entry.level)
-    .map((entry) => entry.level)
+    .flatMap((entry) => entry.levels ?? [])
     .sort((left, right) => (
       numericLevelKey(left) - numericLevelKey(right)
       || left.sourceFile.localeCompare(right.sourceFile, "zh-CN", { numeric: true })
     ));
-  const errors = settled.filter((entry) => entry.error).map((entry) => entry.error);
+  const errors = settled.flatMap((entry) => entry.errors ?? []);
   const selectedLevel = levels.find(isLevel20)
+    ?? (levels.every((level) => level.source === "sheep") ? levels[0] : null)
     ?? [...levels].sort((left, right) => (
       right.tiles.length - left.tiles.length
       || numericLevelKey(left) - numericLevelKey(right)

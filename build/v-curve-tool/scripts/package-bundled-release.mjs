@@ -10,7 +10,7 @@ const packageJson = JSON.parse(await readFile(path.join(projectRoot, "package.js
 const releaseDirectory = path.join(projectRoot, "release");
 const archiveScript = path.join(projectRoot, "scripts", "bundled-archive.ps1");
 const levelsDirectory = path.resolve(
-  process.argv[2] ?? "E:\\Mahjong\\PawsHomeClient\\Assets\\Editor\\Res\\Config\\Gameplay\\Editorlevel",
+  process.argv[2] ?? path.join(projectRoot, "bundled-levels", "EditorLevels-v150"),
 );
 const staged = await stageBundledRelease({
   releaseDirectory,

@@ -41,7 +41,13 @@ function createScale(width, height, yMax) {
   };
 }
 
-export function createComparisonScales(sheepSeries, pawsSeries, width, height) {
+export function createComparisonScales(sheepSeries, pawsSeries, width, height, mode = "shared") {
+  if (mode === "independent") {
+    return {
+      sheep: createScale(width, height, Math.max(4, Math.ceil(seriesMaximum(sheepSeries) + 3))),
+      paws: createScale(width, height, Math.max(4, Math.ceil(seriesMaximum(pawsSeries) + 3))),
+    };
+  }
   const yMax = niceMaximum(Math.max(
     seriesMaximum(sheepSeries),
     seriesMaximum(pawsSeries),
@@ -112,6 +118,7 @@ export class VChart {
     this.context = canvas.getContext("2d");
     this.series = options.series ?? [];
     this.yMax = options.yMax ?? null;
+    this.progressLabel = options.progressLabel ?? "消除进度";
     this.hoverProgress = null;
     this.onPointerMove = (event) => this.handlePointerMove(event);
     this.onPointerLeave = () => {
@@ -201,7 +208,7 @@ export class VChart {
     context.textAlign = "left";
     context.fillText("可操作砖数 V", scale.plot.left, 16);
     context.textAlign = "right";
-    context.fillText("消除进度", scale.plot.right, scale.height - 8);
+    context.fillText(this.progressLabel, scale.plot.right, scale.height - 8);
     context.restore();
   }
 

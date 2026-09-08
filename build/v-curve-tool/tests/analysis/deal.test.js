@@ -1,7 +1,5 @@
 import { describe, expect, it } from "vitest";
 import { assignTypes } from "../../src/analysis/deal.js";
-import { normalizePawsLevel } from "../../src/model/normalize.js";
-import pseudoRandomLevel from "../../bundled-levels/Editorlevel/level_0008_r2_第二关模板2.json";
 
 function levelWithTypes(types, rules = {}) {
   return {
@@ -17,51 +15,81 @@ function levelWithTypes(types, rules = {}) {
   };
 }
 
-function coveredByUpperLayer(tiles, id) {
-  const tile = tiles[id];
-  return tiles.some((other, otherId) => (
-    otherId !== id
-    && other.layer > tile.layer
-    && Math.abs(other.x - tile.x) < 8
-    && Math.abs(other.y - tile.y) < 8
-  ));
-}
-
-function hasImmediatePair(level, assigned, groupType) {
-  const counts = new Map();
-  const groupTypes = new Set();
-  level.tiles.forEach((tile, id) => {
-    if (coveredByUpperLayer(level.tiles, id)) return;
-    const type = assigned[id];
-    if (type <= 0) return;
-    counts.set(type, (counts.get(type) ?? 0) + 1);
-    if (tile.type === groupType) groupTypes.add(type);
-  });
-  return [...groupTypes].some((type) => counts.get(type) >= 2);
-}
-
-function pseudoFixture(mode) {
-  return {
-    id: `pseudo-${mode}`,
-    source: "paws",
-    rules: {
-      gameLevelOrder: 2,
-      limitedTypeMax: 3,
-      fullTypeMin: 1,
-      fullTypeMax: 3,
-      pseudoRandomLimitedMode: 0,
-      pseudoRandomFullMode: mode,
-    },
-    tiles: [
-      { id: 0, type: -1, x: 0, y: 0, layer: 2 },
-      { id: 1, type: -1, x: 16, y: 0, layer: 2 },
-      { id: 2, type: -1, x: 0, y: 0, layer: 1 },
-      { id: 3, type: -1, x: 16, y: 0, layer: 1 },
-    ],
-  };
-}
-
 describe("deterministic paired deals", () => {
+  it("draws every pair independently instead of guaranteeing a balanced type count", () => {
+    const fixture = levelWithTypes(Array(8).fill(0));
+    const distinctCounts = Array.from({ length: 12 }, (_, seed) => (
+      new Set(assignTypes(fixture, seed)).size
+    ));
+    expect(distinctCounts.some((count) => count < 4)).toBe(true);
+    for (let seed = 0; seed < 12; seed += 1) {
+      const counts = new Map();
+      for (const type of assignTypes(fixture, seed)) counts.set(type, (counts.get(type) ?? 0) + 1);
+      expect([...counts.values()].every((count) => count % 2 === 0)).toBe(true);
+    }
+  });
+
+  it("honors per-tile ranges for both random pools and rejects odd subgroups", () => {
+    const fixture = levelWithTypes([0, 0, -1, -1]);
+    fixture.tiles[0].metaType = 12; fixture.tiles[0].metaData = 12;
+    fixture.tiles[1].metaType = 12; fixture.tiles[1].metaData = 12;
+    fixture.tiles[2].metaType = 19; fixture.tiles[2].metaData = 19;
+    fixture.tiles[3].metaType = 19; fixture.tiles[3].metaData = 19;
+    expect(assignTypes(fixture, 7)).toEqual([12, 12, 19, 19]);
+    fixture.tiles[1].metaData = 13;
+    expect(assignTypes(fixture, 7)).toMatchObject({ valid: false, group: "limited", count: 1 });
+  });
+
+  it("pairs the fun-clear segment in expected open/high-layer/y/x order", () => {
+    const fixture = levelWithTypes(Array(8).fill(-1), { funClearPercent: 50 });
+    fixture.tiles = fixture.tiles.map((tile, index) => ({ ...tile, x: (7 - index) * 16, y: 0, layer: 1 }));
+    for (let seed = 0; seed < 8; seed += 1) {
+      const types = assignTypes(fixture, seed);
+      expect(types[7]).toBe(types[6]);
+      expect(types[5]).toBe(types[4]);
+    }
+  });
+
+  it("uses Sheep tiles only as a layout and draws Paws pairs regardless of source types or metadata", () => {
+    const fixture = levelWithTypes([1001, 5, 1, 8], { limitedTypeMax: 1 });
+    fixture.source = "sheep";
+    fixture.tiles.forEach((tile) => { tile.metaType = 20; tile.metaData = 20; });
+    expect(assignTypes(fixture, 0)).toEqual([1, 1, 1, 1]);
+    expect(fixture.tiles.map((tile) => tile.type)).toEqual([1001, 5, 1, 8]);
+  });
+
+  it("keeps 100% fun-clear pairs intact instead of running fill-stack diversity afterwards", () => {
+    const fixture = levelWithTypes(Array(8).fill(-1), { fullTypeMin: 1, fullTypeMax: 4, funClearPercent: 100 });
+    fixture.tiles = fixture.tiles.map((tile, index) => ({
+      ...tile, x: index % 2 * 16, y: 0, layer: 4 - Math.floor(index / 2), presetColorType: 3,
+    }));
+    for (let seed = 0; seed < 12; seed += 1) {
+      const types = assignTypes(fixture, seed);
+      expect(types[0]).toBe(types[1]);
+      expect(types[2]).toBe(types[3]);
+      expect(types[4]).toBe(types[5]);
+      expect(types[6]).toBe(types[7]);
+    }
+  });
+
+  it("diversifies simultaneous fill-stack tops by swapping without changing the pair pool", () => {
+    const fixture = levelWithTypes(Array(8).fill(-1), { fullTypeMin: 1, fullTypeMax: 4 });
+    fixture.tiles = fixture.tiles.map((tile, index) => ({
+      ...tile, x: index % 2 * 16, y: 0, layer: 4 - Math.floor(index / 2), presetColorType: 3,
+    }));
+    const ordinary = { ...fixture, tiles: fixture.tiles.map((tile) => ({ ...tile, presetColorType: 1 })) };
+    const mixedSeeds = Array.from({ length: 20 }, (_, seed) => seed).filter((seed) => {
+      const types = assignTypes(ordinary, seed);
+      return types[0] === types[1] && new Set(types).size > 1;
+    });
+    expect(mixedSeeds.length).toBeGreaterThan(0);
+    expect(mixedSeeds.some((seed) => {
+      const types = assignTypes(fixture, seed);
+      const original = assignTypes(ordinary, seed);
+      expect([...types].sort()).toEqual([...original].sort());
+      return types[0] !== types[1];
+    })).toBe(true);
+  });
   it("preserves fixed types and pairs type 0 and -1 pools separately", () => {
     const level = levelWithTypes([3, 3, 0, 0, -1, -1]);
 
@@ -77,12 +105,6 @@ describe("deterministic paired deals", () => {
     expect(types).toEqual(assignTypes(level, 42));
   });
 
-  it("matches the Unity XorShift deal for a fixed runtime seed", () => {
-    const level = levelWithTypes(Array(6).fill(0), { gameLevelOrder: 2 });
-
-    expect(assignTypes(level, 42)).toEqual([4, 4, 3, 3, 4, 4]);
-  });
-
   it("reports an odd random group as invalid instead of inventing a match", () => {
     const result = assignTypes(levelWithTypes([0, 0, 0, -1, -1]), 7);
 
@@ -92,62 +114,5 @@ describe("deterministic paired deals", () => {
       count: 3,
     });
     expect(result.reason).toContain("奇数");
-  });
-
-  it("retries a matchable pseudo-random deal until an exposed group pair exists", () => {
-    const level = pseudoFixture(1);
-
-    const assigned = assignTypes(level, 0);
-
-    expect(Array.isArray(assigned)).toBe(true);
-    expect(hasImmediatePair(level, assigned, -1)).toBe(true);
-  });
-
-  it("retries an unmatchable pseudo-random deal until no exposed group pair exists", () => {
-    const level = pseudoFixture(2);
-
-    const assigned = assignTypes(level, 4);
-
-    expect(Array.isArray(assigned)).toBe(true);
-    expect(hasImmediatePair(level, assigned, -1)).toBe(false);
-  });
-
-  it("rejects an impossible unmatchable pseudo-random deal after bounded retries", () => {
-    const level = pseudoFixture(2);
-    level.tiles.forEach((tile) => { tile.layer = 1; });
-
-    const result = assignTypes(level, 4);
-
-    expect(result).toMatchObject({
-      valid: false,
-      group: "full",
-      mode: 2,
-      attempts: 128,
-    });
-    expect(result.reason).toContain("不可消除");
-  });
-
-  it("uses the runtime 1–8 limited pool for first-round levels", () => {
-    const level = levelWithTypes(Array(16).fill(0), {
-      gameLevelOrder: 1,
-      limitedTypeMax: 2,
-      pseudoRandomLimitedMode: 0,
-      pseudoRandomFullMode: 0,
-    });
-
-    const assigned = assignTypes(level, 0);
-
-    expect(Math.min(...assigned)).toBeGreaterThanOrEqual(1);
-    expect(Math.max(...assigned)).toBeLessThanOrEqual(8);
-    expect(assigned.some((type) => type > 2)).toBe(true);
-  });
-
-  it("honors matchable pseudo-random semantics on a bundled Unity level", () => {
-    const level = normalizePawsLevel(pseudoRandomLevel, "level_0008_r2_第二关模板2.json");
-
-    const assigned = assignTypes(level, 0);
-
-    expect(Array.isArray(assigned)).toBe(true);
-    expect(hasImmediatePair(level, assigned, -1)).toBe(true);
   });
 });

@@ -40,13 +40,20 @@ describe("runtime-aligned structure availability", () => {
     expect(availableIds(structure, createBoardState(structure))).toEqual([0, 1]);
   });
 
-  it("side-locks the middle tile with live neighbors at x plus and minus 8", () => {
+  it("keeps the middle tile operable because current client side locking is disabled", () => {
     const structure = buildStructure([
       tile(0, 0, 0, 1),
       tile(1, 8, 0, 1),
       tile(2, 16, 0, 1),
     ]);
 
+    expect(availableIds(structure, createBoardState(structure))).toEqual([0, 1, 2]);
+  });
+
+  it("can explicitly evaluate the legacy side-lock policy", () => {
+    const structure = buildStructure([
+      tile(0, 0, 0, 1), tile(1, 8, 0, 1), tile(2, 16, 0, 1),
+    ], { sideLocks: true });
     expect(availableIds(structure, createBoardState(structure))).toEqual([0, 2]);
   });
 

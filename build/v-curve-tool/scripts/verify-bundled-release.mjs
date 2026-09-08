@@ -21,7 +21,7 @@ const names = bundleArtifactNames(packageJson.version);
 const releaseDirectory = path.join(projectRoot, "release");
 const archiveScript = path.join(projectRoot, "scripts", "bundled-archive.ps1");
 const sourceLevels = path.resolve(
-  process.argv[2] ?? "E:\\Mahjong\\PawsHomeClient\\Assets\\Editor\\Res\\Config\\Gameplay\\Editorlevel",
+  process.argv[2] ?? path.join(projectRoot, "bundled-levels", "EditorLevels-v150"),
 );
 const zipPath = path.join(releaseDirectory, names.zip);
 const zipChecksumPath = path.join(releaseDirectory, names.zipChecksum);
@@ -113,7 +113,7 @@ try {
     stat(executablePath),
   ]);
   assert.deepEqual(extractedManifest, sourceManifest, "解压后的 Editorlevel 与源目录不一致");
-  assert.equal(Object.keys(sourceManifest).length, 62, "用户指定的 Editorlevel 当前应包含 62 个文件");
+  assert.equal(Object.keys(sourceManifest).length, 64, "当前 Editorlevel 快照应包含 32 个JSON及32个伴随文件");
   const executableSha256 = createHash("sha256").update(executableBytes).digest("hex");
   assert.equal(
     await readFile(path.join(bundleDirectory, names.executableChecksum), "utf8"),
@@ -145,13 +145,17 @@ try {
     document.querySelector("#analysis-status")?.textContent.includes("分析完成")
   ), null, { timeout: 120_000 });
   const state = await page.evaluate(() => ({
-    summary: document.querySelector("#import-summary")?.textContent,
+    leftSummary: document.querySelector("#left-import-summary")?.textContent,
+    rightSummary: document.querySelector("#right-import-summary")?.textContent,
     status: document.querySelector("#analysis-status")?.textContent,
-    selected: document.querySelector("#level-select")?.selectedOptions?.[0]?.textContent,
+    leftSelected: document.querySelector("#left-level-select")?.selectedOptions?.[0]?.textContent,
+    rightSelected: document.querySelector("#right-level-select")?.selectedOptions?.[0]?.textContent,
   }));
-  assert.match(state.summary, /已导入 31 个关卡 · 忽略 31 个文件 · 5 项警告/);
-  assert.match(state.selected, /level_0020 · 368 砖 · 21 层/);
-  assert.match(state.status, /level_0020 分析完成 · 300 seeds/);
+  assert.match(state.leftSummary, /36/);
+  assert.match(state.rightSummary, /32 个工程关卡/);
+  assert.match(state.leftSelected, /900121/);
+  assert.match(state.rightSelected, /level_0020/);
+  assert.match(state.status, /分析完成/);
   assert.deepEqual(consoleErrors, []);
 
   console.log(JSON.stringify({

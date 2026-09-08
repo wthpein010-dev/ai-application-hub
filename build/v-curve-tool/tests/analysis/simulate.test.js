@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { buildStructure } from "../../src/analysis/structure.js";
-import { monteCarloBand, simulateOnce } from "../../src/analysis/simulate.js";
+import { buildStructure, createBoardState } from "../../src/analysis/structure.js";
+import { monteCarloBand, simulateOnce, scoreAvailableAfterLeaving } from "../../src/analysis/simulate.js";
 
 function tile(id, x, y, layer, type) {
   return {
@@ -59,6 +59,14 @@ function stashRevealLevel() {
 }
 
 describe("pair-and-tray simulation", () => {
+  it("does not reintroduce disabled side locks inside greedy lookahead scoring", () => {
+    const fixture = level([
+      tile(0, 0, 0, 1, 1), tile(1, 8, 0, 1, 2), tile(2, 16, 0, 1, 1),
+      tile(3, 32, 0, 1, 2),
+    ]);
+    const structure = buildStructure(fixture.tiles);
+    expect(scoreAvailableAfterLeaving(structure, createBoardState(structure), [3])).toBe(3);
+  });
   it("stashes one unmatched tile without advancing cleared progress", () => {
     const fixture = unmatchedThenPairLevel();
     const result = simulateOnce(fixture, buildStructure(fixture.tiles), {

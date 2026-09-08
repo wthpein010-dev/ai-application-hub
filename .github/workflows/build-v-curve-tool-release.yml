@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
   push:
     branches:
-      - feat/v-curve-tool-20260828
+      - "feat/v-curve-tool-*"
     paths:
       - ".github/workflows/build-v-curve-tool-release.yml"
       - "build/v-curve-tool/**"
@@ -31,6 +31,9 @@ jobs:
             runner: macos-15-intel
             expected-machine: x86_64
     runs-on: ${{ matrix.runner }}
+    outputs:
+      version: ${{ steps.package.outputs.version }}
+      bundled-files: ${{ steps.package.outputs.bundled-files }}
     defaults:
       run:
         working-directory: build/v-curve-tool
@@ -51,6 +54,27 @@ jobs:
       - name: Install locked dependencies
         run: npm ci
 
+      - name: Read package version and bundled payload
+        id: package
+        shell: bash
+        run: |
+          set -euo pipefail
+          version="$(node -p 'require("./package.json").version')"
+          [[ "$version" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]
+          source="$(node -p 'require("./package.json").build.mac.extraResources.find(resource => resource.to === "Editorlevel").from')"
+          [[ "$source" == bundled-levels/* && "$source" != *..* ]]
+          test -d "$source"
+          files="$(find "$source" -type f | wc -l | tr -d ' ')"
+          json="$(find "$source" -type f -name '*.json' | wc -l | tr -d ' ')"
+          meta="$(find "$source" -type f -name '*.meta' | wc -l | tr -d ' ')"
+          test "$json" -gt 0
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+          echo "bundled-files=$files" >> "$GITHUB_OUTPUT"
+          echo "PACKAGE_VERSION=$version" >> "$GITHUB_ENV"
+          echo "BUNDLED_FILES=$files" >> "$GITHUB_ENV"
+          echo "BUNDLED_JSON=$json" >> "$GITHUB_ENV"
+          echo "BUNDLED_META=$meta" >> "$GITHUB_ENV"
+
       - name: Run the application suite
         run: npm test
 
@@ -61,7 +85,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          archive="release/V曲线对比工具-1.2.0-macOS-${{ matrix.arch }}.zip"
+          archive="release/V曲线对比工具-${PACKAGE_VERSION}-macOS-${{ matrix.arch }}.zip"
           test -f "$archive"
           extract="${RUNNER_TEMP}/v-curve-${{ matrix.arch }}"
           ditto -x -k "$archive" "$extract"
@@ -70,14 +94,15 @@ jobs:
           executable="$app/Contents/MacOS/V曲线对比工具"
           test -x "$executable"
           plutil -lint "$app/Contents/Info.plist"
+          test "$(/usr/libexec/PlistBuddy -c 'Print :CFBundleShortVersionString' "$app/Contents/Info.plist")" = "$PACKAGE_VERSION"
           file "$executable" | grep -q 'Mach-O'
           file "$executable" | grep -q '${{ matrix.expected-machine }}'
           codesign --force --deep --sign - "$app"
           codesign --verify --deep --strict "$app"
           levels="$app/Contents/Resources/Editorlevel"
-          test "$(find "$levels" -type f | wc -l | tr -d ' ')" = "62"
-          test "$(find "$levels" -type f -name '*.json' | wc -l | tr -d ' ')" = "31"
-          test "$(find "$levels" -type f -name '*.meta' | wc -l | tr -d ' ')" = "31"
+          test "$(find "$levels" -type f | wc -l | tr -d ' ')" = "$BUNDLED_FILES"
+          test "$(find "$levels" -type f -name '*.json' | wc -l | tr -d ' ')" = "$BUNDLED_JSON"
+          test "$(find "$levels" -type f -name '*.meta' | wc -l | tr -d ' ')" = "$BUNDLED_META"
           open -n "$app"
           sleep 5
           canonical_executable="$(cd "$(dirname "$executable")" && pwd -P)/$(basename "$executable")"
@@ -92,8 +117,8 @@ jobs:
         with:
           name: v-curve-tool-macos-${{ matrix.arch }}
           path: |
-            build/v-curve-tool/release/V曲线对比工具-1.2.0-macOS-${{ matrix.arch }}.zip
-            build/v-curve-tool/release/V曲线对比工具-1.2.0-macOS-${{ matrix.arch }}.zip.sha256.txt
+            build/v-curve-tool/release/V曲线对比工具-${{ steps.package.outputs.version }}-macOS-${{ matrix.arch }}.zip
+            build/v-curve-tool/release/V曲线对比工具-${{ steps.package.outputs.version }}-macOS-${{ matrix.arch }}.zip.sha256.txt
           if-no-files-found: error
           retention-days: 14
 
@@ -101,6 +126,9 @@ jobs:
     name: Assemble the public dual-architecture archive
     needs: build
     runs-on: macos-14
+    env:
+      PACKAGE_VERSION: ${{ needs.build.outputs.version }}
+      BUNDLED_FILES: ${{ needs.build.outputs.bundled-files }}
     steps:
       - name: Download both verified packages
         uses: actions/download-artifact@v4
@@ -113,13 +141,13 @@ jobs:
         run: |
           set -euo pipefail
           mkdir -p stage/arm64 stage/x64
-          ditto -x -k artifacts/v-curve-tool-macos-arm64/V曲线对比工具-1.2.0-macOS-arm64.zip stage/arm64
-          ditto -x -k artifacts/v-curve-tool-macos-x64/V曲线对比工具-1.2.0-macOS-x64.zip stage/x64
+          ditto -x -k "artifacts/v-curve-tool-macos-arm64/V曲线对比工具-${PACKAGE_VERSION}-macOS-arm64.zip" stage/arm64
+          ditto -x -k "artifacts/v-curve-tool-macos-x64/V曲线对比工具-${PACKAGE_VERSION}-macOS-x64.zip" stage/x64
           test -x stage/arm64/V曲线对比工具.app/Contents/MacOS/V曲线对比工具
           test -x stage/x64/V曲线对比工具.app/Contents/MacOS/V曲线对比工具
           file stage/arm64/V曲线对比工具.app/Contents/MacOS/V曲线对比工具 | grep -q arm64
           file stage/x64/V曲线对比工具.app/Contents/MacOS/V曲线对比工具 | grep -q x86_64
-          archive="$GITHUB_WORKSPACE/V-Curve-Comparison-Tool-1.2.0-macOS.zip"
+          archive="$GITHUB_WORKSPACE/V-Curve-Comparison-Tool-${PACKAGE_VERSION}-macOS.zip"
           (cd stage && zip -qry --symlinks "$archive" arm64 x64)
           (cd "$(dirname "$archive")" && shasum -a 256 "$(basename "$archive")") > "$archive.sha256.txt"
           ARCHIVE_PATH="$archive" SOURCE_SHA="$GITHUB_SHA" node - <<'NODE'
@@ -129,13 +157,13 @@ jobs:
           const bytes = statSync(archive).size;
           const sha256 = createHash("sha256").update(readFileSync(archive)).digest("hex").toUpperCase();
           writeFileSync("v-curve-tool-macos-release.json", `${JSON.stringify({
-            version: "1.2.0",
+            version: process.env.PACKAGE_VERSION,
             sourceCommit: process.env.SOURCE_SHA,
-            asset: "V-Curve-Comparison-Tool-1.2.0-macOS.zip",
+            asset: `V-Curve-Comparison-Tool-${process.env.PACKAGE_VERSION}-macOS.zip`,
             bytes,
             sha256,
             architectures: ["arm64", "x64"],
-            bundledFiles: 62,
+            bundledFiles: Number(process.env.BUNDLED_FILES),
           }, null, 2)}\n`);
           NODE
 
@@ -144,8 +172,8 @@ jobs:
         with:
           name: v-curve-tool-macos-release
           path: |
-            V-Curve-Comparison-Tool-1.2.0-macOS.zip
-            V-Curve-Comparison-Tool-1.2.0-macOS.zip.sha256.txt
+            V-Curve-Comparison-Tool-${{ needs.build.outputs.version }}-macOS.zip
+            V-Curve-Comparison-Tool-${{ needs.build.outputs.version }}-macOS.zip.sha256.txt
             v-curve-tool-macos-release.json
           if-no-files-found: error
           retention-days: 14

@@ -27,9 +27,9 @@ const rootExecutables = entries
   .sort();
 
 assert.deepEqual(
-  rootExecutables,
+  rootExecutables.filter((name) => name.includes(`-${packageJson.version}-`)),
   [names.exe],
-  "release 根目录必须只包含一个命名正确的便携 EXE",
+  "release 根目录必须包含一个当前版本、命名正确的便携 EXE；旧版可保留",
 );
 
 const executablePath = path.join(releasePath, names.exe);

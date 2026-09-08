@@ -120,7 +120,9 @@ body.vcurve-demo-page {
   .vcurve-hero ul { grid-template-columns: 1fr; }
   .vcurve-hero li { min-height: 0; }
   .vcurve-frame-head { align-items: flex-start; flex-direction: column; }
-  .vcurve-frame-head small { display: block; margin-top: 3px; white-space: normal; }
+  .vcurve-frame-head > div { display: grid; grid-template-columns: 9px minmax(0, 1fr); width: 100%; }
+  .vcurve-frame-head strong { white-space: nowrap; }
+  .vcurve-frame-head small { display: block; grid-column: 1 / -1; margin-top: 3px; white-space: normal; }
   .vcurve-frame-wrap,
   .vcurve-frame-wrap iframe { min-height: 760px; height: 760px; }
 }

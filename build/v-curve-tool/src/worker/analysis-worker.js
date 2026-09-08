@@ -1,5 +1,4 @@
-import { compareReports, analyzeLevel } from "../analysis/report.js";
-import { normalizeSheepLevel } from "../model/normalize.js";
+import { analyzeComparisonLevels } from "../analysis/report.js";
 
 const cancelled = new Set();
 
@@ -15,19 +14,16 @@ self.addEventListener("message", (event) => {
   }
   if (message.type !== "analyze") return;
 
-  const { requestId, level, baseline, options } = message;
+  const { requestId, leftLevel, rightLevel, options } = message;
   cancelled.delete(requestId);
   try {
-    const sheepLevel = Array.isArray(baseline?.tiles)
-      ? baseline
-      : normalizeSheepLevel(baseline);
-    const sheep = analyzeLevel(sheepLevel, options, (payload) => {
-      safePost(requestId, { type: "progress", side: "sheep", payload });
+    if (!leftLevel?.tiles?.length || !rightLevel?.tiles?.length) {
+      throw new Error("左右两侧都必须选择有效关卡。");
+    }
+    const comparison = analyzeComparisonLevels(leftLevel, rightLevel, options, ({ side, payload }) => {
+      safePost(requestId, { type: "progress", side, payload });
     });
-    const paws = analyzeLevel(level, options, (payload) => {
-      safePost(requestId, { type: "progress", side: "paws", payload });
-    });
-    safePost(requestId, { type: "result", payload: compareReports(sheep, paws) });
+    safePost(requestId, { type: "result", payload: comparison });
   } catch (error) {
     safePost(requestId, {
       type: "error",

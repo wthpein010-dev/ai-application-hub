@@ -11,13 +11,13 @@ import {
 const require = createRequire(import.meta.url);
 const { readBundledLevelFiles } = require("../../desktop/bundled-levels.cjs");
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..");
-const bundledDirectory = path.join(root, "bundled-levels", "Editorlevel");
+const bundledDirectory = path.join(root, "bundled-levels", "EditorLevels-v150");
 
 describe("tracked cross-platform Editorlevel payload", () => {
-  it("ships the confirmed 31 playable levels and their 31 Unity metadata files", async () => {
+  it("ships the September 8 snapshot of 32 playable levels and their Unity metadata files", async () => {
     const payload = await readBundledLevelFiles([bundledDirectory]);
     expect(payload.available).toBe(true);
-    expect(payload.files).toHaveLength(62);
+    expect(payload.files).toHaveLength(64);
 
     const bridged = await loadBundledLevelFiles({
       async loadBundledLevels() {
@@ -25,8 +25,8 @@ describe("tracked cross-platform Editorlevel payload", () => {
       },
     });
     const result = await importLevelFiles(bridged.files);
-    expect(result.importedCount).toBe(31);
-    expect(result.ignoredCount).toBe(31);
+    expect(result.importedCount).toBe(32);
+    expect(result.ignoredCount).toBe(32);
     expect(result.errors).toEqual([]);
     expect(result.selectedLevel?.id).toBe("level_0020");
   });
