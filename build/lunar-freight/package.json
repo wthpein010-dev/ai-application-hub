@@ -1,7 +1,7 @@
 {
   "name": "lunar-freight-public", "version": "1.0.0", "private": true, "type": "module",
   "engines": { "node": ">=22.13.0" },
-  "scripts": { "build": "vite build", "test": "node --test tests/physics.test.mjs && node tests/route.mjs", "typecheck": "tsc --noEmit" },
+  "scripts": { "build": "vite build", "test": "node --test tests/physics.test.mjs tests/campaign.test.mjs && node tests/campaign-route.mjs", "typecheck": "tsc --noEmit" },
   "dependencies": { "@base-ui/react": "1.7.0", "cannon-es": "0.20.0", "class-variance-authority": "0.7.1", "clsx": "2.1.1", "lucide-react": "1.31.0", "react": "19.2.6", "react-dom": "19.2.6", "tailwind-merge": "3.6.0", "three": "0.185.1" },
   "devDependencies": { "@tailwindcss/postcss": "4.2.1", "@types/node": "22.19.19", "@types/react": "19.2.14", "@types/react-dom": "19.2.3", "@types/three": "0.185.4", "@vitejs/plugin-react": "6.0.2", "tailwindcss": "4.2.1", "typescript": "5.9.3", "vite": "8.0.13" }
 }

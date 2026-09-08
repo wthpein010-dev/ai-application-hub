@@ -330,7 +330,7 @@ globalThis.HUB_PROJECT_MEDIA = Object.freeze({
     visualKind: "data",
   }),
   "lunar-freight": Object.freeze({
-    src: "./assets/hub-showcase/lunar-freight.webp?v=20260908-lunar-freight",
+    src: "./assets/hub-showcase/lunar-freight.webp?v=20260908-lunar-campaign",
     alt: "月面货运实时 3D 月球车运输游戏画面",
     position: "center",
     layout: "wide",
