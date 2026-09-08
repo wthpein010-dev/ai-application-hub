@@ -992,6 +992,31 @@ const defaultApps = [
     risk: 8,
     polish: 9
   },
+  {
+    id: "lunar-freight",
+    name: "月面货运",
+    category: "实时 3D 小游戏",
+    status: "game",
+    badge: "小游戏",
+    brief: "驾驶月球车在低重力地形中装卸并运送货物，管理车辆姿态、电量与任务路线。",
+    problem: "把低重力驾驶、货物装卸、能源管理和月面路线选择组合成无需安装即可体验的实时运输挑战。",
+    aiUse: "AI 参与实时 3D 场景、车辆物理、任务流程、键鼠与触控操作适配，以及公开网页体验的构建与验收。",
+    folder: "./projects/lunar-freight/",
+    entry: "./projects/lunar-freight/index.html",
+    video: "",
+    videoExemption: "user-request-no-video",
+    package: "",
+    platforms: {
+      web: { href: "./projects/lunar-freight/index.html", label: "演示" },
+      windows: "",
+      mac: ""
+    },
+    tags: ["月球车", "实时 3D", "低重力", "货运任务"],
+    speed: 9,
+    impact: 9,
+    risk: 8,
+    polish: 9
+  },
 ];
 
 let apps = loadApps();
@@ -1618,6 +1643,7 @@ function renderAppCard(app, index = 0, extraClass = "", actionMode = "default") 
 }
 
 function gameDisplayRank(app) {
+  if (app.id === "lunar-freight") return Number.POSITIVE_INFINITY;
   if (app.id === "icecream") return Number.MAX_SAFE_INTEGER;
   if (app.id === "zhuanglege-sha") return -3;
   if (app.id === "xiang-le-ge-xiang") return -2;

@@ -19,16 +19,13 @@ function escapeRegExp(value) {
 
 test("every published video entry provides its own lazy-loaded tutorial video", () => {
   const apps = loadDefaultApps();
-  assert.equal(apps.length, 33, "the hub should keep its full project inventory");
+  assert.equal(apps.length, 34, "the hub should keep its full project inventory");
 
   const appsWithoutVideo = apps.filter((app) => !app.video);
-  assert.equal(
-    appsWithoutVideo.length,
-    0,
-    `every published project should provide a tutorial video; missing: ${Array.from(
-      appsWithoutVideo,
-      (app) => app.id,
-    ).join(", ")}`,
+  assert.deepEqual(
+    Array.from(appsWithoutVideo, ({ id, videoExemption }) => ({ id, videoExemption })),
+    [{ id: "lunar-freight", videoExemption: "user-request-no-video" }],
+    "only the explicitly approved lunar-freight project may omit a tutorial video",
   );
 
   for (const app of apps.filter((app) => app.video)) {
@@ -72,7 +69,7 @@ test("every video page follows the shared Hub player contract", () => {
   assert.equal(existsSync(join(root, "assets", "hub-video-player.css")), true);
   assert.equal(existsSync(join(root, "assets", "hub-video-player.js")), true);
 
-  for (const app of loadDefaultApps()) {
+  for (const app of loadDefaultApps().filter((item) => item.video)) {
     const pagePath = join(root, ...app.video.replace(/^\.\//, "").split("/"));
     const html = readFileSync(pagePath, "utf8");
     const relativeRoot = relative(dirname(pagePath), root).replaceAll(sep, "/") || ".";
