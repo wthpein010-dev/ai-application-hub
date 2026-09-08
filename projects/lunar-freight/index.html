@@ -1,0 +1,20 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="description" content="驾驶实时 3D 六轮月球车，在低重力月面运送三箱设备。支持真实碰撞、掉货拾取、翻车复位和三种镜头，打开即玩。">
+  <meta name="theme-color" content="#08101b"><title>月面货运</title>
+  <link rel="icon" href="../../assets/app-mark.svg"><link rel="stylesheet" href="../../assets/subpage-shell.css">
+  <style>
+    *{box-sizing:border-box}body{margin:0;color:#edf4fc;font-family:Arial,"Microsoft YaHei",sans-serif;background:#09121f url('../../assets/hero-ai-companion.png') center/cover fixed}
+    .bar{height:74px;display:flex;align-items:center;justify-content:space-between;padding:0 20px 0 175px;background:#07101ee8;border-bottom:1px solid #314454}.bar h1{font-size:17px;margin:0}.bar small{color:#96acbf;font-size:12px;margin-left:15px}.bar a,.bar button{color:#ecf5ff;background:#182a40;border:1px solid #496078;border-radius:7px;padding:9px 12px;text-decoration:none;font:inherit;font-size:13px;cursor:pointer}.links{display:flex;gap:8px}iframe{display:block;width:100%;height:calc(100dvh - 74px);min-height:500px;border:0;background:#050a12}iframe:fullscreen{height:100dvh}button:focus-visible,a:focus-visible{outline:3px solid #ffad60;outline-offset:3px}@media(max-width:700px){.bar{padding-left:165px;padding-right:12px}.bar h1{font-size:14px}.bar small,.direct{display:none}.bar button{padding:8px}.links{gap:4px}iframe{min-height:580px}}
+  </style>
+</head>
+<body class="hub-subpage">
+  <a class="hub-home-link" href="../../index.html#games" aria-label="返回主页"><span class="hub-home-link__icon" aria-hidden="true">←</span><span>返回主页</span></a>
+  <header class="bar"><h1>月面货运 <small>六轮月球车 · 三站运输</small></h1><div class="links"><a class="direct" href="./game/index.html">独立窗口</a><button id="fullscreen" type="button">全屏驾驶</button></div></header>
+  <iframe id="game" src="./game/index.html" title="月面货运实时 3D 游戏" allow="fullscreen; gamepad" allowfullscreen></iframe>
+  <noscript>需要启用 JavaScript 才能驾驶月球车。</noscript>
+  <script>document.getElementById('fullscreen').addEventListener('click',async()=>{const game=document.getElementById('game');try{if(game.requestFullscreen)await game.requestFullscreen();else location.href=game.src;game.focus();}catch{location.href=game.src;}});</script>
+</body>
+</html>

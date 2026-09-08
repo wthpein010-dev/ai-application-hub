@@ -46,7 +46,7 @@ function parseVtt(source) {
 }
 
 test("every tutorial video returns to its owning catalog section", () => {
-  for (const app of apps) {
+  for (const app of apps.filter((item) => item.video)) {
     const pagePath = join(root, ...app.video.replace(/^\.\//, "").split("/"));
     const html = readFileSync(pagePath, "utf8");
     const rootFromPage = relative(dirname(pagePath), root).replaceAll(sep, "/") || ".";
@@ -59,7 +59,7 @@ test("every tutorial video returns to its owning catalog section", () => {
 });
 
 test("captions are single-line, ordered and bounded by their media", () => {
-  for (const app of apps) {
+  for (const app of apps.filter((item) => item.video)) {
     const pagePath = join(root, ...app.video.replace(/^\.\//, "").split("/"));
     const html = readFileSync(pagePath, "utf8");
     const videoTag = /<video\b[\s\S]*?<\/video>/i.exec(html)?.[0] || "";

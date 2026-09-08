@@ -28,9 +28,11 @@ function actionTypes(app) {
 }
 
 test("every card exposes actions that match its actual delivery type", () => {
-  assert.equal(apps.length, 33);
+  assert.equal(apps.length, 34);
   for (const app of apps) {
-    const expected = nativeIds.has(app.id) || extensionIds.has(app.id)
+    const expected = app.id === "lunar-freight" && app.videoExemption === "user-request-no-video"
+      ? ["web"]
+      : nativeIds.has(app.id) || extensionIds.has(app.id)
       ? ["web", "video", "windows", "mac"]
       : ["web", "video"];
     assert.deepEqual(actionTypes(app), expected, `${app.id} has misleading platform actions`);

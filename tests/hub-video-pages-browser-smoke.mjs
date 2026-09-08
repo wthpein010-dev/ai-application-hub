@@ -106,7 +106,7 @@ const requestedBaseUrl = process.env.HUB_BASE_URL?.replace(/\/+$/, "");
 const server = requestedBaseUrl ? null : createStaticServer();
 const baseUrl = requestedBaseUrl || await startServer(server);
 const browser = await chromium.launch({ executablePath: browserPath, headless: true });
-const apps = loadDefaultApps();
+const apps = loadDefaultApps().filter((app) => app.video);
 
 try {
   for (const viewport of [
