@@ -166,6 +166,11 @@ test("Hub workflow builds and verifies both Mac architectures before publishing"
   assert.match(publisher, /ditto -c -k --sequesterRsrc --keepParent/);
   assert.doesNotMatch(publisher, /CodexThreadWorkbench\.app/);
   assert.doesNotMatch(publisher, /dev\.wthpein010\.codex-thread-workbench/);
+  const packageCheck = readFileSync(join(root, "scripts", "test-codex-confirmation-bar-macos-package.sh"), "utf8");
+  const projectVersion = readFileSync(join(root, "build", "codex-thread-workbench", "src", "CodexThreadWorkbench", "CodexThreadWorkbench.csproj"), "utf8").match(/<Version>([^<]+)<\/Version>/)[1];
+  for (const key of ["CFBundleShortVersionString", "CFBundleVersion"]) {
+    assert.ok(packageCheck.split("\n").some(line => line.includes(`plutil -extract ${key} `) && line.includes(`== "${projectVersion}"`)), `${key} native verification must match the source version`);
+  }
 });
 
 test("Mac manifests are either both absent or both publish verified v2.3.9 bundles", async (context) => {
