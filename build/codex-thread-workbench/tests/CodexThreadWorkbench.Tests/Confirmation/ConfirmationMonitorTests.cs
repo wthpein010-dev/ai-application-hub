@@ -74,7 +74,7 @@ public sealed class ConfirmationMonitorTests
     }
 
     [Fact]
-    public async Task FirstScan_ReadsRecentInterruptedThread_AndPublishesCandidate()
+    public async Task FirstScan_RejectsInterruptedThreadWithoutAContinuationRequest()
     {
         var client = new FakeCodexThreadClient();
         client.Threads.Add(
@@ -91,7 +91,22 @@ public sealed class ConfirmationMonitorTests
 
         await monitor.ScanOnceAsync(Now);
 
-        Assert.Equal("interrupted", Assert.Single(monitor.Candidates).ThreadId);
+        Assert.Empty(monitor.Candidates);
+    }
+
+    [Fact]
+    public async Task FirstScan_SkipsBackgroundAgentWithoutLoadingItsHistory()
+    {
+        var client = new FakeCodexThreadClient();
+        var summary = Summary("background", Now, ThreadStatusKind.NotLoaded) with { IsSubAgent = true };
+        client.Threads.Add(summary);
+        client.ThreadStates[summary.Id] = WaitingState(summary.Id, Now) with { Summary = summary };
+        await using var monitor = new ConfirmationMonitor(client, new ConfirmationDetector());
+
+        await monitor.ScanOnceAsync(Now);
+
+        Assert.Empty(monitor.Candidates);
+        Assert.Empty(client.ReadCalls);
     }
 
     [Fact]

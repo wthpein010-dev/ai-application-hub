@@ -9,6 +9,45 @@ namespace CodexThreadWorkbench.Tests.Presentation;
 public sealed class ConfirmationOverlayViewModelTests
 {
     [Fact]
+    public async Task InitialScan_WithAutomationEnabled_DoesNotOpenOrSendToCompletedReports()
+    {
+        var client = ClientWith();
+        var texts = new[]
+        {
+            "**项目概况**\n项目已交付。\n**可以直接问的问题**\n1. 你会怎么设计架构？",
+            "### Verdict\n**Ready to merge? Yes.** All checks passed.",
+            "只读审计完成。",
+            "任务已经完成。",
+            "已修复并重启。真正要求你确认、选择或回复的任务仍会提醒。当前没有待确认项。"
+        };
+        for (var index = 0; index < texts.Length; index++)
+        {
+            var id = $"old-{index}";
+            var state = WaitingState(id, $"reply-{index}") with
+            {
+                Messages = [new ChatMessage($"reply-{index}", ChatRole.Assistant, texts[index])],
+                LatestTurnStatus = index == 3 ? ThreadStatusKind.Interrupted : ThreadStatusKind.Completed
+            };
+            client.Threads.Add(state.Summary);
+            client.ThreadStates[id] = state;
+        }
+
+        var detector = new ConfirmationDetector();
+        await using var monitor = new ConfirmationMonitor(client, detector);
+        var fallback = new RecordingFallback();
+        await using var viewModel = new ConfirmationOverlayViewModel(client, monitor, detector, fallback,
+            automationSettingsStore: new RecordingAutomationSettingsStore(true));
+        await viewModel.InitializeAsync();
+        await monitor.ScanOnceAsync(DateTimeOffset.UtcNow);
+
+        Assert.True(viewModel.IsAutoConfirmEnabled);
+        Assert.Empty(monitor.Candidates);
+        Assert.Empty(viewModel.Items);
+        Assert.Empty(fallback.Calls);
+        Assert.Empty(client.OperationLog);
+    }
+
+    [Fact]
     public async Task BadgeText_TracksCandidateCountAndCapsLargeCounts()
     {
         var monitor = new FakeConfirmationMonitor();

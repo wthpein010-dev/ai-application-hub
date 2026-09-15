@@ -38,8 +38,15 @@ public static class ThreadProjection
             preview,
             GetString(thread, "cwd"),
             updatedAt,
-            status);
+            status,
+            thread.TryGetProperty("source", out var source) && IsSubAgentSource(source));
     }
+
+    internal static bool IsSubAgentSource(JsonElement source) =>
+        source.ValueKind == JsonValueKind.String
+            ? (source.GetString() ?? string.Empty).StartsWith("subAgent", StringComparison.OrdinalIgnoreCase)
+            : source.ValueKind == JsonValueKind.Object && source.EnumerateObject().Any(
+                property => property.Name.Equals("subagent", StringComparison.OrdinalIgnoreCase));
 
     public static IReadOnlyList<ChatMessage> MessagesFromThread(
         JsonElement thread,

@@ -328,7 +328,7 @@ test("public Mac audit workflow checks out and enables every selected Workbench 
   }
 });
 
-test("Confirmation Bar workflow builds v2.3.3 from the dispatched revision", async () => {
+test("Confirmation Bar workflow builds from the dispatched revision", async () => {
   const workflow = await readFile(
     join(root, ".github", "workflows", "build-codex-thread-workbench.yml"),
     "utf8",
@@ -361,7 +361,7 @@ test("independent workflow verifies real apps before safely publishing both arch
     /- "scripts\/lib\/validated-workbench-macos-zip\.mjs"/,
     "changes to the ZIP validator must trigger the independent build workflow",
   );
-  assert.match(project, /<Version>2\.3\.3<\/Version>/);
+  assert.match(project, /<Version>2\.3\.9<\/Version>/);
   assert.match(project, /<AssemblyName>CodexThreadWorkbench<\/AssemblyName>/);
   assert.match(
     workflow,

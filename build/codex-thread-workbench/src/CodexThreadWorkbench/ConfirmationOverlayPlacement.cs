@@ -4,8 +4,6 @@ namespace CodexThreadWorkbench;
 
 public sealed class ConfirmationOverlayPlacement
 {
-    private const int TopMargin = 0;
-
     public bool IsManuallyPositioned { get; private set; }
 
     public void MarkManuallyPositioned() => IsManuallyPositioned = true;
@@ -18,8 +16,8 @@ public sealed class ConfirmationOverlayPlacement
         if (!IsManuallyPositioned)
         {
             return new PixelPoint(
-                workingArea.X + ((workingArea.Width - windowSize.Width) / 2),
-                workingArea.Y + TopMargin);
+                workingArea.X,
+                workingArea.Y + Math.Max(0, (workingArea.Height - windowSize.Height) / 2));
         }
 
         var maximumX = Math.Max(
@@ -37,17 +35,17 @@ public sealed class ConfirmationOverlayPlacement
         PixelRect workingArea,
         PixelPoint expandedPosition,
         PixelSize windowSize,
-        int visibleHeight)
+        int visibleWidth)
     {
-        var maximumX = Math.Max(
-            workingArea.X,
-            workingArea.Right - windowSize.Width);
-        var clampedVisibleHeight = Math.Clamp(
-            visibleHeight,
+        var maximumY = Math.Max(
+            workingArea.Y,
+            workingArea.Bottom - windowSize.Height);
+        var clampedVisibleWidth = Math.Clamp(
+            visibleWidth,
             1,
-            windowSize.Height);
+            windowSize.Width);
         return new PixelPoint(
-            Math.Clamp(expandedPosition.X, workingArea.X, maximumX),
-            workingArea.Y - windowSize.Height + clampedVisibleHeight);
+            workingArea.X - windowSize.Width + clampedVisibleWidth,
+            Math.Clamp(expandedPosition.Y, workingArea.Y, maximumY));
     }
 }

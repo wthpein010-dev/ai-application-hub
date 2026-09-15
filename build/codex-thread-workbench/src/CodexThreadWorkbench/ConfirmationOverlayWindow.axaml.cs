@@ -12,12 +12,14 @@ namespace CodexThreadWorkbench;
 
 public partial class ConfirmationOverlayWindow : Window
 {
-    public const int IdlePeekHeight = 10;
+    public const int IdlePeekWidth = 16;
 
+    private static readonly TimeSpan IdleExpandDelay =
+        TimeSpan.FromMilliseconds(350);
     private static readonly TimeSpan IdleCollapseDelay =
         TimeSpan.FromMilliseconds(760);
     private static readonly TimeSpan PositionAnimationDuration =
-        TimeSpan.FromMilliseconds(170);
+        TimeSpan.FromMilliseconds(220);
     private static readonly TimeSpan InteractionArmDelay =
         TimeSpan.FromMilliseconds(650);
     private static readonly TimeSpan AttentionCueDuration =
@@ -28,6 +30,7 @@ public partial class ConfirmationOverlayWindow : Window
     private readonly HashSet<Button> _threadNavigationInProgress = [];
     private readonly ICodexThreadNavigator? _threadNavigator;
     private CancellationTokenSource? _idleCollapseCancellation;
+    private CancellationTokenSource? _idleExpandCancellation;
     private CancellationTokenSource? _interactionArmCancellation;
     private CancellationTokenSource? _positionAnimationCancellation;
     private CancellationTokenSource? _attentionCueCancellation;
@@ -40,6 +43,7 @@ public partial class ConfirmationOverlayWindow : Window
     private bool _isIdlePreviewExpanded;
     private bool _isPointerOverWindow;
     private bool _isRetracted;
+    private bool _isApplyingPosition;
     private bool _isClosingForShutdown;
 
     public ConfirmationOverlayWindow() : this(null)
@@ -56,6 +60,14 @@ public partial class ConfirmationOverlayWindow : Window
             RoutingStrategies.Tunnel,
             handledEventsToo: true);
         Screens.Changed += OnScreensChanged;
+        ScalingChanged += OnScreensChanged;
+        PositionChanged += (_, _) =>
+        {
+            if (_placement.IsManuallyPositioned && !_isRetracted && !_isApplyingPosition)
+            {
+                _expandedPosition = Position;
+            }
+        };
     }
 
     public void Attach(ConfirmationOverlayViewModel viewModel)
@@ -83,9 +95,9 @@ public partial class ConfirmationOverlayWindow : Window
     public void PositionAtTopCenter(PixelRect workingArea)
     {
         var width = (int)Math.Round(Width);
-        Position = new PixelPoint(
+        ApplyPosition(new PixelPoint(
             workingArea.X + ((workingArea.Width - width) / 2),
-            workingArea.Y);
+            workingArea.Y));
     }
 
     public void MarkManuallyPositioned() =>
@@ -105,6 +117,7 @@ public partial class ConfirmationOverlayWindow : Window
         }
 
         _isClosingForShutdown = true;
+        CancelIdleExpand();
         CancelIdleCollapse();
         CancelInteractionArm();
         CancelPositionAnimation();
@@ -116,6 +129,7 @@ public partial class ConfirmationOverlayWindow : Window
         }
 
         Screens.Changed -= OnScreensChanged;
+        ScalingChanged -= OnScreensChanged;
         Close();
     }
 
@@ -135,12 +149,14 @@ public partial class ConfirmationOverlayWindow : Window
 
     protected override void OnClosed(EventArgs e)
     {
+        CancelIdleExpand();
         CancelIdleCollapse();
         CancelInteractionArm();
         CancelPositionAnimation();
         CancelAttentionCue(resetVisuals: true);
         _pointerActionGate.Clear();
         Screens.Changed -= OnScreensChanged;
+        ScalingChanged -= OnScreensChanged;
         base.OnClosed(e);
     }
 
@@ -159,6 +175,7 @@ public partial class ConfirmationOverlayWindow : Window
         {
             if (_viewModel?.RequiresAttention == true)
             {
+                CancelIdleExpand();
                 CancelIdleCollapse();
                 _isIdlePreviewExpanded = false;
             }
@@ -215,7 +232,11 @@ public partial class ConfirmationOverlayWindow : Window
             DispatcherPriority.Loaded);
 
         var area = GetCurrentWorkingArea();
-        var windowSize = GetCurrentPixelSize();
+        var scaling = Screens.All.FirstOrDefault(screen => screen.WorkingArea == area)?.Scaling
+                      ?? RenderScaling;
+        Height = Math.Max(1, Math.Min(560, (area.Height / scaling) - 24));
+        UpdateLayout();
+        var windowSize = GetCurrentPixelSize(scaling);
         var shouldRetract = _viewModel?.RequiresAttention != true &&
                             !_isIdlePreviewExpanded;
         PixelPoint target;
@@ -233,7 +254,7 @@ public partial class ConfirmationOverlayWindow : Window
                 area,
                 _expandedPosition ?? Position,
                 windowSize,
-                IdlePeekHeight);
+                (int)Math.Ceiling(IdlePeekWidth * scaling));
         }
         else
         {
@@ -245,12 +266,44 @@ public partial class ConfirmationOverlayWindow : Window
         }
 
         _isRetracted = shouldRetract;
+        if (!shouldRetract)
+        {
+            SetRetractedVisuals(false);
+        }
         await MoveToAsync(target, animate && Opacity > 0);
+        if (_isRetracted == shouldRetract)
+        {
+            SetRetractedVisuals(shouldRetract);
+        }
         Opacity = 1;
         ConfirmationOverlayDiagnostics.Write(
             $"presentation:{(shouldRetract ? "retracted" : "expanded")}:" +
             $"x={Position.X}:y={Position.Y}:w={windowSize.Width}:h={windowSize.Height}:" +
             $"attention={_viewModel?.RequiresAttention == true}");
+    }
+
+    private void SetRetractedVisuals(bool retracted)
+    {
+        if (this.FindControl<Border>("IdleSideTab") is { } sideTab)
+        {
+            sideTab.IsVisible = retracted;
+        }
+        if (this.FindControl<Border>("OverlaySurface") is { } surface)
+        {
+            surface.Opacity = retracted ? 0 : 1;
+            surface.IsHitTestVisible = !retracted;
+        }
+        if (this.FindControl<Grid>("OverlayRoot") is { } root)
+        {
+            root.Background = retracted ? null : Brushes.Transparent;
+            root.Clip = retracted
+                ? new RectangleGeometry(new Rect(
+                    root.Bounds.Width - IdlePeekWidth,
+                    (root.Bounds.Height - 64) / 2,
+                    IdlePeekWidth,
+                    64))
+                : null;
+        }
     }
 
     private void OnScreensChanged(object? sender, EventArgs e)
@@ -274,8 +327,9 @@ public partial class ConfirmationOverlayWindow : Window
             return;
         }
 
-        _isIdlePreviewExpanded = true;
-        _ = UpdatePresentationAsync();
+        CancelIdleExpand();
+        _idleExpandCancellation = new CancellationTokenSource();
+        _ = ExpandIdleAfterDelayAsync(_idleExpandCancellation.Token);
     }
 
     private void OverlayRoot_OnPointerExited(
@@ -283,6 +337,7 @@ public partial class ConfirmationOverlayWindow : Window
         PointerEventArgs e)
     {
         _isPointerOverWindow = false;
+        CancelIdleExpand();
         if (_viewModel?.RequiresAttention == true)
         {
             return;
@@ -454,7 +509,7 @@ public partial class ConfirmationOverlayWindow : Window
         CancelPositionAnimation();
         if (!animate || Position == target)
         {
-            Position = target;
+            ApplyPosition(target);
             return;
         }
 
@@ -473,9 +528,9 @@ public partial class ConfirmationOverlayWindow : Window
                     0,
                     1);
                 var eased = 1 - Math.Pow(1 - progress, 3);
-                Position = new PixelPoint(
+                ApplyPosition(new PixelPoint(
                     start.X + (int)Math.Round((target.X - start.X) * eased),
-                    start.Y + (int)Math.Round((target.Y - start.Y) * eased));
+                    start.Y + (int)Math.Round((target.Y - start.Y) * eased)));
                 if (progress >= 1)
                 {
                     break;
@@ -484,7 +539,7 @@ public partial class ConfirmationOverlayWindow : Window
                 await Task.Delay(16, cancellation.Token);
             }
 
-            Position = target;
+            ApplyPosition(target);
         }
         catch (OperationCanceledException)
         {
@@ -494,8 +549,21 @@ public partial class ConfirmationOverlayWindow : Window
     private void SetExpandedPosition(PixelPoint position)
     {
         _expandedPosition = position;
-        Position = position;
+        ApplyPosition(position);
         _isRetracted = false;
+    }
+
+    private void ApplyPosition(PixelPoint position)
+    {
+        _isApplyingPosition = true;
+        try
+        {
+            Position = position;
+        }
+        finally
+        {
+            _isApplyingPosition = false;
+        }
     }
 
     private void CancelIdleCollapse()
@@ -543,6 +611,32 @@ public partial class ConfirmationOverlayWindow : Window
         _interactionArmCancellation?.Cancel();
         _interactionArmCancellation?.Dispose();
         _interactionArmCancellation = null;
+    }
+
+    private async Task ExpandIdleAfterDelayAsync(CancellationToken cancellationToken)
+    {
+        try
+        {
+            await Task.Delay(IdleExpandDelay, cancellationToken);
+            if (!_isPointerOverWindow || _isClosingForShutdown ||
+                _viewModel?.RequiresAttention == true)
+            {
+                return;
+            }
+
+            _isIdlePreviewExpanded = true;
+            await UpdatePresentationAsync();
+        }
+        catch (OperationCanceledException)
+        {
+        }
+    }
+
+    private void CancelIdleExpand()
+    {
+        _idleExpandCancellation?.Cancel();
+        _idleExpandCancellation?.Dispose();
+        _idleExpandCancellation = null;
     }
 
     private void BeginAttentionCue()
@@ -772,13 +866,13 @@ public partial class ConfirmationOverlayWindow : Window
             Screens.All.Select(screen => screen.WorkingArea));
     }
 
-    private PixelSize GetCurrentPixelSize()
+    private PixelSize GetCurrentPixelSize(double scaling)
     {
         var width = Bounds.Width > 0 ? Bounds.Width : Width;
         var height = Bounds.Height > 0 ? Bounds.Height : 1;
         return new PixelSize(
-            Math.Max(1, (int)Math.Ceiling(width)),
-            Math.Max(1, (int)Math.Ceiling(height)));
+            Math.Max(1, (int)Math.Ceiling(width * scaling)),
+            Math.Max(1, (int)Math.Ceiling(height * scaling)));
     }
 
     private void InitializeComponent() => AvaloniaXamlLoader.Load(this);

@@ -69,7 +69,7 @@ test("hub registers the Confirmation Bar demo, video, Windows, Mac, and iOS acti
 
   assert.match(source, /id:\s*"codex-thread-workbench"/);
   assert.match(source, /name:\s*"Codex 待确认悬浮助手"/);
-  assert.match(source, /brief:\s*"[^"]*顶部悬停[^"]*查看原任务[^"]*自动确认[^"]*"/);
+  assert.match(source, /brief:\s*"[^"]*左侧悬停[^"]*查看原任务[^"]*自动确认[^"]*"/);
   assert.match(source, /entry:\s*"\.\/projects\/codex-thread-workbench\/index\.html"/);
   assert.match(source, new RegExp(`video:\\s*"${regexEscape(videoPage)}"`));
   assert.match(source, new RegExp(`package:\\s*"${regexEscape(downloadPage)}"`));
@@ -135,8 +135,8 @@ test("project page presents the confirmation overlay workflow and every release 
     "https://wthpein010-dev.github.io/ai-application-hub/projects/codex-thread-workbench/download/mac/";
 
   assert.match(html, /Codex 待确认悬浮助手/);
-  assert.match(html, /v2\.3\.3/);
-  assert.match(html, /顶部悬停/);
+  assert.match(html, /v2\.3\.9/);
+  assert.match(html, /左侧悬停/);
   assert.match(html, /查看原任务/);
   assert.match(html, /自动确认/);
   assert.match(html, /普通关闭请求会被拦截/);
@@ -167,12 +167,85 @@ test("project page presents the confirmation overlay workflow and every release 
   assert.doesNotMatch(html, /releases\/download\/codex-thread-workbench-v1\.0\.0/);
 });
 
-test("project preview keeps a ten-pixel green handle visible while retracted", async () => {
-  const css = await read("../projects/codex-thread-workbench/styles.css");
+test("portrait preview keeps its left handle usable and batch action fixed below scrolling cards", async () => {
+  const server = createStaticServer();
+  const baseUrl = await startServer(server);
+  const browser = await launchBrowser();
+  try {
+    for (const viewport of [{ width: 1440, height: 1000 }, { width: 390, height: 844 }]) {
+      const page = await browser.newPage({ viewport });
+      await page.goto(`${baseUrl}/projects/codex-thread-workbench/index.html`);
+      const handle = page.locator('[data-role="overlay-handle"]');
+      const handleBox = await handle.boundingBox();
+      const desktopBox = await page.locator('.desktop-demo').boundingBox();
+      assert.ok(handleBox.width <= 20 && handleBox.height >= 48, 'idle handle must be narrow and vertical');
+      assert.ok(handleBox.x >= desktopBox.x && handleBox.x <= desktopBox.x + 20, 'handle stays on the left edge');
+      await page.getByRole('button', { name: '模拟待确认出现' }).click();
+      await page.waitForTimeout(300);
+      const panel = page.locator('.overlay-panel');
+      const panelBox = await panel.boundingBox();
+      assert.ok(panelBox.height > panelBox.width, 'expanded panel must be portrait');
+      const batch = page.locator('[data-action="confirm-all"]');
+      const batchBefore = await batch.boundingBox();
+      assert.ok(batchBefore.width >= panelBox.width - 40, 'batch action spans the panel');
+      await page.locator('[data-action="ignore-one"]').first().click();
+      assert.equal(await page.locator('[data-role="candidate"]').count(), 1);
+      assert.match(await page.locator('[data-role="activity-log"]').textContent(), /忽略/);
+      assert.doesNotMatch(await page.locator('[data-role="activity-log"]').textContent(), /发送/);
+      await page.locator('[data-role="candidate-list"]').evaluate(list => {
+        const first = list.firstElementChild;
+        for (let index = 0; index < 8; index += 1) list.append(first.cloneNode(true));
+        list.scrollTop = list.scrollHeight;
+      });
+      const batchAfter = await batch.boundingBox();
+      const panelAfter = await panel.boundingBox();
+      const desktopAfter = await page.locator('.desktop-demo').boundingBox();
+      assert.ok(Math.abs((batchBefore.y - panelBox.y) - (batchAfter.y - panelAfter.y)) < 1, 'scrolling cards must not move the batch action within the panel');
+      assert.ok(batchAfter.y + batchAfter.height <= panelAfter.y + panelAfter.height, 'batch action remains within panel');
+      assert.ok(batchAfter.y + batchAfter.height <= desktopAfter.y + desktopAfter.height, 'desktop frame must not clip the action');
+      assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true);
+      await page.close();
+    }
+  } finally {
+    await browser.close();
+    await stopServer(server);
+  }
+});
 
-  assert.match(css, /\.overlay-handle\s*\{[^}]*height:\s*10px/s);
-  assert.match(css, /data-overlay-state="retracted"/);
-  assert.match(css, /prefers-reduced-motion:\s*reduce/);
+test("left hover waits before revealing and does not bounce or hide pending tasks", async () => {
+  const server = createStaticServer();
+  const baseUrl = await startServer(server);
+  const browser = await launchBrowser();
+  try {
+    const page = await browser.newPage({ viewport: { width: 1440, height: 1000 } });
+    await page.goto(`${baseUrl}/projects/codex-thread-workbench/index.html`);
+    const overlay = page.locator('[data-role="confirmation-overlay"]');
+    const handle = page.locator('[data-role="overlay-handle"]');
+    await handle.scrollIntoViewIfNeeded();
+    const handleBounds = await handle.boundingBox();
+    await page.mouse.move(handleBounds.x + 8, handleBounds.y - 70);
+    await page.waitForTimeout(500);
+    assert.equal(await overlay.getAttribute('data-overlay-state'), 'retracted', 'invisible area above the tab must not reveal the panel');
+    await handle.hover();
+    await page.waitForTimeout(80);
+    await page.mouse.move(1400, 10);
+    await page.waitForTimeout(420);
+    assert.equal(await overlay.getAttribute('data-overlay-state'), 'retracted');
+    await handle.hover();
+    await page.waitForFunction(() => document.querySelector('[data-role="confirmation-overlay"]').dataset.overlayState === 'idle');
+    await page.locator('.overlay-header').hover();
+    await page.waitForTimeout(900);
+    assert.equal(await overlay.getAttribute('data-overlay-state'), 'idle');
+    await page.mouse.move(1400, 10);
+    await page.waitForFunction(() => document.querySelector('[data-role="confirmation-overlay"]').dataset.overlayState === 'retracted');
+    await page.getByRole('button', { name: '模拟待确认出现' }).click();
+    await page.mouse.move(1400, 10);
+    await page.waitForTimeout(900);
+    assert.equal(await overlay.getAttribute('data-overlay-state'), 'attention');
+  } finally {
+    await browser.close();
+    await stopServer(server);
+  }
 });
 
 test("confirmation overlay expands for candidates, retracts, and reports protected close", async () => {
@@ -206,9 +279,9 @@ test("confirmation overlay expands for candidates, retracts, and reports protect
     const overlay = page.locator('[data-role="confirmation-overlay"]');
     const handle = page.locator('[data-role="overlay-handle"]');
     assert.equal(await overlay.getAttribute("data-overlay-state"), "retracted");
-    assert.equal((await handle.boundingBox()).height, 10);
+    assert.equal((await handle.boundingBox()).height, 64);
 
-    await handle.click({ position: { x: 30, y: 5 } });
+    await handle.click({ position: { x: 8, y: 32 } });
     assert.equal(await overlay.getAttribute("data-overlay-state"), "idle");
     assert.match(await page.locator('[data-role="overlay-status"]').textContent(), /监控中/);
 
@@ -242,7 +315,7 @@ test("confirmation overlay expands for candidates, retracts, and reports protect
   }
 });
 
-test("v2.3.3 source snapshot retains the full-window hover fix", async () => {
+test("v2.3.9 source snapshot retains the full-window hover fix", async () => {
   const [project, xaml, code, placement] = await Promise.all([
     read("../build/codex-thread-workbench/src/CodexThreadWorkbench/CodexThreadWorkbench.csproj"),
     read("../build/codex-thread-workbench/src/CodexThreadWorkbench/ConfirmationOverlayWindow.axaml"),
@@ -250,12 +323,12 @@ test("v2.3.3 source snapshot retains the full-window hover fix", async () => {
     read("../build/codex-thread-workbench/src/CodexThreadWorkbench/ConfirmationOverlayPlacement.cs"),
   ]);
 
-  assert.match(project, /<Version>2\.3\.3<\/Version>/);
+  assert.match(project, /<Version>2\.3\.9<\/Version>/);
   assert.match(xaml, /x:Name="OverlayRoot"/);
   assert.match(xaml, /PointerEntered="OverlayRoot_OnPointerEntered"/);
   assert.match(xaml, /PointerExited="OverlayRoot_OnPointerExited"/);
   assert.match(code, /_isPointerOverWindow/);
-  assert.match(placement, /TopMargin = 0/);
+  assert.match(placement, /workingArea\.X/);
 });
 
 test("error state is fail-closed and keyboard and mobile controls stay usable", async () => {
@@ -359,7 +432,7 @@ test("download page exposes progress, verification, failure and retry states", a
   ]);
 
   assert.match(html, /CodexConfirmationBar-Windows-x64\.zip/);
-  assert.match(html, /v2\.3\.3/);
+  assert.match(html, /v2\.3\.9/);
   assert.match(html, /data-role="download-button"/);
   assert.match(html, /data-role="retry-button"/);
   assert.match(html, /data-role="progress"/);

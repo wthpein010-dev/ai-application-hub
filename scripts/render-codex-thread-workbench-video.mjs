@@ -89,7 +89,7 @@ async function recordWalkthrough() {
   const preRollMs = startedAt - rawStartedAt;
 
   await waitUntil(startedAt, 5.5);
-  await page.locator("#demo").scrollIntoViewIfNeeded();
+  await page.locator(".demo-layout").scrollIntoViewIfNeeded();
   await page.getByRole("button", { name: "重置演示" }).click();
 
   await waitUntil(startedAt, 11.5);
@@ -137,9 +137,9 @@ async function main() {
 
   await run(ffmpegPath, [
     "-y", "-hide_banner", "-loglevel", "error",
-    "-i", recording.webmPath,
     "-ss", (recording.preRollMs / 1000).toFixed(3),
-    "-vf", `setpts=${playbackScale}*PTS,scale=1280:720:flags=lanczos,fps=30`,
+    "-i", recording.webmPath,
+    "-vf", `setpts=${playbackScale}*(PTS-STARTPTS),scale=1280:720:flags=lanczos,fps=30,tpad=stop_mode=clone:stop_duration=${targetDuration}`,
     "-t", String(targetDuration),
     "-c:v", "libx264", "-profile:v", "high", "-level", "4.0",
     "-preset", "medium", "-crf", "20", "-pix_fmt", "yuv420p",

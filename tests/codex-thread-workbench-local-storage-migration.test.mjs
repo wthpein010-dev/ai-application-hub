@@ -80,6 +80,15 @@ test("old Windows-only workbench storage migrates to all five published entrance
   assert.deepEqual(JSON.parse(JSON.stringify(gamePulse.tags)), JSON.parse(JSON.stringify(gamePulseDefault.tags)));
 });
 
+test("previous top-docked default description upgrades without overwriting custom copy", () => {
+  const workbench = loadDefaultApps().find(app => app.id === 'codex-thread-workbench');
+  const oldBrief = '自动扫描等待你继续的 Codex 任务；空闲时收进屏幕顶部，顶部悬停稳定展开，可查看原任务，并按需开启自动确认。';
+  for (const [brief, expected] of [[oldBrief, workbench.brief], ['我的自定义说明', '我的自定义说明']]) {
+    const result = loadAppsWithStoredValue([{ ...workbench, brief }]).find(app => app.id === workbench.id);
+    assert.equal(result.brief, expected);
+  }
+});
+
 test("legacy default workbench name migrates while a custom name stays untouched", () => {
   const defaults = loadDefaultApps();
   const workbench = defaults.find((app) => app.id === "codex-thread-workbench");

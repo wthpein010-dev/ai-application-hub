@@ -6,4 +6,5 @@ public sealed record ThreadSummary(
     string Preview,
     string WorkingDirectory,
     DateTimeOffset UpdatedAt,
-    ThreadStatusKind Status);
+    ThreadStatusKind Status,
+    bool IsSubAgent = false);

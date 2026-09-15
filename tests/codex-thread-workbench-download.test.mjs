@@ -56,7 +56,7 @@ test("published manifest fixes the confirmation-overlay archive contract and ord
 
   assert.equal(manifest.version, 1);
   assert.equal(manifest.fileName, "CodexConfirmationBar-Windows-x64.zip");
-  assert.equal(manifest.totalSize, 41_562_042);
+  assert.equal(manifest.totalSize, 41_571_222);
   assert.equal(manifest.chunkSize, 8_388_608);
   assert.equal(manifest.parts.length, 5);
   assert.deepEqual(
@@ -67,7 +67,7 @@ test("published manifest fixes the confirmation-overlay archive contract and ord
     manifest.parts.map(part => part.path),
     Array.from(
       { length: 5 },
-      (_, index) => `parts/v2.3.3-confirmation-overlay-e7d1928/part-${String(index).padStart(3, "0")}.bin`
+      (_, index) => `parts/v2.3.9-portrait-e40e884/part-${String(index).padStart(3, "0")}.bin`
     )
   );
   assert.deepEqual(
@@ -77,7 +77,7 @@ test("published manifest fixes the confirmation-overlay archive contract and ord
       8_388_608,
       8_388_608,
       8_388_608,
-      8_007_610
+      8_016_790
     ]
   );
   assert.equal(
@@ -86,7 +86,7 @@ test("published manifest fixes the confirmation-overlay archive contract and ord
   );
   assert.equal(
     manifest.sha256,
-    "E7D1928EA27BCAE0737F9CFF14CEE5D909154BCABCA693610616357ADE7A11A7"
+    "E40E88453808D7900A3F807B13D42D7149AC2071DC30274CB872D381068844DF"
   );
 });
 
@@ -94,11 +94,11 @@ test("Windows download page identifies the Confirmation Bar v2 release", async (
   const html = await readFile(pageUrl, "utf8");
 
   assert.match(html, /Codex 待确认悬浮助手/);
-  assert.match(html, /v2\.3\.3/);
+  assert.match(html, /v2\.3\.9/);
   assert.match(html, /CodexConfirmationBar-Windows-x64\.zip/);
   assert.match(html, /41\.6 MB/);
   assert.match(html, /5 个/);
-  assert.match(html, /E7D1928EA27BCAE0737F9CFF14CEE5D909154BCABCA693610616357ADE7A11A7/);
+  assert.match(html, /E40E88453808D7900A3F807B13D42D7149AC2071DC30274CB872D381068844DF/);
 });
 
 test("published Windows helper archive defaults to the confirmation overlay", async () => {

@@ -72,6 +72,34 @@ public sealed class CodexSessionSnapshotReaderTests : IDisposable
     }
 
     [Fact]
+    public async Task ReadThreadAsync_ExcludesSubagentEvenWhenMetadataIsOutsideTail()
+    {
+        const string threadId = "019f7444-4d4d-7771-9864-0043606d7f81";
+        Directory.CreateDirectory(_sessionsRoot);
+        var path = Path.Combine(_sessionsRoot, $"rollout-{threadId}.jsonl");
+        await File.WriteAllLinesAsync(path,
+        [
+            System.Text.Json.JsonSerializer.Serialize(new
+            {
+                type = "session_meta",
+                payload = new
+                {
+                    source = new { subagent = new { thread_spawn = new { parent_thread_id = "parent" } } },
+                    instructions = new string('x', 40000)
+                }
+            }),
+            new string('x', 9000),
+            """{"type":"response_item","payload":{"type":"message","role":"assistant","content":[{"type":"output_text","text":"Please confirm this specification."}]}}""",
+            """{"type":"event_msg","payload":{"type":"task_complete"}}"""
+        ]);
+
+        var state = await new CodexSessionSnapshotReader(_sessionsRoot, tailByteLimit: 4096)
+            .ReadThreadAsync(Summary(threadId));
+
+        Assert.Null(new ConfirmationDetector().Detect(state));
+    }
+
+    [Fact]
     public async Task ReadThreadAsync_StrictModeThrowsWhenSessionIsMissing()
     {
         var summary = Summary("019f7444-4d4d-7771-9864-0043606d7f79");

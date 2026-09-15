@@ -48,7 +48,7 @@
 .\CodexThreadWorkbench.exe --workbench
 ```
 
-如需顶部待确认助手，可显式运行：
+如需侧边待确认助手，可显式运行：
 
 ```powershell
 .\CodexThreadWorkbench.exe --confirmation-overlay
@@ -60,7 +60,7 @@
 .\CodexThreadWorkbench.exe --floating-launcher
 ```
 
-`Install-WindowsRecoveryTask.ps1` 只适用于希望让顶部待确认助手登录后常驻并自动恢复的用户，不是完整桌面工作台的默认安装步骤。
+`Install-WindowsRecoveryTask.ps1` 只适用于希望让侧边待确认助手登录后常驻并自动恢复的用户，不是完整桌面工作台的默认安装步骤。
 
 ## 工作方式与隐私
 
@@ -68,7 +68,7 @@
 
 关闭某张卡片只会从工作台移除，不会删除或归档对应 Codex 任务。关闭完整桌面窗口会先保存布局并释放本机连接，然后正常退出应用。
 
-顶部待确认助手和圆形悬浮按钮属于可选模式。待确认助手支持手动或用户主动开启后的自动确认，但不会自动同意命令执行、文件修改、连接器或其他 Codex 安全审批。
+侧边待确认助手和圆形悬浮按钮属于可选模式。待确认助手支持手动或用户主动开启后的自动确认，但不会自动同意命令执行、文件修改、连接器或其他 Codex 安全审批。
 
 ## 从源码构建
 
