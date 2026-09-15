@@ -132,6 +132,14 @@ public sealed class CodexSessionSnapshotReader : IConfirmationThreadReader
             return EmptyState(summary);
         }
 
+        // Session source is in the first line, often outside the bounded history tail.
+        var headerBytes = new byte[(int)Math.Min(stream.Length, 16 * 1024)];
+        await stream.ReadExactlyAsync(headerBytes, cancellationToken);
+        if (IsSubAgentSessionHeader(headerBytes))
+        {
+            summary = summary with { IsSubAgent = true };
+        }
+
         var startsMidFile = stream.Length > length;
         stream.Seek(-length, SeekOrigin.End);
         var bytes = new byte[length];
@@ -171,6 +179,47 @@ public sealed class CodexSessionSnapshotReader : IConfirmationThreadReader
             status,
             ActiveTurnId: activeTurnId,
             LatestTurnStatus: latestTurnStatus);
+    }
+
+    private static bool IsSubAgentSessionHeader(ReadOnlySpan<byte> header)
+    {
+        try
+        {
+            // Read the early source field without materializing the potentially large
+            // instructions field later in session_meta. The prefix need not be complete JSON.
+            var reader = new Utf8JsonReader(header, isFinalBlock: false, state: default);
+            var isMetadata = false;
+            while (reader.Read())
+            {
+                if (reader.TokenType != JsonTokenType.PropertyName)
+                {
+                    continue;
+                }
+
+                if (reader.CurrentDepth == 1 && reader.ValueTextEquals("type"))
+                {
+                    isMetadata = reader.Read() && reader.ValueTextEquals("session_meta");
+                }
+                else if (isMetadata && reader.CurrentDepth == 2 && reader.ValueTextEquals("source"))
+                {
+                    if (reader.Read() && JsonDocument.TryParseValue(ref reader, out var source))
+                    {
+                        using (source)
+                        {
+                            return Codex.ThreadProjection.IsSubAgentSource(source.RootElement);
+                        }
+                    }
+
+                    return false;
+                }
+            }
+        }
+        catch (JsonException)
+        {
+            // Older/imported sessions may not contain a metadata header.
+        }
+
+        return false;
     }
 
     private static void ApplyLine(

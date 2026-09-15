@@ -68,7 +68,7 @@ test("Mac download page offers Apple silicon and Intel packages", () => {
   const html = readFileSync(join(macRoot, "index.html"), "utf8");
 
   assert.match(html, /Codex 待确认悬浮助手/);
-  assert.match(html, /v2\.3\.3/);
+  assert.match(html, /v2\.3\.9/);
   assert.match(html, /Apple\s*(?:芯片|silicon)/i);
   assert.match(html, /arm64/i);
   assert.match(html, /Intel/i);
@@ -105,7 +105,7 @@ test("Hub workflow builds and verifies both Mac architectures before publishing"
 
   assert.match(workflow, /runtime:\s*osx-arm64\s+runner:\s*macos-14/);
   assert.match(workflow, /runtime:\s*osx-x64\s+runner:\s*macos-15-intel/);
-  assert.match(workflow, /branches:\s*- release\/codex-confirmation-v233/);
+  assert.match(workflow, /workflow_dispatch:/);
   assert.match(workflow, /ref:\s*\$\{\{ github\.sha \}\}/);
   assert.match(workflow, /CodexConfirmationBar-macOS-arm64\.app\.zip/);
   assert.match(workflow, /CodexConfirmationBar-macOS-x64\.app\.zip/);
@@ -166,9 +166,14 @@ test("Hub workflow builds and verifies both Mac architectures before publishing"
   assert.match(publisher, /ditto -c -k --sequesterRsrc --keepParent/);
   assert.doesNotMatch(publisher, /CodexThreadWorkbench\.app/);
   assert.doesNotMatch(publisher, /dev\.wthpein010\.codex-thread-workbench/);
+  const packageCheck = readFileSync(join(root, "scripts", "test-codex-confirmation-bar-macos-package.sh"), "utf8");
+  const projectVersion = readFileSync(join(root, "build", "codex-thread-workbench", "src", "CodexThreadWorkbench", "CodexThreadWorkbench.csproj"), "utf8").match(/<Version>([^<]+)<\/Version>/)[1];
+  for (const key of ["CFBundleShortVersionString", "CFBundleVersion"]) {
+    assert.ok(packageCheck.split("\n").some(line => line.includes(`plutil -extract ${key} `) && line.includes(`== "${projectVersion}"`)), `${key} native verification must match the source version`);
+  }
 });
 
-test("Mac manifests are either both absent or both publish verified v2.3.3 bundles", async (context) => {
+test("Mac manifests are either both absent or both publish verified v2.3.9 bundles", async (context) => {
   const architectures = ["arm64", "x64"];
   const present = architectures.map((architecture) =>
     existsSync(join(macRoot, `manifest-${architecture}.json`))
@@ -216,8 +221,8 @@ test("Mac manifests are either both absent or both publish verified v2.3.3 bundl
         ),
         "utf8",
       );
-      assert.equal(plistString(plist, "CFBundleShortVersionString"), "2.3.3");
-      assert.equal(plistString(plist, "CFBundleVersion"), "2.3.3");
+      assert.equal(plistString(plist, "CFBundleShortVersionString"), "2.3.9");
+      assert.equal(plistString(plist, "CFBundleVersion"), "2.3.9");
       assert.equal(
         plistString(plist, "CFBundleIdentifier"),
         "dev.wthpein010.codex-confirmation-bar",

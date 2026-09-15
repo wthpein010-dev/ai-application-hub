@@ -2,10 +2,11 @@
         xmlns="https://github.com/avaloniaui"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         Title="Codex 待确认"
-        Width="560"
+        Width="360"
+        Height="560"
         MinHeight="0"
         MaxHeight="720"
-        SizeToContent="Height"
+        SizeToContent="Manual"
         CanResize="False"
         ShowInTaskbar="False"
         ShowActivated="False"
@@ -15,9 +16,10 @@
         Background="Transparent">
   <Window.Styles>
     <Style Selector="Button.overlayPrimary">
-      <Setter Property="MinHeight" Value="36" />
-      <Setter Property="Padding" Value="14,0" />
-      <Setter Property="Margin" Value="6,0,0,0" />
+      <Setter Property="HorizontalAlignment" Value="Stretch" />
+      <Setter Property="MinHeight" Value="34" />
+      <Setter Property="Padding" Value="10,0" />
+      <Setter Property="FontSize" Value="12" />
       <Setter Property="Background" Value="#238B67" />
       <Setter Property="Foreground" Value="White" />
       <Setter Property="BorderBrush" Value="#238B67" />
@@ -26,21 +28,33 @@
       <Setter Property="FontWeight" Value="SemiBold" />
       <Setter Property="HorizontalContentAlignment" Value="Center" />
       <Setter Property="VerticalContentAlignment" Value="Center" />
+      <Setter Property="Transitions">
+        <Transitions>
+          <BrushTransition Property="Background" Duration="0:0:0.12" />
+        </Transitions>
+      </Setter>
     </Style>
     <Style Selector="Button.overlayPrimary:pointerover">
       <Setter Property="Background" Value="#187655" />
     </Style>
     <Style Selector="Button.overlayQuiet">
-      <Setter Property="MinHeight" Value="36" />
-      <Setter Property="Padding" Value="13,0" />
-      <Setter Property="Margin" Value="6,0,0,0" />
-      <Setter Property="Background" Value="#FFFFFF" />
+      <Setter Property="HorizontalAlignment" Value="Stretch" />
+      <Setter Property="MinHeight" Value="34" />
+      <Setter Property="Padding" Value="8,0" />
+      <Setter Property="FontSize" Value="12" />
+      <Setter Property="Background" Value="#F4F8F6" />
       <Setter Property="Foreground" Value="#52615C" />
       <Setter Property="BorderBrush" Value="#CFE2DA" />
       <Setter Property="BorderThickness" Value="1" />
       <Setter Property="CornerRadius" Value="11" />
       <Setter Property="HorizontalContentAlignment" Value="Center" />
       <Setter Property="VerticalContentAlignment" Value="Center" />
+      <Setter Property="Transitions">
+        <Transitions>
+          <BrushTransition Property="Background" Duration="0:0:0.12" />
+          <BrushTransition Property="BorderBrush" Duration="0:0:0.12" />
+        </Transitions>
+      </Setter>
     </Style>
     <Style Selector="Button.overlayQuiet:pointerover">
       <Setter Property="Background" Value="#F0FAF6" />
@@ -54,25 +68,24 @@
         PointerExited="OverlayRoot_OnPointerExited">
   <Border x:Name="OverlaySurface"
           Margin="0,14,14,0"
-          Padding="18,16,18,9"
-          BorderBrush="#BBDDD0"
+          Padding="16,18,16,16"
+          BorderBrush="#D5E5DD"
           BorderThickness="1"
-          BoxShadow="0 14 42 0 #45233F35"
-          CornerRadius="19">
+          BoxShadow="0 8 24 0 #29233F35"
+          CornerRadius="22">
     <Border.Background>
       <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,100%">
-        <GradientStop Color="#FFFCF7" Offset="0" />
-        <GradientStop Color="#F6FFF9" Offset="0.52" />
-        <GradientStop Color="#EDF9F5" Offset="1" />
+        <GradientStop Color="#FCFEFC" Offset="0" />
+        <GradientStop Color="#F3F8F5" Offset="1" />
       </LinearGradientBrush>
     </Border.Background>
 
     <Grid RowDefinitions="Auto,Auto,*,Auto">
-      <Grid Grid.Row="0" ColumnDefinitions="Auto,*,Auto,Auto">
+      <Grid Grid.Row="0" ColumnDefinitions="Auto,*,Auto">
         <Grid Grid.Column="0"
-              Width="56"
+              Width="44"
               Height="50"
-              Margin="0,0,11,0">
+              Margin="0,0,10,0">
           <Border x:Name="TaskSpriteAura"
                   Width="52"
                   Height="52"
@@ -174,14 +187,21 @@
                     VerticalAlignment="Center"
                     PointerPressed="DragHandle_OnPointerPressed"
                     ToolTip.Tip="拖动以移动待确认窗口">
-          <TextBlock FontSize="16"
-                     FontWeight="Bold"
-                     Text="{Binding CountText}" />
+          <StackPanel Orientation="Horizontal" Spacing="7">
+            <TextBlock FontSize="16" FontWeight="SemiBold" Foreground="#243F33" Text="待确认" />
+            <Border Background="#E3F3EB" CornerRadius="7" Padding="6,1"
+                    VerticalAlignment="Center" IsVisible="{Binding HasItems}">
+              <TextBlock FontSize="11" FontWeight="SemiBold" Foreground="#237253" Text="{Binding BadgeText}" />
+            </Border>
+          </StackPanel>
+          <TextBlock Margin="0,3,0,0" FontSize="10" Foreground="#86988F" LetterSpacing="1.4" Text="CODEX" />
         </StackPanel>
 
         <ToggleSwitch x:Name="AutoConfirmToggle"
                       Grid.Column="2"
-                      Margin="0,0,12,0"
+                      Margin="4,0,0,0"
+                      MinWidth="0"
+                      FontSize="11"
                       VerticalAlignment="Center"
                       OffContent="自动"
                       OnContent="自动"
@@ -191,14 +211,6 @@
                       PointerExited="ActionButton_OnPointerExited"
                       ToolTip.Tip="开启后，新出现的待确认任务会自动执行确认继续" />
 
-        <Button x:Name="ConfirmAllButton"
-                Grid.Column="3"
-                Classes="overlayPrimary"
-                Click="ConfirmAllButton_OnClick"
-                Content="{Binding ConfirmAllText}"
-                IsEnabled="{Binding CanConfirmAll}"
-                IsVisible="{Binding HasItems}"
-                PointerExited="ActionButton_OnPointerExited" />
       </Grid>
 
       <StackPanel Grid.Row="1">
@@ -212,6 +224,8 @@
           <TextBlock Foreground="#9A5B18"
                      FontSize="11"
                      Text="{Binding MonitorErrorText}"
+                     LineHeight="17" MaxLines="3" TextTrimming="CharacterEllipsis"
+                     ToolTip.Tip="{Binding MonitorErrorText}"
                      TextWrapping="Wrap" />
         </Border>
 
@@ -225,83 +239,78 @@
           <TextBlock Foreground="#9A5B18"
                      FontSize="11"
                      Text="{Binding AutoConfirmErrorText}"
+                     LineHeight="17" MaxLines="3" TextTrimming="CharacterEllipsis"
+                     ToolTip.Tip="{Binding AutoConfirmErrorText}"
                      TextWrapping="Wrap" />
         </Border>
       </StackPanel>
 
-      <ScrollViewer Grid.Row="2"
-                    MaxHeight="540"
-                    Margin="0,10,0,0"
+      <ScrollViewer x:Name="TaskScroll" Grid.Row="2"
+                    Margin="0,18,0,0"
+                    IsVisible="{Binding HasItems}"
                     HorizontalScrollBarVisibility="Disabled"
                     VerticalScrollBarVisibility="Auto">
         <ItemsControl x:Name="ConfirmationList"
                       ItemsSource="{Binding Items}">
           <ItemsControl.ItemTemplate>
             <DataTemplate>
-              <Border Margin="0,0,0,9"
-                      Padding="13"
-                      Background="#FBFFFD"
-                      BorderBrush="#CDE5DB"
+              <Border Margin="0,0,0,10"
+                      Padding="13,14"
+                      Background="#FFFFFF"
+                      BorderBrush="#DCE8E1"
                       BorderThickness="1"
-                      BoxShadow="0 5 16 0 #1F2B6A55"
-                      CornerRadius="13">
-                <Grid RowDefinitions="Auto,Auto,Auto"
-                      ColumnDefinitions="*,Auto,Auto,Auto">
-                  <StackPanel Grid.Row="0"
-                              Grid.ColumnSpan="4"
-                              Orientation="Horizontal"
-                              Spacing="7">
+                      CornerRadius="15">
+                <Grid RowDefinitions="Auto,Auto,Auto,Auto">
+                  <Grid Grid.Row="0" ColumnDefinitions="Auto,*">
                     <Ellipse Width="7"
                              Height="7"
                              VerticalAlignment="Center"
                              Fill="#F08B62" />
-                    <TextBlock VerticalAlignment="Center"
+                    <TextBlock Grid.Column="1" Margin="7,0,0,0" VerticalAlignment="Center"
                                FontSize="13.5"
                                FontWeight="SemiBold"
                                Text="{Binding Title}"
                                TextTrimming="CharacterEllipsis" />
-                  </StackPanel>
+                  </Grid>
                   <TextBlock Grid.Row="1"
-                             Grid.ColumnSpan="4"
-                             Margin="0,7,0,11"
+                             Margin="0,8,0,13"
                              Foreground="#61736C"
-                             FontSize="11"
-                             LineHeight="17"
-                             MaxLines="2"
+                             FontSize="12"
+                             LineHeight="18"
+                             MaxLines="3"
                              Text="{Binding RequestPreview}"
                              TextTrimming="CharacterEllipsis"
                              TextWrapping="Wrap" />
                   <TextBlock Grid.Row="2"
-                             Grid.Column="0"
-                             Margin="0,0,10,0"
+                             Margin="0,0,0,10"
                              VerticalAlignment="Center"
                              Foreground="#A75B3B"
                              FontSize="11"
                              IsVisible="{Binding HasError}"
                              Text="{Binding ErrorText}"
+                             TextWrapping="Wrap" MaxLines="3"
                              TextTrimming="CharacterEllipsis" />
-                  <Button Grid.Row="2"
-                          Grid.Column="1"
+                  <Grid Grid.Row="3" ColumnDefinitions="*,*,1.4*">
+                  <Button Grid.Column="0" Margin="0,0,6,0"
                           Classes="overlayQuiet"
                           Click="ViewButton_OnClick"
                           Content="查看"
                           IsEnabled="{Binding IsActionEnabled}"
                           PointerExited="ActionButton_OnPointerExited"
                           ToolTip.Tip="在 Codex 中查看此任务" />
-                  <Button Grid.Row="2"
-                          Grid.Column="2"
+                  <Button Grid.Column="1" Margin="0,0,6,0"
                           Classes="overlayQuiet"
                           Click="IgnoreButton_OnClick"
                           Content="忽略"
                           IsEnabled="{Binding IsActionEnabled}"
                           PointerExited="ActionButton_OnPointerExited" />
-                  <Button Grid.Row="2"
-                          Grid.Column="3"
+                  <Button Grid.Column="2"
                           Classes="overlayPrimary"
                           Click="ConfirmButton_OnClick"
                           Content="{Binding ActionText}"
                           IsEnabled="{Binding IsActionEnabled}"
                           PointerExited="ActionButton_OnPointerExited" />
+                  </Grid>
                 </Grid>
               </Border>
             </DataTemplate>
@@ -309,17 +318,40 @@
         </ItemsControl>
       </ScrollViewer>
 
-      <Border x:Name="IdleGrabber"
-              Grid.Row="3"
-              Width="148"
-              Height="4"
-              Margin="0,9,0,0"
-              HorizontalAlignment="Center"
-              Background="#3DB88A"
-              CornerRadius="2"
-              IsVisible="{Binding !HasItems}"
-              Opacity="0.78"
-              ToolTip.Tip="鼠标移入可查看扫描状态" />
+      <StackPanel x:Name="EmptyState" Grid.Row="2" VerticalAlignment="Center"
+                  HorizontalAlignment="Center" Spacing="18" IsVisible="{Binding !RequiresAttention}">
+        <Grid Width="104" Height="104">
+          <Ellipse Width="102" Height="102" Stroke="#E0EBE4" StrokeThickness="1" />
+          <Ellipse Width="78" Height="78" Fill="#EAF3ED" />
+          <Border Width="46" Height="46" Background="#FFFFFF" CornerRadius="16"
+                  HorizontalAlignment="Center" VerticalAlignment="Center"
+                  BoxShadow="0 5 14 0 #172A694E">
+            <Path Width="21" Height="16" Data="M 1,8 L 8,15 L 20,1"
+                  Stroke="#419575" StrokeThickness="2.5" Stretch="Uniform"
+                  HorizontalAlignment="Center" VerticalAlignment="Center" />
+          </Border>
+          <Ellipse Width="7" Height="7" Margin="0,6,12,0" Fill="#D5B988"
+                   HorizontalAlignment="Right" VerticalAlignment="Top" />
+          <Ellipse Width="5" Height="5" Margin="9,0,0,14" Fill="#93C5AF"
+                   HorizontalAlignment="Left" VerticalAlignment="Bottom" />
+        </Grid>
+        <TextBlock Text="暂无待确认" FontSize="13" Foreground="#83958A" HorizontalAlignment="Center" />
+      </StackPanel>
+
+      <Border Grid.Row="3" Margin="0,12,0,0" Padding="0,12,0,0"
+              BorderBrush="#DCE8E1" BorderThickness="0,1,0,0">
+        <Grid>
+          <Button x:Name="ConfirmAllButton" Height="42"
+                  HorizontalAlignment="Stretch" Classes="overlayPrimary"
+                  Click="ConfirmAllButton_OnClick" Content="{Binding ConfirmAllText}"
+                  IsEnabled="{Binding CanConfirmAll}" IsVisible="{Binding HasItems}"
+                  PointerExited="ActionButton_OnPointerExited" />
+          <TextBlock Text="{Binding CountText}" FontSize="10.5" Foreground="#86988F"
+                     HorizontalAlignment="Center" VerticalAlignment="Center" Height="25"
+                     IsVisible="{Binding !HasItems}" TextTrimming="CharacterEllipsis" />
+        </Grid>
+      </Border>
+
     </Grid>
   </Border>
   <Border x:Name="AttentionBadge"
@@ -355,6 +387,22 @@
                Canvas.Top="1"
                Fill="#FFE49B" />
     </Canvas>
+  </Border>
+  <Border x:Name="IdleSideTab"
+          Width="16"
+          Height="64"
+          HorizontalAlignment="Right"
+          VerticalAlignment="Center"
+          Background="#238B67"
+          BorderBrush="#D9F4E8"
+          BorderThickness="0,1,1,1"
+          CornerRadius="0,8,8,0"
+          IsVisible="False"
+          ToolTip.Tip="停留片刻可展开">
+    <Path Width="5" Height="14"
+          Data="M 0,0 L 5,7 L 0,14"
+          Stroke="#F2FFF8" StrokeThickness="1.5"
+          HorizontalAlignment="Center" VerticalAlignment="Center" />
   </Border>
   </Grid>
 </Window>

@@ -6,6 +6,21 @@ namespace CodexThreadWorkbench.Tests.Codex;
 
 public sealed class ThreadProjectionTests
 {
+    [Theory]
+    [InlineData("\"subAgentReview\"")]
+    [InlineData("{\"subagent\":{\"thread_spawn\":{\"parent_thread_id\":\"parent\"}}}")]
+    [InlineData("{\"subAgent\":{\"review\":{}}}")]
+    public void FromThread_ExcludesBackgroundAgentFromConfirmation(string source)
+    {
+        using var document = JsonDocument.Parse("{\"id\":\"review\",\"source\":" + source + "}");
+        var summary = ThreadProjection.FromThread(document.RootElement);
+        var state = new ThreadCardState(summary,
+            [new ChatMessage("reply", ChatRole.Assistant, "Please confirm this change.")],
+            ThreadStatusKind.Completed, LatestTurnStatus: ThreadStatusKind.Completed);
+
+        Assert.Null(new CodexThreadWorkbench.Confirmation.ConfirmationDetector().Detect(state));
+    }
+
     [Fact]
     public void FromThread_UsesExplicitNameAndMapsActiveStatus()
     {

@@ -3,12 +3,12 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <meta name="description" content="Codex 待确认悬浮助手 v2.3.3：顶部悬停稳定展开，可查看原任务，并支持默认关闭的自动确认。" />
+  <meta name="description" content="Codex 待确认悬浮助手 v2.3.9：左侧悬停稳定展开，可查看原任务，并支持默认关闭的自动确认。" />
   <meta name="theme-color" content="#071a16" />
   <link rel="icon" href="data:," />
   <title>Codex 待确认悬浮助手</title>
   <link rel="stylesheet" href="../../assets/subpage-shell.css" />
-  <link rel="stylesheet" href="./styles.css?v=20260831-v233" />
+  <link rel="stylesheet" href="./styles.css?v=20260915-v239" />
 </head>
 <body class="hub-subpage">
   <header class="site-header">
@@ -22,9 +22,9 @@
   <main>
     <section class="hero" aria-labelledby="heroTitle">
       <div class="hero-copy">
-        <p class="eyebrow"><span>v2.3.3</span> 常驻桌面，不漏掉下一步</p>
+        <p class="eyebrow"><span>v2.3.9</span> 常驻桌面，不漏掉下一步</p>
         <h1 id="heroTitle">任务跑完了，<br /><em>确认不用再找。</em></h1>
-        <p class="hero-lede">它在没有待确认时收进屏幕上边缘，只留一条 10 像素绿色把手；顶部悬停会稳定展开，不再反复弹动。发现可继续的任务后可查看原任务、确认继续，或按需开启默认关闭的自动确认。</p>
+        <p class="hero-lede">空闲时收在屏幕左侧，避开网页顶部。悬停片刻，展开为竖版任务卡片：查看原任务、忽略误报，或一键继续。仅把真正需要你回复的问题列入待确认，自动确认默认关闭。</p>
         <div class="hero-actions" aria-label="发布入口">
           <a class="action-primary" href="./video/index.html">观看视频</a>
           <a href="https://wthpein010-dev.github.io/ai-application-hub/projects/codex-thread-workbench/download/">Windows 下载</a>
@@ -32,7 +32,7 @@
           <a href="./ios/index.html">iOS 安装</a>
         </div>
         <ul class="hero-points" aria-label="产品特性">
-          <li><span aria-hidden="true">✓</span> 顶部悬停稳定展开</li>
+          <li><span aria-hidden="true">✓</span> 左侧悬停稳定展开</li>
           <li><span aria-hidden="true">✓</span> 查看原任务</li>
           <li><span aria-hidden="true">✓</span> 自动确认默认关闭</li>
           <li><span aria-hidden="true">✓</span> 发送后落盘核验</li>
@@ -42,10 +42,10 @@
       <div class="hero-visual" aria-hidden="true">
         <div class="signal-orbit orbit-one"></div><div class="signal-orbit orbit-two"></div>
         <div class="hero-window">
-          <div class="hero-window-bar"><i></i><i></i><i></i><span>桌面顶部</span></div>
+          <div class="hero-window-bar"><i></i><i></i><i></i><span>左侧竖版 · v2.3.9</span></div>
           <div class="mini-overlay">
             <div class="mini-head"><span><i></i> 待确认 · 2</span><b>始终置顶</b></div>
-            <div class="mini-task"><span>发布 v2.3.3</span><button type="button" tabindex="-1">查看</button><button type="button" tabindex="-1">确认继续</button></div>
+            <div class="mini-task"><span>发布 v2.3.9</span><button type="button" tabindex="-1">查看</button><button type="button" tabindex="-1">确认继续</button></div>
             <div class="mini-task"><span>完善演示站</span><button type="button" tabindex="-1">查看</button><button type="button" tabindex="-1">确认继续</button></div>
             <div class="mini-all">一键全部确认</div>
           </div>
@@ -70,25 +70,24 @@
               <header class="overlay-header">
                 <div class="overlay-identity">
                   <span class="overlay-logo" aria-hidden="true"><i></i></span>
-                  <div><strong>Codex 待确认</strong><small data-role="overlay-status">监控中 · 暂无待确认</small></div>
+                  <div><strong>待确认</strong><small data-role="overlay-status">监控中</small></div>
                 </div>
                 <div class="overlay-header-actions">
                   <button class="auto-confirm-toggle" type="button" data-action="toggle-auto-confirm" data-role="auto-confirm-toggle" aria-pressed="false">自动确认 关</button>
-                  <span class="candidate-badge">待确认 <b data-role="candidate-count">0</b></span>
-                  <button type="button" data-action="collapse-overlay" aria-label="收起悬浮栏">⌃</button>
+                  <span class="candidate-badge"><b data-role="candidate-count">0</b></span>
+                  <button type="button" data-action="collapse-overlay" aria-label="收起悬浮栏">‹</button>
                 </div>
               </header>
 
               <div class="overlay-empty" data-role="overlay-empty">
                 <span class="empty-pulse" aria-hidden="true"><i></i></span>
-                <div><strong>正在后台扫描</strong><p>发现可继续的任务时会自动展开，不抢占当前焦点。</p></div>
+                <div><strong>暂无待确认</strong></div>
               </div>
               <div class="candidate-list" data-role="candidate-list" aria-live="polite"></div>
               <div class="overlay-error" data-role="overlay-error" role="alert">
                 <span aria-hidden="true">!</span><div><strong>扫描暂时中断</strong><p>当前结果不可靠，确认按钮已停用。桌面版会自动重试连接。</p></div>
               </div>
               <footer class="overlay-footer">
-                <p>固定回复：确认，继续开始做，完成前不要停。</p>
                 <button type="button" data-action="confirm-all">一键全部确认</button>
               </footer>
             </div>
@@ -108,7 +107,7 @@
             <button type="button" data-action="simulate-candidates"><span>02</span><b>模拟待确认出现</b><small>自动弹出两条候选</small></button>
             <button type="button" data-action="simulate-close"><span>03</span><b>模拟窗口关闭</b><small>验证关闭保护与恢复监控</small></button>
             <button type="button" data-action="simulate-error"><span>04</span><b>模拟扫描异常</b><small>错误时禁止误确认</small></button>
-            <button type="button" data-action="reset-demo"><span>05</span><b>重置演示</b><small>清空并收进屏幕顶部</small></button>
+            <button type="button" data-action="reset-demo"><span>05</span><b>重置演示</b><small>清空并收进屏幕左侧</small></button>
           </div>
           <div class="activity-card"><span>最近动作</span><p data-role="activity-log" aria-live="polite">演示已就绪，悬浮栏当前处于收纳状态。</p></div>
         </aside>
@@ -118,7 +117,7 @@
     <section class="workflow" aria-labelledby="workflowTitle">
       <div class="section-heading compact-heading"><div><p class="eyebrow">工作方式</p><h2 id="workflowTitle">只打断真正需要你的时刻</h2></div></div>
       <div class="workflow-grid">
-        <article><span>01</span><h3>顶部悬停</h3><p>无候选时只留 10 像素把手；整窗命中区让靠近顶部后的展开保持稳定。</p></article>
+        <article><span>01</span><h3>左侧悬停</h3><p>无候选时保留窄边签，停留片刻展开竖版面板；快速经过不误弹，任务增减不改变面板尺寸。</p></article>
         <article><span>02</span><h3>查看原任务</h3><p>每条候选都有查看入口，可先跳到 Codex 对应任务，再决定是否继续。</p></article>
         <article><span>03</span><h3>立即续做</h3><p>可逐条或一键发送；自动确认默认关闭，开启后新候选会直接执行并完成回读核验。</p></article>
         <article><span>04</span><h3>保持常驻</h3><p>普通关闭请求会被拦截；Windows 恢复任务登录时启动，并每分钟检查恢复异常退出的进程。</p></article>
@@ -128,13 +127,13 @@
     <section class="platform-note" aria-labelledby="platformTitle">
       <div><p class="eyebrow">跨平台边界</p><h2 id="platformTitle">桌面负责真实任务，iOS 负责随手体验</h2></div>
       <div class="platform-grid">
-        <article class="platform-native"><span>Windows 与 macOS</span><strong>原生桌面应用</strong><p>可连接电脑本机 Codex、常驻扫描、贴顶悬浮，并把确认继续消息发送回对应任务。Windows 包另附登录启动与每分钟恢复安装脚本。</p></article>
+        <article class="platform-native"><span>Windows 与 macOS</span><strong>原生桌面应用</strong><p>可连接电脑本机 Codex、常驻扫描、左侧悬浮，并把确认继续消息发送回对应任务。Windows 包另附登录启动与每分钟恢复安装脚本。</p></article>
         <article><span>iPhone 与 iPad</span><strong>可安装 Web App</strong><p>可添加到主屏幕并离线体验流程；受 iOS 沙箱限制，不能置顶悬浮、读取电脑任务或启动 Codex CLI。</p></article>
       </div>
     </section>
   </main>
 
-  <footer class="site-footer"><span>Codex 待确认悬浮助手 · v2.3.3</span><a href="../../index.html#apps">返回应用列表</a></footer>
-  <script src="./app.js?v=20260831-v233"></script>
+  <footer class="site-footer"><span>Codex 待确认悬浮助手 · v2.3.9</span><a href="../../index.html#apps">返回应用列表</a></footer>
+  <script src="./app.js?v=20260915-v239"></script>
 </body>
 </html>

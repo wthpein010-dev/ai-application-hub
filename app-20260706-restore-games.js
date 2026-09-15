@@ -409,7 +409,7 @@ const defaultApps = [
     category: "AI 开发桌面工具",
     status: "desktop",
     badge: "待确认助手",
-    brief: "自动扫描等待你继续的 Codex 任务；空闲时收进屏幕顶部，顶部悬停稳定展开，可查看原任务，并按需开启自动确认。",
+    brief: "自动扫描真正需要你回复的 Codex 任务；空闲时左侧收纳，左侧悬停展开竖版面板，可查看原任务，并按需开启自动确认。",
     problem: "多个 Codex 任务并行运行时，等待确认的任务容易埋在任务列表里；频繁切换检查既打断工作，也会拖慢后续执行。",
     aiUse: "桌面端通过本机 codex app-server 和会话日志识别未决确认，不读取凭据；Windows/macOS 负责真实线程操作，iOS 提供可安装的演示伴侣入口。",
     folder: "./projects/codex-thread-workbench/",
@@ -2111,6 +2111,7 @@ function normalizeApp(app) {
   if (normalized.id === "codex-thread-workbench") {
     const legacyNames = ["Codex 多会话工作台"];
     const legacyBriefs = [
+      "自动扫描等待你继续的 Codex 任务；空闲时收进屏幕顶部，顶部悬停稳定展开，可查看原任务，并按需开启自动确认。",
       "在同一个 Windows 一级界面中同时查看和操作多个真实 Codex 线程，直接输入、停止、审批，并清晰区分进行中与已完成任务。",
       "在同一个 Windows 或 macOS 一级界面中同时查看和操作多个真实 Codex 线程，直接输入、停止、审批，并清晰区分进行中与已完成任务。"
     ];

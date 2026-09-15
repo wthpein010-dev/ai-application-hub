@@ -30,8 +30,8 @@ test -f "${info_plist}"
 test -x "${executable}"
 test -f "${launch_profile}"
 
-[[ "$(plutil -extract CFBundleShortVersionString raw -o - "${info_plist}")" == "2.3.3" ]]
-[[ "$(plutil -extract CFBundleVersion raw -o - "${info_plist}")" == "2.3.3" ]]
+[[ "$(plutil -extract CFBundleShortVersionString raw -o - "${info_plist}")" == "2.3.9" ]]
+[[ "$(plutil -extract CFBundleVersion raw -o - "${info_plist}")" == "2.3.9" ]]
 [[ "$(plutil -extract CFBundleIdentifier raw -o - "${info_plist}")" == "dev.wthpein010.codex-confirmation-bar" ]]
 [[ "$(plutil -extract CFBundleDisplayName raw -o - "${info_plist}")" == "Codex 待确认悬浮助手" ]]
 grep -Fq '"defaultMode":"confirmation-overlay"' "${launch_profile}"

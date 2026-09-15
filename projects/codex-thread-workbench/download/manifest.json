@@ -1,39 +1,39 @@
 {
   "version": 1,
   "fileName": "CodexConfirmationBar-Windows-x64.zip",
-  "totalSize": 41562042,
+  "totalSize": 41571222,
   "chunkSize": 8388608,
-  "sha256": "E7D1928EA27BCAE0737F9CFF14CEE5D909154BCABCA693610616357ADE7A11A7",
+  "sha256": "E40E88453808D7900A3F807B13D42D7149AC2071DC30274CB872D381068844DF",
   "parts": [
     {
       "index": 0,
-      "path": "parts/v2.3.3-confirmation-overlay-e7d1928/part-000.bin",
+      "path": "parts/v2.3.9-portrait-e40e884/part-000.bin",
       "size": 8388608,
-      "sha256": "14353740713DF862A06159F97B0DFFC9B391A346D00C99FC57848DB3EE7A7ADB"
+      "sha256": "82BBD62D52E980EABCDCF70BB978535F045588C3BF346B3FACF7BF6FF671EFDA"
     },
     {
       "index": 1,
-      "path": "parts/v2.3.3-confirmation-overlay-e7d1928/part-001.bin",
+      "path": "parts/v2.3.9-portrait-e40e884/part-001.bin",
       "size": 8388608,
-      "sha256": "9E7D68A7728B0F0A7D3094BB90F3F28062C195D613658C78743EFD4DED978B81"
+      "sha256": "404C35378794C205AEF10A5F0D75865A8041947C4276EFE567AB51CC615CF27E"
     },
     {
       "index": 2,
-      "path": "parts/v2.3.3-confirmation-overlay-e7d1928/part-002.bin",
+      "path": "parts/v2.3.9-portrait-e40e884/part-002.bin",
       "size": 8388608,
-      "sha256": "0CF05142036883C4B05246421C3DEE3F50DCCC34F03E416F2C1557DCBC420A05"
+      "sha256": "742F2DCDA8D59CCD256425F22CC0EAB925A0C973E6D196A8C77BF76BD1DD4D8D"
     },
     {
       "index": 3,
-      "path": "parts/v2.3.3-confirmation-overlay-e7d1928/part-003.bin",
+      "path": "parts/v2.3.9-portrait-e40e884/part-003.bin",
       "size": 8388608,
-      "sha256": "017F4717B18FDD1D591B0390B39E720ED38CB0E0E05661F62E4861AC07987BD6"
+      "sha256": "27B18701BDA0AC9B20F8F9D8A5C8BA6E52297A959E164F81F5DFB30B0324CB64"
     },
     {
       "index": 4,
-      "path": "parts/v2.3.3-confirmation-overlay-e7d1928/part-004.bin",
-      "size": 8007610,
-      "sha256": "72EC071C25C69DBAE819E7C060C19B7B034E65A9565675C5F2B80A034EE72AF4"
+      "path": "parts/v2.3.9-portrait-e40e884/part-004.bin",
+      "size": 8016790,
+      "sha256": "BBAD2DE2FCCF7D870F28811DAF62BEC241DECA8DBBCAE36EB2A50D461ABCE115"
     }
   ]
 }

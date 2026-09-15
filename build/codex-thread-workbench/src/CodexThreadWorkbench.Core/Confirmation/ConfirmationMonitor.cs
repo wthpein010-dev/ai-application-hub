@@ -103,7 +103,7 @@ public sealed class ConfirmationMonitor : IConfirmationMonitor
                 continue;
             }
 
-            if (summary.Status is (
+            if (summary.IsSubAgent || summary.Status is (
                     ThreadStatusKind.NeedsApproval or
                     ThreadStatusKind.Error or
                     ThreadStatusKind.Offline))

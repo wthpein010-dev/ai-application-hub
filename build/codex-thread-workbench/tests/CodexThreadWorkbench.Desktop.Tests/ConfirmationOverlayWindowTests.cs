@@ -39,7 +39,112 @@ public sealed class ConfirmationOverlayWindowTests
         Assert.False(window.ShowActivated);
         Assert.False(window.CanResize);
         Assert.Equal(SystemDecorations.None, window.SystemDecorations);
-        Assert.Equal(560, window.Width);
+        Assert.InRange(window.Width, 320, 380);
+    }
+
+    [AvaloniaFact]
+    public async Task PortraitLayout_KeepsFooterVisibleAndLongCardsInsidePanel()
+    {
+        var monitor = new PushMonitor();
+        await using var viewModel = new ConfirmationOverlayViewModel(
+            new NoopClient(), monitor, new ConfirmationDetector());
+        var window = new ConfirmationOverlayWindow();
+        try
+        {
+            window.Attach(viewModel);
+            monitor.Push(Enumerable.Range(1, 8).Select(index => new ConfirmationCandidate(
+                $"preview-{index}", "很长的任务名称：整理设计方案并补充多个页面的详细交互说明",
+                $"message-{index}", "请选择需要继续处理的方案，确认后开始实现页面布局和交互细节。",
+                DateTimeOffset.UtcNow.AddSeconds(index))).ToArray());
+            await WaitForAsync(() => window.IsVisible && viewModel.IsInteractionArmed);
+            window.UpdateLayout();
+
+            Assert.True(window.Bounds.Height > window.Bounds.Width);
+            Assert.InRange(window.Bounds.Width, 320, 380);
+            var scroller = window.GetVisualDescendants().OfType<ScrollViewer>()
+                .Single(scroll => scroll.Content is ItemsControl);
+            var footer = window.FindControl<Button>("ConfirmAllButton")!;
+            var footerTop = footer.TranslatePoint(default, window)!.Value.Y;
+            var listBottom = scroller.TranslatePoint(default, window)!.Value.Y + scroller.Bounds.Height;
+            Assert.True(footerTop >= listBottom);
+            Assert.True(footerTop + footer.Bounds.Height <= window.Bounds.Height);
+            Assert.True(scroller.Extent.Height > scroller.Viewport.Height);
+            Assert.All(window.GetVisualDescendants().OfType<Button>()
+                .Where(button => Equals(button.Content, "确认继续")),
+                button => Assert.True(button.Bounds.Width >= 90));
+            foreach (var title in window.GetVisualDescendants().OfType<TextBlock>()
+                         .Where(text => text.Text?.StartsWith("很长的任务名称") == true))
+            {
+                Assert.True(title.TranslatePoint(default, window)!.Value.X + title.Bounds.Width < window.Bounds.Width);
+            }
+
+            var initialSize = window.Bounds.Size;
+            scroller.Offset = new Vector(0, 2000);
+            window.UpdateLayout();
+            Assert.Equal(footerTop, footer.TranslatePoint(default, window)!.Value.Y);
+            monitor.Push(new ConfirmationCandidate("preview-1", "设计方案", "next", "是否开始？", DateTimeOffset.UtcNow));
+            await Task.Delay(250);
+            Assert.Equal(initialSize, window.Bounds.Size);
+        }
+        finally
+        {
+            window.CloseForShutdown();
+        }
+    }
+
+    [AvaloniaFact]
+    public async Task PortraitLayout_LongErrorsDoNotDisplaceTaskListOrFooter()
+    {
+        var monitor = new PushMonitor();
+        var error = string.Concat(Enumerable.Repeat("连接不可用，请检查本机服务状态。", 200));
+        await using var viewModel = new ConfirmationOverlayViewModel(
+            new NoopClient(), monitor, new ConfirmationDetector(),
+            automationSettingsStore: new LongErrorSettingsStore(error));
+        await viewModel.SetAutoConfirmEnabledAsync(true);
+        monitor.PushError(error);
+        monitor.Push(new ConfirmationCandidate("preview", "设计方案", "message", "是否开始？", DateTimeOffset.UtcNow));
+        var window = new ConfirmationOverlayWindow();
+        try
+        {
+            window.Attach(viewModel);
+            await WaitForAsync(() => window.IsVisible && viewModel.IsInteractionArmed);
+            window.UpdateLayout();
+            Assert.True(viewModel.HasMonitorError && viewModel.HasAutoConfirmError);
+            var scroller = window.GetVisualDescendants().OfType<ScrollViewer>()
+                .Single(scroll => scroll.Content is ItemsControl);
+            var footer = window.FindControl<Button>("ConfirmAllButton")!;
+            Assert.True(scroller.Bounds.Height >= 80);
+            Assert.True(footer.TranslatePoint(default, window)!.Value.Y + footer.Bounds.Height <= window.Bounds.Height);
+        }
+        finally { window.CloseForShutdown(); }
+    }
+
+    [AvaloniaFact]
+    public async Task PortraitLayout_ConstrainedDisplayKeepsPanelInsideWorkingArea()
+    {
+        await using var viewModel = new ConfirmationOverlayViewModel(
+            new NoopClient(), new PushMonitor(), new ConfirmationDetector());
+        var window = new ConfirmationOverlayWindow();
+        var screen = window.Screens.Primary!;
+        var areaProperty = typeof(Avalonia.Platform.Screen).GetProperty("WorkingArea")!;
+        var scalingProperty = typeof(Avalonia.Platform.Screen).GetProperty("Scaling")!;
+        var oldArea = screen.WorkingArea;
+        var oldScaling = screen.Scaling;
+        try
+        {
+            areaProperty.SetValue(screen, new PixelRect(0, 0, 1280, 720));
+            scalingProperty.SetValue(screen, 1.5);
+            window.Attach(viewModel);
+            await WaitForAsync(() => window.FindControl<Border>("IdleSideTab")!.IsVisible);
+            Assert.InRange(window.Bounds.Height, 400, 456);
+            Assert.True(window.Position.Y + Math.Ceiling(window.Bounds.Height * 1.5) <= 720);
+        }
+        finally
+        {
+            window.CloseForShutdown();
+            areaProperty.SetValue(screen, oldArea);
+            scalingProperty.SetValue(screen, oldScaling);
+        }
     }
 
     [AvaloniaFact]
@@ -115,7 +220,7 @@ public sealed class ConfirmationOverlayWindowTests
     }
 
     [Fact]
-    public void Placement_WhenIdle_RetractsAboveTopEdgeAndKeepsAnchorX()
+    public void Placement_WhenIdle_RetractsAtLeftEdgeAndKeepsAnchorY()
     {
         var placement = new ConfirmationOverlayPlacement();
 
@@ -123,9 +228,47 @@ public sealed class ConfirmationOverlayWindowTests
             new PixelRect(100, 50, 1200, 800),
             new PixelPoint(280, 340),
             new PixelSize(560, 64),
-            ConfirmationOverlayWindow.IdlePeekHeight);
+            16);
 
-        Assert.Equal(new PixelPoint(280, -4), position);
+        Assert.Equal(new PixelPoint(-444, 340), position);
+    }
+
+    [Theory]
+    [InlineData(100, 50, 1500, 900, 560, 400, 100, 300)]
+    [InlineData(-1920, 0, 1920, 1040, 840, 600, -1920, 220)]
+    public void Placement_DefaultsToLeftMiddleAwayFromBrowserTop(
+        int x, int y, int width, int height, int windowWidth, int windowHeight,
+        int expectedX, int expectedY)
+    {
+        var placement = new ConfirmationOverlayPlacement();
+        Assert.Equal(new PixelPoint(expectedX, expectedY), placement.ResolveForShow(
+            new PixelRect(x, y, width, height), new PixelPoint(5000, 0),
+            new PixelSize(windowWidth, windowHeight)));
+    }
+
+    [AvaloniaFact]
+    public async Task IdleHover_QuickPassDoesNotOpenPanel()
+    {
+        await using var viewModel = new ConfirmationOverlayViewModel(
+            new NoopClient(), new PushMonitor(), new ConfirmationDetector());
+        var window = new ConfirmationOverlayWindow();
+        try
+        {
+            window.Attach(viewModel);
+            await WaitForAsync(() => window.IsVisible && window.Bounds.Height > 1);
+            await Task.Delay(250);
+            var retracted = window.Position;
+            window.MouseMove(new Point(window.Bounds.Width - 5, window.Bounds.Height / 2));
+            await Task.Delay(100);
+            Assert.Equal(retracted, window.Position);
+            window.MouseMove(new Point(window.Bounds.Width + 50, window.Bounds.Height / 2));
+            await Task.Delay(500);
+            Assert.Equal(retracted, window.Position);
+        }
+        finally
+        {
+            window.CloseForShutdown();
+        }
     }
 
     [Fact]
@@ -171,6 +314,77 @@ public sealed class ConfirmationOverlayWindowTests
     }
 
     [AvaloniaFact]
+    public void Overlay_AfterMovingAnAlreadyPositionedWindow_UsesNewAnchor()
+    {
+        var window = new ConfirmationOverlayWindow();
+        var area = new PixelRect(100, 50, 1500, 900);
+        var size = new PixelSize(560, 400);
+        window.PositionForShow(area, size);
+        window.MarkManuallyPositioned();
+        window.Position = new PixelPoint(280, 340);
+
+        window.PositionForShow(area, size);
+
+        Assert.Equal(new PixelPoint(280, 340), window.Position);
+    }
+
+    [AvaloniaFact]
+    public async Task ManualMove_AfterHoverExpansion_PreservesAnchorThroughRetraction()
+    {
+        await using var viewModel = new ConfirmationOverlayViewModel(
+            new NoopClient(), new PushMonitor(), new ConfirmationDetector());
+        var window = new ConfirmationOverlayWindow();
+        try
+        {
+            window.Attach(viewModel);
+            await WaitForAsync(() => window.FindControl<Border>("IdleSideTab")!.IsVisible);
+            window.MouseMove(new Point(window.Bounds.Width - 5, window.Bounds.Height / 2));
+            await WaitForAsync(() => window.Position.X == window.Screens.Primary!.WorkingArea.X);
+            window.MarkManuallyPositioned();
+            window.Position = new PixelPoint(80, 200);
+            window.MouseMove(new Point(window.Bounds.Width + 50, window.Bounds.Height / 2));
+            await WaitForAsync(() => window.FindControl<Border>("IdleSideTab")!.IsVisible);
+            Assert.Equal(200, window.Position.Y);
+
+            window.MouseMove(new Point(window.Bounds.Width - 5, window.Bounds.Height / 2));
+            await WaitForAsync(() => window.Position.X == 80);
+            Assert.Equal(200, window.Position.Y);
+        }
+        finally
+        {
+            window.CloseForShutdown();
+        }
+    }
+
+    [AvaloniaFact]
+    public async Task Attach_UsesTargetDisplayScaleBeforeWindowMoves()
+    {
+        await using var viewModel = new ConfirmationOverlayViewModel(
+            new NoopClient(), new PushMonitor(), new ConfirmationDetector());
+        var window = new ConfirmationOverlayWindow();
+        var screen = window.Screens.Primary!;
+        var scalingProperty = typeof(Avalonia.Platform.Screen).GetProperty("Scaling")!;
+        var originalScaling = screen.Scaling;
+        try
+        {
+            // Simulate a 150% target display while the newly created window is still at 100%.
+            scalingProperty.SetValue(screen, 1.5);
+            Assert.Equal(1, window.RenderScaling);
+            window.Attach(viewModel);
+            await WaitForAsync(() => window.IsVisible && window.Bounds.Height > 1);
+            await Task.Delay(250);
+
+            // 360 DIP panel = 540 px, and 16 DIP tab = 24 px on the target display.
+            Assert.Equal(screen.WorkingArea.X - 516, window.Position.X);
+        }
+        finally
+        {
+            window.CloseForShutdown();
+            scalingProperty.SetValue(screen, originalScaling);
+        }
+    }
+
+    [AvaloniaFact]
     public async Task Attach_RetractsWhenIdle_ExpandsForCandidate_ThenRetractsAgain()
     {
         var monitor = new PushMonitor();
@@ -186,12 +400,22 @@ public sealed class ConfirmationOverlayWindowTests
         var workingArea = primaryScreen.WorkingArea;
         await WaitForAsync(() => window.Bounds.Height > 1);
         await WaitForAsync(() =>
-            window.Position.Y + (int)Math.Ceiling(window.Bounds.Height) ==
-            workingArea.Y + ConfirmationOverlayWindow.IdlePeekHeight);
+            window.Position.X + (int)Math.Ceiling(window.Bounds.Width) ==
+            workingArea.X + ConfirmationOverlayWindow.IdlePeekWidth);
         Assert.Equal(
-            workingArea.X +
-            ((workingArea.Width - (int)Math.Ceiling(window.Bounds.Width)) / 2),
-            window.Position.X);
+            workingArea.Y +
+            ((workingArea.Height - (int)Math.Ceiling(window.Bounds.Height)) / 2),
+            window.Position.Y);
+        Assert.True(window.FindControl<Border>("IdleSideTab")?.IsVisible);
+        Assert.Equal(0, window.FindControl<Border>("OverlaySurface")!.Opacity);
+        var root = window.FindControl<Grid>("OverlayRoot")!;
+        await WaitForAsync(() =>
+        {
+            AvaloniaHeadlessPlatform.ForceRenderTimerTick();
+            return root.InputHitTest(new Point(root.Bounds.Width - 5, 3)) is null &&
+                   root.InputHitTest(new Point(root.Bounds.Width - 5, root.Bounds.Height / 2)) is not null;
+        });
+        Assert.NotNull(root.InputHitTest(new Point(root.Bounds.Width - 5, root.Bounds.Height / 2)));
 
         Assert.Equal("暂无待确认 · 常驻扫描", viewModel.CountText);
         Assert.False(viewModel.ConfirmAllCommand.CanExecute(null));
@@ -204,8 +428,11 @@ public sealed class ConfirmationOverlayWindowTests
             "请确认方案，确认后开始实施。",
             DateTimeOffset.UtcNow));
         await WaitForAsync(() => !viewModel.IsInteractionArmed);
-        await WaitForAsync(() => window.Position.Y == workingArea.Y);
+        await WaitForAsync(() => window.Position.X == workingArea.X);
         await WaitForAsync(() => viewModel.IsInteractionArmed);
+        Assert.True(window.Position.Y > workingArea.Y);
+        Assert.False(window.FindControl<Border>("IdleSideTab")?.IsVisible);
+        Assert.Equal(1, window.FindControl<Border>("OverlaySurface")!.Opacity);
 
         var confirmAllButton = window.FindControl<Button>("ConfirmAllButton");
         Assert.NotNull(confirmAllButton);
@@ -215,8 +442,8 @@ public sealed class ConfirmationOverlayWindowTests
 
         monitor.Push();
         await WaitForAsync(() =>
-            window.Position.Y + (int)Math.Ceiling(window.Bounds.Height) ==
-            workingArea.Y + ConfirmationOverlayWindow.IdlePeekHeight);
+            window.Position.X + (int)Math.Ceiling(window.Bounds.Width) ==
+            workingArea.X + ConfirmationOverlayWindow.IdlePeekWidth);
 
         Assert.True(window.IsVisible);
         Assert.Equal("暂无待确认 · 常驻扫描", viewModel.CountText);
@@ -224,7 +451,7 @@ public sealed class ConfirmationOverlayWindowTests
     }
 
     [AvaloniaFact]
-    public async Task IdleHover_WhenPointerRemainsAtTopEdge_StaysExpanded()
+    public async Task IdleHover_WhenPointerRemainsAtLeftEdge_StaysExpanded()
     {
         var monitor = new PushMonitor();
         await using var viewModel = new ConfirmationOverlayViewModel(
@@ -238,16 +465,20 @@ public sealed class ConfirmationOverlayWindowTests
         Assert.NotNull(primaryScreen);
         var workingArea = primaryScreen.WorkingArea;
         await WaitForAsync(() =>
-            window.Position.Y + (int)Math.Ceiling(window.Bounds.Height) ==
-            workingArea.Y + ConfirmationOverlayWindow.IdlePeekHeight);
+            window.Position.X + (int)Math.Ceiling(window.Bounds.Width) ==
+            workingArea.X + ConfirmationOverlayWindow.IdlePeekWidth);
 
-        window.MouseMove(new Point(window.Bounds.Width / 2, window.Bounds.Height - 5));
-        await WaitForAsync(() => window.Position.Y == workingArea.Y);
+        window.MouseMove(new Point(window.Bounds.Width - 5, window.Bounds.Height / 2));
+        await WaitForAsync(() => window.Position.X == workingArea.X);
 
-        window.MouseMove(new Point(window.Bounds.Width / 2, 5));
+        window.MouseMove(new Point(5, window.Bounds.Height / 2));
         await Task.Delay(900);
 
-        Assert.Equal(workingArea.Y, window.Position.Y);
+        Assert.Equal(workingArea.X, window.Position.X);
+        window.MouseMove(new Point(window.Bounds.Width + 50, window.Bounds.Height / 2));
+        await Task.Delay(150);
+        Assert.Equal(workingArea.X, window.Position.X);
+        await WaitForAsync(() => window.Position.X + 360 == workingArea.X + 16);
         window.CloseForShutdown();
     }
 
@@ -304,11 +535,11 @@ public sealed class ConfirmationOverlayWindowTests
         Assert.NotNull(primaryScreen);
         var workingArea = primaryScreen.WorkingArea;
         await WaitForAsync(() => window.Bounds.Height > 1);
-        await WaitForAsync(() => window.Position.Y < workingArea.Y);
+        await WaitForAsync(() => window.Position.X < workingArea.X);
 
         monitor.PushError("扫描连接暂时不可用");
 
-        await WaitForAsync(() => window.Position.Y == workingArea.Y);
+        await WaitForAsync(() => window.Position.X == workingArea.X);
         Assert.True(viewModel.RequiresAttention);
         Assert.Equal("扫描异常 · 请检查", viewModel.CountText);
         window.CloseForShutdown();
@@ -499,6 +730,9 @@ public sealed class ConfirmationOverlayWindowTests
         Assert.False(viewModel.IsAutoConfirmEnabled);
         Assert.False(toggle.IsChecked);
 
+        await WaitForAsync(() => window.FindControl<Border>("IdleSideTab")!.IsVisible);
+        window.MouseMove(new Point(window.Bounds.Width - 5, window.Bounds.Height / 2));
+        await WaitForAsync(() => window.Position.X == window.Screens.Primary!.WorkingArea.X);
         var point = toggle.TranslatePoint(
             new Point(toggle.Bounds.Width / 2, toggle.Bounds.Height / 2),
             window)!.Value;
@@ -525,6 +759,9 @@ public sealed class ConfirmationOverlayWindowTests
         await WaitForAsync(() => window.IsVisible);
         var toggle = window.FindControl<ToggleSwitch>("AutoConfirmToggle");
         Assert.NotNull(toggle);
+        await WaitForAsync(() => window.FindControl<Border>("IdleSideTab")!.IsVisible);
+        window.MouseMove(new Point(window.Bounds.Width - 5, window.Bounds.Height / 2));
+        await WaitForAsync(() => window.Position.X == window.Screens.Primary!.WorkingArea.X);
         var point = toggle.TranslatePoint(
             new Point(toggle.Bounds.Width / 2, toggle.Bounds.Height / 2),
             window)!.Value;
@@ -673,6 +910,13 @@ public sealed class ConfirmationOverlayWindowTests
             throw new NotSupportedException();
 
         public ValueTask DisposeAsync() => ValueTask.CompletedTask;
+    }
+
+    private sealed class LongErrorSettingsStore(string error) : IConfirmationAutomationSettingsStore
+    {
+        public Task<bool> LoadEnabledAsync(CancellationToken cancellationToken = default) => Task.FromResult(false);
+        public Task SaveEnabledAsync(bool enabled, CancellationToken cancellationToken = default) =>
+            Task.FromException(new IOException(error));
     }
 
     private sealed class FailingAutomationSettingsStore :

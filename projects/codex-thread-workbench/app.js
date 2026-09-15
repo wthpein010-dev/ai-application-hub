@@ -8,21 +8,40 @@ const autoConfirmToggle = document.querySelector('[data-role="auto-confirm-toggl
 const sampleCandidates = [
   {
     id: "release-v2",
-    title: "发布待确认悬浮助手 v2",
+    title: "发布待确认悬浮助手 v2.3.9",
     state: "已结束 · 等待你的下一条指令",
-    preview: "构建验证已经完成，可以继续同步到公开站点。",
+    preview: "构建验证已经完成，是否继续同步到公开站点？",
   },
   {
     id: "showcase-site",
     title: "完善产品演示站",
-    state: "回合中断 · 可从当前进度继续",
-    preview: "页面结构与素材已经保存，等待确认后继续制作视频。",
+    state: "等待你的决定",
+    preview: "页面结构已经完成，需要我继续制作演示视频吗？",
   },
 ];
 
 let candidates = [];
 let autoConfirmEnabled = false;
 let autoConfirmTimer;
+let revealTimer;
+let retractTimer;
+
+overlay.addEventListener("pointerenter", event => {
+  if (event.pointerType === "touch") return;
+  clearTimeout(retractTimer);
+  if (overlay.dataset.overlayState === "retracted") {
+    revealTimer = setTimeout(() => setState(candidates.length ? "attention" : "idle"), 350);
+  }
+});
+overlay.addEventListener("pointerleave", () => {
+  clearTimeout(revealTimer);
+  if (candidates.length || overlay.dataset.overlayState === "error") return;
+  retractTimer = setTimeout(() => {
+    if (!overlay.matches(":hover") && !overlay.matches(":focus-within") && !candidates.length && overlay.dataset.overlayState === "idle") {
+      setState("retracted");
+    }
+  }, 760);
+});
 
 document.addEventListener("click", event => {
   const button = event.target.closest("[data-action]");
@@ -34,7 +53,7 @@ document.addEventListener("click", event => {
     activityLog.textContent = "已展开悬浮栏；后台监控正常，没有真实消息被发送。";
   } else if (action === "collapse-overlay") {
     setState("retracted");
-    activityLog.textContent = "已手动收进屏幕顶部；监控仍在后台运行。";
+    activityLog.textContent = "演示已收进屏幕左侧；监控仍在后台运行。";
   } else if (action === "simulate-candidates") {
     candidates = sampleCandidates.map(candidate => ({ ...candidate }));
     renderCandidates();
@@ -60,6 +79,13 @@ document.addEventListener("click", event => {
     confirmOne(button.dataset.candidateId);
   } else if (action === "view-one") {
     viewOne(button.dataset.candidateId);
+  } else if (action === "ignore-one") {
+    const candidate = candidates.find(item => item.id === button.dataset.candidateId);
+    if (!candidate) return;
+    candidates = candidates.filter(item => item.id !== candidate.id);
+    renderCandidates();
+    setState(candidates.length ? "attention" : "retracted");
+    activityLog.textContent = `演示：已忽略「${candidate.title}」。`;
   } else if (action === "confirm-all") {
     confirmAll();
   } else if (action === "toggle-auto-confirm") {
@@ -85,14 +111,14 @@ function confirmOne(id) {
 
   candidates = candidates.filter(item => item.id !== id);
   renderCandidates();
-  activityLog.textContent = `已向「${candidate.title}」发送确认继续。`;
+  activityLog.textContent = `演示：已向「${candidate.title}」发送确认继续，未操作真实任务。`;
   setState(candidates.length ? "attention" : "retracted");
 }
 
 function viewOne(id) {
   const candidate = candidates.find(item => item.id === id);
   if (!candidate) return;
-  activityLog.textContent = `查看「${candidate.title}」的 Codex 原任务；候选保持不变。`;
+  activityLog.textContent = `演示：查看「${candidate.title}」的 Codex 原任务；候选保持不变。`;
 }
 
 function confirmAll(automatic = false) {
@@ -102,8 +128,8 @@ function confirmAll(automatic = false) {
   renderCandidates();
   setState("retracted");
   activityLog.textContent = automatic
-    ? `自动确认已向 ${confirmedCount} 个任务发送继续消息，悬浮栏已收回。`
-    : `已向 ${confirmedCount} 个任务发送确认继续，悬浮栏已自动收回。`;
+    ? `演示：自动确认已向 ${confirmedCount} 个模拟任务发送继续消息，悬浮栏已收回。`
+    : `演示：已向 ${confirmedCount} 个任务发送确认继续，未操作真实任务。`;
 }
 
 function updateAutoConfirmToggle() {
@@ -113,13 +139,15 @@ function updateAutoConfirmToggle() {
 }
 
 function setState(state) {
+  clearTimeout(revealTimer);
+  clearTimeout(retractTimer);
   overlay.dataset.overlayState = state;
   if (state === "attention") {
-    overlayStatus.textContent = `发现 ${candidates.length} 个待确认任务`;
+    overlayStatus.textContent = "等待回复";
   } else if (state === "error") {
-    overlayStatus.textContent = "扫描异常 · 正在自动重试";
+    overlayStatus.textContent = "扫描异常";
   } else {
-    overlayStatus.textContent = "监控中 · 暂无待确认";
+    overlayStatus.textContent = "监控中";
   }
 }
 
@@ -150,13 +178,21 @@ function renderCandidates() {
     view.setAttribute("aria-label", `查看原任务：${candidate.title}`);
     view.textContent = "查看";
 
+    const ignore = document.createElement("button");
+    ignore.type = "button";
+    ignore.className = "candidate-ignore";
+    ignore.dataset.action = "ignore-one";
+    ignore.dataset.candidateId = candidate.id;
+    ignore.setAttribute("aria-label", `忽略：${candidate.title}`);
+    ignore.textContent = "忽略";
+
     const confirm = document.createElement("button");
     confirm.type = "button";
     confirm.dataset.action = "confirm-one";
     confirm.dataset.candidateId = candidate.id;
     confirm.setAttribute("aria-label", `确认继续：${candidate.title}`);
     confirm.textContent = "确认继续";
-    actions.append(view, confirm);
+    actions.append(view, ignore, confirm);
     item.append(copy, actions);
     return item;
   }));
