@@ -17,6 +17,7 @@ on:
 
 permissions:
   contents: write
+  actions: read
 
 concurrency:
   group: codex-thread-workbench-macos-${{ github.ref }}
@@ -31,11 +32,9 @@ jobs:
         include:
           - architecture: arm64
             runtime: osx-arm64
-            runner: macos-14
-          - architecture: x64
-            runtime: osx-x64
-            runner: macos-15-intel
+            runner: macos-15
     runs-on: ${{ matrix.runner }}
+    timeout-minutes: 15
     defaults:
       run:
         working-directory: build/codex-thread-workbench
@@ -125,6 +124,14 @@ jobs:
           pattern: workbench-macos-*
           path: artifacts/workbench-macos
           merge-multiple: true
+
+      - name: Reuse the verified Intel artifact from the identical source revision
+        uses: actions/download-artifact@v4
+        with:
+          name: workbench-macos-x64
+          run-id: 34937802759
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          path: artifacts/workbench-macos
 
       - name: Create verified Pages parts and manifests
         run: |
