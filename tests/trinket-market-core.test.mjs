@@ -18,15 +18,14 @@ const root = dirname(dirname(fileURLToPath(import.meta.url)));
 const projectRoot = resolve(root, "projects", "trinket-market");
 const canonical = JSON.parse(readFileSync(resolve(projectRoot, "data", "items.json"), "utf8"));
 
-test("canonical catalog keeps 11 stable IDs with one bundled image each", () => {
+test("canonical catalog keeps the 44 fully configured stable IDs with one bundled image each", () => {
   const items = validateItems(canonical);
-  assert.deepEqual(items.map((item) => item.id), [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11]);
-  assert.equal(new Set(items.map((item) => item.image)).size, 11);
+  assert.deepEqual(items.map((item) => item.id), [...Array.from({ length: 42 }, (_, index) => index + 1), 48, 50]);
+  assert.equal(new Set(items.map((item) => item.image)).size, 44);
   assert.equal(items.every((item) => existsSync(resolve(projectRoot, item.image))), true);
   assert.equal(items.every((item) => item.name && item.pinyin && item.rarity), true);
   assert.equal(canonical.every((item) => item.slot === "hand" && Number.isInteger(item.ownedCount) && item.ownedCount > 0), true);
-  assert.equal(canonical.find((item) => item.id === 10).giftable, false);
-  assert.equal(canonical.filter((item) => item.isNew).map((item) => item.id).join(","), "4,10,11");
+  assert.equal(canonical.every((item) => item.acquisitionText && item.galleryDescription), true);
 });
 
 test("validation rejects duplicate IDs and invalid market values", () => {
@@ -48,7 +47,7 @@ test("acquisition bridge updates known non-negative integer counts only", () => 
 test("sorting supports IDs, names, counts, and a complete manual order", () => {
   const sample = canonical.slice(0, 4);
   assert.deepEqual(sortItems(sample, "id", "desc").map((item) => item.id), [4, 3, 2, 1]);
-  assert.deepEqual(sortItems(sample, "name", "asc").map((item) => item.id), [1, 2, 4, 3]);
+  assert.deepEqual(sortItems(sample, "name", "asc").map((item) => item.id), [2, 1, 3, 4]);
   assert.deepEqual(sortItems(sample, "acquired", "desc").map((item) => item.id), [1, 3, 2, 4]);
   assert.deepEqual(sortItems(sample, "manual", "asc", [3, 1, 4, 2]).map((item) => item.id), [3, 1, 4, 2]);
 });
@@ -61,7 +60,7 @@ test("manual sorting appends IDs absent from a stale saved order", () => {
 test("imported state validates item data and repairs stale manual order", () => {
   const imported = validateImportedState({ version: 1, items: canonical, order: [3, 1, 99, 3] });
   assert.equal(imported.version, 1);
-  assert.deepEqual(imported.order, [3, 1, 2, 4, 5, 6, 7, 8, 9, 10, 11]);
+  assert.deepEqual(imported.order, [3, 1, ...canonical.map((item) => item.id).filter((id) => id !== 1 && id !== 3)]);
   assert.throws(() => validateImportedState({ version: 1, items: [canonical[0], canonical[0]], order: [] }), /重复/);
   assert.throws(() => validateImportedState({ version: 2, items: canonical, order: [] }), /版本/);
   assert.throws(() => validateImportedState({ version: 1, items: canonical.slice(0, 10), order: [] }), /完整包含/);

@@ -73,6 +73,7 @@ const elements = {
   trinketOwned: document.querySelector("#trinket-owned-count"),
   trinketGiftCount: document.querySelector("#trinket-gift-count"),
   trinketAcquisition: document.querySelector("#trinket-acquisition"),
+  trinketGalleryDescription: document.querySelector("#trinket-gallery-description"),
   trinketRemove: document.querySelector("#trinket-remove"),
   rewardCharacter: document.querySelector("#reward-character"),
   rewardName: document.querySelector("#reward-name"),
@@ -375,6 +376,7 @@ function renderTrinketPanel() {
       ownedCount: elements.trinketOwned,
       giftCount: elements.trinketGiftCount,
       acquisition: elements.trinketAcquisition,
+      galleryDescription: elements.trinketGalleryDescription,
       remove: elements.trinketRemove,
     },
   });

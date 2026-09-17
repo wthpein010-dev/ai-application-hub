@@ -48,3 +48,32 @@ test("hand sync copies only matching PNGs and marks a new catalog item for namin
   assert.equal(existsSync(join(projectRoot, "assets", "items", "hand_12.png")), true);
   assert.equal(existsSync(join(projectRoot, "assets", "items", "hand_bad.png")), false);
 });
+
+test("hand sync can restrict copied art to configured item IDs", async (context) => {
+  const fixtureRoot = await mkdtemp(join(tmpdir(), "trinket-sync-filter-"));
+  const sourceRoot = join(fixtureRoot, "source");
+  const projectRoot = join(fixtureRoot, "project");
+  context.after(() => rm(fixtureRoot, { recursive: true, force: true }));
+  await mkdir(sourceRoot, { recursive: true });
+  await mkdir(join(projectRoot, "assets", "items"), { recursive: true });
+  await mkdir(join(projectRoot, "data"), { recursive: true });
+  await writeFile(join(sourceRoot, "hand_1.png"), "one");
+  await writeFile(join(sourceRoot, "hand_2.png"), "two");
+  await writeFile(join(projectRoot, "data", "items.json"), JSON.stringify([{
+    id: 1,
+    name: "已有名字",
+    pinyin: "existing",
+    rarity: "常见",
+    acquired: 3,
+    value: 1,
+    change: 0,
+    image: "./assets/items/hand_1.png",
+    ownedCount: 2,
+  }], null, 2));
+
+  const result = await syncApi.syncTrinketCatalog({ sourceRoot, projectRoot, allowedIds: [1] });
+
+  assert.deepEqual(result.copiedIds, [1]);
+  assert.equal(existsSync(join(projectRoot, "assets", "items", "hand_1.png")), true);
+  assert.equal(existsSync(join(projectRoot, "assets", "items", "hand_2.png")), false);
+});

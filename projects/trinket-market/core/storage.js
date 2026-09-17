@@ -3,7 +3,7 @@ import { validateItems } from "./items.js";
 export const DATA_STORAGE_KEY = "trinket-market-v1-data";
 const IMAGE_DB_NAME = "trinket-market-v1-images";
 const IMAGE_STORE_NAME = "images";
-const CANONICAL_IDS = Object.freeze(Array.from({ length: 11 }, (_, index) => index + 1));
+const CANONICAL_IDS = Object.freeze([...Array.from({ length: 42 }, (_, index) => index + 1), 48, 50]);
 
 function normalizeOrder(items, input) {
   const validIds = new Set(items.map((item) => item.id));

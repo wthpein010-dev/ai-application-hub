@@ -146,6 +146,7 @@ export function renderTrinketDetail({ item, favoriteIds, equippedItemId, element
   elements.ownedCount.textContent = `×${item.ownedCount}`;
   elements.giftCount.textContent = `×${Math.max(0, item.ownedCount - (equippedItemId === item.id ? 1 : 0))}`;
   elements.acquisition.textContent = item.acquisitionText || "获取方式待配置";
+  elements.galleryDescription.textContent = item.galleryDescription || "图鉴描述待配置";
   elements.remove.disabled = !equippedItemId;
   elements.remove.setAttribute("aria-label", equippedItemId ? "卸下当前装扮的小物" : "当前没有已装扮的小物");
 }

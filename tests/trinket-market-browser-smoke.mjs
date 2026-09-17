@@ -40,6 +40,8 @@ const browserExecutable = [
 ].find((candidate) => candidate && existsSync(candidate));
 const browser = await chromium.launch({ headless: true, executablePath: browserExecutable });
 const origin = `http://127.0.0.1:${server.address().port}`;
+const configuredIds = [...Array.from({ length: 42 }, (_, index) => index + 1), 48, 50];
+const defaultAcquiredOrder = [7, 1, 3, 8, 2, 9, 5, 4, 11, 6, 10, ...configuredIds.filter((id) => id >= 12)];
 
 function rgbChannels(value) {
   const channels = value.match(/[\d.]+/g)?.slice(0, 3).map(Number);
@@ -83,11 +85,11 @@ try {
     await page.locator("body[data-ready='true']").waitFor();
 
     assert.equal(await page.title(), "随身小物交易市场");
-    assert.equal(await page.locator(".item-card").count(), 11);
+    assert.equal(await page.locator(".item-card").count(), 44);
     assert.equal(await page.locator("body").getAttribute("data-theme"), "a");
     assert.equal(await page.locator("#value-toggle").isChecked(), false);
     assert.equal(await page.locator(".item-price:not([hidden])").count(), 0);
-    assert.equal(await page.locator(".item-art img[data-centered='true']").count(), 11);
+    assert.equal(await page.locator(".item-art img[data-centered='true']").count(), 44);
 
     const firstRowCount = await page.locator(".item-card").evaluateAll((cards) => {
       const top = cards[0].getBoundingClientRect().top;
@@ -104,7 +106,7 @@ try {
 
     await page.locator(".value-toggle").click();
     assert.equal(await page.locator("#value-toggle").isChecked(), true);
-    assert.equal(await page.locator(".item-price:not([hidden])").count(), 11);
+    assert.equal(await page.locator(".item-price:not([hidden])").count(), 44);
     assert.equal(await page.locator("#third-stat-label").textContent(), "参考总估值");
     assert.deepEqual(errors, []);
     await page.close();
@@ -185,13 +187,13 @@ try {
   await page.goto(`${origin}/projects/trinket-market/index.html`, { waitUntil: "networkidle" });
   await page.locator("body[data-ready='true']").waitFor();
 
-  assert.deepEqual(await page.locator(".item-card").evaluateAll((cards) => cards.map((card) => Number(card.dataset.id))), [7, 1, 3, 8, 2, 9, 5, 4, 11, 6, 10]);
+  assert.deepEqual(await page.locator(".item-card").evaluateAll((cards) => cards.map((card) => Number(card.dataset.id))), defaultAcquiredOrder);
   await page.locator("#sort-mode").selectOption("id");
-  assert.deepEqual(await page.locator(".item-card").evaluateAll((cards) => cards.map((card) => Number(card.dataset.id))), [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11]);
+  assert.deepEqual(await page.locator(".item-card").evaluateAll((cards) => cards.map((card) => Number(card.dataset.id))), configuredIds);
   await page.locator("#sort-direction").click();
-  assert.deepEqual(await page.locator(".item-card").evaluateAll((cards) => cards.map((card) => Number(card.dataset.id))), [11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1]);
+  assert.deepEqual(await page.locator(".item-card").evaluateAll((cards) => cards.map((card) => Number(card.dataset.id))), [...configuredIds].reverse());
   await page.locator("#sort-mode").selectOption("name");
-  assert.deepEqual((await page.locator(".item-card").evaluateAll((cards) => cards.map((card) => Number(card.dataset.id)))).slice(0, 4), [1, 2, 4, 11]);
+  assert.deepEqual((await page.locator(".item-card").evaluateAll((cards) => cards.map((card) => Number(card.dataset.id)))).slice(0, 4), [33, 34, 30, 26]);
 
   await page.evaluate(() => window.TrinketMarketAPI.setAcquisitionCounts({ 1: 30000, 2: -1, 99: 2 }));
   await page.locator("#sort-mode").selectOption("acquired");
@@ -363,7 +365,7 @@ try {
   assert.match(await editPage.locator("#github-source").getAttribute("href"), /^https:\/\/github\.com\/wthpein010-dev\/ai-application-hub/);
 
   await editPage.locator("#edit-mode").click();
-  assert.equal(await editPage.locator(".item-edit").count(), 11);
+  assert.equal(await editPage.locator(".item-edit").count(), 44);
   await editPage.locator('.item-card[data-id="1"] .item-edit').click();
   await editPage.locator("#edit-name").fill("测试冰水壶");
   await editPage.locator("#edit-rarity").fill("限定");
@@ -426,7 +428,7 @@ try {
 
   editPage.once("dialog", (dialog) => dialog.accept());
   await editPage.locator("#reset-data").click();
-  await editPage.waitForFunction(() => document.querySelector('.item-card[data-id="1"] .item-name')?.textContent === "便携冰水壶");
+  await editPage.waitForFunction(() => document.querySelector('.item-card[data-id="1"] .item-name')?.textContent === "保温杯");
   assert.match(await editPage.locator("#edit-status").textContent(), /已恢复官方数据/);
 
   await editPage.locator("#edit-mode").click();

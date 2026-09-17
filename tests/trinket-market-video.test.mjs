@@ -33,6 +33,8 @@ test("video page and single-line captions cover the core interactions", () => {
   assert.match(page, /href="\.\.\/\.\.\/\.\.\/index\.html#engineering"/);
   assert.match(page, /preload="none" data-src="\.\/trinket-market-demo\.mp4"/);
   assert.match(page, /小物排序与桌面式拖拽/);
+  assert.match(page, /四十四件随身小物/);
+  assert.match(captions, /四十四件随身小物/);
 
   const cues = captions.replace(/\r/g, "").trim().split(/\n{2,}/).slice(1).map((block) => {
     const lines = block.split("\n");
@@ -42,5 +44,5 @@ test("video page and single-line captions cover the core interactions", () => {
   assert.ok(cues.length >= 6);
   assert.equal(cues.every((cue) => cue.text.length === 1), true);
   assert.ok(cues.at(-1).end <= 75);
-  for (const phrase of ["参考估值", "拖拽", "编辑物品", "导出 JSON"]) assert.match(tutorial, new RegExp(phrase));
+  for (const phrase of ["四十四件", "参考估值", "拖拽", "编辑物品", "导出 JSON"]) assert.match(tutorial, new RegExp(phrase));
 });

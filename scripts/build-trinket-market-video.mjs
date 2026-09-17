@@ -96,7 +96,7 @@ try {
   await at(29, () => page.locator("#edit-mode").click());
   await at(31, () => page.locator('.item-card[data-id="1"] .item-edit').click());
   await at(34, async () => {
-    await page.locator("#edit-name").fill("便携冰水壶·典藏");
+    await page.locator("#edit-name").fill("保温杯·典藏");
     await page.locator("#edit-rarity").fill("限定");
     await page.locator("#edit-acquired").fill("20001");
   });

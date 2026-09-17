@@ -49,7 +49,8 @@ try {
 
   await page.locator("#tab-trinkets").click();
   assert.equal(await page.locator("#tab-trinkets").getAttribute("aria-selected"), "true");
-  assert.equal(await page.locator(".trinket-card").count(), 11);
+  assert.equal(await page.locator(".trinket-card").count(), 44);
+  assert.equal(await page.locator('.trinket-card[data-item-id="26"]').getAttribute("aria-label"), "装扮安心泳圈");
   assert.equal(await page.locator('.trinket-card[data-item-id="1"]').getAttribute("data-equipped"), "true", "entering the small-object tab must establish a complete default equipped preview");
   assert.match(await page.locator("#trinket-stage-figure .trinket-hand-anchor img").getAttribute("src"), /hand_1\.png/);
   const firstRow = await page.locator(".trinket-card").evaluateAll((cards) => {
@@ -57,7 +58,7 @@ try {
     return cards.filter((card) => Math.abs(card.getBoundingClientRect().top - top) < 2).length;
   });
   assert.equal(firstRow, 4);
-  assert.equal(await page.locator('.trinket-card[data-item-id="4"]').getAttribute("data-new"), "true");
+  assert.equal(await page.locator('.trinket-card[data-item-id="4"]').getAttribute("data-new"), "false");
   const initialThumbAlignment = await page.locator(".trinket-card").evaluateAll((cards) => cards.map((card) => {
     const image = card.querySelector(".trinket-art img");
     const art = image?.closest(".trinket-art");
@@ -102,7 +103,8 @@ try {
   assert.equal(await page.locator('.trinket-card[data-equipped="true"]').count(), 1, "choosing another small object must leave exactly one equipped card");
   assert.equal(await page.locator('.trinket-card[data-item-id="1"]').getAttribute("data-equipped"), "false", "the initial small object must lose its equipped highlight after choosing another one");
   assert.equal(await page.locator("#trinket-detail").isVisible(), true);
-  assert.equal(await page.locator("#trinket-detail-name").textContent(), "告白玫瑰");
+  assert.equal(await page.locator("#trinket-detail-name").textContent(), "救急卷纸");
+  assert.equal(await page.locator("#trinket-gallery-description").textContent(), "平时谁都不提它，关键时刻少一张，全家都得满屋喊救命");
   assert.match(await page.locator("#trinket-detail-id").textContent(), /HAND-0004/);
   assert.equal(await page.locator("#trinket-reward-preview").isVisible(), true);
   assert.equal(await page.locator("#trinket-reward-preview .character-figure").count(), 0, "the left panel must show only the isolated small-object art");
@@ -134,7 +136,7 @@ try {
   assert.equal(await page.getByRole("button", { name: "试穿" }).count(), 0, "equipping must not need a secondary try-on button");
   assert.equal(await page.locator("#trinket-remove").isVisible(), true);
   assert.equal(await page.locator('.trinket-card[data-item-id="4"]').getAttribute("data-equipped"), "true");
-  assert.equal(await page.locator('.trinket-card[data-item-id="4"]').getAttribute("aria-label"), "告白玫瑰，已装扮");
+  assert.equal(await page.locator('.trinket-card[data-item-id="4"]').getAttribute("aria-label"), "救急卷纸，已装扮");
   assert.equal(await page.locator("#trinket-stage-figure .trinket-preview-rig").count(), 1);
   assert.equal(await page.locator("#trinket-stage-figure .trinket-hand-anchor").count(), 1);
   const equippedGeometry = await page.locator("#trinket-stage-figure").evaluate((stage) => {
@@ -174,7 +176,7 @@ try {
 
   await page.locator("#trinket-sort").selectOption("quantity");
   assert.equal(await page.locator(".trinket-card").first().getAttribute("data-item-id"), "7");
-  await page.locator("#trinket-search").fill("玫瑰");
+  await page.locator("#trinket-search").fill("滚毛");
   assert.equal(await page.locator(".trinket-card").count(), 1);
   await page.locator("#trinket-search").fill("");
 

@@ -185,7 +185,8 @@ test("video page uses the shared player and a 45-character H.264 walkthrough", (
   assert.ok(media.duration >= 38 && media.duration <= 55);
 
   const captions = readFileSync(join(videoRoot, "brick-character-copy-preview-demo.vtt"), "utf8");
-  const cues = captions.replace(/\r/g, "").trim().split(/\n{2,}/).slice(1).map((block) => {
+  const normalizedCaptions = captions.replace(/\r/g, "");
+  const cues = normalizedCaptions.trim().split(/\n{2,}/).slice(1).map((block) => {
     const lines = block.split("\n");
     const timing = lines.find((line) => line.includes(" --> "));
     return { end: seconds(timing.split(" --> ")[1]), text: lines.slice(1).filter(Boolean) };
@@ -196,9 +197,10 @@ test("video page uses the shared player and a 45-character H.264 walkthrough", (
   assert.match(captions, /右侧详情/);
   assert.match(captions, /真实换行/);
   assert.match(captions, /随身小物/);
+  assert.match(captions, /四十四件手持小物/);
   assert.match(captions, /点击小物/);
   assert.match(captions, /卸下/);
-  assert.match(captions, /00:17\.500 --> 00:25\.000\n点击小物即可装扮右侧角色，也可直接卸下。/);
+  assert.match(normalizedCaptions, /00:17\.500 --> 00:25\.000\n点击小物即可装扮右侧角色，也可直接卸下。/);
   assert.match(page, /data-time="17"[\s\S]*点击装扮与卸下/);
   assert.ok(cues.at(-1).end <= media.duration);
 });

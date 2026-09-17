@@ -34,15 +34,19 @@ async function fileChanged(source, target) {
   }
 }
 
-export async function syncTrinketCatalog({ sourceRoot, projectRoot }) {
+export async function syncTrinketCatalog({ sourceRoot, projectRoot, allowedIds = null }) {
   const source = resolve(sourceRoot);
   const project = resolve(projectRoot);
   const itemsDir = join(project, "assets", "items");
   const dataPath = join(project, "data", "items.json");
+  const allowed = Array.isArray(allowedIds)
+    ? new Set(allowedIds.map(Number).filter((id) => Number.isInteger(id) && id > 0))
+    : null;
   const entries = await readdir(source, { withFileTypes: true });
   const handFiles = entries
     .filter((entry) => entry.isFile() && HAND_FILE.test(entry.name))
     .map((entry) => ({ id: Number(HAND_FILE.exec(entry.name)[1]), name: entry.name }))
+    .filter((entry) => !allowed || allowed.has(entry.id))
     .sort((left, right) => left.id - right.id);
   const items = JSON.parse(await readFile(dataPath, "utf8"));
   const byId = new Map(items.map((item) => [item.id, item]));
@@ -74,7 +78,10 @@ const executedPath = process.argv[1] ? resolve(process.argv[1]) : "";
 if (executedPath && resolve(fileURLToPath(import.meta.url)) === executedPath) {
   const sourceRoot = process.env.TRINKET_HAND_ROOT;
   if (!sourceRoot) throw new Error("TRINKET_HAND_ROOT is required");
+  const allowedIds = process.env.TRINKET_HAND_IDS
+    ? process.env.TRINKET_HAND_IDS.split(",").map((value) => Number(value.trim()))
+    : null;
   const projectRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..", "projects", "trinket-market");
-  const result = await syncTrinketCatalog({ sourceRoot, projectRoot });
+  const result = await syncTrinketCatalog({ sourceRoot, projectRoot, allowedIds });
   console.log(`Synced ${basename(sourceRoot)}: ${result.copiedIds.length} art files, ${result.addedIds.length} catalog items.`);
 }

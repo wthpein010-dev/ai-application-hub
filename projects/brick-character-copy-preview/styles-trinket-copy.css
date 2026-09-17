@@ -1,0 +1,13 @@
+.trinket-meta .trinket-meta__description {
+  grid-column: 1 / -1;
+}
+
+.trinket-meta .trinket-meta__description dd {
+  overflow: visible;
+  color: #e9f7ef;
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1.55;
+  text-overflow: clip;
+  white-space: normal;
+}
