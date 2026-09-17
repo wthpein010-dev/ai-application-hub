@@ -39,16 +39,16 @@ export async function syncTrinketCatalog({ sourceRoot, projectRoot, allowedIds =
   const project = resolve(projectRoot);
   const itemsDir = join(project, "assets", "items");
   const dataPath = join(project, "data", "items.json");
+  const items = JSON.parse(await readFile(dataPath, "utf8"));
   const allowed = Array.isArray(allowedIds)
     ? new Set(allowedIds.map(Number).filter((id) => Number.isInteger(id) && id > 0))
-    : null;
+    : new Set(items.map((item) => Number(item.id)).filter((id) => Number.isInteger(id) && id > 0));
   const entries = await readdir(source, { withFileTypes: true });
   const handFiles = entries
     .filter((entry) => entry.isFile() && HAND_FILE.test(entry.name))
     .map((entry) => ({ id: Number(HAND_FILE.exec(entry.name)[1]), name: entry.name }))
-    .filter((entry) => !allowed || allowed.has(entry.id))
+    .filter((entry) => allowed.has(entry.id))
     .sort((left, right) => left.id - right.id);
-  const items = JSON.parse(await readFile(dataPath, "utf8"));
   const byId = new Map(items.map((item) => [item.id, item]));
   const addedIds = [];
   const copiedIds = [];

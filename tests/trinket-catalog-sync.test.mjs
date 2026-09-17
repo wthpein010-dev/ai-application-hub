@@ -12,7 +12,7 @@ try {
   // The first red run intentionally exercises the missing module as an empty API.
 }
 
-test("hand sync copies only matching PNGs and marks a new catalog item for naming", async (context) => {
+test("hand sync only adds a new catalog item when its ID is explicitly configured", async (context) => {
   const fixtureRoot = await mkdtemp(join(tmpdir(), "trinket-sync-"));
   const sourceRoot = join(fixtureRoot, "source");
   const projectRoot = join(fixtureRoot, "project");
@@ -36,7 +36,7 @@ test("hand sync copies only matching PNGs and marks a new catalog item for namin
     ownedCount: 2,
   }], null, 2));
 
-  const result = await syncApi.syncTrinketCatalog({ sourceRoot, projectRoot });
+  const result = await syncApi.syncTrinketCatalog({ sourceRoot, projectRoot, allowedIds: [1, 12] });
   const catalog = JSON.parse(await readFile(join(projectRoot, "data", "items.json"), "utf8"));
   const added = catalog.find((item) => item.id === 12);
 
@@ -47,6 +47,38 @@ test("hand sync copies only matching PNGs and marks a new catalog item for namin
   assert.equal(existsSync(join(projectRoot, "assets", "items", "hand_1.png")), true);
   assert.equal(existsSync(join(projectRoot, "assets", "items", "hand_12.png")), true);
   assert.equal(existsSync(join(projectRoot, "assets", "items", "hand_bad.png")), false);
+});
+
+test("hand sync defaults to the configured catalog IDs and never publishes an unconfigured source file", async (context) => {
+  const fixtureRoot = await mkdtemp(join(tmpdir(), "trinket-sync-default-filter-"));
+  const sourceRoot = join(fixtureRoot, "source");
+  const projectRoot = join(fixtureRoot, "project");
+  context.after(() => rm(fixtureRoot, { recursive: true, force: true }));
+  await mkdir(sourceRoot, { recursive: true });
+  await mkdir(join(projectRoot, "assets", "items"), { recursive: true });
+  await mkdir(join(projectRoot, "data"), { recursive: true });
+  await writeFile(join(sourceRoot, "hand_1.png"), "one");
+  await writeFile(join(sourceRoot, "hand_12.png"), "unconfigured");
+  await writeFile(join(projectRoot, "data", "items.json"), JSON.stringify([{
+    id: 1,
+    name: "已有名字",
+    pinyin: "existing",
+    rarity: "常见",
+    acquired: 3,
+    value: 1,
+    change: 0,
+    image: "./assets/items/hand_1.png",
+    ownedCount: 2,
+  }], null, 2));
+
+  const result = await syncApi.syncTrinketCatalog({ sourceRoot, projectRoot });
+  const catalog = JSON.parse(await readFile(join(projectRoot, "data", "items.json"), "utf8"));
+
+  assert.deepEqual(result.addedIds, []);
+  assert.deepEqual(result.copiedIds, [1]);
+  assert.deepEqual(catalog.map((item) => item.id), [1]);
+  assert.equal(existsSync(join(projectRoot, "assets", "items", "hand_1.png")), true);
+  assert.equal(existsSync(join(projectRoot, "assets", "items", "hand_12.png")), false);
 });
 
 test("hand sync can restrict copied art to configured item IDs", async (context) => {

@@ -70,6 +70,37 @@ test("imported state validates item data and repairs stale manual order", () => 
     items: canonical.map((item, index) => index === 0 ? { ...item, imageData: "data:image/png;base64,YmFk" } : item),
     order: [],
   }), /图片数据/);
+  assert.throws(() => validateImportedState({ version: 1, items: canonical.slice(0, 11), order: [] }), /当前 44 件官方小物/);
+});
+
+test("legacy eleven-item browser state migrates custom fields and manual order onto the configured catalog", () => {
+  const legacyItems = [
+    { id: 1, name: "便携冰水壶", pinyin: "bianxiebingshuihu", rarity: "常见", acquired: 18342, value: 12.8, change: 2.4, image: "./assets/items/hand_1.png" },
+    { id: 2, name: "橙香果汁箱", pinyin: "chengxiangguozhixiang", rarity: "稀有", acquired: 9186, value: 34.5, change: 5.1, image: "./assets/items/hand_2.png" },
+    { id: 3, name: "热血篮球", pinyin: "rexuelanqiu", rarity: "进阶", acquired: 14270, value: 21.2, change: -1.3, image: "./assets/items/hand_3.png" },
+    { id: 4, name: "告白玫瑰", pinyin: "gaobaimeigui", rarity: "史诗", acquired: 3210, value: 128, change: 12.8, image: "./assets/items/hand_4.png" },
+    { id: 5, name: "远行手提箱", pinyin: "yuanxingshoutixiang", rarity: "稀有", acquired: 6024, value: 48.6, change: 3.7, image: "./assets/items/hand_5.png" },
+    { id: 6, name: "青芽茶盏", pinyin: "qingyachazhan", rarity: "传说", acquired: 1688, value: 268, change: 18.2, image: "./assets/items/hand_6.png" },
+    { id: 7, name: "幸运骨头", pinyin: "xingyungutou", rarity: "常见", acquired: 24105, value: 8.6, change: -0.8, image: "./assets/items/hand_7.png" },
+    { id: 8, name: "深海猫罐头", pinyin: "shenhaimaoguantou", rarity: "进阶", acquired: 11602, value: 18.9, change: 1.9, image: "./assets/items/hand_8.png" },
+    { id: 9, name: "蓝莓冰棍", pinyin: "lanmeibinggun", rarity: "稀有", acquired: 7480, value: 39.7, change: 6.4, image: "./assets/items/hand_9.png" },
+    { id: 10, name: "奶牛小猫", pinyin: "nainiuxiaomao", rarity: "传说", acquired: 936, value: 520, change: 24.1, image: "./assets/items/hand_10.png" },
+    { id: 11, name: "旧式捕虫网", pinyin: "jiushibuchongwang", rarity: "史诗", acquired: 2765, value: 156, change: -3.2, image: "./assets/items/hand_11.png" },
+  ];
+  legacyItems[0] = { ...legacyItems[0], name: "我的保温杯", acquired: 88 };
+  const memory = new Map([["trinket-market-v1-data", JSON.stringify({ version: 1, items: legacyItems, order: [11, 1, 10] })]]);
+  const storage = {
+    getItem: (key) => memory.get(key) ?? null,
+    setItem: (key, value) => memory.set(key, String(value)),
+  };
+
+  const migrated = loadLocalState(storage, canonical);
+
+  assert.equal(migrated.items.length, 44);
+  assert.equal(migrated.items.find((item) => item.id === 1).name, "我的保温杯");
+  assert.equal(migrated.items.find((item) => item.id === 1).acquired, 88);
+  assert.deepEqual(migrated.order.slice(0, 5), [11, 1, 10, 2, 3]);
+  assert.equal(JSON.parse(memory.get("trinket-market-v1-data")).items.length, 44);
 });
 
 test("browser state round-trips and corrupt saved data falls back safely", () => {

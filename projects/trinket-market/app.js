@@ -326,7 +326,7 @@ async function exportEditableState() {
 
 async function importEditableState(file) {
   try {
-    const imported = validateImportedState(JSON.parse(await file.text()));
+    const imported = validateImportedState(JSON.parse(await file.text()), state.canonicalItems);
     const imageReplacements = new Map();
     for (const item of imported.items) {
       if (item.imageData) imageReplacements.set(item.id, dataUrlAsBlob(item.imageData));
@@ -602,7 +602,7 @@ async function loadCatalog() {
     const response = await fetch("./data/items.json", { cache: "no-store" });
     if (!response.ok) throw new Error(`目录请求失败（${response.status}）`);
     state.canonicalItems = validateItems(await response.json());
-    const saved = loadLocalState(localStorage);
+    const saved = loadLocalState(localStorage, state.canonicalItems);
     state.items = saved?.items || state.canonicalItems.map((item) => ({ ...item }));
     state.manualOrder = saved?.order || state.manualOrder;
     if (!state.manualOrder.length) state.manualOrder = state.items.map((item) => item.id);
