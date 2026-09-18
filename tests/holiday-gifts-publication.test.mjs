@@ -11,7 +11,7 @@ test('holiday game is appended with real demo and video, without fake platform d
  assert.equal(app.platforms.windows,'');assert.equal(app.platforms.mac,'');
 });
 test('demo and video reuse shared shell and local playable resources',()=>{
- const html=read('projects/holiday-gifts/index.html');assert.match(html,/subpage-shell.css/);assert.match(html,/index.html#games/);assert.match(html,/game\/index.html/);
+ const html=read('projects/holiday-gifts/index.html');assert.match(html,/<title>好事成双 · 双节活动<\/title>/);assert.match(html,/subpage-shell.css/);assert.match(html,/index.html#games/);assert.match(html,/game\/index.html/);
  const video=read('projects/holiday-gifts/video/index.html');assert.match(video,/hub-video-player.js/);assert.match(video,/holiday-demo.mp4/);
  assert.match(read('projects/holiday-gifts/game/results.js'),/暂无可消/);
  assert.match(read('projects/holiday-gifts/game/index.html'),/调出失败界面/);
