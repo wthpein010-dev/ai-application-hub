@@ -1,0 +1,29 @@
+.result{background:#cbff8d}.result:before{display:none}
+.result-scene{position:absolute;inset:0}.result-scene .date-ornament{display:none}.result-dim{position:absolute;inset:0;background:#000a}
+.result-inner{z-index:1}.result .date{position:absolute;left:235px;top:68px;margin:0;width:280px;height:64px;padding:6px 0;font-size:36px;line-height:50px}
+.result-heading{position:absolute;top:208px;left:120px;width:510px}
+.result .result-heading h2{margin:0;width:100%;font-size:82px;padding:25px 0;border-radius:12px;line-height:1.4}
+.result h2 small{font-size:50px;line-height:1.5;color:#ffef00}
+.result .duration{font-size:26px;line-height:38px;white-space:nowrap;padding:3px 22px;color:#ffe800}
+.reward-halo{position:absolute;top:485px;left:85px;width:580px;height:580px;background:repeating-conic-gradient(#fff33a28 0deg 11deg,transparent 11deg 27deg);mask-image:radial-gradient(ellipse,#000 10%,transparent 69%)}
+.reward-moon-tile{position:absolute;left:252px;top:592px;width:246px;height:279px;background:url('assets/gameplay/block_front.png') center/contain no-repeat;transform:rotate(-9deg)}
+.reward-moon-hd{position:absolute;width:390px;height:390px;left:-72px;top:-68px;background:url('assets/gameplay/moon-states.png') 0 0/1170px 390px no-repeat;pointer-events:none}
+.reward-moon-tile b{position:absolute;right:-62px;bottom:-12px;font-size:72px;color:#ffd332;-webkit-text-stroke:3px #13190f;paint-order:stroke fill;transform:rotate(9deg)}
+.result-copy{position:absolute;top:965px;left:45px;right:45px;text-align:center}.result-copy strong{font-size:42px}.result-copy p{font-size:25px;margin-top:24px}
+.result .native-result-button{border:10px solid transparent;border-image:url('assets/results/t_button1.png') 10 fill stretch;background:transparent;border-radius:0;box-shadow:none;min-height:0;height:90px;padding:0;font-size:44px;font-weight:500;line-height:62px;color:#000}
+.result .native-result-button:active{transform:translateY(3px);box-shadow:none}
+.result .return{left:215px;bottom:270px;width:320px}
+.result .share{left:575px;right:auto;bottom:270px;width:90px;height:90px;min-height:0;border:0;border-radius:0;padding:0;box-shadow:none;background:url('assets/results/share.png') center/contain no-repeat}
+.result-failure .result-heading{top:287px;left:139px;width:474px}
+.result-failure .result-heading h2{color:red;font-size:90px;padding:40px 0;line-height:1.45}
+.result-failure .duration{color:white;font-size:25px}
+.failure-bubble{position:absolute;left:225px;top:620px;width:300px;height:178px;display:flex;align-items:center;justify-content:center;padding-bottom:35px;background:url('assets/results/fail_qipao.png') center/contain no-repeat;color:#111;font-size:29px;box-sizing:border-box}
+.failure-tomb{position:absolute;left:268px;top:835px;width:214px;height:auto;object-fit:contain;animation:tomb-enter .45s ease-out}
+.result-failure .again{left:215px;bottom:390px;width:320px;color:white;border-image-source:url('assets/results/t_button2.png')}
+.result-failure .return,.result-failure .share{bottom:270px}
+@keyframes tomb-enter{from{opacity:0;transform:translateY(-28px)}to{opacity:1;transform:none}}
+#phone:has(.game) #toast{display:none!important}
+.game.no-moves .board-area{filter:grayscale(.7);opacity:.5;transition:opacity .25s,filter .25s}.game.no-moves{pointer-events:none}
+.no-moves-effect{position:absolute;left:0;right:0;top:695px;text-align:center;color:white;font-size:80px;font-weight:900;letter-spacing:5px;-webkit-text-stroke:7px #151b10;paint-order:stroke fill;text-shadow:0 8px #0003;z-index:18;animation:no-moves-pop 1.1s ease-out both;pointer-events:none}
+@keyframes no-moves-pop{0%{opacity:0;transform:scale(.8)}18%{opacity:1;transform:scale(1.06)}32%,78%{opacity:1;transform:scale(1)}100%{opacity:0;transform:translateY(-10px)}}
+@media(prefers-reduced-motion:reduce){.failure-tomb{animation:none}.no-moves-effect{animation:none}}

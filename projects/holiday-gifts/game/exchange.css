@@ -1,0 +1,42 @@
+.exchange-page.activity{background:#6a6aa5}.exchange-page.activity:before{display:none}
+.exchange-bg{position:absolute;inset:0;width:750px;height:auto}
+.exchange-hero{position:absolute;left:0;top:100px;width:750px;height:445px;background:url('assets/exchange/reference.png') 0 -100px/750px auto no-repeat}
+.exchange-title{position:absolute;top:200px;left:217px;width:316px;height:auto}
+.exchange-time{position:absolute;top:296px;left:250px;width:250px;text-align:center;color:white;background:black;border-radius:8px;font-size:25px;padding:3px}
+.exchange-help{position:absolute;top:248px;right:106px;background:white;border:5px solid #111;border-radius:16px;width:50px;height:50px;font-size:36px;font-weight:900;line-height:35px}
+.exchange-board{position:absolute;top:477px;left:0;width:750px;height:auto}
+.exchange-balance{position:absolute;top:535px;left:85px;width:580px;height:80px;display:flex;align-items:center;justify-content:center;gap:22px;color:#fffac3;font-size:32px;font-weight:800}
+.exchange-balance img{width:60px;height:auto}.exchange-balance b{font-size:48px;color:white;padding:0 10px}
+.exchange-list{position:absolute;top:647px;left:45px;right:45px;bottom:247px;overflow-y:auto;display:grid;grid-template-columns:1fr 1fr;grid-auto-rows:171px;gap:15px 22px;padding-bottom:130px;overscroll-behavior:contain;scrollbar-width:thin;scrollbar-color:#d7c4f3 transparent;mask-image:linear-gradient(#000 0%,#000 84%,transparent 100%)}
+.exchange-card{display:flex;align-items:center;position:relative;border-radius:16px;background:url('assets/exchange/di_1.png') center/100% 100% no-repeat;padding:8px;min-width:0}
+.exchange-card.skin{background-image:url('assets/exchange/di_2.png')}
+.exchange-prize{width:130px;height:145px;border:0;background:transparent;overflow:hidden;padding:0;flex-shrink:0;display:flex;align-items:center;justify-content:center}
+.exchange-prize .art{transform:scale(.95);margin:0;border-radius:16px;flex-shrink:0}
+.exchange-info{position:absolute;left:151px;right:22px;top:19px;text-align:center;min-width:0;color:#121212}
+.exchange-date{font-size:25px;background:transparent;white-space:nowrap;margin:0 0 5px;line-height:34px}
+.exchange-price{font-size:27px;margin:0 0 6px;height:42px;display:flex;align-items:center;justify-content:center}
+.moon-cost{display:inline-flex;align-items:center;justify-content:center;gap:8px;vertical-align:middle;white-space:nowrap;line-height:1}
+.moon-cost img{width:34px;height:auto;object-fit:contain}.moon-cost b{font-weight:800}
+.exchange-button{border:0;border-radius:0;background:url('assets/exchange/button-red.png') center/contain no-repeat;color:white;font-weight:800;font-size:26px;width:146px;height:47px;min-height:0;padding:0 0 3px;box-shadow:none}
+.exchange-button.unavailable{filter:grayscale(1) brightness(2.4);color:white}.exchange-button:active:not(:disabled){transform:translateY(3px);box-shadow:none}
+.exchange-card.skin .exchange-prize{height:122px;align-self:flex-start}.exchange-card.skin .exchange-prize .art{transform:scale(.8)}
+.exchange-limit{position:absolute;left:9px;bottom:12px;width:130px;text-align:center;font-size:17px;color:#62576c;line-height:20px}
+.art.skin-art{background:none;border-radius:0;object-fit:contain}
+.exchange-card.skin .exchange-prize .skin-art{width:112px;height:122px;transform:none;margin:0}
+.modal .reward-space .skin-art{width:180px;height:245px;transform:none;margin:0;object-fit:contain}
+.gallery-item .skin-art{width:107px;height:140px;transform:none;object-fit:contain}
+.exchange-bottom{position:absolute;bottom:0;height:430px;width:750px;background:linear-gradient(transparent 65%,#000 65%);border:0;pointer-events:none;z-index:3}
+.exchange-bottom:before{display:none}
+.exchange-foreground{position:absolute;left:0;bottom:140px;width:750px;height:auto;pointer-events:none}
+.exchange-start{position:absolute;top:90px;left:148px;width:420px;height:180px;font-size:52px;background:url('assets/exchange/button-start-aqua.png') center/contain no-repeat;border:0;border-radius:0;box-shadow:none;padding:0 0 10px;color:#111;pointer-events:auto}
+.exchange-back{position:absolute;top:133px;left:27px;width:111px;height:117px;min-height:0;padding:0;background:url('assets/exchange/button-back.png') center/contain no-repeat;border:0;border-radius:0;box-shadow:none;pointer-events:auto}
+.exchange-start:disabled{filter:grayscale(1)}
+.exchange-bottom p{position:absolute;top:310px;width:100%;text-align:center;color:#fffac3;font-size:25px;font-weight:700;text-shadow:0 2px #24321b}
+.exchange-confirm .reward-space{height:235px}.exchange-confirm .reward-space .art{transform:scale(1.6)}
+.confirm-actions{display:flex;justify-content:center;gap:20px;margin-top:35px}.confirm-actions .white-btn{font-size:32px}
+.confirm-actions .white-btn{border:14px solid transparent;border-image:url('assets/exchange/button-white.png') 14 fill stretch;background:transparent;border-radius:0;box-shadow:none;min-width:220px;margin:0;padding:5px 0}
+.exchange-confirm .moon-cost img{width:42px}
+.tile{border:0;border-radius:0;background:transparent url('assets/exchange/block-front.png') center/contain no-repeat;box-shadow:none}
+.tile.selected{box-shadow:none;filter:drop-shadow(0 0 5px #ffb800)}
+.modal.exchange-rules{width:666px;padding:48px 25px;background:#fff9e8}.exchange-rules h2{font-size:40px}.exchange-rules p{font-size:28px;line-height:1.7}.exchange-rules small{font-size:24px}
+.announcement-copy{position:absolute;left:108px;top:1038px;width:730px;height:80px;display:flex;align-items:center;justify-content:center;background:#fff1d8;font-size:33px;font-weight:bold;color:#432312}

@@ -1017,6 +1017,23 @@ const defaultApps = [
     risk: 8,
     polish: 9
   },
+  {
+    id: "holiday-gifts",
+    name: "好事成双 · 双节活动",
+    category: "休闲消除体验",
+    status: "game",
+    badge: "小游戏",
+    brief: "月饼碰三次，喜欢哪件就换哪件。体验中秋国庆活动的自由兑换、限定砖块皮肤与完整挑战结算流程。",
+    problem: "把活动入口、月饼碰撞、结算和外观兑换串成可直接操作的体验，方便检查界面衔接。",
+    aiUse: "基于游戏美术资源制作750×1624交互原型；可切换演示日期，调出成功、暂无可消和墓碑失败页面。关卡为简化演示，不代表正式难度。",
+    folder: "./projects/holiday-gifts/",
+    entry: "./projects/holiday-gifts/index.html",
+    video: "./projects/holiday-gifts/video/index.html",
+    package: "",
+    platforms: { web: { href: "./projects/holiday-gifts/index.html", label: "演示" }, windows: "", mac: "" },
+    tags: ["月饼碰撞", "自由兑换", "双节限定", "交互原型"],
+    speed: 9, impact: 8, risk: 8, polish: 9
+  },
 ];
 
 let apps = loadApps();
@@ -1643,7 +1660,8 @@ function renderAppCard(app, index = 0, extraClass = "", actionMode = "default") 
 }
 
 function gameDisplayRank(app) {
-  if (app.id === "lunar-freight") return Number.POSITIVE_INFINITY;
+  if (app.id === "holiday-gifts") return Number.POSITIVE_INFINITY;
+  if (app.id === "lunar-freight") return Number.MAX_VALUE;
   if (app.id === "icecream") return Number.MAX_SAFE_INTEGER;
   if (app.id === "zhuanglege-sha") return -3;
   if (app.id === "xiang-le-ge-xiang") return -2;

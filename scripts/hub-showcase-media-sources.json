@@ -1,4 +1,5 @@
 {
+  "holiday-gifts": { "mode": "file", "source": "projects/holiday-gifts/video/poster.jpg", "feature": "月饼碰三次，喜欢哪件就换哪件", "accent": "#e6b945", "visualKind": "game", "layout": "wide" },
   "hub": { "mode": "capture", "entry": "./index.html", "focusSelector": "#apps", "feature": "统一管理演示、视频与多端入口", "accent": "#156b5c", "visualKind": "product", "layout": "wide" },
   "gamepulse-mini-radar": { "mode": "capture", "entry": "https://gamepulse-mini-radar.polite-chord-7994.chatgpt.site", "focusMode": "auto", "feature": "聚合榜单、热度与趋势变化", "accent": "#2563eb", "visualKind": "data", "layout": "wide" },
   "icecream": { "mode": "capture", "publicEntry": "https://wthpein010-dev.github.io/ai-application-hub/projects/icecream/video/index.html", "readySelector": "#introVideo", "focusSelector": "#introVideo", "captureTime": 9, "feature": "合成升级与限时消除挑战", "accent": "#f97316", "visualKind": "game", "layout": "standard" },

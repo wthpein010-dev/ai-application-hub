@@ -11,10 +11,10 @@ const runtime = readFileSync(join(root, "app-20260706-restore-games.js"), "utf8"
 const apps = loadDefaultAppsFromRuntime(runtime);
 const projectRoot = join(root, "projects", "lunar-freight");
 
-test("lunar freight is the final game with one explicit no-video exemption", () => {
+test("lunar freight retains its order before the newly appended game and its no-video exemption", () => {
   const lunar = apps.find(({ id }) => id === "lunar-freight");
   assert.ok(lunar);
-  assert.equal(apps.at(-1)?.id, "lunar-freight");
+  assert.equal(apps.at(-2)?.id, "lunar-freight");
   assert.equal(lunar.name, "月面货运");
   assert.equal(lunar.status, "game");
   assert.equal(lunar.entry, "./projects/lunar-freight/index.html");
@@ -36,7 +36,7 @@ test("lunar freight is the final game with one explicit no-video exemption", () 
   const rankedGames = apps
     .filter(({ status }) => status === "game")
     .sort((left, right) => context.rankGame(left) - context.rankGame(right));
-  assert.equal(rankedGames.at(-1)?.id, "lunar-freight");
+  assert.equal(rankedGames.at(-2)?.id, "lunar-freight");
 });
 
 test("the project wrapper keeps the Hub shell and opens the same-name game", () => {

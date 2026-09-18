@@ -1,0 +1,36 @@
+.game{background:#cbff8d;background-image:none}
+.game:before{display:none}
+.scene-grass{position:absolute;inset:0;pointer-events:none}
+.scene-grass i{position:absolute;display:block;width:53px;height:29px;background:url('assets/gameplay/grass.png') -2px -3px;transform-origin:bottom center;animation:grass-sway 3.5s ease-in-out infinite;opacity:.85}
+@keyframes grass-sway{50%{transform:rotate(4deg) scaleY(.9)}}
+.date-ornament{position:absolute;left:195px;top:90px;width:360px;height:120px;background:url('assets/gameplay/date-plate.png') center/contain no-repeat}
+.game-date{left:265px;top:112px;width:216px;height:43px;font-size:31px;line-height:43px}
+.miniapp-capsule{position:absolute;right:20px;top:107px;width:153px;height:58px;border-radius:35px;background:#66894342;color:white;font-size:34px;line-height:58px;text-align:center;font-weight:bold;letter-spacing:3px}
+.game-settings{top:111px;left:33px;width:76px;height:85px;background:url('assets/gameplay/t_setting.png') center/contain no-repeat}
+.board-area{top:352px;left:25px;right:25px;height:790px;overflow:visible;background:none}
+.tile{width:94px;height:106.533px;background:url('assets/gameplay/block_front.png') center/100% 100% no-repeat;border:0;box-shadow:none;border-radius:0;transition:filter .15s,transform .15s}
+.tile.selected{filter:brightness(1.08) drop-shadow(0 0 5px #fff321);box-shadow:none;transform:translateY(-9px)}
+.native-face{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;pointer-events:none}
+.tile .moon-face{flex-shrink:0;transform:translateY(-4px)}
+.game .moon-face{width:120px;height:120px;background-image:url('assets/gameplay/moon-states.png');background-size:360px 120px;background-position:0 0;clip-path:none}
+.game .moon-face.bite2{background-position:-120px 0}
+.game .moon-face.bite1{background-position:-240px 0}
+.tile.gone{opacity:0;transform:scale(0)}
+.collision-layer{position:absolute;inset:0;z-index:15;pointer-events:none}
+.collision-tile{pointer-events:none;transition:none!important;filter:none;box-shadow:none}
+.impact-flash{position:absolute;width:84px;height:90px;background:url('assets/gameplay/zhuan.png') -212px -62px/452px 156px no-repeat;pointer-events:none}
+.impact-fragment{position:absolute;display:block;background:url('assets/gameplay/zhuan.png') no-repeat;pointer-events:none}
+.game-tools{bottom:30px;left:70px;right:70px}
+.game-tools .tool{width:143px;height:125px;background-position:center;background-size:contain;background-repeat:no-repeat}
+.game-tools [data-action="slot"]{background-image:url('assets/gameplay/btn_caowei.png')}
+.game-tools [data-action="shuffle"]{background-image:url('assets/gameplay/btn_random.png')}
+.game-tools [data-action="pair"]{background-image:url('assets/gameplay/btn_magnet.png')}
+.stash{top:1300px;left:312px;width:126px;height:147px;background:url('assets/gameplay/play_save.png') center/contain no-repeat;color:#b08038;font-size:26px;font-weight:bold;text-shadow:1px 1px #603915}
+.modal.tutorial{width:600px;height:832px;padding:0;background:transparent;border:0;box-shadow:none;border-radius:0}
+.moon-tutorial-art{width:600px;height:auto;display:block}
+.tutorial>.close{display:none}
+.tutorial-dismiss,.tutorial-x{position:absolute;background:transparent;border:0;color:transparent;padding:0}
+.tutorial-dismiss{left:188px;top:686px;width:225px;height:86px;border-radius:30px}
+.tutorial-x{left:489px;top:50px;width:69px;height:72px;border-radius:50%}
+.tutorial-dismiss:focus-visible,.tutorial-x:focus-visible{outline:4px solid #ffdc00}
+@media(prefers-reduced-motion:reduce){.scene-grass i{animation:none}}

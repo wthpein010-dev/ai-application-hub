@@ -329,6 +329,13 @@ globalThis.HUB_PROJECT_MEDIA = Object.freeze({
     accent: "#7aa2ff",
     visualKind: "data",
   }),
+  "holiday-gifts": Object.freeze({
+    src: "./assets/hub-showcase/holiday-gifts.webp?v=20260918",
+    alt: "好事成双月饼兑换与砖块小人限定外观",
+    position: "center", layout: "wide", fallback: "好事成双",
+    feature: "月饼碰三次，喜欢哪件就换哪件",
+    accent: "#e6b945", visualKind: "game",
+  }),
   "lunar-freight": Object.freeze({
     src: "./assets/hub-showcase/lunar-freight.webp?v=20260908-lunar-campaign",
     alt: "月面货运实时 3D 月球车运输游戏画面",
