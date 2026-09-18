@@ -1,5 +1,4 @@
 {
-  "holiday-gifts": { "mode": "file", "source": "projects/holiday-gifts/video/poster.jpg", "feature": "月饼碰三次，喜欢哪件就换哪件", "accent": "#e6b945", "visualKind": "game", "layout": "wide" },
   "hub": { "mode": "capture", "entry": "./index.html", "focusSelector": "#apps", "feature": "统一管理演示、视频与多端入口", "accent": "#156b5c", "visualKind": "product", "layout": "wide" },
   "gamepulse-mini-radar": { "mode": "capture", "entry": "https://gamepulse-mini-radar.polite-chord-7994.chatgpt.site", "focusMode": "auto", "feature": "聚合榜单、热度与趋势变化", "accent": "#2563eb", "visualKind": "data", "layout": "wide" },
   "icecream": { "mode": "capture", "publicEntry": "https://wthpein010-dev.github.io/ai-application-hub/projects/icecream/video/index.html", "readySelector": "#introVideo", "focusSelector": "#introVideo", "captureTime": 9, "feature": "合成升级与限时消除挑战", "accent": "#f97316", "visualKind": "game", "layout": "standard" },
@@ -32,5 +31,6 @@
   "codex-multi-thread-workbench": { "mode": "capture", "entry": "./projects/codex-multi-thread-workbench/index.html", "focusMode": "auto", "feature": "多线程会话、消息直发与拖拽布局", "accent": "#0f766e", "visualKind": "product", "layout": "wide" },
   "trinket-market": { "mode": "capture", "entry": "./projects/trinket-market/index.html", "publicEntry": "https://wthpein010-dev.github.io/ai-application-hub/projects/trinket-market/index.html", "readySelector": "body[data-ready='true']", "focusMode": "auto", "feature": "小物目录、数量排行与桌面式拖拽整理", "accent": "#f0c75e", "visualKind": "game", "layout": "wide" },
   "v-curve-tool": { "mode": "file", "source": "projects/v-curve-tool/video/poster.jpg", "feature": "双模型、双侧关卡库与参考图复现", "accent": "#7aa2ff", "visualKind": "data", "layout": "wide", "cacheVersion": "20260908-v150-dual-model" },
-  "lunar-freight": { "mode": "capture", "entry": "./projects/lunar-freight/game/index.html", "readySelector": ".launch-button", "clickSelector": ".launch-button", "captureDelay": 1500, "focusSelector": "canvas", "feature": "低重力驾驶、货物装卸与能源管理", "accent": "#d7b56d", "visualKind": "game", "layout": "wide" }
+  "lunar-freight": { "mode": "capture", "entry": "./projects/lunar-freight/game/index.html", "readySelector": ".launch-button", "clickSelector": ".launch-button", "captureDelay": 1500, "focusSelector": "canvas", "feature": "低重力驾驶、货物装卸与能源管理", "accent": "#d7b56d", "visualKind": "game", "layout": "wide" },
+  "holiday-gifts": {"mode":"file","source":"projects/holiday-gifts/video/poster.jpg","feature":"月饼碰三次，喜欢哪件就换哪件","accent":"#e6b945","visualKind":"game","layout":"wide"}
 }

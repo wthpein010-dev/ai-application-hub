@@ -1,7 +1,7 @@
 # AI Application Hub 平台兼容矩阵
 
-- 日期：2026-09-08
-- 范围：主页当前 34 张公开项目卡片
+- 日期：2026-09-18
+- 范围：主页当前 35 张公开项目卡片
 - 规则：网页、小游戏和工程体验通过现代浏览器覆盖 Windows 与 macOS；只有经过原生构建、架构检查和产物校验的项目显示系统下载。
 - 通用门禁：`tests/hub-entry-pages-browser-smoke.mjs`、`tests/hub-video-pages-browser-smoke.mjs`、`tests/hub-platform-artifacts.test.mjs`。
 
@@ -41,9 +41,10 @@
 | `trinket-market` | 随身小物交易市场 | 工程在线体验 | Windows：现代浏览器 | macOS：现代浏览器 | [网页体验](https://wthpein010-dev.github.io/ai-application-hub/projects/trinket-market/index.html)；访客修改保存在当前浏览器，可导入或导出 JSON，永久修改通过公开 GitHub 仓库提交 |
 | `v-curve-tool` | V曲线对比工具 | 原生双平台 | Windows： [Wins下载](https://github.com/wthpein010-dev/ai-application-hub/releases/download/v-curve-tool-v1.5.0/V-Curve-Comparison-Tool-1.5.0-Windows-x64.zip)，x64，99,807,165 字节，SHA-256 `10C7954DA48C6A315513D7A2CAB90BCD599C7B7DBFEEAE5D46C15910FC7E7BA8`，未代码签名 | macOS： [Mac下载](https://github.com/wthpein010-dev/ai-application-hub/releases/download/v-curve-tool-v1.5.0/V-Curve-Comparison-Tool-1.5.0-macOS.zip)，arm64/x64，261,534,472 字节，SHA-256 `42C42C8D4EA3F7FDBB5B0620C999A346059B4948B2CE8537E85E72C78206F852` | [项目页](https://wthpein010-dev.github.io/ai-application-hub/projects/v-curve-tool/index.html)；不可变 Release Run [`34205060408`](https://github.com/wthpein010-dev/ai-application-hub/actions/runs/34205060408)（源 `0f3f45f49119d35893dc478b1313f3a28688ae85`）完成双架构各 154 测试、ad-hoc 深度签名、64 个随包文件校验及实际启动；公网双架构审计 Run `34206344947` 通过；元数据见 `projects/v-curve-tool/release-manifest.json`。 |
 | `lunar-freight` | 月面货运 | 小游戏在线体验 | Windows：现代浏览器 | macOS：现代浏览器 | [网页体验](https://wthpein010-dev.github.io/ai-application-hub/projects/lunar-freight/index.html)；用户明确要求不制作视频或预渲染动画，目录使用 `videoExemption: user-request-no-video`。 |
+| `holiday-gifts` | 好事成双 · 双节活动 | 小游戏在线体验 | Windows：现代浏览器 | macOS：现代浏览器 | [网页体验](https://wthpein010-dev.github.io/ai-application-hub/projects/holiday-gifts/index.html)；提供玩法视频与离线网页包，非原生安装包；`tests/holiday-gifts-publication.test.mjs` 验证入口与交付资源。 |
 
 ## 结论
 
-- 34 个项目都可在 Windows 与 macOS 上通过网页查看或体验。
+- 35 个项目都可在 Windows 与 macOS 上通过网页查看或体验。
 - 7 个项目提供经过验证的原生 Windows/macOS 成品；Codex 多线程工作台与 V 曲线对比工具均通过 Windows x64 与 macOS arm64/x64 验证，飞书插件提供同一份跨平台浏览器扩展。
 - 其余项目不再显示来源码、Unity 工程、WebGL 压缩包或占位 ZIP 形式的伪系统下载。

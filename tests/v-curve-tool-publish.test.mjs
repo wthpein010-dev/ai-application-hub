@@ -65,7 +65,7 @@ function parseCues(source) {
 }
 
 test("V curve is the final project-development card with four truthful actions", () => {
-  assert.equal(apps.length, 34);
+  assert.equal(apps.length, 35);
   const project = apps.find((app) => app.id === "v-curve-tool");
   assert.ok(project, "V curve catalog entry is missing");
   assert.equal(project.name, "V曲线对比工具");

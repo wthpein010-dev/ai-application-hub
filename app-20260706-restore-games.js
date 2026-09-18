@@ -1020,7 +1020,7 @@ const defaultApps = [
   {
     id: "holiday-gifts",
     name: "好事成双 · 双节活动",
-    category: "休闲消除体验",
+    category: "休闲消除小游戏",
     status: "game",
     badge: "小游戏",
     brief: "月饼碰三次，喜欢哪件就换哪件。体验中秋国庆活动的自由兑换、限定砖块皮肤与完整挑战结算流程。",
