@@ -40,3 +40,22 @@
 .tile.selected{box-shadow:none;filter:drop-shadow(0 0 5px #ffb800)}
 .modal.exchange-rules{width:666px;padding:48px 25px;background:#fff9e8}.exchange-rules h2{font-size:40px}.exchange-rules p{font-size:28px;line-height:1.7}.exchange-rules small{font-size:24px}
 .announcement-copy{position:absolute;left:108px;top:1038px;width:730px;height:80px;display:flex;align-items:center;justify-content:center;background:#fff1d8;font-size:33px;font-weight:bold;color:#432312}
+.exchange-scroll-hint{position:absolute;top:616px;width:100%;text-align:center;font-size:19px;color:#fff2cb;pointer-events:none}
+.exchange-list{grid-auto-rows:190px;touch-action:pan-y;cursor:grab;user-select:none;padding-bottom:170px}
+.exchange-list.dragging{cursor:grabbing}.exchange-list img{-webkit-user-drag:none;pointer-events:none}
+.exchange-card.quality-普通,.exchange-card.quality-稀有,.exchange-card.quality-传说{background:none;isolation:isolate}
+.exchange-card.item:before{content:"";position:absolute;inset:0;border-radius:16px;z-index:-1;background:url('assets/exchange/di_1.png') center/100% 100% no-repeat;pointer-events:none}
+.exchange-card.quality-普通:before{filter:hue-rotate(200deg)}
+.exchange-card.quality-传说:before{background-image:url('assets/exchange/di_2.png')}
+.quality-label{position:absolute;top:6px;left:14px;z-index:1;font-size:16px;font-weight:800;color:#236e3d}
+.quality-稀有 .quality-label{color:#703ba4}.quality-传说 .quality-label{color:#99570a}.skin .quality-label{color:#715590}
+.exchange-prize{height:120px;align-self:flex-start;margin-top:14px}.exchange-card.skin .exchange-prize{height:120px}
+.exchange-card .exchange-prize .art{transform:scale(.78)}
+.exchange-name{position:absolute;top:143px;left:6px;width:136px;text-align:center;font-size:18px;font-weight:bold;color:#30243b}
+.exchange-limit,.exchange-owned{position:absolute;top:166px;bottom:auto;left:6px;width:136px;font-size:15px;text-align:center;color:#62576c}
+.exchange-info{top:26px}.exchange-date{font-size:23px}.exchange-button{font-size:24px}
+.art.accessory-art{width:120px;height:120px;object-fit:contain;background:none;border-radius:0}
+.modal .reward-space .accessory-art{width:220px;height:220px;transform:none;object-fit:contain}
+.gallery-item .accessory-art{width:107px;height:140px;object-fit:contain;transform:none}
+.exchange-start{font-size:46px}.exchange-start:disabled{background-color:transparent}
+.daily-finished{position:absolute;top:930px;left:0;right:0;text-align:center;font-size:30px;color:#fff}
