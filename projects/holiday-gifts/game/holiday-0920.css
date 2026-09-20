@@ -1,0 +1,56 @@
+/* 750×1624 design coordinates; source images always retain aspect ratio. */
+html{scrollbar-width:none}html::-webkit-scrollbar{display:none}
+.exchange-page.activity{background:#454392 url('assets/holiday-0920/bg3.png') left top/750px 532px no-repeat}
+.exchange-bg,.exchange-hero{display:none}
+.exchange-board{content:url('assets/holiday-0920/bg2.png');top:331px;width:750px;height:1073px;pointer-events:none}
+.exchange-title{content:url('assets/holiday-0920/title.png');top:200px;left:218.5px;width:313px;height:103px;z-index:1}
+.exchange-time{z-index:2}.exchange-help{z-index:2}
+.exchange-balance{top:539px;left:115px;width:520px;height:66px;z-index:2;color:white;font-size:32px;text-shadow:2px 2px #552018,-2px -2px #552018}
+.exchange-balance>img{display:none}.exchange-balance:before{content:'';width:60px;height:67.5px;background:url('assets/holiday-0920/block_bing1.png') center/contain no-repeat;flex-shrink:0}
+.exchange-balance b{color:#ffe400;-webkit-text-stroke:3px #462019;paint-order:stroke fill;font-size:48px}
+.exchange-list{top:647px;left:45px;right:45px;bottom:215px;grid-auto-rows:171px;gap:15px 22px;padding-bottom:230px;mask-image:linear-gradient(#000 0%,#000 92%,transparent 100%)}
+.exchange-card{background:#fffef6!important;border:5px solid #3c356f;border-radius:16px;padding:0}
+.exchange-card.item:before{display:none}.exchange-card.skin{background:#ffebeb!important}
+.exchange-prize,.exchange-card.skin .exchange-prize{position:absolute;left:20px;top:18px;width:110px;height:110px;margin:0;border-radius:11px;background:#e5e5e5;overflow:hidden}
+.quality-稀有 .exchange-prize{background:#f6eaff}.quality-传说 .exchange-prize{background:#ffe992}.exchange-card.skin .exchange-prize{background:none}
+.exchange-card .exchange-prize .art{transform:scale(.74)}
+.exchange-card.skin .exchange-prize .skin-art{width:98px;height:110px;transform:none}
+.exchange-name{top:130px;left:4px;width:143px;font-size:16px;line-height:21px;color:#111;font-weight:500}
+.exchange-limit,.exchange-owned{top:149px;left:5px;width:138px;font-size:12px;line-height:15px;color:#555}
+.quality-label{display:none}.exchange-card.skin:after{content:'';position:absolute;left:-5px;top:-5px;width:59px;height:61px;background:url('assets/holiday-0920/xiangou.png') center/contain no-repeat;pointer-events:none}
+.exchange-info{left:149px;right:19px;top:15px}.exchange-date{height:36px;line-height:36px;font-size:24px;background:url('assets/holiday-0920/t_di1.png') center/100% 100% no-repeat;margin:0 0 6px}
+.quality-稀有 .exchange-date{background-image:url('assets/holiday-0920/t_di2.png')}.quality-传说 .exchange-date{background-image:url('assets/holiday-0920/t_di3.png')}.skin .exchange-date{background-image:url('assets/holiday-0920/t_di4.png')}
+.exchange-price{height:40px;margin:0 0 5px;font-size:20px}.moon-cost{gap:0;align-items:flex-end}.moon-cost b{color:#ffea00;-webkit-text-stroke:3px #000;paint-order:stroke fill;font-size:24px;margin-left:-3px}
+.moon-currency{display:inline-block;width:40px;height:45px;background:url('assets/holiday-0920/block_bing1.png') center/contain no-repeat;vertical-align:middle}
+.exchange-button{width:146px;height:49px;font-size:26px}.exchange-button.unavailable{filter:grayscale(1) brightness(1.65)}
+.exchange-bottom{height:539px;background:none}.exchange-foreground{content:url('assets/holiday-0920/bg1.png');bottom:0;width:750px;height:539px}
+.exchange-start{top:217px;left:172px;width:408px;height:173px;font-size:52px}.exchange-start:disabled{filter:grayscale(1);color:#555;background:url('assets/exchange/button-start-aqua.png') center/contain no-repeat;box-shadow:none}
+.exchange-back{top:239px;left:25px;width:124px;height:130px}.exchange-bottom p{top:393px;margin:0;font-size:20px;line-height:30px}
+.exchange-scroll-hint{top:618px;font-size:17px;color:#f6eaff}
+.exchange-page .daily-reset{position:absolute;left:252px;top:210px;padding:1px 14px;color:white;background:#000;border-radius:8px;font-size:24px;line-height:28px;z-index:4}
+.entry{left:620px!important;top:657px!important;width:116px!important;height:114px!important;padding:0;border:0;border-radius:0;background:url('assets/holiday-0920/entry.png') center/contain no-repeat;box-shadow:none}
+.entry:before,.entry:after{display:none}.entry-time{left:602px!important;top:774px!important;width:146px!important;font-size:16px!important;line-height:22px;color:#ffe400!important;background:#000;border-radius:7px}
+.modal.announcement{background:transparent!important;overflow:hidden}
+.holiday-announcement-bg{position:absolute;left:0;top:333px;width:750px;height:821px;pointer-events:none}
+.holiday-announcement-title{position:absolute;left:153px;top:417px;width:447px;height:97px;pointer-events:none}
+.holiday-announcement-preview{position:absolute;left:102px;top:420px;width:545px;margin:0!important;font-size:47px!important;color:white!important;-webkit-text-stroke:9px #000;paint-order:stroke fill}
+.holiday-announcement-slogan{position:absolute;top:511px;left:210px;width:330px;font-size:25px!important;font-weight:700;color:#fff9d4;background:#777146bd;border-radius:24px;margin:0!important}
+.holiday-announcement-copy{position:absolute;top:831px;left:60px;width:630px;margin:0!important;font-size:31px!important;color:#ffffc8}
+.holiday-announcement-date{position:absolute;top:893px;left:160px;width:430px;margin:0!important;font-size:31px!important;color:#ffffc8;display:flex;align-items:center;justify-content:center;gap:5px}
+.holiday-announcement-date img{width:30px;height:31px}
+.holiday-announcement-close{position:absolute;left:613px;top:461px;width:70px;height:70px;border:0;background:url('assets/holiday-0920/close.png') center/contain no-repeat}
+.holiday-announcement-go{position:absolute;left:224px;top:958px;width:303px;height:89px;padding:0;border:12px solid transparent;border-image:url('assets/holiday-0920/button-red.png') 12 fill stretch;box-shadow:none;border-radius:0;background:none;font-size:48px;color:white;font-weight:700}
+.modal.exchange-rules,.modal.tutorial{position:absolute;left:146px;top:418px;width:458px;height:715px;padding:0;border:10px solid #000;border-radius:26px;background:#f1f1f1;box-shadow:inset 0 0 0 4px white,inset 0 0 0 8px #888;overflow:visible}
+.holiday-dialog-title{position:absolute;left:90px;top:-46px;width:266px;height:82px;display:flex;justify-content:center;align-items:center;background:#000;box-shadow:0 11px #aaa;border-radius:16px;color:#fff000!important;font-size:46px!important;margin:0!important;line-height:1}
+.modal.exchange-rules>.close,.modal.tutorial>.close{display:none}
+.holiday-dialog-close{position:absolute;right:-28px;top:-28px;width:70px;height:70px;background:url('assets/holiday-0920/close.png') center/contain no-repeat;border:0;z-index:3;padding:0}
+.holiday-rule-content{position:absolute;left:32px;right:32px;top:70px;text-align:left;font-size:20px;line-height:1.55}
+.holiday-rule-content .rule-label{display:block;background:#bababa;width:120px;border-radius:18px;line-height:30px;padding-left:12px;font-weight:500;margin:0 0 5px;white-space:nowrap}
+.holiday-rule-content p{font-size:20px!important;line-height:1.55!important;margin:0 0 7px!important;color:#000!important}
+.holiday-rule-content .rule-strip{display:block;width:100%;height:100px;padding:12px 39px;background:#bcbcbc;border-radius:7px;object-fit:contain;margin:7px 0}
+.holiday-tutorial-picture{position:absolute;left:127px;top:58px;width:180px;height:443px;object-fit:contain}
+.holiday-tutorial-copy{position:absolute;top:531px;left:10px;right:10px;font-size:32px!important;line-height:1.5!important;margin:0!important;color:#000!important;text-align:center}
+.holiday-tutorial-copy strong{color:red;font-weight:500}.holiday-tutorial-note{position:absolute;top:641px;left:10px;right:10px;font-size:17px!important;color:#555;text-align:center;margin:0!important}
+.game .moon-face,.game .moon-face.bite2,.game .moon-face.bite1{position:absolute;inset:0;width:94px;height:105.75px;transform:none;background:url('assets/holiday-0920/block_bing1.png') center/contain no-repeat}
+.game .moon-face.bite2{background-image:url('assets/holiday-0920/block_bing2.png')}.game .moon-face.bite1{background-image:url('assets/holiday-0920/block_bing3.png')}
+.reward-moon-hd{display:block;left:0;top:0;width:246px;height:277px;background:url('assets/holiday-0920/block_bing1.png') center/contain no-repeat}

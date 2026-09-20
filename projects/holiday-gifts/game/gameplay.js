@@ -1,6 +1,6 @@
 // Native game assets; VFX are anchored to the actual matched pair.
 function sceneMarkup(){return `<div class="scene-grass" aria-hidden="true">${[[210,214],[560,285],[80,320],[660,470],[42,900],[680,1075],[140,1255],[570,1330],[42,1490],[680,1520]].map(([x,y],i)=>`<i style="left:${x}px;top:${y}px;animation-delay:-${i*.37}s"></i>`).join('')}</div><div class="date-ornament" aria-hidden="true"></div><div class="miniapp-capsule" aria-hidden="true">•••　◉</div>`}
-function showMoonTutorial(){openModal(`<img class="moon-tutorial-art" src="assets/gameplay/tutorial-panel.png" alt="月饼砖块：相同状态的月饼砖碰一碰，碰撞3次，消除后收集2个月饼。本局结算后存入月饼余额。"><button class="tutorial-dismiss" data-action="tutorial" aria-label="知道了">知道了</button><button class="tutorial-x" data-action="tutorial" aria-label="关闭月饼说明">关闭</button>`,'tutorial');}
+function showMoonTutorial(){openModal(`<h2 class="holiday-dialog-title">玩法说明</h2><button class="holiday-dialog-close" data-action="tutorial" aria-label="知道了"></button><img class="holiday-tutorial-picture" src="assets/holiday-0920/shuoming2.png" alt="同状态月饼砖碰撞后，从完整变为缺口，再变为少量剩余"><p class="holiday-tutorial-copy">相同状态的月饼砖，碰撞<br><strong>3次</strong>，消除<strong>2个月饼</strong>！</p><p class="holiday-tutorial-note">本局结算后，存入月饼余额</p>`,'tutorial');}
 function tileFace(t){return t.type==='moon'?`<div class="moon-face ${t.hp===2?'bite2':t.hp===1?'bite1':''}"></div>`:`<img class="native-face" src="assets/gameplay/block_${Number(t.type)+1}.png" alt="">`;}
 function animateCollision(a,b){
  const board=document.querySelector('#board');if(!board)return Promise.resolve();
