@@ -1,18 +1,24 @@
-for(const href of ['announcement.css','reference.css','exchange.css','gameplay.css','results.css','holiday-0920.css']){const link=document.createElement('link');link.rel='stylesheet';link.href=href+'?v=41';document.head.append(link);}
+for(const href of ['announcement.css','reference.css','exchange.css','gameplay.css','results.css','holiday-0920.css']){const link=document.createElement('link');link.rel='stylesheet';link.href=href+'?v=42';document.head.append(link);}
 const $=s=>document.querySelector(s);const STORE='holiday-prototype-v37';
 const dates=Array.from({length:13},(_,i)=>new Date(Date.UTC(2026,8,25+i)).toISOString().slice(0,10));
-const names=['兔灯挂件','桂花香囊','月兔团圆','团圆茶杯','秋游挎包','出游墨镜','假日出游','野餐水壶','随行相机','秋日花束','假日行李箱','枫叶挂饰','枫叶漫游'];const skins=[2,6,12];
-const prices=[4,4,18,4,10,4,20,4,4,10,24,4,22];
-const qualities=['普通','普通','皮肤','普通','稀有','普通','皮肤','普通','普通','稀有','传说','普通','皮肤'];
+const names=['兔灯挂件','桂花香囊','月兔团圆','团圆茶杯','秋游挎包','秋日小厨','出游墨镜','野餐水壶','随行相机','秋日花束','假日行李箱','枫叶挂饰','篝火露营'];const skins=[2,5,12];
+const prices=[4,4,18,4,10,20,4,4,4,10,24,4,22];
+const qualities=['普通','普通','皮肤','普通','稀有','皮肤','普通','普通','普通','稀有','传说','普通','皮肤'];
 function quantity(i){return Number(state.quantities[i]||0)}
 function challengeUsed(){return state.playedDays.includes(day())}
 function resetTime(){const m=1440-Number(state.date.slice(11,13))*60-Number(state.date.slice(14,16));return `${Math.floor(m/60)}时${String(m%60).padStart(2,'0')}分后重置`}
 function canStart(){return phase()==='open'&&(Boolean(state.game)||!challengeUsed())}
 function moonCost(n){return `<span class="moon-cost"><span class="moon-currency" role="img" aria-label="月饼"></span><b>×${n}</b></span>`;}
-const fresh=()=>({date:'2026-09-25T12:00:00',total:0,claimed:[],quantities:{},playedDays:[],seen:[],tutorial:false,game:null,attempts:0});let state;try{state=JSON.parse(localStorage.getItem(STORE))||fresh()}catch{state=fresh()}let page='home',selected=null,lock=false,dialog=null,toastTimer,dragStart=null,blockClick=false;
+function migrateRewardSchedule(s){
+ if(s.rewardSchedule===42)return;
+ const q=s.quantities||{},next={...q};delete next[5];delete next[6];
+ if(q[5]!==undefined)next[6]=q[5];if(q[6]!==undefined)next[5]=q[6];
+ s.quantities=next;s.claimed=(s.claimed||[]).map(i=>i===5?6:i===6?5:i);s.rewardSchedule=42;
+}
+const fresh=()=>({rewardSchedule:42,date:'2026-09-25T12:00:00',total:0,claimed:[],quantities:{},playedDays:[],seen:[],tutorial:false,game:null,attempts:0});let state;try{state=JSON.parse(localStorage.getItem(STORE))||fresh()}catch{state=fresh()}migrateRewardSchedule(state);let page='home',selected=null,lock=false,dialog=null,toastTimer,dragStart=null,blockClick=false;
 function save(){localStorage.setItem(STORE,JSON.stringify(state))}function day(){return state.date.slice(0,10)}function phase(){return day()<'2026-09-24'||day()>='2026-10-12'?'hidden':day()<'2026-09-25'?'preview':day()>='2026-10-08'?'ended':'open'}function fmt(d){return +d.slice(5,7)+'月'+ +d.slice(8,10)+'日'}function canClaim(i){return Number.isInteger(i)&&i>=0&&i<13&&phase()==='open'&&day()>=dates[i]&&state.total>=prices[i]&&(!skins.includes(i)||!quantity(i))}
 function leftTime(){let target=phase()==='preview'?'2026-09-25T00:00:00':'2026-10-08T00:00:00',mins=Math.max(0,Math.floor((new Date(target)-new Date(state.date))/60000));return phase()==='ended'?'活动已结束':phase()==='preview'?`距开启${Math.floor(mins/60)}时${String(mins%60).padStart(2,'0')}分`:mins<1440?`剩余${Math.floor(mins/60)}时${String(mins%60).padStart(2,'0')}分`:`剩余${Math.ceil(mins/1440)}天`}
-function art(i){const file={2:'moon',6:'travel',12:'autumn'}[i];if(file)return `<img class="art skin-art" src="assets/exchange/skin-${file}.png" alt="${names[i]}限定砖块皮肤">`;const icon={3:'cup',5:'sunglasses',7:'bottle',9:'bouquet',11:'maple'}[i];if(icon)return `<img class="art accessory-art" src="assets/rewards/${icon}.png" alt="${names[i]}">`;let old={0:0,1:1,4:3,8:5,10:6}[i],col=old%2,row=Math.floor(old/2);return `<div class="art" style="background-size:800px 1422px;background-position:${col?-417:-99}px ${-551-row*174}px" role="img" aria-label="${names[i]}"></div>`}
+function art(i){const file={2:'moon-v42',5:'chef',12:'camp'}[i];if(file)return `<img class="art skin-art" src="assets/exchange/skin-${file}.png" alt="${names[i]}限定砖块皮肤">`;const icon={0:'rabbit-lantern',3:'cup',6:'sunglasses',7:'bottle',9:'bouquet',11:'maple'}[i];if(icon)return `<img class="art accessory-art" src="assets/rewards/${icon}.png" alt="${names[i]}">`;let old={1:1,4:3,8:5,10:6}[i],col=old%2,row=Math.floor(old/2);return `<div class="art" style="background-size:800px 1422px;background-position:${col?-417:-99}px ${-551-row*174}px" role="img" aria-label="${names[i]}"></div>`}
 function toast(t){if(page==='game')return;clearTimeout(toastTimer);$('#toast').textContent=t;$('#toast').classList.add('show');toastTimer=setTimeout(()=>$('#toast').classList.remove('show'),2600)}
 function resize(){let mobile=innerWidth<=760;let scale=mobile?Math.min(innerWidth/750,(innerHeight-6)/1624):Math.min((innerHeight-48)/1624,(innerWidth-390)/750,1);scale=Math.max(.15,scale);$('#phone').style.transform=`scale(${scale})`;$('#phone-wrap').style.width=750*scale+'px';$('#phone-wrap').style.height=1624*scale+'px'}addEventListener('resize',resize);
 function navigate(next){if(next==='activity'&&phase()==='hidden')next='home';clearTimeout(toastTimer);$('#toast').classList.remove('show');closeModal();page=next;selected=null;render();$('#screen').classList.remove('enter');void $('#screen').offsetWidth;$('#screen').classList.add('enter')}
