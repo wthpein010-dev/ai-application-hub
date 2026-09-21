@@ -1,4 +1,4 @@
-for(const href of ['announcement.css','reference.css','exchange.css','gameplay.css','results.css','holiday-0920.css']){const link=document.createElement('link');link.rel='stylesheet';link.href=href;document.head.append(link);}
+for(const href of ['announcement.css','reference.css','exchange.css','gameplay.css','results.css','holiday-0920.css']){const link=document.createElement('link');link.rel='stylesheet';link.href=href+'?v=39';document.head.append(link);}
 const $=s=>document.querySelector(s);const STORE='holiday-prototype-v37';
 const dates=Array.from({length:13},(_,i)=>new Date(Date.UTC(2026,8,25+i)).toISOString().slice(0,10));
 const names=['兔灯挂件','桂花香囊','月兔团圆','团圆茶杯','秋游挎包','出游墨镜','假日出游','野餐水壶','随行相机','秋日花束','假日行李箱','枫叶挂饰','枫叶漫游'];const skins=[2,6,12];
