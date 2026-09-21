@@ -70,3 +70,14 @@ html{scrollbar-width:none}html::-webkit-scrollbar{display:none}
 .result-share-bubble{position:absolute;left:547px;bottom:366px;width:146px;height:86px;background:url('assets/results/fail_qipao.png') center/100% 100% no-repeat;color:#111;display:flex;align-items:center;justify-content:center;padding-bottom:14px;font-size:17px;pointer-events:none;animation:share-bob 2.8s ease-in-out infinite}
 @media(prefers-reduced-motion:reduce){.share-reward-bubble,.result-share-bubble{animation:none}}
 body.page-hidden .share-reward-bubble,body.page-hidden .result-share-bubble,body:has(.shade) .share-reward-bubble,body:has(.shade) .result-share-bubble{animation-play-state:paused}
+/* Currency feedback uses the existing middle balance, leaving reward layout intact. */
+.exchange-balance{overflow:visible!important}
+.exchange-balance b{display:inline-block;min-width:1.5ch;text-align:center;font-variant-numeric:tabular-nums}
+.balance-changing b{animation:balance-number-pop .7s ease-out both}
+.balance-changing:before{animation:balance-moon-pop .55s ease-out both}
+.exchange-balance .balance-delta{position:absolute;left:50%;top:-6px;z-index:8;min-width:110px;text-align:center;font-size:48px;font-weight:900;line-height:1;color:#ffe77a;text-shadow:0 3px #733c13,-2px 0 #733c13,2px 0 #733c13;pointer-events:none;animation:balance-float .9s ease-out both}
+.balance-gain .balance-delta{color:#fff69b}
+@keyframes balance-float{0%{opacity:0;transform:translate(-50%,8px) scale(.75)}20%{opacity:1;transform:translate(-50%,-12px) scale(1.08)}70%{opacity:1;transform:translate(-50%,-43px) scale(1)}100%{opacity:0;transform:translate(-50%,-66px) scale(.96)}}
+@keyframes balance-number-pop{0%,100%{transform:scale(1)}22%{transform:scale(1.16)}55%{transform:scale(.98)}}
+@keyframes balance-moon-pop{0%,100%{transform:scale(1) rotate(0)}30%{transform:scale(1.16) rotate(-8deg)}65%{transform:scale(.96) rotate(3deg)}}
+@media(prefers-reduced-motion:reduce){.balance-changing b,.balance-changing:before,.balance-delta{animation:none!important}}
