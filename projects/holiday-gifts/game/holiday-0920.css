@@ -54,3 +54,19 @@ html{scrollbar-width:none}html::-webkit-scrollbar{display:none}
 .game .moon-face,.game .moon-face.bite2,.game .moon-face.bite1{position:absolute;inset:0;width:94px;height:105.75px;transform:none;background:url('assets/holiday-0920/block_bing1.png') center/contain no-repeat}
 .game .moon-face.bite2{background-image:url('assets/holiday-0920/block_bing2.png')}.game .moon-face.bite1{background-image:url('assets/holiday-0920/block_bing3.png')}
 .reward-moon-hd{display:block;left:0;top:0;width:246px;height:277px;background:url('assets/holiday-0920/block_bing1.png') center/contain no-repeat}
+/* September 21: shared date chip, rarity frames and fixed footer sharing. */
+.exchange-card.skin{background:#fffef6!important}
+.exchange-date,.quality-稀有 .exchange-date,.quality-传说 .exchange-date,.skin .exchange-date{background-image:url('assets/holiday-0920/date-gray.png')}
+.exchange-card .exchange-prize{background:none;border:4px solid transparent;border-image:url('assets/holiday-0920/kuang1.png') 7 fill stretch;overflow:visible}
+.quality-稀有 .exchange-prize{border-image-source:url('assets/holiday-0920/kuang2.png')}.quality-传说 .exchange-prize{border-image-source:url('assets/holiday-0920/kuang3.png')}
+.exchange-card.skin .exchange-prize{background:none;border:0;border-image:none}
+.exchange-button.unavailable{filter:grayscale(1);color:#fff;opacity:1}
+.activity-share-group{position:absolute;left:584px;top:1247px;width:121px;height:188px;z-index:8;pointer-events:none}
+.activity-share{position:absolute;left:16px;top:96px;width:90px;height:90px;background:url('assets/results/share.png') center/contain no-repeat;border:0;padding:0;cursor:pointer;pointer-events:auto}
+.activity-share:active{transform:translateY(3px)}
+.share-reward-bubble{position:absolute;left:0;top:0;width:121px;height:90px;background:url('assets/holiday-0920/share_pop.png') center/contain no-repeat;display:flex;align-items:center;flex-direction:column;padding-top:3px;color:#111;font-size:16px;line-height:20px;animation:share-bob 2.8s ease-in-out infinite;transform-origin:50% 100%}
+.share-reward-bubble .moon-currency{width:46px;height:49px}.share-reward-bubble span:last-child{font-size:16px}
+@keyframes share-bob{0%,100%{transform:translateY(0)}50%{transform:translateY(-5px)}}
+.result-share-bubble{position:absolute;left:547px;bottom:366px;width:146px;height:86px;background:url('assets/results/fail_qipao.png') center/100% 100% no-repeat;color:#111;display:flex;align-items:center;justify-content:center;padding-bottom:14px;font-size:17px;pointer-events:none;animation:share-bob 2.8s ease-in-out infinite}
+@media(prefers-reduced-motion:reduce){.share-reward-bubble,.result-share-bubble{animation:none}}
+body.page-hidden .share-reward-bubble,body.page-hidden .result-share-bubble,body:has(.shade) .share-reward-bubble,body:has(.shade) .result-share-bubble{animation-play-state:paused}

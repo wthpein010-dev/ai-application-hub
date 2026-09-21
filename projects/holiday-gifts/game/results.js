@@ -4,7 +4,7 @@ function resultMarkup(win){
  ${win?`<div class="date">- ${fmt(r.date||day())} -</div>`:''}
  <div class="result-heading"><h2>${win?'<small>恭喜你</small>挑战成功':'挑战失败'}</h2><div class="duration">${win?`通关用时 ${Math.floor(r.seconds/60)}分${String(r.seconds%60).padStart(2,'0')}秒`:`今日已挑战${state.attempts}次`}</div></div>
  ${win?`<div class="reward-halo"></div><div class="reward-moon-tile"><div class="reward-moon-hd" role="img" aria-label="完整高清月饼"></div><b>×${r.count}</b></div><div class="result-copy"><strong>本局获得 ${r.count} 个月饼</strong><p>月饼已入账，回去兑换喜欢的好礼吧</p></div>`:`<div class="failure-bubble">明天再来碰一碰。</div><img class="failure-tomb" src="assets/results/fail_dead1.png" alt="原游戏木十字墓碑"><div class="daily-finished">今日挑战已结束</div>`}
- <button class="white-btn return native-result-button" data-action="return">返回活动</button><button class="white-btn share" data-action="share" aria-label="分享"></button>
+ <button class="white-btn return native-result-button" data-action="return">返回活动</button><div class="result-share-bubble">${win?'向好友炫耀一下！':'明天一起再挑战！'}</div><button class="white-btn share" data-action="share" aria-label="分享"></button>
  </div></div>`;
 }
 
