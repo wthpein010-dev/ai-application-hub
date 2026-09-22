@@ -43,7 +43,7 @@
 | `lunar-freight` | 月面货运 | 小游戏在线体验 | Windows：现代浏览器 | macOS：现代浏览器 | [网页体验](https://wthpein010-dev.github.io/ai-application-hub/projects/lunar-freight/index.html)；用户明确要求不制作视频或预渲染动画，目录使用 `videoExemption: user-request-no-video`。 |
 | `holiday-gifts` | 好事成双 · 双节活动 | 项目辅助 | Windows：现代浏览器 | macOS：现代浏览器 | [网页体验](https://wthpein010-dev.github.io/ai-application-hub/projects/holiday-gifts/index.html)；提供玩法视频与离线网页包，非原生安装包；`tests/holiday-gifts-publication.test.mjs` 验证入口与交付资源。 |
 
-| `announcement-center` | 公告中心 · 挂件焕新 | 网页跨平台 | Windows：现代浏览器 | macOS：现代浏览器 | [网页体验](https://wthpein010-dev.github.io/ai-application-hub/projects/announcement-center/index.html)；浏览器交互原型，20.88秒操作视频及离线网页ZIP；桌面与390px浏览器检查通过。 |
+| `announcement-center` | 公告中心 · 挂件焕新 | 项目辅助 | Windows：现代浏览器 | macOS：现代浏览器 | [网页体验](https://wthpein010-dev.github.io/ai-application-hub/projects/announcement-center/index.html)；浏览器交互原型，20.88秒操作视频及离线网页ZIP；桌面与390px浏览器检查通过。 |
 
 ## 结论
 

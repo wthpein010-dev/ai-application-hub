@@ -123,7 +123,7 @@ test("application cards preserve the public tool taxonomy and engineering collec
       "pureshrink",
       "codex-multi-thread-workbench",
     ],
-    content: ["travel-generator", "announcement-center"],
+    content: ["travel-generator"],
   };
 
   for (const [type, ids] of Object.entries(expectedGroups)) {
@@ -138,7 +138,7 @@ test("application cards preserve the public tool taxonomy and engineering collec
   }
 
   assert.equal(apps.filter((app) => catalogTypeKey(app) === "game").length, 6);
-  assert.equal(apps.filter((app) => catalogTypeKey(app) === "engineering").length, 8);
+  assert.equal(apps.filter((app) => catalogTypeKey(app) === "engineering").length, 9);
 });
 
 test("the type filter exposes only the six tool types plus games and engineering", () => {
@@ -228,7 +228,7 @@ test("application taxonomy filters leave games and engineering intact while sear
   assert.deepEqual(groupedIds(), {
     apps: ["feishu-downloader"],
     games: ["icecream", "zhuanglege-sha", "fill-what", "xiang-le-ge-xiang", "nang-keng-pai-pai-xiang", "lunar-freight"],
-    engineering: ["vita-mahjong", "paws-home-client", "paws-level-editor", "brick-light-motion-lab", "brick-character-copy-preview", "trinket-market", "v-curve-tool", "holiday-gifts"],
+    engineering: ["vita-mahjong", "paws-home-client", "paws-level-editor", "brick-light-motion-lab", "brick-character-copy-preview", "trinket-market", "v-curve-tool", "holiday-gifts", "announcement-center"],
   });
 
   state.status = "all";
@@ -236,7 +236,7 @@ test("application taxonomy filters leave games and engineering intact while sear
   assert.deepEqual(groupedIds(), {
     apps: ["travel-generator"],
     games: ["icecream", "zhuanglege-sha", "fill-what", "xiang-le-ge-xiang", "nang-keng-pai-pai-xiang", "lunar-freight"],
-    engineering: ["vita-mahjong", "paws-home-client", "paws-level-editor", "brick-light-motion-lab", "brick-character-copy-preview", "trinket-market", "v-curve-tool", "holiday-gifts"],
+    engineering: ["vita-mahjong", "paws-home-client", "paws-level-editor", "brick-light-motion-lab", "brick-character-copy-preview", "trinket-market", "v-curve-tool", "holiday-gifts", "announcement-center"],
   });
 
   state.category = "all";

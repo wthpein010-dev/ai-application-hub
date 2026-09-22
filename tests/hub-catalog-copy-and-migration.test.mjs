@@ -49,6 +49,19 @@ function pageTitle(path) {
   return /<title>([^<]+)<\/title>/i.exec(html)?.[1].trim() || "";
 }
 
+test("announcement center belongs to support and migrates saved content without losing edits", () => {
+  const project = loadDefaultAppsFromRuntime(runtime).find(app => app.id === "announcement-center");
+  assert.equal(project.status, "engineering");
+  const updated = loadAppsWithStoredValue([{
+    ...project, status: "content", badge: "网页原型",
+    brief: "我的公告说明", video: "./custom-announcement-video.html",
+  }]).find(app => app.id === project.id);
+  assert.equal(updated.status, "engineering");
+  assert.equal(updated.badge, "项目辅助");
+  assert.equal(updated.brief, "我的公告说明");
+  assert.equal(updated.video, "./custom-announcement-video.html");
+});
+
 test("stored holiday game moves to support without losing user text or links", () => {
   const project = loadDefaultAppsFromRuntime(runtime).find(app => app.id === "holiday-gifts");
   const updated = loadAppsWithStoredValue([{

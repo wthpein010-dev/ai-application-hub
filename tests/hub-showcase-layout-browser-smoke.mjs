@@ -38,6 +38,8 @@ try {
   assert.equal(await page.locator('#engineeringGrid article[data-app-id="holiday-gifts"]').count(), 1);
   assert.equal(await page.locator('#gameGrid article[data-app-id="holiday-gifts"]').count(), 0);
   assert.equal(await page.locator("#engineering h2").innerText(), "项目辅助");
+  assert.equal(await page.locator('#engineeringGrid article[data-app-id="announcement-center"]').count(), 1);
+  assert.equal(await page.locator('#appGrid article[data-app-id="announcement-center"]').count(), 0);
   const ids = await page.evaluate(() => visibleApps().map(app => app.id).filter(id => id !== "clickflow"));
   for (const width of [1440, 900, 390]) {
     await page.setViewportSize({ width, height: 1000 });
