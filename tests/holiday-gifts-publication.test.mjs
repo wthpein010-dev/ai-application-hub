@@ -6,7 +6,7 @@ const root=new URL('../',import.meta.url);
 const read=p=>readFileSync(new URL(p,root),'utf8');
 test('holiday game is appended with real demo and video, without fake platform downloads',()=>{
  const apps=loadDefaultAppsFromRuntime(read('app-20260706-restore-games.js'));
- const app=apps.at(-1);assert.equal(app.id,'holiday-gifts');assert.equal(app.status,'game');
+ const app=apps.filter(a=>a.status==='game').at(-1);assert.equal(app.id,'holiday-gifts');assert.equal(app.status,'game');
  for(const p of [app.entry,app.video])assert(existsSync(new URL(p,root)));
  assert.equal(app.platforms.windows,'');assert.equal(app.platforms.mac,'');
 });

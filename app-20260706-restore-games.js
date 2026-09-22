@@ -1034,6 +1034,7 @@ const defaultApps = [
     tags: ["月饼碰撞", "自由兑换", "双节限定", "交互原型"],
     speed: 9, impact: 8, risk: 8, polish: 9
   },
+  {id:"announcement-center",name:"公告中心 · 挂件焕新",category:"游戏UI交互原型",status:"content",badge:"网页原型",brief:"点击横幅展开公告，切换查看更新与挂件焕新补偿说明。",problem:"验证公告层级、图文阅读与不同公告之间的切换体验。",aiUse:"基于游戏美术制作响应式网页原型，图片等比显示，支持内联展开和单项切换。仅演示交互，不发放奖励。",folder:"./projects/announcement-center/",entry:"./projects/announcement-center/index.html",video:"./projects/announcement-center/video/index.html",package:"",platforms:{web:{href:"./projects/announcement-center/index.html",label:"演示"},windows:"",mac:""},tags:["公告UI","内联展开","挂件焕新","交互原型"],speed:9,impact:8,risk:8,polish:9},
 ];
 
 let apps = loadApps();

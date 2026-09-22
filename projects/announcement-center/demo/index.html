@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#121816"><title>公告中心 · 交互原型</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<main class="stage" aria-label="游戏公告交互预览">
+  <button class="reopen" id="reopen" aria-label="打开公告中心">公告</button>
+  <div class="overlay" id="overlay">
+    <button class="scrim" id="scrim" aria-label="关闭公告中心"></button>
+    <section class="modal" id="modal" role="dialog" aria-modal="true" aria-labelledby="dialog-title">
+      <h1 class="title" id="dialog-title">公告中心</h1>
+      <button class="close" id="close" aria-label="关闭公告中心"><span></span><span></span></button>
+      <div class="viewport" id="viewport">
+        <div class="list" id="list">
+          <button class="banner" data-notice="update" aria-label="查看更新公告"><img src="assets/banner-update.png" alt="更新公告，新内容与优化，一起看看" draggable="false"><span class="unread" aria-label="未读"></span></button>
+          <button class="banner" data-notice="compensation" aria-label="查看挂件焕新与补偿"><img src="assets/banner-compensation.png" alt="挂件焕新与补偿，额外补偿兑奖券5张" draggable="false"><span class="unread" aria-label="未读"></span></button>
+          <button class="banner" data-notice="guide" aria-label="查看玩法指南示例"><img src="assets/banner-guide.png" alt="玩法指南，常见问题与玩法说明" draggable="false"></button>
+        </div>
+      </div>
+      <div class="edge-fade" id="fade" aria-hidden="true"></div>
+    </section>
+  </div>
+</main>
+<script src="state.js"></script><script src="app.js"></script>
+</body>
+</html>

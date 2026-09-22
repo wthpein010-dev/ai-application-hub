@@ -37,8 +37,8 @@ test("homepage exposes the approved dynamic showcase shell", () => {
   assert.match(html, /<section id="engineering"[^>]*>[\s\S]*id="engineeringGrid"/u);
   assert.match(html, /<aside id="editPanel"[^>]+aria-hidden="true"[^>]+inert/u);
   assert.match(html, /href="\.\/styles\.css\?v=20260827-hub-visual-polish"/u);
-  assert.match(html, /src="\.\/hub-project-media\.js\?v=20260918-holiday-gifts"/u);
-  assert.match(html, /src="\.\/app-20260706-restore-games\.js\?v=20260918-holiday-gifts"/u);
+  assert.match(html, /src="\.\/hub-project-media\.js\?v=20260922-announcement"/u);
+  assert.match(html, /src="\.\/app-20260706-restore-games\.js\?v=20260922-announcement"/u);
 });
 
 test("approved showcase uses image-led Bento layouts with responsive fallbacks", () => {
@@ -91,7 +91,7 @@ test("the multi-thread Workbench is appended with a dedicated showcase image", (
   const apps = loadDefaultAppsFromRuntime(runtime);
   const media = loadMediaRegistry(mediaRuntime);
 
-  assert.equal(apps.length, 35);
+  assert.equal(apps.length, 36);
   const radarIndex = apps.findIndex(({ id }) => id === "x-ai-codex-radar");
   assert.equal(apps.at(radarIndex + 1)?.id, "loop-bgm-lab");
   assert.equal(apps.at(radarIndex + 2)?.id, "codex-multi-thread-workbench");

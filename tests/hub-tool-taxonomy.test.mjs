@@ -123,7 +123,7 @@ test("application cards preserve the public tool taxonomy and engineering collec
       "pureshrink",
       "codex-multi-thread-workbench",
     ],
-    content: ["travel-generator"],
+    content: ["travel-generator", "announcement-center"],
   };
 
   for (const [type, ids] of Object.entries(expectedGroups)) {

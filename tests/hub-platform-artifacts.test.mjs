@@ -28,7 +28,7 @@ function actionTypes(app) {
 }
 
 test("every card exposes actions that match its actual delivery type", () => {
-  assert.equal(apps.length, 35);
+  assert.equal(apps.length, 36);
   for (const app of apps) {
     const expected = app.id === "lunar-freight" && app.videoExemption === "user-request-no-video"
       ? ["web"]

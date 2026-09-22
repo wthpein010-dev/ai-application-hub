@@ -346,4 +346,5 @@ globalThis.HUB_PROJECT_MEDIA = Object.freeze({
     feature: "月饼碰三次，喜欢哪件就换哪件",
     accent: "#e6b945", visualKind: "game",
   }),
+  "announcement-center": Object.freeze({src:"./assets/hub-showcase/announcement-center.jpg?v=20260922-announcement",alt:"公告中心 · 挂件焕新内联展开交互演示",position:"center",layout:"wide",fallback:"公告中心",feature:"横幅展开、单项切换与挂件焕新说明",accent:"#a5cb53",visualKind:"product"}),
 });

@@ -1,7 +1,7 @@
 # AI Application Hub 平台兼容矩阵
 
 - 日期：2026-09-18
-- 范围：主页当前 35 张公开项目卡片
+- 范围：主页当前 36 张公开项目卡片
 - 规则：网页、小游戏和工程体验通过现代浏览器覆盖 Windows 与 macOS；只有经过原生构建、架构检查和产物校验的项目显示系统下载。
 - 通用门禁：`tests/hub-entry-pages-browser-smoke.mjs`、`tests/hub-video-pages-browser-smoke.mjs`、`tests/hub-platform-artifacts.test.mjs`。
 
@@ -43,8 +43,10 @@
 | `lunar-freight` | 月面货运 | 小游戏在线体验 | Windows：现代浏览器 | macOS：现代浏览器 | [网页体验](https://wthpein010-dev.github.io/ai-application-hub/projects/lunar-freight/index.html)；用户明确要求不制作视频或预渲染动画，目录使用 `videoExemption: user-request-no-video`。 |
 | `holiday-gifts` | 好事成双 · 双节活动 | 小游戏在线体验 | Windows：现代浏览器 | macOS：现代浏览器 | [网页体验](https://wthpein010-dev.github.io/ai-application-hub/projects/holiday-gifts/index.html)；提供玩法视频与离线网页包，非原生安装包；`tests/holiday-gifts-publication.test.mjs` 验证入口与交付资源。 |
 
+| `announcement-center` | 公告中心 · 挂件焕新 | 网页跨平台 | Windows：现代浏览器 | macOS：现代浏览器 | [网页体验](https://wthpein010-dev.github.io/ai-application-hub/projects/announcement-center/index.html)；浏览器交互原型，20.88秒操作视频及离线网页ZIP；桌面与390px浏览器检查通过。 |
+
 ## 结论
 
-- 35 个项目都可在 Windows 与 macOS 上通过网页查看或体验。
+- 36 个项目都可在 Windows 与 macOS 上通过网页查看或体验。
 - 7 个项目提供经过验证的原生 Windows/macOS 成品；Codex 多线程工作台与 V 曲线对比工具均通过 Windows x64 与 macOS arm64/x64 验证，飞书插件提供同一份跨平台浏览器扩展。
 - 其余项目不再显示来源码、Unity 工程、WebGL 压缩包或占位 ZIP 形式的伪系统下载。

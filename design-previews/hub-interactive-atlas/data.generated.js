@@ -1397,5 +1397,42 @@ export const projects = [
       "ink": "#6f2b0d",
       "mark": "好事"
     }
+  },
+  {
+    "id": "announcement-center",
+    "index": 35,
+    "name": "公告中心 · 挂件焕新",
+    "category": "游戏UI交互原型",
+    "kind": "app",
+    "badge": "网页原型",
+    "brief": "点击横幅展开公告，切换查看更新与挂件焕新补偿说明。",
+    "problem": "验证公告层级、图文阅读与不同公告之间的切换体验。",
+    "aiUse": "基于游戏美术制作响应式网页原型，图片等比显示，支持内联展开和单项切换。仅演示交互，不发放奖励。",
+    "tags": [
+      "公告UI",
+      "内联展开",
+      "挂件焕新",
+      "交互原型"
+    ],
+    "actions": [
+      {
+        "type": "web",
+        "label": "网页预览",
+        "href": "./projects/announcement-center/index.html",
+        "sourceLabel": "演示"
+      },
+      {
+        "type": "video",
+        "label": "介绍视频",
+        "href": "./projects/announcement-center/video/index.html",
+        "sourceLabel": "介绍视频"
+      }
+    ],
+    "visual": {
+      "accent": "#2868c7",
+      "surface": "#e7f0ff",
+      "ink": "#173f7b",
+      "mark": "公告"
+    }
   }
 ];
