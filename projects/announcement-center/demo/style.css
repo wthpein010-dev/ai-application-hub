@@ -18,4 +18,6 @@
 .expansion .detail .box,.expansion .detail .comparebox{margin:3.5cqw 0 0;padding:0;border:0;border-radius:0;background:none;box-shadow:none}
 .expansion .detail h3{position:static;margin:0 0 1.4cqw;padding:0;border:0;border-radius:0;background:none;font-size:3.8cqw;line-height:1.5}
 .expansion .reward{background:none;padding:1cqw 0;margin:1.5cqw 0;border-radius:0}.expansion .detail p{margin:0 0 2.5cqw}.expansion .comparison{height:auto;object-fit:contain}
+.banner[data-notice="compensation"] img{clip-path:none}.notice-item .banner{aspect-ratio:2.1535836}.banner img{height:100%;object-fit:contain}.release-date{font-size:2.8cqw;color:#6b705e}.expansion .detail ul{padding-left:4.5cqw;margin:0}.expansion .detail li{margin:0 0 2.2cqw}.expansion .detail .box:first-child{margin-top:0}.guide-tip{border-left:.7cqw solid #83af42;padding:1cqw 2cqw;background:#f4f9e9}.guide-inline{display:flex;align-items:center;gap:2cqw}.guide-inline img{width:22%;height:auto;flex:none}.guide-inline p{flex:1}.guide-section+.guide-section{padding-top:2cqw!important;border-top:1px solid #e7e9e1!important}
+.notice-item .banner{display:grid;place-items:center;height:36cqw;aspect-ratio:auto}.banner img{height:auto;max-height:100%;width:auto;max-width:100%;object-fit:contain}
 @media(prefers-reduced-motion:reduce){*{transition:none!important}}

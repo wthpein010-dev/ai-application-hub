@@ -8,6 +8,7 @@ const pages={
 function updateFade(){fade.classList.toggle('at-bottom',viewport.scrollTop+viewport.clientHeight>=viewport.scrollHeight-2);}
 pages.update=`<h2>更新公告</h2><p>新内容与优化，一起看看。</p><section class="box"><h3>公告展示升级</h3><p>更新内容、挂件调整与玩法说明，可以在公告中心集中查看。</p><ul><li>点击横幅，下方展开对应说明。</li><li>点击其他横幅，切换查看内容。</li><li>再次点击当前横幅，可收起详情。</li></ul></section><p class="example-note">此页为交互演示文案，正式更新内容待补充。</p>`;
 pages.guide=`<h2>玩法指南</h2><p class="example-note">本页为扩展公告的交互示例。</p><section class="box"><h3>查看公告</h3><p>点击横幅，在下方展开详情。查看后，横幅上的未读红点会消失。</p><p>点击其他横幅切换内容，再次点击当前横幅可收起。</p><p>点击右上角关闭或弹窗外空白处，可关闭公告中心。</p></section>`;
+pages.update=NoticeCopy.update;pages.guide=NoticeCopy.guide;
 const buttons=[...document.querySelectorAll('[data-notice]')];
 const reduced=matchMedia('(prefers-reduced-motion: reduce)');let motion=0;
 buttons.forEach(b=>{
