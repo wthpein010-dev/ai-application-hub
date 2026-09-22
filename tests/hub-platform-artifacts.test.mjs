@@ -189,7 +189,7 @@ test("the compatibility matrix covers every public card and its delivery evidenc
         : app.status === "game"
           ? "小游戏在线体验"
           : app.status === "ai" || app.status === "engineering"
-            ? "工程在线体验"
+            ? "项目辅助"
             : "网页跨平台";
 
     if (app.id === "codex-thread-workbench") {

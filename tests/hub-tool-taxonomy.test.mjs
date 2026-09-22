@@ -47,7 +47,7 @@ function loadNormalizer() {
       assistant: "辅助工具",
       game: "小游戏",
       ai: "AI版",
-      engineering: "工程体验",
+      engineering: "项目辅助",
       life: "生活工具",
       training: "训练工具",
       idea: "创意工具",
@@ -95,7 +95,7 @@ test("application cards preserve the public tool taxonomy and engineering collec
     desktop: "桌面工具",
     content: "内容工具",
     game: "小游戏",
-    engineering: "工程体验",
+    engineering: "项目辅助",
   };
   assert.deepEqual(JSON.parse(JSON.stringify(catalogTypeLabels)), expectedLabels);
 
@@ -137,8 +137,8 @@ test("application cards preserve the public tool taxonomy and engineering collec
     }
   }
 
-  assert.equal(apps.filter((app) => catalogTypeKey(app) === "game").length, 7);
-  assert.equal(apps.filter((app) => catalogTypeKey(app) === "engineering").length, 7);
+  assert.equal(apps.filter((app) => catalogTypeKey(app) === "game").length, 6);
+  assert.equal(apps.filter((app) => catalogTypeKey(app) === "engineering").length, 8);
 });
 
 test("the type filter exposes only the six tool types plus games and engineering", () => {
@@ -155,10 +155,10 @@ test("the type filter exposes only the six tool types plus games and engineering
     ["desktop", "桌面工具"],
     ["content", "内容工具"],
     ["game", "小游戏"],
-    ["engineering", "工程体验"],
+    ["engineering", "项目辅助"],
   ]);
   assert.doesNotMatch(filter, /AI版|训练工具|创意工具|项目导航/);
-  assert.match(homepage, /styles\.css\?v=20260827-hub-visual-polish/u);
+  assert.match(homepage, /styles\.css\?v=20260922-showcase-readable/u);
 });
 
 test("the maintenance editor uses and persists the same public taxonomy", () => {
@@ -196,7 +196,7 @@ test("the maintenance editor uses and persists the same public taxonomy", () => 
     "plugin", "assistant", "life", "intelligence", "desktop", "content",
   ]);
   assert.deepEqual(JSON.parse(JSON.stringify(editableCatalogTypes(game))), [["game", "小游戏"]]);
-  assert.deepEqual(JSON.parse(JSON.stringify(editableCatalogTypes(engineering))), [["engineering", "工程体验"]]);
+  assert.deepEqual(JSON.parse(JSON.stringify(editableCatalogTypes(engineering))), [["engineering", "项目辅助"]]);
 
   assert.match(homepage, /<select id="editStatus"><\/select>/);
   assert.doesNotMatch(homepage, /<select id="editStatus">[\s\S]*?AI版/);
@@ -227,23 +227,23 @@ test("application taxonomy filters leave games and engineering intact while sear
   state.status = "plugin";
   assert.deepEqual(groupedIds(), {
     apps: ["feishu-downloader"],
-    games: ["icecream", "zhuanglege-sha", "fill-what", "xiang-le-ge-xiang", "nang-keng-pai-pai-xiang", "lunar-freight", "holiday-gifts"],
-    engineering: ["vita-mahjong", "paws-home-client", "paws-level-editor", "brick-light-motion-lab", "brick-character-copy-preview", "trinket-market", "v-curve-tool"],
+    games: ["icecream", "zhuanglege-sha", "fill-what", "xiang-le-ge-xiang", "nang-keng-pai-pai-xiang", "lunar-freight"],
+    engineering: ["vita-mahjong", "paws-home-client", "paws-level-editor", "brick-light-motion-lab", "brick-character-copy-preview", "trinket-market", "v-curve-tool", "holiday-gifts"],
   });
 
   state.status = "all";
   state.category = "AI 内容生成";
   assert.deepEqual(groupedIds(), {
     apps: ["travel-generator"],
-    games: ["icecream", "zhuanglege-sha", "fill-what", "xiang-le-ge-xiang", "nang-keng-pai-pai-xiang", "lunar-freight", "holiday-gifts"],
-    engineering: ["vita-mahjong", "paws-home-client", "paws-level-editor", "brick-light-motion-lab", "brick-character-copy-preview", "trinket-market", "v-curve-tool"],
+    games: ["icecream", "zhuanglege-sha", "fill-what", "xiang-le-ge-xiang", "nang-keng-pai-pai-xiang", "lunar-freight"],
+    engineering: ["vita-mahjong", "paws-home-client", "paws-level-editor", "brick-light-motion-lab", "brick-character-copy-preview", "trinket-market", "v-curve-tool", "holiday-gifts"],
   });
 
   state.category = "all";
   state.query = "小游戏";
   assert.deepEqual(groupedIds(), {
     apps: ["hub", "gamepulse-mini-radar", "minigame-project-simulator"],
-    games: ["icecream", "zhuanglege-sha", "fill-what", "xiang-le-ge-xiang", "nang-keng-pai-pai-xiang", "lunar-freight", "holiday-gifts"],
+    games: ["icecream", "zhuanglege-sha", "fill-what", "xiang-le-ge-xiang", "nang-keng-pai-pai-xiang", "lunar-freight"],
     engineering: [],
   });
 });

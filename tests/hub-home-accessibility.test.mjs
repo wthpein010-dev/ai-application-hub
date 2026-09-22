@@ -59,7 +59,7 @@ test("showcase controls keep accessible labels inside the semantic media region"
 test("home metadata describes the full cross-platform catalog", () => {
   const description = html.match(/<meta name="description" content="([^"]+)"/u)?.[1] || "";
   assert.doesNotMatch(description, /HyperFrames/u);
-  for (const phrase of ["AI 应用", "小游戏", "工程体验", "Windows", "macOS"]) {
+  for (const phrase of ["AI 应用", "小游戏", "项目辅助", "Windows", "macOS"]) {
     assert.match(description, new RegExp(phrase, "u"));
   }
 });

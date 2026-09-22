@@ -28,6 +28,12 @@ function loadPageTextNormalizer() {
   return context.globalThis;
 }
 
+test("project support migrates old defaults while preserving custom copy", () => {
+  const { normalizePageText } = loadPageTextNormalizer();
+  assert.equal(normalizePageText({ "engineering.title": "工程在线体验" })["engineering.title"], "项目辅助");
+  assert.equal(normalizePageText({ "engineering.title": "我的项目分区" })["engineering.title"], "我的项目分区");
+});
+
 test("obviously corrupted editable page text falls back field by field", () => {
   const { defaultPageText, normalizePageText } = loadPageTextNormalizer();
   const storedDescription = "通过 Codex 调用 HyperFrames，保留我在线修改过的主页说明。";
