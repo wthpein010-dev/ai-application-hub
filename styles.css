@@ -679,7 +679,8 @@ section[id] {
 
 .selected-summary {
   min-width: 0;
-  padding: 34px 72px 22px;
+  padding: 24px 28px;
+  background: var(--hero-panel);
 }
 
 .summary-copy {
@@ -701,7 +702,7 @@ section[id] {
 
 .summary-copy > strong {
   display: block;
-  margin-top: 22px;
+  margin-top: 14px;
   color: var(--hero-text);
   font-size: 28px;
   font-weight: 800;
@@ -721,7 +722,7 @@ section[id] {
   display: grid;
   grid-template-columns: auto minmax(0, 1fr);
   gap: 16px;
-  margin: auto 0 0;
+  margin: 20px 0 16px;
   padding-top: 18px;
   border-top: 1px solid var(--hero-line);
 }
@@ -743,10 +744,11 @@ section[id] {
 
 .showcase-controls {
   display: grid;
-  grid-template-columns: minmax(0, 1fr);
+  grid-template-columns: 46px minmax(0, 1fr) 46px;
+  gap: 16px;
   align-items: center;
   min-height: 58px;
-  padding: 15px 72px;
+  padding: 12px 20px;
   border-top: 1px solid var(--hero-line);
   background: color-mix(in srgb, var(--hero-panel) 84%, var(--page-bg));
 }
@@ -756,14 +758,13 @@ section[id] {
 }
 
 .showcase-arrows button {
-  position: absolute;
+  position: static;
   z-index: 3;
-  top: calc((100% - 58px) / 2);
   display: inline-grid;
   width: 46px;
   height: 46px;
   padding: 0;
-  transform: translateY(-50%);
+  transform: none;
   place-items: center;
   border: 1px solid var(--hero-line);
   border-radius: 7px;
@@ -776,11 +777,13 @@ section[id] {
 }
 
 #prevApp {
-  left: 16px;
+  grid-column: 1;
+  grid-row: 1;
 }
 
 #nextApp {
-  right: 16px;
+  grid-column: 3;
+  grid-row: 1;
 }
 
 .carousel-arrow-icon {
@@ -800,6 +803,8 @@ section[id] {
 
 .showcase-status-host {
   min-width: 0;
+  grid-column: 2;
+  grid-row: 1;
 }
 
 .showcase-status {
@@ -857,8 +862,9 @@ section[id] {
   position: relative;
   display: grid;
   min-width: 0;
-  min-height: clamp(360px, 42vw, 560px);
-  grid-template-rows: minmax(0, 1fr) auto;
+  min-height: 0;
+  grid-template-rows: auto 1fr auto;
+  align-self: start;
   isolation: isolate;
   overflow: hidden;
   border-color: var(--line-strong);
@@ -874,16 +880,30 @@ section[id] {
 }
 
 .showcase-visual {
-  position: absolute;
-  z-index: -1;
-  inset: 0;
+  position: relative;
+  width: 100%;
+  min-width: 0;
+  aspect-ratio: 16 / 7;
+  max-height: 300px;
   margin: 0;
+  padding: 12px;
+  border-bottom: 1px solid var(--hero-line);
+  background: var(--surface-soft);
+}
+
+.showcase-media.media-fallback .showcase-visual {
+  display: none;
+}
+
+.showcase-media.media-fallback {
+  grid-template-rows: 1fr auto;
 }
 
 #showcaseImage {
+  display: block;
   width: 100%;
   height: 100%;
-  object-fit: cover;
+  object-fit: contain;
   object-position: center;
 }
 
@@ -900,41 +920,10 @@ section[id] {
   line-height: 1.4;
 }
 
-.showcase-media:has(#showcaseImage:not([hidden])) .selected-summary {
-  background: var(--showcase-overlay);
-}
-
 .showcase-media:has(#showcaseImage:not([hidden])) .summary-type {
   border-color: var(--showcase-badge-bg);
   background: var(--showcase-badge-bg);
   color: #ffffff;
-}
-
-.showcase-media:has(#showcaseImage:not([hidden])) .summary-copy > strong,
-.showcase-media:has(#showcaseImage:not([hidden])) .summary-richtext em {
-  color: #ffffff;
-}
-
-.showcase-media:has(#showcaseImage:not([hidden])) .summary-intro,
-.showcase-media:has(#showcaseImage:not([hidden])) .summary-richtext span {
-  color: #f0f5f4;
-}
-
-.showcase-media:has(#showcaseImage:not([hidden])) .summary-richtext,
-.showcase-media:has(#showcaseImage:not([hidden])) .showcase-controls {
-  border-color: rgba(255, 255, 255, 0.35);
-}
-
-.showcase-media:has(#showcaseImage:not([hidden])) .showcase-controls {
-  background: var(--showcase-overlay);
-}
-
-.showcase-media:has(#showcaseImage:not([hidden])) .showcase-status__position {
-  color: #ffffff;
-}
-
-.showcase-media:has(#showcaseImage:not([hidden])) .showcase-status__track {
-  background: rgba(255, 255, 255, 0.38);
 }
 
 body.showcase-intro-complete .showcase-stage,

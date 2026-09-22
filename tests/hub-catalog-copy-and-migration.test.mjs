@@ -49,6 +49,18 @@ function pageTitle(path) {
   return /<title>([^<]+)<\/title>/i.exec(html)?.[1].trim() || "";
 }
 
+test("stored holiday game moves to support without losing user text or links", () => {
+  const project = loadDefaultAppsFromRuntime(runtime).find(app => app.id === "holiday-gifts");
+  const updated = loadAppsWithStoredValue([{
+    ...project, status: "game", badge: "小游戏", category: "休闲消除小游戏",
+    brief: "我的活动说明", video: "./custom-video.html",
+  }]).find(app => app.id === "holiday-gifts");
+  assert.equal(updated.status, "engineering");
+  assert.equal(updated.badge, "项目辅助");
+  assert.equal(updated.brief, "我的活动说明");
+  assert.equal(updated.video, "./custom-video.html");
+});
+
 test("legacy Planner metadata cannot move the training tool into games", () => {
   const defaults = loadDefaultAppsFromRuntime(runtime);
   const planner = defaults.find((app) => app.id === "planner-daily-quiz");

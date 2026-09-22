@@ -13,7 +13,7 @@ const statusLabel = {
   assistant: "辅助工具",
   game: "小游戏",
   ai: "AI版",
-  engineering: "工程体验",
+  engineering: "项目辅助",
   life: "生活工具",
   training: "训练工具",
   idea: "创意工具",
@@ -28,7 +28,7 @@ const catalogTypeLabels = {
   desktop: "桌面工具",
   content: "内容工具",
   game: "小游戏",
-  engineering: "工程体验"
+  engineering: "项目辅助"
 };
 
 const catalogTypeOverrides = {
@@ -150,8 +150,8 @@ const defaultPageText = {
   "filter.sortLabel": "排序",
   "apps.title": "应用项目集合",
   "games.title": "小游戏体验集合",
-  "engineering.title": "工程在线体验",
-  "engineering.description": "项目组打包内部体验测试入口，只保留在线演示，方便快速检查 WebGL 包和浏览器运行状态。",
+  "engineering.title": "项目辅助",
+  "engineering.description": "集中查看活动原型、美术参考与项目工具，辅助设计讨论和体验验证。",
   "platforms.title": "跨平台体验",
   "platforms.description": "按网页、Windows、Mac 和 iOS 四种方式整理体验入口。桌面工具优先提供对应系统包，iOS 可安装 Web App 会明确标注移动端能力边界。",
   "maintain.title": "维护控制台",
@@ -181,8 +181,8 @@ const pageTextTargets = [
   { key: "filter.sortLabel", label: "排序标签", selector: "label[for=\"sortMode\"]", short: true },
   { key: "apps.title", label: "应用区标题", selector: ".app-list .section-heading h2" },
   { key: "games.title", label: "小游戏标题", selector: "#games .section-heading h2" },
-  { key: "engineering.title", label: "工程体验标题", selector: "#engineering .section-heading h2" },
-  { key: "engineering.description", label: "工程体验说明", selector: "#engineering .engineering-description", multiline: true },
+  { key: "engineering.title", label: "项目辅助标题", selector: "#engineering .section-heading h2" },
+  { key: "engineering.description", label: "项目辅助说明", selector: "#engineering .engineering-description", multiline: true },
   { key: "platforms.title", label: "平台标题", selector: "#platforms h2" },
   { key: "platforms.description", label: "平台描述", selector: "#platforms .section-head > p:last-child", multiline: true },
   { key: "maintain.title", label: "维护标题", selector: "#maintain h2" },
@@ -1020,9 +1020,9 @@ const defaultApps = [
   {
     id: "holiday-gifts",
     name: "好事成双 · 双节活动",
-    category: "休闲消除小游戏",
-    status: "game",
-    badge: "小游戏",
+    category: "双节活动交互原型",
+    status: "engineering",
+    badge: "项目辅助",
     brief: "月饼碰三次，喜欢哪件就换哪件。体验中秋国庆活动的自由兑换、限定砖块皮肤与完整挑战结算流程。",
     problem: "把活动入口、月饼碰撞、结算和外观兑换串成可直接操作的体验，方便检查界面衔接。",
     aiUse: "基于游戏美术资源制作750×1624交互原型；可切换演示日期，调出成功、暂无可消和墓碑失败页面。关卡为简化演示，不代表正式难度。",
@@ -1618,7 +1618,7 @@ function renderEngineeringGrid(filtered) {
   if (!nodes.engineeringGrid) return;
   const engineeringList = filtered.filter(app => ["engineering", "ai"].includes(app.status));
   if (nodes.engineeringCount) {
-    nodes.engineeringCount.textContent = `${engineeringList.length} 个工程体验`;
+    nodes.engineeringCount.textContent = `${engineeringList.length} 个项目`;
   }
   if (!engineeringList.length) {
     nodes.engineeringGrid.innerHTML = `<article class="app-card engineering-experience-card"><h3>没有匹配结果</h3><p>换个关键词或重置筛选条件再试。</p></article>`;
@@ -1661,7 +1661,6 @@ function renderAppCard(app, index = 0, extraClass = "", actionMode = "default") 
 }
 
 function gameDisplayRank(app) {
-  if (app.id === "holiday-gifts") return Number.POSITIVE_INFINITY;
   if (app.id === "lunar-freight") return Number.MAX_VALUE;
   if (app.id === "icecream") return Number.MAX_SAFE_INTEGER;
   if (app.id === "zhuanglege-sha") return -3;
@@ -2051,7 +2050,9 @@ function normalizePageText(stored = {}) {
   const staleGameText = {
     "metrics.games": "训练工具",
     "metrics.gamesNote": "答题与训练原型",
-    "games.title": "训练工具集合"
+    "games.title": "训练工具集合",
+    "engineering.title": "工程在线体验",
+    "engineering.description": "项目组打包内部体验测试入口，只保留在线演示，方便快速检查 WebGL 包和浏览器运行状态。"
   };
   Object.entries(staleGameText).forEach(([key, value]) => {
     if (merged[key] === value) merged[key] = defaultPageText[key];
@@ -2079,6 +2080,11 @@ function normalizeApp(app) {
     ...app,
     tags: Array.isArray(app.tags) ? app.tags : []
   };
+  if (normalized.id === "holiday-gifts") {
+    normalized.status = base.status;
+    if (normalized.category === "休闲消除小游戏") normalized.category = base.category;
+    if (normalized.badge === "小游戏") normalized.badge = base.badge;
+  }
   const visual = normalizeVisualPath(normalized.visual);
   if (visual) normalized.visual = visual;
   else delete normalized.visual;

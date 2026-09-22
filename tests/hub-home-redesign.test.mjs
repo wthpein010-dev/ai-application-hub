@@ -124,13 +124,13 @@ test("the featured carousel follows each page theme instead of forcing a dark pa
   assert.match(rule(".hero-board"), /box-shadow:\s*var\(--shadow-md\)/u);
 });
 
-test("desktop carousel controls sit on opposite content edges and mobile controls return to the status rail", () => {
+test("carousel controls share a bottom rail without covering image or copy", () => {
   assert.match(html, /class="carousel-arrow-icon"/u);
   assert.match(rule(".showcase-arrows"), /display:\s*contents/u);
-  assert.match(rule(".showcase-arrows button"), /position:\s*absolute/u);
-  assert.match(rule("#prevApp"), /left:\s*16px/u);
-  assert.match(rule("#nextApp"), /right:\s*16px/u);
-  assert.match(rule(".showcase-controls"), /grid-template-columns:\s*minmax\(0,\s*1fr\)/u);
+  assert.match(rule(".showcase-arrows button"), /position:\s*static/u);
+  assert.match(rule("#prevApp"), /grid-column:\s*1/u);
+  assert.match(rule("#nextApp"), /grid-column:\s*3/u);
+  assert.match(rule(".showcase-controls"), /grid-template-columns:\s*46px\s+minmax\(0,\s*1fr\)\s+46px/u);
 
   const mobile = styles.slice(styles.indexOf("@media (max-width: 720px)"));
   assert.match(mobile, /\.showcase-controls\s*\{[^}]*grid-template-columns:\s*42px\s+minmax\(0,\s*1fr\)\s+42px/u);
@@ -171,9 +171,9 @@ test("secondary theme text keeps WCAG AA contrast on card surfaces", () => {
 });
 
 test("the redesign uses the exact showcase cache marker and accessible action names", () => {
-  assert.match(html, /href="\.\/styles\.css\?v=20260827-hub-visual-polish"/u);
+  assert.match(html, /href="\.\/styles\.css\?v=20260922-showcase-readable"/u);
   assert.match(html, /src="\.\/hub-project-media\.js\?v=20260922-announcement"/u);
-  assert.match(html, /src="\.\/app-20260706-restore-games\.js\?v=20260922-announcement"/u);
+  assert.match(html, /src="\.\/app-20260706-restore-games\.js\?v=20260922-showcase-readable"/u);
   assert.match(runtime, /const webActionLabel = `\$\{app\.name\} 演示`;/u);
   assert.match(runtime, /const videoActionLabel = `\$\{app\.name\} 视频`;/u);
 });
