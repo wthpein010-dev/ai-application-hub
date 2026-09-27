@@ -36,9 +36,9 @@ test("homepage exposes the approved dynamic showcase shell", () => {
   assert.match(html, /<section id="games"[^>]*>[\s\S]*id="gameGrid"/u);
   assert.match(html, /<section id="engineering"[^>]*>[\s\S]*id="engineeringGrid"/u);
   assert.match(html, /<aside id="editPanel"[^>]+aria-hidden="true"[^>]+inert/u);
-  assert.match(html, /href="\.\/styles\.css\?v=20260927-textbook-l18"/u);
-  assert.match(html, /src="\.\/hub-project-media\.js\?v=20260927-textbook-l18"/u);
-  assert.match(html, /src="\.\/app-20260706-restore-games\.js\?v=20260927-textbook-l18"/u);
+  assert.match(html, /href="\.\/styles\.css\?v=20260927-textbook-l19"/u);
+  assert.match(html, /src="\.\/hub-project-media\.js\?v=20260927-textbook-l19"/u);
+  assert.match(html, /src="\.\/app-20260706-restore-games\.js\?v=20260927-textbook-l19"/u);
 });
 
 test("approved showcase uses image-led Bento layouts with responsive fallbacks", () => {
