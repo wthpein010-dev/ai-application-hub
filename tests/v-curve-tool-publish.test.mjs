@@ -78,7 +78,9 @@ test("V curve retains four truthful actions as the catalog expands", () => {
   assert.equal(platformHref(project.platforms.mac), `${releaseBase}/${macAsset}`);
 
   const engineering = apps.filter((app) => ["ai", "engineering"].includes(app.status));
-  assert.equal(engineering.at(-1)?.id, "v-curve-tool");
+  const position = engineering.findIndex((app) => app.id === project.id);
+  assert.ok(position > 0);
+  assert.equal(engineering[position - 1].id, "trinket-market");
 });
 
 test("the public demo is the real offline tool inside the shared engineering shell", () => {
