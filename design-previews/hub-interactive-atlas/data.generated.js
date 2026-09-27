@@ -59,8 +59,8 @@ export const projects = [
       {
         "type": "web",
         "label": "网页预览",
-        "href": "https://gamepulse-mini-radar.polite-chord-7994.chatgpt.site",
-        "sourceLabel": "演示"
+        "href": "./projects/gamepulse-mini-radar/index.html",
+        "sourceLabel": "只读预览"
       },
       {
         "type": "video",
@@ -354,8 +354,8 @@ export const projects = [
     "name": "Codex 待确认悬浮助手",
     "category": "AI 开发桌面工具",
     "kind": "app",
-    "badge": "",
-    "brief": "自动扫描等待你确认继续的 Codex 任务；空闲时收进屏幕顶部，有候选时自动弹出，可逐条确认或一键全部确认。",
+    "badge": "待确认助手",
+    "brief": "自动扫描真正需要你回复的 Codex 任务；空闲时左侧收纳，左侧悬停展开竖版面板，可查看原任务，并按需开启自动确认。",
     "problem": "多个 Codex 任务并行运行时，等待确认的任务容易埋在任务列表里；频繁切换检查既打断工作，也会拖慢后续执行。",
     "aiUse": "桌面端通过本机 codex app-server 和会话日志识别未决确认，不读取凭据；Windows/macOS 负责真实线程操作，iOS 提供可安装的演示伴侣入口。",
     "tags": [
@@ -1036,18 +1036,18 @@ export const projects = [
   {
     "id": "brick-character-copy-preview",
     "index": 26,
-    "name": "砖块角色文案预览",
+    "name": "砖块小人与随身小物图鉴",
     "category": "美术设计参考",
     "kind": "engineering",
     "badge": "工程体验",
-    "brief": "集中审阅20个砖块角色的形象、命名与图鉴文案，点击任意角色即可同步查看游戏内详情排版。",
-    "problem": "角色文案放在表格里容易忽略真实界面的换行、层级和阅读节奏，美术与策划也难以对同一版内容快速确认。",
-    "aiUse": "AI 参与角色命名、梗概与短文案打磨、字数校验、图鉴详情预览和响应式网页交付。",
+    "brief": "同步 Unity 正式配置的45个砖块小人、11件随身小物，默认全解锁；左侧筛选列表，右侧详情与换装检查同步呈现。",
+    "problem": "角色文案放在配置表里难以提前发现详情框换行、溢出和孤行标点，小物资源也需要在不遮挡列表的情况下检查试穿效果。",
+    "aiUse": "AI 参与 Unity 配置与贴图同步、角色分层还原、横版双图鉴、视觉位置统计和响应式排版验收。",
     "tags": [
-      "美术参考",
-      "角色命名",
-      "图鉴预览",
-      "砖块角色"
+      "双图鉴",
+      "文案换行",
+      "随身小物",
+      "Unity同步"
     ],
     "actions": [
       {
@@ -1287,13 +1287,13 @@ export const projects = [
     "category": "项目开发",
     "kind": "engineering",
     "badge": "工程体验",
-    "brief": "导入 Paws JSON 关卡，即可与固定的《羊了个羊》900121 结构并排生成连续 V 曲线、河道上下界与关键诊断。",
+    "brief": "左右独立导入关卡，一键载入羊 900121 与 Paws 0020 示例；切换参考图复现和当前工程规则，对比 V 曲线与河道上下界。",
     "problem": "关卡层数和砖量只能说明规模，难以直接判断开局宽度、中盘断崖与后段窄口，也缺少与成熟样本一致口径的对照。",
-    "aiUse": "工具完全离线，按 Paws 两两配对与暂存槽规则执行确定性河道搜索和 Monte Carlo 仿真；Windows 与 macOS 包均内置已确认的 31 个关卡。",
+    "aiUse": "工具完全离线，内置羊关卡库与 Paws 关卡；1.5 版明确区分参考图算法和当前工程规则，修正侧锁、进度口径与河道显示，支持双侧导入和报告导出。",
     "tags": [
       "V曲线",
-      "关卡分析",
-      "羊了个羊",
+      "双模型",
+      "双侧导入",
       "Windows",
       "macOS"
     ],
@@ -1313,13 +1313,13 @@ export const projects = [
       {
         "type": "windows",
         "label": "Wins下载",
-        "href": "https://github.com/wthpein010-dev/ai-application-hub/releases/download/v-curve-tool-v1.2.0/V-Curve-Comparison-Tool-1.2.0-Windows-x64.zip",
+        "href": "https://github.com/wthpein010-dev/ai-application-hub/releases/download/v-curve-tool-v1.5.0/V-Curve-Comparison-Tool-1.5.0-Windows-x64.zip",
         "sourceLabel": "Wins下载"
       },
       {
         "type": "mac",
         "label": "Mac下载",
-        "href": "https://github.com/wthpein010-dev/ai-application-hub/releases/download/v-curve-tool-v1.2.0/V-Curve-Comparison-Tool-1.2.0-macOS.zip",
+        "href": "https://github.com/wthpein010-dev/ai-application-hub/releases/download/v-curve-tool-v1.5.0/V-Curve-Comparison-Tool-1.5.0-macOS.zip",
         "sourceLabel": "Mac下载"
       }
     ],
@@ -1433,6 +1433,43 @@ export const projects = [
       "surface": "#e7f0ff",
       "ink": "#173f7b",
       "mark": "公告"
+    }
+  },
+  {
+    "id": "game-design-textbook",
+    "index": 36,
+    "name": "游戏设计研习册",
+    "category": "游戏策划学习",
+    "kind": "app",
+    "badge": "图文教材",
+    "brief": "从玩家动机到随机奖励与虚拟交易，沿50课路线学习；当前16课可阅读全文。",
+    "problem": "把概率公式、玩家体验和设计验证连起来，让每个结论都有条件、算例与反例。",
+    "aiUse": "原创教材、全文讲解、知识脑图和参数实验；逐课引用并核验参考来源。阅读与同内容音频可替代，学习记录仅存本地。",
+    "tags": [
+      "游戏策划",
+      "玩家心理",
+      "概率原理",
+      "虚拟经济"
+    ],
+    "actions": [
+      {
+        "type": "web",
+        "label": "网页预览",
+        "href": "./projects/game-design-textbook/index.html",
+        "sourceLabel": "演示"
+      },
+      {
+        "type": "video",
+        "label": "介绍视频",
+        "href": "./projects/game-design-textbook/video/index.html",
+        "sourceLabel": "介绍视频"
+      }
+    ],
+    "visual": {
+      "accent": "#9d4a78",
+      "surface": "#faeaf3",
+      "ink": "#642645",
+      "mark": "游戏"
     }
   }
 ];

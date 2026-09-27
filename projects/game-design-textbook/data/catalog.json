@@ -1,0 +1,716 @@
+[
+  {
+    "id": "L01",
+    "number": 1,
+    "module": 1,
+    "module_title": "玩法基础",
+    "title": "体验与规则",
+    "question": "机制怎样形成玩家行为，行为又怎样形成体验？",
+    "practice": "画出刷新、选择、领取的因果链，区分事实与体验假设。",
+    "prerequisites": [],
+    "minutes": 120,
+    "ready": true,
+    "url": "https://rpv4d9p6q2.feishu.cn/docx/PtXFdeJbqoU8RExLv79cIEFMnYe"
+  },
+  {
+    "id": "L02",
+    "number": 2,
+    "module": 1,
+    "module_title": "玩法基础",
+    "title": "核心循环",
+    "question": "一次有意义的游玩由哪些动作组成？",
+    "practice": "画出挑战—选择—领取—收藏循环，标出每步反馈。",
+    "prerequisites": [
+      "L01"
+    ],
+    "minutes": 120,
+    "ready": true,
+    "url": "https://rpv4d9p6q2.feishu.cn/docx/LyXedKOYdo31j7xNRaec4SiDn1f"
+  },
+  {
+    "id": "L03",
+    "number": 3,
+    "module": 1,
+    "module_title": "玩法基础",
+    "title": "选择与代价",
+    "question": "为什么多一个按钮不一定多一个选择？",
+    "practice": "比较三种刷新规则，写出各自的机会成本。",
+    "prerequisites": [
+      "L02"
+    ],
+    "minutes": 120,
+    "ready": true,
+    "url": "https://rpv4d9p6q2.feishu.cn/docx/St5mdyBLrof7JpxdUrsc7DXWnUc"
+  },
+  {
+    "id": "L04",
+    "number": 4,
+    "module": 1,
+    "module_title": "玩法基础",
+    "title": "目标与成长",
+    "question": "短期目标怎样连接长期追求？",
+    "practice": "设计一次、一天、一周的收藏目标，并排除互相抵消的激励。",
+    "prerequisites": [
+      "L03"
+    ],
+    "minutes": 120,
+    "ready": true,
+    "url": "https://rpv4d9p6q2.feishu.cn/docx/DXWedlvaCoKXW8xaFNFcPhYsnZ4"
+  },
+  {
+    "id": "L05",
+    "number": 5,
+    "module": 1,
+    "module_title": "玩法基础",
+    "title": "规则与边界",
+    "question": "怎样把一个想法写成能执行的规则？",
+    "practice": "完成含开始条件、结算、断线及候选不足处理的规则页。",
+    "prerequisites": [
+      "L04"
+    ],
+    "minutes": 120,
+    "ready": true,
+    "url": "https://rpv4d9p6q2.feishu.cn/docx/KsipdGH4NotOO9xNpt2ceUPOnAb"
+  },
+  {
+    "id": "L06",
+    "number": 6,
+    "module": 2,
+    "module_title": "玩家心理",
+    "title": "自主与胜任",
+    "question": "为什么奖励更多，玩家仍可能不满意？",
+    "practice": "完成一张规则—感受—证据设计卡，写出可推翻假设的反例。",
+    "prerequisites": [
+      "L05"
+    ],
+    "minutes": 120,
+    "ready": true,
+    "url": "https://rpv4d9p6q2.feishu.cn/docx/P9avdcpdnoDacJxAjSscPZrtnxg"
+  },
+  {
+    "id": "L07",
+    "number": 7,
+    "module": 2,
+    "module_title": "玩家心理",
+    "title": "动机与人群",
+    "question": "不同玩家为什么会追求不同的奖励？",
+    "practice": "设计两条目标路径，补充分群口径卡，区分机会、行为和动机。",
+    "prerequisites": [
+      "L06"
+    ],
+    "minutes": 120,
+    "ready": true,
+    "url": "https://rpv4d9p6q2.feishu.cn/docx/YjdBdAWMropDmJxbss1cv0konML"
+  },
+  {
+    "id": "L08",
+    "number": 8,
+    "module": 2,
+    "module_title": "玩家心理",
+    "title": "反馈与归因",
+    "question": "玩家如何理解成功、失败与运气？",
+    "practice": "改写一条反馈，说清结果、原因和有效的下一步，补充不适用的状态。",
+    "prerequisites": [
+      "L07"
+    ],
+    "minutes": 120,
+    "ready": true,
+    "url": "https://rpv4d9p6q2.feishu.cn/docx/IPvMdlmCeovFFaxUvx4cL0uHnfe"
+  },
+  {
+    "id": "L09",
+    "number": 9,
+    "module": 2,
+    "module_title": "玩家心理",
+    "title": "学习与负担",
+    "question": "怎样减少理解障碍，同时保留值得思考的选择？",
+    "practice": "完成教学卡与独立迁移任务，区分提示下完成和真正理解。",
+    "prerequisites": [
+      "L08"
+    ],
+    "minutes": 120,
+    "ready": true,
+    "url": "https://rpv4d9p6q2.feishu.cn/docx/Kw5IdlCcqoZzvYxuPH0ce4PonOc"
+  },
+  {
+    "id": "L10",
+    "number": 10,
+    "module": 2,
+    "module_title": "玩家心理",
+    "title": "访谈与观察",
+    "question": "怎样避免把自己的想法当成玩家心理？",
+    "practice": "写出五个不暗示答案的访谈问题及行为观察表。",
+    "prerequisites": [
+      "L09"
+    ],
+    "minutes": 120,
+    "ready": true,
+    "url": "https://rpv4d9p6q2.feishu.cn/docx/V2aQdcQxJoolQnxpE5icrGijnEO"
+  },
+  {
+    "id": "L11",
+    "number": 11,
+    "module": 3,
+    "module_title": "概率基础",
+    "title": "概率与频率",
+    "question": "为什么设定10%却不会每十次固定出一次？",
+    "practice": "区分单次概率、样本频率与长期稳定性。",
+    "prerequisites": [
+      "L10"
+    ],
+    "minutes": 120,
+    "ready": true,
+    "url": "https://rpv4d9p6q2.feishu.cn/docx/P6Z9dR99zozskWxJikqcJxrtnPd"
+  },
+  {
+    "id": "L12",
+    "number": 12,
+    "module": 3,
+    "module_title": "概率基础",
+    "title": "权重与分母",
+    "question": "物品权重翻倍，概率为什么不一定翻倍？",
+    "practice": "手算4、2、2变为8、2、2的概率变化。",
+    "prerequisites": [
+      "L11"
+    ],
+    "minutes": 120,
+    "ready": true,
+    "url": "https://rpv4d9p6q2.feishu.cn/docx/WxSvdNlknoj0uQxRvZWckmwunTg"
+  },
+  {
+    "id": "L13",
+    "number": 13,
+    "module": 3,
+    "module_title": "概率基础",
+    "title": "条件与人群",
+    "question": "禁止指定物品后，其余物品怎样重新分配？",
+    "practice": "列出G1至G5允许候选和各自归一化分母。",
+    "prerequisites": [
+      "L12"
+    ],
+    "minutes": 120,
+    "ready": true,
+    "url": "https://rpv4d9p6q2.feishu.cn/docx/Vog6d8646oVPdmxZ9spc3X7RnZb"
+  },
+  {
+    "id": "L14",
+    "number": 14,
+    "module": 3,
+    "module_title": "概率基础",
+    "title": "分阶段抽取",
+    "question": "先品质后物品的最终概率怎样合成？",
+    "practice": "绘制概率树，手算某挂件一次入槽的概率。",
+    "prerequisites": [
+      "L13"
+    ],
+    "minutes": 120,
+    "ready": true,
+    "url": "https://rpv4d9p6q2.feishu.cn/docx/JaSZdGqrQorz80xxCpAc367nnLh"
+  },
+  {
+    "id": "L15",
+    "number": 15,
+    "module": 3,
+    "module_title": "概率基础",
+    "title": "不放回与去重",
+    "question": "抽过的不再出现，会怎样改变后续概率？",
+    "practice": "逐步算出三件物品抽两次的路径，说明候选不足。",
+    "prerequisites": [
+      "L14"
+    ],
+    "minutes": 120,
+    "ready": true,
+    "url": "https://rpv4d9p6q2.feishu.cn/docx/Q7ubdVbGBoX9QKxyculcjlphn3d"
+  },
+  {
+    "id": "L16",
+    "number": 16,
+    "module": 4,
+    "module_title": "奖表与返还",
+    "title": "期望与平均",
+    "question": "为什么平均收益不是玩家每次得到的收益？",
+    "practice": "用明确价值的筹码奖表求期望，并举有限次反例。",
+    "prerequisites": [
+      "L15"
+    ],
+    "minutes": 120,
+    "ready": true,
+    "url": "https://rpv4d9p6q2.feishu.cn/docx/V1VYdxdcLoVFRqx72MUchOE5nFc"
+  },
+  {
+    "id": "L17",
+    "number": 17,
+    "module": 4,
+    "module_title": "奖表与返还",
+    "title": "返还与净收益",
+    "question": "90%返还和90%中奖有什么区别？",
+    "practice": "同表计算RTP、净收益、有返还率及净赚率。",
+    "prerequisites": [
+      "L16"
+    ],
+    "minutes": 120,
+    "ready": false
+  },
+  {
+    "id": "L18",
+    "number": 18,
+    "module": 4,
+    "module_title": "奖表与返还",
+    "title": "奖级与频率",
+    "question": "相同返还如何形成不同奖励节奏？",
+    "practice": "设计两张期望相同、中奖频率不同的奖表。",
+    "prerequisites": [
+      "L17"
+    ],
+    "minutes": 120,
+    "ready": false
+  },
+  {
+    "id": "L19",
+    "number": 19,
+    "module": 4,
+    "module_title": "奖表与返还",
+    "title": "方差与尾部",
+    "question": "平均相同，为什么有的奖励更不稳定？",
+    "practice": "计算两张奖表的方差并比较低分位体验。",
+    "prerequisites": [
+      "L18"
+    ],
+    "minutes": 120,
+    "ready": false
+  },
+  {
+    "id": "L20",
+    "number": 20,
+    "module": 4,
+    "module_title": "奖表与返还",
+    "title": "目标反推",
+    "question": "已知产出目标怎样反求奖表参数？",
+    "practice": "在概率和为1及非负约束下反求大奖概率。",
+    "prerequisites": [
+      "L19"
+    ],
+    "minutes": 120,
+    "ready": false
+  },
+  {
+    "id": "L21",
+    "number": 21,
+    "module": 5,
+    "module_title": "等待与收藏",
+    "title": "首次等待",
+    "question": "5%获取率意味着平均等多久？",
+    "practice": "推导几何等待，分清期望次数与90%覆盖次数。",
+    "prerequisites": [
+      "L20"
+    ],
+    "minutes": 120,
+    "ready": false
+  },
+  {
+    "id": "L22",
+    "number": 22,
+    "module": 5,
+    "module_title": "等待与收藏",
+    "title": "连续重复",
+    "question": "为什么随机系统会自然出现连败或连中？",
+    "practice": "区分指定位置连续重复与整段历史出现连串。",
+    "prerequisites": [
+      "L21"
+    ],
+    "minutes": 120,
+    "ready": false
+  },
+  {
+    "id": "L23",
+    "number": 23,
+    "module": 5,
+    "module_title": "等待与收藏",
+    "title": "集齐周期",
+    "question": "为什么最后一件往往最难集齐？",
+    "practice": "从等权集齐问题推导分段等待，说明非等权边界。",
+    "prerequisites": [
+      "L22"
+    ],
+    "minutes": 120,
+    "ready": false
+  },
+  {
+    "id": "L24",
+    "number": 24,
+    "module": 5,
+    "module_title": "等待与收藏",
+    "title": "伪随机与状态",
+    "question": "有历史状态的概率怎样分析？",
+    "practice": "比较独立随机与教学保底的转移过程，不改业务规则。",
+    "prerequisites": [
+      "L23"
+    ],
+    "minutes": 120,
+    "ready": false
+  },
+  {
+    "id": "L25",
+    "number": 25,
+    "module": 5,
+    "module_title": "等待与收藏",
+    "title": "有限样本",
+    "question": "小规模测试的异常可能只是波动吗？",
+    "practice": "计算标准误并识别独立性、稀有事件及多次观察限制。",
+    "prerequisites": [
+      "L24"
+    ],
+    "minutes": 120,
+    "ready": false
+  },
+  {
+    "id": "L26",
+    "number": 26,
+    "module": 6,
+    "module_title": "刷新与决策",
+    "title": "七槽与七选一",
+    "question": "看到金色和拿到金色为什么是两回事？",
+    "practice": "分别计算池内有金概率与均匀七选一的获取率。",
+    "prerequisites": [
+      "L25"
+    ],
+    "minutes": 120,
+    "ready": false
+  },
+  {
+    "id": "L27",
+    "number": 27,
+    "module": 6,
+    "module_title": "刷新与决策",
+    "title": "一次刷新",
+    "question": "有金即领的选择怎样改变总体结果？",
+    "practice": "推导一次刷新下最终领金率，不混用条件概率。",
+    "prerequisites": [
+      "L26"
+    ],
+    "minutes": 120,
+    "ready": false
+  },
+  {
+    "id": "L28",
+    "number": 28,
+    "module": 6,
+    "module_title": "刷新与决策",
+    "title": "两次刷新",
+    "question": "三阶段策略怎样逐层合成？",
+    "practice": "复核70/22/8、60/30/10、50/38/12的停止路径。",
+    "prerequisites": [
+      "L27"
+    ],
+    "minutes": 120,
+    "ready": false
+  },
+  {
+    "id": "L29",
+    "number": 29,
+    "module": 6,
+    "module_title": "刷新与决策",
+    "title": "保留与放弃",
+    "question": "可保留旧池与必须放弃旧池有什么不同？",
+    "practice": "比较两类停止规则，明确沉没成本不改变未来概率。",
+    "prerequisites": [
+      "L28"
+    ],
+    "minutes": 120,
+    "ready": false
+  },
+  {
+    "id": "L30",
+    "number": 30,
+    "module": 6,
+    "module_title": "刷新与决策",
+    "title": "信息与公平",
+    "question": "随机奖励怎样做到可理解、可验证？",
+    "practice": "写出概率说明、状态重置与结果展示的一致性检查表。",
+    "prerequisites": [
+      "L29"
+    ],
+    "minutes": 120,
+    "ready": false
+  },
+  {
+    "id": "L31",
+    "number": 31,
+    "module": 7,
+    "module_title": "虚拟经济",
+    "title": "库存与流量",
+    "question": "发奖、交易、销毁分别改变什么？",
+    "practice": "用库存恒等式核算一天的物品数量。",
+    "prerequisites": [
+      "L30"
+    ],
+    "minutes": 120,
+    "ready": false
+  },
+  {
+    "id": "L32",
+    "number": 32,
+    "module": 7,
+    "module_title": "虚拟经济",
+    "title": "来源与消耗",
+    "question": "奖励为何会从稀缺变为堆积？",
+    "practice": "画出资源来源与消耗路径，并检查消耗是否真实发生。",
+    "prerequisites": [
+      "L31"
+    ],
+    "minutes": 120,
+    "ready": false
+  },
+  {
+    "id": "L33",
+    "number": 33,
+    "module": 7,
+    "module_title": "虚拟经济",
+    "title": "人群与供给",
+    "question": "相同概率在不同玩家规模下产出多少？",
+    "practice": "按分组人数和抽取次数计算期望供给，分清活跃与注册。",
+    "prerequisites": [
+      "L32"
+    ],
+    "minutes": 120,
+    "ready": false
+  },
+  {
+    "id": "L34",
+    "number": 34,
+    "module": 7,
+    "module_title": "虚拟经济",
+    "title": "稀缺与价值",
+    "question": "为什么稀有不一定值钱？",
+    "practice": "分别分析用途、偏好、可替代性及供给，不把品质折现。",
+    "prerequisites": [
+      "L33"
+    ],
+    "minutes": 120,
+    "ready": false
+  },
+  {
+    "id": "L35",
+    "number": 35,
+    "module": 7,
+    "module_title": "虚拟经济",
+    "title": "版本与冲击",
+    "question": "新增物品怎样影响旧物和玩家预期？",
+    "practice": "比较增量投放、分母稀释与新旧物品需求迁移。",
+    "prerequisites": [
+      "L34"
+    ],
+    "minutes": 120,
+    "ready": false
+  },
+  {
+    "id": "L36",
+    "number": 36,
+    "module": 8,
+    "module_title": "交易市场",
+    "title": "交易与匹配",
+    "question": "两人各有重复物，为什么仍可能换不成？",
+    "practice": "分析双重需求巧合、交易成本与撮合条件。",
+    "prerequisites": [
+      "L35"
+    ],
+    "minutes": 120,
+    "ready": false
+  },
+  {
+    "id": "L37",
+    "number": 37,
+    "module": 8,
+    "module_title": "交易市场",
+    "title": "缺门与互补",
+    "question": "限制指定物品怎样创造跨组交易需求？",
+    "practice": "设计缺三件的组别表，检查供给孤岛和玩家可达性。",
+    "prerequisites": [
+      "L36"
+    ],
+    "minutes": 120,
+    "ready": false
+  },
+  {
+    "id": "L38",
+    "number": 38,
+    "module": 8,
+    "module_title": "交易市场",
+    "title": "挂单与流动性",
+    "question": "有挂牌价为什么不等于卖得出去？",
+    "practice": "区分挂单量、成交量、价差和等待时间。",
+    "prerequisites": [
+      "L37"
+    ],
+    "minutes": 120,
+    "ready": false
+  },
+  {
+    "id": "L39",
+    "number": 39,
+    "module": 8,
+    "module_title": "交易市场",
+    "title": "费用与摩擦",
+    "question": "手续费如何同时影响回收和成交？",
+    "practice": "比较固定费与比例费对低价、高价交易的影响。",
+    "prerequisites": [
+      "L38"
+    ],
+    "minutes": 120,
+    "ready": false
+  },
+  {
+    "id": "L40",
+    "number": 40,
+    "module": 8,
+    "module_title": "交易市场",
+    "title": "囤积与操纵",
+    "question": "市场中的价格信号什么时候不可信？",
+    "practice": "识别对倒、集中持有和低流动性报价的不同证据。",
+    "prerequisites": [
+      "L39"
+    ],
+    "minutes": 120,
+    "ready": false
+  },
+  {
+    "id": "L41",
+    "number": 41,
+    "module": 9,
+    "module_title": "验证与研究",
+    "title": "指标与目标",
+    "question": "怎样判断系统是在改善体验？",
+    "practice": "搭建含理解度、公平感、产出、交易和回访的指标树。",
+    "prerequisites": [
+      "L40"
+    ],
+    "minutes": 120,
+    "ready": false
+  },
+  {
+    "id": "L42",
+    "number": 42,
+    "module": 9,
+    "module_title": "验证与研究",
+    "title": "日志与口径",
+    "question": "同一个中奖率为何能算出不同答案？",
+    "practice": "定义事件、分母、时间窗和重复去除规则。",
+    "prerequisites": [
+      "L41"
+    ],
+    "minutes": 120,
+    "ready": false
+  },
+  {
+    "id": "L43",
+    "number": 43,
+    "module": 9,
+    "module_title": "验证与研究",
+    "title": "实验与对照",
+    "question": "改动之后变好了，能证明改动有效吗？",
+    "practice": "设计随机分配对照，写出混杂因素与停止规则。",
+    "prerequisites": [
+      "L42"
+    ],
+    "minutes": 120,
+    "ready": false
+  },
+  {
+    "id": "L44",
+    "number": 44,
+    "module": 9,
+    "module_title": "验证与研究",
+    "title": "模拟与边界",
+    "question": "模拟能证明规则正确吗？",
+    "practice": "用手算小例子校验模拟，再检查极端输入。",
+    "prerequisites": [
+      "L43"
+    ],
+    "minutes": 120,
+    "ready": false
+  },
+  {
+    "id": "L45",
+    "number": 45,
+    "module": 9,
+    "module_title": "验证与研究",
+    "title": "敏感性与决策",
+    "question": "哪些参数最值得优先验证？",
+    "practice": "围绕用户规模、权重及刷新策略做情景对比。",
+    "prerequisites": [
+      "L44"
+    ],
+    "minutes": 120,
+    "ready": false
+  },
+  {
+    "id": "L46",
+    "number": 46,
+    "module": 10,
+    "module_title": "综合设计",
+    "title": "设计简报",
+    "question": "怎样把体验目标压缩为清楚的问题？",
+    "practice": "完成玩家、场景、核心问题、约束及成功标准。",
+    "prerequisites": [
+      "L45"
+    ],
+    "minutes": 120,
+    "ready": false
+  },
+  {
+    "id": "L47",
+    "number": 47,
+    "module": 10,
+    "module_title": "综合设计",
+    "title": "规则与奖表",
+    "question": "怎样让业务规则和数值表相互一致？",
+    "practice": "形成候选、品质、权重、去重、领取及重置的完整规格。",
+    "prerequisites": [
+      "L46"
+    ],
+    "minutes": 120,
+    "ready": false
+  },
+  {
+    "id": "L48",
+    "number": 48,
+    "module": 10,
+    "module_title": "综合设计",
+    "title": "经济与市场",
+    "question": "怎样证明交易系统在小规模也能运行？",
+    "practice": "估算最小供给与成交等待，提出冷启动验证方案。",
+    "prerequisites": [
+      "L47"
+    ],
+    "minutes": 120,
+    "ready": false
+  },
+  {
+    "id": "L49",
+    "number": 49,
+    "module": 10,
+    "module_title": "综合设计",
+    "title": "原型与评审",
+    "question": "怎样让他人真实检验你的设计？",
+    "practice": "完成可操作原型、观察任务、四种失败案例与评审记录。",
+    "prerequisites": [
+      "L48"
+    ],
+    "minutes": 120,
+    "ready": false
+  },
+  {
+    "id": "L50",
+    "number": 50,
+    "module": 10,
+    "module_title": "综合设计",
+    "title": "复盘与修订",
+    "question": "怎样根据证据修改而不是盲目调参？",
+    "practice": "提交六页设计材料，标明成立条件、反例和下一轮实验。",
+    "prerequisites": [
+      "L49"
+    ],
+    "minutes": 120,
+    "ready": false
+  }
+]

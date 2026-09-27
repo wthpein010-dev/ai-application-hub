@@ -111,6 +111,7 @@ test("application cards preserve the public tool taxonomy and engineering collec
       "simuai",
       "gamespec-relay",
       "loop-bgm-lab",
+      "game-design-textbook",
     ],
     life: ["wanhuatong"],
     intelligence: ["gamepulse-mini-radar", "x-ai-codex-radar"],
