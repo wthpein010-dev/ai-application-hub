@@ -62,7 +62,7 @@ test("cards expose one readable project-owned feature without repeating the summ
 });
 
 test("homepage loads all showcase assets with the exact release cache marker", () => {
-  assert.match(page, /href="\.\/styles\.css\?v=20260927-textbook-l18"/);
-  assert.match(page, /src="\.\/hub-project-media\.js\?v=20260927-textbook-l18"/);
-  assert.match(page, /src="\.\/app-20260706-restore-games\.js\?v=20260927-textbook-l18"/);
+  assert.match(page, /href="\.\/styles\.css\?v=20260927-textbook-l19"/);
+  assert.match(page, /src="\.\/hub-project-media\.js\?v=20260927-textbook-l19"/);
+  assert.match(page, /src="\.\/app-20260706-restore-games\.js\?v=20260927-textbook-l19"/);
 });

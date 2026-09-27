@@ -171,9 +171,9 @@ test("secondary theme text keeps WCAG AA contrast on card surfaces", () => {
 });
 
 test("the redesign uses the exact showcase cache marker and accessible action names", () => {
-  assert.match(html, /href="\.\/styles\.css\?v=20260927-textbook-l18"/u);
-  assert.match(html, /src="\.\/hub-project-media\.js\?v=20260927-textbook-l18"/u);
-  assert.match(html, /src="\.\/app-20260706-restore-games\.js\?v=20260927-textbook-l18"/u);
+  assert.match(html, /href="\.\/styles\.css\?v=20260927-textbook-l19"/u);
+  assert.match(html, /src="\.\/hub-project-media\.js\?v=20260927-textbook-l19"/u);
+  assert.match(html, /src="\.\/app-20260706-restore-games\.js\?v=20260927-textbook-l19"/u);
   assert.match(runtime, /const webActionLabel = `\$\{app\.name\} 演示`;/u);
   assert.match(runtime, /const videoActionLabel = `\$\{app\.name\} 视频`;/u);
 });
