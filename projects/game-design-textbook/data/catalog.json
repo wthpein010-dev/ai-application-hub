@@ -349,12 +349,13 @@
     "module_title": "等待与收藏",
     "title": "伪随机与状态",
     "question": "有历史状态的概率怎样分析？",
-    "practice": "比较独立随机与教学保底的转移过程，不改业务规则。",
+    "practice": "比较独立随机、袋子与递增概率的状态变化，不改业务规则。",
     "prerequisites": [
       "L23"
     ],
     "minutes": 120,
-    "ready": false
+    "ready": true,
+    "url": "https://rpv4d9p6q2.feishu.cn/docx/SeOIdseTboiboWxJPE7clSF3nVh"
   },
   {
     "id": "L25",
