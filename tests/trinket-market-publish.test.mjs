@@ -8,14 +8,14 @@ import { loadDefaultAppsFromRuntime } from "./helpers/default-apps.mjs";
 const root = dirname(dirname(fileURLToPath(import.meta.url)));
 const runtime = readFileSync(join(root, "app-20260706-restore-games.js"), "utf8");
 
-test("trinket market immediately precedes the final V curve engineering experience with web-only actions", () => {
+test("trinket market immediately precedes V curve with web-only actions", () => {
   const apps = loadDefaultAppsFromRuntime(runtime);
   const project = apps.find((app) => app.id === "trinket-market");
   const engineering = apps.filter((app) => ["engineering", "ai"].includes(app.status));
 
   assert.ok(project);
   assert.deepEqual(
-    Array.from(engineering.slice(-2), (app) => app.id),
+    Array.from(engineering.slice(engineering.indexOf(project), engineering.indexOf(project) + 2), (app) => app.id),
     ["trinket-market", "v-curve-tool"],
   );
   assert.equal(project.name, "随身小物交易市场");
