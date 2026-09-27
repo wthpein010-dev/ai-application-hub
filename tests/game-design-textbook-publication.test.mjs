@@ -17,7 +17,7 @@ test('已发布课程媒体、脑图跳转和测验完整，规划课不伪装�
   const d=JSON.parse(read(dir+'data/'+c.id+'.json'));assert.equal(d.id,c.id);assert.equal(d.quiz.length,4);
   assert.ok(d.quiz.every(q=>q.options.length===4&&q.answer>=0&&q.answer<4&&q.why));
   const sections=new Set(d.sections.map(s=>s.id));assert.equal(sections.size,d.sections.length);
-  assert.deepEqual(Object.keys(d.map_links),Object.keys(d.map));assert.ok(Object.values(d.map_links).every(x=>sections.has(x)));
+  assert.deepEqual(Object.keys(d.map_links),Object.keys(d.map));assert.ok(Object.values(d.map_links).every(x=>new Set(['quiz',...d.sections.filter(s=>!/^练习|^解答|^选择题/.test(s.title)).map(s=>s.id)]).has(x)));
   for(const f of d.figures){assert.ok(sections.has(f.section));assert.ok(f.width>0&&f.height>0);}
   for(const path of [d.audio.src,d.audio.transcript,d.audio.subtitles,...d.figures.map(f=>f.src)])assert.ok(existsSync(new URL(dir+path,root)),path);
   for(const v of d.videos){assert.equal(new URL(v.url).searchParams.get('p'),String(v.page));assert.ok(v.duration>0);}
