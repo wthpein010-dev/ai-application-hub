@@ -714,7 +714,8 @@
       "L47"
     ],
     "minutes": 120,
-    "ready": false
+    "ready": true,
+    "url": "https://rpv4d9p6q2.feishu.cn/docx/EX80dNnXIobUZ1xGFg5cVa7Vnrf"
   },
   {
     "id": "L49",
@@ -728,7 +729,8 @@
       "L48"
     ],
     "minutes": 120,
-    "ready": false
+    "ready": true,
+    "url": "https://rpv4d9p6q2.feishu.cn/docx/FWISdA563oYOHfxEhxOczKbcnZg"
   },
   {
     "id": "L50",
@@ -742,6 +744,7 @@
       "L49"
     ],
     "minutes": 120,
-    "ready": false
+    "ready": true,
+    "url": "https://rpv4d9p6q2.feishu.cn/docx/JJFJdtkBMozFrcxEoI2cjXABnsg"
   }
 ]
