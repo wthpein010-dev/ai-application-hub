@@ -25,7 +25,7 @@ test("preview data mirrors every production project in order", async () => {
   const sourceApps = loadDefaultAppsFromRuntime(runtime);
   const generated = await import(`${pathToFileURL(dataPath).href}?t=${Date.now()}`);
 
-  assert.equal(sourceApps.length, 36);
+  assert.equal(sourceApps.length, 37);
   assert.equal(generated.projects.length, sourceApps.length);
   assert.deepEqual(
     generated.projects.map(({ id }) => id),
@@ -46,8 +46,8 @@ test("preview data mirrors every production project in order", async () => {
     {
       type: "web",
       label: "网页预览",
-      href: "https://gamepulse-mini-radar.polite-chord-7994.chatgpt.site",
-      sourceLabel: "演示",
+      href: "./projects/gamepulse-mini-radar/index.html",
+      sourceLabel: "只读预览",
     },
     "Loop BGM Lab catalog refresh must preserve the Task 5 GamePulse action",
   );

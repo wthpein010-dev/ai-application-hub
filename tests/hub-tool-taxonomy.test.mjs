@@ -111,6 +111,7 @@ test("application cards preserve the public tool taxonomy and engineering collec
       "simuai",
       "gamespec-relay",
       "loop-bgm-lab",
+      "game-design-textbook",
     ],
     life: ["wanhuatong"],
     intelligence: ["gamepulse-mini-radar", "x-ai-codex-radar"],
@@ -158,7 +159,7 @@ test("the type filter exposes only the six tool types plus games and engineering
     ["engineering", "项目辅助"],
   ]);
   assert.doesNotMatch(filter, /AI版|训练工具|创意工具|项目导航/);
-  assert.match(homepage, /styles\.css\?v=20260922-showcase-readable/u);
+  assert.match(homepage, /styles\.css\?v=20260927-textbook/u);
 });
 
 test("the maintenance editor uses and persists the same public taxonomy", () => {
