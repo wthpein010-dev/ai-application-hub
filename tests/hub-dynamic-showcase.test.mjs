@@ -91,7 +91,7 @@ test("the multi-thread Workbench is appended with a dedicated showcase image", (
   const apps = loadDefaultAppsFromRuntime(runtime);
   const media = loadMediaRegistry(mediaRuntime);
 
-  assert.equal(apps.length, 37);
+  assert.equal(apps.length, 38);
   const radarIndex = apps.findIndex(({ id }) => id === "x-ai-codex-radar");
   assert.equal(apps.at(radarIndex + 1)?.id, "loop-bgm-lab");
   assert.equal(apps.at(radarIndex + 2)?.id, "codex-multi-thread-workbench");
