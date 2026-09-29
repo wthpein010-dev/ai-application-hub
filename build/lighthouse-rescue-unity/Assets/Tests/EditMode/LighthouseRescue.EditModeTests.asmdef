@@ -1,0 +1,10 @@
+{
+  "name": "LighthouseRescue.EditModeTests",
+  "rootNamespace": "LighthouseRescue.Tests",
+  "references": ["LighthouseRescue.Rules"],
+  "includePlatforms": ["Editor"],
+  "optionalUnityReferences": ["TestAssemblies"],
+  "autoReferenced": false,
+  "defineConstraints": ["UNITY_INCLUDE_TESTS"],
+  "noEngineReferences": false
+}
