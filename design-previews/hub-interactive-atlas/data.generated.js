@@ -1362,8 +1362,52 @@ export const projects = [
     }
   },
   {
-    "id": "holiday-gifts",
+    "id": "lighthouse-rescue",
     "index": 34,
+    "name": "灯塔救援队",
+    "category": "Unity 直播互动游戏",
+    "kind": "game",
+    "badge": "小游戏",
+    "brief": "一起选路、修船和照明，在三段风暴中救起三个人。免费互动就能改变结局。",
+    "problem": "验证主播主持的短局合作救援能否在竖屏直播中一眼看懂并反复开局。",
+    "aiUse": "Unity 规则状态机、模拟观众事件、可恢复的 Windows 客户端与 WebGL 试玩共同构建；正式抖音直播权限尚待官方 SDK 和真实直播间联调。",
+    "tags": [
+      "Unity",
+      "直播互动",
+      "合作救援",
+      "Windows",
+      "WebGL"
+    ],
+    "actions": [
+      {
+        "type": "web",
+        "label": "网页预览",
+        "href": "./projects/lighthouse-rescue/index.html",
+        "sourceLabel": "演示"
+      },
+      {
+        "type": "video",
+        "label": "介绍视频",
+        "href": "./projects/lighthouse-rescue/video/index.html",
+        "sourceLabel": "介绍视频"
+      },
+      {
+        "type": "windows",
+        "label": "Wins下载",
+        "href": "https://github.com/wthpein010-dev/ai-application-hub/releases/download/lighthouse-rescue-v1.0.0/LighthouseRescue-Windows-x64.zip",
+        "sourceLabel": "Wins下载"
+      }
+    ],
+    "visual": {
+      "accent": "#7160bf",
+      "surface": "#efecff",
+      "ink": "#40347e",
+      "mark": "灯塔"
+    }
+  },
+  {
+    "id": "holiday-gifts",
+    "index": 35,
     "name": "好事成双 · 双节活动",
     "category": "双节活动交互原型",
     "kind": "engineering",
@@ -1400,7 +1444,7 @@ export const projects = [
   },
   {
     "id": "announcement-center",
-    "index": 35,
+    "index": 36,
     "name": "公告中心 · 挂件焕新",
     "category": "游戏UI交互原型",
     "kind": "engineering",
@@ -1437,12 +1481,12 @@ export const projects = [
   },
   {
     "id": "game-design-textbook",
-    "index": 36,
+    "index": 37,
     "name": "游戏设计研习册",
     "category": "游戏策划学习",
     "kind": "app",
     "badge": "图文教材",
-    "brief": "从玩家动机到随机奖励与虚拟交易，沿50课路线学习；当前16课可阅读全文。",
+    "brief": "从玩家动机到随机奖励与虚拟交易，沿50课路线学习；当前19课可阅读全文。",
     "problem": "把概率公式、玩家体验和设计验证连起来，让每个结论都有条件、算例与反例。",
     "aiUse": "原创教材、全文讲解、知识脑图和参数实验；逐课引用并核验参考来源。阅读与同内容音频可替代，学习记录仅存本地。",
     "tags": [
