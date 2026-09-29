@@ -11,6 +11,7 @@ namespace LighthouseRescue.Rules
         public GamePhase Phase;
         public GamePhase PhaseBeforePause;
         public RescueRoute Route;
+        public RescueRoute CaptainChoice;
         public GameOutcome Outcome;
         public double ElapsedSeconds;
         public double StageStartedAtSeconds;

@@ -42,6 +42,45 @@ namespace LighthouseRescue.Rules
             hull = config.StartingHull;
         }
 
+        public static RescueGame Restore(GameConfig config, RescueSnapshot snapshot)
+        {
+            if (snapshot == null || snapshot.RulesVersion != 1 ||
+                string.IsNullOrWhiteSpace(snapshot.RoomId) || string.IsNullOrWhiteSpace(snapshot.RoundId))
+                throw new ArgumentException("Incompatible or incomplete rescue snapshot", nameof(snapshot));
+            var game = new RescueGame(config, snapshot.RoomId, snapshot.RoundId, snapshot.Seed)
+            {
+                phase = snapshot.Phase,
+                phaseBeforePause = snapshot.PhaseBeforePause,
+                route = snapshot.Route,
+                captainChoice = snapshot.CaptainChoice,
+                outcome = snapshot.Outcome,
+                elapsedSeconds = snapshot.ElapsedSeconds,
+                stageStartedAtSeconds = snapshot.StageStartedAtSeconds,
+                remainingSeconds = snapshot.RemainingSeconds,
+                hull = snapshot.Hull,
+                savedCount = snapshot.SavedCount,
+                leftVotes = snapshot.LeftVotes,
+                rightVotes = snapshot.RightVotes,
+                repairProgress = snapshot.RepairProgress,
+                lightProgress = snapshot.LightProgress,
+                likeCarry = snapshot.LikeCarry,
+                likePointsAwarded = snapshot.LikePointsAwarded
+            };
+            if (snapshot.RecentEventIds != null)
+                foreach (string id in snapshot.RecentEventIds) game.seenEvents.Add(id);
+            if (snapshot.JoinedUserIds != null)
+                foreach (string id in snapshot.JoinedUserIds) game.joinedUsers.Add(id);
+            if (snapshot.VotedUserIds != null)
+                foreach (string id in snapshot.VotedUserIds) game.votedUsers.Add(id);
+            if (snapshot.CooldownKeys != null && snapshot.CooldownTimes != null)
+                for (int i = 0; i < Math.Min(snapshot.CooldownKeys.Count, snapshot.CooldownTimes.Count); i++)
+                    game.lastCommandTime[snapshot.CooldownKeys[i]] = snapshot.CooldownTimes[i];
+            if (snapshot.CommandCapKeys != null && snapshot.CommandCapCounts != null)
+                for (int i = 0; i < Math.Min(snapshot.CommandCapKeys.Count, snapshot.CommandCapCounts.Count); i++)
+                    game.stageCommandCount[snapshot.CommandCapKeys[i]] = snapshot.CommandCapCounts[i];
+            return game;
+        }
+
         public ApplyResult Apply(GameEvent gameEvent, double nowSeconds)
         {
             if (gameEvent == null || string.IsNullOrWhiteSpace(gameEvent.EventId) ||
@@ -124,7 +163,7 @@ namespace LighthouseRescue.Rules
             {
                 RoomId = roomId, RoundId = roundId, Seed = seed,
                 Phase = phase, PhaseBeforePause = phaseBeforePause,
-                Route = route, Outcome = outcome,
+                Route = route, CaptainChoice = captainChoice, Outcome = outcome,
                 ElapsedSeconds = elapsedSeconds,
                 StageStartedAtSeconds = stageStartedAtSeconds,
                 RemainingSeconds = remainingSeconds,

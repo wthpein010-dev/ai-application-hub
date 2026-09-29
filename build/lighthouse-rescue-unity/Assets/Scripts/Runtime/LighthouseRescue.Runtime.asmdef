@@ -1,0 +1,9 @@
+{
+  "name": "LighthouseRescue.Runtime",
+  "rootNamespace": "LighthouseRescue.Runtime",
+  "references": ["LighthouseRescue.Rules"],
+  "includePlatforms": [],
+  "excludePlatforms": [],
+  "allowUnsafeCode": false,
+  "autoReferenced": true
+}
