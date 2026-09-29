@@ -1,2 +1,5 @@
 *.meta whitespace=-blank-at-eol
 ProjectSettings/*.asset whitespace=-blank-at-eol
+Assets/Scenes/*.unity whitespace=-blank-at-eol
+Assets/Art/Licenses/*.txt whitespace=-blank-at-eol
+Assets/Resources/Fonts/OFL.txt whitespace=-blank-at-eol

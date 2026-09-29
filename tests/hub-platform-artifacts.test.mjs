@@ -28,9 +28,11 @@ function actionTypes(app) {
 }
 
 test("every card exposes actions that match its actual delivery type", () => {
-  assert.equal(apps.length, 37);
+  assert.equal(apps.length, 38);
   for (const app of apps) {
-    const expected = app.id === "lunar-freight" && app.videoExemption === "user-request-no-video"
+    const expected = app.id === "lighthouse-rescue"
+      ? ["web", "video", "windows"]
+      : app.id === "lunar-freight" && app.videoExemption === "user-request-no-video"
       ? ["web"]
       : nativeIds.has(app.id) || extensionIds.has(app.id)
       ? ["web", "video", "windows", "mac"]
@@ -182,7 +184,9 @@ test("the compatibility matrix covers every public card and its delivery evidenc
 
   for (const app of apps) {
     const row = byId.get(app.id);
-    const expectedType = nativeIds.has(app.id)
+    const expectedType = app.id === "lighthouse-rescue"
+      ? "小游戏在线体验 + Windows x64"
+      : nativeIds.has(app.id)
       ? "原生双平台"
       : extensionIds.has(app.id)
         ? "浏览器扩展"
@@ -201,12 +205,16 @@ test("the compatibility matrix covers every public card and its delivery evidenc
       assert.match(row, /manifest-x64\.json/u, "new Workbench records the x64 manifest");
       assert.doesNotMatch(row, /待真实 runner 验证/u, "new Workbench is activated only after real-runner verification");
     }
-    assert.match(row, new RegExp(`\\| ${expectedType} \\|`), `${app.id} delivery type`);
+    assert.ok(row.includes(`| ${expectedType} |`), `${app.id} delivery type`);
     assert.match(row, /Windows/, `${app.id} Windows statement`);
     assert.match(row, /macOS/, `${app.id} macOS statement`);
     assert.match(row, /https:\/\/wthpein010-dev\.github\.io\/ai-application-hub\//, `${app.id} public entry`);
 
-    if (nativeIds.has(app.id)) {
+    if (app.id === "lighthouse-rescue") {
+      assert.ok(row.includes(href(app.platforms.windows)), "lighthouse-rescue Windows URL");
+      assert.match(row, /模拟模式/u);
+      assert.match(row, /SDK.*未接入/u);
+    } else if (nativeIds.has(app.id)) {
       assert.ok(row.includes(app.platforms.windows.label), `${app.id} Windows label`);
       assert.ok(row.includes(app.platforms.mac.label), `${app.id} macOS label`);
       assert.ok(row.includes(href(app.platforms.windows)), `${app.id} Windows URL`);

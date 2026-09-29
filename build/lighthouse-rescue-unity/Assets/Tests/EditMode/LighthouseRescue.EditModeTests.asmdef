@@ -1,7 +1,7 @@
 {
   "name": "LighthouseRescue.EditModeTests",
   "rootNamespace": "LighthouseRescue.Tests",
-  "references": ["LighthouseRescue.Rules", "LighthouseRescue.Runtime"],
+  "references": ["LighthouseRescue.Rules", "LighthouseRescue.Runtime", "Unity.ugui"],
   "includePlatforms": ["Editor"],
   "optionalUnityReferences": ["TestAssemblies"],
   "autoReferenced": false,

@@ -1,7 +1,7 @@
 {
   "name": "LighthouseRescue.Runtime",
   "rootNamespace": "LighthouseRescue.Runtime",
-  "references": ["LighthouseRescue.Rules"],
+  "references": ["LighthouseRescue.Rules", "Unity.ugui"],
   "includePlatforms": [],
   "excludePlatforms": [],
   "allowUnsafeCode": false,

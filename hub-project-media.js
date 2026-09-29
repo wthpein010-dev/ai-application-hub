@@ -339,6 +339,16 @@ globalThis.HUB_PROJECT_MEDIA = Object.freeze({
     accent: "#d7b56d",
     visualKind: "game",
   }),
+  "lighthouse-rescue": Object.freeze({
+    src: "./assets/hub-showcase/lighthouse-rescue.webp?v=20260929-release",
+    alt: "灯塔救援队 Unity 竖屏游戏中的小船、灯塔与免费救援操作",
+    position: "center",
+    layout: "wide",
+    fallback: "灯塔救援队",
+    feature: "上船、选路、修理和照明，三段救起三人",
+    accent: "#ffd983",
+    visualKind: "game",
+  }),
   "holiday-gifts": Object.freeze({
     src: "./assets/hub-showcase/holiday-gifts.webp?v=20260918-holiday-gifts",
     alt: "好事成双 · 双节活动：月饼兑换与砖块小人限定外观",
