@@ -14,6 +14,7 @@ const NATIVE_PROJECTS = new Set([
   "v-curve-tool",
 ]);
 const EXTENSION_PROJECTS = new Set(["feishu-downloader"]);
+const WINDOWS_NATIVE_PROJECTS = new Set(["lighthouse-rescue"]);
 const PLATFORM_KEYS = ["windows", "mac"];
 const TEXT_EXTENSIONS = new Set([".html", ".md", ".txt", ".json"]);
 
@@ -278,16 +279,17 @@ export async function auditCatalog({
 
     const native = NATIVE_PROJECTS.has(app.id);
     const extension = EXTENSION_PROJECTS.has(app.id);
+    const windowsNative = WINDOWS_NATIVE_PROJECTS.has(app.id);
     for (const platform of PLATFORM_KEYS) {
       const href = platformHref(app.platforms?.[platform]);
       if (!href) {
-        if (native || extension) {
-          findings.push(finding("platform-artifact", app.id, platform, `Verified ${native ? "native" : "extension"} project is missing its ${platform} action.`));
+        if (native || extension || (windowsNative && platform === "windows")) {
+          findings.push(finding("platform-artifact", app.id, platform, `Verified ${extension ? "extension" : "native"} project is missing its ${platform} action.`));
         }
         continue;
       }
 
-      if (!native && !extension) {
+      if (!native && !extension && !(windowsNative && platform === "windows")) {
         findings.push(
           finding(
             "platform-artifact",

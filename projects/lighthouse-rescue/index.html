@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="description" content="灯塔救援队：可直接试玩的 Unity 直播互动游戏模拟版。免费上船、选路、修理与照明，救起三名待救者。">
+  <title>灯塔救援队 · Unity 试玩</title>
+  <link rel="icon" href="../../assets/app-mark.svg">
+  <link rel="stylesheet" href="../../assets/subpage-shell.css">
+  <link rel="stylesheet" href="./style.css">
+</head>
+<body class="hub-subpage">
+  <a class="hub-home-link" href="../../index.html#games" aria-label="返回主页"><span class="hub-home-link__icon" aria-hidden="true">←</span><span>返回主页</span></a>
+  <main class="layout">
+    <aside class="guide">
+      <p class="eyebrow">UNITY · 9:16 · 本地试玩</p>
+      <h1>灯塔救援队</h1>
+      <p class="lead">在风暴里，带三个人回家。选择航线，修好船、点亮海面；每一个免费动作都可能改变结局。</p>
+      <div class="mode-note" role="note"><strong>试玩说明</strong><span>这里的按钮模拟直播评论与点赞，使用正式游戏规则。此页面没有接入抖音直播间，也不会发送真实礼物。</span></div>
+      <ol class="steps"><li><b>上船</b>：开局集结 20 秒。</li><li><b>选路</b>：左边是礁石短路，右边是迷雾长路。</li><li><b>救人</b>：每段点“修理”“照明”；每 20 次点赞补一格光。</li><li><b>结算</b>：三段各救一人，目标是 3/3 平安上船。</li></ol>
+      <p class="hint">默认一局约 3–4 分钟；右下角“1×”可切到 4× / 8×，方便快速试玩。</p>
+      <nav class="guide-links" aria-label="项目资料"><a href="./rules.html">完整规则</a><a href="./host-guide.html">主播操作卡</a><a href="./video/index.html">玩法视频</a></nav>
+      <p class="credit">素材：Kenney CC0；字体：Noto Sans SC（SIL OFL）。<a href="../../build/lighthouse-rescue-unity/Assets/Art/THIRD_PARTY_ASSETS.md">来源清单</a></p>
+    </aside>
+    <section class="game-wrap" aria-label="灯塔救援队 Unity 游戏">
+      <div class="game-frame"><canvas id="lighthouse-canvas" aria-label="灯塔救援队游戏画面" tabindex="0"></canvas><div class="loading" id="loading" role="status"><strong>正在装载救援现场…</strong><span id="progress">初始化 Unity WebGL</span></div></div>
+      <p class="game-note">画面操作支持鼠标与触摸。Windows 直播客户端也保留同一套模拟模式。</p>
+    </section>
+  </main>
+  <script src="./game/Build/game.loader.js"></script>
+  <script type="module" src="./play.js"></script>
+</body>
+</html>

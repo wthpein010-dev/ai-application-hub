@@ -138,7 +138,7 @@ test("application cards preserve the public tool taxonomy and engineering collec
     }
   }
 
-  assert.equal(apps.filter((app) => catalogTypeKey(app) === "game").length, 6);
+  assert.equal(apps.filter((app) => catalogTypeKey(app) === "game").length, 7);
   assert.equal(apps.filter((app) => catalogTypeKey(app) === "engineering").length, 9);
 });
 
@@ -228,7 +228,7 @@ test("application taxonomy filters leave games and engineering intact while sear
   state.status = "plugin";
   assert.deepEqual(groupedIds(), {
     apps: ["feishu-downloader"],
-    games: ["icecream", "zhuanglege-sha", "fill-what", "xiang-le-ge-xiang", "nang-keng-pai-pai-xiang", "lunar-freight"],
+    games: ["icecream", "zhuanglege-sha", "fill-what", "xiang-le-ge-xiang", "nang-keng-pai-pai-xiang", "lunar-freight", "lighthouse-rescue"],
     engineering: ["vita-mahjong", "paws-home-client", "paws-level-editor", "brick-light-motion-lab", "brick-character-copy-preview", "trinket-market", "v-curve-tool", "holiday-gifts", "announcement-center"],
   });
 
@@ -236,7 +236,7 @@ test("application taxonomy filters leave games and engineering intact while sear
   state.category = "AI 内容生成";
   assert.deepEqual(groupedIds(), {
     apps: ["travel-generator"],
-    games: ["icecream", "zhuanglege-sha", "fill-what", "xiang-le-ge-xiang", "nang-keng-pai-pai-xiang", "lunar-freight"],
+    games: ["icecream", "zhuanglege-sha", "fill-what", "xiang-le-ge-xiang", "nang-keng-pai-pai-xiang", "lunar-freight", "lighthouse-rescue"],
     engineering: ["vita-mahjong", "paws-home-client", "paws-level-editor", "brick-light-motion-lab", "brick-character-copy-preview", "trinket-market", "v-curve-tool", "holiday-gifts", "announcement-center"],
   });
 

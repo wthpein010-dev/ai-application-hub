@@ -1,0 +1,22 @@
+import test from "node:test";
+import assert from "node:assert/strict";
+import { existsSync, readdirSync, readFileSync } from "node:fs";
+import { join } from "node:path";
+
+const root = join(import.meta.dirname, "..", "projects", "lighthouse-rescue");
+
+test("public shell embeds the real Unity WebGL build and discloses simulation mode", () => {
+  const html = readFileSync(join(root, "index.html"), "utf8");
+  const play = readFileSync(join(root, "play.js"), "utf8");
+  assert.match(html, /index\.html#games/);
+  assert.match(html, /本地试玩|模拟事件/);
+  assert.match(play, /createUnityInstance/);
+  assert.match(html, /lighthouse-canvas/);
+  assert.match(html, /subpage-shell\.css/);
+  const build = join(root, "game", "Build");
+  assert.ok(existsSync(build));
+  const files = readdirSync(build);
+  assert.ok(files.some((name) => name.endsWith(".loader.js")));
+  assert.ok(files.some((name) => name.endsWith(".data")));
+  assert.ok(files.some((name) => name.endsWith(".wasm")));
+});
