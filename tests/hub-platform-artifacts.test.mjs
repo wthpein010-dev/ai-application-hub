@@ -156,7 +156,7 @@ test("Fill What keeps its Unity source download on the demo page only", () => {
 
   const html = readFileSync(join(root, "projects", "fill-what", "index.html"), "utf8");
   assert.match(html, /href="\.\.\/\.\.\/downloads\/fill-what-unity-project\.zip"/);
-  assert.match(html, /download>下载Unity工程<\/a>/);
+  assert.match(html, /<a\b[^>]*\sdownload\b[^>]*\bdata-hub-package\b[^>]*>下载Unity工程<\/a>/);
 });
 
 test("Codex Reviewer and Feishu entry actions all point to published resources", () => {
