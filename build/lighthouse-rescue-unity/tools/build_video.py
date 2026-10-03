@@ -48,7 +48,7 @@ def main():
         subprocess.run([args.ffmpeg, "-y", "-hide_banner", "-loglevel", "error", *map(str, command)], check=True)
 
     thunder = audio / "Thunder.ogg"
-    delay = [round(markers[f"checkpoint{i}"] * 1000) for i in (1, 2, 3)]
+    delay = [round((markers[f"checkpoint{i}"] + 0.26) * 1000) for i in (1, 2, 3)]
     filters = ["[1:a]volume=0.14[rain]"]
     for index, milliseconds in enumerate(delay, start=2):
         filters.append(f"[{index}:a]adelay={milliseconds},volume=0.25[t{index}]")
