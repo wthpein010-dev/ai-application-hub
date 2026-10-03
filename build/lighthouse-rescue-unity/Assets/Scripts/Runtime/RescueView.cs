@@ -33,6 +33,11 @@ namespace LighthouseRescue.Runtime
                 Mathf.Sin(seconds * 4.1f + 0.8f) * Mathf.Lerp(0.4f, 2f, strength);
         }
 
+        public static float WindGust(float seconds)
+        {
+            return 0.5f + 0.5f * Mathf.Sin(seconds * 0.78f - 0.8f + 0.24f * Mathf.Sin(seconds * 1.91f));
+        }
+
         public static float LightningPulse(float age)
         {
             if (age < 0f || age >= LightningDuration) return 0f;
@@ -79,6 +84,8 @@ namespace LighthouseRescue.Runtime
         private Image[] rain;
         private Image[] spray;
         private Image[] lensRain;
+        private Image[] windGusts;
+        private Image[] searchlightMist;
         private GameObject resultCard;
         private GameObject recoveryCard;
         private Button boardButton, leftButton, rightButton, repairButton, lightButton, likeButton, giftButton;
@@ -270,6 +277,20 @@ namespace LighthouseRescue.Runtime
                 lensRain[i].rectTransform.localEulerAngles = new Vector3(0, 0, 9f);
                 lensRain[i].gameObject.SetActive(false);
             }
+            windGusts = new Image[12];
+            for (int i = 0; i < windGusts.Length; i++)
+            {
+                windGusts[i] = Panel(root, "Wind gust " + i, 80, 460, 45 + i % 3 * 18, 2 + i % 2, Color.clear);
+                windGusts[i].rectTransform.localEulerAngles = new Vector3(0, 0, 18f);
+            }
+            searchlightMist = new Image[16];
+            for (int i = 0; i < searchlightMist.Length; i++)
+            {
+                searchlightMist[i] = Panel(root, "Searchlight mist " + i, 475, 640, 9 + i % 4 * 5,
+                    9 + i % 4 * 5, Color.clear);
+                searchlightMist[i].sprite = glowSprite;
+                searchlightMist[i].gameObject.SetActive(false);
+            }
             hullFlash = Panel(root, "Hull damage flash", 48, 438, 984, 629, Color.clear);
             Panel(root, "Map info scrim", 48, 939, 984, 128, new Color(0.02f, 0.10f, 0.16f, 0.74f));
             rescueToast = Label(root, "", 261, 739, 558, 80, 42, Gold, FontStyle.Bold, TextAnchor.MiddleCenter);
@@ -418,6 +439,7 @@ namespace LighthouseRescue.Runtime
             pauseButton.interactable = s.Phase != GamePhase.Waiting && s.Phase != GamePhase.Result;
             float storm = StormIntensity(s);
             if (s.Phase != GamePhase.Paused) weatherClock += Mathf.Min(Time.unscaledDeltaTime, 0.1f);
+            float gust = WindGust(weatherClock);
             if (checkpoint && weatherClock >= nextLightningAt)
             {
                 lightningUntil = weatherClock + LightningDuration;
@@ -458,6 +480,26 @@ namespace LighthouseRescue.Runtime
                 lensRain[i].color = new Color(0.78f, 0.91f, 1f,
                     storm * (0.045f + i % 3 * 0.009f) + lightning * 0.055f);
             }
+            for (int i = 0; i < windGusts.Length; i++)
+            {
+                float travel = (weatherClock * (94f + gust * 125f) + i * 83f) % 820f;
+                float height = 460f + (i * 139) % 555;
+                windGusts[i].rectTransform.anchoredPosition = new Vector2(78f + travel, -height);
+                windGusts[i].color = new Color(0.78f, 0.91f, 1f, storm * (0.08f + 0.18f * gust));
+            }
+            float mistLight = effectiveLightTarget <= 0 ? 0f : Mathf.Clamp01((float)s.LightProgress / effectiveLightTarget);
+            for (int i = 0; i < searchlightMist.Length; i++)
+            {
+                searchlightMist[i].gameObject.SetActive(pov);
+                if (!pov) continue;
+                float phase = weatherClock * (0.8f + i % 4 * 0.14f) + i * 2.13f;
+                float center = povStage == 2 ? 410f : povStage == 3 ? 790f : 555f;
+                float x = Mathf.Clamp(center + Mathf.Sin(phase) * (60f + i % 4 * 23f), 80f, 975f);
+                float y = 515f + (i * 37 + weatherClock * (18f + gust * 20f)) % 385f;
+                searchlightMist[i].rectTransform.anchoredPosition = new Vector2(x, -y);
+                searchlightMist[i].color = new Color(1f, 0.85f, 0.60f,
+                    storm * (0.035f + 0.20f * mistLight) * (0.65f + 0.35f * Mathf.Sin(phase) * Mathf.Sin(phase)));
+            }
             ship.anchoredPosition = new Vector2(405 + Mathf.Sin(weatherClock * 0.7f) * 8f, -666 + Mathf.Sin(weatherClock * 2f) * 7f);
             ship.localEulerAngles = new Vector3(0, 0, Mathf.Sin(weatherClock * 1.4f) * (2f + 2f * storm));
             wake.color = new Color(0.59f, 0.92f, 1f, 0.19f + 0.06f * Mathf.Sin(weatherClock * 3f));
@@ -476,7 +518,7 @@ namespace LighthouseRescue.Runtime
             for (int i = 0; i < rain.Length; i++)
             {
                 float travel = (weatherClock * (260f + i % 7 * 31f) + i * 89f) % 510f;
-                float wind = weatherClock * (54f + i % 4 * 10f);
+                float wind = weatherClock * (54f + i % 4 * 10f) + gust * 38f;
                 rain[i].rectTransform.anchoredPosition = new Vector2(85 + ((i * 193 + wind) % 900f), -(440 + travel));
                 rain[i].color = new Color(0.77f, 0.9f, 1f, storm * (0.28f + (i % 4) * 0.055f));
             }
@@ -488,7 +530,8 @@ namespace LighthouseRescue.Runtime
                 spray[i].color = new Color(0.72f, 0.92f, 1f, storm * (pov ? 0.2f : 0.1f) * Mathf.Abs(Mathf.Sin(phase)));
             }
             if (host.Muted) sound.Stop();
-            weatherSound.volume = host.Muted ? 0f : storm * (s.Phase == GamePhase.Paused ? 0.04f : 0.19f);
+            weatherSound.volume = host.Muted ? 0f : storm * (s.Phase == GamePhase.Paused ? 0.04f : 0.14f + 0.08f * gust);
+            weatherSound.pitch = 0.94f + 0.10f * gust;
             if (Application.isPlaying && weatherSound.clip != null && !weatherSound.isPlaying && weatherSound.volume > 0f) weatherSound.Play();
             resultCard.SetActive(s.Phase == GamePhase.Result);
             if (s.Phase == GamePhase.Result)
