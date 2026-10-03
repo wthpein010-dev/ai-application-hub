@@ -41,11 +41,13 @@ namespace LighthouseRescue.Rules
 
         public RescueGame(GameConfig config, string roomId, string roundId, int seed)
         {
-            this.config = config ?? throw new ArgumentNullException(nameof(config));
+            if (config == null) throw new ArgumentNullException(nameof(config));
+            if (!config.IsValid()) throw new ArgumentException("Invalid rescue round configuration", nameof(config));
+            this.config = config.Copy();
             this.roomId = roomId ?? throw new ArgumentNullException(nameof(roomId));
             this.roundId = roundId ?? throw new ArgumentNullException(nameof(roundId));
             this.seed = seed;
-            hull = config.StartingHull;
+            hull = this.config.StartingHull;
         }
 
         public static RescueGame Restore(GameConfig config, RescueSnapshot snapshot)
@@ -53,7 +55,8 @@ namespace LighthouseRescue.Rules
             if (config == null) throw new ArgumentNullException(nameof(config));
             if (!CanRestore(config, snapshot))
                 throw new ArgumentException("Incompatible or incomplete rescue snapshot", nameof(snapshot));
-            var game = new RescueGame(config, snapshot.RoomId, snapshot.RoundId, snapshot.Seed)
+            var game = new RescueGame(snapshot.HasRoundConfig ? snapshot.RoundConfig : config,
+                snapshot.RoomId, snapshot.RoundId, snapshot.Seed)
             {
                 phase = snapshot.Phase,
                 phaseBeforePause = snapshot.PhaseBeforePause,
@@ -93,7 +96,11 @@ namespace LighthouseRescue.Rules
 
         public static bool CanRestore(GameConfig config, RescueSnapshot snapshot)
         {
-            if (config == null || snapshot == null || snapshot.RulesVersion != 1 ||
+            if (config == null || snapshot == null || snapshot.RulesVersion != 1)
+                return false;
+            config = snapshot.HasRoundConfig ? snapshot.RoundConfig : config;
+            if (config == null || (snapshot.HasRoundConfig && config.SnapshotFormat != 1) ||
+                !config.IsValid() ||
                 string.IsNullOrWhiteSpace(snapshot.RoomId) || string.IsNullOrWhiteSpace(snapshot.RoundId) ||
                 !FiniteNonnegative(snapshot.ElapsedSeconds) || !FiniteNonnegative(snapshot.StageStartedAtSeconds) ||
                 !FiniteNonnegative(snapshot.RemainingSeconds) ||
@@ -232,6 +239,8 @@ namespace LighthouseRescue.Rules
             var result = new RescueSnapshot
             {
                 RulesVersion = includeHistory ? 1 : 0,
+                HasRoundConfig = includeHistory,
+                RoundConfig = includeHistory ? config.Copy() : null,
                 RoomId = roomId, RoundId = roundId, Seed = seed,
                 Phase = phase, PhaseBeforePause = phaseBeforePause,
                 Route = route, CaptainChoice = captainChoice, Outcome = outcome,

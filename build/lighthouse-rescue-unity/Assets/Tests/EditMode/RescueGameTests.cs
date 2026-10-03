@@ -37,6 +37,29 @@ namespace LighthouseRescue.Tests
             return game;
         }
 
+        [Test]
+        public void RunningRoundKeepsItsOriginalTimingAfterCallerChangesConfig()
+        {
+            var settings = GameConfig.Default;
+            settings.GatheringSeconds = 7;
+            var game = new RescueGame(settings, "room-a", "round-a", 17);
+            settings.GatheringSeconds = 100;
+            game.Snapshot().RoundConfig.GatheringSeconds = 200;
+
+            Assert.That(game.Apply(Event(GameCommand.Start, "start", "host", 0), 0), Is.EqualTo(ApplyResult.Accepted));
+            Assert.That(game.Snapshot().RemainingSeconds, Is.EqualTo(7));
+            game.Advance(7);
+            Assert.That(game.Snapshot().Phase, Is.EqualTo(GamePhase.Voting));
+        }
+
+        [Test]
+        public void InvalidRoundRulesCannotBeStarted()
+        {
+            var settings = GameConfig.Default;
+            settings.LikesPerLightPoint = 0;
+            Assert.Throws<System.ArgumentException>(() => new RescueGame(settings, "room-a", "round-a", 17));
+        }
+
         private static RescueGame FirstCheckpoint(bool left)
         {
             var game = Started();

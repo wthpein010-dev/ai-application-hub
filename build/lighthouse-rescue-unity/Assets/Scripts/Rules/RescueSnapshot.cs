@@ -5,6 +5,8 @@ namespace LighthouseRescue.Rules
     public sealed class RescueSnapshot
     {
         public int RulesVersion = 1;
+        public bool HasRoundConfig;
+        public GameConfig RoundConfig;
         public long JournalSequence;
         public string RoomId;
         public string RoundId;
