@@ -21,6 +21,8 @@ namespace LighthouseRescue.Runtime
             if (snapshot == null) throw new ArgumentNullException(nameof(snapshot));
             if (snapshot.RulesVersion != 1)
                 throw new ArgumentException("Only a complete rules snapshot can be saved", nameof(snapshot));
+            if (!RescueGame.CanRestore(GameConfig.Default, snapshot))
+                throw new ArgumentException("Cannot save an invalid rescue snapshot", nameof(snapshot));
             if (snapshot.JournalSequence < 0)
                 throw new ArgumentException("Journal sequence cannot be negative", nameof(snapshot));
             snapshot.JournalSequence = journal.Matches(snapshot) ? journal.Sequence : snapshot.JournalSequence;

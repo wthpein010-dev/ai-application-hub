@@ -36,6 +36,98 @@ namespace LighthouseRescue.Tests
         }
 
         [Test]
+        public void SavedRoundKeepsItsOwnRulesAfterReloadWithNewDefaults()
+        {
+            var settings = GameConfig.Default;
+            settings.GatheringSeconds = 6;
+            settings.VotingSeconds = 11;
+            settings.LongCheckpointSeconds = 14;
+            var game = new RescueGame(settings, "room", "round", 9);
+            game.Apply(E(GameCommand.Start, "start", 0), 0);
+            game.Advance(6);
+            var store = new CheckpointStore(file);
+            store.Save(game.Snapshot());
+
+            Assert.That(new CheckpointStore(file).TryLoad("room", 1, out var saved), Is.True);
+            var resumed = RescueGame.Restore(GameConfig.Default, saved);
+            resumed.Advance(11);
+            Assert.That(resumed.Snapshot().Phase, Is.EqualTo(GamePhase.Checkpoint1));
+            Assert.That(resumed.Snapshot().RemainingSeconds, Is.EqualTo(14));
+        }
+
+        [Test]
+        public void JournalReplayUsesSavedRulesForInProgressRepairs()
+        {
+            var settings = GameConfig.Default;
+            settings.LongRepairTarget = 5;
+            var game = new RescueGame(settings, "room", "round", 9);
+            game.Apply(E(GameCommand.Start, "start", 0), 0);
+            game.Advance(40);
+            var store = new CheckpointStore(file);
+            store.Save(game.Snapshot());
+            for (int i = 0; i < 3; i++)
+            {
+                var repair = E(GameCommand.Repair, "repair-" + i, 40);
+                repair.UserId = "viewer-" + i;
+                Assert.That(game.Apply(repair, 40), Is.EqualTo(ApplyResult.Accepted));
+                store.AppendAccepted(repair, game);
+            }
+
+            Assert.That(new CheckpointStore(file).TryLoad("room", 1, out var saved), Is.True);
+            Assert.That(saved.RepairProgress, Is.EqualTo(4));
+            Assert.That(RescueGame.Restore(GameConfig.Default, saved).Snapshot().RepairTarget, Is.EqualTo(5));
+        }
+
+        [Test]
+        public void CorruptRoundRulesCannotReplaceAValidCheckpoint()
+        {
+            var game = new RescueGame(GameConfig.Default, "room", "round", 9);
+            game.Apply(E(GameCommand.Start, "start", 0), 0);
+            var store = new CheckpointStore(file);
+            store.Save(game.Snapshot());
+            var corrupt = game.Snapshot();
+            corrupt.RoundConfig.LikesPerLightPoint = 0;
+
+            Assert.Throws<ArgumentException>(() => store.Save(corrupt));
+            Assert.That(store.TryLoad("room", 1, out var recovered), Is.True);
+            Assert.That(recovered.RoundConfig.LikesPerLightPoint, Is.EqualTo(20));
+        }
+
+        [Test]
+        public void CheckpointWithoutRoundRulesUsesLegacyDefaultConfiguration()
+        {
+            var game = new RescueGame(GameConfig.Default, "room", "round", 9);
+            game.Apply(E(GameCommand.Start, "start", 0), 0);
+            var snapshot = game.Snapshot();
+            string json = UnityEngine.JsonUtility.ToJson(snapshot);
+            string savedConfig = "\"RoundConfig\":" + UnityEngine.JsonUtility.ToJson(snapshot.RoundConfig) + ",";
+            Assert.That(json, Does.Contain(savedConfig));
+            Assert.That(json, Does.Contain("\"HasRoundConfig\":true,"));
+            File.WriteAllText(file, json.Replace(savedConfig, "").Replace("\"HasRoundConfig\":true,", ""));
+
+            Assert.That(new CheckpointStore(file).TryLoad("room", 1, out var recovered), Is.True);
+            Assert.That(recovered.HasRoundConfig, Is.False);
+            var resumed = RescueGame.Restore(GameConfig.Default, recovered);
+            resumed.Advance(20);
+            Assert.That(resumed.Snapshot().Phase, Is.EqualTo(GamePhase.Voting));
+        }
+
+        [Test]
+        public void NewCheckpointMissingItsEmbeddedRulesCannotSilentlyUseDefaults()
+        {
+            var settings = GameConfig.Default;
+            settings.LongCheckpointSeconds = 14;
+            var game = new RescueGame(settings, "room", "round", 9);
+            game.Apply(E(GameCommand.Start, "start", 0), 0);
+            string json = UnityEngine.JsonUtility.ToJson(game.Snapshot());
+            string savedConfig = "\"RoundConfig\":" + UnityEngine.JsonUtility.ToJson(game.Snapshot().RoundConfig) + ",";
+            Assert.That(json, Does.Contain(savedConfig));
+            File.WriteAllText(file, json.Replace(savedConfig, ""));
+
+            Assert.That(new CheckpointStore(file).TryLoad("room", 1, out _), Is.False);
+        }
+
+        [Test]
         public void InterruptedTemporaryWriteLeavesLastCompleteCheckpointReadable()
         {
             var game = new RescueGame(GameConfig.Default, "room", "round", 9);
