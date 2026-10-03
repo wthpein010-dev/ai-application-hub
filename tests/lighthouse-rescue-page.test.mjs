@@ -11,6 +11,11 @@ test("public shell embeds the real Unity WebGL build and discloses simulation mo
   assert.match(html, /index\.html#games/);
   assert.match(html, /本地试玩|模拟事件/);
   assert.match(play, /createUnityInstance/);
+  const builtPage = readFileSync(join(root, "game", "index.html"), "utf8");
+  const shellVersion = play.match(/productVersion:\s*"([^"]+)"/)?.[1];
+  const buildVersion = builtPage.match(/productVersion:\s*"([^"]+)"/)?.[1];
+  assert.ok(shellVersion && buildVersion, "both loaders declare a Unity product version");
+  assert.equal(shellVersion, buildVersion, "public shell must load the current Unity build version");
   assert.match(html, /lighthouse-canvas/);
   assert.match(html, /subpage-shell\.css/);
   const build = join(root, "game", "Build");
