@@ -32,6 +32,7 @@
 **Files:**
 - Modify: `build/lighthouse-rescue-unity/Assets/Scripts/Rules/RescueSnapshot.cs`
 - Modify: `build/lighthouse-rescue-unity/Assets/Scripts/Runtime/CheckpointStore.cs`
+- Add: `build/lighthouse-rescue-unity/Assets/Scripts/Runtime/AcceptedEventJournal.cs` and `.meta`
 - Modify: `build/lighthouse-rescue-unity/Assets/Tests/EditMode/CheckpointStoreTests.cs`
 
 **Interfaces:** `CheckpointStore.AppendAccepted(GameEvent gameEvent, RescueGame game)`; `CheckpointStore.Save(RescueSnapshot snapshot)` stamps current `JournalSequence`; `TryLoad` replays valid records and returns a complete snapshot.
