@@ -64,6 +64,7 @@ namespace LighthouseRescue.Runtime
                     finished = true;
                     return false;
                 }
+                if (!RescueGame.CanRestore(GameConfig.Default, read)) return false;
                 snapshot = read;
                 return true;
             }

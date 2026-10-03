@@ -48,8 +48,8 @@ namespace LighthouseRescue.Rules
 
         public static RescueGame Restore(GameConfig config, RescueSnapshot snapshot)
         {
-            if (snapshot == null || snapshot.RulesVersion != 1 ||
-                string.IsNullOrWhiteSpace(snapshot.RoomId) || string.IsNullOrWhiteSpace(snapshot.RoundId))
+            if (config == null) throw new ArgumentNullException(nameof(config));
+            if (!CanRestore(config, snapshot))
                 throw new ArgumentException("Incompatible or incomplete rescue snapshot", nameof(snapshot));
             var game = new RescueGame(config, snapshot.RoomId, snapshot.RoundId, snapshot.Seed)
             {
@@ -88,6 +88,50 @@ namespace LighthouseRescue.Rules
                     game.stageCommandCount[snapshot.CommandCapKeys[i]] = snapshot.CommandCapCounts[i];
             return game;
         }
+
+        public static bool CanRestore(GameConfig config, RescueSnapshot snapshot)
+        {
+            if (config == null || snapshot == null || snapshot.RulesVersion != 1 ||
+                string.IsNullOrWhiteSpace(snapshot.RoomId) || string.IsNullOrWhiteSpace(snapshot.RoundId) ||
+                !FiniteNonnegative(snapshot.ElapsedSeconds) || !FiniteNonnegative(snapshot.StageStartedAtSeconds) ||
+                !FiniteNonnegative(snapshot.RemainingSeconds) ||
+                snapshot.StageStartedAtSeconds > snapshot.ElapsedSeconds + Epsilon ||
+                snapshot.Hull < 0 || snapshot.Hull > config.StartingHull ||
+                snapshot.SavedCount < 0 || snapshot.SavedCount > 3 ||
+                snapshot.LeftVotes < 0 || snapshot.RightVotes < 0 ||
+                snapshot.RepairProgress < 0 || snapshot.LightProgress < 0 ||
+                snapshot.RepairProgress > Math.Max(config.ShortRepairTarget, config.LongRepairTarget) ||
+                snapshot.LightProgress > Math.Max(config.ShortLightTarget, config.LongLightTarget) ||
+                snapshot.LikeCarry < 0 || snapshot.LikePointsAwarded < 0 ||
+                snapshot.LikePointsAwarded > config.MaxLikeLightPerStage ||
+                snapshot.RepairActions < 0 || snapshot.LightActions < 0 || snapshot.LikeLightPoints < 0)
+                return false;
+
+            if (snapshot.Phase == GamePhase.Result)
+                return snapshot.RemainingSeconds <= Epsilon && snapshot.Outcome != GameOutcome.Pending;
+            if (snapshot.Phase == GamePhase.Waiting)
+                return snapshot.RemainingSeconds <= Epsilon && snapshot.Outcome == GameOutcome.Pending &&
+                    snapshot.Hull == config.StartingHull;
+            if (snapshot.Hull == 0 || snapshot.Outcome != GameOutcome.Pending) return false;
+
+            GamePhase activePhase = snapshot.Phase == GamePhase.Paused ? snapshot.PhaseBeforePause : snapshot.Phase;
+            if (activePhase < GamePhase.Gathering || activePhase > GamePhase.Finale ||
+                (snapshot.Phase != GamePhase.Paused && snapshot.PhaseBeforePause == GamePhase.Paused))
+                return false;
+
+            bool checkpointOrLater = activePhase >= GamePhase.Checkpoint1;
+            if (checkpointOrLater != (snapshot.Route == RescueRoute.ShortLeft || snapshot.Route == RescueRoute.LongRight))
+                return false;
+
+            double phaseDuration = activePhase == GamePhase.Gathering ? config.GatheringSeconds :
+                activePhase == GamePhase.Voting ? config.VotingSeconds :
+                activePhase == GamePhase.Finale ? config.FinaleSeconds :
+                snapshot.Route == RescueRoute.ShortLeft ? config.ShortCheckpointSeconds : config.LongCheckpointSeconds;
+            return snapshot.RemainingSeconds <= phaseDuration + Epsilon;
+        }
+
+        private static bool FiniteNonnegative(double value) =>
+            !double.IsNaN(value) && !double.IsInfinity(value) && value >= 0;
 
         public ApplyResult Apply(GameEvent gameEvent, double nowSeconds)
         {
