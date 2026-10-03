@@ -16,7 +16,7 @@ test("lighthouse rescue is the last game with real demo, video and Windows relea
   assert.equal(game.id, "lighthouse-rescue");
   assert.equal(game.platforms.web.href, "./projects/lighthouse-rescue/index.html");
   assert.equal(game.video, "./projects/lighthouse-rescue/video/index.html");
-  assert.match(game.platforms.windows.href, /^https:\/\/github\.com\/wthpein010-dev\/ai-application-hub\/releases\/download\/lighthouse-rescue-v1\.4\.0\/LighthouseRescue-Windows-x64\.zip$/);
+  assert.match(game.platforms.windows.href, /^https:\/\/github\.com\/wthpein010-dev\/ai-application-hub\/releases\/download\/lighthouse-rescue-v1\.4\.1\/LighthouseRescue-Windows-x64\.zip$/);
   assert.equal(game.platforms.mac, "");
   assert.ok(existsSync(join(root, "assets", "hub-showcase", "lighthouse-rescue.webp")));
 });
