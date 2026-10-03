@@ -30,11 +30,14 @@ namespace LighthouseRescue.Tests
                 Assert.That(GameObject.Find("1× control"), Is.Null);
                 Assert.That(GameObject.Find("开始 / 再来 control").GetComponentInChildren<Button>().interactable,
                     Is.True);
+                Assert.That(GameObject.Find("重置 control").GetComponentInChildren<Button>().interactable, Is.True);
                 view.Render(new RescueSnapshot { Phase = GamePhase.Voting, Hull = 100 });
                 Assert.That(GameObject.Find("船长裁定左 control"), Is.Not.Null);
                 status.MarkDisconnected("test");
                 view.Render(new RescueSnapshot { Phase = GamePhase.Paused, PhaseBeforePause = GamePhase.Voting, Hull = 100 });
                 Assert.That(Object.FindObjectsOfType<Text>().Any(label => label.text.Contains("断开")), Is.True);
+                Assert.That(GameObject.Find("重置 control").GetComponentInChildren<Button>().interactable, Is.False,
+                    "a disconnected live room cannot safely reset its round");
                 status.MarkFaulted("存储失败，已停止；检查磁盘后重启。");
                 view.Render(new RescueSnapshot { Phase = GamePhase.Paused, PhaseBeforePause = GamePhase.Voting, Hull = 100 });
                 Assert.That(Object.FindObjectsOfType<Text>().Any(label => label.text.Contains("存储故障")), Is.True);

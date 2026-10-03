@@ -307,7 +307,19 @@ namespace LighthouseRescue.Runtime
         }
 
         public void EndRound() => Emit(GameCommand.End, "host");
-        public void ResetRound() { if (liveFaulted) return; game = NewGame(); checkpoint.Save(game.Snapshot()); view.Render(game.ViewSnapshot()); }
+        public void ResetRound()
+        {
+            if (liveFaulted || awaitingLiveRecovery || (liveSource != null && !liveSource.Status.IsConnected)) return;
+            game = NewGame();
+            try { checkpoint.Save(game.Snapshot()); }
+            catch (Exception error)
+            {
+                if (liveSource == null) throw;
+                StopForStorageFault(error);
+                return;
+            }
+            view.Render(game.ViewSnapshot());
+        }
         public void ToggleSpeed() { if (liveSource != null) return; speed = speed < 4 ? 4 : speed < 8 ? 8 : 1; view.Render(game.ViewSnapshot()); }
         public void SetCaptureSpeed() => speed = 8;
     }

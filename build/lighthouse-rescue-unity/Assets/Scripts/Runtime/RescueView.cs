@@ -439,7 +439,8 @@ namespace LighthouseRescue.Runtime
             giftButton.interactable = s.Phase != GamePhase.Waiting && s.Phase != GamePhase.Result && s.Phase != GamePhase.Paused;
             startButton.interactable = !liveFault && (s.Phase == GamePhase.Waiting || s.Phase == GamePhase.Result);
             pauseButton.interactable = !liveFault && s.Phase != GamePhase.Waiting && s.Phase != GamePhase.Result;
-            endButton.interactable = resetButton.interactable = !liveFault;
+            endButton.interactable = !liveFault;
+            resetButton.interactable = !liveFault && (localDemo || liveStatus.IsConnected);
             float storm = StormIntensity(s);
             if (liveFault)
             {
