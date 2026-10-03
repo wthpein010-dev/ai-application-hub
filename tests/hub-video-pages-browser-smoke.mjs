@@ -18,6 +18,7 @@ function contentType(path) {
     ".css": "text/css; charset=utf-8",
     ".html": "text/html; charset=utf-8",
     ".js": "text/javascript; charset=utf-8",
+    ".mjs": "text/javascript; charset=utf-8",
     ".mp4": "video/mp4",
     ".vtt": "text/vtt; charset=utf-8",
   }[extname(path).toLowerCase()] || "application/octet-stream";
