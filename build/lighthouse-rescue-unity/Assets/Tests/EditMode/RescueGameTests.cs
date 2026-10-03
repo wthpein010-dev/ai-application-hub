@@ -1,10 +1,25 @@
 using NUnit.Framework;
 using LighthouseRescue.Rules;
+using System.Reflection;
 
 namespace LighthouseRescue.Tests
 {
     public class RescueGameTests
     {
+        private static int Contribution(RescueSnapshot snapshot, string fieldName)
+        {
+            FieldInfo field = typeof(RescueSnapshot).GetField(fieldName);
+            Assert.That(field, Is.Not.Null, fieldName + " must be persisted in the round snapshot");
+            return (int)field.GetValue(snapshot);
+        }
+
+        private static bool TotalsComplete(RescueSnapshot snapshot)
+        {
+            FieldInfo field = typeof(RescueSnapshot).GetField("ContributionTotalsComplete");
+            Assert.That(field, Is.Not.Null, "new rounds must mark complete contribution totals");
+            return (bool)field.GetValue(snapshot);
+        }
+
         private static GameEvent Event(GameCommand command, string id, string user, double at, int count = 1)
         {
             return new GameEvent
@@ -119,6 +134,32 @@ namespace LighthouseRescue.Tests
                 game.Apply(Event(GameCommand.Repair, $"crowd-{i}", $"viewer-{i}", 40), 40);
             Assert.That(game.Snapshot().LightProgress, Is.EqualTo(3));
             Assert.That(game.Snapshot().RepairProgress, Is.EqualTo(3));
+        }
+
+        [Test]
+        public void RoundContributionTotalsCountEffectiveActionsAndSurviveRecovery()
+        {
+            var game = FirstCheckpoint(true);
+            Assert.That(game.Apply(Event(GameCommand.Repair, "repair-1", "viewer-a", 40), 40), Is.EqualTo(ApplyResult.Accepted));
+            Assert.That(game.Apply(Event(GameCommand.Repair, "repair-1", "viewer-a", 40), 40), Is.EqualTo(ApplyResult.Duplicate));
+            Assert.That(game.Apply(Event(GameCommand.Repair, "repair-fast", "viewer-a", 41), 41), Is.EqualTo(ApplyResult.Cooldown));
+            Assert.That(game.Apply(Event(GameCommand.Light, "light-1", "viewer-b", 40), 40), Is.EqualTo(ApplyResult.Accepted));
+            Assert.That(game.Apply(Event(GameCommand.Like, "likes-1", "viewer-c", 40, 20), 40), Is.EqualTo(ApplyResult.Accepted));
+            Assert.That(game.Apply(Event(GameCommand.Gift, "gift-1", "viewer-d", 40), 40), Is.EqualTo(ApplyResult.Accepted));
+            Assert.That(game.Apply(Event(GameCommand.Like, "likes-capped", "viewer-c", 40, 20), 40), Is.EqualTo(ApplyResult.Capped));
+            game.Advance(35);
+            Assert.That(game.Apply(Event(GameCommand.Repair, "repair-2", "viewer-a", 75), 75), Is.EqualTo(ApplyResult.Accepted));
+
+            var snapshot = game.Snapshot();
+            Assert.That(Contribution(snapshot, "RepairActions"), Is.EqualTo(2));
+            Assert.That(Contribution(snapshot, "LightActions"), Is.EqualTo(1));
+            Assert.That(Contribution(snapshot, "LikeLightPoints"), Is.EqualTo(1));
+            Assert.That(TotalsComplete(snapshot), Is.True);
+            var restored = RescueGame.Restore(GameConfig.Default, snapshot).Snapshot();
+            Assert.That(Contribution(restored, "RepairActions"), Is.EqualTo(2));
+            Assert.That(Contribution(restored, "LightActions"), Is.EqualTo(1));
+            Assert.That(Contribution(restored, "LikeLightPoints"), Is.EqualTo(1));
+            Assert.That(TotalsComplete(restored), Is.True);
         }
 
         [Test]

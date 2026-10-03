@@ -16,7 +16,7 @@ test("public shell embeds the real Unity WebGL build and discloses simulation mo
   const buildVersion = builtPage.match(/productVersion:\s*"([^"]+)"/)?.[1];
   assert.ok(shellVersion && buildVersion, "both loaders declare a Unity product version");
   assert.equal(shellVersion, buildVersion, "public shell must load the current Unity build version");
-  assert.equal(shellVersion, "1.3.0");
+  assert.equal(shellVersion, "1.4.0");
   assert.match(html, /lighthouse-canvas/);
   assert.match(html, /subpage-shell\.css/);
   const build = join(root, "game", "Build");

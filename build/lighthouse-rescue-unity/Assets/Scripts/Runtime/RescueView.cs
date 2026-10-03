@@ -276,13 +276,13 @@ namespace LighthouseRescue.Runtime
             var speedButton = MakeButton("1×", 888, 1824, 144, 75, host.ToggleSpeed, MutedText, 33);
             speedText = speedButton.GetComponentInChildren<Text>();
 
-            resultCard = Panel(root, "Ending illustration", 141, 529, 798, 427, Hex("183747")).gameObject;
+            resultCard = Panel(root, "Ending illustration", 141, 529, 798, 460, Hex("183747")).gameObject;
             Panel(resultCard.transform, "Ending accent", 0, 0, 798, 13, Gold);
             resultTitle = Label(resultCard.transform, "", 35, 75, 728, 100, 51, Gold, FontStyle.Bold, TextAnchor.MiddleCenter);
             resultCrew = new Image[3];
             for (int i = 0; i < 3; i++)
                 resultCrew[i] = Picture(resultCard.transform, "Rescued survivor " + i, "Art/SurvivorV2", 203 + i * 137, 156, 119, 119, false);
-            resultDetail = Label(resultCard.transform, "", 40, 277, 718, 116, 37, SoftWhite, FontStyle.Normal, TextAnchor.MiddleCenter);
+            resultDetail = Label(resultCard.transform, "", 25, 282, 748, 168, 38, SoftWhite, FontStyle.Bold, TextAnchor.MiddleCenter);
             resultCard.SetActive(false);
             if (FindObjectOfType<EventSystem>() == null)
                 new GameObject("UI Event System", typeof(EventSystem), typeof(StandaloneInputModule));
@@ -445,7 +445,11 @@ namespace LighthouseRescue.Runtime
             {
                 resultTitle.text = DescribeEnding(s.Outcome);
                 for (int i = 0; i < 3; i++) resultCrew[i].color = i < s.SavedCount ? Color.white : new Color(0.37f, 0.48f, 0.51f, 0.8f);
-                resultDetail.text = "救起 " + s.SavedCount + "/3｜船体 " + s.Hull + "｜" + Mathf.RoundToInt((float)s.ElapsedSeconds) + " 秒\n点击“开始/再来”开启下一局";
+                string contributions = s.ContributionTotalsComplete
+                    ? "修理 " + s.RepairActions + "｜照明 " + s.LightActions + "｜点赞补光 " + s.LikeLightPoints
+                    : "升级前贡献记录不可用";
+                resultDetail.text = "救起 " + s.SavedCount + "/3｜船体 " + s.Hull + "｜" + Mathf.RoundToInt((float)s.ElapsedSeconds) + " 秒\n" +
+                    contributions + "\n开始/再来：开启下一局";
             }
             var controller = GetComponent<RescueController>();
             speedText.text = (controller == null ? 1 : controller.Speed).ToString("0") + "×";

@@ -37,7 +37,7 @@ def main():
         (markers["checkpoint2"], markers["checkpoint3"], "有效操作显示观众贡献，风雨雷电加剧"),
         (markers["checkpoint3"], 22.4, "第三段救援，探照灯穿过浪花"),
         (22.4, markers["result"], "带三个人冲回灯塔，准备结算"),
-        (markers["result"], markers["result"] + 1.7, "三人平安上船；礼物只作外观"),
+        (markers["result"], markers["result"] + 2.5, "结算看本局免费修理、照明与补光"),
     ]
     lines = ["WEBVTT", ""]
     for start, end, caption in cues:

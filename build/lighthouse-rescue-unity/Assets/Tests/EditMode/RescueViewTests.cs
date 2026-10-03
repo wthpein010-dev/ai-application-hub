@@ -211,6 +211,52 @@ namespace LighthouseRescue.Tests
             StringAssert.Contains(expected, RescueView.DescribeEnding(outcome));
         }
 
+        [Test]
+        public void EndingShowsEffectiveFreeContributionTotals()
+        {
+            var owner = new GameObject("ending-contribution-test");
+            try
+            {
+                var view = owner.AddComponent<RescueView>();
+                view.Build(owner.AddComponent<HostControls>());
+                view.Render(new RescueSnapshot { Phase = GamePhase.Result, Outcome = GameOutcome.FullSuccess,
+                    SavedCount = 3, Hull = 76, RepairActions = 9, LightActions = 6, LikeLightPoints = 2,
+                    ContributionTotalsComplete = true });
+                Assert.That(Object.FindObjectsOfType<Text>().Any(label => label.text.Contains("修理 9") &&
+                    label.text.Contains("照明 6") && label.text.Contains("点赞补光 2")), Is.True);
+            }
+            finally
+            {
+                foreach (var canvas in Object.FindObjectsOfType<Canvas>()) Object.DestroyImmediate(canvas.gameObject);
+                Object.DestroyImmediate(owner);
+            }
+        }
+
+        [Test]
+        public void LegacyCheckpointEndingDoesNotPresentMissingTotalsAsZero()
+        {
+            var legacy = JsonUtility.FromJson<RescueSnapshot>(
+                "{\"RulesVersion\":1,\"RoomId\":\"local-demo\",\"RoundId\":\"old-round\",\"SavedCount\":1,\"Hull\":64}");
+            legacy.Phase = GamePhase.Result;
+            legacy.Outcome = GameOutcome.PartialSuccess;
+            var restored = RescueGame.Restore(GameConfig.Default, legacy).Snapshot();
+            var owner = new GameObject("legacy-contribution-test");
+            try
+            {
+                var view = owner.AddComponent<RescueView>();
+                view.Build(owner.AddComponent<HostControls>());
+                view.Render(restored);
+                var summary = Object.FindObjectsOfType<Text>().Single(label => label.text.StartsWith("救起 1/3"));
+                Assert.That(summary.text, Does.Contain("升级前贡献记录不可用"));
+                Assert.That(summary.text, Does.Not.Contain("修理 0"));
+            }
+            finally
+            {
+                foreach (var canvas in Object.FindObjectsOfType<Canvas>()) Object.DestroyImmediate(canvas.gameObject);
+                Object.DestroyImmediate(owner);
+            }
+        }
+
         [TestCase(GameCommand.Board, "上船成功")]
         [TestCase(GameCommand.VoteLeft, "左路投票已计入")]
         [TestCase(GameCommand.Repair, "修理已计入")]
@@ -423,7 +469,7 @@ namespace LighthouseRescue.Tests
                 view.Render(snapshot);
                 labels = Object.FindObjectsOfType<Text>();
                 var summary = labels.Single(text => text.text.StartsWith("救起 3"));
-                Assert.That(summary.fontSize * 390f / 1080f, Is.GreaterThanOrEqualTo(13f), "ending summary");
+                Assert.That(summary.fontSize * 390f / 1080f, Is.GreaterThanOrEqualTo(13.5f), "ending summary");
                 Assert.That(summary.preferredHeight, Is.LessThanOrEqualTo(summary.rectTransform.rect.height + 2f));
             }
             finally
