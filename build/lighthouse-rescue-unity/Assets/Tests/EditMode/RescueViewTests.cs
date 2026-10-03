@@ -10,6 +10,188 @@ namespace LighthouseRescue.Tests
     public sealed class RescueViewTests
     {
         [Test]
+        public void RescueCameraUsesPOVForEveryCheckpointAndPauseFromCheckpoint()
+        {
+            foreach (var phase in new[] { GamePhase.Checkpoint1, GamePhase.Checkpoint2, GamePhase.Checkpoint3 })
+                Assert.That(RescueView.IsRescuePOV(new RescueSnapshot { Phase = phase }), Is.True, phase.ToString());
+            Assert.That(RescueView.IsRescuePOV(new RescueSnapshot
+                { Phase = GamePhase.Paused, PhaseBeforePause = GamePhase.Checkpoint2 }), Is.True);
+            foreach (var phase in new[] { GamePhase.Waiting, GamePhase.Gathering, GamePhase.Voting,
+                GamePhase.Finale, GamePhase.Result })
+                Assert.That(RescueView.IsRescuePOV(new RescueSnapshot { Phase = phase }), Is.False, phase.ToString());
+            Assert.That(RescueView.IsRescuePOV(new RescueSnapshot
+                { Phase = GamePhase.Paused, PhaseBeforePause = GamePhase.Voting }), Is.False);
+        }
+
+        [Test]
+        public void EachCheckpointShowsItsOwnPOVArtAndHidesTheOverheadBoat()
+        {
+            var owner = new GameObject("pov-selection-test");
+            try
+            {
+                var view = owner.AddComponent<RescueView>();
+                view.Build(owner.AddComponent<HostControls>());
+                for (int stage = 1; stage <= 3; stage++)
+                {
+                    var phase = (GamePhase)((int)GamePhase.Checkpoint1 + stage - 1);
+                    view.Render(new RescueSnapshot { Phase = phase, CheckpointNumber = stage, Hull = 100 });
+                    var scene = GameObject.Find("First-person rescue " + stage);
+                    Assert.That(scene, Is.Not.Null);
+                    Assert.That(scene.GetComponentInParent<RectMask2D>(), Is.Not.Null, "POV zoom must stay inside sea frame");
+                    Assert.That(scene.GetComponent<RectTransform>().rect.width, Is.GreaterThan(984f), "survivor must read at phone size");
+                    Assert.That(GameObject.Find("Rescue ship"), Is.Null);
+                    Assert.That(Resources.Load<Texture2D>("Art/RescuePOV" + stage), Is.Not.Null);
+                }
+                view.Render(new RescueSnapshot { Phase = GamePhase.Voting, Hull = 100 });
+                Assert.That(GameObject.Find("Rescue ship"), Is.Not.Null);
+                Assert.That(GameObject.Find("First-person rescue 1"), Is.Null);
+            }
+            finally
+            {
+                foreach (var canvas in Object.FindObjectsOfType<Canvas>()) Object.DestroyImmediate(canvas.gameObject);
+                Object.DestroyImmediate(owner);
+            }
+        }
+
+        [Test]
+        public void StormBuildsPooledRainAndSprayAndGetsStrongerAcrossRescues()
+        {
+            var owner = new GameObject("storm-pool-test");
+            try
+            {
+                var view = owner.AddComponent<RescueView>();
+                view.Build(owner.AddComponent<HostControls>());
+                Assert.That(GameObject.Find("Storm rain 47"), Is.Not.Null);
+                Assert.That(GameObject.Find("Storm spray 17"), Is.Not.Null);
+                var canvas = Object.FindObjectOfType<Canvas>();
+                int pooledCount = canvas.GetComponentsInChildren<RectTransform>(true).Length;
+                var early = new RescueSnapshot { Phase = GamePhase.Checkpoint1, CheckpointNumber = 1, Hull = 100 };
+                var late = new RescueSnapshot { Phase = GamePhase.Checkpoint3, CheckpointNumber = 3, Hull = 100 };
+                Assert.That(RescueView.StormIntensity(late), Is.GreaterThan(RescueView.StormIntensity(early)));
+                for (int i = 0; i < 5; i++) view.Render(late);
+                Assert.That(canvas.GetComponentsInChildren<RectTransform>(true).Length, Is.EqualTo(pooledCount));
+                var paused = new RescueSnapshot { Phase = GamePhase.Paused, PhaseBeforePause = GamePhase.Checkpoint3,
+                    CheckpointNumber = 3, Hull = 100 };
+                Assert.That(RescueView.StormIntensity(paused), Is.EqualTo(RescueView.StormIntensity(late)));
+            }
+            finally
+            {
+                foreach (var canvas in Object.FindObjectsOfType<Canvas>()) Object.DestroyImmediate(canvas.gameObject);
+                Object.DestroyImmediate(owner);
+            }
+        }
+
+        [Test]
+        public void MuteSilencesStormAmbienceAlongWithInteractionSounds()
+        {
+            var owner = new GameObject("storm-audio-test");
+            try
+            {
+                var host = owner.AddComponent<HostControls>();
+                var view = owner.AddComponent<RescueView>();
+                view.Build(host);
+                var storm = owner.GetComponents<AudioSource>().Single(source => source.loop);
+                Assert.That(storm.clip, Is.Not.Null);
+                var snapshot = new RescueSnapshot { Phase = GamePhase.Checkpoint2, CheckpointNumber = 2, Hull = 100 };
+                view.Render(snapshot);
+                Assert.That(storm.volume, Is.GreaterThan(0f));
+                host.ToggleMute();
+                view.Render(snapshot);
+                Assert.That(storm.volume, Is.EqualTo(0f));
+                host.ToggleMute();
+                view.Render(snapshot);
+                Assert.That(storm.volume, Is.GreaterThan(0f));
+            }
+            finally
+            {
+                foreach (var canvas in Object.FindObjectsOfType<Canvas>()) Object.DestroyImmediate(canvas.gameObject);
+                Object.DestroyImmediate(owner);
+            }
+        }
+
+        [Test]
+        public void PausedRescueKeepsTheLastSpotlightBrightness()
+        {
+            var owner = new GameObject("paused-light-test");
+            try
+            {
+                var view = owner.AddComponent<RescueView>();
+                view.Build(owner.AddComponent<HostControls>());
+                view.Render(new RescueSnapshot { Phase = GamePhase.Checkpoint2, CheckpointNumber = 2,
+                    LightProgress = 3, LightTarget = 4, RepairProgress = 2, RepairTarget = 3, Hull = 100 });
+                var light = GameObject.Find("Searchlight on survivor").GetComponent<Image>();
+                float before = light.color.a;
+                view.Render(new RescueSnapshot { Phase = GamePhase.Paused, PhaseBeforePause = GamePhase.Checkpoint2,
+                    CheckpointNumber = 0, LightProgress = 3, LightTarget = 0, RepairProgress = 2, RepairTarget = 0, Hull = 100 });
+                Assert.That(light.color.a, Is.EqualTo(before).Within(0.001f));
+                Assert.That(Object.FindObjectsOfType<Text>().Any(label => label.text == "照明 3 / 4"), Is.True);
+                Assert.That(Object.FindObjectsOfType<Text>().Any(label => label.text == "修理 2 / 3"), Is.True);
+            }
+            finally
+            {
+                foreach (var canvas in Object.FindObjectsOfType<Canvas>()) Object.DestroyImmediate(canvas.gameObject);
+                Object.DestroyImmediate(owner);
+            }
+        }
+
+        [Test]
+        public void ThunderSourceIsSilencedWhenStormEndsOrHostMutes()
+        {
+            var owner = new GameObject("thunder-stop-test");
+            try
+            {
+                var host = owner.AddComponent<HostControls>();
+                var view = owner.AddComponent<RescueView>();
+                view.Build(host);
+                var thunder = owner.GetComponents<AudioSource>().Single(source => source.clip != null && source.clip.name == "Thunder");
+                var rescue = new RescueSnapshot { Phase = GamePhase.Checkpoint1, CheckpointNumber = 1, Hull = 100 };
+                view.Render(rescue);
+                Assert.That(thunder.volume, Is.GreaterThan(0f));
+                host.ToggleMute();
+                view.Render(rescue);
+                Assert.That(thunder.volume, Is.EqualTo(0f));
+                host.ToggleMute();
+                view.Render(new RescueSnapshot { Phase = GamePhase.Result, Hull = 100 });
+                Assert.That(thunder.volume, Is.EqualTo(0f));
+            }
+            finally
+            {
+                foreach (var canvas in Object.FindObjectsOfType<Canvas>()) Object.DestroyImmediate(canvas.gameObject);
+                Object.DestroyImmediate(owner);
+            }
+        }
+
+        [Test]
+        public void LightningIntervalsUseARepeatableIrregularSequence()
+        {
+            float first = RescueView.LightningInterval(0, 2);
+            float second = RescueView.LightningInterval(1, 2);
+            Assert.That(first, Is.Not.EqualTo(second));
+            Assert.That(RescueView.LightningInterval(0, 2), Is.EqualTo(first));
+        }
+
+        [Test]
+        public void LightningBranchExtendsDownwardFromItsTopPivot()
+        {
+            var owner = new GameObject("lightning-direction-test");
+            try
+            {
+                var view = owner.AddComponent<RescueView>();
+                view.Build(owner.AddComponent<HostControls>());
+                view.Render(new RescueSnapshot { Phase = GamePhase.Checkpoint1, CheckpointNumber = 1, Hull = 100 });
+                var branch = GameObject.Find("Lightning branch 0").GetComponent<RectTransform>();
+                Vector3 tip = branch.localRotation * new Vector3(0f, -branch.sizeDelta.y, 0f);
+                Assert.That(tip.x, Is.EqualTo(23f).Within(0.2f));
+                Assert.That(tip.y, Is.EqualTo(-38f).Within(0.2f));
+            }
+            finally
+            {
+                foreach (var canvas in Object.FindObjectsOfType<Canvas>()) Object.DestroyImmediate(canvas.gameObject);
+                Object.DestroyImmediate(owner);
+            }
+        }
+
+        [Test]
         public void StageCopyShowsActionAndNeverClaimsLiveConnection()
         {
             var snapshot = new RescueSnapshot { Phase = GamePhase.Voting, RemainingSeconds = 12 };
