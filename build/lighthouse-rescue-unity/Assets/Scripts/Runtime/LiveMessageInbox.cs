@@ -6,6 +6,7 @@ using LighthouseRescue.Rules;
 namespace LighthouseRescue.Runtime
 {
     public enum LiveInboxOutcome { Applied, RuleRejected, Ignored, Invalid, WrongRoom, WrongRound }
+    public enum LiveInboxPostResult { Accepted, Rejected, Full }
 
     public sealed class LiveInboxReceipt
     {
@@ -57,12 +58,16 @@ namespace LighthouseRescue.Runtime
             }
         }
 
-        public bool Post(LivePushEnvelope message, string sourceRoomId, long receivedUnixMilliseconds)
+        public bool Post(LivePushEnvelope message, string sourceRoomId, long receivedUnixMilliseconds) =>
+            TryPost(message, sourceRoomId, receivedUnixMilliseconds) == LiveInboxPostResult.Accepted;
+
+        public LiveInboxPostResult TryPost(LivePushEnvelope message, string sourceRoomId, long receivedUnixMilliseconds)
         {
-            if (message == null || receivedUnixMilliseconds <= 0) return false;
+            if (message == null || receivedUnixMilliseconds <= 0) return LiveInboxPostResult.Rejected;
             lock (gate)
             {
-                if (pending.Count >= capacity || string.IsNullOrWhiteSpace(roundId)) return false;
+                if (string.IsNullOrWhiteSpace(roundId)) return LiveInboxPostResult.Rejected;
+                if (pending.Count >= capacity) return LiveInboxPostResult.Full;
                 pending.Enqueue(new PendingMessage
                 {
                     Message = new LivePushEnvelope
@@ -75,7 +80,7 @@ namespace LighthouseRescue.Runtime
                     RoundId = roundId,
                     ReceivedUnixMilliseconds = receivedUnixMilliseconds
                 });
-                return true;
+                return LiveInboxPostResult.Accepted;
             }
         }
 

@@ -86,6 +86,22 @@ namespace LighthouseRescue.Tests
         }
 
         [Test]
+        public void PostResultDistinguishesFullQueueFromInvalidAndUnboundInputs()
+        {
+            var method = typeof(LiveMessageInbox).GetMethod("TryPost");
+            Assert.That(method, Is.Not.Null, "the controller needs an explicit overflow result");
+            var inbox = new LiveMessageInbox(1);
+            Func<LivePushEnvelope, string> result = message =>
+                method.Invoke(inbox, new object[] { message, "room-1", 100600 }).ToString();
+            Assert.That(result(Board()), Is.EqualTo("Rejected"), "unbound is not overflow");
+            inbox.SetRound("room-1", "round-1");
+            Assert.That(result(null), Is.EqualTo("Rejected"), "invalid input is not overflow");
+            Assert.That(result(Board()), Is.EqualTo("Accepted"));
+            Assert.That(result(Board("m2")), Is.EqualTo("Full"));
+            Assert.That(inbox.PendingCount, Is.EqualTo(1));
+        }
+
+        [Test]
         public void RoundBindingMustHappenOnTheUnityMainThread()
         {
             var inbox = new LiveMessageInbox(2);
