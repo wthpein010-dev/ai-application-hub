@@ -34,7 +34,7 @@ def main():
         (0, markers["voting"], "免费上船，俯视航行并投票选路"),
         (markers["voting"], markers["checkpoint1"], "左边礁石短路，右边迷雾长路"),
         (markers["checkpoint1"], markers["checkpoint2"], "船上视角：照明寻找第一位落难者"),
-        (markers["checkpoint2"], markers["checkpoint3"], "风雨雷电加剧，修船和照明同时补足"),
+        (markers["checkpoint2"], markers["checkpoint3"], "有效操作显示观众贡献，风雨雷电加剧"),
         (markers["checkpoint3"], 22.4, "第三段救援，探照灯穿过浪花"),
         (22.4, markers["result"], "带三个人冲回灯塔，准备结算"),
         (markers["result"], markers["result"] + 1.7, "三人平安上船；礼物只作外观"),
