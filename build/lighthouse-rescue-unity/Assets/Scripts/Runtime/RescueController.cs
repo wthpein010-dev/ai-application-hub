@@ -21,7 +21,6 @@ namespace LighthouseRescue.Runtime
         private GamePhase observedLivePhase;
         private long stageStartedUnixMilliseconds;
         private bool awaitingLiveRecovery;
-        private int eventNumber;
         private int roundNumber;
         private double speed = 1;
 
@@ -212,7 +211,7 @@ namespace LighthouseRescue.Runtime
             var gameEvent = new GameEvent
             {
                 Source = liveSource == null ? "simulation" : "host", RoomId = roomId, RoundId = snapshot.RoundId,
-                EventId = (liveSource == null ? "demo-" : "host-") + (++eventNumber), UserId = userId,
+                EventId = (liveSource == null ? "demo-" : "host-") + Guid.NewGuid().ToString("N"), UserId = userId,
                 DisplayName = userId == "host" ? null : "试玩观众",
                 Command = command, Count = count, OccurredAtSeconds = snapshot.ElapsedSeconds
             };

@@ -78,6 +78,9 @@ jobs:
           node tests/hub-entry-pages-browser-smoke.mjs
           node tests/x-ai-codex-radar-browser-smoke.mjs
 
+      - name: Verify Lighthouse WebGL refresh recovery
+        run: node tests/lighthouse-rescue-recovery-browser-smoke.mjs
+
       - name: Run ClickFlow browser acceptance
         run: node tests/clickflow-browser-smoke.mjs
 
