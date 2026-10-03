@@ -223,8 +223,88 @@ namespace LighthouseRescue.Tests
             {
                 var view = owner.AddComponent<RescueView>();
                 view.Build(owner.AddComponent<HostControls>());
-                view.ShowFeedback(command, ApplyResult.Accepted);
+                view.ShowFeedback(new GameEvent { Command = command }, ApplyResult.Accepted);
                 Assert.That(Object.FindObjectsOfType<Text>().Any(label => label.text == expected), Is.True);
+            }
+            finally
+            {
+                foreach (var canvas in Object.FindObjectsOfType<Canvas>()) Object.DestroyImmediate(canvas.gameObject);
+                Object.DestroyImmediate(owner);
+            }
+        }
+
+        [Test]
+        public void AcceptedAudienceActionAppearsInPortraitHintWithoutExposingUserId()
+        {
+            var owner = new GameObject("audience-hint-test");
+            try
+            {
+                var view = owner.AddComponent<RescueView>();
+                view.Build(owner.AddComponent<HostControls>());
+                var snapshot = new RescueSnapshot { Phase = GamePhase.Checkpoint1, CheckpointNumber = 1,
+                    RoundId = "round-a", Hull = 100, RepairTarget = 4, LightTarget = 3 };
+                view.Render(snapshot);
+                view.ShowFeedback(new GameEvent { UserId = "private-platform-id", DisplayName = "海风",
+                    Command = GameCommand.Repair }, ApplyResult.Accepted);
+                view.Render(snapshot);
+                var hint = Object.FindObjectsOfType<Text>().Single(label => label.text.Contains("海风：修理 +1"));
+                Assert.That(hint.text, Does.Not.Contain("private-platform-id"));
+                Assert.That(hint.supportRichText, Is.False);
+                Assert.That(hint.fontSize * 390f / 1080f, Is.GreaterThanOrEqualTo(13f));
+                Assert.That(hint.preferredHeight, Is.LessThanOrEqualTo(hint.rectTransform.rect.height + 2f));
+            }
+            finally
+            {
+                foreach (var canvas in Object.FindObjectsOfType<Canvas>()) Object.DestroyImmediate(canvas.gameObject);
+                Object.DestroyImmediate(owner);
+            }
+        }
+
+        [Test]
+        public void RejectedActionAndNewRoundCannotReceiveOldAudienceCredit()
+        {
+            var owner = new GameObject("audience-boundary-test");
+            try
+            {
+                var view = owner.AddComponent<RescueView>();
+                view.Build(owner.AddComponent<HostControls>());
+                var snapshot = new RescueSnapshot { Phase = GamePhase.Checkpoint1, CheckpointNumber = 1,
+                    RoundId = "round-a", Hull = 100 };
+                view.Render(snapshot);
+                view.ShowFeedback(new GameEvent { DisplayName = "甲", Command = GameCommand.Light }, ApplyResult.Cooldown);
+                view.Render(snapshot);
+                Assert.That(Object.FindObjectsOfType<Text>().Any(label => label.text.Contains("甲：照明")), Is.False);
+                view.ShowFeedback(new GameEvent { DisplayName = "乙", Command = GameCommand.Light }, ApplyResult.Accepted);
+                view.Render(snapshot);
+                Assert.That(Object.FindObjectsOfType<Text>().Any(label => label.text.Contains("乙：照明")), Is.True);
+                snapshot.RoundId = "round-b";
+                view.Render(snapshot);
+                Assert.That(Object.FindObjectsOfType<Text>().Any(label => label.text.Contains("乙：照明")), Is.False);
+            }
+            finally
+            {
+                foreach (var canvas in Object.FindObjectsOfType<Canvas>()) Object.DestroyImmediate(canvas.gameObject);
+                Object.DestroyImmediate(owner);
+            }
+        }
+
+        [Test]
+        public void RecoveryClearsOldAudienceHintFromTheSameRound()
+        {
+            var owner = new GameObject("audience-recovery-test");
+            try
+            {
+                var view = owner.AddComponent<RescueView>();
+                view.Build(owner.AddComponent<HostControls>());
+                var snapshot = new RescueSnapshot { Phase = GamePhase.Checkpoint2, CheckpointNumber = 2,
+                    RoundId = "round-a", Hull = 80 };
+                view.Render(snapshot);
+                view.ShowFeedback(new GameEvent { DisplayName = "海风", Command = GameCommand.Repair }, ApplyResult.Accepted);
+                view.Render(snapshot);
+                Assert.That(Object.FindObjectsOfType<Text>().Any(label => label.text.Contains("海风：修理")), Is.True);
+                view.ResetTransitionBaseline(snapshot);
+                view.Render(snapshot);
+                Assert.That(Object.FindObjectsOfType<Text>().Any(label => label.text.Contains("海风：修理")), Is.False);
             }
             finally
             {

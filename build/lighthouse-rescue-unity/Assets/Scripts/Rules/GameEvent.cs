@@ -7,6 +7,7 @@ namespace LighthouseRescue.Rules
         public string RoundId;
         public string EventId;
         public string UserId;
+        public string DisplayName;
         public GameCommand Command;
         public int Count = 1;
         public double OccurredAtSeconds;

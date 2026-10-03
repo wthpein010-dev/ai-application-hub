@@ -69,10 +69,10 @@ namespace LighthouseRescue.Runtime
             {
                 var snapshot = game.Snapshot();
                 checkpoint.Save(snapshot);
-                view.ShowFeedback(gameEvent.Command, result);
+                view.ShowFeedback(gameEvent, result);
                 view.Render(snapshot);
             }
-            else view.ShowFeedback(gameEvent.Command, result);
+            else view.ShowFeedback(gameEvent, result);
         }
 
         public void Emit(GameCommand command, string userId = "试玩观众", int count = 1)
@@ -83,6 +83,7 @@ namespace LighthouseRescue.Runtime
             {
                 Source = "simulation", RoomId = Room, RoundId = snapshot.RoundId,
                 EventId = "demo-" + (++eventNumber), UserId = userId,
+                DisplayName = userId == "host" ? null : "试玩观众",
                 Command = command, Count = count, OccurredAtSeconds = snapshot.ElapsedSeconds
             });
         }
