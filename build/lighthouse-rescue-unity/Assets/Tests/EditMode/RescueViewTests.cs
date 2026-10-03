@@ -123,5 +123,52 @@ namespace LighthouseRescue.Tests
                 Object.DestroyImmediate(owner);
             }
         }
+
+        [Test]
+        public void CoreInstructionsAndActionsAreLegibleOnPortraitPhones()
+        {
+            var owner = new GameObject("mobile-legibility-test");
+            try
+            {
+                var view = owner.AddComponent<RescueView>();
+                view.Build(owner.AddComponent<HostControls>());
+                var snapshot = new RescueSnapshot { Phase = GamePhase.Voting, Hull = 100, RemainingSeconds = 15 };
+                view.Render(snapshot);
+                var labels = Object.FindObjectsOfType<Text>();
+                foreach (var copy in new[] { "上船", "选左 · 短路", "选右 · 长路", "船长裁定左", "船长裁定右" })
+                {
+                    var label = labels.Single(text => text.text == copy);
+                    Assert.That(label.fontSize * 390f / 1080f, Is.GreaterThanOrEqualTo(13.5f), copy);
+                }
+                Assert.That(labels.Single(text => text.text == RescueView.DescribeStage(snapshot)).fontSize * 390f / 1080f,
+                    Is.GreaterThanOrEqualTo(13.5f), "stage instruction");
+                Assert.That(labels.Single(text => text.text.StartsWith("左：")).fontSize * 390f / 1080f,
+                    Is.GreaterThanOrEqualTo(13f), "route choice");
+                Assert.That(labels.Single(text => text.text.StartsWith("已救 ")).fontSize * 390f / 1080f,
+                    Is.GreaterThanOrEqualTo(13f), "rescue score");
+                foreach (var phase in new[] { GamePhase.Waiting, GamePhase.Gathering, GamePhase.Voting,
+                    GamePhase.Checkpoint1, GamePhase.Finale, GamePhase.Paused, GamePhase.Result })
+                {
+                    snapshot.Phase = phase;
+                    view.Render(snapshot);
+                    var instruction = labels.Single(text => text.text == RescueView.DescribeStage(snapshot));
+                    Assert.That(instruction.preferredHeight, Is.LessThanOrEqualTo(instruction.rectTransform.rect.height + 2f), phase.ToString());
+                }
+                Assert.That(labels.Single(text => text.text == "本地演示 · 非直播连接").fontSize * 390f / 1080f,
+                    Is.GreaterThanOrEqualTo(13f), "simulation mode badge");
+                snapshot.SavedCount = 3;
+                snapshot.Outcome = GameOutcome.FullSuccess;
+                view.Render(snapshot);
+                labels = Object.FindObjectsOfType<Text>();
+                var summary = labels.Single(text => text.text.StartsWith("救起 3"));
+                Assert.That(summary.fontSize * 390f / 1080f, Is.GreaterThanOrEqualTo(13f), "ending summary");
+                Assert.That(summary.preferredHeight, Is.LessThanOrEqualTo(summary.rectTransform.rect.height + 2f));
+            }
+            finally
+            {
+                foreach (var canvas in Object.FindObjectsOfType<Canvas>()) Object.DestroyImmediate(canvas.gameObject);
+                Object.DestroyImmediate(owner);
+            }
+        }
     }
 }

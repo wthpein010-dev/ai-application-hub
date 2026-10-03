@@ -64,16 +64,16 @@ namespace LighthouseRescue.Runtime
             if (snapshot == null) return "准备救援";
             switch (snapshot.Phase)
             {
-                case GamePhase.Waiting: return "目标：救起 3 人，驶向灯塔。点击开始，邀请观众上船。";
-                case GamePhase.Gathering: return "集结中：评论“上船”加入救援队。免费参与，每个人都能帮忙。";
-                case GamePhase.Voting: return "选路中：评论“左”走礁石短路，评论“右”走迷雾长路。";
+                case GamePhase.Waiting: return "救起 3 人，驶向灯塔。点击开始。";
+                case GamePhase.Gathering: return "评论“上船”，免费加入救援队。";
+                case GamePhase.Voting: return "评论“左”或“右”，决定航线。";
                 case GamePhase.Checkpoint1:
                 case GamePhase.Checkpoint2:
                 case GamePhase.Checkpoint3:
-                    return "修理保船，照明救人；每 20 次点赞补一格光。";
-                case GamePhase.Finale: return "正在冲向灯塔，三段救援已结束。准备查看结局。";
-                case GamePhase.Paused: return "已暂停。恢复后继续当前倒计时，过期指令不会补入。";
-                case GamePhase.Result: return "本局结束。查看救援结果，点击再来一局。";
+                    return "修理保船，照明救人；点赞补光。";
+                case GamePhase.Finale: return "驶向灯塔，准备查看救援结果。";
+                case GamePhase.Paused: return "已暂停，恢复后继续倒计时。";
+                case GamePhase.Result: return "本局结束，点击再来一局。";
                 default: return "准备救援";
             }
         }
@@ -116,13 +116,13 @@ namespace LighthouseRescue.Runtime
             Panel(root, "Top accent", 0, 0, 1080, 12, Gold);
             Label(root, "灯塔救援队", 60, 49, 700, 72, 62, Gold, FontStyle.Bold);
             Label(root, "L I G H T H O U S E  R E S C U E", 64, 128, 730, 35, 25, Mint);
-            Panel(root, "Mode badge", 60, 177, 340, 53, Hex("295A63"));
-            Label(root, "本地演示 · 非直播连接", 79, 181, 310, 45, 26, SoftWhite, FontStyle.Bold);
+            Panel(root, "Mode badge", 60, 177, 500, 53, Hex("295A63"));
+            Label(root, "本地演示 · 非直播连接", 79, 181, 470, 45, 36, SoftWhite, FontStyle.Bold);
             timer = Label(root, "00:00", 800, 64, 220, 80, 62, SoftWhite, FontStyle.Bold, TextAnchor.MiddleRight);
             Panel(root, "Intro card border", 48, 257, 984, 153, Gold);
             Panel(root, "Intro card", 52, 261, 976, 145, Card);
             stageTitle = Label(root, "准备起航", 78, 274, 910, 55, 42, Gold, FontStyle.Bold);
-            instruction = Label(root, "", 78, 333, 904, 62, 31, SoftWhite);
+            instruction = Label(root, "", 78, 333, 904, 62, 40, SoftWhite);
 
             Panel(root, "Sea frame", 43, 433, 994, 639, Hex("42697A"));
             Panel(root, "Sea", 48, 438, 984, 629, Sea);
@@ -160,36 +160,36 @@ namespace LighthouseRescue.Runtime
             hullFlash = Panel(root, "Hull damage flash", 48, 438, 984, 629, Color.clear);
             Panel(root, "Map info scrim", 48, 939, 984, 128, new Color(0.02f, 0.10f, 0.16f, 0.74f));
             rescueToast = Label(root, "", 261, 739, 558, 80, 42, Gold, FontStyle.Bold, TextAnchor.MiddleCenter);
-            routeText = Label(root, "", 71, 950, 935, 58, 29, SoftWhite, FontStyle.Bold, TextAnchor.MiddleCenter);
+            routeText = Label(root, "", 71, 950, 935, 58, 37, SoftWhite, FontStyle.Bold, TextAnchor.MiddleCenter);
 
             Panel(root, "Status panel", 48, 1091, 984, 213, Card);
-            scoreText = Label(root, "", 76, 1108, 930, 54, 34, Gold, FontStyle.Bold);
-            hullText = Label(root, "", 76, 1172, 325, 43, 28, SoftWhite);
+            scoreText = Label(root, "", 76, 1108, 930, 54, 36, Gold, FontStyle.Bold);
+            hullText = Label(root, "", 76, 1172, 325, 43, 34, SoftWhite);
             Panel(root, "Hull track", 397, 1180, 568, 26, Hex("274958"));
             hullFill = Panel(root, "Hull fill", 397, 1180, 568, 26, Mint);
-            repairText = Label(root, "", 76, 1225, 388, 42, 28, SoftWhite);
+            repairText = Label(root, "", 76, 1225, 388, 42, 34, SoftWhite);
             repairFill = Panel(root, "Repair progress", 468, 1236, 213, 18, Gold);
-            lightText = Label(root, "", 698, 1225, 300, 42, 28, SoftWhite);
+            lightText = Label(root, "", 698, 1225, 300, 42, 34, SoftWhite);
             lightFill = Panel(root, "Light progress", 921, 1236, 75, 18, Gold);
-            crewText = Label(root, "", 61, 1327, 920, 48, 28, MutedText);
+            crewText = Label(root, "", 61, 1327, 920, 48, 34, MutedText);
 
             boardButton = MakeButton("上船", 48, 1406, 310, 105, host.Board, Mint);
             leftButton = MakeButton("选左 · 短路", 382, 1406, 316, 105, host.VoteLeft, Gold);
             rightButton = MakeButton("选右 · 长路", 722, 1406, 310, 105, host.VoteRight, Gold);
             repairButton = MakeButton("修理船体", 48, 1532, 477, 105, host.Repair, Mint);
             lightButton = MakeButton("照明救人", 548, 1532, 484, 105, host.Light, Gold);
-            captainLeftButton = MakeButton("船长裁定左", 48, 1522, 477, 125, host.CaptainLeft, Gold, 34);
-            captainRightButton = MakeButton("船长裁定右", 548, 1522, 484, 125, host.CaptainRight, Mint, 34);
+            captainLeftButton = MakeButton("船长裁定左", 48, 1522, 477, 125, host.CaptainLeft, Gold, 40);
+            captainRightButton = MakeButton("船长裁定右", 548, 1522, 484, 125, host.CaptainRight, Mint, 40);
             likeButton = MakeButton("点赞 ×20 补光", 48, 1658, 477, 96, host.Like, Mint);
             giftButton = MakeButton("礼物烟花 · 纯外观", 548, 1658, 484, 96, host.Gift, Hex("D2ABC8"));
-            feedbackText = Label(root, "", 64, 1763, 952, 55, 28, Gold, FontStyle.Bold, TextAnchor.MiddleCenter);
+            feedbackText = Label(root, "", 64, 1763, 952, 55, 36, Gold, FontStyle.Bold, TextAnchor.MiddleCenter);
 
-            startButton = MakeButton("开始 / 再来", 46, 1834, 214, 62, host.StartRound, Gold, 25);
-            pauseButton = MakeButton("暂停 / 恢复", 269, 1834, 199, 62, host.PauseOrResume, Mint, 25);
-            MakeButton("结束", 477, 1834, 128, 62, host.EndRound, Hex("D2ABC8"), 25);
-            MakeButton("静音", 614, 1834, 128, 62, host.ToggleMute, MutedText, 25);
-            MakeButton("重置", 751, 1834, 128, 62, host.ResetRound, MutedText, 25);
-            var speedButton = MakeButton("1×", 888, 1834, 144, 62, host.ToggleSpeed, MutedText, 25);
+            startButton = MakeButton("开始 / 再来", 46, 1824, 214, 75, host.StartRound, Gold, 33);
+            pauseButton = MakeButton("暂停 / 恢复", 269, 1824, 199, 75, host.PauseOrResume, Mint, 33);
+            MakeButton("结束", 477, 1824, 128, 75, host.EndRound, Hex("D2ABC8"), 33);
+            MakeButton("静音", 614, 1824, 128, 75, host.ToggleMute, MutedText, 33);
+            MakeButton("重置", 751, 1824, 128, 75, host.ResetRound, MutedText, 33);
+            var speedButton = MakeButton("1×", 888, 1824, 144, 75, host.ToggleSpeed, MutedText, 33);
             speedText = speedButton.GetComponentInChildren<Text>();
 
             resultCard = Panel(root, "Ending illustration", 141, 529, 798, 427, Hex("183747")).gameObject;
@@ -198,7 +198,7 @@ namespace LighthouseRescue.Runtime
             resultCrew = new Image[3];
             for (int i = 0; i < 3; i++)
                 resultCrew[i] = Picture(resultCard.transform, "Rescued survivor " + i, "Art/SurvivorV2", 203 + i * 137, 156, 119, 119, false);
-            resultDetail = Label(resultCard.transform, "", 40, 277, 718, 116, 29, SoftWhite, FontStyle.Normal, TextAnchor.MiddleCenter);
+            resultDetail = Label(resultCard.transform, "", 40, 277, 718, 116, 37, SoftWhite, FontStyle.Normal, TextAnchor.MiddleCenter);
             resultCard.SetActive(false);
             if (FindObjectOfType<EventSystem>() == null)
                 new GameObject("UI Event System", typeof(EventSystem), typeof(StandaloneInputModule));
@@ -225,10 +225,10 @@ namespace LighthouseRescue.Runtime
             timer.text = s.Phase == GamePhase.Waiting || s.Phase == GamePhase.Result ? "--:--" : "00:" + Mathf.CeilToInt((float)s.RemainingSeconds).ToString("00");
             stageTitle.text = StageTitle(s);
             instruction.text = DescribeStage(s);
-            routeText.text = s.Phase == GamePhase.Voting ? "左：礁石短路（修 4 / 光 3）　右：迷雾长路（修 3 / 光 4）" :
+            routeText.text = s.Phase == GamePhase.Voting ? "左：短路 修4 光3｜右：长路 修3 光4" :
                 s.Route == RescueRoute.ShortLeft ? "当前路线：礁石短路 · 快，但更伤船" :
                 s.Route == RescueRoute.LongRight ? "当前路线：迷雾长路 · 慢，需要更多光" : "观众可免费投票决定航线";
-            scoreText.text = "已救 " + s.SavedCount + " / 3 人　　 船员 " + s.JoinedCount + " 人　　 左 " + s.LeftVotes + " : " + s.RightVotes + " 右";
+            scoreText.text = "已救 " + s.SavedCount + "/3｜船员 " + s.JoinedCount + "｜左 " + s.LeftVotes + ":" + s.RightVotes + " 右";
             hullText.text = "船体 " + s.Hull + " / 100";
             SetFill(hullFill, 568, Mathf.Clamp01(s.Hull / 100f));
             hullFill.color = s.Hull < 30 ? Hex("EF8C83") : Mint;
@@ -236,7 +236,7 @@ namespace LighthouseRescue.Runtime
             lightText.text = s.LightTarget == 0 ? "照明 --" : "照明 " + s.LightProgress + " / " + s.LightTarget;
             SetFill(repairFill, 213, s.RepairTarget == 0 ? 0 : (float)s.RepairProgress / s.RepairTarget);
             SetFill(lightFill, 75, s.LightTarget == 0 ? 0 : (float)s.LightProgress / s.LightTarget);
-            crewText.text = "船员席位  " + (s.JoinedCount > 0 ? "● " + s.JoinedCount + " 人同行" : "○ 等待第一位观众") + "　　 系统值守各 1 格，免费指令能改变结局";
+            crewText.text = "每段自带 1 格值守｜免费参与能改变结局";
             var checkpoint = s.Phase == GamePhase.Checkpoint1 || s.Phase == GamePhase.Checkpoint2 || s.Phase == GamePhase.Checkpoint3;
             boardButton.interactable = s.Phase != GamePhase.Waiting && s.Phase != GamePhase.Result && s.Phase != GamePhase.Paused;
             leftButton.interactable = rightButton.interactable = s.Phase == GamePhase.Voting;
@@ -279,7 +279,7 @@ namespace LighthouseRescue.Runtime
             {
                 resultTitle.text = DescribeEnding(s.Outcome);
                 for (int i = 0; i < 3; i++) resultCrew[i].color = i < s.SavedCount ? Color.white : new Color(0.37f, 0.48f, 0.51f, 0.8f);
-                resultDetail.text = "救起 " + s.SavedCount + " / 3 人 · 船体 " + s.Hull + " 点 · 用时 " + Mathf.RoundToInt((float)s.ElapsedSeconds) + " 秒\n点击“开始 / 再来”开启下一局";
+                resultDetail.text = "救起 " + s.SavedCount + "/3｜船体 " + s.Hull + "｜" + Mathf.RoundToInt((float)s.ElapsedSeconds) + " 秒\n点击“开始/再来”开启下一局";
             }
             var controller = GetComponent<RescueController>();
             speedText.text = (controller == null ? 1 : controller.Speed).ToString("0") + "×";
@@ -368,8 +368,8 @@ namespace LighthouseRescue.Runtime
 
         private void Play(AudioClip clip) { if (clip != null && !host.Muted) sound.PlayOneShot(clip, 0.35f); }
         private static void SetFill(Image image, float max, float ratio) => image.rectTransform.sizeDelta = new Vector2(max * Mathf.Clamp01(ratio), image.rectTransform.sizeDelta.y);
-        private Button MakeButton(string title, float x, float y, float w, float h, UnityEngine.Events.UnityAction action, Color color, int size = 31) => MakeButtonOn(root, title, x, y, w, h, action, color, size);
-        private Button MakeButtonOn(Transform parent, string title, float x, float y, float w, float h, UnityEngine.Events.UnityAction action, Color color, int size = 31)
+        private Button MakeButton(string title, float x, float y, float w, float h, UnityEngine.Events.UnityAction action, Color color, int size = 39) => MakeButtonOn(root, title, x, y, w, h, action, color, size);
+        private Button MakeButtonOn(Transform parent, string title, float x, float y, float w, float h, UnityEngine.Events.UnityAction action, Color color, int size = 39)
         {
             var group = Rect(parent, title + " control", x, y, w, h);
             Panel(group, title + " shadow", 4, 5, w, h, new Color(0f, 0.04f, 0.08f, 0.32f));
