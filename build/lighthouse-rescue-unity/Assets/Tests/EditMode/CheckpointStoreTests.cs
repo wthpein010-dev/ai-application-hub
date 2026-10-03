@@ -60,6 +60,19 @@ namespace LighthouseRescue.Tests
         }
 
         [Test]
+        public void TransientViewSnapshotCannotReplaceACompleteCheckpoint()
+        {
+            var game = new RescueGame(GameConfig.Default, "room", "round", 9);
+            game.Apply(E(GameCommand.Start, "start", 0), 0);
+            var store = new CheckpointStore(file);
+            store.Save(game.Snapshot());
+            var transient = new RescueSnapshot { RulesVersion = 0, RoomId = "room", RoundId = "round" };
+            Assert.Throws<ArgumentException>(() => store.Save(transient));
+            Assert.That(store.TryLoad("room", 1, out var recovered), Is.True);
+            Assert.That(recovered.RecentEventIds, Does.Contain("start"));
+        }
+
+        [Test]
         public void StartingFreshAfterAbandoningRoundDoesNotOfferStaleRecovery()
         {
             var store = new CheckpointStore(file);

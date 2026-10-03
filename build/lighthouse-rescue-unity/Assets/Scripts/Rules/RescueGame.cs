@@ -193,10 +193,22 @@ namespace LighthouseRescue.Rules
 
         public RescueSnapshot Advance(double deltaSeconds)
         {
+            AdvanceClock(deltaSeconds);
+            return Snapshot();
+        }
+
+        public RescueSnapshot AdvanceForView(double deltaSeconds)
+        {
+            AdvanceClock(deltaSeconds);
+            return ViewSnapshot();
+        }
+
+        private void AdvanceClock(double deltaSeconds)
+        {
             if (double.IsNaN(deltaSeconds) || double.IsInfinity(deltaSeconds) || deltaSeconds < 0)
                 throw new ArgumentOutOfRangeException(nameof(deltaSeconds));
             if (phase == GamePhase.Waiting || phase == GamePhase.Paused || phase == GamePhase.Result)
-                return Snapshot();
+                return;
             while (deltaSeconds > Epsilon && phase != GamePhase.Result)
             {
                 double step = Math.Min(deltaSeconds, remainingSeconds);
@@ -206,13 +218,18 @@ namespace LighthouseRescue.Rules
                 if (remainingSeconds <= Epsilon)
                     CompletePhase();
             }
-            return Snapshot();
         }
 
-        public RescueSnapshot Snapshot()
+        public RescueSnapshot Snapshot() => CreateSnapshot(true);
+
+        // Render and live-message hot paths need scalar state, never persistence history.
+        public RescueSnapshot ViewSnapshot() => CreateSnapshot(false);
+
+        private RescueSnapshot CreateSnapshot(bool includeHistory)
         {
             var result = new RescueSnapshot
             {
+                RulesVersion = includeHistory ? 1 : 0,
                 RoomId = roomId, RoundId = roundId, Seed = seed,
                 Phase = phase, PhaseBeforePause = phaseBeforePause,
                 Route = route, CaptainChoice = captainChoice, Outcome = outcome,
@@ -227,11 +244,12 @@ namespace LighthouseRescue.Rules
                 CheckpointNumber = CheckpointNumber(),
                 LikeCarry = likeCarry, LikePointsAwarded = likePointsAwarded,
                 RepairActions = repairActions, LightActions = lightActions, LikeLightPoints = likeLightPoints,
-                ContributionTotalsComplete = contributionTotalsComplete,
-                RecentEventIds = new List<string>(seenEvents),
-                JoinedUserIds = new List<string>(joinedUsers),
-                VotedUserIds = new List<string>(votedUsers)
+                ContributionTotalsComplete = contributionTotalsComplete
             };
+            if (!includeHistory) return result;
+            result.RecentEventIds = new List<string>(seenEvents);
+            result.JoinedUserIds = new List<string>(joinedUsers);
+            result.VotedUserIds = new List<string>(votedUsers);
             foreach (var pair in lastCommandTime)
             {
                 result.CooldownKeys.Add(pair.Key);
