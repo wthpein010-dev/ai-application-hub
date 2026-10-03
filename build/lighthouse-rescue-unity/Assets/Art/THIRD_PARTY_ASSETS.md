@@ -45,3 +45,13 @@ These three scene illustrations were generated with the built-in image generatio
 | `Resources/Art/RescuePOV1.png` | First rescue: yellow-raincoat survivor in orange life ring, viewed from boat bow | `A6A9AA29211437605799FD512BB27E0E99741F237C0A331957C1983372864BC3` |
 | `Resources/Art/RescuePOV2.png` | Second rescue: red-raincoat survivor reaching from broken dinghy | `9DDD291687F3E27C5E1C9017F34CC375001152B67CF56D1D8BBD29A4A9EA2729` |
 | `Resources/Art/RescuePOV3.png` | Third rescue: yellow-raincoat survivor by rocks in heavy surf | `64C5614F58A859D5FF373FE7E16F723E48490A7312EF72BDE160C06B24009929` |
+
+## Original synthesized storm audio
+
+`tools/generate_weather_audio.py` uses seeded noise and oscillators to create these sounds, then encodes them with the repository's locked `ffmpeg-static` binary. No third-party field recording is embedded. The generator is the reproducible source for the shipped OGG files.
+
+| Shipped asset | Intended use | SHA-256 |
+| --- | --- | --- |
+| `Resources/Audio/StormRain.ogg` | Looping rain, wind and distant surf | `B73A3E2C5E1C29A5A4D9F3D89CC299C6515074E6DE0E5EDA5FE4661DF5D489B6` |
+| `Resources/Audio/Thunder.ogg` | Lightning crack and rolling thunder | `5F6D2D7C3B03ECEADFEEB538FC9C33F395EE8EBB76DB0B46B9A69453197027F4` |
+| `Resources/Audio/Splash.ogg` | Water splash when a survivor is saved | `C44ED6F29E5C74A24F5C5718D44539DB951C9B1DB994CACA3872BCB21EC141BE` |
