@@ -142,6 +142,70 @@ namespace LighthouseRescue.Tests
         }
 
         [Test]
+        public void WindAndSearchlightParticlesStayPooledAndFollowTheRescueCamera()
+        {
+            var owner = new GameObject("storm-depth-test");
+            try
+            {
+                var view = owner.AddComponent<RescueView>();
+                view.Build(owner.AddComponent<HostControls>());
+                var first = new RescueSnapshot { Phase = GamePhase.Checkpoint1, CheckpointNumber = 1, Hull = 100,
+                    LightProgress = 0, LightTarget = 3 };
+                view.Render(first);
+                var wind = GameObject.Find("Wind gust 0").GetComponent<Image>();
+                var mote = GameObject.Find("Searchlight mist 0").GetComponent<Image>();
+                float weakWind = wind.color.a;
+                float unlitMist = mote.color.a;
+                int pooledCount = Object.FindObjectOfType<Canvas>().GetComponentsInChildren<RectTransform>(true).Length;
+                view.Render(new RescueSnapshot { Phase = GamePhase.Checkpoint3, CheckpointNumber = 3, Hull = 100,
+                    LightProgress = 3, LightTarget = 3 });
+                Assert.That(wind.color.a, Is.GreaterThan(weakWind));
+                Assert.That(mote.color.a, Is.GreaterThan(unlitMist));
+                Assert.That(Object.FindObjectOfType<Canvas>().GetComponentsInChildren<RectTransform>(true).Length,
+                    Is.EqualTo(pooledCount));
+                view.Render(new RescueSnapshot { Phase = GamePhase.Voting, Hull = 100 });
+                Assert.That(GameObject.Find("Wind gust 0"), Is.Not.Null);
+                Assert.That(GameObject.Find("Searchlight mist 0"), Is.Null);
+            }
+            finally
+            {
+                foreach (var canvas in Object.FindObjectsOfType<Canvas>()) Object.DestroyImmediate(canvas.gameObject);
+                Object.DestroyImmediate(owner);
+            }
+        }
+
+        [Test]
+        public void StormAmbienceBreathesWithGustsButPauseFreezesItsWeatherClock()
+        {
+            var owner = new GameObject("gust-audio-test");
+            try
+            {
+                var view = owner.AddComponent<RescueView>();
+                view.Build(owner.AddComponent<HostControls>());
+                var clock = typeof(RescueView).GetField("weatherClock", BindingFlags.Instance | BindingFlags.NonPublic);
+                var ambience = owner.GetComponents<AudioSource>().Single(source => source.loop);
+                var storm = new RescueSnapshot { Phase = GamePhase.Checkpoint3, CheckpointNumber = 3, Hull = 100 };
+                clock.SetValue(view, 0f);
+                view.Render(storm);
+                float firstVolume = ambience.volume;
+                clock.SetValue(view, 2.2f);
+                view.Render(storm);
+                Assert.That(ambience.volume, Is.Not.EqualTo(firstVolume).Within(0.001f));
+                var paused = new RescueSnapshot { Phase = GamePhase.Paused,
+                    PhaseBeforePause = GamePhase.Checkpoint3, CheckpointNumber = 3, Hull = 100 };
+                float beforePause = (float)clock.GetValue(view);
+                view.Render(paused);
+                Assert.That((float)clock.GetValue(view), Is.EqualTo(beforePause));
+                Assert.That(ambience.volume, Is.LessThan(firstVolume));
+            }
+            finally
+            {
+                foreach (var canvas in Object.FindObjectsOfType<Canvas>()) Object.DestroyImmediate(canvas.gameObject);
+                Object.DestroyImmediate(owner);
+            }
+        }
+
+        [Test]
         public void RainStreaksStayInsideTheSeaFrameDuringAStorm()
         {
             var owner = new GameObject("storm-bounds-test");
@@ -150,17 +214,19 @@ namespace LighthouseRescue.Tests
                 var view = owner.AddComponent<RescueView>();
                 view.Build(owner.AddComponent<HostControls>());
                 var clock = typeof(RescueView).GetField("weatherClock", BindingFlags.Instance | BindingFlags.NonPublic);
-                foreach (float seconds in new[] { 0f, 3.5f, 7.2f, 13f })
+                for (float seconds = 0f; seconds <= 30f; seconds += 0.25f)
                 {
                     clock.SetValue(view, seconds);
                     view.Render(new RescueSnapshot { Phase = GamePhase.Checkpoint3, CheckpointNumber = 3, Hull = 100 });
                     foreach (var image in Object.FindObjectsOfType<Image>())
                     {
-                        if (!image.name.StartsWith("Storm rain ") && !image.name.StartsWith("Lens rain ")) continue;
+                        if (!image.name.StartsWith("Storm rain ") && !image.name.StartsWith("Lens rain ") &&
+                            !image.name.StartsWith("Wind gust ") && !image.name.StartsWith("Searchlight mist ")) continue;
                         var rect = image.rectTransform;
                         float top = -rect.anchoredPosition.y;
                         Assert.That(rect.anchoredPosition.x, Is.GreaterThanOrEqualTo(75f), image.name);
                         Assert.That(rect.anchoredPosition.x, Is.LessThanOrEqualTo(990f), image.name);
+                        Assert.That(rect.anchoredPosition.x + rect.sizeDelta.x, Is.LessThanOrEqualTo(1032f), image.name);
                         Assert.That(top, Is.GreaterThanOrEqualTo(438f), image.name);
                         Assert.That(top + rect.sizeDelta.y, Is.LessThanOrEqualTo(1067f), image.name);
                     }
