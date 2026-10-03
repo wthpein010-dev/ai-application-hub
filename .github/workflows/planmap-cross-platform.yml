@@ -1,7 +1,7 @@
 name: PlanMap cross-platform
 on:
   push:
-    branches: ['agent/planmap-*']
+    branches: ['main']
     paths: ['projects/planmap/**', '.github/workflows/planmap-cross-platform.yml']
   pull_request:
     paths: ['projects/planmap/**', '.github/workflows/planmap-cross-platform.yml']
