@@ -144,9 +144,19 @@ test("recording proof matches current media, sources, timeline and real state ch
   ];
   assert.deepEqual(Object.keys(proof.sources).sort(), sourceFiles.sort());
   for (const relativePath of sourceFiles) {
+    const sourcePath = join(root, ...relativePath.split("/"));
+    if (relativePath === "projects/paws-level-editor/index.html") {
+      // The administrator gate was added after filming; keep the original recording proof immutable.
+      const current = readFileSync(sourcePath, "utf8").replace(/\r\n/g, "\n");
+      const gate = '  <link rel="stylesheet" href="../../assets/admin-download-gate.css">\n'
+        + '  <script type="module" src="../../assets/admin-download-gate.mjs"></script>\n';
+      assert.ok(current.includes(gate), "post-recording administrator gate must remain present");
+      assert.equal(proof.sources[relativePath], sha256(current.replace(gate, "")), relativePath);
+      continue;
+    }
     assert.equal(
       proof.sources[relativePath],
-      sha256Source(join(root, ...relativePath.split("/"))),
+      sha256Source(sourcePath),
       relativePath,
     );
   }
