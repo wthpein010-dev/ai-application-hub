@@ -90,6 +90,7 @@ namespace LighthouseRescue.Runtime
         private GameObject recoveryCard;
         private Button boardButton, leftButton, rightButton, repairButton, lightButton, likeButton, giftButton;
         private Button startButton, pauseButton, endButton, resetButton, captainLeftButton, captainRightButton;
+        private Button recoverButton, restartRecoveryButton;
         private Font font;
         private AudioSource sound;
         private AudioSource weatherSound;
@@ -343,6 +344,7 @@ namespace LighthouseRescue.Runtime
             if (s == null || root == null) return;
             bool localDemo = liveStatus == null;
             bool liveFault = !localDemo && liveStatus.State == LiveConnectionState.Faulted;
+            bool recoveryPending = recoveryCard != null && recoveryCard.activeSelf;
             modeText.text = localDemo ? "本地演示 · 非直播连接" :
                 liveFault ? "直播已停止 · " + liveStatus.FaultTitle :
                 liveStatus.IsConnected ? "抖音直播 · 已连接" : "直播断开 · 等待重连";
@@ -430,16 +432,19 @@ namespace LighthouseRescue.Runtime
             speedButton.transform.parent.gameObject.SetActive(localDemo);
             boardButton.interactable = localDemo && s.Phase != GamePhase.Waiting && s.Phase != GamePhase.Result && s.Phase != GamePhase.Paused;
             leftButton.interactable = rightButton.interactable = s.Phase == GamePhase.Voting;
-            captainLeftButton.interactable = captainRightButton.interactable = s.Phase == GamePhase.Voting && !liveFault;
+            captainLeftButton.interactable = captainRightButton.interactable = s.Phase == GamePhase.Voting && !liveFault && !recoveryPending;
             captainLeftButton.transform.parent.gameObject.SetActive(s.Phase == GamePhase.Voting);
             captainRightButton.transform.parent.gameObject.SetActive(s.Phase == GamePhase.Voting);
             repairButton.transform.parent.gameObject.SetActive(localDemo && s.Phase != GamePhase.Voting);
             lightButton.transform.parent.gameObject.SetActive(localDemo && s.Phase != GamePhase.Voting);
             repairButton.interactable = lightButton.interactable = likeButton.interactable = checkpoint;
             giftButton.interactable = s.Phase != GamePhase.Waiting && s.Phase != GamePhase.Result && s.Phase != GamePhase.Paused;
-            startButton.interactable = !liveFault && (s.Phase == GamePhase.Waiting || s.Phase == GamePhase.Result);
-            pauseButton.interactable = !liveFault && s.Phase != GamePhase.Waiting && s.Phase != GamePhase.Result;
-            endButton.interactable = resetButton.interactable = !liveFault;
+            startButton.interactable = !liveFault && !recoveryPending && (s.Phase == GamePhase.Waiting || s.Phase == GamePhase.Result);
+            pauseButton.interactable = !liveFault && !recoveryPending && s.Phase != GamePhase.Waiting && s.Phase != GamePhase.Result;
+            endButton.interactable = !liveFault && !recoveryPending;
+            resetButton.interactable = !liveFault && !recoveryPending && (localDemo || liveStatus.IsConnected);
+            if (recoveryPending)
+                recoverButton.interactable = restartRecoveryButton.interactable = !liveFault && (localDemo || liveStatus.IsConnected);
             float storm = StormIntensity(s);
             if (liveFault)
             {
@@ -643,8 +648,18 @@ namespace LighthouseRescue.Runtime
             recoveryCard = Panel(root, "Recovery prompt", 130, 620, 820, 470, Hex("122C3E")).gameObject;
             Label(recoveryCard.transform, "发现未结束的上一局", 46, 48, 730, 85, 46, Gold, FontStyle.Bold, TextAnchor.MiddleCenter);
             Label(recoveryCard.transform, "可以从已保存的阶段继续，或重新开局。\n恢复不会重复计入已处理事件。", 72, 157, 680, 130, 29, SoftWhite, FontStyle.Normal, TextAnchor.MiddleCenter);
-            MakeButtonOn(recoveryCard.transform, "恢复上一局", 51, 326, 343, 83, () => { recoveryCard.SetActive(false); recover(); }, Mint);
-            MakeButtonOn(recoveryCard.transform, "重新开局", 425, 326, 343, 83, () => { recoveryCard.SetActive(false); restart(); }, Gold);
+            recoverButton = MakeButtonOn(recoveryCard.transform, "恢复上一局", 51, 326, 343, 83, () =>
+            {
+                if (liveStatus != null && !liveStatus.IsConnected) return;
+                recoveryCard.SetActive(false);
+                recover();
+            }, Mint);
+            restartRecoveryButton = MakeButtonOn(recoveryCard.transform, "重新开局", 425, 326, 343, 83, () =>
+            {
+                if (liveStatus != null && !liveStatus.IsConnected) return;
+                recoveryCard.SetActive(false);
+                restart();
+            }, Gold);
         }
 
         private static string StageTitle(RescueSnapshot s)

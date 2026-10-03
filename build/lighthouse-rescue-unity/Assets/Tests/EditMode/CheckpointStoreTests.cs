@@ -94,6 +94,30 @@ namespace LighthouseRescue.Tests
         }
 
         [Test]
+        public void FaultRollbackReadsTerminalCheckpointWithoutOfferingNormalRecovery()
+        {
+            var store = new CheckpointStore(file);
+            var game = new RescueGame(GameConfig.Default, "room", "finished", 9);
+            game.Apply(new GameEvent
+            {
+                Source = "host", RoomId = "room", RoundId = "finished",
+                EventId = "start", UserId = "host", Command = GameCommand.Start
+            }, 0);
+            game.Apply(new GameEvent
+            {
+                Source = "host", RoomId = "room", RoundId = "finished",
+                EventId = "end", UserId = "host", Command = GameCommand.End
+            }, 0);
+            store.Save(game.Snapshot());
+
+            Assert.That(store.TryLoad("room", 1, out _), Is.False,
+                "normal startup must not offer recovery for a finished round");
+            Assert.That(store.TryLoadForFaultRollback("room", 1, out var durable), Is.True);
+            Assert.That(durable.RoundId, Is.EqualTo("finished"));
+            Assert.That(durable.Phase, Is.EqualTo(GamePhase.Result));
+        }
+
+        [Test]
         public void RestoredRoundRetainsEventIdsAndCooldowns()
         {
             var game = new RescueGame(GameConfig.Default, "room", "round", 9);

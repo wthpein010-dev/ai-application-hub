@@ -30,11 +30,14 @@ namespace LighthouseRescue.Tests
                 Assert.That(GameObject.Find("1× control"), Is.Null);
                 Assert.That(GameObject.Find("开始 / 再来 control").GetComponentInChildren<Button>().interactable,
                     Is.True);
+                Assert.That(GameObject.Find("重置 control").GetComponentInChildren<Button>().interactable, Is.True);
                 view.Render(new RescueSnapshot { Phase = GamePhase.Voting, Hull = 100 });
                 Assert.That(GameObject.Find("船长裁定左 control"), Is.Not.Null);
                 status.MarkDisconnected("test");
                 view.Render(new RescueSnapshot { Phase = GamePhase.Paused, PhaseBeforePause = GamePhase.Voting, Hull = 100 });
                 Assert.That(Object.FindObjectsOfType<Text>().Any(label => label.text.Contains("断开")), Is.True);
+                Assert.That(GameObject.Find("重置 control").GetComponentInChildren<Button>().interactable, Is.False,
+                    "a disconnected live room cannot safely reset its round");
                 status.MarkFaulted("存储失败，已停止；检查磁盘后重启。");
                 view.Render(new RescueSnapshot { Phase = GamePhase.Paused, PhaseBeforePause = GamePhase.Voting, Hull = 100 });
                 Assert.That(Object.FindObjectsOfType<Text>().Any(label => label.text.Contains("存储故障")), Is.True);
@@ -44,6 +47,48 @@ namespace LighthouseRescue.Tests
                     "船长裁定左 control", "船长裁定右 control" })
                     Assert.That(GameObject.Find(control).GetComponentInChildren<Button>().interactable, Is.False,
                         control + " must be disabled until the failed process restarts");
+            }
+            finally
+            {
+                foreach (var canvas in Object.FindObjectsOfType<Canvas>()) Object.DestroyImmediate(canvas.gameObject);
+                Object.DestroyImmediate(owner);
+            }
+        }
+
+        [Test]
+        public void RecoveryPromptBlocksHostControlsAndWaitsForLiveReconnect()
+        {
+            var owner = new GameObject("live-recovery-view-test");
+            try
+            {
+                var view = owner.AddComponent<RescueView>();
+                view.Build(owner.AddComponent<HostControls>());
+                var status = new LiveConnectionStatus();
+                status.Evaluate(true, true, true);
+                status.MarkConnected();
+                view.SetLiveMode(status);
+                int restartCount = 0;
+                view.OfferRecovery(() => { }, () => restartCount++);
+                view.Render(new RescueSnapshot { Phase = GamePhase.Waiting, Hull = 100 });
+
+                Assert.That(GameObject.Find("开始 / 再来 control").GetComponentInChildren<Button>().interactable, Is.False);
+                Assert.That(GameObject.Find("重置 control").GetComponentInChildren<Button>().interactable, Is.False);
+                var restart = GameObject.Find("重新开局 control").GetComponentInChildren<Button>();
+                Assert.That(restart.interactable, Is.True);
+
+                status.MarkDisconnected("test disconnect");
+                view.Render(new RescueSnapshot { Phase = GamePhase.Waiting, Hull = 100 });
+                Assert.That(restart.interactable, Is.False);
+                restart.onClick.Invoke();
+                Assert.That(restartCount, Is.Zero);
+                Assert.That(GameObject.Find("Recovery prompt"), Is.Not.Null);
+
+                status.Evaluate(true, true, true);
+                status.MarkConnected();
+                view.Render(new RescueSnapshot { Phase = GamePhase.Waiting, Hull = 100 });
+                Assert.That(restart.interactable, Is.True);
+                restart.onClick.Invoke();
+                Assert.That(restartCount, Is.EqualTo(1));
             }
             finally
             {
