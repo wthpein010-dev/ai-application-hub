@@ -1,0 +1,10 @@
+{
+  "name": "planmap-local-verification",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "node --test tests/server.test.mjs",
+    "test:browser": "node tests/browser.mjs"
+  },
+  "devDependencies": { "playwright": "1.58.2" }
+}

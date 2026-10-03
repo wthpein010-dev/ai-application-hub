@@ -1,0 +1,2 @@
+local/*.command text eol=lf
+local/*.cmd text eol=crlf

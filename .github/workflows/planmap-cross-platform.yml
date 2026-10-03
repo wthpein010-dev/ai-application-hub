@@ -1,0 +1,73 @@
+name: PlanMap cross-platform
+on:
+  push:
+    branches: ['agent/planmap-*']
+    paths: ['projects/planmap/**', '.github/workflows/planmap-cross-platform.yml']
+  pull_request:
+    paths: ['projects/planmap/**', '.github/workflows/planmap-cross-platform.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  local-release:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [windows-latest, macos-latest, ubuntu-latest]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: projects/planmap/local
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: npm ci
+      - run: npm test
+      - run: python tests/package_test.py
+      - run: python package.py --output ../../../planmap-artifacts
+      - name: Test extracted runtime
+        shell: bash
+        run: |
+          python -m zipfile -e ../../../planmap-artifacts/planmap-local-web.zip ../../../planmap-extracted
+          mkdir -p ../../../planmap-extracted/planmap-local-web/local/tests
+          cp tests/server.test.mjs ../../../planmap-extracted/planmap-local-web/local/tests/
+          node --test ../../../planmap-extracted/planmap-local-web/local/tests/server.test.mjs
+      - run: npx playwright install --with-deps chromium
+      - run: npm run test:browser
+      - name: Verify WebKit on macOS
+        if: runner.os == 'macOS'
+        env:
+          PLANMAP_BROWSER: webkit
+        run: |
+          npx playwright install webkit
+          npm run test:browser
+      - uses: actions/upload-artifact@v4
+        with:
+          name: planmap-local-web-${{ runner.os }}
+          path: planmap-artifacts/*
+          if-no-files-found: error
+  source:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [windows-latest, macos-latest, ubuntu-latest]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 20
+    defaults:
+      run:
+        working-directory: projects/planmap/source
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: npm ci
+      - run: npm test
+      - run: npm run lint
+      - run: npx tsc --noEmit
