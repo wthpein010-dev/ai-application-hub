@@ -44,6 +44,7 @@ async function run(width, height, playRound) {
     await page.waitForTimeout(2700); await click(540, 1458); // left route
     await page.waitForTimeout(2700);
     for (let stage = 0; stage < 3; stage++) {
+      await page.screenshot({ path: join(output, `${width}-rescue-${stage + 1}.png`), fullPage: false });
       await click(285, 1706); await click(285, 1706); // 40 likes, two light
       for (let count = 0; count < 3; count++) {
         await click(285, 1585); // repair, 3-second game cooldown

@@ -163,5 +163,165 @@ namespace LighthouseRescue.Tests
             Assert.That(resumed.ContributionTotalsComplete, Is.False);
             Assert.That(resumed.RemainingSeconds, Is.EqualTo(40));
         }
+
+        [Test]
+        public void AcceptedAudienceJournalRestoresTwoHundredUniqueViewersWithoutTwoHundredFullCopies()
+        {
+            var game = new RescueGame(GameConfig.Default, "room", "round", 9);
+            Assert.That(game.Apply(E(GameCommand.Start, "start", 0), 0), Is.EqualTo(ApplyResult.Accepted));
+            var store = new CheckpointStore(file);
+            store.Save(game.Snapshot());
+            for (int i = 0; i < 200; i++)
+            {
+                var join = E(GameCommand.Board, "join-" + i, 0);
+                join.UserId = "viewer-" + i;
+                Assert.That(game.Apply(join, 0), Is.EqualTo(ApplyResult.Accepted));
+                store.AppendAccepted(join, game);
+            }
+
+            Assert.That(game.CompleteSnapshotCount, Is.EqualTo(1));
+            Assert.That(new FileInfo(file + ".journal").Length, Is.LessThan(200000));
+            Assert.That(store.TryLoad("room", 1, out var recovered), Is.True);
+            Assert.That(recovered.JoinedCount, Is.EqualTo(200));
+            Assert.That(RescueGame.Restore(GameConfig.Default, recovered)
+                .Apply(E(GameCommand.Board, "join-0", 0), 0), Is.EqualTo(ApplyResult.Duplicate));
+        }
+
+        [Test]
+        public void JournalReplayPreservesRepairCooldownAfterReload()
+        {
+            var game = new RescueGame(GameConfig.Default, "room", "round", 9);
+            game.Apply(E(GameCommand.Start, "start", 0), 0);
+            game.AdvanceForView(40);
+            var store = new CheckpointStore(file);
+            store.Save(game.Snapshot());
+            var repair = E(GameCommand.Repair, "repair-1", 40);
+            Assert.That(game.Apply(repair, 40), Is.EqualTo(ApplyResult.Accepted));
+            store.AppendAccepted(repair, game);
+
+            Assert.That(new CheckpointStore(file).TryLoad("room", 1, out var recovered), Is.True);
+            var resumed = RescueGame.Restore(GameConfig.Default, recovered);
+            Assert.That(resumed.Apply(repair, 40), Is.EqualTo(ApplyResult.Duplicate));
+            Assert.That(resumed.Apply(E(GameCommand.Repair, "repair-2", 41), 41), Is.EqualTo(ApplyResult.Cooldown));
+            Assert.That(resumed.Apply(E(GameCommand.Repair, "repair-3", 43), 43), Is.EqualTo(ApplyResult.Accepted));
+        }
+
+        [Test]
+        public void TornJournalTailIsDiscardedBeforeNewEventsAppend()
+        {
+            var game = new RescueGame(GameConfig.Default, "room", "round", 9);
+            game.Apply(E(GameCommand.Start, "start", 0), 0);
+            var store = new CheckpointStore(file);
+            store.Save(game.Snapshot());
+            var first = E(GameCommand.Board, "join-1", 0);
+            first.UserId = "viewer-1";
+            Assert.That(game.Apply(first, 0), Is.EqualTo(ApplyResult.Accepted));
+            store.AppendAccepted(first, game);
+            File.AppendAllText(file + ".journal", "{broken");
+
+            var restoredStore = new CheckpointStore(file);
+            Assert.That(restoredStore.TryLoad("room", 1, out var recovered), Is.True);
+            Assert.That(recovered.JoinedCount, Is.EqualTo(1));
+            var resumed = RescueGame.Restore(GameConfig.Default, recovered);
+            var second = E(GameCommand.Board, "join-2", 0);
+            second.UserId = "viewer-2";
+            Assert.That(resumed.Apply(second, 0), Is.EqualTo(ApplyResult.Accepted));
+            restoredStore.AppendAccepted(second, resumed);
+            Assert.That(new CheckpointStore(file).TryLoad("room", 1, out var again), Is.True);
+            Assert.That(again.JoinedCount, Is.EqualTo(2));
+        }
+
+        [Test]
+        public void OldCheckpointWithoutJournalSequenceStillRestores()
+        {
+            var game = new RescueGame(GameConfig.Default, "room", "round", 9);
+            game.Apply(E(GameCommand.Start, "start", 0), 0);
+            string legacy = UnityEngine.JsonUtility.ToJson(game.Snapshot()).Replace("\"JournalSequence\":0,", "");
+            File.WriteAllText(file, legacy);
+
+            Assert.That(new CheckpointStore(file).TryLoad("room", 1, out var recovered), Is.True);
+            Assert.That(recovered.Phase, Is.EqualTo(GamePhase.Gathering));
+            Assert.That(recovered.JournalSequence, Is.Zero);
+        }
+
+        [Test]
+        public void JournalLeftBehindAfterPhaseCheckpointDoesNotReplayTwice()
+        {
+            var game = new RescueGame(GameConfig.Default, "room", "round", 9);
+            game.Apply(E(GameCommand.Start, "start", 0), 0);
+            var store = new CheckpointStore(file);
+            store.Save(game.Snapshot());
+            var join = E(GameCommand.Board, "join-1", 0);
+            join.UserId = "viewer-1";
+            Assert.That(game.Apply(join, 0), Is.EqualTo(ApplyResult.Accepted));
+            store.AppendAccepted(join, game);
+            byte[] staleJournal = File.ReadAllBytes(file + ".journal");
+            game.AdvanceForView(20);
+            store.Save(game.Snapshot());
+            File.WriteAllBytes(file + ".journal", staleJournal);
+
+            Assert.That(new CheckpointStore(file).TryLoad("room", 1, out var recovered), Is.True);
+            Assert.That(recovered.Phase, Is.EqualTo(GamePhase.Voting));
+            Assert.That(recovered.JoinedCount, Is.EqualTo(1));
+            Assert.That(recovered.JournalSequence, Is.EqualTo(1));
+        }
+
+        [Test]
+        public void TamperedJournalRecordStopsAtLastValidEvent()
+        {
+            var game = new RescueGame(GameConfig.Default, "room", "round", 9);
+            game.Apply(E(GameCommand.Start, "start", 0), 0);
+            var store = new CheckpointStore(file);
+            store.Save(game.Snapshot());
+            for (int i = 1; i <= 2; i++)
+            {
+                var join = E(GameCommand.Board, "join-" + i, 0);
+                join.UserId = "viewer-" + i;
+                Assert.That(game.Apply(join, 0), Is.EqualTo(ApplyResult.Accepted));
+                store.AppendAccepted(join, game);
+            }
+            string original = File.ReadAllText(file + ".journal");
+            File.WriteAllText(file + ".journal", original.Replace("viewer-2", "viewer-X"));
+
+            Assert.That(new CheckpointStore(file).TryLoad("room", 1, out var recovered), Is.True);
+            Assert.That(recovered.JoinedCount, Is.EqualTo(1));
+            Assert.That(recovered.JournalSequence, Is.EqualTo(1));
+        }
+
+        [Test]
+        public void PreviousRoundJournalCannotAddViewersToNewRound()
+        {
+            var first = new RescueGame(GameConfig.Default, "room", "first", 9);
+            first.Apply(new GameEvent { RoomId = "room", RoundId = "first", EventId = "start-first",
+                UserId = "host", Command = GameCommand.Start }, 0);
+            var store = new CheckpointStore(file);
+            store.Save(first.Snapshot());
+            var oldJoin = new GameEvent { RoomId = "room", RoundId = "first", EventId = "old-join",
+                UserId = "old-viewer", Command = GameCommand.Board };
+            Assert.That(first.Apply(oldJoin, 0), Is.EqualTo(ApplyResult.Accepted));
+            store.AppendAccepted(oldJoin, first);
+            byte[] oldJournal = File.ReadAllBytes(file + ".journal");
+
+            var second = new RescueGame(GameConfig.Default, "room", "second", 10);
+            second.Apply(new GameEvent { RoomId = "room", RoundId = "second", EventId = "start-second",
+                UserId = "host", Command = GameCommand.Start }, 0);
+            store.Save(second.Snapshot());
+            var newJoin = new GameEvent { RoomId = "room", RoundId = "second", EventId = "new-join",
+                UserId = "new-viewer", Command = GameCommand.Board };
+            Assert.That(second.Apply(newJoin, 0), Is.EqualTo(ApplyResult.Accepted));
+            store.AppendAccepted(newJoin, second);
+            byte[] newJournal = File.ReadAllBytes(file + ".journal");
+            using (var output = new FileStream(file + ".journal", FileMode.Create, FileAccess.Write))
+            {
+                output.Write(oldJournal, 0, oldJournal.Length);
+                output.Write(newJournal, 0, newJournal.Length);
+            }
+
+            Assert.That(new CheckpointStore(file).TryLoad("room", 1, out var recovered), Is.True);
+            Assert.That(recovered.RoundId, Is.EqualTo("second"));
+            Assert.That(recovered.JoinedCount, Is.EqualTo(1));
+            Assert.That(recovered.JoinedUserIds, Does.Contain("new-viewer"));
+            Assert.That(recovered.JoinedUserIds, Does.Not.Contain("old-viewer"));
+        }
     }
 }

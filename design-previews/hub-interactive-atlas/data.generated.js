@@ -1394,7 +1394,7 @@ export const projects = [
       {
         "type": "windows",
         "label": "Wins下载",
-        "href": "https://github.com/wthpein010-dev/ai-application-hub/releases/download/lighthouse-rescue-v1.4.4/LighthouseRescue-Windows-x64.zip",
+        "href": "https://github.com/wthpein010-dev/ai-application-hub/releases/download/lighthouse-rescue-v1.4.5/LighthouseRescue-Windows-x64.zip",
         "sourceLabel": "Wins下载"
       }
     ],

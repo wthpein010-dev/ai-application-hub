@@ -8,10 +8,12 @@ namespace LighthouseRescue.Runtime
     public sealed class CheckpointStore
     {
         private readonly string path;
+        private readonly AcceptedEventJournal journal;
 
         public CheckpointStore(string path)
         {
             this.path = string.IsNullOrWhiteSpace(path) ? throw new ArgumentException("Checkpoint path is required", nameof(path)) : path;
+            journal = new AcceptedEventJournal(path + ".journal");
         }
 
         public void Save(RescueSnapshot snapshot)
@@ -19,6 +21,9 @@ namespace LighthouseRescue.Runtime
             if (snapshot == null) throw new ArgumentNullException(nameof(snapshot));
             if (snapshot.RulesVersion != 1)
                 throw new ArgumentException("Only a complete rules snapshot can be saved", nameof(snapshot));
+            if (snapshot.JournalSequence < 0)
+                throw new ArgumentException("Journal sequence cannot be negative", nameof(snapshot));
+            snapshot.JournalSequence = journal.Matches(snapshot) ? journal.Sequence : snapshot.JournalSequence;
             string folder = Path.GetDirectoryName(path);
             if (!string.IsNullOrEmpty(folder)) Directory.CreateDirectory(folder);
             string temporary = path + ".tmp";
@@ -34,19 +39,38 @@ namespace LighthouseRescue.Runtime
             if (File.Exists(path))
             {
                 File.Replace(temporary, path, backup, true);
-                if (File.Exists(backup)) File.Delete(backup);
             }
             else
             {
                 File.Move(temporary, path);
             }
+            journal.Bind(snapshot);
+            journal.ClearAfterCheckpoint();
+            try { if (File.Exists(backup)) File.Delete(backup); }
+            catch (IOException) { }
+            catch (UnauthorizedAccessException) { }
+        }
+
+        public void AppendAccepted(GameEvent gameEvent, RescueGame game)
+        {
+            journal.AppendAccepted(gameEvent, game);
+            if (!journal.ShouldCompact) return;
+            try { Save(game.Snapshot()); }
+            catch (IOException error) { Debug.LogWarning("Journal compaction failed: " + error.GetType().Name); }
+            catch (UnauthorizedAccessException error) { Debug.LogWarning("Journal compaction failed: " + error.GetType().Name); }
         }
 
         public bool TryLoad(string roomId, int rulesVersion, out RescueSnapshot snapshot)
         {
-            if (TryRead(path, roomId, rulesVersion, out snapshot, out bool finished)) return true;
+            if (TryRead(path, roomId, rulesVersion, out snapshot, out bool finished))
+            {
+                snapshot = journal.Replay(snapshot);
+                return true;
+            }
             if (finished) return false;
-            return TryRead(path + ".bak", roomId, rulesVersion, out snapshot, out _);
+            if (!TryRead(path + ".bak", roomId, rulesVersion, out snapshot, out _)) return false;
+            snapshot = journal.Replay(snapshot);
+            return true;
         }
 
         private static bool TryRead(string candidate, string roomId, int rulesVersion,

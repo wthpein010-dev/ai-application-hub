@@ -276,11 +276,14 @@ namespace LighthouseRescue.Tests
                     message.StableUserId = "viewer-" + i;
                     Assert.That(source.Send(message, time), Is.True);
                 }
-                for (int frame = 0; frame < 4; frame++) Tick(controller);
                 var game = (RescueGame)typeof(RescueController)
                     .GetField("game", BindingFlags.Instance | BindingFlags.NonPublic).GetValue(controller);
+                long beforeMessages = game.CompleteSnapshotCount;
+                for (int frame = 0; frame < 4; frame++) Tick(controller);
                 var counter = typeof(RescueGame).GetProperty("CompleteSnapshotCount");
                 Assert.That(counter, Is.Not.Null);
+                Assert.That(game.CompleteSnapshotCount, Is.EqualTo(beforeMessages),
+                    "accepted audience messages must append durably without copying the full audience history");
                 long beforeIdleFrame = (long)counter.GetValue(game);
                 Tick(controller);
                 Assert.That((long)counter.GetValue(game), Is.EqualTo(beforeIdleFrame),
@@ -288,6 +291,37 @@ namespace LighthouseRescue.Tests
                 Assert.That(controller.Current.JoinedCount, Is.EqualTo(200));
                 Assert.That(source.Handled.Count, Is.EqualTo(200));
                 Assert.That(source.Handled.TrueForAll(receipt => receipt.Outcome == LiveInboxOutcome.Applied), Is.True);
+                var store = (CheckpointStore)typeof(RescueController)
+                    .GetField("checkpoint", BindingFlags.Instance | BindingFlags.NonPublic).GetValue(controller);
+                Assert.That(store.TryLoad(source.RoomId, 1, out var recovered), Is.True);
+                Assert.That(recovered.JoinedCount, Is.EqualTo(200));
+            }
+            finally { Cleanup(owner); }
+        }
+
+        [Test]
+        public void LiveReceiptIsEmittedOnlyAfterAudienceJoinIsRecoverable()
+        {
+            var owner = new GameObject("live-durable-receipt-test");
+            try
+            {
+                var controller = NewController(owner);
+                var source = new FakeSource();
+                Assert.That(controller.AttachLiveSource(source), Is.True);
+                controller.StartOrRestart();
+                var store = (CheckpointStore)typeof(RescueController)
+                    .GetField("checkpoint", BindingFlags.Instance | BindingFlags.NonPublic).GetValue(controller);
+                source.JoinedAtReceipt = () => store.TryLoad(source.RoomId, 1, out var recovered)
+                    ? recovered.JoinedCount : -1;
+                long time = Now();
+                Assert.That(source.Send(Board(time), time), Is.True);
+                Tick(controller);
+
+                Assert.That(source.Handled[0].Outcome, Is.EqualTo(LiveInboxOutcome.Applied));
+                Assert.That(source.ObservedJoined, Is.EqualTo(1));
+                var game = (RescueGame)typeof(RescueController)
+                    .GetField("game", BindingFlags.Instance | BindingFlags.NonPublic).GetValue(controller);
+                Assert.That(game.CompleteSnapshotCount, Is.EqualTo(1));
             }
             finally { Cleanup(owner); }
         }

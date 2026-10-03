@@ -30,6 +30,12 @@ public static class BuildLighthouse
         PlayerSettings.WebGL.exceptionSupport = WebGLExceptionSupport.None;
         PlayerSettings.stripEngineCode = true;
         Build(output, BuildTarget.WebGL, output);
+        var page = Path.Combine(output, "index.html");
+        const string disabled = "// config.autoSyncPersistentDataPath = true;";
+        if (!File.Exists(page) || !File.ReadAllText(page).Contains(disabled))
+            throw new Exception("Unity WebGL template no longer exposes persistent-data autosync");
+        File.WriteAllText(page, File.ReadAllText(page).Replace(disabled,
+            "config.autoSyncPersistentDataPath = true;"));
     }
 
     private static void Build(string folder, BuildTarget target, string location)
