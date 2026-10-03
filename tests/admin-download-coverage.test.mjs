@@ -8,19 +8,21 @@ import {loadDefaultAppsFromRuntime} from './helpers/default-apps.mjs';
 const root=resolve(dirname(fileURLToPath(import.meta.url)),'..');
 const files=execFileSync('git',['ls-files','-z','*.html'],{cwd:root,encoding:'utf8'}).split('\0').filter(file=>file&&existsSync(resolve(root,file)));
 const packageTag=/<(?:a|button)\b[^>]*(?:href\s*=\s*["'][^"']*(?:\.zip|\.exe|\.dmg|releases\/download|\/download\/|github\.com[^"']*\/(?:tree|archive)\/)|data-role=["']download-button)[^>]*>/gi;
-const coordinationFiles=['projects/planmap/index.html','projects/planmap/video/index.html'];
-test('every local package page outside PlanMap coordination includes the presentation gate',()=>{
-  for(const file of files){const html=readFileSync(resolve(root,file),'utf8');if(!html.match(packageTag)||coordinationFiles.includes(file))continue;
+const planMapPages=['projects/planmap/index.html','projects/planmap/video/index.html'];
+test('every local package page includes the presentation gate',()=>{
+  for(const file of files){const html=readFileSync(resolve(root,file),'utf8');if(!html.match(packageTag))continue;
     assert.match(html,/admin-download-gate\.css/,file);assert.match(html,/admin-download-gate\.mjs/,file);
     for(const tag of html.match(packageTag)||[])assert.match(tag,/data-hub-package/,`${file}: ${tag}`);
   }
 });
 test('public project introductions and the Hub homepage load fail-closed gate',()=>{
   const apps=loadDefaultAppsFromRuntime(readFileSync(resolve(root,'app-20260706-restore-games.js'),'utf8'));
-  for(const app of apps){if(app.id==='planmap'||/^https?:/.test(app.entry))continue;const file=resolve(root,app.entry);assert.ok(existsSync(file),app.id);assert.match(readFileSync(file,'utf8'),/admin-download-gate\.mjs/,app.id);}
+  for(const app of apps){if(/^https?:/.test(app.entry))continue;const file=resolve(root,app.entry);assert.ok(existsSync(file),app.id);assert.match(readFileSync(file,'utf8'),/admin-download-gate\.mjs/,app.id);}
 });
-test('PlanMap shared pages remain unchanged pending integration coordination',()=>{
-  for(const file of coordinationFiles){const baseline=execFileSync('git',['show',`HEAD:${file}`],{cwd:root,encoding:'utf8'});assert.equal(readFileSync(resolve(root,file),'utf8').replaceAll('\r\n','\n'),baseline.replaceAll('\r\n','\n'));}
+test('both coordinated PlanMap pages gate source downloads without claiming native packages',()=>{
+  for(const file of planMapPages){const html=readFileSync(resolve(root,file),'utf8');assert.match(html,/admin-download-gate\.css/,file);assert.match(html,/<a[^>]*planmap-source\.zip[^>]*data-hub-package/);}
+  const planMap=loadDefaultAppsFromRuntime(readFileSync(resolve(root,'app-20260706-restore-games.js'),'utf8')).find(app=>app.id==='planmap');
+  assert.equal(planMap.platforms.windows,'');assert.equal(planMap.platforms.mac,'');
 });
 test('no production API or mock is enabled and no stale public download fallback is introduced',()=>{
   assert.match(readFileSync(resolve(root,'assets/admin-download-config.mjs'),'utf8'),/ADMIN_API_BASE = ''/);

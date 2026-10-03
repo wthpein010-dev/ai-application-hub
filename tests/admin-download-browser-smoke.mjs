@@ -2,6 +2,8 @@
 import assert from 'node:assert/strict';
 import {createServer} from 'node:http';
 import {readFile,mkdir} from 'node:fs/promises';
+import {readFileSync,existsSync} from 'node:fs';
+import {execFileSync} from 'node:child_process';
 import {resolve,extname} from 'node:path';
 import {pathToFileURL} from 'node:url';
 import {randomUUID} from 'node:crypto';
@@ -48,6 +50,14 @@ try{
   assert.match(await page.locator('.hub-admin-dialog [role="status"]').textContent(),/未配置/);
   assert.equal(await page.locator('.hub-admin-dialog button[type="submit"]').isDisabled(),true);
   await page.keyboard.press('Escape');assert.equal(await page.locator('.hub-admin-dialog').isVisible(),false);
+  const pages=execFileSync('git',['ls-files','-z','*.html'],{encoding:'utf8'}).split('\0').filter(file=>file&&existsSync(file)&&!file.startsWith('projects/clickflow/')&&readFileSync(file,'utf8').includes('admin-download-gate.mjs'));
+  for(const file of pages){
+    await page.goto(origin+'/'+file,{waitUntil:'domcontentloaded'});
+    await page.locator('.hub-admin-dialog').waitFor({state:'attached'});
+    const controls=page.locator('[data-hub-package], [data-role="download-button"], a[href*="/releases/download/"], a[href*="/downloads/"], a[href*="/download/"]');
+    for(let i=0;i<await controls.count();i++)assert.equal(await controls.nth(i).isVisible(),false,`${file}: anonymous package control visible`);
+  }
+  console.log(`Anonymous browser presentation gate verified on ${pages.length} pages. ClickFlow page excluded from browser execution; covered by static contract only.`);
   configEnabled=true;await page.goto(origin+'/?fixture=1#admin');await page.locator('.hub-admin-dialog input[name="username"]').fill(testValue);await page.locator('.hub-admin-dialog input[name="password"]').fill(testValue);
   await page.locator('.hub-admin-dialog button[type="submit"]').click();await page.locator('[data-hub-authorized]').waitFor();
   assert.match(await page.locator('.hub-admin-artifacts').textContent(),/Mac 运行待验证/);
