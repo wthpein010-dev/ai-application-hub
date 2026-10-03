@@ -16,12 +16,14 @@ on:
       - "package-lock.json"
       - "assets/**"
       - "build/clickflow/**"
+      - "build/lighthouse-rescue-unity/**"
       - "downloads/**"
       - "projects/**"
       - "scripts/**"
       - "tests/**"
       - "videos/**"
       - "docs/audits/**"
+      - "docs/lighthouse-rescue-live-sdk-readiness.md"
 
 permissions:
   contents: read
