@@ -35,6 +35,46 @@ namespace LighthouseRescue.Tests
                 status.MarkDisconnected("test");
                 view.Render(new RescueSnapshot { Phase = GamePhase.Paused, PhaseBeforePause = GamePhase.Voting, Hull = 100 });
                 Assert.That(Object.FindObjectsOfType<Text>().Any(label => label.text.Contains("断开")), Is.True);
+                status.MarkFaulted("存储失败，已停止；检查磁盘后重启。");
+                view.Render(new RescueSnapshot { Phase = GamePhase.Paused, PhaseBeforePause = GamePhase.Voting, Hull = 100 });
+                Assert.That(Object.FindObjectsOfType<Text>().Any(label => label.text.Contains("存储故障")), Is.True);
+                Assert.That(Object.FindObjectsOfType<Text>().Any(label => label.text.Contains("检查磁盘后重启")), Is.True);
+                view.Render(new RescueSnapshot { Phase = GamePhase.Voting, Hull = 100 });
+                foreach (string control in new[] { "暂停 / 恢复 control", "结束 control", "重置 control",
+                    "船长裁定左 control", "船长裁定右 control" })
+                    Assert.That(GameObject.Find(control).GetComponentInChildren<Button>().interactable, Is.False,
+                        control + " must be disabled until the failed process restarts");
+            }
+            finally
+            {
+                foreach (var canvas in Object.FindObjectsOfType<Canvas>()) Object.DestroyImmediate(canvas.gameObject);
+                Object.DestroyImmediate(owner);
+            }
+        }
+
+        [Test]
+        public void StorageFaultStopsWeatherAudioAndLightningInsteadOfLeavingAnActiveStormCue()
+        {
+            var owner = new GameObject("faulted-storm-test");
+            try
+            {
+                var view = owner.AddComponent<RescueView>();
+                view.Build(owner.AddComponent<HostControls>());
+                var status = new LiveConnectionStatus();
+                status.Evaluate(true, true, true);
+                status.MarkConnected();
+                view.SetLiveMode(status);
+                var storm = new RescueSnapshot { Phase = GamePhase.Checkpoint3, CheckpointNumber = 3, Hull = 100 };
+                view.Render(storm);
+                var ambience = owner.GetComponents<AudioSource>().Single(source => source.loop);
+                Assert.That(ambience.volume, Is.GreaterThan(0f));
+
+                status.MarkFaulted("存储失败，已停止；检查磁盘后重启。");
+                view.Render(storm);
+                Assert.That(ambience.volume, Is.Zero);
+                var thunder = owner.GetComponents<AudioSource>().Single(source => source.clip != null && source.clip.name == "Thunder");
+                Assert.That(thunder.volume, Is.Zero);
+                Assert.That(GameObject.Find("Lightning sky flash").GetComponent<Image>().color.a, Is.Zero);
             }
             finally
             {
@@ -133,6 +173,42 @@ namespace LighthouseRescue.Tests
                     Is.EqualTo(pooledCount));
                 view.Render(new RescueSnapshot { Phase = GamePhase.Voting, Hull = 100 });
                 Assert.That(GameObject.Find("Lens rain 0"), Is.Null);
+            }
+            finally
+            {
+                foreach (var canvas in Object.FindObjectsOfType<Canvas>()) Object.DestroyImmediate(canvas.gameObject);
+                Object.DestroyImmediate(owner);
+            }
+        }
+
+        [Test]
+        public void LightningBrieflyIlluminatesRainSprayAndSearchlightMist()
+        {
+            var owner = new GameObject("lightning-reflection-test");
+            try
+            {
+                var view = owner.AddComponent<RescueView>();
+                view.Build(owner.AddComponent<HostControls>());
+                var flags = BindingFlags.Instance | BindingFlags.NonPublic;
+                typeof(RescueView).GetField("weatherClock", flags).SetValue(view, 2f);
+                typeof(RescueView).GetField("nextLightningAt", flags).SetValue(view, 100f);
+                var storm = new RescueSnapshot { Phase = GamePhase.Paused, PhaseBeforePause = GamePhase.Checkpoint3, CheckpointNumber = 3,
+                    Hull = 100, LightProgress = 3, LightTarget = 3 };
+                view.Render(storm);
+                typeof(RescueView).GetField("lightningUntil", flags).SetValue(view, 0f);
+                view.Render(storm);
+                float rainBefore = GameObject.Find("Storm rain 0").GetComponent<Image>().color.a;
+                float sprayBefore = GameObject.Find("Storm spray 0").GetComponent<Image>().color.a;
+                float mistBefore = GameObject.Find("Searchlight mist 0").GetComponent<Image>().color.a;
+
+                typeof(RescueView).GetField("lightningUntil", flags).SetValue(view, 2f + 0.20f);
+                view.Render(storm);
+                Assert.That(GameObject.Find("Storm rain 0").GetComponent<Image>().color.a,
+                    Is.GreaterThan(rainBefore));
+                Assert.That(GameObject.Find("Storm spray 0").GetComponent<Image>().color.a,
+                    Is.GreaterThan(sprayBefore));
+                Assert.That(GameObject.Find("Searchlight mist 0").GetComponent<Image>().color.a,
+                    Is.GreaterThan(mistBefore));
             }
             finally
             {

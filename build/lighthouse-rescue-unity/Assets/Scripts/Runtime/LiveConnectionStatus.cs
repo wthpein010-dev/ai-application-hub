@@ -1,6 +1,6 @@
 namespace LighthouseRescue.Runtime
 {
-    public enum LiveConnectionState { Unavailable, Authorising, Connected, Disconnected }
+    public enum LiveConnectionState { Unavailable, Authorising, Connected, Disconnected, Faulted }
 
     public sealed class LiveConnectionStatus
     {
@@ -34,16 +34,29 @@ namespace LighthouseRescue.Runtime
         {
             lock (gate)
             {
-                if (state == LiveConnectionState.Connected)
+                if (state == LiveConnectionState.Connected || state == LiveConnectionState.Disconnected)
                 {
                     state = LiveConnectionState.Disconnected;
                     this.reason = reason;
                 }
             }
         }
+        public void MarkFaulted(string reason)
+        {
+            lock (gate)
+            {
+                state = LiveConnectionState.Faulted;
+                this.reason = string.IsNullOrWhiteSpace(reason) ? "直播已停止，请检查本地存储。" : reason;
+            }
+        }
         private void Set(LiveConnectionState next, string explanation)
         {
-            lock (gate) { state = next; reason = explanation; }
+            lock (gate)
+            {
+                if (state == LiveConnectionState.Faulted) return;
+                state = next;
+                reason = explanation;
+            }
         }
     }
 }

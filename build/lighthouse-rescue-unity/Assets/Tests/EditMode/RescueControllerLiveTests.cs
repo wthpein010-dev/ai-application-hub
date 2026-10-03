@@ -327,6 +327,93 @@ namespace LighthouseRescue.Tests
         }
 
         [Test]
+        public void JournalWriteFailureStopsLiveDrainWithoutReceiptAndRestoresDurableState()
+        {
+            var owner = new GameObject("live-storage-failure-test");
+            try
+            {
+                var controller = NewController(owner);
+                var source = new FakeSource();
+                Assert.That(controller.AttachLiveSource(source), Is.True);
+                controller.StartOrRestart();
+                var durable = controller.Current;
+                var journalPath = Path.Combine(TestFolders[owner], "checkpoint.json.journal");
+                Directory.CreateDirectory(journalPath); // FileStream.Append must fail.
+                long time = Now();
+                Assert.That(source.Send(Board(time, "cannot-save"), time), Is.True);
+                var queued = Board(time, "must-not-drain");
+                queued.StableUserId = "viewer-2";
+                Assert.That(source.Send(queued, time), Is.True);
+
+                Assert.DoesNotThrow(() => Tick(controller));
+                Assert.That(source.Stopped, Is.True);
+                Assert.That(source.Status.State, Is.EqualTo(LiveConnectionState.Faulted));
+                Assert.That(source.Status.Reason, Does.Contain("存储"));
+                Assert.That(source.Handled, Is.Empty, "a failed durable write cannot receive fulfillment ACK");
+                Assert.That(controller.Current.RoundId, Is.EqualTo(durable.RoundId));
+                Assert.That(controller.Current.JoinedCount, Is.Zero, "the accepted but unwritten join must roll back");
+                Assert.That(controller.Current.Phase, Is.EqualTo(GamePhase.Gathering));
+                Assert.DoesNotThrow(() => Tick(controller));
+                Assert.That(source.Handled, Is.Empty, "queued events must stay frozen after failure");
+                controller.TogglePause();
+                controller.EndRound();
+                controller.ResetRound();
+                Assert.That(controller.Current.RoundId, Is.EqualTo(durable.RoundId));
+                Assert.That(controller.Current.Phase, Is.EqualTo(GamePhase.Gathering));
+            }
+            finally { Cleanup(owner); }
+        }
+
+        [Test]
+        public void UnreadableCheckpointAfterWriteFailureStillStopsLiveRound()
+        {
+            var owner = new GameObject("live-unreadable-storage-test");
+            try
+            {
+                var controller = NewController(owner);
+                var source = new FakeSource();
+                Assert.That(controller.AttachLiveSource(source), Is.True);
+                controller.StartOrRestart();
+                string checkpointPath = Path.Combine(TestFolders[owner], "checkpoint.json");
+                File.Delete(checkpointPath);
+                Directory.CreateDirectory(checkpointPath);
+                Directory.CreateDirectory(checkpointPath + ".journal");
+                long time = Now();
+                Assert.That(source.Send(Board(time), time), Is.True);
+
+                Assert.DoesNotThrow(() => Tick(controller));
+                Assert.That(source.Status.State, Is.EqualTo(LiveConnectionState.Faulted));
+                Assert.That(source.Handled, Is.Empty);
+                Assert.DoesNotThrow(() => Tick(controller));
+                controller.EndRound();
+                Assert.That(controller.Current.Phase, Is.EqualTo(GamePhase.Gathering));
+            }
+            finally { Cleanup(owner); }
+        }
+
+        [Test]
+        public void HostPauseCheckpointFailureRollsBackAndStopsLiveRound()
+        {
+            var owner = new GameObject("live-host-storage-failure-test");
+            try
+            {
+                var controller = NewController(owner);
+                var source = new FakeSource();
+                Assert.That(controller.AttachLiveSource(source), Is.True);
+                controller.StartOrRestart();
+                var durable = controller.Current;
+                Directory.CreateDirectory(Path.Combine(TestFolders[owner], "checkpoint.json.tmp"));
+
+                Assert.DoesNotThrow(() => controller.TogglePause());
+                Assert.That(source.Status.State, Is.EqualTo(LiveConnectionState.Faulted));
+                Assert.That(controller.Current.RoundId, Is.EqualTo(durable.RoundId));
+                Assert.That(controller.Current.Phase, Is.EqualTo(GamePhase.Gathering));
+                Assert.DoesNotThrow(() => Tick(controller));
+            }
+            finally { Cleanup(owner); }
+        }
+
+        [Test]
         public void DisconnectedLiveSourceCannotStartANewRound()
         {
             var owner = new GameObject("live-start-disconnected-test");
