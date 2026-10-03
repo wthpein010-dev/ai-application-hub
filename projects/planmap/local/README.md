@@ -30,6 +30,6 @@ Mac 字体可能与 Windows 略有不同。保存 PNG/PDF 时检查长标题、�
 
 该下载版来自 Hub 已发布的 `projects/planmap/app` 静态实现。`../source` 是另行同步的权威 React/vinext 开发源码；两者并非同一个构建产物。本 ZIP 不包含 React 开发源码、私有报告、部署配置或凭据。
 
-CI 在 Windows/macOS/Linux 验证本机服务器、ZIP 解压运行和 Chromium 的保存/四种导出；macOS 另测 WebKit 引擎。CI 不能替代真实机器的双击启动、Safari 浏览器及签名/安装验证，实际运行记录以本提交的 Actions 结果为准。
+CI 在 Windows x64、macOS 15 Apple Silicon/Intel、Linux x64 runner 实际执行本机服务器、含空格路径内 ZIP 解压后的启动脚本，并通过其服务检查编辑、刷新恢复和 Chromium 的四种导出；两种 macOS 架构另测 WebKit 引擎，使用系统 unzip 核对 `.command` 权限及 LF 换行。下载版仅依赖对应架构的 Node.js 与浏览器，没有包内原生二进制或 npm 运行依赖。CI 不能替代用户机器的 Finder 双击、Safari 浏览器及签名/安装验证，实际运行记录以本提交的 Actions 结果为准；未测试的旧 macOS 或 Windows ARM 不在本轮保证范围。
 
 原生版本下一步可选：Electron 搭配现有网页，增加体积但可统一运行时；Tauri 使用系统 WebView，包更小但增加 Rust、平台 WebView 和适配工作。二者均需独立设计、平台构建及 macOS 签名/notarization、Windows 签名决定。本轮不添加这些依赖或冒称已有原生安装包。

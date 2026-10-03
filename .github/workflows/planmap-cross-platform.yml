@@ -16,7 +16,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [windows-latest, macos-latest, ubuntu-latest]
+        os: [windows-latest, macos-15, macos-15-intel, ubuntu-latest]
     runs-on: ${{ matrix.os }}
     timeout-minutes: 15
     defaults:
@@ -45,6 +45,8 @@ jobs:
           node --test ../../../planmap-extracted/planmap-local-web/local/tests/server.test.mjs
       - run: npx playwright install --with-deps chromium
       - run: npm run test:browser
+      - name: Run extracted launcher and browser acceptance in a path with spaces
+        run: python tests/extracted_runtime.py ../../../planmap-artifacts/planmap-local-web.zip
       - name: Verify WebKit on macOS
         if: runner.os == 'macOS'
         env:
@@ -52,16 +54,18 @@ jobs:
         run: |
           npx playwright install webkit
           npm run test:browser
+          python tests/extracted_runtime.py ../../../planmap-artifacts/planmap-local-web.zip
       - uses: actions/upload-artifact@v4
         with:
-          name: planmap-local-web-${{ runner.os }}
+          name: planmap-local-web-${{ runner.os }}-${{ runner.arch }}
           path: planmap-artifacts/*
           if-no-files-found: error
+          retention-days: 7
   source:
     strategy:
       fail-fast: false
       matrix:
-        os: [windows-latest, macos-latest, ubuntu-latest]
+        os: [windows-latest, macos-15, macos-15-intel, ubuntu-latest]
     runs-on: ${{ matrix.os }}
     timeout-minutes: 20
     defaults:

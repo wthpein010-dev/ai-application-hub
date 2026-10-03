@@ -5,9 +5,9 @@ import { join } from 'node:path';
 import { chromium, webkit } from 'playwright';
 import { createLocalServer } from '../server.mjs';
 
-const server = createLocalServer();
-await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));
-const origin = `http://127.0.0.1:${server.address().port}`;
+const server = process.env.PLANMAP_BASE_URL ? null : createLocalServer();
+if (server) await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));
+const origin = process.env.PLANMAP_BASE_URL || `http://127.0.0.1:${server.address().port}`;
 const downloads = await mkdtemp(join(tmpdir(), 'planmap-exports-'));
 let browser;
 try {
@@ -61,9 +61,9 @@ try {
   await page.locator('#settingsButton').click();
   assert.equal(await page.locator('#modelKey').inputValue(), '');
   assert.deepEqual(errors, []);
-  console.log('Verified browser persistence, ephemeral API keys, and Markdown/PNG/PDF/XMind downloads.');
+  console.log(`Verified ${origin}: browser editing/persistence, ephemeral API keys, and Markdown/PNG/PDF/XMind downloads.`);
 } finally {
   if (browser) await browser.close();
-  await new Promise(resolve => server.close(resolve));
+  if (server) await new Promise(resolve => server.close(resolve));
   await rm(downloads, {recursive: true, force: true});
 }
