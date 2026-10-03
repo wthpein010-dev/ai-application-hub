@@ -11,5 +11,6 @@ namespace LighthouseRescue.Rules
         public GameCommand Command;
         public int Count = 1;
         public double OccurredAtSeconds;
+        public long OccurredUnixMilliseconds;
     }
 }
