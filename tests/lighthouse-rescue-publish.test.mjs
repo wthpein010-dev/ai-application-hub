@@ -16,7 +16,7 @@ test("lighthouse rescue is the last game with real demo, video and Windows relea
   assert.equal(game.id, "lighthouse-rescue");
   assert.equal(game.platforms.web.href, "./projects/lighthouse-rescue/index.html");
   assert.equal(game.video, "./projects/lighthouse-rescue/video/index.html");
-  assert.match(game.platforms.windows.href, /^https:\/\/github\.com\/wthpein010-dev\/ai-application-hub\/releases\/download\/lighthouse-rescue-v1\.1\.1\/LighthouseRescue-Windows-x64\.zip$/);
+  assert.match(game.platforms.windows.href, /^https:\/\/github\.com\/wthpein010-dev\/ai-application-hub\/releases\/download\/lighthouse-rescue-v1\.2\.0\/LighthouseRescue-Windows-x64\.zip$/);
   assert.equal(game.platforms.mac, "");
   assert.ok(existsSync(join(root, "assets", "hub-showcase", "lighthouse-rescue.webp")));
 });
@@ -32,6 +32,7 @@ test("published video has a playable MP4, poster and single-line captions", () =
   const media = inspectMedia(mp4);
   assert.ok(media.duration > 10 && media.duration <= 240);
   assert.match(media.videoCodec, /h264/i);
+  assert.match(media.audioCodec, /aac/i, "storm gameplay recap should include sound");
   assert.ok(existsSync(join(video, "poster.jpg")));
   const vtt = readFileSync(join(video, "lighthouse-demo.vtt"), "utf8");
   assert.match(vtt, /^WEBVTT/);
