@@ -260,6 +260,39 @@ namespace LighthouseRescue.Tests
         }
 
         [Test]
+        public void HundredsOfLiveJoinsDrainAcrossFramesWithoutLosingReceipts()
+        {
+            var owner = new GameObject("live-many-viewers-test");
+            try
+            {
+                var controller = NewController(owner);
+                var source = new FakeSource();
+                Assert.That(controller.AttachLiveSource(source), Is.True);
+                controller.StartOrRestart();
+                long time = Now();
+                for (int i = 0; i < 200; i++)
+                {
+                    var message = Board(time, "audience-" + i);
+                    message.StableUserId = "viewer-" + i;
+                    Assert.That(source.Send(message, time), Is.True);
+                }
+                for (int frame = 0; frame < 4; frame++) Tick(controller);
+                var game = (RescueGame)typeof(RescueController)
+                    .GetField("game", BindingFlags.Instance | BindingFlags.NonPublic).GetValue(controller);
+                var counter = typeof(RescueGame).GetProperty("CompleteSnapshotCount");
+                Assert.That(counter, Is.Not.Null);
+                long beforeIdleFrame = (long)counter.GetValue(game);
+                Tick(controller);
+                Assert.That((long)counter.GetValue(game), Is.EqualTo(beforeIdleFrame),
+                    "an idle controller frame must not copy the accumulated audience history");
+                Assert.That(controller.Current.JoinedCount, Is.EqualTo(200));
+                Assert.That(source.Handled.Count, Is.EqualTo(200));
+                Assert.That(source.Handled.TrueForAll(receipt => receipt.Outcome == LiveInboxOutcome.Applied), Is.True);
+            }
+            finally { Cleanup(owner); }
+        }
+
+        [Test]
         public void DisconnectedLiveSourceCannotStartANewRound()
         {
             var owner = new GameObject("live-start-disconnected-test");

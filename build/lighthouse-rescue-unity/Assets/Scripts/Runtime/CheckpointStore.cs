@@ -17,6 +17,8 @@ namespace LighthouseRescue.Runtime
         public void Save(RescueSnapshot snapshot)
         {
             if (snapshot == null) throw new ArgumentNullException(nameof(snapshot));
+            if (snapshot.RulesVersion != 1)
+                throw new ArgumentException("Only a complete rules snapshot can be saved", nameof(snapshot));
             string folder = Path.GetDirectoryName(path);
             if (!string.IsNullOrEmpty(folder)) Directory.CreateDirectory(folder);
             string temporary = path + ".tmp";

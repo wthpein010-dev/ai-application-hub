@@ -48,6 +48,48 @@ namespace LighthouseRescue.Tests
             return game;
         }
 
+        [Test]
+        public void ViewSnapshotKeepsVisibleCountsWithoutCopyingAudienceOrDedupeHistory()
+        {
+            var game = Started();
+            for (int i = 0; i < 256; i++)
+                Assert.That(game.Apply(Event(GameCommand.Board, "board-" + i, "viewer-" + i, 0), 0),
+                    Is.EqualTo(ApplyResult.Accepted));
+            var method = typeof(RescueGame).GetMethod("ViewSnapshot");
+            Assert.That(method, Is.Not.Null, "the render path needs a history-free snapshot");
+            var visual = (RescueSnapshot)method.Invoke(game, null);
+            Assert.That(visual.RulesVersion, Is.EqualTo(0));
+            Assert.That(visual.JoinedCount, Is.EqualTo(256));
+            Assert.That(visual.RecentEventIds, Is.Empty);
+            Assert.That(visual.JoinedUserIds, Is.Empty);
+            Assert.That(visual.VotedUserIds, Is.Empty);
+            Assert.That(visual.CooldownKeys, Is.Empty);
+            Assert.That(visual.CommandCapKeys, Is.Empty);
+
+            var complete = game.Snapshot();
+            Assert.That(complete.RulesVersion, Is.EqualTo(1));
+            Assert.That(complete.RecentEventIds.Count, Is.EqualTo(257));
+            Assert.That(complete.JoinedUserIds.Count, Is.EqualTo(256));
+            var restored = RescueGame.Restore(GameConfig.Default, complete);
+            Assert.That(restored.Apply(Event(GameCommand.Board, "board-0", "viewer-0", 0), 0),
+                Is.EqualTo(ApplyResult.Duplicate));
+        }
+
+        [Test]
+        public void AdvancingForViewKeepsPhaseAndClockWhileSkippingHistory()
+        {
+            var game = Started();
+            var method = typeof(RescueGame).GetMethod("AdvanceForView");
+            Assert.That(method, Is.Not.Null, "frame advance needs a history-free result");
+            var visual = (RescueSnapshot)method.Invoke(game, new object[] { 20d });
+            var complete = game.Snapshot();
+            Assert.That(visual.Phase, Is.EqualTo(GamePhase.Voting));
+            Assert.That(visual.RemainingSeconds, Is.EqualTo(complete.RemainingSeconds));
+            Assert.That(visual.ElapsedSeconds, Is.EqualTo(complete.ElapsedSeconds));
+            Assert.That(visual.RecentEventIds, Is.Empty);
+            Assert.That(complete.RecentEventIds, Does.Contain("start"));
+        }
+
         private static void FillShortCheckpoint(RescueGame game, int stage, double at)
         {
             for (int i = 0; i < 3; i++)

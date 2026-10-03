@@ -109,5 +109,38 @@ namespace LighthouseRescue.Tests
             Assert.That(receipts[1].Outcome, Is.EqualTo(LiveInboxOutcome.RuleRejected));
             Assert.That(receipts[1].RuleResult, Is.EqualTo(ApplyResult.Duplicate));
         }
+
+        [Test]
+        public void DrainingOneLiveMessageDoesNotCopyThousandsOfHistoricalAudienceIds()
+        {
+            var game = StartedGame();
+            for (int i = 0; i < 2048; i++)
+                Assert.That(game.Apply(new GameEvent
+                {
+                    Source = "douyin", RoomId = "room-1", RoundId = "round-1",
+                    EventId = "prior-" + i, UserId = "viewer-" + i, Command = GameCommand.Board
+                }, 0), Is.EqualTo(ApplyResult.Accepted));
+            var inbox = new LiveMessageInbox(4);
+            inbox.SetRound("room-1", "round-1");
+            var router = new EventRouter();
+            var receipts = new List<LiveInboxReceipt>();
+            var warmup = Board("warmup");
+            warmup.StableUserId = "warmup-viewer";
+            Assert.That(inbox.Post(warmup, "room-1", 100600), Is.True);
+            inbox.Drain(game, router, 100600, 100000, 4, receipts.Add);
+            receipts.Clear();
+            var next = Board("measured");
+            next.StableUserId = "new-viewer";
+            Assert.That(inbox.Post(next, "room-1", 100600), Is.True);
+
+            var counter = typeof(RescueGame).GetProperty("CompleteSnapshotCount");
+            Assert.That(counter, Is.Not.Null, "full snapshot copies must be observable in stress tests");
+            long before = (long)counter.GetValue(game);
+            inbox.Drain(game, router, 100600, 100000, 4, receipts.Add);
+            Assert.That((long)counter.GetValue(game), Is.EqualTo(before),
+                "one message must not copy all prior IDs");
+            Assert.That(game.Snapshot().JoinedCount, Is.EqualTo(2050));
+            Assert.That(receipts[0].Outcome, Is.EqualTo(LiveInboxOutcome.Applied));
+        }
     }
 }

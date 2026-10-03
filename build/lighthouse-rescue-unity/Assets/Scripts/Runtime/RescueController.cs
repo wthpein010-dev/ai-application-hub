@@ -25,7 +25,7 @@ namespace LighthouseRescue.Runtime
         private int roundNumber;
         private double speed = 1;
 
-        public RescueSnapshot Current => game?.Snapshot();
+        public RescueSnapshot Current => game?.ViewSnapshot();
         public double Speed => speed;
 
         private void Awake()
@@ -41,9 +41,9 @@ namespace LighthouseRescue.Runtime
             view.Build(host);
             simulation.Start(OnEvent);
             if (checkpoint.TryLoad(DemoRoom, 1, out RescueSnapshot recovered))
-                view.OfferRecovery(() => { game = RescueGame.Restore(GameConfig.Default, recovered); var snapshot = game.Snapshot(); view.ResetTransitionBaseline(snapshot); view.Render(snapshot); },
-                    () => { game = NewGame(); checkpoint.Save(game.Snapshot()); view.Render(game.Snapshot()); });
-            view.Render(game.Snapshot());
+                view.OfferRecovery(() => { game = RescueGame.Restore(GameConfig.Default, recovered); var snapshot = game.ViewSnapshot(); view.ResetTransitionBaseline(snapshot); view.Render(snapshot); },
+                    () => { game = NewGame(); checkpoint.Save(game.Snapshot()); view.Render(game.ViewSnapshot()); });
+            view.Render(game.ViewSnapshot());
             foreach (string argument in Environment.GetCommandLineArgs())
                 if (argument == "--capture-short" || argument == "--capture-long")
                 {
@@ -72,7 +72,7 @@ namespace LighthouseRescue.Runtime
             var nextGame = new RescueGame(GameConfig.Default, verifiedRoom,
                 "round-" + DateTime.UtcNow.Ticks + "-" + nextRound, nextRound);
             var nextInbox = new LiveMessageInbox(LiveInboxCapacity);
-            nextInbox.SetRound(verifiedRoom, nextGame.Snapshot().RoundId);
+            nextInbox.SetRound(verifiedRoom, nextGame.ViewSnapshot().RoundId);
             try
             {
                 source.Start((message, sourceRoom, receivedAt) =>
@@ -92,10 +92,10 @@ namespace LighthouseRescue.Runtime
             roundNumber = nextRound;
             speed = 1;
             game = nextGame;
-            ObserveLivePhase(game.Snapshot(), UnixNow());
+            ObserveLivePhase(game.ViewSnapshot(), UnixNow());
             view.SetLiveMode(source.Status);
-            view.ResetTransitionBaseline(game.Snapshot());
-            view.Render(game.Snapshot());
+            view.ResetTransitionBaseline(game.ViewSnapshot());
+            view.Render(game.ViewSnapshot());
             if (checkpoint.TryLoad(verifiedRoom, 1, out RescueSnapshot recovered))
             {
                 awaitingLiveRecovery = true;
@@ -104,15 +104,15 @@ namespace LighthouseRescue.Runtime
                     game = RescueGame.Restore(GameConfig.Default, recovered);
                     BindLiveRound(game);
                     awaitingLiveRecovery = false;
-                    view.ResetTransitionBaseline(game.Snapshot());
-                    view.Render(game.Snapshot());
+                    view.ResetTransitionBaseline(game.ViewSnapshot());
+                    view.Render(game.ViewSnapshot());
                 }, () =>
                 {
                     game = NewGame();
                     awaitingLiveRecovery = false;
                     checkpoint.Save(game.Snapshot());
-                    view.ResetTransitionBaseline(game.Snapshot());
-                    view.Render(game.Snapshot());
+                    view.ResetTransitionBaseline(game.ViewSnapshot());
+                    view.Render(game.ViewSnapshot());
                 });
             }
             return true;
@@ -122,9 +122,9 @@ namespace LighthouseRescue.Runtime
 
         private void BindLiveRound(RescueGame next)
         {
-            liveInbox.SetRound(roomId, next.Snapshot().RoundId);
+            liveInbox.SetRound(roomId, next.ViewSnapshot().RoundId);
             stageStartedUnixMilliseconds = 0;
-            ObserveLivePhase(next.Snapshot(), UnixNow());
+            ObserveLivePhase(next.ViewSnapshot(), UnixNow());
         }
 
         private void ObserveLivePhase(RescueSnapshot snapshot, long now)
@@ -140,25 +140,26 @@ namespace LighthouseRescue.Runtime
         private void Update()
         {
             if (game == null || view == null) return;
-            if (awaitingLiveRecovery) { view.Render(game.Snapshot()); return; }
+            if (awaitingLiveRecovery) { view.Render(game.ViewSnapshot()); return; }
             if (liveSource != null)
             {
                 long now = UnixNow();
-                ObserveLivePhase(game.Snapshot(), now);
+                ObserveLivePhase(game.ViewSnapshot(), now);
                 liveInbox.Drain(game, router, now, stageStartedUnixMilliseconds,
                     LiveItemsPerFrame, OnLiveReceipt);
                 if (!liveSource.Status.IsConnected)
                 {
                     // Finish already received events within the frame budget, without moving the timer.
-                    if (liveInbox.PendingCount > 0) { view.Render(game.Snapshot()); return; }
-                    if (game.Snapshot().Phase != GamePhase.Paused && game.Snapshot().Phase != GamePhase.Waiting &&
-                        game.Snapshot().Phase != GamePhase.Result)
+                    if (liveInbox.PendingCount > 0) { view.Render(game.ViewSnapshot()); return; }
+                    var disconnected = game.ViewSnapshot();
+                    if (disconnected.Phase != GamePhase.Paused && disconnected.Phase != GamePhase.Waiting &&
+                        disconnected.Phase != GamePhase.Result)
                         Emit(GameCommand.Pause, "host");
                 }
             }
-            GamePhase before = game.Snapshot().Phase;
-            var snapshot = game.Advance(Time.deltaTime * speed);
-            if (snapshot.Phase != before) checkpoint.Save(snapshot);
+            GamePhase before = game.ViewSnapshot().Phase;
+            var snapshot = game.AdvanceForView(Time.deltaTime * speed);
+            if (snapshot.Phase != before) checkpoint.Save(game.Snapshot());
             ObserveLivePhase(snapshot, UnixNow());
             view.Render(snapshot);
         }
@@ -172,19 +173,19 @@ namespace LighthouseRescue.Runtime
                 if (receipt.Outcome == LiveInboxOutcome.Applied)
                     checkpoint.Save(game.Snapshot());
                 view.ShowFeedback(receipt.GameEvent, receipt.RuleResult);
-                view.Render(game.Snapshot());
+                view.Render(game.ViewSnapshot());
             }
             liveSource.HandleReceipt(receipt);
         }
 
         private void OnEvent(GameEvent gameEvent)
         {
-            var before = game.Snapshot();
+            var before = game.ViewSnapshot();
             var result = router.Route(gameEvent, game, before.ElapsedSeconds);
             if (result == ApplyResult.Accepted)
             {
-                var snapshot = game.Snapshot();
-                checkpoint.Save(snapshot);
+                var snapshot = game.ViewSnapshot();
+                checkpoint.Save(game.Snapshot());
                 ObserveLivePhase(snapshot, UnixNow());
                 view.ShowFeedback(gameEvent, result);
                 view.Render(snapshot);
@@ -198,7 +199,7 @@ namespace LighthouseRescue.Runtime
             if (liveSource != null && command != GameCommand.Start && command != GameCommand.Pause &&
                 command != GameCommand.Resume && command != GameCommand.End &&
                 command != GameCommand.CaptainLeft && command != GameCommand.CaptainRight) return;
-            var snapshot = game.Snapshot();
+            var snapshot = game.ViewSnapshot();
             var gameEvent = new GameEvent
             {
                 Source = liveSource == null ? "simulation" : "host", RoomId = roomId, RoundId = snapshot.RoundId,
@@ -213,19 +214,19 @@ namespace LighthouseRescue.Runtime
         public void StartOrRestart()
         {
             if (liveSource != null && !liveSource.Status.IsConnected) return;
-            if (game.Snapshot().Phase == GamePhase.Result) game = NewGame();
+            if (game.ViewSnapshot().Phase == GamePhase.Result) game = NewGame();
             Emit(GameCommand.Start, "host");
         }
 
         public void TogglePause()
         {
-            if (liveSource != null && !liveSource.Status.IsConnected && game.Snapshot().Phase == GamePhase.Paused) return;
-            Emit(game.Snapshot().Phase == GamePhase.Paused ? GameCommand.Resume : GameCommand.Pause, "host");
+            if (liveSource != null && !liveSource.Status.IsConnected && game.ViewSnapshot().Phase == GamePhase.Paused) return;
+            Emit(game.ViewSnapshot().Phase == GamePhase.Paused ? GameCommand.Resume : GameCommand.Pause, "host");
         }
 
         public void EndRound() => Emit(GameCommand.End, "host");
-        public void ResetRound() { game = NewGame(); checkpoint.Save(game.Snapshot()); view.Render(game.Snapshot()); }
-        public void ToggleSpeed() { if (liveSource != null) return; speed = speed < 4 ? 4 : speed < 8 ? 8 : 1; view.Render(game.Snapshot()); }
+        public void ResetRound() { game = NewGame(); checkpoint.Save(game.Snapshot()); view.Render(game.ViewSnapshot()); }
+        public void ToggleSpeed() { if (liveSource != null) return; speed = speed < 4 ? 4 : speed < 8 ? 8 : 1; view.Render(game.ViewSnapshot()); }
         public void SetCaptureSpeed() => speed = 8;
     }
 }
