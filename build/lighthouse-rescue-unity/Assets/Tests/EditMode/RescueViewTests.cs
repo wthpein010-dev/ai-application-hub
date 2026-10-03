@@ -220,9 +220,35 @@ namespace LighthouseRescue.Tests
                 var view = owner.AddComponent<RescueView>();
                 view.Build(owner.AddComponent<HostControls>());
                 view.Render(new RescueSnapshot { Phase = GamePhase.Result, Outcome = GameOutcome.FullSuccess,
-                    SavedCount = 3, Hull = 76, RepairActions = 9, LightActions = 6, LikeLightPoints = 2 });
+                    SavedCount = 3, Hull = 76, RepairActions = 9, LightActions = 6, LikeLightPoints = 2,
+                    ContributionTotalsComplete = true });
                 Assert.That(Object.FindObjectsOfType<Text>().Any(label => label.text.Contains("修理 9") &&
                     label.text.Contains("照明 6") && label.text.Contains("点赞补光 2")), Is.True);
+            }
+            finally
+            {
+                foreach (var canvas in Object.FindObjectsOfType<Canvas>()) Object.DestroyImmediate(canvas.gameObject);
+                Object.DestroyImmediate(owner);
+            }
+        }
+
+        [Test]
+        public void LegacyCheckpointEndingDoesNotPresentMissingTotalsAsZero()
+        {
+            var legacy = JsonUtility.FromJson<RescueSnapshot>(
+                "{\"RulesVersion\":1,\"RoomId\":\"local-demo\",\"RoundId\":\"old-round\",\"SavedCount\":1,\"Hull\":64}");
+            legacy.Phase = GamePhase.Result;
+            legacy.Outcome = GameOutcome.PartialSuccess;
+            var restored = RescueGame.Restore(GameConfig.Default, legacy).Snapshot();
+            var owner = new GameObject("legacy-contribution-test");
+            try
+            {
+                var view = owner.AddComponent<RescueView>();
+                view.Build(owner.AddComponent<HostControls>());
+                view.Render(restored);
+                var summary = Object.FindObjectsOfType<Text>().Single(label => label.text.StartsWith("救起 1/3"));
+                Assert.That(summary.text, Does.Contain("升级前贡献记录不可用"));
+                Assert.That(summary.text, Does.Not.Contain("修理 0"));
             }
             finally
             {

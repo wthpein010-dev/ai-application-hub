@@ -445,9 +445,11 @@ namespace LighthouseRescue.Runtime
             {
                 resultTitle.text = DescribeEnding(s.Outcome);
                 for (int i = 0; i < 3; i++) resultCrew[i].color = i < s.SavedCount ? Color.white : new Color(0.37f, 0.48f, 0.51f, 0.8f);
+                string contributions = s.ContributionTotalsComplete
+                    ? "修理 " + s.RepairActions + "｜照明 " + s.LightActions + "｜点赞补光 " + s.LikeLightPoints
+                    : "升级前贡献记录不可用";
                 resultDetail.text = "救起 " + s.SavedCount + "/3｜船体 " + s.Hull + "｜" + Mathf.RoundToInt((float)s.ElapsedSeconds) + " 秒\n" +
-                    "修理 " + s.RepairActions + "｜照明 " + s.LightActions + "｜点赞补光 " + s.LikeLightPoints + "\n" +
-                    "开始/再来：开启下一局";
+                    contributions + "\n开始/再来：开启下一局";
             }
             var controller = GetComponent<RescueController>();
             speedText.text = (controller == null ? 1 : controller.Speed).ToString("0") + "×";

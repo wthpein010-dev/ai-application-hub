@@ -91,11 +91,14 @@ namespace LighthouseRescue.Tests
             var store = new CheckpointStore(file);
             store.Save(game.Snapshot());
             Assert.That(store.TryLoad("room", 1, out var snapshot), Is.True);
+            Assert.That(snapshot.ContributionTotalsComplete, Is.True);
+            Assert.That(snapshot.RepairActions, Is.EqualTo(1));
             var resumed = RescueGame.Restore(GameConfig.Default, snapshot);
             Assert.That(resumed.Apply(repair, 40), Is.EqualTo(ApplyResult.Duplicate));
             Assert.That(resumed.Apply(E(GameCommand.Repair, "repair-2", 41), 41), Is.EqualTo(ApplyResult.Cooldown));
             Assert.That(resumed.Apply(E(GameCommand.Repair, "repair-3", 43), 43), Is.EqualTo(ApplyResult.Accepted));
             Assert.That(resumed.Snapshot().RepairProgress, Is.EqualTo(3));
+            Assert.That(resumed.Snapshot().RepairActions, Is.EqualTo(2));
         }
     }
 }

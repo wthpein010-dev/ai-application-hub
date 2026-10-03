@@ -31,6 +31,7 @@ namespace LighthouseRescue.Rules
         public int RepairActions;
         public int LightActions;
         public int LikeLightPoints;
+        public bool ContributionTotalsComplete;
         public List<string> RecentEventIds = new List<string>();
         public List<string> JoinedUserIds = new List<string>();
         public List<string> VotedUserIds = new List<string>();

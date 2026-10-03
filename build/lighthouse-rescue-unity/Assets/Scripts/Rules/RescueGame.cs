@@ -35,6 +35,7 @@ namespace LighthouseRescue.Rules
         private int repairActions;
         private int lightActions;
         private int likeLightPoints;
+        private bool contributionTotalsComplete = true;
 
         public RescueGame(GameConfig config, string roomId, string roundId, int seed)
         {
@@ -70,7 +71,8 @@ namespace LighthouseRescue.Rules
                 likePointsAwarded = snapshot.LikePointsAwarded,
                 repairActions = snapshot.RepairActions,
                 lightActions = snapshot.LightActions,
-                likeLightPoints = snapshot.LikeLightPoints
+                likeLightPoints = snapshot.LikeLightPoints,
+                contributionTotalsComplete = snapshot.ContributionTotalsComplete
             };
             if (snapshot.RecentEventIds != null)
                 foreach (string id in snapshot.RecentEventIds) game.seenEvents.Add(id);
@@ -181,6 +183,7 @@ namespace LighthouseRescue.Rules
                 CheckpointNumber = CheckpointNumber(),
                 LikeCarry = likeCarry, LikePointsAwarded = likePointsAwarded,
                 RepairActions = repairActions, LightActions = lightActions, LikeLightPoints = likeLightPoints,
+                ContributionTotalsComplete = contributionTotalsComplete,
                 RecentEventIds = new List<string>(seenEvents),
                 JoinedUserIds = new List<string>(joinedUsers),
                 VotedUserIds = new List<string>(votedUsers)

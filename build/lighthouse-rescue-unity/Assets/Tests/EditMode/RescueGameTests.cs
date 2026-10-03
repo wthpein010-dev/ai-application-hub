@@ -13,6 +13,13 @@ namespace LighthouseRescue.Tests
             return (int)field.GetValue(snapshot);
         }
 
+        private static bool TotalsComplete(RescueSnapshot snapshot)
+        {
+            FieldInfo field = typeof(RescueSnapshot).GetField("ContributionTotalsComplete");
+            Assert.That(field, Is.Not.Null, "new rounds must mark complete contribution totals");
+            return (bool)field.GetValue(snapshot);
+        }
+
         private static GameEvent Event(GameCommand command, string id, string user, double at, int count = 1)
         {
             return new GameEvent
@@ -147,10 +154,12 @@ namespace LighthouseRescue.Tests
             Assert.That(Contribution(snapshot, "RepairActions"), Is.EqualTo(2));
             Assert.That(Contribution(snapshot, "LightActions"), Is.EqualTo(1));
             Assert.That(Contribution(snapshot, "LikeLightPoints"), Is.EqualTo(1));
+            Assert.That(TotalsComplete(snapshot), Is.True);
             var restored = RescueGame.Restore(GameConfig.Default, snapshot).Snapshot();
             Assert.That(Contribution(restored, "RepairActions"), Is.EqualTo(2));
             Assert.That(Contribution(restored, "LightActions"), Is.EqualTo(1));
             Assert.That(Contribution(restored, "LikeLightPoints"), Is.EqualTo(1));
+            Assert.That(TotalsComplete(restored), Is.True);
         }
 
         [Test]
