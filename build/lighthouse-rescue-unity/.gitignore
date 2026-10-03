@@ -7,3 +7,10 @@ Builds/
 .vs/
 *.csproj
 *.sln
+
+# Install these official ByteDance packages locally; do not redistribute SDK binaries.
+Assets/Plugins.meta
+Assets/Plugins/ByteGame.meta
+Assets/Plugins/ByteGame/com.bytedance.bgdt.meta
+Assets/Plugins/ByteGame/com.bytedance.bgdt/
+Packages/com.bytedance.liveopensdk/
