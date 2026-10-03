@@ -90,6 +90,32 @@ namespace LighthouseRescue.Tests
                 view.Render(new RescueSnapshot { Phase = GamePhase.Voting });
                 Assert.That(left.interactable && right.interactable, Is.True);
                 Assert.That(left.gameObject.activeInHierarchy && right.gameObject.activeInHierarchy, Is.True);
+                Assert.That(left.GetComponent<RectTransform>().rect.height, Is.GreaterThanOrEqualTo(120f));
+                Assert.That(right.GetComponent<RectTransform>().rect.height, Is.GreaterThanOrEqualTo(120f));
+                Assert.That(GameObject.Find("修理船体 button"), Is.Null);
+                Assert.That(GameObject.Find("照明救人 button"), Is.Null);
+            }
+            finally
+            {
+                foreach (var canvas in Object.FindObjectsOfType<Canvas>()) Object.DestroyImmediate(canvas.gameObject);
+                Object.DestroyImmediate(owner);
+            }
+        }
+
+        [Test]
+        public void RestoredProgressDoesNotPlayNewRescueOrDamageEffects()
+        {
+            var owner = new GameObject("recovery-effects-test");
+            try
+            {
+                var view = owner.AddComponent<RescueView>();
+                view.Build(owner.AddComponent<HostControls>());
+                view.Render(new RescueSnapshot { Phase = GamePhase.Waiting, Hull = 100 });
+                var recovered = new RescueSnapshot { Phase = GamePhase.Checkpoint2, SavedCount = 2, Hull = 54 };
+                view.ResetTransitionBaseline(recovered);
+                view.Render(recovered);
+                Assert.That(GameObject.Find("Hull damage flash").GetComponent<Image>().color.a, Is.EqualTo(0f));
+                Assert.That(Object.FindObjectsOfType<Text>().Any(label => label.text.Contains("已救起第 2 位")), Is.False);
             }
             finally
             {

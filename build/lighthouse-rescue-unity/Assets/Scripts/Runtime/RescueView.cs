@@ -161,8 +161,6 @@ namespace LighthouseRescue.Runtime
             Panel(root, "Map info scrim", 48, 939, 984, 128, new Color(0.02f, 0.10f, 0.16f, 0.74f));
             rescueToast = Label(root, "", 261, 739, 558, 80, 42, Gold, FontStyle.Bold, TextAnchor.MiddleCenter);
             routeText = Label(root, "", 71, 950, 935, 58, 29, SoftWhite, FontStyle.Bold, TextAnchor.MiddleCenter);
-            captainLeftButton = MakeButton("船长裁定左", 244, 1012, 276, 53, host.CaptainLeft, Gold, 25);
-            captainRightButton = MakeButton("船长裁定右", 558, 1012, 276, 53, host.CaptainRight, Mint, 25);
 
             Panel(root, "Status panel", 48, 1091, 984, 213, Card);
             scoreText = Label(root, "", 76, 1108, 930, 54, 34, Gold, FontStyle.Bold);
@@ -180,6 +178,8 @@ namespace LighthouseRescue.Runtime
             rightButton = MakeButton("选右 · 长路", 722, 1406, 310, 105, host.VoteRight, Gold);
             repairButton = MakeButton("修理船体", 48, 1532, 477, 105, host.Repair, Mint);
             lightButton = MakeButton("照明救人", 548, 1532, 484, 105, host.Light, Gold);
+            captainLeftButton = MakeButton("船长裁定左", 48, 1522, 477, 125, host.CaptainLeft, Gold, 34);
+            captainRightButton = MakeButton("船长裁定右", 548, 1522, 484, 125, host.CaptainRight, Mint, 34);
             likeButton = MakeButton("点赞 ×20 补光", 48, 1658, 477, 96, host.Like, Mint);
             giftButton = MakeButton("礼物烟花 · 纯外观", 548, 1658, 484, 96, host.Gift, Hex("D2ABC8"));
             feedbackText = Label(root, "", 64, 1763, 952, 55, 28, Gold, FontStyle.Bold, TextAnchor.MiddleCenter);
@@ -243,6 +243,8 @@ namespace LighthouseRescue.Runtime
             captainLeftButton.interactable = captainRightButton.interactable = s.Phase == GamePhase.Voting;
             captainLeftButton.transform.parent.gameObject.SetActive(s.Phase == GamePhase.Voting);
             captainRightButton.transform.parent.gameObject.SetActive(s.Phase == GamePhase.Voting);
+            repairButton.transform.parent.gameObject.SetActive(s.Phase != GamePhase.Voting);
+            lightButton.transform.parent.gameObject.SetActive(s.Phase != GamePhase.Voting);
             repairButton.interactable = lightButton.interactable = likeButton.interactable = checkpoint;
             giftButton.interactable = s.Phase != GamePhase.Waiting && s.Phase != GamePhase.Result && s.Phase != GamePhase.Paused;
             startButton.interactable = s.Phase == GamePhase.Waiting || s.Phase == GamePhase.Result;
@@ -282,6 +284,16 @@ namespace LighthouseRescue.Runtime
             var controller = GetComponent<RescueController>();
             speedText.text = (controller == null ? 1 : controller.Speed).ToString("0") + "×";
             if (Time.unscaledTime > feedbackUntil) feedbackText.text = "";
+        }
+
+        public void ResetTransitionBaseline(RescueSnapshot snapshot)
+        {
+            if (snapshot == null) return;
+            lastSavedCount = snapshot.SavedCount;
+            lastHull = snapshot.Hull;
+            lastPhase = snapshot.Phase;
+            rescueToastUntil = 0f;
+            hullFlashUntil = 0f;
         }
 
         public void ShowFeedback(GameCommand command, ApplyResult result)
