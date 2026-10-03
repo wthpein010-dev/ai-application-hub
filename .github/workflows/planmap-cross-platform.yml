@@ -44,6 +44,9 @@ jobs:
           cp tests/server.test.mjs ../../../planmap-extracted/planmap-local-web/local/tests/
           node --test ../../../planmap-extracted/planmap-local-web/local/tests/server.test.mjs
       - run: npx playwright install --with-deps chromium
+        if: runner.os == 'Linux'
+      - run: npx playwright install chromium
+        if: runner.os != 'Linux'
       - run: npm run test:browser
       - name: Run extracted launcher and browser acceptance in a path with spaces
         run: python tests/extracted_runtime.py ../../../planmap-artifacts/planmap-local-web.zip
