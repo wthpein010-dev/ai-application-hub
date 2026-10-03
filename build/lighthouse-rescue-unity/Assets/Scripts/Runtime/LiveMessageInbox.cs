@@ -97,7 +97,7 @@ namespace LighthouseRescue.Runtime
                     if (pending.Count == 0) break;
                     item = pending.Dequeue();
                 }
-                var snapshot = game.Snapshot();
+                var snapshot = game.ViewSnapshot();
                 var receipt = new LiveInboxReceipt
                 {
                     MessageId = item.Message.MessageId,

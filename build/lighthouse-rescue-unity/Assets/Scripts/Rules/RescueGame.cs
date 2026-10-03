@@ -37,6 +37,8 @@ namespace LighthouseRescue.Rules
         private int likeLightPoints;
         private bool contributionTotalsComplete = true;
 
+        public long CompleteSnapshotCount { get; private set; }
+
         public RescueGame(GameConfig config, string roomId, string roundId, int seed)
         {
             this.config = config ?? throw new ArgumentNullException(nameof(config));
@@ -247,6 +249,7 @@ namespace LighthouseRescue.Rules
                 ContributionTotalsComplete = contributionTotalsComplete
             };
             if (!includeHistory) return result;
+            CompleteSnapshotCount++;
             result.RecentEventIds = new List<string>(seenEvents);
             result.JoinedUserIds = new List<string>(joinedUsers);
             result.VotedUserIds = new List<string>(votedUsers);
