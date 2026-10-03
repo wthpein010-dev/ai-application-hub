@@ -329,6 +329,9 @@ namespace LighthouseRescue.Tests
                 Assert.That(source.Stopped, Is.True);
                 Assert.That(source.Status.State, Is.EqualTo(LiveConnectionState.Faulted));
                 Assert.That(source.Status.Reason, Does.Contain("过载"));
+                Assert.That(Array.Exists(UnityEngine.Object.FindObjectsOfType<Text>(),
+                    label => label.text == "直播已停止 · 输入过载"), Is.True,
+                    "the streamer badge must distinguish overload from a storage failure");
                 Assert.That(controller.Current.JoinedCount, Is.EqualTo(1),
                     "all queued but unacknowledged joins must remain unapplied");
                 Assert.That(source.Handled.Count, Is.EqualTo(1),
@@ -363,6 +366,25 @@ namespace LighthouseRescue.Tests
                 Assert.That(controller.Current.JoinedCount, Is.EqualTo(256));
                 Assert.That(controller.Current.Phase, Is.EqualTo(GamePhase.Paused));
                 Assert.That(source.Handled.Count, Is.EqualTo(256));
+            }
+            finally { Cleanup(owner); }
+        }
+
+        [Test]
+        public void InvalidCallbackInputDoesNotFaultConnectedLiveRound()
+        {
+            var owner = new GameObject("live-invalid-input-test");
+            try
+            {
+                var controller = NewController(owner);
+                var source = new FakeSource();
+                Assert.That(controller.AttachLiveSource(source), Is.True);
+                controller.StartOrRestart();
+                Assert.That(source.Send(null, Now()), Is.False);
+                Tick(controller);
+                Assert.That(source.Status.State, Is.EqualTo(LiveConnectionState.Connected));
+                Assert.That(source.Stopped, Is.False);
+                Assert.That(controller.Current.Phase, Is.EqualTo(GamePhase.Gathering));
             }
             finally { Cleanup(owner); }
         }

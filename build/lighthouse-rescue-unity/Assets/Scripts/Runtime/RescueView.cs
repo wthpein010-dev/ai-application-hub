@@ -342,9 +342,9 @@ namespace LighthouseRescue.Runtime
         {
             if (s == null || root == null) return;
             bool localDemo = liveStatus == null;
-            bool storageFault = !localDemo && liveStatus.State == LiveConnectionState.Faulted;
+            bool liveFault = !localDemo && liveStatus.State == LiveConnectionState.Faulted;
             modeText.text = localDemo ? "本地演示 · 非直播连接" :
-                storageFault ? "直播已停止 · 存储故障" :
+                liveFault ? "直播已停止 · " + liveStatus.FaultTitle :
                 liveStatus.IsConnected ? "抖音直播 · 已连接" : "直播断开 · 等待重连";
             if (lastRoundId != s.RoundId)
             {
@@ -386,7 +386,7 @@ namespace LighthouseRescue.Runtime
             }
             timer.text = s.Phase == GamePhase.Waiting || s.Phase == GamePhase.Result ? "--:--" : "00:" + Mathf.CeilToInt((float)s.RemainingSeconds).ToString("00");
             stageTitle.text = StageTitle(s);
-            instruction.text = storageFault ? liveStatus.Reason : DescribeStage(s);
+            instruction.text = liveFault ? liveStatus.Reason : DescribeStage(s);
             routeText.text = s.Phase == GamePhase.Voting ? "左：短路 修4 光3｜右：长路 修3 光4" :
                 s.Route == RescueRoute.ShortLeft ? "当前路线：礁石短路 · 快，但更伤船" :
                 s.Route == RescueRoute.LongRight ? "当前路线：迷雾长路 · 慢，需要更多光" : "观众可免费投票决定航线";
@@ -430,33 +430,33 @@ namespace LighthouseRescue.Runtime
             speedButton.transform.parent.gameObject.SetActive(localDemo);
             boardButton.interactable = localDemo && s.Phase != GamePhase.Waiting && s.Phase != GamePhase.Result && s.Phase != GamePhase.Paused;
             leftButton.interactable = rightButton.interactable = s.Phase == GamePhase.Voting;
-            captainLeftButton.interactable = captainRightButton.interactable = s.Phase == GamePhase.Voting && !storageFault;
+            captainLeftButton.interactable = captainRightButton.interactable = s.Phase == GamePhase.Voting && !liveFault;
             captainLeftButton.transform.parent.gameObject.SetActive(s.Phase == GamePhase.Voting);
             captainRightButton.transform.parent.gameObject.SetActive(s.Phase == GamePhase.Voting);
             repairButton.transform.parent.gameObject.SetActive(localDemo && s.Phase != GamePhase.Voting);
             lightButton.transform.parent.gameObject.SetActive(localDemo && s.Phase != GamePhase.Voting);
             repairButton.interactable = lightButton.interactable = likeButton.interactable = checkpoint;
             giftButton.interactable = s.Phase != GamePhase.Waiting && s.Phase != GamePhase.Result && s.Phase != GamePhase.Paused;
-            startButton.interactable = !storageFault && (s.Phase == GamePhase.Waiting || s.Phase == GamePhase.Result);
-            pauseButton.interactable = !storageFault && s.Phase != GamePhase.Waiting && s.Phase != GamePhase.Result;
-            endButton.interactable = resetButton.interactable = !storageFault;
+            startButton.interactable = !liveFault && (s.Phase == GamePhase.Waiting || s.Phase == GamePhase.Result);
+            pauseButton.interactable = !liveFault && s.Phase != GamePhase.Waiting && s.Phase != GamePhase.Result;
+            endButton.interactable = resetButton.interactable = !liveFault;
             float storm = StormIntensity(s);
-            if (storageFault)
+            if (liveFault)
             {
                 lightningUntil = 0f;
                 pendingThunderAt = -1f;
                 thunderSource.Stop();
             }
-            if (s.Phase != GamePhase.Paused && !storageFault) weatherClock += Mathf.Min(Time.unscaledDeltaTime, 0.1f);
+            if (s.Phase != GamePhase.Paused && !liveFault) weatherClock += Mathf.Min(Time.unscaledDeltaTime, 0.1f);
             float gust = WindGust(weatherClock);
-            if (checkpoint && !storageFault && weatherClock >= nextLightningAt)
+            if (checkpoint && !liveFault && weatherClock >= nextLightningAt)
             {
                 lightningUntil = weatherClock + LightningDuration;
                 pendingThunderAt = weatherClock + 0.25f;
                 nextLightningAt = weatherClock + LightningInterval(lightningStrikeIndex++, s.CheckpointNumber);
             }
             if (!checkpoint || host.Muted) thunderSource.Stop();
-            thunderSource.volume = checkpoint && !host.Muted && !storageFault ? 0.27f : 0f;
+            thunderSource.volume = checkpoint && !host.Muted && !liveFault ? 0.27f : 0f;
             if (host.Muted) pendingThunderAt = -1f;
             if (checkpoint && !host.Muted && pendingThunderAt >= 0f && weatherClock >= pendingThunderAt)
             {
@@ -541,8 +541,8 @@ namespace LighthouseRescue.Runtime
                 spray[i].color = new Color(0.72f, 0.92f, 1f,
                     storm * (pov ? 0.2f : 0.1f) * Mathf.Abs(Mathf.Sin(phase)) + lightning * 0.15f);
             }
-            if (host.Muted || storageFault) sound.Stop();
-            weatherSound.volume = host.Muted || storageFault ? 0f : storm * (s.Phase == GamePhase.Paused ? 0.04f : 0.14f + 0.08f * gust);
+            if (host.Muted || liveFault) sound.Stop();
+            weatherSound.volume = host.Muted || liveFault ? 0f : storm * (s.Phase == GamePhase.Paused ? 0.04f : 0.14f + 0.08f * gust);
             weatherSound.pitch = 0.94f + 0.10f * gust;
             if (Application.isPlaying && weatherSound.clip != null && !weatherSound.isPlaying && weatherSound.volume > 0f) weatherSound.Play();
             resultCard.SetActive(s.Phase == GamePhase.Result);

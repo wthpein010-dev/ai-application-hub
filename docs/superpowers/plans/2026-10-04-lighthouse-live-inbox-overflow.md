@@ -33,10 +33,10 @@
 
 **Interfaces:** Add `LiveInboxPostResult TryPost(LivePushEnvelope, string, long)` with `Accepted`, `Rejected`, `Full`; preserve `bool Post(...)`. Controller uses an atomic overflow flag, checked before `Drain`.
 
-- [ ] Write tests for all post results and a full-queue live controller that preserves an earlier durable join but applies none of the 256 pending joins.
-- [ ] Run targeted EditMode tests and see the new cases fail for the missing behaviour.
-- [ ] Implement minimal thread-safe signal and main-thread fail-stop; run targeted and full EditMode suites.
-- [ ] Commit the verified controller/inbox change.
+- [x] Write tests for all post results and a full-queue live controller that preserves an earlier durable join but applies none of the 256 pending joins.
+- [x] Run targeted EditMode tests and see the new cases fail for the missing behaviour.
+- [x] Implement minimal thread-safe signal and main-thread fail-stop; run targeted and full EditMode suites.
+- [x] Commit the verified controller/inbox change.
 
 ### Task 2: Distinct streamer feedback and release
 
@@ -44,7 +44,7 @@
 
 **Interfaces:** `MarkFaulted(reason, title)` retains the storage default and accepts `输入过载` for queue overflow; `RescueView` renders the title and reason from status.
 
-- [ ] Add failing tests for overload badge/reason, disabled host controls, muted storm and unchanged normal disconnect.
-- [ ] Implement feedback; run full Unity EditMode and named Lighthouse Node tests.
-- [ ] Build and smoke Windows/WebGL, refresh recovery, desktop/390px rounds, video and publication audit; update ZIP hash and versioned docs.
+- [x] Add tests for overload badge/reason, disabled host controls, muted storm and unchanged normal disconnect; observe the badge test fail before implementation.
+- [x] Implement feedback; run full Unity EditMode and named Lighthouse Node tests.
+- [x] Build and smoke Windows/WebGL, refresh recovery, desktop/390px rounds, video and publication audit; update ZIP hash and versioned docs.
 - [ ] Commit, PR, merge and create an exact-SHA Release; verify exact-SHA Pages/CI and public downloads/pages; update project memory.

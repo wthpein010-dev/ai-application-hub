@@ -1032,7 +1032,7 @@ const defaultApps = [
     package: "",
     platforms: {
       web: { href: "./projects/lighthouse-rescue/index.html", label: "演示" },
-      windows: { href: "https://github.com/wthpein010-dev/ai-application-hub/releases/download/lighthouse-rescue-v1.4.6/LighthouseRescue-Windows-x64.zip", label: "Wins下载" },
+      windows: { href: "https://github.com/wthpein010-dev/ai-application-hub/releases/download/lighthouse-rescue-v1.4.7/LighthouseRescue-Windows-x64.zip", label: "Wins下载" },
       mac: ""
     },
     tags: ["Unity", "直播互动", "合作救援", "Windows", "WebGL"],

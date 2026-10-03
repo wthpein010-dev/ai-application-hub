@@ -7,8 +7,10 @@ namespace LighthouseRescue.Runtime
         private readonly object gate = new object();
         private LiveConnectionState state = LiveConnectionState.Unavailable;
         private string reason = "未安装或核验抖音官方 Unity SDK；当前仅支持本地演示。";
+        private string faultTitle = "故障";
         public LiveConnectionState State { get { lock (gate) return state; } }
         public string Reason { get { lock (gate) return reason; } }
+        public string FaultTitle { get { lock (gate) return faultTitle; } }
         public bool IsConnected => State == LiveConnectionState.Connected;
 
         public void Evaluate(bool officialSdkPresent, bool permissionVerified, bool stableEventIds)
@@ -41,12 +43,13 @@ namespace LighthouseRescue.Runtime
                 }
             }
         }
-        public void MarkFaulted(string reason)
+        public void MarkFaulted(string reason, string title = "存储故障")
         {
             lock (gate)
             {
                 state = LiveConnectionState.Faulted;
                 this.reason = string.IsNullOrWhiteSpace(reason) ? "直播已停止，请检查本地存储。" : reason;
+                faultTitle = string.IsNullOrWhiteSpace(title) ? "故障" : title;
             }
         }
         private void Set(LiveConnectionState next, string explanation)

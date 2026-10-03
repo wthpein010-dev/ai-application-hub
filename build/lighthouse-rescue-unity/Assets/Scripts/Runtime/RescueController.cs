@@ -249,16 +249,16 @@ namespace LighthouseRescue.Runtime
         }
 
         private void StopForStorageFault(Exception error) =>
-            StopForLiveFault("存储失败，已停止；检查磁盘后重启。", error);
+            StopForLiveFault("存储失败，已停止；检查磁盘后重启。", "存储故障", error);
 
         private void StopForInboxOverflow() =>
-            StopForLiveFault("弹幕输入过载，已停止；检查流量后重启。", null);
+            StopForLiveFault("弹幕输入过载，已停止；检查流量后重启。", "输入过载", null);
 
-        private void StopForLiveFault(string reason, Exception error)
+        private void StopForLiveFault(string reason, string title, Exception error)
         {
             liveFaulted = true;
             awaitingLiveRecovery = true;
-            liveSource.Status.MarkFaulted(reason);
+            liveSource.Status.MarkFaulted(reason, title);
             try { liveSource.Stop(); }
             catch (Exception stopError) { Debug.LogWarning("Live source stop failed: " + stopError.GetType().Name); }
             try
