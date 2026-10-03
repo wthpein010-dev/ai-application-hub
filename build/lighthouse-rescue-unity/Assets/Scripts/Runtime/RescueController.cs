@@ -221,7 +221,12 @@ namespace LighthouseRescue.Runtime
                 view.ShowFeedback(receipt.GameEvent, receipt.RuleResult);
                 view.Render(game.ViewSnapshot());
             }
-            liveSource.HandleReceipt(receipt);
+            try { liveSource.HandleReceipt(receipt); }
+            catch (Exception error)
+            {
+                StopForReceiptFault(error);
+                throw new LiveFaultStopException();
+            }
         }
 
         private void OnEvent(GameEvent gameEvent)
@@ -259,6 +264,9 @@ namespace LighthouseRescue.Runtime
 
         private void StopForInboxOverflow() =>
             StopForLiveFault("弹幕输入过载，已停止；检查流量后重启。", "输入过载", null);
+
+        private void StopForReceiptFault(Exception error) =>
+            StopForLiveFault("直播消息回执失败，已停止；检查连接后重启。", "回执故障", error);
 
         private void StopForLiveFault(string reason, string title, Exception error)
         {
