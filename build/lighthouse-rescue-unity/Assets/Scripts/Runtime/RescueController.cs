@@ -171,7 +171,7 @@ namespace LighthouseRescue.Runtime
             if (receipt.GameEvent != null)
             {
                 if (receipt.Outcome == LiveInboxOutcome.Applied)
-                    checkpoint.Save(game.Snapshot());
+                    PersistAccepted(receipt.GameEvent);
                 view.ShowFeedback(receipt.GameEvent, receipt.RuleResult);
                 view.Render(game.ViewSnapshot());
             }
@@ -185,12 +185,21 @@ namespace LighthouseRescue.Runtime
             if (result == ApplyResult.Accepted)
             {
                 var snapshot = game.ViewSnapshot();
-                checkpoint.Save(game.Snapshot());
+                PersistAccepted(gameEvent);
                 ObserveLivePhase(snapshot, UnixNow());
                 view.ShowFeedback(gameEvent, result);
                 view.Render(snapshot);
             }
             else view.ShowFeedback(gameEvent, result);
+        }
+
+        private void PersistAccepted(GameEvent gameEvent)
+        {
+            if (gameEvent.Command == GameCommand.Start || gameEvent.Command == GameCommand.Pause ||
+                gameEvent.Command == GameCommand.Resume || gameEvent.Command == GameCommand.End)
+                checkpoint.Save(game.Snapshot());
+            else
+                checkpoint.AppendAccepted(gameEvent, game);
         }
 
         public void Emit(GameCommand command, string userId = "试玩观众", int count = 1)
