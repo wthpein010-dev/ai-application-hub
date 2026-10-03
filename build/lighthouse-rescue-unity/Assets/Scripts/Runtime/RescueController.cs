@@ -34,7 +34,7 @@ namespace LighthouseRescue.Runtime
             simulation.Start(OnEvent);
             if (checkpoint.TryLoad(Room, 1, out RescueSnapshot recovered))
                 view.OfferRecovery(() => { game = RescueGame.Restore(GameConfig.Default, recovered); view.Render(game.Snapshot()); },
-                    () => { game = NewGame(); view.Render(game.Snapshot()); });
+                    () => { game = NewGame(); checkpoint.Save(game.Snapshot()); view.Render(game.Snapshot()); });
             view.Render(game.Snapshot());
             foreach (string argument in Environment.GetCommandLineArgs())
                 if (argument == "--capture-short" || argument == "--capture-long")
@@ -99,7 +99,7 @@ namespace LighthouseRescue.Runtime
         }
 
         public void EndRound() => Emit(GameCommand.End, "host");
-        public void ResetRound() { game = NewGame(); view.Render(game.Snapshot()); }
+        public void ResetRound() { game = NewGame(); checkpoint.Save(game.Snapshot()); view.Render(game.Snapshot()); }
         public void ToggleSpeed() { speed = speed < 4 ? 4 : speed < 8 ? 8 : 1; view.Render(game.Snapshot()); }
         public void SetCaptureSpeed() => speed = 8;
     }

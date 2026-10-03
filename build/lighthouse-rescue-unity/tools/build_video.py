@@ -1,4 +1,4 @@
-"""Cut an honest, captioned stage recap from screenshots captured by the Windows player."""
+"""Cut a captioned stage recap from the playable Unity WebGL canvas captures."""
 
 import argparse
 import subprocess
@@ -53,7 +53,7 @@ def main():
         "-c:v", "libx264", "-preset", "medium", "-crf", "21", "-movflags", "+faststart",
         video / "lighthouse-demo.mp4")
     run("-i", frames[-1], "-vf", "scale=720:1280:flags=lanczos", "-frames:v", "1", "-q:v", "2", video / "poster.jpg")
-    run("-i", frames[2], "-vf", "crop=1080:608:0:438,scale=1280:720:flags=lanczos",
+    run("-i", frames[2], "-vf", "crop=iw:ih*0.327:0:ih*0.228,scale=1280:720:flags=lanczos",
         "-frames:v", "1", "-c:v", "libwebp", "-q:v", "85", root / "assets/hub-showcase/lighthouse-rescue.webp")
     print("Lighthouse video:", (video / "lighthouse-demo.mp4").stat().st_size, "bytes")
 

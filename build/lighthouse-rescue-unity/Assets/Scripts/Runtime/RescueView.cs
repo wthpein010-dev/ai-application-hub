@@ -17,6 +17,10 @@ namespace LighthouseRescue.Runtime
         private static readonly Color MutedText = Hex("ADC5CC");
         private RectTransform root;
         private RectTransform ship;
+        private Image wake;
+        private Image giftGlow;
+        private Image[] giftSparks;
+        private Image hullFlash;
         private Image haze;
         private Image beam;
         private Image hullFill;
@@ -32,6 +36,7 @@ namespace LighthouseRescue.Runtime
         private Text lightText;
         private Text crewText;
         private Text feedbackText;
+        private Text rescueToast;
         private Text speedText;
         private Text resultTitle;
         private Text resultDetail;
@@ -41,13 +46,18 @@ namespace LighthouseRescue.Runtime
         private GameObject resultCard;
         private GameObject recoveryCard;
         private Button boardButton, leftButton, rightButton, repairButton, lightButton, likeButton, giftButton;
-        private Button startButton, pauseButton;
+        private Button startButton, pauseButton, captainLeftButton, captainRightButton;
         private Font font;
         private AudioSource sound;
         private AudioClip clickSound, confirmSound, warningSound, rescueSound;
         private HostControls host;
         private GamePhase lastPhase = GamePhase.Waiting;
         private float feedbackUntil;
+        private float rescueToastUntil;
+        private float giftGlowUntil;
+        private float hullFlashUntil;
+        private int lastSavedCount = -1;
+        private int lastHull = -1;
 
         public static string DescribeStage(RescueSnapshot snapshot)
         {
@@ -114,31 +124,30 @@ namespace LighthouseRescue.Runtime
             stageTitle = Label(root, "准备起航", 78, 274, 910, 55, 42, Gold, FontStyle.Bold);
             instruction = Label(root, "", 78, 333, 904, 62, 31, SoftWhite);
 
+            Panel(root, "Sea frame", 43, 433, 994, 639, Hex("42697A"));
             Panel(root, "Sea", 48, 438, 984, 629, Sea);
-            Panel(root, "Sea top", 48, 438, 984, 104, Hex("1B687A"));
-            for (int i = 0; i < 7; i++)
+            var seaArt = Picture(root, "Night sea art", "Art/NightSeaV2", 48, 438, 984, 629, false);
+            seaArt.preserveAspect = false;
+            var glowSprite = CreateGlowSprite();
+            giftGlow = Panel(root, "Lighthouse celebration", 795, 457, 177, 177, Color.clear);
+            giftGlow.sprite = glowSprite;
+            giftSparks = new Image[8];
+            for (int i = 0; i < giftSparks.Length; i++)
             {
-                var wave = Panel(root, "Wave " + i, 94 + ((i * 143) % 390), 584 + i * 61, 200 + (i % 3) * 56, 5, new Color(0.63f, 0.87f, 0.88f, 0.17f));
-                wave.rectTransform.localEulerAngles = new Vector3(0, 0, i % 2 == 0 ? 2 : -2);
+                giftSparks[i] = Panel(root, "Gift spark " + i, 872, 533, 32, 32, Color.clear);
+                giftSparks[i].sprite = glowSprite;
             }
-            Picture(root, "Island", "Art/Island", 63, 455, 256, 247);
-            Picture(root, "Rock left", "Art/RockA", 162, 759, 119, 112);
-            Picture(root, "Rock right", "Art/RockB", 851, 774, 125, 112);
-            Picture(root, "Rock far", "Art/RockA", 767, 953, 84, 75);
-            Panel(root, "Lighthouse island", 739, 497, 215, 81, Hex("D9BE8B"));
-            Panel(root, "Lighthouse base", 793, 338 + 190, 106, 245, Hex("F2E7D1"));
-            Panel(root, "Lighthouse stripe", 793, 627, 106, 51, Hex("BE655A"));
-            Panel(root, "Lighthouse lantern", 777, 481, 138, 61, Gold);
-            Panel(root, "Lighthouse roof", 761, 462, 171, 23, Hex("8E554D"));
-            beam = Panel(root, "Light beam", 455, 547, 338, 172, Color.white);
+            wake = Panel(root, "Boat wake", 399, 824, 281, 153, new Color(0.58f, 0.91f, 1f, 0.28f));
+            wake.sprite = glowSprite;
+            beam = Panel(root, "Light beam", 474, 515, 428, 245, Color.white);
             beam.sprite = CreateBeamSprite();
             beam.rectTransform.localEulerAngles = new Vector3(0, 0, -20);
-            var shipImage = Picture(root, "Rescue ship", "Art/RescueShip", 440, 700, 205, 254);
+            var shipImage = Picture(root, "Rescue ship", "Art/RescueShipV2", 405, 666, 270, 337, false);
             ship = shipImage.rectTransform;
             waitingCrew = new Image[3];
             for (int i = 0; i < 3; i++)
             {
-                waitingCrew[i] = Picture(root, "Waiting crew " + i, "Art/Crew" + (char)('A' + i), 99 + 73 * i, 574, 53, 53);
+                waitingCrew[i] = Picture(root, "Waiting survivor " + i, "Art/SurvivorV2", 91 + 86 * i, 586, 80, 80, false);
             }
             rain = new Image[9];
             for (int i = 0; i < rain.Length; i++)
@@ -148,7 +157,12 @@ namespace LighthouseRescue.Runtime
             }
             haze = Panel(root, "Weather haze", 48, 438, 984, 629, new Color(0.75f, 0.9f, 0.91f, 0));
             haze.raycastTarget = false;
-            routeText = Label(root, "", 71, 978, 935, 65, 30, SoftWhite, FontStyle.Bold, TextAnchor.MiddleCenter);
+            hullFlash = Panel(root, "Hull damage flash", 48, 438, 984, 629, Color.clear);
+            Panel(root, "Map info scrim", 48, 939, 984, 128, new Color(0.02f, 0.10f, 0.16f, 0.74f));
+            rescueToast = Label(root, "", 261, 739, 558, 80, 42, Gold, FontStyle.Bold, TextAnchor.MiddleCenter);
+            routeText = Label(root, "", 71, 950, 935, 58, 29, SoftWhite, FontStyle.Bold, TextAnchor.MiddleCenter);
+            captainLeftButton = MakeButton("船长裁定左", 244, 1012, 276, 53, host.CaptainLeft, Gold, 25);
+            captainRightButton = MakeButton("船长裁定右", 558, 1012, 276, 53, host.CaptainRight, Mint, 25);
 
             Panel(root, "Status panel", 48, 1091, 984, 213, Card);
             scoreText = Label(root, "", 76, 1108, 930, 54, 34, Gold, FontStyle.Bold);
@@ -183,7 +197,7 @@ namespace LighthouseRescue.Runtime
             resultTitle = Label(resultCard.transform, "", 35, 75, 728, 100, 51, Gold, FontStyle.Bold, TextAnchor.MiddleCenter);
             resultCrew = new Image[3];
             for (int i = 0; i < 3; i++)
-                resultCrew[i] = Picture(resultCard.transform, "Rescued crew " + i, "Art/Crew" + (char)('A' + i), 214 + i * 137, 170, 100, 96);
+                resultCrew[i] = Picture(resultCard.transform, "Rescued survivor " + i, "Art/SurvivorV2", 203 + i * 137, 156, 119, 119, false);
             resultDetail = Label(resultCard.transform, "", 40, 277, 718, 116, 29, SoftWhite, FontStyle.Normal, TextAnchor.MiddleCenter);
             resultCard.SetActive(false);
             if (FindObjectOfType<EventSystem>() == null)
@@ -193,6 +207,15 @@ namespace LighthouseRescue.Runtime
         public void Render(RescueSnapshot s)
         {
             if (s == null || root == null) return;
+            if (lastSavedCount >= 0 && s.SavedCount > lastSavedCount)
+            {
+                rescueToast.text = "✦ 已救起第 " + s.SavedCount + " 位待救者 ✦";
+                rescueToastUntil = Time.unscaledTime + 2.4f;
+                Play(rescueSound);
+            }
+            if (lastHull >= 0 && s.Hull < lastHull) hullFlashUntil = Time.unscaledTime + 0.8f;
+            lastSavedCount = s.SavedCount;
+            lastHull = s.Hull;
             if (s.Phase != lastPhase)
             {
                 if (s.Phase == GamePhase.Result) Play(rescueSound);
@@ -202,7 +225,7 @@ namespace LighthouseRescue.Runtime
             timer.text = s.Phase == GamePhase.Waiting || s.Phase == GamePhase.Result ? "--:--" : "00:" + Mathf.CeilToInt((float)s.RemainingSeconds).ToString("00");
             stageTitle.text = StageTitle(s);
             instruction.text = DescribeStage(s);
-            routeText.text = s.Phase == GamePhase.Voting ? "礁石短路：修理 4 / 照明 3 　·　 迷雾长路：修理 3 / 照明 4" :
+            routeText.text = s.Phase == GamePhase.Voting ? "左：礁石短路（修 4 / 光 3）　右：迷雾长路（修 3 / 光 4）" :
                 s.Route == RescueRoute.ShortLeft ? "当前路线：礁石短路 · 快，但更伤船" :
                 s.Route == RescueRoute.LongRight ? "当前路线：迷雾长路 · 慢，需要更多光" : "观众可免费投票决定航线";
             scoreText.text = "已救 " + s.SavedCount + " / 3 人　　 船员 " + s.JoinedCount + " 人　　 左 " + s.LeftVotes + " : " + s.RightVotes + " 右";
@@ -217,15 +240,38 @@ namespace LighthouseRescue.Runtime
             var checkpoint = s.Phase == GamePhase.Checkpoint1 || s.Phase == GamePhase.Checkpoint2 || s.Phase == GamePhase.Checkpoint3;
             boardButton.interactable = s.Phase != GamePhase.Waiting && s.Phase != GamePhase.Result && s.Phase != GamePhase.Paused;
             leftButton.interactable = rightButton.interactable = s.Phase == GamePhase.Voting;
+            captainLeftButton.interactable = captainRightButton.interactable = s.Phase == GamePhase.Voting;
+            captainLeftButton.transform.parent.gameObject.SetActive(s.Phase == GamePhase.Voting);
+            captainRightButton.transform.parent.gameObject.SetActive(s.Phase == GamePhase.Voting);
             repairButton.interactable = lightButton.interactable = likeButton.interactable = checkpoint;
             giftButton.interactable = s.Phase != GamePhase.Waiting && s.Phase != GamePhase.Result && s.Phase != GamePhase.Paused;
             startButton.interactable = s.Phase == GamePhase.Waiting || s.Phase == GamePhase.Result;
             pauseButton.interactable = s.Phase != GamePhase.Waiting && s.Phase != GamePhase.Result;
-            haze.color = new Color(0.78f, 0.88f, 0.91f, checkpoint ? 0.06f * s.CheckpointNumber : 0f);
-            beam.color = new Color(1f, 1f, 1f, checkpoint ? 0.42f + 0.5f * Mathf.Clamp01(s.LightTarget == 0 ? 0 : (float)s.LightProgress / s.LightTarget) : 0.62f);
-            ship.anchoredPosition = new Vector2(440, -700 + Mathf.Sin(Time.time * 2f) * 7f);
+            float storm = checkpoint ? s.CheckpointNumber / 3f : 0f;
+            haze.color = new Color(0.54f, 0.65f, 0.72f, storm * (0.10f + 0.025f * Mathf.Sin(Time.time * 1.8f)));
+            hullFlash.color = new Color(0.94f, 0.20f, 0.17f, Mathf.Max(0f, hullFlashUntil - Time.unscaledTime) * 0.22f);
+            beam.color = new Color(1f, 0.91f, 0.72f, checkpoint ? 0.32f + 0.46f * Mathf.Clamp01(s.LightTarget == 0 ? 0 : (float)s.LightProgress / s.LightTarget) : 0.48f);
+            beam.rectTransform.localEulerAngles = new Vector3(0, 0, -20f + Mathf.Sin(Time.time * 0.8f) * 5f);
+            ship.anchoredPosition = new Vector2(405 + Mathf.Sin(Time.time * 0.7f) * 8f, -666 + Mathf.Sin(Time.time * 2f) * 7f);
+            ship.localEulerAngles = new Vector3(0, 0, Mathf.Sin(Time.time * 1.4f) * (2f + 2f * storm));
+            wake.color = new Color(0.59f, 0.92f, 1f, 0.19f + 0.06f * Mathf.Sin(Time.time * 3f));
+            giftGlow.color = new Color(1f, 0.77f, 0.34f, Mathf.Max(0f, giftGlowUntil - Time.unscaledTime) * (0.38f + 0.12f * Mathf.Sin(Time.time * 15f)));
+            float giftRemaining = Mathf.Max(0f, giftGlowUntil - Time.unscaledTime);
+            float giftAge = 1.7f - giftRemaining;
+            for (int i = 0; i < giftSparks.Length; i++)
+            {
+                float angle = i * Mathf.PI * 2f / giftSparks.Length + 0.2f;
+                float radius = 24f + giftAge * 68f;
+                giftSparks[i].rectTransform.anchoredPosition = new Vector2(882 + Mathf.Cos(angle) * radius, -(543 + Mathf.Sin(angle) * radius));
+                giftSparks[i].color = new Color(1f, i % 2 == 0 ? 0.84f : 0.98f, 0.48f, giftRemaining * 0.46f);
+            }
+            rescueToast.enabled = s.Phase != GamePhase.Result && Time.unscaledTime < rescueToastUntil;
             for (int i = 0; i < waitingCrew.Length; i++) waitingCrew[i].color = i < s.SavedCount ? new Color(1f, 1f, 1f, 0.12f) : Color.white;
-            for (int i = 0; i < rain.Length; i++) rain[i].color = new Color(0.74f, 0.9f, 0.94f, checkpoint ? 0.19f * s.CheckpointNumber : 0f);
+            for (int i = 0; i < rain.Length; i++)
+            {
+                rain[i].color = new Color(0.74f, 0.9f, 0.94f, 0.26f * storm);
+                rain[i].rectTransform.anchoredPosition = new Vector2(88 + ((i * 107) % 870), -(493 + ((Time.time * (210f + i * 8f) + i * 73f) % 510f)));
+            }
             resultCard.SetActive(s.Phase == GamePhase.Result);
             if (s.Phase == GamePhase.Result)
             {
@@ -233,20 +279,54 @@ namespace LighthouseRescue.Runtime
                 for (int i = 0; i < 3; i++) resultCrew[i].color = i < s.SavedCount ? Color.white : new Color(0.37f, 0.48f, 0.51f, 0.8f);
                 resultDetail.text = "救起 " + s.SavedCount + " / 3 人 · 船体 " + s.Hull + " 点 · 用时 " + Mathf.RoundToInt((float)s.ElapsedSeconds) + " 秒\n点击“开始 / 再来”开启下一局";
             }
-            speedText.text = GetComponent<RescueController>().Speed.ToString("0") + "×";
+            var controller = GetComponent<RescueController>();
+            speedText.text = (controller == null ? 1 : controller.Speed).ToString("0") + "×";
             if (Time.unscaledTime > feedbackUntil) feedbackText.text = "";
         }
 
         public void ShowFeedback(GameCommand command, ApplyResult result)
         {
             if (feedbackText == null) return;
-            feedbackText.text = result == ApplyResult.Accepted ? "✓ " + command + " 已生效" :
-                result == ApplyResult.Cooldown ? "请稍等 3 秒再输入同类指令" :
-                result == ApplyResult.Capped ? "本段贡献已达上限，感谢参与" :
-                result == ApplyResult.WrongPhase ? "当前阶段暂不接受该指令" : "指令未计入：" + result;
+            if (command == GameCommand.Gift && result == ApplyResult.Accepted)
+                giftGlowUntil = Time.unscaledTime + 1.7f;
+            feedbackText.text = DescribeFeedback(command, result);
             feedbackText.color = result == ApplyResult.Accepted ? Mint : Gold;
             feedbackUntil = Time.unscaledTime + 2.4f;
             Play(result == ApplyResult.Accepted ? confirmSound : clickSound);
+        }
+
+        private static string DescribeFeedback(GameCommand command, ApplyResult result)
+        {
+            if (result == ApplyResult.Accepted)
+            {
+                switch (command)
+                {
+                    case GameCommand.Start: return "救援已开始";
+                    case GameCommand.Pause: return "救援已暂停";
+                    case GameCommand.Resume: return "救援已继续";
+                    case GameCommand.End: return "本局已结束";
+                    case GameCommand.Board: return "上船成功";
+                    case GameCommand.VoteLeft: return "左路投票已计入";
+                    case GameCommand.VoteRight: return "右路投票已计入";
+                    case GameCommand.CaptainLeft: return "船长已裁定左路（平票时生效）";
+                    case GameCommand.CaptainRight: return "船长已裁定右路（平票时生效）";
+                    case GameCommand.Repair: return "修理已计入";
+                    case GameCommand.Light: return "照明已计入";
+                    case GameCommand.Like: return "点赞补光已计入";
+                    case GameCommand.Gift: return "礼物只点亮烟花，不影响胜负";
+                }
+            }
+            switch (result)
+            {
+                case ApplyResult.Duplicate: return "重复指令已忽略";
+                case ApplyResult.WrongRoom: return "不是当前房间的指令";
+                case ApplyResult.WrongRound: return "不是本局的指令";
+                case ApplyResult.WrongPhase: return "当前阶段暂不接受该指令";
+                case ApplyResult.Cooldown: return "请稍等 3 秒再输入同类指令";
+                case ApplyResult.Capped: return "本段贡献已达上限，感谢参与";
+                case ApplyResult.Stale: return "过期指令未计入";
+                default: return "指令格式无效";
+            }
         }
 
         public void OfferRecovery(Action recover, Action restart)
@@ -279,7 +359,10 @@ namespace LighthouseRescue.Runtime
         private Button MakeButton(string title, float x, float y, float w, float h, UnityEngine.Events.UnityAction action, Color color, int size = 31) => MakeButtonOn(root, title, x, y, w, h, action, color, size);
         private Button MakeButtonOn(Transform parent, string title, float x, float y, float w, float h, UnityEngine.Events.UnityAction action, Color color, int size = 31)
         {
-            var image = Panel(parent, title + " button", x, y, w, h, color);
+            var group = Rect(parent, title + " control", x, y, w, h);
+            Panel(group, title + " shadow", 4, 5, w, h, new Color(0f, 0.04f, 0.08f, 0.32f));
+            Panel(group, title + " rim", -2, -2, w + 4, h + 4, new Color(0.98f, 0.87f, 0.67f, 0.39f));
+            var image = Panel(group, title + " button", 0, 0, w, h, color);
             image.raycastTarget = true;
             var button = image.gameObject.AddComponent<Button>();
             button.targetGraphic = image;
@@ -288,13 +371,13 @@ namespace LighthouseRescue.Runtime
             return button;
         }
 
-        private Image Picture(Transform parent, string name, string resource, float x, float y, float w, float h)
+        private Image Picture(Transform parent, string name, string resource, float x, float y, float w, float h, bool pixelArt = true)
         {
             var image = Panel(parent, name, x, y, w, h, Color.white);
             var texture = Resources.Load<Texture2D>(resource);
             if (texture != null)
             {
-                texture.filterMode = FilterMode.Point;
+                texture.filterMode = pixelArt ? FilterMode.Point : FilterMode.Bilinear;
                 image.sprite = Sprite.Create(texture, new Rect(0, 0, texture.width, texture.height), new Vector2(0.5f, 0.5f));
             }
             image.preserveAspect = true;
@@ -362,6 +445,24 @@ namespace LighthouseRescue.Runtime
             texture.SetPixels(pixels);
             texture.Apply();
             return Sprite.Create(texture, new Rect(0, 0, width, height), new Vector2(0.5f, 0.5f));
+        }
+
+        private static Sprite CreateGlowSprite()
+        {
+            const int size = 96;
+            var pixels = new Color[size * size];
+            for (int y = 0; y < size; y++)
+                for (int x = 0; x < size; x++)
+                {
+                    float dx = (x + 0.5f - size / 2f) / (size / 2f);
+                    float dy = (y + 0.5f - size / 2f) / (size / 2f);
+                    float alpha = Mathf.Pow(Mathf.Clamp01(1f - dx * dx - dy * dy), 2f);
+                    pixels[y * size + x] = new Color(1f, 1f, 1f, alpha);
+                }
+            var texture = new Texture2D(size, size, TextureFormat.RGBA32, false);
+            texture.SetPixels(pixels);
+            texture.Apply();
+            return Sprite.Create(texture, new Rect(0, 0, size, size), new Vector2(0.5f, 0.5f));
         }
     }
 }
