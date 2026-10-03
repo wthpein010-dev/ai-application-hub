@@ -34,7 +34,7 @@ namespace LighthouseRescue.Runtime
         {
             lock (gate)
             {
-                if (state == LiveConnectionState.Connected)
+                if (state == LiveConnectionState.Connected || state == LiveConnectionState.Disconnected)
                 {
                     state = LiveConnectionState.Disconnected;
                     this.reason = reason;

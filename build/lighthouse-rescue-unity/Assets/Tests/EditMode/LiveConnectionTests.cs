@@ -28,5 +28,17 @@ namespace LighthouseRescue.Tests
             Assert.AreEqual(LiveConnectionState.Authorising, status.State);
             Assert.IsFalse(status.IsConnected);
         }
+
+        [Test]
+        public void StorageFailureReasonSupersedesAnEarlierNetworkDisconnect()
+        {
+            var status = new LiveConnectionStatus();
+            status.Evaluate(true, true, true);
+            status.MarkConnected();
+            status.MarkDisconnected("网络断开");
+            status.MarkDisconnected("本地存储失败，本局已停止");
+            Assert.That(status.State, Is.EqualTo(LiveConnectionState.Disconnected));
+            Assert.That(status.Reason, Does.Contain("存储失败"));
+        }
     }
 }

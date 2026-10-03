@@ -7,6 +7,7 @@ namespace LighthouseRescue.Runtime
 {
     public sealed class RescueController : MonoBehaviour
     {
+        private sealed class StorageFaultStopException : Exception { }
         private const string DemoRoom = "local-demo";
         private const int LiveInboxCapacity = 256;
         private const int LiveItemsPerFrame = 64;
@@ -21,6 +22,7 @@ namespace LighthouseRescue.Runtime
         private GamePhase observedLivePhase;
         private long stageStartedUnixMilliseconds;
         private bool awaitingLiveRecovery;
+        private bool storageFaulted;
         private int roundNumber;
         private double speed = 1;
 
@@ -139,13 +141,17 @@ namespace LighthouseRescue.Runtime
         private void Update()
         {
             if (game == null || view == null) return;
-            if (awaitingLiveRecovery) { view.Render(game.ViewSnapshot()); return; }
+            if (awaitingLiveRecovery || storageFaulted) { view.Render(game.ViewSnapshot()); return; }
             if (liveSource != null)
             {
                 long now = UnixNow();
                 ObserveLivePhase(game.ViewSnapshot(), now);
-                liveInbox.Drain(game, router, now, stageStartedUnixMilliseconds,
-                    LiveItemsPerFrame, OnLiveReceipt);
+                try
+                {
+                    liveInbox.Drain(game, router, now, stageStartedUnixMilliseconds,
+                        LiveItemsPerFrame, OnLiveReceipt);
+                }
+                catch (StorageFaultStopException) { return; }
                 if (!liveSource.Status.IsConnected)
                 {
                     // Finish already received events within the frame budget, without moving the timer.
@@ -158,7 +164,16 @@ namespace LighthouseRescue.Runtime
             }
             GamePhase before = game.ViewSnapshot().Phase;
             var snapshot = game.AdvanceForView(Time.deltaTime * speed);
-            if (snapshot.Phase != before) checkpoint.Save(game.Snapshot());
+            if (snapshot.Phase != before)
+            {
+                try { checkpoint.Save(game.Snapshot()); }
+                catch (Exception error)
+                {
+                    if (liveSource == null) throw;
+                    StopForStorageFault(error);
+                    return;
+                }
+            }
             ObserveLivePhase(snapshot, UnixNow());
             view.Render(snapshot);
         }
@@ -170,7 +185,14 @@ namespace LighthouseRescue.Runtime
             if (receipt.GameEvent != null)
             {
                 if (receipt.Outcome == LiveInboxOutcome.Applied)
-                    PersistAccepted(receipt.GameEvent);
+                {
+                    try { PersistAccepted(receipt.GameEvent); }
+                    catch (Exception error)
+                    {
+                        StopForStorageFault(error);
+                        throw new StorageFaultStopException();
+                    }
+                }
                 view.ShowFeedback(receipt.GameEvent, receipt.RuleResult);
                 view.Render(game.ViewSnapshot());
             }
@@ -184,7 +206,13 @@ namespace LighthouseRescue.Runtime
             if (result == ApplyResult.Accepted)
             {
                 var snapshot = game.ViewSnapshot();
-                PersistAccepted(gameEvent);
+                try { PersistAccepted(gameEvent); }
+                catch (Exception error)
+                {
+                    if (liveSource == null) throw;
+                    StopForStorageFault(error);
+                    return;
+                }
                 ObserveLivePhase(snapshot, UnixNow());
                 view.ShowFeedback(gameEvent, result);
                 view.Render(snapshot);
@@ -201,9 +229,29 @@ namespace LighthouseRescue.Runtime
                 checkpoint.AppendAccepted(gameEvent, game);
         }
 
+        private void StopForStorageFault(Exception error)
+        {
+            storageFaulted = true;
+            awaitingLiveRecovery = true;
+            liveSource.Status.MarkDisconnected("本地存储失败，本局已停止；请检查磁盘并重启。");
+            try { liveSource.Stop(); }
+            catch (Exception stopError) { Debug.LogWarning("Live source stop failed: " + stopError.GetType().Name); }
+            try
+            {
+                if (checkpoint.TryLoad(roomId, 1, out RescueSnapshot durable))
+                {
+                    game = RescueGame.Restore(GameConfig.Default, durable);
+                    view.ResetTransitionBaseline(durable);
+                }
+            }
+            catch (Exception readError) { Debug.LogWarning("Live checkpoint read failed: " + readError.GetType().Name); }
+            Debug.LogWarning("Live input stopped after storage failure: " + error.GetType().Name);
+            view.Render(game.ViewSnapshot());
+        }
+
         public void Emit(GameCommand command, string userId = "试玩观众", int count = 1)
         {
-            if (game == null) return;
+            if (game == null || storageFaulted) return;
             if (liveSource != null && command != GameCommand.Start && command != GameCommand.Pause &&
                 command != GameCommand.Resume && command != GameCommand.End &&
                 command != GameCommand.CaptainLeft && command != GameCommand.CaptainRight) return;
@@ -221,6 +269,7 @@ namespace LighthouseRescue.Runtime
 
         public void StartOrRestart()
         {
+            if (storageFaulted) return;
             if (liveSource != null && !liveSource.Status.IsConnected) return;
             if (game.ViewSnapshot().Phase == GamePhase.Result) game = NewGame();
             Emit(GameCommand.Start, "host");
@@ -233,7 +282,7 @@ namespace LighthouseRescue.Runtime
         }
 
         public void EndRound() => Emit(GameCommand.End, "host");
-        public void ResetRound() { game = NewGame(); checkpoint.Save(game.Snapshot()); view.Render(game.ViewSnapshot()); }
+        public void ResetRound() { if (storageFaulted) return; game = NewGame(); checkpoint.Save(game.Snapshot()); view.Render(game.ViewSnapshot()); }
         public void ToggleSpeed() { if (liveSource != null) return; speed = speed < 4 ? 4 : speed < 8 ? 8 : 1; view.Render(game.ViewSnapshot()); }
         public void SetCaptureSpeed() => speed = 8;
     }
