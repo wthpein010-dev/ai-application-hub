@@ -36,9 +36,13 @@ namespace LighthouseRescue.Tests
             status.Evaluate(true, true, true);
             status.MarkConnected();
             status.MarkDisconnected("网络断开");
-            status.MarkDisconnected("本地存储失败，本局已停止");
-            Assert.That(status.State, Is.EqualTo(LiveConnectionState.Disconnected));
+            status.MarkFaulted("本地存储失败，本局已停止");
+            Assert.That(status.State, Is.EqualTo(LiveConnectionState.Faulted));
             Assert.That(status.Reason, Does.Contain("存储失败"));
+            status.Evaluate(true, true, true);
+            status.MarkConnected();
+            Assert.That(status.State, Is.EqualTo(LiveConnectionState.Faulted),
+                "a failed live process cannot silently reconnect in the same process");
         }
     }
 }

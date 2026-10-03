@@ -4,7 +4,7 @@
 
 **Goal:** Stop a live round safely when an accepted message cannot be persisted before its fulfillment receipt.
 
-**Architecture:** Keep `RescueGame` and the SDK-facing interface unchanged. `RescueController` catches only failures from its persistence step, disconnects/stops the source, restores the last durable same-room state when possible, and aborts the inbox drain. `RescueView` renders the status reason in its existing instruction area.
+**Architecture:** Keep `RescueGame` and the SDK-facing interface unchanged. `RescueController` catches only failures from its persistence step, marks the source permanently faulted in this process, restores the last durable same-room state when possible, and aborts the inbox drain. `RescueView` renders the status reason in its existing instruction area.
 
 **Tech Stack:** Unity 2022.3 C#, NUnit EditMode, Windows x64, WebGL, Node/Playwright, GitHub Actions and Pages.
 

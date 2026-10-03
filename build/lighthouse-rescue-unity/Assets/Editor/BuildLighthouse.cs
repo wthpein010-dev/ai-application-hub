@@ -32,10 +32,13 @@ public static class BuildLighthouse
         Build(output, BuildTarget.WebGL, output);
         var page = Path.Combine(output, "index.html");
         const string disabled = "// config.autoSyncPersistentDataPath = true;";
-        if (!File.Exists(page) || !File.ReadAllText(page).Contains(disabled))
+        const string enabled = "config.autoSyncPersistentDataPath = true;";
+        if (!File.Exists(page))
             throw new Exception("Unity WebGL template no longer exposes persistent-data autosync");
-        File.WriteAllText(page, File.ReadAllText(page).Replace(disabled,
-            "config.autoSyncPersistentDataPath = true;"));
+        var html = File.ReadAllText(page);
+        if (html.Contains(disabled)) File.WriteAllText(page, html.Replace(disabled, enabled));
+        else if (!html.Contains(enabled))
+            throw new Exception("Unity WebGL template no longer exposes persistent-data autosync");
     }
 
     private static void Build(string folder, BuildTarget target, string location)

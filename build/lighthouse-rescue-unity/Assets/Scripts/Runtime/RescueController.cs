@@ -233,7 +233,7 @@ namespace LighthouseRescue.Runtime
         {
             storageFaulted = true;
             awaitingLiveRecovery = true;
-            liveSource.Status.MarkDisconnected("本地存储失败，本局已停止；请检查磁盘并重启。");
+            liveSource.Status.MarkFaulted("存储失败，已停止；检查磁盘后重启。");
             try { liveSource.Stop(); }
             catch (Exception stopError) { Debug.LogWarning("Live source stop failed: " + stopError.GetType().Name); }
             try

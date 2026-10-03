@@ -347,7 +347,7 @@ namespace LighthouseRescue.Tests
 
                 Assert.DoesNotThrow(() => Tick(controller));
                 Assert.That(source.Stopped, Is.True);
-                Assert.That(source.Status.State, Is.EqualTo(LiveConnectionState.Disconnected));
+                Assert.That(source.Status.State, Is.EqualTo(LiveConnectionState.Faulted));
                 Assert.That(source.Status.Reason, Does.Contain("存储"));
                 Assert.That(source.Handled, Is.Empty, "a failed durable write cannot receive fulfillment ACK");
                 Assert.That(controller.Current.RoundId, Is.EqualTo(durable.RoundId));
@@ -382,7 +382,7 @@ namespace LighthouseRescue.Tests
                 Assert.That(source.Send(Board(time), time), Is.True);
 
                 Assert.DoesNotThrow(() => Tick(controller));
-                Assert.That(source.Status.State, Is.EqualTo(LiveConnectionState.Disconnected));
+                Assert.That(source.Status.State, Is.EqualTo(LiveConnectionState.Faulted));
                 Assert.That(source.Handled, Is.Empty);
                 Assert.DoesNotThrow(() => Tick(controller));
                 controller.EndRound();
@@ -405,7 +405,7 @@ namespace LighthouseRescue.Tests
                 Directory.CreateDirectory(Path.Combine(TestFolders[owner], "checkpoint.json.tmp"));
 
                 Assert.DoesNotThrow(() => controller.TogglePause());
-                Assert.That(source.Status.State, Is.EqualTo(LiveConnectionState.Disconnected));
+                Assert.That(source.Status.State, Is.EqualTo(LiveConnectionState.Faulted));
                 Assert.That(controller.Current.RoundId, Is.EqualTo(durable.RoundId));
                 Assert.That(controller.Current.Phase, Is.EqualTo(GamePhase.Gathering));
                 Assert.DoesNotThrow(() => Tick(controller));

@@ -16,13 +16,13 @@ test("public shell embeds the real Unity WebGL build and discloses simulation mo
   const buildVersion = builtPage.match(/productVersion:\s*"([^"]+)"/)?.[1];
   assert.ok(shellVersion && buildVersion, "both loaders declare a Unity product version");
   assert.equal(shellVersion, buildVersion, "public shell must load the current Unity build version");
-  assert.equal(shellVersion, "1.4.5");
+  assert.equal(shellVersion, "1.4.6");
   assert.match(play, /autoSyncPersistentDataPath:\s*true/, "the public shell must persist WebGL checkpoints");
   assert.match(builtPage, /^\s*config\.autoSyncPersistentDataPath = true;/m,
     "the standalone Unity page must persist WebGL checkpoints");
   const projectSettings = readFileSync(join(root, "..", "..", "build", "lighthouse-rescue-unity",
     "ProjectSettings", "ProjectSettings.asset"), "utf8");
-  assert.match(projectSettings, /bundleVersion:\s*1\.4\.5\b/);
+  assert.match(projectSettings, /bundleVersion:\s*1\.4\.6\b/);
   assert.match(html, /lighthouse-canvas/);
   assert.match(html, /subpage-shell\.css/);
   const build = join(root, "game", "Build");
