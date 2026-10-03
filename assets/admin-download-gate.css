@@ -1,0 +1,22 @@
+/* Presentation gate only: existing public files require a separate migration. */
+[data-hub-package],
+a[href*="/releases/download/"],
+a[href*="/downloads/"],
+a[href*="/download/"],
+[data-role="download-button"],
+.card-actions [data-action="download"],
+.card-actions [data-action="mac"] { display: none !important; }
+.hub-admin-dialog { width: min(620px, calc(100vw - 32px)); max-height: calc(100dvh - 40px); overflow: auto; padding: 24px; border: 1px solid #cbd5e1; border-radius: 18px; background: #fff; color: #172033; font: 16px/1.6 system-ui, sans-serif; box-sizing: border-box; }
+.hub-admin-dialog::backdrop { background: #17203399; }
+.hub-admin-dialog h2 { margin: 0; font-size: 22px; }
+.hub-admin-dialog header { display: flex; justify-content: space-between; align-items: center; gap: 16px; }
+.hub-admin-dialog label { display: grid; gap: 4px; margin: 12px 0; }
+.hub-admin-dialog input { width: 100%; box-sizing: border-box; padding: 10px; border: 1px solid #94a3b8; border-radius: 8px; font: inherit; }
+.hub-admin-dialog button { padding: 9px 14px; border: 1px solid #cbd5e1; border-radius: 8px; background: #eff6ff; color: #172033; font: inherit; cursor: pointer; }
+.hub-admin-dialog button:disabled { cursor: default; opacity: .5; }
+.hub-admin-dialog [hidden] { display: none !important; }
+.hub-admin-dialog [role="status"] { margin: 16px 0; }
+.hub-admin-artifacts { list-style: none; padding: 0; }
+.hub-admin-artifacts li { display: flex; justify-content: space-between; align-items: center; gap: 16px; padding: 12px 0; border-top: 1px solid #e2e8f0; }
+.hub-admin-artifacts small { display: block; color: #475569; }
+@media (max-width: 480px) { .hub-admin-dialog { padding: 18px; } .hub-admin-artifacts li { align-items: flex-start; } }
