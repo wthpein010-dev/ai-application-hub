@@ -1,0 +1,322 @@
+using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Reflection;
+using System.Threading;
+using System.Threading.Tasks;
+using LighthouseRescue.Rules;
+using LighthouseRescue.Runtime;
+using NUnit.Framework;
+using UnityEngine;
+using UnityEngine.UI;
+
+namespace LighthouseRescue.Tests
+{
+    public sealed class RescueControllerLiveTests
+    {
+        private static readonly Dictionary<GameObject, string> TestFolders = new Dictionary<GameObject, string>();
+        private sealed class FakeSource : ILiveMessageSource
+        {
+            private Func<LivePushEnvelope, string, long, bool> post;
+            public string RoomId { get; set; } = "verified-room";
+            public LiveConnectionStatus Status { get; } = new LiveConnectionStatus();
+            public readonly List<LiveInboxReceipt> Handled = new List<LiveInboxReceipt>();
+            public Func<int> JoinedAtReceipt;
+            public int ObservedJoined;
+            public bool FailStart;
+            public bool Stopped;
+
+            public FakeSource()
+            {
+                Status.Evaluate(true, true, true);
+                Status.MarkConnected();
+            }
+
+            public void Start(Func<LivePushEnvelope, string, long, bool> onMessage)
+            {
+                if (FailStart) throw new InvalidOperationException("fake startup failure");
+                post = onMessage;
+            }
+
+            public bool Send(LivePushEnvelope message, long received) => post(message, RoomId, received);
+            public void Stop() { Stopped = true; post = null; }
+            public void HandleReceipt(LiveInboxReceipt receipt)
+            {
+                ObservedJoined = JoinedAtReceipt == null ? -1 : JoinedAtReceipt();
+                Handled.Add(receipt);
+            }
+        }
+
+        private static long Now() => DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
+        private static LivePushEnvelope Board(long time, string id = "message-1") => new LivePushEnvelope
+        {
+            MessageId = id, MessageType = "live_comment", Content = "上船",
+            StableUserId = "viewer-1", DisplayName = "观众甲", UnixMilliseconds = time
+        };
+        private static void Tick(RescueController controller) => typeof(RescueController)
+            .GetMethod("Update", BindingFlags.Instance | BindingFlags.NonPublic).Invoke(controller, null);
+        private static RescueController NewController(GameObject owner)
+        {
+            var controller = owner.AddComponent<RescueController>();
+            typeof(RescueController).GetMethod("Awake", BindingFlags.Instance | BindingFlags.NonPublic)
+                .Invoke(controller, null);
+            string folder = Path.Combine(Path.GetTempPath(), "lighthouse-live-controller-" + Guid.NewGuid().ToString("N"));
+            TestFolders.Add(owner, folder);
+            typeof(RescueController).GetField("checkpoint", BindingFlags.Instance | BindingFlags.NonPublic)
+                .SetValue(controller, new CheckpointStore(Path.Combine(folder, "checkpoint.json")));
+            return controller;
+        }
+
+        [Test]
+        public void BackgroundLiveMessageAppliesOnlyAfterControllerFrameAndReceiptFollowsState()
+        {
+            var owner = new GameObject("live-controller-test");
+            try
+            {
+                var controller = NewController(owner);
+                var source = new FakeSource { JoinedAtReceipt = () => controller.Current.JoinedCount };
+                Assert.That(controller.AttachLiveSource(source), Is.True);
+                Assert.That(controller.Current.RoomId, Is.EqualTo(source.RoomId));
+                controller.StartOrRestart();
+                long time = Now();
+                Assert.That(Task.Run(() => source.Send(Board(time), time)).GetAwaiter().GetResult(), Is.True);
+                Assert.That(controller.Current.JoinedCount, Is.Zero);
+
+                Tick(controller);
+                Assert.That(controller.Current.JoinedCount, Is.EqualTo(1));
+                Assert.That(source.Handled.Count, Is.EqualTo(1));
+                Assert.That(source.Handled[0].Outcome, Is.EqualTo(LiveInboxOutcome.Applied));
+                Assert.That(source.ObservedJoined, Is.EqualTo(1));
+            }
+            finally { Cleanup(owner); }
+        }
+
+        [Test]
+        public void PreviousRoundMessageIsReportedButCannotJoinResetRound()
+        {
+            var owner = new GameObject("live-round-test");
+            try
+            {
+                var controller = NewController(owner);
+                var source = new FakeSource();
+                Assert.That(controller.AttachLiveSource(source), Is.True);
+                controller.StartOrRestart();
+                long time = Now();
+                Assert.That(source.Send(Board(time), time), Is.True);
+                controller.ResetRound();
+                Tick(controller);
+                Assert.That(controller.Current.JoinedCount, Is.Zero);
+                Assert.That(source.Handled[0].Outcome, Is.EqualTo(LiveInboxOutcome.WrongRound));
+            }
+            finally { Cleanup(owner); }
+        }
+
+        [Test]
+        public void QueuedCommentFromOldStageCannotVoteAfterStageTransition()
+        {
+            var owner = new GameObject("live-stage-test");
+            try
+            {
+                var controller = NewController(owner);
+                var source = new FakeSource();
+                Assert.That(controller.AttachLiveSource(source), Is.True);
+                controller.StartOrRestart();
+                long oldTime = Now();
+                var vote = Board(oldTime, "old-vote");
+                vote.Content = "左";
+                Assert.That(source.Send(vote, oldTime), Is.True);
+                var game = (RescueGame)typeof(RescueController)
+                    .GetField("game", BindingFlags.Instance | BindingFlags.NonPublic).GetValue(controller);
+                game.Advance(20.1);
+                Thread.Sleep(10);
+
+                Tick(controller);
+                Assert.That(controller.Current.LeftVotes, Is.Zero);
+                Assert.That(source.Handled[0].Outcome, Is.EqualTo(LiveInboxOutcome.Invalid));
+            }
+            finally { Cleanup(owner); }
+        }
+
+        [Test]
+        public void MissingConnectionOrFailedStartupLeavesSimulationPlayable()
+        {
+            var owner = new GameObject("live-rollback-test");
+            try
+            {
+                var controller = NewController(owner);
+                var disconnected = new FakeSource();
+                disconnected.Status.MarkDisconnected("test");
+                Assert.That(controller.AttachLiveSource(disconnected), Is.False);
+                Assert.That(controller.AttachLiveSource(new FakeSource { RoomId = " local-demo " }), Is.False);
+                var throwing = new FakeSource { FailStart = true };
+                Assert.That(controller.AttachLiveSource(throwing), Is.False);
+                Assert.That(controller.Current.RoomId, Is.EqualTo("local-demo"));
+                controller.StartOrRestart();
+                controller.Emit(GameCommand.Board);
+                Assert.That(controller.Current.JoinedCount, Is.EqualTo(1));
+            }
+            finally { Cleanup(owner); }
+        }
+
+        [Test]
+        public void AttachingLiveResetsDemoSpeedAndRejectsSimulatedAudienceCommands()
+        {
+            var owner = new GameObject("live-speed-test");
+            try
+            {
+                var controller = NewController(owner);
+                controller.ToggleSpeed();
+                controller.ToggleSpeed();
+                Assert.That(controller.Speed, Is.EqualTo(8));
+                Assert.That(controller.AttachLiveSource(new FakeSource()), Is.True);
+                Assert.That(controller.Speed, Is.EqualTo(1));
+                controller.ToggleSpeed();
+                Assert.That(controller.Speed, Is.EqualTo(1));
+                controller.StartOrRestart();
+                controller.Emit(GameCommand.Board);
+                Assert.That(controller.Current.JoinedCount, Is.Zero);
+            }
+            finally { Cleanup(owner); }
+        }
+
+        [Test]
+        public void DisconnectPausesCountdownUntilHostResumesAfterReconnect()
+        {
+            var owner = new GameObject("live-disconnect-test");
+            try
+            {
+                var controller = NewController(owner);
+                var source = new FakeSource();
+                Assert.That(controller.AttachLiveSource(source), Is.True);
+                controller.StartOrRestart();
+                source.Status.MarkDisconnected("test disconnect");
+                Tick(controller);
+                Assert.That(controller.Current.Phase, Is.EqualTo(GamePhase.Paused));
+                controller.TogglePause();
+                Assert.That(controller.Current.Phase, Is.EqualTo(GamePhase.Paused),
+                    "host cannot resume while the SDK is disconnected");
+                source.Status.Evaluate(true, true, true);
+                source.Status.MarkConnected();
+                Tick(controller);
+                Assert.That(controller.Current.Phase, Is.EqualTo(GamePhase.Paused));
+                controller.TogglePause();
+                Assert.That(controller.Current.Phase, Is.EqualTo(GamePhase.Gathering));
+            }
+            finally { Cleanup(owner); }
+        }
+
+        [Test]
+        public void MessageAlreadyQueuedBeforeDisconnectAppliesBeforeCountdownPauses()
+        {
+            var owner = new GameObject("live-drain-before-pause-test");
+            try
+            {
+                var controller = NewController(owner);
+                var source = new FakeSource();
+                Assert.That(controller.AttachLiveSource(source), Is.True);
+                controller.StartOrRestart();
+                long time = Now();
+                Assert.That(source.Send(Board(time), time), Is.True);
+                source.Status.MarkDisconnected("test disconnect");
+
+                Tick(controller);
+                Assert.That(controller.Current.JoinedCount, Is.EqualTo(1));
+                Assert.That(source.Handled[0].Outcome, Is.EqualTo(LiveInboxOutcome.Applied));
+                Assert.That(controller.Current.Phase, Is.EqualTo(GamePhase.Paused));
+            }
+            finally { Cleanup(owner); }
+        }
+
+        [Test]
+        public void DisconnectDrainsExistingBacklogAcrossFramesWithoutAdvancingCountdown()
+        {
+            var owner = new GameObject("live-backlog-before-pause-test");
+            try
+            {
+                var controller = NewController(owner);
+                var source = new FakeSource();
+                Assert.That(controller.AttachLiveSource(source), Is.True);
+                controller.StartOrRestart();
+                long time = Now();
+                for (int i = 0; i < 70; i++)
+                {
+                    var message = Board(time, "queued-" + i);
+                    message.StableUserId = "viewer-" + i;
+                    Assert.That(source.Send(message, time), Is.True);
+                }
+                Task.Run(() => source.Status.MarkDisconnected("test disconnect")).GetAwaiter().GetResult();
+                Assert.That(source.Send(Board(Now(), "after-disconnect"), Now()), Is.False);
+                double before = controller.Current.RemainingSeconds;
+
+                Tick(controller);
+                Assert.That(controller.Current.JoinedCount, Is.EqualTo(64));
+                Assert.That(controller.Current.RemainingSeconds, Is.EqualTo(before));
+                Tick(controller);
+                Assert.That(controller.Current.JoinedCount, Is.EqualTo(70));
+                Assert.That(source.Handled.Count, Is.EqualTo(70));
+                Assert.That(controller.Current.Phase, Is.EqualTo(GamePhase.Paused));
+            }
+            finally { Cleanup(owner); }
+        }
+
+        [Test]
+        public void DisconnectedLiveSourceCannotStartANewRound()
+        {
+            var owner = new GameObject("live-start-disconnected-test");
+            try
+            {
+                var controller = NewController(owner);
+                var source = new FakeSource();
+                Assert.That(controller.AttachLiveSource(source), Is.True);
+                source.Status.MarkDisconnected("test disconnect");
+                controller.StartOrRestart();
+                Assert.That(controller.Current.Phase, Is.EqualTo(GamePhase.Waiting));
+            }
+            finally { Cleanup(owner); }
+        }
+
+        [Test]
+        public void VerifiedRoomCanRestoreItsCheckpointBeforeAcceptingNewMessages()
+        {
+            var owner = new GameObject("live-recovery-test");
+            string folder = Path.Combine(Path.GetTempPath(), "lighthouse-live-recovery-" + Guid.NewGuid().ToString("N"));
+            try
+            {
+                var saved = new RescueGame(GameConfig.Default, "verified-room", "saved-round", 11);
+                saved.Apply(new GameEvent { Source = "host", RoomId = "verified-room", RoundId = "saved-round",
+                    EventId = "start-saved", UserId = "host", Command = GameCommand.Start }, 0);
+                saved.Apply(new GameEvent { Source = "douyin", RoomId = "verified-room", RoundId = "saved-round",
+                    EventId = "join-saved", UserId = "viewer-old", Command = GameCommand.Board }, 0);
+                var store = new CheckpointStore(Path.Combine(folder, "checkpoint.json"));
+                store.Save(saved.Snapshot());
+
+                var controller = NewController(owner);
+                typeof(RescueController).GetField("checkpoint", BindingFlags.Instance | BindingFlags.NonPublic)
+                    .SetValue(controller, store);
+                var source = new FakeSource();
+                Assert.That(controller.AttachLiveSource(source), Is.True);
+                Assert.That(GameObject.Find("Recovery prompt"), Is.Not.Null);
+                GameObject.Find("恢复上一局 control").GetComponentInChildren<Button>().onClick.Invoke();
+                Assert.That(controller.Current.RoundId, Is.EqualTo("saved-round"));
+                Assert.That(controller.Current.JoinedCount, Is.EqualTo(1));
+            }
+            finally
+            {
+                Cleanup(owner);
+                if (Directory.Exists(folder)) Directory.Delete(folder, true);
+            }
+        }
+
+        private static void Cleanup(GameObject owner)
+        {
+            foreach (var canvas in UnityEngine.Object.FindObjectsOfType<Canvas>())
+                UnityEngine.Object.DestroyImmediate(canvas.gameObject);
+            UnityEngine.Object.DestroyImmediate(owner);
+            if (TestFolders.TryGetValue(owner, out string folder))
+            {
+                if (Directory.Exists(folder)) Directory.Delete(folder, true);
+                TestFolders.Remove(owner);
+            }
+        }
+    }
+}

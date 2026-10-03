@@ -13,9 +13,10 @@ namespace LighthouseRescue.Runtime
         public string MessageType;
         public LiveInboxOutcome Outcome;
         public ApplyResult RuleResult;
+        public GameEvent GameEvent;
     }
 
-    // SDK callbacks may call Post from any thread. Only the Unity main thread calls Drain.
+    // SDK callbacks may call Post from any thread. SetRound and Drain run on Unity's main thread.
     public sealed class LiveMessageInbox
     {
         private sealed class PendingMessage
@@ -45,6 +46,8 @@ namespace LighthouseRescue.Runtime
 
         public void SetRound(string room, string round)
         {
+            if (Thread.CurrentThread.ManagedThreadId != mainThreadId)
+                throw new InvalidOperationException("Live rounds must be bound on the Unity main thread.");
             if (string.IsNullOrWhiteSpace(room) || string.IsNullOrWhiteSpace(round))
                 throw new ArgumentException("A verified room and round are required.");
             lock (gate)
@@ -116,6 +119,7 @@ namespace LighthouseRescue.Runtime
                     else if (translation == LiveTranslationResult.Rejected) receipt.Outcome = LiveInboxOutcome.Invalid;
                     else
                     {
+                        receipt.GameEvent = gameEvent;
                         receipt.RuleResult = router.Route(gameEvent, game, snapshot.ElapsedSeconds);
                         receipt.Outcome = receipt.RuleResult == ApplyResult.Accepted
                             ? LiveInboxOutcome.Applied : LiveInboxOutcome.RuleRejected;

@@ -68,6 +68,9 @@ namespace LighthouseRescue.Runtime
         private Text feedbackText;
         private Text rescueToast;
         private Text speedText;
+        private Text modeText;
+        private Button speedButton;
+        private LiveConnectionStatus liveStatus;
         private Text muteText;
         private Text resultTitle;
         private Text resultDetail;
@@ -196,7 +199,7 @@ namespace LighthouseRescue.Runtime
             Label(root, "灯塔救援队", 60, 49, 700, 72, 62, Gold, FontStyle.Bold);
             Label(root, "L I G H T H O U S E  R E S C U E", 64, 128, 730, 35, 25, Mint);
             Panel(root, "Mode badge", 60, 177, 500, 53, Hex("295A63"));
-            Label(root, "本地演示 · 非直播连接", 79, 181, 470, 45, 36, SoftWhite, FontStyle.Bold);
+            modeText = Label(root, "本地演示 · 非直播连接", 79, 181, 470, 45, 36, SoftWhite, FontStyle.Bold);
             timer = Label(root, "00:00", 800, 64, 220, 80, 62, SoftWhite, FontStyle.Bold, TextAnchor.MiddleRight);
             Panel(root, "Intro card border", 48, 257, 984, 153, Gold);
             Panel(root, "Intro card", 52, 261, 976, 145, Card);
@@ -299,7 +302,7 @@ namespace LighthouseRescue.Runtime
             MakeButton("结束", 477, 1824, 128, 75, host.EndRound, Hex("D2ABC8"), 33);
             muteText = MakeButton("静音", 614, 1824, 128, 75, host.ToggleMute, MutedText, 33).GetComponentInChildren<Text>();
             MakeButton("重置", 751, 1824, 128, 75, host.ResetRound, MutedText, 33);
-            var speedButton = MakeButton("1×", 888, 1824, 144, 75, host.ToggleSpeed, MutedText, 33);
+            speedButton = MakeButton("1×", 888, 1824, 144, 75, host.ToggleSpeed, MutedText, 33);
             speedText = speedButton.GetComponentInChildren<Text>();
 
             resultCard = Panel(root, "Ending illustration", 141, 529, 798, 460, Hex("183747")).gameObject;
@@ -317,6 +320,9 @@ namespace LighthouseRescue.Runtime
         public void Render(RescueSnapshot s)
         {
             if (s == null || root == null) return;
+            bool localDemo = liveStatus == null;
+            modeText.text = localDemo ? "本地演示 · 非直播连接" :
+                liveStatus.IsConnected ? "抖音直播 · 已连接" : "直播断开 · 等待重连";
             if (lastRoundId != s.RoundId)
             {
                 audienceFeed.Reset();
@@ -393,13 +399,19 @@ namespace LighthouseRescue.Runtime
             beam.gameObject.SetActive(!pov);
             povBeam.gameObject.SetActive(pov);
             for (int i = 0; i < waitingCrew.Length; i++) waitingCrew[i].gameObject.SetActive(!pov);
-            boardButton.interactable = s.Phase != GamePhase.Waiting && s.Phase != GamePhase.Result && s.Phase != GamePhase.Paused;
+            boardButton.transform.parent.gameObject.SetActive(localDemo);
+            leftButton.transform.parent.gameObject.SetActive(localDemo);
+            rightButton.transform.parent.gameObject.SetActive(localDemo);
+            likeButton.transform.parent.gameObject.SetActive(localDemo);
+            giftButton.transform.parent.gameObject.SetActive(localDemo);
+            speedButton.transform.parent.gameObject.SetActive(localDemo);
+            boardButton.interactable = localDemo && s.Phase != GamePhase.Waiting && s.Phase != GamePhase.Result && s.Phase != GamePhase.Paused;
             leftButton.interactable = rightButton.interactable = s.Phase == GamePhase.Voting;
             captainLeftButton.interactable = captainRightButton.interactable = s.Phase == GamePhase.Voting;
             captainLeftButton.transform.parent.gameObject.SetActive(s.Phase == GamePhase.Voting);
             captainRightButton.transform.parent.gameObject.SetActive(s.Phase == GamePhase.Voting);
-            repairButton.transform.parent.gameObject.SetActive(s.Phase != GamePhase.Voting);
-            lightButton.transform.parent.gameObject.SetActive(s.Phase != GamePhase.Voting);
+            repairButton.transform.parent.gameObject.SetActive(localDemo && s.Phase != GamePhase.Voting);
+            lightButton.transform.parent.gameObject.SetActive(localDemo && s.Phase != GamePhase.Voting);
             repairButton.interactable = lightButton.interactable = likeButton.interactable = checkpoint;
             giftButton.interactable = s.Phase != GamePhase.Waiting && s.Phase != GamePhase.Result && s.Phase != GamePhase.Paused;
             startButton.interactable = s.Phase == GamePhase.Waiting || s.Phase == GamePhase.Result;
@@ -493,6 +505,12 @@ namespace LighthouseRescue.Runtime
             speedText.text = (controller == null ? 1 : controller.Speed).ToString("0") + "×";
             muteText.text = host.Muted ? "开音" : "静音";
             if (Time.unscaledTime > feedbackUntil) feedbackText.text = "";
+        }
+
+        public void SetLiveMode(LiveConnectionStatus status)
+        {
+            liveStatus = status ?? throw new ArgumentNullException(nameof(status));
+            if (recoveryCard != null) recoveryCard.SetActive(false);
         }
 
         public void ResetTransitionBaseline(RescueSnapshot snapshot)
