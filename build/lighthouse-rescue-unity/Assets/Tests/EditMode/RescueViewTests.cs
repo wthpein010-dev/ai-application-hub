@@ -171,6 +171,27 @@ namespace LighthouseRescue.Tests
         }
 
         [Test]
+        public void LightningBranchExtendsDownwardFromItsTopPivot()
+        {
+            var owner = new GameObject("lightning-direction-test");
+            try
+            {
+                var view = owner.AddComponent<RescueView>();
+                view.Build(owner.AddComponent<HostControls>());
+                view.Render(new RescueSnapshot { Phase = GamePhase.Checkpoint1, CheckpointNumber = 1, Hull = 100 });
+                var branch = GameObject.Find("Lightning branch 0").GetComponent<RectTransform>();
+                Vector3 tip = branch.localRotation * new Vector3(0f, -branch.sizeDelta.y, 0f);
+                Assert.That(tip.x, Is.EqualTo(23f).Within(0.2f));
+                Assert.That(tip.y, Is.EqualTo(-38f).Within(0.2f));
+            }
+            finally
+            {
+                foreach (var canvas in Object.FindObjectsOfType<Canvas>()) Object.DestroyImmediate(canvas.gameObject);
+                Object.DestroyImmediate(owner);
+            }
+        }
+
+        [Test]
         public void StageCopyShowsActionAndNeverClaimsLiveConnection()
         {
             var snapshot = new RescueSnapshot { Phase = GamePhase.Voting, RemainingSeconds = 12 };

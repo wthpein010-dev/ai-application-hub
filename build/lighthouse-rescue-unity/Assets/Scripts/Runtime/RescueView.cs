@@ -541,7 +541,7 @@ namespace LighthouseRescue.Runtime
                 var rect = lightningBolt[i].rectTransform;
                 rect.anchoredPosition = new Vector2(from.x, -from.y);
                 rect.sizeDelta = new Vector2(5f + alpha * 4f, delta.magnitude);
-                rect.localEulerAngles = new Vector3(0, 0, Mathf.Atan2(delta.x, -delta.y) * Mathf.Rad2Deg);
+                rect.localEulerAngles = new Vector3(0, 0, Mathf.Atan2(delta.x, delta.y) * Mathf.Rad2Deg);
                 lightningBolt[i].color = new Color(0.9f, 0.96f, 1f, alpha * 0.88f);
             }
         }
