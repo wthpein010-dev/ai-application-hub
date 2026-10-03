@@ -2,6 +2,7 @@ using LighthouseRescue.Rules;
 using LighthouseRescue.Runtime;
 using NUnit.Framework;
 using System.Linq;
+using System.Reflection;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -73,6 +74,64 @@ namespace LighthouseRescue.Tests
                 var paused = new RescueSnapshot { Phase = GamePhase.Paused, PhaseBeforePause = GamePhase.Checkpoint3,
                     CheckpointNumber = 3, Hull = 100 };
                 Assert.That(RescueView.StormIntensity(paused), Is.EqualTo(RescueView.StormIntensity(late)));
+            }
+            finally
+            {
+                foreach (var canvas in Object.FindObjectsOfType<Canvas>()) Object.DestroyImmediate(canvas.gameObject);
+                Object.DestroyImmediate(owner);
+            }
+        }
+
+        [Test]
+        public void NearLensRainAppearsOnlyInRescueViewAndIntensifiesByTheLastRescue()
+        {
+            var owner = new GameObject("lens-rain-test");
+            try
+            {
+                var view = owner.AddComponent<RescueView>();
+                view.Build(owner.AddComponent<HostControls>());
+                view.Render(new RescueSnapshot { Phase = GamePhase.Checkpoint1, CheckpointNumber = 1, Hull = 100 });
+                var nearDrop = GameObject.Find("Lens rain 0").GetComponent<Image>();
+                float firstAlpha = nearDrop.color.a;
+                int pooledCount = Object.FindObjectOfType<Canvas>().GetComponentsInChildren<RectTransform>(true).Length;
+                view.Render(new RescueSnapshot { Phase = GamePhase.Checkpoint3, CheckpointNumber = 3, Hull = 100 });
+                Assert.That(nearDrop.color.a, Is.GreaterThan(firstAlpha));
+                Assert.That(Object.FindObjectOfType<Canvas>().GetComponentsInChildren<RectTransform>(true).Length,
+                    Is.EqualTo(pooledCount));
+                view.Render(new RescueSnapshot { Phase = GamePhase.Voting, Hull = 100 });
+                Assert.That(GameObject.Find("Lens rain 0"), Is.Null);
+            }
+            finally
+            {
+                foreach (var canvas in Object.FindObjectsOfType<Canvas>()) Object.DestroyImmediate(canvas.gameObject);
+                Object.DestroyImmediate(owner);
+            }
+        }
+
+        [Test]
+        public void RainStreaksStayInsideTheSeaFrameDuringAStorm()
+        {
+            var owner = new GameObject("storm-bounds-test");
+            try
+            {
+                var view = owner.AddComponent<RescueView>();
+                view.Build(owner.AddComponent<HostControls>());
+                var clock = typeof(RescueView).GetField("weatherClock", BindingFlags.Instance | BindingFlags.NonPublic);
+                foreach (float seconds in new[] { 0f, 3.5f, 7.2f, 13f })
+                {
+                    clock.SetValue(view, seconds);
+                    view.Render(new RescueSnapshot { Phase = GamePhase.Checkpoint3, CheckpointNumber = 3, Hull = 100 });
+                    foreach (var image in Object.FindObjectsOfType<Image>())
+                    {
+                        if (!image.name.StartsWith("Storm rain ") && !image.name.StartsWith("Lens rain ")) continue;
+                        var rect = image.rectTransform;
+                        float top = -rect.anchoredPosition.y;
+                        Assert.That(rect.anchoredPosition.x, Is.GreaterThanOrEqualTo(75f), image.name);
+                        Assert.That(rect.anchoredPosition.x, Is.LessThanOrEqualTo(990f), image.name);
+                        Assert.That(top, Is.GreaterThanOrEqualTo(438f), image.name);
+                        Assert.That(top + rect.sizeDelta.y, Is.LessThanOrEqualTo(1067f), image.name);
+                    }
+                }
             }
             finally
             {
@@ -168,6 +227,24 @@ namespace LighthouseRescue.Tests
             float second = RescueView.LightningInterval(1, 2);
             Assert.That(first, Is.Not.EqualTo(second));
             Assert.That(RescueView.LightningInterval(0, 2), Is.EqualTo(first));
+        }
+
+        [Test]
+        public void FirstPersonWaveBobGetsStrongerButNeverExposesTheImageEdge()
+        {
+            Assert.That(Mathf.Abs(RescueView.RescueBob(1f, 0.6f)),
+                Is.GreaterThan(Mathf.Abs(RescueView.RescueBob(0.58f, 0.6f))));
+            for (float seconds = 0; seconds <= 30; seconds += 0.1f)
+                Assert.That(Mathf.Abs(RescueView.RescueBob(1f, seconds)), Is.LessThan(15f));
+        }
+
+        [Test]
+        public void LightningHasTwoBriefFlashesWithDarknessBetween()
+        {
+            Assert.That(RescueView.LightningPulse(0.015f), Is.GreaterThan(0.5f));
+            Assert.That(RescueView.LightningPulse(0.085f), Is.EqualTo(0f));
+            Assert.That(RescueView.LightningPulse(0.14f), Is.GreaterThan(0.25f));
+            Assert.That(RescueView.LightningPulse(0.25f), Is.EqualTo(0f));
         }
 
         [Test]

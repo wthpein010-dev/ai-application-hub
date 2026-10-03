@@ -18,10 +18,27 @@ namespace LighthouseRescue.Runtime
         private static readonly float[] LightningOffsetX = { 0f, 23f, -16f, 38f, 11f, 45f, 18f };
         private static readonly float[] LightningOffsetY = { 0f, 38f, 83f, 118f, 164f, 199f, 243f };
         private static readonly float[] LightningGaps = { 6.4f, 8.9f, 7.2f, 10.1f, 6.8f, 9.3f };
+        private static readonly float[] PovSceneOffsets = { -89f, -10f, -177f };
+        private const float LightningDuration = 0.22f;
 
         public static float LightningInterval(int strikeIndex, int checkpointNumber)
         {
             return LightningGaps[(strikeIndex + Mathf.Max(0, checkpointNumber - 1) * 2) % LightningGaps.Length];
+        }
+
+        public static float RescueBob(float storm, float seconds)
+        {
+            float strength = Mathf.Clamp01(storm);
+            return Mathf.Sin(seconds * 2.4f) * Mathf.Lerp(3f, 10f, strength) +
+                Mathf.Sin(seconds * 4.1f + 0.8f) * Mathf.Lerp(0.4f, 2f, strength);
+        }
+
+        public static float LightningPulse(float age)
+        {
+            if (age < 0f || age >= LightningDuration) return 0f;
+            if (age < 0.055f) return 1f - age / 0.055f;
+            if (age < 0.11f) return 0f;
+            return 0.72f * (1f - (age - 0.11f) / (LightningDuration - 0.11f));
         }
         private RectTransform root;
         private RectTransform ship;
@@ -58,6 +75,7 @@ namespace LighthouseRescue.Runtime
         private Image[] waitingCrew;
         private Image[] rain;
         private Image[] spray;
+        private Image[] lensRain;
         private GameObject resultCard;
         private GameObject recoveryCard;
         private Button boardButton, leftButton, rightButton, repairButton, lightButton, likeButton, giftButton;
@@ -192,10 +210,9 @@ namespace LighthouseRescue.Runtime
             var povViewport = Rect(root, "First-person viewport", 48, 438, 984, 629);
             povViewport.gameObject.AddComponent<RectMask2D>();
             rescuePOV = new Image[3];
-            float[] sceneOffsets = { -89f, -10f, -177f };
             for (int i = 0; i < rescuePOV.Length; i++)
             {
-                rescuePOV[i] = Picture(povViewport, "First-person rescue " + (i + 1), "Art/RescuePOV" + (i + 1), sceneOffsets[i], -50, 1162, 742, false);
+                rescuePOV[i] = Picture(povViewport, "First-person rescue " + (i + 1), "Art/RescuePOV" + (i + 1), PovSceneOffsets[i], -50, 1162, 742, false);
                 rescuePOV[i].preserveAspect = false;
                 rescuePOV[i].gameObject.SetActive(false);
             }
@@ -241,6 +258,15 @@ namespace LighthouseRescue.Runtime
             lightningBolt = new Image[6];
             for (int i = 0; i < lightningBolt.Length; i++)
                 lightningBolt[i] = Panel(root, "Lightning branch " + i, 0, 0, 6, 80, Color.clear);
+            lensRain = new Image[14];
+            for (int i = 0; i < lensRain.Length; i++)
+            {
+                lensRain[i] = Panel(root, "Lens rain " + i, 95 + (i * 227) % 880,
+                    455 + (i * 59) % 580, 11 + i % 3 * 4, 44 + i % 4 * 12, Color.clear);
+                lensRain[i].sprite = glowSprite;
+                lensRain[i].rectTransform.localEulerAngles = new Vector3(0, 0, 9f);
+                lensRain[i].gameObject.SetActive(false);
+            }
             hullFlash = Panel(root, "Hull damage flash", 48, 438, 984, 629, Color.clear);
             Panel(root, "Map info scrim", 48, 939, 984, 128, new Color(0.02f, 0.10f, 0.16f, 0.74f));
             rescueToast = Label(root, "", 261, 739, 558, 80, 42, Gold, FontStyle.Bold, TextAnchor.MiddleCenter);
@@ -321,7 +347,7 @@ namespace LighthouseRescue.Runtime
                     if (lastPhase != GamePhase.Paused)
                     {
                         Play(warningSound);
-                        lightningUntil = weatherClock + 0.2f;
+                        lightningUntil = weatherClock + LightningDuration;
                         pendingThunderAt = weatherClock + 0.26f;
                         lightningStrikeIndex = 0;
                         nextLightningAt = weatherClock + LightningInterval(lightningStrikeIndex++, s.CheckpointNumber);
@@ -382,7 +408,7 @@ namespace LighthouseRescue.Runtime
             if (s.Phase != GamePhase.Paused) weatherClock += Mathf.Min(Time.unscaledDeltaTime, 0.1f);
             if (checkpoint && weatherClock >= nextLightningAt)
             {
-                lightningUntil = weatherClock + 0.19f;
+                lightningUntil = weatherClock + LightningDuration;
                 pendingThunderAt = weatherClock + 0.25f;
                 nextLightningAt = weatherClock + LightningInterval(lightningStrikeIndex++, s.CheckpointNumber);
             }
@@ -400,14 +426,26 @@ namespace LighthouseRescue.Runtime
             beam.rectTransform.localEulerAngles = new Vector3(0, 0, -20f + Mathf.Sin(weatherClock * 0.8f) * 5f);
             if (pov)
             {
+                rescuePOV[povStage - 1].rectTransform.anchoredPosition = new Vector2(
+                    PovSceneOffsets[povStage - 1], 50f + RescueBob(storm, weatherClock));
                 float targetX = povStage == 2 ? 130f : povStage == 3 ? 522f : 305f;
                 float lightRatio = effectiveLightTarget <= 0 ? 0f : Mathf.Clamp01((float)s.LightProgress / effectiveLightTarget);
                 povBeam.rectTransform.anchoredPosition = new Vector2(targetX + Mathf.Sin(weatherClock * 0.82f) * 25f, -520f);
                 povBeam.color = new Color(1f, 0.83f, 0.49f, 0.09f + 0.17f * lightRatio);
             }
-            float lightning = Mathf.Clamp01((lightningUntil - weatherClock) / 0.19f);
-            lightningFlash.color = new Color(0.68f, 0.81f, 1f, lightning * (pov ? 0.24f : 0.14f));
+            float lightning = LightningPulse(LightningDuration - (lightningUntil - weatherClock));
+            lightningFlash.color = new Color(0.68f, 0.81f, 1f, lightning * (pov ? 0.31f : 0.18f));
             UpdateLightningBolt(lightning, povStage);
+            for (int i = 0; i < lensRain.Length; i++)
+            {
+                lensRain[i].gameObject.SetActive(pov);
+                if (!pov) continue;
+                float travel = (weatherClock * (64f + i % 5 * 11f) + i * 59f) % 500f;
+                float x = 95f + (i * 227) % 880 + Mathf.Sin(weatherClock * 1.3f + i) * 9f;
+                lensRain[i].rectTransform.anchoredPosition = new Vector2(x, -(450f + travel));
+                lensRain[i].color = new Color(0.78f, 0.91f, 1f,
+                    storm * (0.045f + i % 3 * 0.009f) + lightning * 0.055f);
+            }
             ship.anchoredPosition = new Vector2(405 + Mathf.Sin(weatherClock * 0.7f) * 8f, -666 + Mathf.Sin(weatherClock * 2f) * 7f);
             ship.localEulerAngles = new Vector3(0, 0, Mathf.Sin(weatherClock * 1.4f) * (2f + 2f * storm));
             wake.color = new Color(0.59f, 0.92f, 1f, 0.19f + 0.06f * Mathf.Sin(weatherClock * 3f));
@@ -425,9 +463,9 @@ namespace LighthouseRescue.Runtime
             for (int i = 0; i < waitingCrew.Length; i++) waitingCrew[i].color = i < s.SavedCount ? new Color(1f, 1f, 1f, 0.12f) : Color.white;
             for (int i = 0; i < rain.Length; i++)
             {
-                float travel = (weatherClock * (260f + i % 7 * 31f) + i * 89f) % 690f;
+                float travel = (weatherClock * (260f + i % 7 * 31f) + i * 89f) % 510f;
                 float wind = weatherClock * (54f + i % 4 * 10f);
-                rain[i].rectTransform.anchoredPosition = new Vector2(60 + ((i * 193 + wind) % 970f), -(430 + travel));
+                rain[i].rectTransform.anchoredPosition = new Vector2(85 + ((i * 193 + wind) % 900f), -(440 + travel));
                 rain[i].color = new Color(0.77f, 0.9f, 1f, storm * (0.28f + (i % 4) * 0.055f));
             }
             for (int i = 0; i < spray.Length; i++)
