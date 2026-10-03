@@ -87,6 +87,8 @@ try {
     `journal must reach IndexedDB before reload: ${JSON.stringify(paths)}`);
   const before = await persistedCheckpoint(page);
   assert.ok(before?.RoundId, "the persisted checkpoint must contain the active round");
+  assert.equal(before.HasRoundConfig, true, "the active round must persist its frozen rules");
+  assert.equal(before.RoundConfig?.SnapshotFormat, 1, "the saved rules must use the complete format");
   await page.reload({ waitUntil: "domcontentloaded" });
   await page.locator("#loading").waitFor({ state: "hidden", timeout: 90000 });
   await page.waitForTimeout(3500);
@@ -106,6 +108,7 @@ try {
   assert.equal(recovered?.RoundId, before.RoundId, "reload must resume the same round");
   assert.equal(recovered?.JoinedCount, 1, "journaled boarding must be restored");
   assert.equal(recovered?.Phase, 8, "the restored round must accept pause after reload");
+  assert.equal(recovered?.RoundConfig?.SnapshotFormat, 1, "the restored round must keep its rules");
   assert.deepEqual(errors, []);
   console.log("Lighthouse WebGL checkpoint and journal survived reload; boarding restored and round paused");
   await context.close();
