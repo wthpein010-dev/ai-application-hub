@@ -11,6 +11,39 @@ namespace LighthouseRescue.Tests
     public sealed class RescueViewTests
     {
         [Test]
+        public void ConnectedLiveViewHidesSimulatedAudienceControlsAndSpeed()
+        {
+            var owner = new GameObject("live-view-test");
+            try
+            {
+                var host = owner.AddComponent<HostControls>();
+                var view = owner.AddComponent<RescueView>();
+                view.Build(host);
+                var status = new LiveConnectionStatus();
+                status.Evaluate(true, true, true);
+                status.MarkConnected();
+                view.SetLiveMode(status);
+                view.Render(new RescueSnapshot { Phase = GamePhase.Waiting, Hull = 100 });
+                Assert.That(Object.FindObjectsOfType<Text>().Any(label => label.text.Contains("已连接")), Is.True);
+                Assert.That(GameObject.Find("上船 control"), Is.Null);
+                Assert.That(GameObject.Find("点赞 ×20 补光 control"), Is.Null);
+                Assert.That(GameObject.Find("1× control"), Is.Null);
+                Assert.That(GameObject.Find("开始 / 再来 control").GetComponentInChildren<Button>().interactable,
+                    Is.True);
+                view.Render(new RescueSnapshot { Phase = GamePhase.Voting, Hull = 100 });
+                Assert.That(GameObject.Find("船长裁定左 control"), Is.Not.Null);
+                status.MarkDisconnected("test");
+                view.Render(new RescueSnapshot { Phase = GamePhase.Paused, PhaseBeforePause = GamePhase.Voting, Hull = 100 });
+                Assert.That(Object.FindObjectsOfType<Text>().Any(label => label.text.Contains("断开")), Is.True);
+            }
+            finally
+            {
+                foreach (var canvas in Object.FindObjectsOfType<Canvas>()) Object.DestroyImmediate(canvas.gameObject);
+                Object.DestroyImmediate(owner);
+            }
+        }
+
+        [Test]
         public void RescueCameraUsesPOVForEveryCheckpointAndPauseFromCheckpoint()
         {
             foreach (var phase in new[] { GamePhase.Checkpoint1, GamePhase.Checkpoint2, GamePhase.Checkpoint3 })

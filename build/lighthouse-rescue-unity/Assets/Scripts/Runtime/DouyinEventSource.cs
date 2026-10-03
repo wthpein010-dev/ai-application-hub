@@ -3,7 +3,7 @@ using LighthouseRescue.Rules;
 
 namespace LighthouseRescue.Runtime
 {
-    // An authorised SDK-specific assembly can implement IEventSource without entering WebGL.
+    // An authorised SDK-specific assembly can implement ILiveMessageSource without entering WebGL.
     // This distribution contains no SDK binary or account credentials.
     public sealed class DouyinEventSource : IEventSource
     {

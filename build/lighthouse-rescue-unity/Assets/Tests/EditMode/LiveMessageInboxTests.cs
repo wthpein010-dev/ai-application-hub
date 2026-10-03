@@ -40,6 +40,10 @@ namespace LighthouseRescue.Tests
             Assert.That(game.Snapshot().JoinedCount, Is.EqualTo(1));
             Assert.That(receipts[0].Outcome, Is.EqualTo(LiveInboxOutcome.Applied));
             Assert.That(receipts[0].RuleResult, Is.EqualTo(ApplyResult.Accepted));
+            Assert.That(receipts[0].MessageId, Is.EqualTo("m1"));
+            Assert.That(receipts[0].GameEvent, Is.Not.Null);
+            Assert.That(receipts[0].GameEvent.Command, Is.EqualTo(GameCommand.Board));
+            Assert.That(receipts[0].GameEvent.UserId, Is.EqualTo("viewer-1"));
         }
 
         [Test]
@@ -79,6 +83,14 @@ namespace LighthouseRescue.Tests
             Assert.That(inbox.Post(Board(), "room-1", 100600), Is.True);
             Assert.That(inbox.Post(Board("m2"), "room-1", 100601), Is.False);
             Assert.That(inbox.PendingCount, Is.EqualTo(1));
+        }
+
+        [Test]
+        public void RoundBindingMustHappenOnTheUnityMainThread()
+        {
+            var inbox = new LiveMessageInbox(2);
+            Assert.That(() => Task.Run(() => inbox.SetRound("room-1", "round-1")).GetAwaiter().GetResult(),
+                Throws.TypeOf<InvalidOperationException>());
         }
 
         [Test]

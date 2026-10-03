@@ -15,15 +15,17 @@
 
 源码中的 `LivePushTranslator` 已把官方 `live_comment`、`live_like`、`live_gift` 消息转换为现有规则事件，并拒绝缺少稳定用户身份、缺少消息 ID、时间早于当前阶段或明显来自未来的消息。它会用消息类型和消息 ID 组成局内去重键；不相关评论不进入规则。`LiveMessageInbox` 进一步提供有界队列：SDK 回调线程只投递消息副本，Unity 主线程按当前房间、本局和阶段时间批量处理；上一局消息、旧阶段消息及规则拒绝会得到不同处理结果，供之后的 ACK 和诊断使用。队列满时 `Post` 返回 `false`，正式适配器必须据此停推或报警，不能静默丢弃。
 
-上述类已经过 Unity EditMode 测试，但**尚未接到 SDK 回调或 `RescueController`，公开版无法连接真实直播间**。安装 SDK 后仍须核对真实字段、点赞计数、队列溢出和 ACK 语义，再接线、构建并验收直播版。
+`LiveMessageInbox` 已接入 `RescueController` 的主线程更新：只有实现 `ILiveMessageSource`、提供已验证房间 ID 且状态为已连接的适配器可调用 `AttachLiveSource`。接入后，SDK 回调只能向有界队列投递消息副本；控制器每帧最多处理 64 条，在规则结算和画面反馈后交还包含原始消息 ID、类型与处理结果的回执。换局会重新绑定队列，同房间检查点可选择恢复；阶段旧消息和上一局消息不能转入新阶段/新局。直播模式关闭本地模拟观众按钮与倍速，断线暂停且不能在断线时开局或恢复。适配器必须处理 `Post` 的 `false`（队列满等）和 `HandleReceipt`；回执本身不等于官方履约 ACK。
+
+这些是**SDK 无关的源码接线**，未进入已发布的 1.4.2 Windows/WebGL 包。工程仍没有获授权的 `LiveOpenSDK`，`DouyinEventSource` 仍保持不可用；也没有官方回调、真实房间或 ACK 实测。安装 SDK 后仍须核对真实字段、点赞计数、队列溢出和 ACK 语义，再构建并验收直播版。
 
 ## 接入顺序
 
 1. 在有直播玩法权限的开发者环境中，从[官方 BGDT 安装页](https://developer.open-douyin.com/docs/resource/zh-CN/mini-game/develop/guide/game-engine/rd-to-SCgame/BGDT-handbook/install)安装工具；选择 `cp` 渠道并安装可授权的 `LiveOpenSDK`。确认工程出现 `Packages/com.bytedance.liveopensdk`，记录实际 SDK 版本。不要修改 SDK 包内代码。
 2. 按[官方 Unity SDK 接入说明](https://developer.open-douyin.com/docs/resource/zh-CN/interaction/develop/unity-sdk/unity-sdk-access)使用 `ByteDance.LiveOpenSdk.Api`；先在包自带的 `SampleGameScene` 验证初始化、直播间信息和直推消息。样例代码若需修改，复制到工程自己的目录，不在包内修改。
-3. Windows 专用适配器以现有 `IEventSource`/`GameEvent` 为边界。按官方顺序初始化 SDK、等待 `WaitForRoomInfoAsync()`、订阅 `OnConnectionStateChanged` 和 `OnMessage`，启动 `live_comment`、`live_like`、`live_gift` 的 `SinglePush` 任务。停止对局时停止推送任务并取消订阅，退出时反初始化。WebGL 构建不能含 SDK 依赖。
+3. Windows 专用适配器实现 `ILiveMessageSource`，SDK 类型只留在 Windows 专用程序集。按官方顺序初始化 SDK、等待 `WaitForRoomInfoAsync()`、订阅 `OnConnectionStateChanged` 和 `OnMessage`，启动 `live_comment`、`live_like`、`live_gift` 的 `SinglePush` 任务。只有确认真实房间、权限和稳定事件 ID 并将状态标记为已连接后，才调用 `RescueController.AttachLiveSource`。停止对局时停止推送任务并取消订阅，退出时反初始化。WebGL 构建不能含 SDK 依赖。
 4. 适配器必须从 SDK 消息读取稳定 `MsgId`、`MsgType` 和毫秒 `Timestamp`，以真实房间 ID 和本局 ID 构造事件。评论映射“上船／左／右／修理／照明”，点赞按官方增量语义规范化，礼物只触发外观。用户去重字段须从实际 SDK 消息验证为稳定身份；昵称只供展示，不能作为一人一票或冷却键。缺字段或语义未验证时禁用直播模式。
-5. SDK 回调把已核对字段复制为 `LivePushEnvelope`，连同真实房间 ID 和接收时间投递到 `LiveMessageInbox.Post`；Unity 主线程按帧调用 `Drain`，每次限制处理条数。开局、换局时 `SetRound`，阶段变化时更新传给 `Drain` 的 Unix 毫秒边界。收到重复、过期或上一局消息时保留结果码，不重复结算；连接断开时暂停倒计时并显示原因，重连后从本地检查点恢复。不要让 SDK 直推与 HTTPS 双推各自累加同一事件。
+5. SDK 回调把已核对字段复制为 `LivePushEnvelope`，连同真实房间 ID 和接收时间传给 `ILiveMessageSource.Start` 收到的投递函数；函数返回 `false` 时由适配器告警或背压，不能静默丢弃。控制器已负责主线程 `Drain`、换局绑定和阶段时间边界；重连后必须由主播明确恢复倒计时。同房间检查点恢复需在真实直播版验证。不要让 SDK 直推与 HTTPS 双推各自累加同一事件。
 6. 按[官方履约 ACK 文档](https://developer.open-douyin.com/docs/resource/zh-CN/interaction/develop/unity-sdk/live-unity-sdk-support/ack-ability)在消息完成游戏内处理和表现后，以原始 `MsgId`、`MsgType` 上报一次 `ReportAck`。SDK 自己负责接收确认；游戏侧的履约 ACK 与接收确认是两件事。具体失败重试和重复消息的 ACK 策略必须以已安装 SDK 版本及真实联调结果验证。
 
 ## 正式直播验收门槛
