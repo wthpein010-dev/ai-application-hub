@@ -17,6 +17,12 @@ namespace LighthouseRescue.Runtime
         private static readonly Color MutedText = Hex("ADC5CC");
         private static readonly float[] LightningOffsetX = { 0f, 23f, -16f, 38f, 11f, 45f, 18f };
         private static readonly float[] LightningOffsetY = { 0f, 38f, 83f, 118f, 164f, 199f, 243f };
+        private static readonly float[] LightningGaps = { 6.4f, 8.9f, 7.2f, 10.1f, 6.8f, 9.3f };
+
+        public static float LightningInterval(int strikeIndex, int checkpointNumber)
+        {
+            return LightningGaps[(strikeIndex + Mathf.Max(0, checkpointNumber - 1) * 2) % LightningGaps.Length];
+        }
         private RectTransform root;
         private RectTransform ship;
         private Image overheadSea;
@@ -59,6 +65,7 @@ namespace LighthouseRescue.Runtime
         private Font font;
         private AudioSource sound;
         private AudioSource weatherSound;
+        private AudioSource thunderSource;
         private AudioClip clickSound, confirmSound, warningSound, rescueSound, thunderSound, splashSound;
         private HostControls host;
         private GamePhase lastPhase = GamePhase.Waiting;
@@ -71,6 +78,10 @@ namespace LighthouseRescue.Runtime
         private float weatherClock;
         private float nextLightningAt = 8f;
         private float lightningUntil;
+        private float pendingThunderAt = -1f;
+        private int lightningStrikeIndex;
+        private int lastLightTarget;
+        private int lastRepairTarget;
 
         public static float StormIntensity(RescueSnapshot snapshot)
         {
@@ -140,6 +151,10 @@ namespace LighthouseRescue.Runtime
             warningSound = Resources.Load<AudioClip>("Audio/Warning");
             rescueSound = Resources.Load<AudioClip>("Audio/Rescue");
             thunderSound = Resources.Load<AudioClip>("Audio/Thunder");
+            thunderSource = gameObject.AddComponent<AudioSource>();
+            thunderSource.playOnAwake = false;
+            thunderSource.clip = thunderSound;
+            thunderSource.volume = 0f;
             splashSound = Resources.Load<AudioClip>("Audio/Splash");
             var canvasObject = new GameObject("Lighthouse rescue 9:16 canvas", typeof(RectTransform), typeof(Canvas), typeof(CanvasScaler), typeof(GraphicRaycaster));
             var canvas = canvasObject.GetComponent<Canvas>();
@@ -285,15 +300,22 @@ namespace LighthouseRescue.Runtime
             lastHull = s.Hull;
             if (s.Phase != lastPhase)
             {
+                if (s.Phase != GamePhase.Paused && !IsRescuePOV(s))
+                {
+                    thunderSource.Stop();
+                    pendingThunderAt = -1f;
+                    lightningUntil = 0f;
+                }
                 if (s.Phase == GamePhase.Result) Play(rescueSound);
                 else if (s.Phase == GamePhase.Checkpoint1 || s.Phase == GamePhase.Checkpoint2 || s.Phase == GamePhase.Checkpoint3)
                 {
                     if (lastPhase != GamePhase.Paused)
                     {
                         Play(warningSound);
-                        Play(thunderSound, 0.24f);
                         lightningUntil = weatherClock + 0.2f;
-                        nextLightningAt = weatherClock + 7.5f;
+                        pendingThunderAt = weatherClock + 0.26f;
+                        lightningStrikeIndex = 0;
+                        nextLightningAt = weatherClock + LightningInterval(lightningStrikeIndex++, s.CheckpointNumber);
                     }
                 }
                 lastPhase = s.Phase;
@@ -308,12 +330,19 @@ namespace LighthouseRescue.Runtime
             hullText.text = "船体 " + s.Hull + " / 100";
             SetFill(hullFill, 568, Mathf.Clamp01(s.Hull / 100f));
             hullFill.color = s.Hull < 30 ? Hex("EF8C83") : Mint;
-            repairText.text = s.RepairTarget == 0 ? "修理 --" : "修理 " + s.RepairProgress + " / " + s.RepairTarget;
-            lightText.text = s.LightTarget == 0 ? "照明 --" : "照明 " + s.LightProgress + " / " + s.LightTarget;
-            SetFill(repairFill, 213, s.RepairTarget == 0 ? 0 : (float)s.RepairProgress / s.RepairTarget);
-            SetFill(lightFill, 75, s.LightTarget == 0 ? 0 : (float)s.LightProgress / s.LightTarget);
-            crewText.text = "每段自带 1 格值守｜免费参与能改变结局";
             var checkpoint = s.Phase == GamePhase.Checkpoint1 || s.Phase == GamePhase.Checkpoint2 || s.Phase == GamePhase.Checkpoint3;
+            if (checkpoint)
+            {
+                lastLightTarget = s.LightTarget;
+                lastRepairTarget = s.RepairTarget;
+            }
+            int effectiveLightTarget = s.Phase == GamePhase.Paused && IsRescuePOV(s) ? lastLightTarget : s.LightTarget;
+            int effectiveRepairTarget = s.Phase == GamePhase.Paused && IsRescuePOV(s) ? lastRepairTarget : s.RepairTarget;
+            repairText.text = effectiveRepairTarget == 0 ? "修理 --" : "修理 " + s.RepairProgress + " / " + effectiveRepairTarget;
+            lightText.text = effectiveLightTarget == 0 ? "照明 --" : "照明 " + s.LightProgress + " / " + effectiveLightTarget;
+            SetFill(repairFill, 213, effectiveRepairTarget == 0 ? 0 : (float)s.RepairProgress / effectiveRepairTarget);
+            SetFill(lightFill, 75, effectiveLightTarget == 0 ? 0 : (float)s.LightProgress / effectiveLightTarget);
+            crewText.text = "每段自带 1 格值守｜免费参与能改变结局";
             bool pov = IsRescuePOV(s);
             int povStage = Mathf.Clamp(s.CheckpointNumber == 0 ? (int)(s.Phase == GamePhase.Paused ? s.PhaseBeforePause : s.Phase) - (int)GamePhase.Checkpoint1 + 1 : s.CheckpointNumber, 1, 3);
             overheadSea.gameObject.SetActive(!pov);
@@ -339,8 +368,16 @@ namespace LighthouseRescue.Runtime
             if (checkpoint && weatherClock >= nextLightningAt)
             {
                 lightningUntil = weatherClock + 0.19f;
-                nextLightningAt = weatherClock + 7.0f + s.CheckpointNumber * 1.1f;
-                Play(thunderSound, 0.27f);
+                pendingThunderAt = weatherClock + 0.25f;
+                nextLightningAt = weatherClock + LightningInterval(lightningStrikeIndex++, s.CheckpointNumber);
+            }
+            if (!checkpoint || host.Muted) thunderSource.Stop();
+            thunderSource.volume = checkpoint && !host.Muted ? 0.27f : 0f;
+            if (host.Muted) pendingThunderAt = -1f;
+            if (checkpoint && !host.Muted && pendingThunderAt >= 0f && weatherClock >= pendingThunderAt)
+            {
+                thunderSource.Play();
+                pendingThunderAt = -1f;
             }
             haze.color = new Color(0.54f, 0.65f, 0.72f, storm * (0.07f + 0.02f * Mathf.Sin(weatherClock * 1.8f)));
             hullFlash.color = new Color(0.94f, 0.20f, 0.17f, Mathf.Max(0f, hullFlashUntil - Time.unscaledTime) * 0.22f);
@@ -349,7 +386,7 @@ namespace LighthouseRescue.Runtime
             if (pov)
             {
                 float targetX = povStage == 2 ? 130f : povStage == 3 ? 522f : 305f;
-                float lightRatio = s.LightTarget <= 0 ? 0f : Mathf.Clamp01((float)s.LightProgress / s.LightTarget);
+                float lightRatio = effectiveLightTarget <= 0 ? 0f : Mathf.Clamp01((float)s.LightProgress / effectiveLightTarget);
                 povBeam.rectTransform.anchoredPosition = new Vector2(targetX + Mathf.Sin(weatherClock * 0.82f) * 25f, -520f);
                 povBeam.color = new Color(1f, 0.83f, 0.49f, 0.09f + 0.17f * lightRatio);
             }
@@ -407,10 +444,18 @@ namespace LighthouseRescue.Runtime
             lastSavedCount = snapshot.SavedCount;
             lastHull = snapshot.Hull;
             lastPhase = snapshot.Phase;
+            if (IsRescuePOV(snapshot))
+            {
+                var config = GameConfig.Default;
+                lastLightTarget = snapshot.Route == RescueRoute.LongRight ? config.LongLightTarget : config.ShortLightTarget;
+                lastRepairTarget = snapshot.Route == RescueRoute.LongRight ? config.LongRepairTarget : config.ShortRepairTarget;
+            }
             rescueToastUntil = 0f;
             hullFlashUntil = 0f;
             lightningUntil = 0f;
             nextLightningAt = weatherClock + 7.5f;
+            pendingThunderAt = -1f;
+            thunderSource.Stop();
         }
 
         public void ShowFeedback(GameCommand command, ApplyResult result)

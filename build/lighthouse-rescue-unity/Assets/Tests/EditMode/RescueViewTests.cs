@@ -110,6 +110,67 @@ namespace LighthouseRescue.Tests
         }
 
         [Test]
+        public void PausedRescueKeepsTheLastSpotlightBrightness()
+        {
+            var owner = new GameObject("paused-light-test");
+            try
+            {
+                var view = owner.AddComponent<RescueView>();
+                view.Build(owner.AddComponent<HostControls>());
+                view.Render(new RescueSnapshot { Phase = GamePhase.Checkpoint2, CheckpointNumber = 2,
+                    LightProgress = 3, LightTarget = 4, RepairProgress = 2, RepairTarget = 3, Hull = 100 });
+                var light = GameObject.Find("Searchlight on survivor").GetComponent<Image>();
+                float before = light.color.a;
+                view.Render(new RescueSnapshot { Phase = GamePhase.Paused, PhaseBeforePause = GamePhase.Checkpoint2,
+                    CheckpointNumber = 0, LightProgress = 3, LightTarget = 0, RepairProgress = 2, RepairTarget = 0, Hull = 100 });
+                Assert.That(light.color.a, Is.EqualTo(before).Within(0.001f));
+                Assert.That(Object.FindObjectsOfType<Text>().Any(label => label.text == "照明 3 / 4"), Is.True);
+                Assert.That(Object.FindObjectsOfType<Text>().Any(label => label.text == "修理 2 / 3"), Is.True);
+            }
+            finally
+            {
+                foreach (var canvas in Object.FindObjectsOfType<Canvas>()) Object.DestroyImmediate(canvas.gameObject);
+                Object.DestroyImmediate(owner);
+            }
+        }
+
+        [Test]
+        public void ThunderSourceIsSilencedWhenStormEndsOrHostMutes()
+        {
+            var owner = new GameObject("thunder-stop-test");
+            try
+            {
+                var host = owner.AddComponent<HostControls>();
+                var view = owner.AddComponent<RescueView>();
+                view.Build(host);
+                var thunder = owner.GetComponents<AudioSource>().Single(source => source.clip != null && source.clip.name == "Thunder");
+                var rescue = new RescueSnapshot { Phase = GamePhase.Checkpoint1, CheckpointNumber = 1, Hull = 100 };
+                view.Render(rescue);
+                Assert.That(thunder.volume, Is.GreaterThan(0f));
+                host.ToggleMute();
+                view.Render(rescue);
+                Assert.That(thunder.volume, Is.EqualTo(0f));
+                host.ToggleMute();
+                view.Render(new RescueSnapshot { Phase = GamePhase.Result, Hull = 100 });
+                Assert.That(thunder.volume, Is.EqualTo(0f));
+            }
+            finally
+            {
+                foreach (var canvas in Object.FindObjectsOfType<Canvas>()) Object.DestroyImmediate(canvas.gameObject);
+                Object.DestroyImmediate(owner);
+            }
+        }
+
+        [Test]
+        public void LightningIntervalsUseARepeatableIrregularSequence()
+        {
+            float first = RescueView.LightningInterval(0, 2);
+            float second = RescueView.LightningInterval(1, 2);
+            Assert.That(first, Is.Not.EqualTo(second));
+            Assert.That(RescueView.LightningInterval(0, 2), Is.EqualTo(first));
+        }
+
+        [Test]
         public void StageCopyShowsActionAndNeverClaimsLiveConnection()
         {
             var snapshot = new RescueSnapshot { Phase = GamePhase.Voting, RemainingSeconds = 12 };
