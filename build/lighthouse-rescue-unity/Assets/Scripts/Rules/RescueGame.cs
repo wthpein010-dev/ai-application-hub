@@ -32,6 +32,9 @@ namespace LighthouseRescue.Rules
         private int lightProgress;
         private int likeCarry;
         private int likePointsAwarded;
+        private int repairActions;
+        private int lightActions;
+        private int likeLightPoints;
 
         public RescueGame(GameConfig config, string roomId, string roundId, int seed)
         {
@@ -64,7 +67,10 @@ namespace LighthouseRescue.Rules
                 repairProgress = snapshot.RepairProgress,
                 lightProgress = snapshot.LightProgress,
                 likeCarry = snapshot.LikeCarry,
-                likePointsAwarded = snapshot.LikePointsAwarded
+                likePointsAwarded = snapshot.LikePointsAwarded,
+                repairActions = snapshot.RepairActions,
+                lightActions = snapshot.LightActions,
+                likeLightPoints = snapshot.LikeLightPoints
             };
             if (snapshot.RecentEventIds != null)
                 foreach (string id in snapshot.RecentEventIds) game.seenEvents.Add(id);
@@ -174,6 +180,7 @@ namespace LighthouseRescue.Rules
                 RepairTarget = RepairTarget(), LightTarget = LightTarget(),
                 CheckpointNumber = CheckpointNumber(),
                 LikeCarry = likeCarry, LikePointsAwarded = likePointsAwarded,
+                RepairActions = repairActions, LightActions = lightActions, LikeLightPoints = likeLightPoints,
                 RecentEventIds = new List<string>(seenEvents),
                 JoinedUserIds = new List<string>(joinedUsers),
                 VotedUserIds = new List<string>(votedUsers)
@@ -262,8 +269,8 @@ namespace LighthouseRescue.Rules
                 return ApplyResult.Cooldown;
             lastCommandTime[key] = nowSeconds;
             stageCommandCount[key] = count + 1;
-            if (command == GameCommand.Repair) repairProgress++;
-            else lightProgress++;
+            if (command == GameCommand.Repair) { repairProgress++; repairActions++; }
+            else { lightProgress++; lightActions++; }
             return ApplyResult.Accepted;
         }
 
@@ -280,6 +287,7 @@ namespace LighthouseRescue.Rules
                 likeCarry -= points * config.LikesPerLightPoint;
                 likePointsAwarded += points;
                 lightProgress += points;
+                likeLightPoints += points;
             }
             return ApplyResult.Accepted;
         }

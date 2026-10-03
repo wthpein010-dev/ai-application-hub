@@ -55,7 +55,7 @@ try {
   }
   await page.waitForTimeout(6000);
   markers.result = await mark();
-  await page.waitForTimeout(1800);
+  await page.waitForTimeout(2800);
   const capture = await page.evaluate(async () => {
     const { recorder, chunks, stream } = window.__lighthouseRecord;
     const stopped = new Promise((resolve, reject) => {

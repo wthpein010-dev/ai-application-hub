@@ -28,6 +28,9 @@ namespace LighthouseRescue.Rules
         public int CheckpointNumber;
         public int LikeCarry;
         public int LikePointsAwarded;
+        public int RepairActions;
+        public int LightActions;
+        public int LikeLightPoints;
         public List<string> RecentEventIds = new List<string>();
         public List<string> JoinedUserIds = new List<string>();
         public List<string> VotedUserIds = new List<string>();
