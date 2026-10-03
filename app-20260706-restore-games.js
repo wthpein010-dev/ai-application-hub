@@ -1751,7 +1751,8 @@ function renderPlatformShowcase(filtered) {
             const href = platformValue(app, group.key) || app.entry;
             const download =
               group.key !== "web" && isDirectPackageHref(href) ? " download" : "";
-            return `<a href="${escapeHtml(projectHref(href))}"${download}>${escapeHtml(app.name)}</a>`;
+            const privatePackage = ["windows", "mac"].includes(group.key) ? " data-hub-package" : "";
+            return `<a href="${escapeHtml(projectHref(href))}"${privatePackage}${download}>${escapeHtml(app.name)}</a>`;
           }).join("")}
         </div>
       </article>
@@ -1783,8 +1784,8 @@ function renderActions(app, stopPropagation = false, mode = "default") {
   const windowsDownload = isDirectPackageHref(windows) ? " download" : "";
   const macDownload = isDirectPackageHref(mac) ? " download" : "";
   const webLink = web ? `<a class="primary-link" data-action="web" data-icon="&#8599;" href="${escapeHtml(projectHref(web))}" aria-label="${escapeHtml(webActionLabel)}"${stop}>网页预览</a>` : "";
-  const windowsLink = windows ? `<a class="download-link" data-action="download" data-icon="&#8595;" href="${escapeHtml(projectHref(windows))}" aria-label="${escapeHtml(windowsActionLabel)}"${windowsDownload}${stop}>Wins下载</a>` : "";
-  const macLink = mac ? `<a class="mac-link" data-action="mac" data-icon="&#8595;" href="${escapeHtml(projectHref(mac))}" aria-label="${escapeHtml(macActionLabel)}"${macDownload}${stop}>Mac下载</a>` : "";
+  const windowsLink = windows ? `<a class="download-link" data-hub-package data-action="download" data-icon="&#8595;" href="${escapeHtml(projectHref(windows))}" aria-label="${escapeHtml(windowsActionLabel)}"${windowsDownload}${stop}>Wins下载</a>` : "";
+  const macLink = mac ? `<a class="mac-link" data-hub-package data-action="mac" data-icon="&#8595;" href="${escapeHtml(projectHref(mac))}" aria-label="${escapeHtml(macActionLabel)}"${macDownload}${stop}>Mac下载</a>` : "";
   const iosLink = ios ? `<a class="ios-link" data-action="ios" data-icon="&#43;" href="${escapeHtml(projectHref(ios))}" aria-label="${escapeHtml(iosActionLabel)}"${stop}>iOS安装</a>` : "";
   const video = app.video
     ? `<a data-action="video" data-icon="&#9654;" href="${escapeHtml(projectHref(videoHref(app)))}" aria-label="${escapeHtml(videoActionLabel)}"${stop}>介绍视频</a>`

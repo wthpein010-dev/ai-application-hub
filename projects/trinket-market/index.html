@@ -1,6 +1,8 @@
 <!doctype html>
 <html lang="zh-CN">
 <head>
+  <link rel="stylesheet" href="../../assets/admin-download-gate.css">
+  <script type="module" src="../../assets/admin-download-gate.mjs"></script>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="description" content="浏览、排序和拖拽整理随身小物，查看全服获得数量，并在需要时开启参考估值。">
@@ -90,7 +92,7 @@
           <label class="import-button" for="import-json">导入 JSON</label>
           <input id="import-json" type="file" accept="application/json,.json" hidden>
           <button id="reset-data" type="button">恢复官方数据</button>
-          <a id="github-source" href="https://github.com/wthpein010-dev/ai-application-hub/tree/main/projects/trinket-market" target="_blank" rel="noreferrer">GitHub 源码</a>
+          <a id="github-source" data-hub-package href="https://github.com/wthpein010-dev/ai-application-hub/tree/main/projects/trinket-market" target="_blank" rel="noreferrer">GitHub 源码</a>
           <span id="edit-status" role="status" aria-live="polite">访客修改仅保存在当前浏览器</span>
         </div>
 

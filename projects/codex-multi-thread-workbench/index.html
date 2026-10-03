@@ -1,6 +1,8 @@
 <!doctype html>
 <html lang="zh-CN">
 <head>
+  <link rel="stylesheet" href="../../assets/admin-download-gate.css">
+  <script type="module" src="../../assets/admin-download-gate.mjs"></script>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <meta name="description" content="Codex 多线程工作台 v2.3.0：在一个桌面窗口中同时查看、回复和维护多个真实 Codex 任务。" />
@@ -26,8 +28,8 @@
         <div class="hero-actions" aria-label="发布入口">
           <a class="action-primary" href="#demo">立即演示</a>
           <a href="./video/index.html">观看视频</a>
-          <a href="./download/">Windows 下载</a>
-          <a href="./download/mac/">Mac 下载</a>
+          <a href="./download/" data-hub-package>Windows 下载</a>
+          <a href="./download/mac/" data-hub-package>Mac 下载</a>
         </div>
         <ul class="hero-points" aria-label="产品特性">
           <li><span>✓</span> 一级界面直接对话</li>
@@ -116,8 +118,8 @@
     <section class="platform-note" aria-labelledby="platformTitle">
       <div><p class="eyebrow">跨平台原生交付</p><h2 id="platformTitle">解压即用，不另建账户</h2></div>
       <div class="platform-grid">
-        <article><span>Windows 10 / 11 x64</span><strong>免安装 ZIP</strong><p>双击 `CodexThreadWorkbench.exe` 直接打开完整工作台，默认不启动悬浮按钮或顶部助手。</p><a href="./download/">下载 Windows 版</a></article>
-        <article><span>macOS 13+</span><strong>Apple Silicon 与 Intel</strong><p>两个架构分别构建和验证；首次打开按页面指引右键选择“打开”。</p><a href="./download/mac/">选择 Mac 版本</a></article>
+        <article><span>Windows 10 / 11 x64</span><strong>免安装 ZIP</strong><p>双击 `CodexThreadWorkbench.exe` 直接打开完整工作台，默认不启动悬浮按钮或顶部助手。</p><a href="./download/" data-hub-package>下载 Windows 版</a></article>
+        <article><span>macOS 13+</span><strong>Apple Silicon 与 Intel</strong><p>两个架构分别构建和验证；首次打开按页面指引右键选择“打开”。</p><a href="./download/mac/" data-hub-package>选择 Mac 版本</a></article>
       </div>
     </section>
   </main>

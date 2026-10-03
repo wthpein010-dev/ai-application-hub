@@ -1,0 +1,33 @@
+name: Verify administrator download contract
+
+on:
+  pull_request:
+    paths:
+      - 'assets/admin-download-*'
+      - 'server/admin-download-api.mjs'
+      - 'tests/admin-download-*.mjs'
+      - 'app-20260706-restore-games.js'
+      - 'index.html'
+      - 'projects/**/*.html'
+      - '.github/workflows/verify-admin-downloads.yml'
+  push:
+    branches: ['audit/hub-admin-downloads-20261003']
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  contract:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      # Exact file list: never start ClickFlow, run Python/Tk, or use npm test.
+      - name: Verify API, client and page integration
+        run: node --test tests/admin-download-api.test.mjs tests/admin-download-client.test.mjs tests/admin-download-coverage.test.mjs
+      - name: Check browser module syntax
+        run: node --check assets/admin-download-gate.mjs
