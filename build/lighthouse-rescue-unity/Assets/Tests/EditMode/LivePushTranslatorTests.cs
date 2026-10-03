@@ -1,3 +1,5 @@
+using System;
+using System.IO;
 using LighthouseRescue.Rules;
 using LighthouseRescue.Runtime;
 using NUnit.Framework;
@@ -72,6 +74,55 @@ namespace LighthouseRescue.Tests
             Assert.AreEqual(LiveTranslationResult.Accepted,
                 translator.Translate(Message("live_gift"), "room-1", "round-1", 1, 100000, 100600, out GameEvent gift));
             Assert.AreEqual(GameCommand.Gift, gift.Command);
+        }
+
+        [Test]
+        public void OversizedNicknameCannotStopDurableBoarding()
+        {
+            var directory = Path.Combine(Path.GetTempPath(), "lighthouse-nickname-" + Guid.NewGuid().ToString("N"));
+            Directory.CreateDirectory(directory);
+            try
+            {
+                var game = new RescueGame(GameConfig.Default, "room-1", "round-1", 7);
+                game.Apply(new GameEvent { Source = "host", RoomId = "room-1", RoundId = "round-1",
+                    EventId = "start", UserId = "host", Command = GameCommand.Start }, 0);
+                var store = new CheckpointStore(Path.Combine(directory, "round.json"));
+                store.Save(game.Snapshot());
+                var message = Message("live_comment", "上船");
+                message.DisplayName = new string('海', 10000);
+                var result = new LivePushTranslator().Translate(message, "room-1", "round-1",
+                    0.5, 100000, 100600, out GameEvent translated);
+
+                Assert.That(result, Is.EqualTo(LiveTranslationResult.Accepted));
+                Assert.That(new EventRouter().Route(translated, game, 0.5), Is.EqualTo(ApplyResult.Accepted));
+                Assert.DoesNotThrow(() => store.AppendAccepted(translated, game));
+                Assert.That(store.TryLoad("room-1", 1, out var recovered), Is.True);
+                Assert.That(recovered.JoinedCount, Is.EqualTo(1));
+                Assert.That(translated.DisplayName, Is.Null);
+            }
+            finally { Directory.Delete(directory, true); }
+        }
+
+        [Test]
+        public void OversizedIdentityKeysAndCommentPayloadAreRejected()
+        {
+            var translator = new LivePushTranslator();
+            var message = Message("live_comment", "上船");
+            message.MessageId = new string('m', 513);
+            Assert.That(translator.Translate(message, "room-1", "round-1", 0.5,
+                100000, 100600, out _), Is.EqualTo(LiveTranslationResult.Rejected));
+            message = Message("live_comment", "上船");
+            message.StableUserId = new string('u', 513);
+            Assert.That(translator.Translate(message, "room-1", "round-1", 0.5,
+                100000, 100600, out _), Is.EqualTo(LiveTranslationResult.Rejected));
+            message = Message("live_comment", "上船");
+            Assert.That(translator.Translate(message, new string('r', 513), "round-1", 0.5,
+                100000, 100600, out _), Is.EqualTo(LiveTranslationResult.Rejected));
+            Assert.That(translator.Translate(message, "room-1", new string('r', 129), 0.5,
+                100000, 100600, out _), Is.EqualTo(LiveTranslationResult.Rejected));
+            message = Message("live_comment", new string(' ', 1000) + "上船");
+            Assert.That(translator.Translate(message, "room-1", "round-1", 0.5,
+                100000, 100600, out _), Is.EqualTo(LiveTranslationResult.Ignored));
         }
     }
 }
