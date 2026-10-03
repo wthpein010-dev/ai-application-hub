@@ -206,6 +206,60 @@ namespace LighthouseRescue.Tests
         }
 
         [Test]
+        public void MessageAlreadyQueuedBeforeDisconnectAppliesBeforeCountdownPauses()
+        {
+            var owner = new GameObject("live-drain-before-pause-test");
+            try
+            {
+                var controller = NewController(owner);
+                var source = new FakeSource();
+                Assert.That(controller.AttachLiveSource(source), Is.True);
+                controller.StartOrRestart();
+                long time = Now();
+                Assert.That(source.Send(Board(time), time), Is.True);
+                source.Status.MarkDisconnected("test disconnect");
+
+                Tick(controller);
+                Assert.That(controller.Current.JoinedCount, Is.EqualTo(1));
+                Assert.That(source.Handled[0].Outcome, Is.EqualTo(LiveInboxOutcome.Applied));
+                Assert.That(controller.Current.Phase, Is.EqualTo(GamePhase.Paused));
+            }
+            finally { Cleanup(owner); }
+        }
+
+        [Test]
+        public void DisconnectDrainsExistingBacklogAcrossFramesWithoutAdvancingCountdown()
+        {
+            var owner = new GameObject("live-backlog-before-pause-test");
+            try
+            {
+                var controller = NewController(owner);
+                var source = new FakeSource();
+                Assert.That(controller.AttachLiveSource(source), Is.True);
+                controller.StartOrRestart();
+                long time = Now();
+                for (int i = 0; i < 70; i++)
+                {
+                    var message = Board(time, "queued-" + i);
+                    message.StableUserId = "viewer-" + i;
+                    Assert.That(source.Send(message, time), Is.True);
+                }
+                Task.Run(() => source.Status.MarkDisconnected("test disconnect")).GetAwaiter().GetResult();
+                Assert.That(source.Send(Board(Now(), "after-disconnect"), Now()), Is.False);
+                double before = controller.Current.RemainingSeconds;
+
+                Tick(controller);
+                Assert.That(controller.Current.JoinedCount, Is.EqualTo(64));
+                Assert.That(controller.Current.RemainingSeconds, Is.EqualTo(before));
+                Tick(controller);
+                Assert.That(controller.Current.JoinedCount, Is.EqualTo(70));
+                Assert.That(source.Handled.Count, Is.EqualTo(70));
+                Assert.That(controller.Current.Phase, Is.EqualTo(GamePhase.Paused));
+            }
+            finally { Cleanup(owner); }
+        }
+
+        [Test]
         public void DisconnectedLiveSourceCannotStartANewRound()
         {
             var owner = new GameObject("live-start-disconnected-test");

@@ -4,8 +4,11 @@ namespace LighthouseRescue.Runtime
 
     public sealed class LiveConnectionStatus
     {
-        public LiveConnectionState State { get; private set; } = LiveConnectionState.Unavailable;
-        public string Reason { get; private set; } = "未安装或核验抖音官方 Unity SDK；当前仅支持本地演示。";
+        private readonly object gate = new object();
+        private LiveConnectionState state = LiveConnectionState.Unavailable;
+        private string reason = "未安装或核验抖音官方 Unity SDK；当前仅支持本地演示。";
+        public LiveConnectionState State { get { lock (gate) return state; } }
+        public string Reason { get { lock (gate) return reason; } }
         public bool IsConnected => State == LiveConnectionState.Connected;
 
         public void Evaluate(bool officialSdkPresent, bool permissionVerified, bool stableEventIds)
@@ -16,8 +19,31 @@ namespace LighthouseRescue.Runtime
             else Set(LiveConnectionState.Authorising, "等待官方授权与真实直播间握手。");
         }
 
-        public void MarkConnected() { if (State == LiveConnectionState.Authorising) Set(LiveConnectionState.Connected, "官方直播连接已建立。"); }
-        public void MarkDisconnected(string reason) { if (State == LiveConnectionState.Connected) Set(LiveConnectionState.Disconnected, reason); }
-        private void Set(LiveConnectionState state, string reason) { State = state; Reason = reason; }
+        public void MarkConnected()
+        {
+            lock (gate)
+            {
+                if (state == LiveConnectionState.Authorising)
+                {
+                    state = LiveConnectionState.Connected;
+                    reason = "官方直播连接已建立。";
+                }
+            }
+        }
+        public void MarkDisconnected(string reason)
+        {
+            lock (gate)
+            {
+                if (state == LiveConnectionState.Connected)
+                {
+                    state = LiveConnectionState.Disconnected;
+                    this.reason = reason;
+                }
+            }
+        }
+        private void Set(LiveConnectionState next, string explanation)
+        {
+            lock (gate) { state = next; reason = explanation; }
+        }
     }
 }

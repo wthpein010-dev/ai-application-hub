@@ -76,7 +76,7 @@ namespace LighthouseRescue.Runtime
             try
             {
                 source.Start((message, sourceRoom, receivedAt) =>
-                    nextInbox.Post(message, sourceRoom, receivedAt));
+                    source.Status.IsConnected && nextInbox.Post(message, sourceRoom, receivedAt));
             }
             catch (Exception error)
             {
@@ -145,11 +145,16 @@ namespace LighthouseRescue.Runtime
             {
                 long now = UnixNow();
                 ObserveLivePhase(game.Snapshot(), now);
-                if (!liveSource.Status.IsConnected && game.Snapshot().Phase != GamePhase.Paused &&
-                    game.Snapshot().Phase != GamePhase.Waiting && game.Snapshot().Phase != GamePhase.Result)
-                    Emit(GameCommand.Pause, "host");
                 liveInbox.Drain(game, router, now, stageStartedUnixMilliseconds,
                     LiveItemsPerFrame, OnLiveReceipt);
+                if (!liveSource.Status.IsConnected)
+                {
+                    // Finish already received events within the frame budget, without moving the timer.
+                    if (liveInbox.PendingCount > 0) { view.Render(game.Snapshot()); return; }
+                    if (game.Snapshot().Phase != GamePhase.Paused && game.Snapshot().Phase != GamePhase.Waiting &&
+                        game.Snapshot().Phase != GamePhase.Result)
+                        Emit(GameCommand.Pause, "host");
+                }
             }
             GamePhase before = game.Snapshot().Phase;
             var snapshot = game.Advance(Time.deltaTime * speed);
