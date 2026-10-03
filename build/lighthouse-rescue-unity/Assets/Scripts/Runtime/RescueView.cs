@@ -82,6 +82,9 @@ namespace LighthouseRescue.Runtime
         private int lightningStrikeIndex;
         private int lastLightTarget;
         private int lastRepairTarget;
+        private readonly AudienceActivityFeed audienceFeed = new AudienceActivityFeed();
+        private string lastRoundId;
+        private string lastAudienceItem = "";
 
         public static float StormIntensity(RescueSnapshot snapshot)
         {
@@ -252,7 +255,7 @@ namespace LighthouseRescue.Runtime
             repairFill = Panel(root, "Repair progress", 468, 1236, 213, 18, Gold);
             lightText = Label(root, "", 698, 1225, 300, 42, 34, SoftWhite);
             lightFill = Panel(root, "Light progress", 921, 1236, 75, 18, Gold);
-            crewText = Label(root, "", 61, 1327, 920, 48, 34, MutedText);
+            crewText = Label(root, "", 61, 1320, 920, 65, 38, MutedText);
 
             boardButton = MakeButton("上船", 48, 1406, 310, 105, host.Board, Mint);
             leftButton = MakeButton("选左 · 短路", 382, 1406, 316, 105, host.VoteLeft, Gold);
@@ -288,6 +291,12 @@ namespace LighthouseRescue.Runtime
         public void Render(RescueSnapshot s)
         {
             if (s == null || root == null) return;
+            if (lastRoundId != s.RoundId)
+            {
+                audienceFeed.Reset();
+                lastAudienceItem = "";
+                lastRoundId = s.RoundId;
+            }
             if (lastSavedCount >= 0 && s.SavedCount > lastSavedCount)
             {
                 rescueToast.text = "✦ 已救起第 " + s.SavedCount + " 位待救者 ✦";
@@ -342,7 +351,13 @@ namespace LighthouseRescue.Runtime
             lightText.text = effectiveLightTarget == 0 ? "照明 --" : "照明 " + s.LightProgress + " / " + effectiveLightTarget;
             SetFill(repairFill, 213, effectiveRepairTarget == 0 ? 0 : (float)s.RepairProgress / effectiveRepairTarget);
             SetFill(lightFill, 75, effectiveLightTarget == 0 ? 0 : (float)s.LightProgress / effectiveLightTarget);
-            crewText.text = "每段自带 1 格值守｜免费参与能改变结局";
+            string audienceItem = audienceFeed.Current(Time.unscaledTime);
+            if (lastAudienceItem != audienceItem)
+            {
+                crewText.text = audienceItem == null ? "每段自带 1 格值守｜免费参与能改变结局" : "值守各1格｜" + audienceItem;
+                crewText.color = audienceItem == null ? MutedText : Mint;
+                lastAudienceItem = audienceItem;
+            }
             bool pov = IsRescuePOV(s);
             int povStage = Mathf.Clamp(s.CheckpointNumber == 0 ? (int)(s.Phase == GamePhase.Paused ? s.PhaseBeforePause : s.Phase) - (int)GamePhase.Checkpoint1 + 1 : s.CheckpointNumber, 1, 3);
             overheadSea.gameObject.SetActive(!pov);
@@ -441,6 +456,9 @@ namespace LighthouseRescue.Runtime
         public void ResetTransitionBaseline(RescueSnapshot snapshot)
         {
             if (snapshot == null) return;
+            audienceFeed.Reset();
+            lastAudienceItem = "";
+            lastRoundId = snapshot.RoundId;
             lastSavedCount = snapshot.SavedCount;
             lastHull = snapshot.Hull;
             lastPhase = snapshot.Phase;
@@ -458,9 +476,11 @@ namespace LighthouseRescue.Runtime
             thunderSource.Stop();
         }
 
-        public void ShowFeedback(GameCommand command, ApplyResult result)
+        public void ShowFeedback(GameEvent gameEvent, ApplyResult result)
         {
-            if (feedbackText == null) return;
+            if (feedbackText == null || gameEvent == null) return;
+            GameCommand command = gameEvent.Command;
+            audienceFeed.Record(gameEvent, result, Time.unscaledTime);
             if (command == GameCommand.Gift && result == ApplyResult.Accepted)
                 giftGlowUntil = Time.unscaledTime + 1.7f;
             feedbackText.text = DescribeFeedback(command, result);
@@ -587,6 +607,7 @@ namespace LighthouseRescue.Runtime
             label.alignment = anchor;
             label.horizontalOverflow = HorizontalWrapMode.Wrap;
             label.verticalOverflow = VerticalWrapMode.Overflow;
+            label.supportRichText = false;
             label.raycastTarget = false;
             return label;
         }
