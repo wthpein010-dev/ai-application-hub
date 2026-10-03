@@ -14,8 +14,9 @@
 - Unity EditMode 53/53；定向 Node 3/3；Hub 发布审计 0 findings。
 - Windows x64 ZIP 全新解压实跑：`FullSuccess`，救起 3/3，退出码 0。ZIP 44,492,211 字节，SHA-256 `38448C56476F3CC380F2041B530066155F6E0DCDDE41B31A2031B2625FFB5E68`。
 - WebGL 桌面与 390px 手机完整一局通过，没有浏览器错误或横向溢出；结算页显示贡献累计。
-- 演示视频为 H.264/AAC，31.71 秒；公开播放和下载仍需待本版 Pages / Release 发布后验收。
+- 演示视频为 H.264/AAC，31.71 秒；公网浏览器播放至结束且无媒体错误，MP4 Range 请求返回 206。Windows Release 1.4.0 的 ZIP 已从公网重新下载并核对 SHA-256。后续兼容矩阵修复合并为 `c6eec116e6dfc38ffb0c601d2abb7233214505d8`，该精确提交的 Pages `37120137970` 与完整 Hub/浏览器 CI `37120138660` 均成功。
 
 ## 发布边界
 
 Windows 与 WebGL 均为本地模拟模式，尚未连接真实抖音直播间。正式直播仍需开发者玩法权限、官方 SDK、真实房间联调和平台审核。
+正式接入所需的已核对条件与验收步骤见 [`docs/lighthouse-rescue-live-sdk-readiness.md`](../../docs/lighthouse-rescue-live-sdk-readiness.md)。
