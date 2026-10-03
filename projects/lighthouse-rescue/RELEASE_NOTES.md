@@ -15,7 +15,7 @@
 
 - Unity EditMode 48/48；Windows x64 全新解压实跑为 `FullSuccess`、救起 3/3、退出码 0，逐段截图确认画面与贡献提示。
 - WebGL 桌面及 390px 手机整局操作通过，无浏览器错误或横向溢出；逐段截图确认船上视角与航行俯视角。
-- Windows ZIP：44,491,826 字节，SHA-256 `2FA0C33DE541404A6F97E12412D45DE19B776C4668C507729E2C09E0CBC35970`。
+- Windows ZIP：44,491,941 字节，SHA-256 `AA1AF66F5B703A07AE8B6AF9145B4B112BBFA9F291486019007DE869691A4421`。
 
 ## 发布边界
 

@@ -62,5 +62,24 @@ namespace LighthouseRescue.Tests
             feed.Reset();
             Assert.That(feed.Current(1.1f), Is.Null);
         }
+
+        [Test]
+        public void CombiningMarkFloodCannotCreateAnUnboundedHudLabel()
+        {
+            var feed = new AudienceActivityFeed();
+            feed.Record(new GameEvent { DisplayName = "a" + new string('\u0301', 2048) + "海风",
+                Command = GameCommand.Repair }, ApplyResult.Accepted, 1f);
+            string label = feed.Current(1f);
+            Assert.That(label.Length, Is.LessThanOrEqualTo(24));
+            Assert.That(label, Does.EndWith("：修理 +1"));
+        }
+
+        [Test]
+        public void ValidEmojiNameRemainsVisible()
+        {
+            var feed = new AudienceActivityFeed();
+            feed.Record(new GameEvent { DisplayName = "🚢", Command = GameCommand.Board }, ApplyResult.Accepted, 1f);
+            Assert.That(feed.Current(1f), Is.EqualTo("🚢：上船"));
+        }
     }
 }

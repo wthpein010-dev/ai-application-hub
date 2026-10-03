@@ -70,14 +70,22 @@ namespace LighthouseRescue.Runtime
         {
             if (string.IsNullOrWhiteSpace(raw)) return "观众";
             var result = new StringBuilder(16);
-            var characters = StringInfo.GetTextElementEnumerator(raw);
+            string bounded = raw.Length > 64 ? raw.Substring(0, 64) : raw;
+            var characters = StringInfo.GetTextElementEnumerator(bounded);
             int visible = 0;
             while (characters.MoveNext() && visible < 8)
             {
                 string element = characters.GetTextElement();
+                if (element.Length > 8 || result.Length + element.Length > 16) continue;
                 bool safe = true;
-                foreach (char c in element)
+                for (int i = 0; i < element.Length; i++)
                 {
+                    char c = element[i];
+                    if (char.IsHighSurrogate(c) && i + 1 < element.Length && char.IsLowSurrogate(element[i + 1]))
+                    {
+                        i++;
+                        continue;
+                    }
                     UnicodeCategory category = CharUnicodeInfo.GetUnicodeCategory(c);
                     if (char.IsControl(c) || category == UnicodeCategory.Format || category == UnicodeCategory.Surrogate || c == '<' || c == '>')
                     {
