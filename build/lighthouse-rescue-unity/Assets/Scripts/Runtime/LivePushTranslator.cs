@@ -22,6 +22,10 @@ namespace LighthouseRescue.Runtime
     {
         private const long FutureAllowanceMilliseconds = 250;
         private const int MaxCount = 100000;
+        private const int MaxIdentityChars = 512;
+        private const int MaxRoundIdChars = 128;
+        private const int MaxDisplayNameChars = 128;
+        private const int MaxCommentChars = 64;
 
         public LiveTranslationResult Translate(
             LivePushEnvelope message, string roomId, string roundId, double receivedAtGameSeconds,
@@ -35,6 +39,8 @@ namespace LighthouseRescue.Runtime
             switch (message.MessageType)
             {
                 case "live_comment":
+                    if (message.Content != null && message.Content.Length > MaxCommentChars)
+                        return LiveTranslationResult.Ignored;
                     if (!TryCommentCommand(message.Content, out command)) return LiveTranslationResult.Ignored;
                     break;
                 case "live_like": command = GameCommand.Like; break;
@@ -44,6 +50,8 @@ namespace LighthouseRescue.Runtime
 
             if (string.IsNullOrWhiteSpace(message.MessageId) || string.IsNullOrWhiteSpace(message.StableUserId) ||
                 string.IsNullOrWhiteSpace(roomId) || string.IsNullOrWhiteSpace(roundId) ||
+                message.MessageId.Length > MaxIdentityChars || message.StableUserId.Length > MaxIdentityChars ||
+                roomId.Length > MaxIdentityChars || roundId.Length > MaxRoundIdChars ||
                 message.Count <= 0 || message.Count > MaxCount ||
                 message.UnixMilliseconds <= 0 || stageStartedUnixMilliseconds <= 0 || receivedUnixMilliseconds <= 0 ||
                 message.UnixMilliseconds < stageStartedUnixMilliseconds ||
@@ -55,7 +63,9 @@ namespace LighthouseRescue.Runtime
             {
                 Source = "douyin", RoomId = roomId, RoundId = roundId,
                 EventId = message.MessageType + ":" + message.MessageId,
-                UserId = message.StableUserId, DisplayName = message.DisplayName,
+                UserId = message.StableUserId,
+                DisplayName = message.DisplayName != null && message.DisplayName.Length > MaxDisplayNameChars
+                    ? null : message.DisplayName,
                 Command = command, Count = command == GameCommand.Like || command == GameCommand.Gift ? message.Count : 1,
                 OccurredAtSeconds = receivedAtGameSeconds, OccurredUnixMilliseconds = message.UnixMilliseconds
             };
