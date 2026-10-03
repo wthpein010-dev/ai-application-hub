@@ -61,19 +61,26 @@ namespace LighthouseRescue.Runtime
         }
 
         public bool TryLoad(string roomId, int rulesVersion, out RescueSnapshot snapshot)
+            => TryLoadCore(roomId, rulesVersion, false, out snapshot);
+
+        // Fault handling needs the exact last durable state, including a finished or reset round.
+        public bool TryLoadForFaultRollback(string roomId, int rulesVersion, out RescueSnapshot snapshot)
+            => TryLoadCore(roomId, rulesVersion, true, out snapshot);
+
+        private bool TryLoadCore(string roomId, int rulesVersion, bool allowFinished, out RescueSnapshot snapshot)
         {
-            if (TryRead(path, roomId, rulesVersion, out snapshot, out bool finished))
+            if (TryRead(path, roomId, rulesVersion, allowFinished, out snapshot, out bool finished))
             {
                 snapshot = journal.Replay(snapshot);
                 return true;
             }
             if (finished) return false;
-            if (!TryRead(path + ".bak", roomId, rulesVersion, out snapshot, out _)) return false;
+            if (!TryRead(path + ".bak", roomId, rulesVersion, allowFinished, out snapshot, out _)) return false;
             snapshot = journal.Replay(snapshot);
             return true;
         }
 
-        private static bool TryRead(string candidate, string roomId, int rulesVersion,
+        private static bool TryRead(string candidate, string roomId, int rulesVersion, bool allowFinished,
             out RescueSnapshot snapshot, out bool finished)
         {
             snapshot = null;
@@ -85,7 +92,7 @@ namespace LighthouseRescue.Runtime
                 if (read == null || read.RulesVersion != rulesVersion || read.RoomId != roomId ||
                     string.IsNullOrWhiteSpace(read.RoundId))
                     return false;
-                if (read.Phase == GamePhase.Waiting || read.Phase == GamePhase.Result)
+                if (!allowFinished && (read.Phase == GamePhase.Waiting || read.Phase == GamePhase.Result))
                 {
                     finished = true;
                     return false;

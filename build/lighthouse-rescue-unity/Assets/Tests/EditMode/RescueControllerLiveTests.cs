@@ -528,6 +528,30 @@ namespace LighthouseRescue.Tests
         }
 
         [Test]
+        public void HostResetFailureAfterResultRestoresTheFinishedDurableRound()
+        {
+            var owner = new GameObject("live-reset-result-storage-failure-test");
+            try
+            {
+                var controller = NewController(owner);
+                var source = new FakeSource();
+                Assert.That(controller.AttachLiveSource(source), Is.True);
+                controller.StartOrRestart();
+                controller.EndRound();
+                var durable = controller.Current;
+                Assert.That(durable.Phase, Is.EqualTo(GamePhase.Result));
+                Directory.CreateDirectory(Path.Combine(TestFolders[owner], "checkpoint.json.tmp"));
+
+                Assert.DoesNotThrow(() => controller.ResetRound());
+                Assert.That(source.Status.State, Is.EqualTo(LiveConnectionState.Faulted));
+                Assert.That(source.Stopped, Is.True);
+                Assert.That(controller.Current.RoundId, Is.EqualTo(durable.RoundId));
+                Assert.That(controller.Current.Phase, Is.EqualTo(GamePhase.Result));
+            }
+            finally { Cleanup(owner); }
+        }
+
+        [Test]
         public void DisconnectedLiveSourceCannotResetTheRound()
         {
             var owner = new GameObject("live-reset-disconnected-test");
@@ -570,6 +594,77 @@ namespace LighthouseRescue.Tests
                 Assert.That(controller.Current.RoundId, Is.EqualTo(roundId));
                 Assert.That(store.TryLoad("verified-room", 1, out var recovered), Is.True);
                 Assert.That(recovered.RoundId, Is.EqualTo("saved-round"));
+            }
+            finally
+            {
+                Cleanup(owner);
+                if (Directory.Exists(folder)) Directory.Delete(folder, true);
+            }
+        }
+
+        [Test]
+        public void PendingRecoveryRejectsHostCommandsWithoutOverwritingSavedRound()
+        {
+            var owner = new GameObject("live-recovery-host-guard-test");
+            string folder = Path.Combine(Path.GetTempPath(), "lighthouse-live-recovery-host-" + Guid.NewGuid().ToString("N"));
+            try
+            {
+                var saved = new RescueGame(GameConfig.Default, "verified-room", "saved-round", 11);
+                saved.Apply(new GameEvent { Source = "host", RoomId = "verified-room", RoundId = "saved-round",
+                    EventId = "start-saved", UserId = "host", Command = GameCommand.Start }, 0);
+                var store = new CheckpointStore(Path.Combine(folder, "checkpoint.json"));
+                store.Save(saved.Snapshot());
+
+                var controller = NewController(owner);
+                typeof(RescueController).GetField("checkpoint", BindingFlags.Instance | BindingFlags.NonPublic)
+                    .SetValue(controller, store);
+                Assert.That(controller.AttachLiveSource(new FakeSource()), Is.True);
+                string provisionalRound = controller.Current.RoundId;
+
+                controller.StartOrRestart();
+                controller.Emit(GameCommand.Start, "host");
+                controller.EndRound();
+                controller.TogglePause();
+                Assert.That(controller.Current.RoundId, Is.EqualTo(provisionalRound));
+                Assert.That(controller.Current.Phase, Is.EqualTo(GamePhase.Waiting));
+                Assert.That(store.TryLoad("verified-room", 1, out var recovered), Is.True);
+                Assert.That(recovered.RoundId, Is.EqualTo("saved-round"));
+            }
+            finally
+            {
+                Cleanup(owner);
+                if (Directory.Exists(folder)) Directory.Delete(folder, true);
+            }
+        }
+
+        [Test]
+        public void RecoveryRestartWriteFailureStopsSourceAndRestoresSavedRound()
+        {
+            var owner = new GameObject("live-recovery-restart-failure-test");
+            string folder = Path.Combine(Path.GetTempPath(), "lighthouse-live-restart-failure-" + Guid.NewGuid().ToString("N"));
+            try
+            {
+                var saved = new RescueGame(GameConfig.Default, "verified-room", "saved-round", 11);
+                saved.Apply(new GameEvent { Source = "host", RoomId = "verified-room", RoundId = "saved-round",
+                    EventId = "start-saved", UserId = "host", Command = GameCommand.Start }, 0);
+                var store = new CheckpointStore(Path.Combine(folder, "checkpoint.json"));
+                store.Save(saved.Snapshot());
+
+                var controller = NewController(owner);
+                typeof(RescueController).GetField("checkpoint", BindingFlags.Instance | BindingFlags.NonPublic)
+                    .SetValue(controller, store);
+                var source = new FakeSource();
+                Assert.That(controller.AttachLiveSource(source), Is.True);
+                Directory.CreateDirectory(Path.Combine(folder, "checkpoint.json.tmp"));
+
+                Assert.DoesNotThrow(() => GameObject.Find("重新开局 control")
+                    .GetComponentInChildren<Button>().onClick.Invoke());
+                Assert.That(source.Status.State, Is.EqualTo(LiveConnectionState.Faulted));
+                Assert.That(source.Stopped, Is.True);
+                Assert.That(source.Handled, Is.Empty);
+                Assert.That(controller.Current.RoundId, Is.EqualTo("saved-round"));
+                Assert.That(controller.Current.Phase, Is.EqualTo(GamePhase.Gathering));
+                Assert.DoesNotThrow(() => Tick(controller));
             }
             finally
             {

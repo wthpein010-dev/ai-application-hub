@@ -119,11 +119,17 @@ namespace LighthouseRescue.Runtime
                 }, () =>
                 {
                     game = NewGame();
+                    try { checkpoint.Save(game.Snapshot()); }
+                    catch (Exception error)
+                    {
+                        StopForStorageFault(error);
+                        return;
+                    }
                     awaitingLiveRecovery = false;
-                    checkpoint.Save(game.Snapshot());
                     view.ResetTransitionBaseline(game.ViewSnapshot());
                     view.Render(game.ViewSnapshot());
                 });
+                view.Render(game.ViewSnapshot());
             }
             return true;
         }
@@ -263,7 +269,7 @@ namespace LighthouseRescue.Runtime
             catch (Exception stopError) { Debug.LogWarning("Live source stop failed: " + stopError.GetType().Name); }
             try
             {
-                if (checkpoint.TryLoad(roomId, 1, out RescueSnapshot durable))
+                if (checkpoint.TryLoadForFaultRollback(roomId, 1, out RescueSnapshot durable))
                 {
                     game = RescueGame.Restore(GameConfig.Default, durable);
                     view.ResetTransitionBaseline(durable);
@@ -276,7 +282,7 @@ namespace LighthouseRescue.Runtime
 
         public void Emit(GameCommand command, string userId = "试玩观众", int count = 1)
         {
-            if (game == null || liveFaulted) return;
+            if (game == null || liveFaulted || awaitingLiveRecovery) return;
             if (liveSource != null && command != GameCommand.Start && command != GameCommand.Pause &&
                 command != GameCommand.Resume && command != GameCommand.End &&
                 command != GameCommand.CaptainLeft && command != GameCommand.CaptainRight) return;
@@ -294,7 +300,7 @@ namespace LighthouseRescue.Runtime
 
         public void StartOrRestart()
         {
-            if (liveFaulted) return;
+            if (liveFaulted || awaitingLiveRecovery) return;
             if (liveSource != null && !liveSource.Status.IsConnected) return;
             if (game.ViewSnapshot().Phase == GamePhase.Result) game = NewGame();
             Emit(GameCommand.Start, "host");
