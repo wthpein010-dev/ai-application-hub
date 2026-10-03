@@ -22,9 +22,9 @@ namespace LighthouseRescue.Runtime
     {
         private const long FutureAllowanceMilliseconds = 250;
         private const int MaxCount = 100000;
-        private const int MaxIdentityChars = 512;
+        internal const int MaxIdentityChars = 512;
         private const int MaxRoundIdChars = 128;
-        private const int MaxDisplayNameChars = 128;
+        internal const int MaxDisplayNameChars = 128;
         private const int MaxCommentChars = 64;
 
         public LiveTranslationResult Translate(

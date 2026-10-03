@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Reflection;
 using System.Threading.Tasks;
 using LighthouseRescue.Rules;
 using LighthouseRescue.Runtime;
@@ -83,6 +84,47 @@ namespace LighthouseRescue.Tests
             Assert.That(inbox.Post(Board(), "room-1", 100600), Is.True);
             Assert.That(inbox.Post(Board("m2"), "room-1", 100601), Is.False);
             Assert.That(inbox.PendingCount, Is.EqualTo(1));
+        }
+
+        [Test]
+        public void UnboundedSdkStringsAreRejectedBeforeTheyEnterTheQueue()
+        {
+            var inbox = new LiveMessageInbox(4);
+            inbox.SetRound("room-1", "round-1");
+            var hugeComment = Board();
+            hugeComment.Content = new string('x', 65536);
+            Assert.That(inbox.TryPost(hugeComment, "room-1", 100600), Is.EqualTo(LiveInboxPostResult.Rejected));
+            var hugeId = Board();
+            hugeId.MessageId = new string('m', 65536);
+            Assert.That(inbox.TryPost(hugeId, "room-1", 100600), Is.EqualTo(LiveInboxPostResult.Rejected));
+            var hugeType = Board();
+            hugeType.MessageType = new string('t', 65536);
+            Assert.That(inbox.TryPost(hugeType, "room-1", 100600), Is.EqualTo(LiveInboxPostResult.Rejected));
+            Assert.That(inbox.TryPost(Board(), new string('r', 65536), 100600), Is.EqualTo(LiveInboxPostResult.Rejected));
+            Assert.That(inbox.PendingCount, Is.Zero);
+        }
+
+        [Test]
+        public void OversizedNicknameIsNotRetainedButValidBoardingStillApplies()
+        {
+            var inbox = new LiveMessageInbox(4);
+            inbox.SetRound("room-1", "round-1");
+            var message = Board();
+            message.DisplayName = new string('海', 65536);
+            Assert.That(inbox.TryPost(message, "room-1", 100600), Is.EqualTo(LiveInboxPostResult.Accepted));
+
+            var field = typeof(LiveMessageInbox).GetField("pending", BindingFlags.Instance | BindingFlags.NonPublic);
+            Assert.That(field, Is.Not.Null);
+            var buffered = field.GetValue(inbox);
+            var queued = buffered.GetType().GetMethod("Peek").Invoke(buffered, null);
+            var copy = (LivePushEnvelope)queued.GetType().GetField("Message").GetValue(queued);
+            Assert.That(copy.DisplayName, Is.Null, "the bounded queue must not retain the huge SDK string");
+
+            var game = StartedGame();
+            var receipts = new List<LiveInboxReceipt>();
+            inbox.Drain(game, new EventRouter(), 100600, 100000, 4, receipts.Add);
+            Assert.That(game.Snapshot().JoinedCount, Is.EqualTo(1));
+            Assert.That(receipts[0].Outcome, Is.EqualTo(LiveInboxOutcome.Applied));
         }
 
         [Test]
