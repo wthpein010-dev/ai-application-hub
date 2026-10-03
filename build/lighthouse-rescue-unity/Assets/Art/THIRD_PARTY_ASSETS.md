@@ -25,3 +25,13 @@ Checked 2026-09-29. Kenney packages contain CC0 1.0 `License.txt` (copied in `Li
 | `Resources/Audio/Rescue.ogg` | Interface Sounds / Audio/bong_001.ogg | `d21d0f0b782445db579d11e2506b24cd1ac9d664ee33aeaf807761aa7b6fd710` |
 | `Resources/Audio/Warning.ogg` | Interface Sounds / Audio/error_001.ogg | `46e67425d16339772e8d328fb36a49426c9467418686e11beeb71ff84b0f6433` |
 | `Resources/Fonts/NotoSansSC-VF.ttf` | Noto Sans SC / NotoSansSC[wght].ttf | `a3041811a78c361b1de50f953c805e0244951c21c5bd412f7232ef0d899af0da` |
+
+## Original art generated for the 2026-10-03 visual pass
+
+The following files were generated with the built-in image generation tool for this game, then checked visually and copied into the Unity project. They are separate from the Kenney assets above. The prompts specified a hand-painted nocturnal maritime map, a transparent top-down civilian rescue boat, and a transparent survivor marker; each excluded text, logos and watermarks.
+
+| Shipped asset | Intended use | SHA-256 |
+| --- | --- | --- |
+| `Resources/Art/NightSeaV2.png` | Night sea game board, lighthouse and reefs, with open center for gameplay | `F8BCB3833D121CAC6A97DFFED5084C80A25010E042587674FD1B0DF54FA4449E` |
+| `Resources/Art/RescueShipV2.png` | Top-down rescue boat cutout | `2110C4720FF39A0F5D5140972295F6804DD6B7245BAC0BF54D7EC90E61EF9EDA` |
+| `Resources/Art/SurvivorV2.png` | Survivor marker and ending badge cutout | `B207BC4E38E95CA1A8887F647CBC01224DBD6E5D239F7934261665FEB0CB64F8` |

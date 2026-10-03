@@ -42,20 +42,28 @@ namespace LighthouseRescue.Runtime
 
         public bool TryLoad(string roomId, int rulesVersion, out RescueSnapshot snapshot)
         {
-            if (TryRead(path, roomId, rulesVersion, out snapshot)) return true;
-            return TryRead(path + ".bak", roomId, rulesVersion, out snapshot);
+            if (TryRead(path, roomId, rulesVersion, out snapshot, out bool finished)) return true;
+            if (finished) return false;
+            return TryRead(path + ".bak", roomId, rulesVersion, out snapshot, out _);
         }
 
-        private static bool TryRead(string candidate, string roomId, int rulesVersion, out RescueSnapshot snapshot)
+        private static bool TryRead(string candidate, string roomId, int rulesVersion,
+            out RescueSnapshot snapshot, out bool finished)
         {
             snapshot = null;
+            finished = false;
             if (!File.Exists(candidate)) return false;
             try
             {
                 var read = JsonUtility.FromJson<RescueSnapshot>(File.ReadAllText(candidate));
                 if (read == null || read.RulesVersion != rulesVersion || read.RoomId != roomId ||
-                    string.IsNullOrWhiteSpace(read.RoundId) || read.Phase == GamePhase.Result)
+                    string.IsNullOrWhiteSpace(read.RoundId))
                     return false;
+                if (read.Phase == GamePhase.Waiting || read.Phase == GamePhase.Result)
+                {
+                    finished = true;
+                    return false;
+                }
                 snapshot = read;
                 return true;
             }

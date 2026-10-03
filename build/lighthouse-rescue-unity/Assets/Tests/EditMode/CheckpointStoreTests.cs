@@ -60,6 +60,27 @@ namespace LighthouseRescue.Tests
         }
 
         [Test]
+        public void StartingFreshAfterAbandoningRoundDoesNotOfferStaleRecovery()
+        {
+            var store = new CheckpointStore(file);
+            var active = new RescueGame(GameConfig.Default, "room", "active", 9);
+            active.Apply(new GameEvent
+            {
+                Source = "simulation", RoomId = "room", RoundId = "active",
+                EventId = "start", UserId = "host", Command = GameCommand.Start,
+                Count = 1, OccurredAtSeconds = 0
+            }, 0);
+            store.Save(active.Snapshot());
+            Assert.That(store.TryLoad("room", 1, out _), Is.True);
+
+            var fresh = new RescueGame(GameConfig.Default, "room", "fresh", 10);
+            store.Save(fresh.Snapshot());
+            File.WriteAllText(file + ".bak", UnityEngine.JsonUtility.ToJson(active.Snapshot()));
+            Assert.That(store.TryLoad("room", 1, out _), Is.False,
+                "An intentionally reset waiting round must not restore an abandoned active round");
+        }
+
+        [Test]
         public void RestoredRoundRetainsEventIdsAndCooldowns()
         {
             var game = new RescueGame(GameConfig.Default, "room", "round", 9);
