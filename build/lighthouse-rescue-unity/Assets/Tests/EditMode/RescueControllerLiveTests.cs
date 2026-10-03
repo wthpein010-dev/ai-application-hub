@@ -24,6 +24,8 @@ namespace LighthouseRescue.Tests
             public Func<int> JoinedAtReceipt;
             public int ObservedJoined;
             public bool FailStart;
+            public bool FailReceipt;
+            public int ReceiptAttempts;
             public bool Stopped;
 
             public FakeSource()
@@ -42,6 +44,8 @@ namespace LighthouseRescue.Tests
             public void Stop() { Stopped = true; post = null; }
             public void HandleReceipt(LiveInboxReceipt receipt)
             {
+                ReceiptAttempts++;
+                if (FailReceipt) throw new InvalidOperationException("fake receipt failure");
                 ObservedJoined = JoinedAtReceipt == null ? -1 : JoinedAtReceipt();
                 Handled.Add(receipt);
             }
@@ -87,6 +91,37 @@ namespace LighthouseRescue.Tests
                 Assert.That(source.Handled.Count, Is.EqualTo(1));
                 Assert.That(source.Handled[0].Outcome, Is.EqualTo(LiveInboxOutcome.Applied));
                 Assert.That(source.ObservedJoined, Is.EqualTo(1));
+            }
+            finally { Cleanup(owner); }
+        }
+
+        [Test]
+        public void ReceiptHandlerFailureStopsLiveInputWithoutLosingDurableAcceptedEvent()
+        {
+            var owner = new GameObject("live-receipt-failure-test");
+            try
+            {
+                var controller = NewController(owner);
+                var source = new FakeSource { FailReceipt = true };
+                Assert.That(controller.AttachLiveSource(source), Is.True);
+                controller.StartOrRestart();
+                long time = Now();
+                Assert.That(source.Send(Board(time, "first"), time), Is.True);
+                var second = Board(time, "second");
+                second.StableUserId = "viewer-2";
+                Assert.That(source.Send(second, time), Is.True);
+
+                Assert.DoesNotThrow(() => Tick(controller));
+                Assert.That(source.Status.State, Is.EqualTo(LiveConnectionState.Faulted));
+                Assert.That(source.Status.FaultTitle, Is.EqualTo("回执故障"));
+                Assert.That(source.Stopped, Is.True);
+                Assert.That(source.ReceiptAttempts, Is.EqualTo(1));
+                Assert.That(source.Handled, Is.Empty);
+                Assert.That(controller.Current.JoinedCount, Is.EqualTo(1),
+                    "the already persisted event survives rollback; queued later events do not run");
+                Assert.DoesNotThrow(() => Tick(controller));
+                Assert.That(controller.Current.JoinedCount, Is.EqualTo(1));
+                Assert.That(source.ReceiptAttempts, Is.EqualTo(1));
             }
             finally { Cleanup(owner); }
         }
