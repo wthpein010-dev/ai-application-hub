@@ -10,6 +10,47 @@ namespace LighthouseRescue.Tests
     public sealed class RescueViewTests
     {
         [Test]
+        public void RescueCameraUsesPOVForEveryCheckpointAndPauseFromCheckpoint()
+        {
+            foreach (var phase in new[] { GamePhase.Checkpoint1, GamePhase.Checkpoint2, GamePhase.Checkpoint3 })
+                Assert.That(RescueView.IsRescuePOV(new RescueSnapshot { Phase = phase }), Is.True, phase.ToString());
+            Assert.That(RescueView.IsRescuePOV(new RescueSnapshot
+                { Phase = GamePhase.Paused, PhaseBeforePause = GamePhase.Checkpoint2 }), Is.True);
+            foreach (var phase in new[] { GamePhase.Waiting, GamePhase.Gathering, GamePhase.Voting,
+                GamePhase.Finale, GamePhase.Result })
+                Assert.That(RescueView.IsRescuePOV(new RescueSnapshot { Phase = phase }), Is.False, phase.ToString());
+            Assert.That(RescueView.IsRescuePOV(new RescueSnapshot
+                { Phase = GamePhase.Paused, PhaseBeforePause = GamePhase.Voting }), Is.False);
+        }
+
+        [Test]
+        public void EachCheckpointShowsItsOwnPOVArtAndHidesTheOverheadBoat()
+        {
+            var owner = new GameObject("pov-selection-test");
+            try
+            {
+                var view = owner.AddComponent<RescueView>();
+                view.Build(owner.AddComponent<HostControls>());
+                for (int stage = 1; stage <= 3; stage++)
+                {
+                    var phase = (GamePhase)((int)GamePhase.Checkpoint1 + stage - 1);
+                    view.Render(new RescueSnapshot { Phase = phase, CheckpointNumber = stage, Hull = 100 });
+                    Assert.That(GameObject.Find("First-person rescue " + stage), Is.Not.Null);
+                    Assert.That(GameObject.Find("Rescue ship"), Is.Null);
+                    Assert.That(Resources.Load<Texture2D>("Art/RescuePOV" + stage), Is.Not.Null);
+                }
+                view.Render(new RescueSnapshot { Phase = GamePhase.Voting, Hull = 100 });
+                Assert.That(GameObject.Find("Rescue ship"), Is.Not.Null);
+                Assert.That(GameObject.Find("First-person rescue 1"), Is.Null);
+            }
+            finally
+            {
+                foreach (var canvas in Object.FindObjectsOfType<Canvas>()) Object.DestroyImmediate(canvas.gameObject);
+                Object.DestroyImmediate(owner);
+            }
+        }
+
+        [Test]
         public void StageCopyShowsActionAndNeverClaimsLiveConnection()
         {
             var snapshot = new RescueSnapshot { Phase = GamePhase.Voting, RemainingSeconds = 12 };

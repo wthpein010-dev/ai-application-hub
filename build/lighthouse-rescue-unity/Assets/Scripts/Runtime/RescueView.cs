@@ -17,6 +17,8 @@ namespace LighthouseRescue.Runtime
         private static readonly Color MutedText = Hex("ADC5CC");
         private RectTransform root;
         private RectTransform ship;
+        private Image overheadSea;
+        private Image[] rescuePOV;
         private Image wake;
         private Image giftGlow;
         private Image[] giftSparks;
@@ -58,6 +60,13 @@ namespace LighthouseRescue.Runtime
         private float hullFlashUntil;
         private int lastSavedCount = -1;
         private int lastHull = -1;
+
+        public static bool IsRescuePOV(RescueSnapshot snapshot)
+        {
+            if (snapshot == null) return false;
+            var phase = snapshot.Phase == GamePhase.Paused ? snapshot.PhaseBeforePause : snapshot.Phase;
+            return phase == GamePhase.Checkpoint1 || phase == GamePhase.Checkpoint2 || phase == GamePhase.Checkpoint3;
+        }
 
         public static string DescribeStage(RescueSnapshot snapshot)
         {
@@ -126,8 +135,15 @@ namespace LighthouseRescue.Runtime
 
             Panel(root, "Sea frame", 43, 433, 994, 639, Hex("42697A"));
             Panel(root, "Sea", 48, 438, 984, 629, Sea);
-            var seaArt = Picture(root, "Night sea art", "Art/NightSeaV2", 48, 438, 984, 629, false);
-            seaArt.preserveAspect = false;
+            overheadSea = Picture(root, "Night sea art", "Art/NightSeaV2", 48, 438, 984, 629, false);
+            overheadSea.preserveAspect = false;
+            rescuePOV = new Image[3];
+            for (int i = 0; i < rescuePOV.Length; i++)
+            {
+                rescuePOV[i] = Picture(root, "First-person rescue " + (i + 1), "Art/RescuePOV" + (i + 1), 48, 438, 984, 629, false);
+                rescuePOV[i].preserveAspect = false;
+                rescuePOV[i].gameObject.SetActive(false);
+            }
             var glowSprite = CreateGlowSprite();
             giftGlow = Panel(root, "Lighthouse celebration", 795, 457, 177, 177, Color.clear);
             giftGlow.sprite = glowSprite;
@@ -238,6 +254,14 @@ namespace LighthouseRescue.Runtime
             SetFill(lightFill, 75, s.LightTarget == 0 ? 0 : (float)s.LightProgress / s.LightTarget);
             crewText.text = "每段自带 1 格值守｜免费参与能改变结局";
             var checkpoint = s.Phase == GamePhase.Checkpoint1 || s.Phase == GamePhase.Checkpoint2 || s.Phase == GamePhase.Checkpoint3;
+            bool pov = IsRescuePOV(s);
+            int povStage = Mathf.Clamp(s.CheckpointNumber == 0 ? (int)(s.Phase == GamePhase.Paused ? s.PhaseBeforePause : s.Phase) - (int)GamePhase.Checkpoint1 + 1 : s.CheckpointNumber, 1, 3);
+            overheadSea.gameObject.SetActive(!pov);
+            for (int i = 0; i < rescuePOV.Length; i++) rescuePOV[i].gameObject.SetActive(pov && i == povStage - 1);
+            ship.gameObject.SetActive(!pov);
+            wake.gameObject.SetActive(!pov);
+            beam.gameObject.SetActive(!pov);
+            for (int i = 0; i < waitingCrew.Length; i++) waitingCrew[i].gameObject.SetActive(!pov);
             boardButton.interactable = s.Phase != GamePhase.Waiting && s.Phase != GamePhase.Result && s.Phase != GamePhase.Paused;
             leftButton.interactable = rightButton.interactable = s.Phase == GamePhase.Voting;
             captainLeftButton.interactable = captainRightButton.interactable = s.Phase == GamePhase.Voting;

@@ -35,3 +35,13 @@ The following files were generated with the built-in image generation tool for t
 | `Resources/Art/NightSeaV2.png` | Night sea game board, lighthouse and reefs, with open center for gameplay | `F8BCB3833D121CAC6A97DFFED5084C80A25010E042587674FD1B0DF54FA4449E` |
 | `Resources/Art/RescueShipV2.png` | Top-down rescue boat cutout | `2110C4720FF39A0F5D5140972295F6804DD6B7245BAC0BF54D7EC90E61EF9EDA` |
 | `Resources/Art/SurvivorV2.png` | Survivor marker and ending badge cutout | `B207BC4E38E95CA1A8887F647CBC01224DBD6E5D239F7934261665FEB0CB64F8` |
+
+## Original rescue POV art generated for the 2026-10-03 storm pass
+
+These three scene illustrations were generated with the built-in image generation tool for this game. The prompts used the existing `NightSeaV2`, `SurvivorV2` and `RescueShipV2` images as art-direction references, then requested a first-person boat-deck perspective with one readable survivor in each scene, storm waves and a distant lighthouse. The generated images were inspected before copying into Unity. No text, logos or watermarks were requested.
+
+| Shipped asset | Intended use | SHA-256 |
+| --- | --- | --- |
+| `Resources/Art/RescuePOV1.png` | First rescue: yellow-raincoat survivor in orange life ring, viewed from boat bow | `A6A9AA29211437605799FD512BB27E0E99741F237C0A331957C1983372864BC3` |
+| `Resources/Art/RescuePOV2.png` | Second rescue: red-raincoat survivor reaching from broken dinghy | `9DDD291687F3E27C5E1C9017F34CC375001152B67CF56D1D8BBD29A4A9EA2729` |
+| `Resources/Art/RescuePOV3.png` | Third rescue: yellow-raincoat survivor by rocks in heavy surf | `64C5614F58A859D5FF373FE7E16F723E48490A7312EF72BDE160C06B24009929` |
