@@ -75,6 +75,19 @@ namespace LighthouseRescue.Tests
                 var thunder = owner.GetComponents<AudioSource>().Single(source => source.clip != null && source.clip.name == "Thunder");
                 Assert.That(thunder.volume, Is.Zero);
                 Assert.That(GameObject.Find("Lightning sky flash").GetComponent<Image>().color.a, Is.Zero);
+
+                var overloadStatus = new LiveConnectionStatus();
+                overloadStatus.Evaluate(true, true, true);
+                overloadStatus.MarkConnected();
+                view.SetLiveMode(overloadStatus);
+                view.Render(storm);
+                Assert.That(ambience.volume, Is.GreaterThan(0f));
+                overloadStatus.MarkFaulted("弹幕输入过载，已停止；检查流量后重启。", "输入过载");
+                view.Render(storm);
+                Assert.That(ambience.volume, Is.Zero);
+                Assert.That(thunder.volume, Is.Zero);
+                Assert.That(GameObject.Find("Lightning sky flash").GetComponent<Image>().color.a, Is.Zero);
+                Assert.That(Object.FindObjectsOfType<Text>().Any(label => label.text == "直播已停止 · 输入过载"), Is.True);
             }
             finally
             {

@@ -1,5 +1,6 @@
 using System;
 using System.IO;
+using System.Threading;
 using LighthouseRescue.Rules;
 using UnityEngine;
 
@@ -7,7 +8,7 @@ namespace LighthouseRescue.Runtime
 {
     public sealed class RescueController : MonoBehaviour
     {
-        private sealed class StorageFaultStopException : Exception { }
+        private sealed class LiveFaultStopException : Exception { }
         private const string DemoRoom = "local-demo";
         private const int LiveInboxCapacity = 256;
         private const int LiveItemsPerFrame = 64;
@@ -22,7 +23,8 @@ namespace LighthouseRescue.Runtime
         private GamePhase observedLivePhase;
         private long stageStartedUnixMilliseconds;
         private bool awaitingLiveRecovery;
-        private bool storageFaulted;
+        private bool liveFaulted;
+        private int inboxOverflowed;
         private int roundNumber;
         private double speed = 1;
 
@@ -74,14 +76,21 @@ namespace LighthouseRescue.Runtime
                 "round-" + DateTime.UtcNow.Ticks + "-" + nextRound, nextRound);
             var nextInbox = new LiveMessageInbox(LiveInboxCapacity);
             nextInbox.SetRound(verifiedRoom, nextGame.ViewSnapshot().RoundId);
+            Interlocked.Exchange(ref inboxOverflowed, 0);
             try
             {
                 source.Start((message, sourceRoom, receivedAt) =>
-                    source.Status.IsConnected && nextInbox.Post(message, sourceRoom, receivedAt));
+                {
+                    if (!source.Status.IsConnected) return false;
+                    var result = nextInbox.TryPost(message, sourceRoom, receivedAt);
+                    if (result == LiveInboxPostResult.Full) Interlocked.Exchange(ref inboxOverflowed, 1);
+                    return result == LiveInboxPostResult.Accepted;
+                });
             }
             catch (Exception error)
             {
                 try { source.Stop(); } catch (Exception) { }
+                Interlocked.Exchange(ref inboxOverflowed, 0);
                 Debug.LogWarning("Live source startup failed: " + error.GetType().Name);
                 return false;
             }
@@ -141,7 +150,12 @@ namespace LighthouseRescue.Runtime
         private void Update()
         {
             if (game == null || view == null) return;
-            if (awaitingLiveRecovery || storageFaulted) { view.Render(game.ViewSnapshot()); return; }
+            if (liveSource != null && !liveFaulted && Interlocked.CompareExchange(ref inboxOverflowed, 0, 0) != 0)
+            {
+                StopForInboxOverflow();
+                return;
+            }
+            if (awaitingLiveRecovery || liveFaulted) { view.Render(game.ViewSnapshot()); return; }
             if (liveSource != null)
             {
                 long now = UnixNow();
@@ -151,7 +165,7 @@ namespace LighthouseRescue.Runtime
                     liveInbox.Drain(game, router, now, stageStartedUnixMilliseconds,
                         LiveItemsPerFrame, OnLiveReceipt);
                 }
-                catch (StorageFaultStopException) { return; }
+                catch (LiveFaultStopException) { return; }
                 if (!liveSource.Status.IsConnected)
                 {
                     // Finish already received events within the frame budget, without moving the timer.
@@ -182,6 +196,11 @@ namespace LighthouseRescue.Runtime
 
         private void OnLiveReceipt(LiveInboxReceipt receipt)
         {
+            if (Interlocked.CompareExchange(ref inboxOverflowed, 0, 0) != 0)
+            {
+                StopForInboxOverflow();
+                throw new LiveFaultStopException();
+            }
             if (receipt.GameEvent != null)
             {
                 if (receipt.Outcome == LiveInboxOutcome.Applied)
@@ -190,7 +209,7 @@ namespace LighthouseRescue.Runtime
                     catch (Exception error)
                     {
                         StopForStorageFault(error);
-                        throw new StorageFaultStopException();
+                        throw new LiveFaultStopException();
                     }
                 }
                 view.ShowFeedback(receipt.GameEvent, receipt.RuleResult);
@@ -229,11 +248,17 @@ namespace LighthouseRescue.Runtime
                 checkpoint.AppendAccepted(gameEvent, game);
         }
 
-        private void StopForStorageFault(Exception error)
+        private void StopForStorageFault(Exception error) =>
+            StopForLiveFault("存储失败，已停止；检查磁盘后重启。", "存储故障", error);
+
+        private void StopForInboxOverflow() =>
+            StopForLiveFault("弹幕输入过载，已停止；检查流量后重启。", "输入过载", null);
+
+        private void StopForLiveFault(string reason, string title, Exception error)
         {
-            storageFaulted = true;
+            liveFaulted = true;
             awaitingLiveRecovery = true;
-            liveSource.Status.MarkFaulted("存储失败，已停止；检查磁盘后重启。");
+            liveSource.Status.MarkFaulted(reason, title);
             try { liveSource.Stop(); }
             catch (Exception stopError) { Debug.LogWarning("Live source stop failed: " + stopError.GetType().Name); }
             try
@@ -245,13 +270,13 @@ namespace LighthouseRescue.Runtime
                 }
             }
             catch (Exception readError) { Debug.LogWarning("Live checkpoint read failed: " + readError.GetType().Name); }
-            Debug.LogWarning("Live input stopped after storage failure: " + error.GetType().Name);
+            Debug.LogWarning("Live input stopped: " + (error == null ? "inbox overflow" : error.GetType().Name));
             view.Render(game.ViewSnapshot());
         }
 
         public void Emit(GameCommand command, string userId = "试玩观众", int count = 1)
         {
-            if (game == null || storageFaulted) return;
+            if (game == null || liveFaulted) return;
             if (liveSource != null && command != GameCommand.Start && command != GameCommand.Pause &&
                 command != GameCommand.Resume && command != GameCommand.End &&
                 command != GameCommand.CaptainLeft && command != GameCommand.CaptainRight) return;
@@ -269,7 +294,7 @@ namespace LighthouseRescue.Runtime
 
         public void StartOrRestart()
         {
-            if (storageFaulted) return;
+            if (liveFaulted) return;
             if (liveSource != null && !liveSource.Status.IsConnected) return;
             if (game.ViewSnapshot().Phase == GamePhase.Result) game = NewGame();
             Emit(GameCommand.Start, "host");
@@ -282,7 +307,7 @@ namespace LighthouseRescue.Runtime
         }
 
         public void EndRound() => Emit(GameCommand.End, "host");
-        public void ResetRound() { if (storageFaulted) return; game = NewGame(); checkpoint.Save(game.Snapshot()); view.Render(game.ViewSnapshot()); }
+        public void ResetRound() { if (liveFaulted) return; game = NewGame(); checkpoint.Save(game.Snapshot()); view.Render(game.ViewSnapshot()); }
         public void ToggleSpeed() { if (liveSource != null) return; speed = speed < 4 ? 4 : speed < 8 ? 8 : 1; view.Render(game.ViewSnapshot()); }
         public void SetCaptureSpeed() => speed = 8;
     }

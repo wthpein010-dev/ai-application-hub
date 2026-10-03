@@ -300,6 +300,96 @@ namespace LighthouseRescue.Tests
         }
 
         [Test]
+        public void FullInboxStopsLiveRoundBeforeDrainingAndPreservesOnlyDurableJoins()
+        {
+            var owner = new GameObject("live-overflow-test");
+            try
+            {
+                var controller = NewController(owner);
+                var source = new FakeSource();
+                Assert.That(controller.AttachLiveSource(source), Is.True);
+                controller.StartOrRestart();
+                long time = Now();
+                Assert.That(source.Send(Board(time, "durable-join"), time), Is.True);
+                Tick(controller);
+                Assert.That(controller.Current.JoinedCount, Is.EqualTo(1));
+                Assert.That(source.Handled.Count, Is.EqualTo(1));
+
+                for (int i = 0; i < 256; i++)
+                {
+                    var message = Board(time, "queued-" + i);
+                    message.StableUserId = "queued-viewer-" + i;
+                    Assert.That(Task.Run(() => source.Send(message, time)).GetAwaiter().GetResult(), Is.True);
+                }
+                Assert.That(Task.Run(() => source.Send(Board(time, "overflow"), time)).GetAwaiter().GetResult(), Is.False);
+                Assert.That(source.Stopped, Is.False, "SDK callbacks must not stop the source from a worker thread");
+                Assert.That(source.Status.State, Is.EqualTo(LiveConnectionState.Connected));
+                Assert.DoesNotThrow(() => Tick(controller));
+
+                Assert.That(source.Stopped, Is.True);
+                Assert.That(source.Status.State, Is.EqualTo(LiveConnectionState.Faulted));
+                Assert.That(source.Status.Reason, Does.Contain("过载"));
+                Assert.That(Array.Exists(UnityEngine.Object.FindObjectsOfType<Text>(),
+                    label => label.text == "直播已停止 · 输入过载"), Is.True,
+                    "the streamer badge must distinguish overload from a storage failure");
+                Assert.That(controller.Current.JoinedCount, Is.EqualTo(1),
+                    "all queued but unacknowledged joins must remain unapplied");
+                Assert.That(source.Handled.Count, Is.EqualTo(1),
+                    "only the earlier durable join may have a fulfilment receipt");
+                controller.EndRound();
+                Assert.That(controller.Current.Phase, Is.EqualTo(GamePhase.Gathering));
+            }
+            finally { Cleanup(owner); }
+        }
+
+        [Test]
+        public void FullBacklogRejectedAfterDisconnectStillDrainsWithoutOverflowFault()
+        {
+            var owner = new GameObject("live-disconnected-full-backlog-test");
+            try
+            {
+                var controller = NewController(owner);
+                var source = new FakeSource();
+                Assert.That(controller.AttachLiveSource(source), Is.True);
+                controller.StartOrRestart();
+                long time = Now();
+                for (int i = 0; i < 256; i++)
+                {
+                    var message = Board(time, "accepted-" + i);
+                    message.StableUserId = "viewer-" + i;
+                    Assert.That(source.Send(message, time), Is.True);
+                }
+                source.Status.MarkDisconnected("test disconnect");
+                Assert.That(source.Send(Board(time, "rejected-disconnected"), time), Is.False);
+                for (int frame = 0; frame < 4; frame++) Tick(controller);
+                Assert.That(source.Status.State, Is.EqualTo(LiveConnectionState.Disconnected));
+                Assert.That(controller.Current.JoinedCount, Is.EqualTo(256));
+                Assert.That(controller.Current.Phase, Is.EqualTo(GamePhase.Paused));
+                Assert.That(source.Handled.Count, Is.EqualTo(256));
+            }
+            finally { Cleanup(owner); }
+        }
+
+        [Test]
+        public void InvalidCallbackInputDoesNotFaultConnectedLiveRound()
+        {
+            var owner = new GameObject("live-invalid-input-test");
+            try
+            {
+                var controller = NewController(owner);
+                var source = new FakeSource();
+                Assert.That(controller.AttachLiveSource(source), Is.True);
+                controller.StartOrRestart();
+                Assert.That(source.Send(null, Now()), Is.False);
+                Tick(controller);
+                Assert.That(source.Status.State, Is.EqualTo(LiveConnectionState.Connected));
+                Assert.That(source.Stopped, Is.False);
+                Assert.That(controller.Current.Phase, Is.EqualTo(GamePhase.Gathering));
+            }
+            finally { Cleanup(owner); }
+        }
+
+        [Test]
         public void LiveReceiptIsEmittedOnlyAfterAudienceJoinIsRecoverable()
         {
             var owner = new GameObject("live-durable-receipt-test");

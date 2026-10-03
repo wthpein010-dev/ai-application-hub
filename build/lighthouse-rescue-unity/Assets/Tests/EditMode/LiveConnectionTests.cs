@@ -39,10 +39,25 @@ namespace LighthouseRescue.Tests
             status.MarkFaulted("本地存储失败，本局已停止");
             Assert.That(status.State, Is.EqualTo(LiveConnectionState.Faulted));
             Assert.That(status.Reason, Does.Contain("存储失败"));
+            Assert.That(status.FaultTitle, Is.EqualTo("存储故障"));
             status.Evaluate(true, true, true);
             status.MarkConnected();
             Assert.That(status.State, Is.EqualTo(LiveConnectionState.Faulted),
                 "a failed live process cannot silently reconnect in the same process");
+        }
+
+        [Test]
+        public void OverloadFaultKeepsItsDistinctTitleThroughConnectionRechecks()
+        {
+            var status = new LiveConnectionStatus();
+            status.Evaluate(true, true, true);
+            status.MarkConnected();
+            status.MarkFaulted("弹幕输入过载，已停止；检查流量后重启。", "输入过载");
+            status.Evaluate(true, true, true);
+            status.MarkDisconnected("late disconnect");
+            Assert.That(status.State, Is.EqualTo(LiveConnectionState.Faulted));
+            Assert.That(status.FaultTitle, Is.EqualTo("输入过载"));
+            Assert.That(status.Reason, Does.Contain("过载"));
         }
     }
 }
