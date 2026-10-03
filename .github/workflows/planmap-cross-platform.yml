@@ -21,6 +21,8 @@ jobs:
         working-directory: projects/planmap/local
     steps:
       - uses: actions/checkout@v4
+        with:
+          sparse-checkout: projects/planmap
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
@@ -64,6 +66,8 @@ jobs:
         working-directory: projects/planmap/source
     steps:
       - uses: actions/checkout@v4
+        with:
+          sparse-checkout: projects/planmap
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
