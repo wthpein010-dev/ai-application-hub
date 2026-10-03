@@ -51,6 +51,13 @@ test("preview data mirrors every production project in order", async () => {
     },
     "Loop BGM Lab catalog refresh must preserve the Task 5 GamePulse action",
   );
+  const lighthouseSource = sourceApps.find(({ id }) => id === "lighthouse-rescue");
+  const lighthousePreview = generated.projects.find(({ id }) => id === "lighthouse-rescue");
+  assert.equal(
+    lighthousePreview.actions.find(({ type }) => type === "windows").href,
+    lighthouseSource.platforms.windows.href,
+    "Lighthouse preview must download the same Windows release as the public Hub",
+  );
 });
 
 test("preview shell exposes the approved stage, filter rail, and catalogs", () => {
