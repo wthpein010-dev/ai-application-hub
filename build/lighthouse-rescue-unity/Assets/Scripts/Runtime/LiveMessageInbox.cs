@@ -20,6 +20,8 @@ namespace LighthouseRescue.Runtime
     // SDK callbacks may call Post from any thread. SetRound and Drain run on Unity's main thread.
     public sealed class LiveMessageInbox
     {
+        private const int MaxQueuedCommentChars = 1024;
+        private const int MaxMessageTypeChars = 64;
         private sealed class PendingMessage
         {
             public LivePushEnvelope Message;
@@ -63,7 +65,13 @@ namespace LighthouseRescue.Runtime
 
         public LiveInboxPostResult TryPost(LivePushEnvelope message, string sourceRoomId, long receivedUnixMilliseconds)
         {
-            if (message == null || receivedUnixMilliseconds <= 0) return LiveInboxPostResult.Rejected;
+            if (message == null || receivedUnixMilliseconds <= 0 ||
+                (message.MessageId != null && message.MessageId.Length > LivePushTranslator.MaxIdentityChars) ||
+                (message.StableUserId != null && message.StableUserId.Length > LivePushTranslator.MaxIdentityChars) ||
+                (sourceRoomId != null && sourceRoomId.Length > LivePushTranslator.MaxIdentityChars) ||
+                (message.MessageType != null && message.MessageType.Length > MaxMessageTypeChars) ||
+                (message.Content != null && message.Content.Length > MaxQueuedCommentChars))
+                return LiveInboxPostResult.Rejected;
             lock (gate)
             {
                 if (string.IsNullOrWhiteSpace(roundId)) return LiveInboxPostResult.Rejected;
@@ -74,7 +82,10 @@ namespace LighthouseRescue.Runtime
                     {
                         MessageId = message.MessageId, MessageType = message.MessageType,
                         UnixMilliseconds = message.UnixMilliseconds, StableUserId = message.StableUserId,
-                        DisplayName = message.DisplayName, Content = message.Content, Count = message.Count
+                        DisplayName = message.DisplayName != null &&
+                            message.DisplayName.Length > LivePushTranslator.MaxDisplayNameChars
+                                ? null : message.DisplayName,
+                        Content = message.Content, Count = message.Count
                     },
                     SourceRoomId = sourceRoomId,
                     RoundId = roundId,
