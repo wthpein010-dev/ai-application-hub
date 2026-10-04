@@ -48,13 +48,18 @@ def main():
         subprocess.run([args.ffmpeg, "-y", "-hide_banner", "-loglevel", "error", *map(str, command)], check=True)
 
     thunder = audio / "Thunder.ogg"
+    wind = audio / "WindGust.ogg"
     delay = [round((markers[f"checkpoint{i}"] + 0.26) * 1000) for i in (1, 2, 3)]
     filters = ["[1:a]volume=0.14[rain]"]
     for index, milliseconds in enumerate(delay, start=2):
         filters.append(f"[{index}:a]adelay={milliseconds},volume=0.25[t{index}]")
-    filters.append("[rain][t2][t3][t4]amix=inputs=4:duration=first:normalize=0,alimiter=limit=0.85[aout]")
+    for index, stage in enumerate((1, 2, 3), start=5):
+        milliseconds = round((markers[f"checkpoint{stage}"] + 2.4) * 1000)
+        filters.append(f"[{index}:a]adelay={milliseconds},volume=0.12[w{index}]")
+    filters.append("[rain][t2][t3][t4][w5][w6][w7]amix=inputs=7:duration=first:normalize=0,alimiter=limit=0.85[aout]")
     run("-i", capture, "-stream_loop", "-1", "-i", audio / "StormRain.ogg",
         "-i", thunder, "-i", thunder, "-i", thunder,
+        "-i", wind, "-i", wind, "-i", wind,
         "-filter_complex", ";".join(filters), "-map", "0:v", "-map", "[aout]",
         "-vf", "scale=720:1280:flags=lanczos,fps=24,format=yuv420p",
         "-c:v", "libx264", "-preset", "medium", "-crf", "21",

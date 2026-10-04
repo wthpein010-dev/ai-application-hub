@@ -1,4 +1,5 @@
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.IO;
 using System.Reflection;
@@ -57,8 +58,15 @@ namespace LighthouseRescue.Tests
             MessageId = id, MessageType = "live_comment", Content = "上船",
             StableUserId = "viewer-1", DisplayName = "观众甲", UnixMilliseconds = time
         };
-        private static void Tick(RescueController controller) => typeof(RescueController)
+        private static void TickWithoutPresentation(RescueController controller) => typeof(RescueController)
             .GetMethod("Update", BindingFlags.Instance | BindingFlags.NonPublic).Invoke(controller, null);
+        private static void Present(RescueController controller) => typeof(RescueController)
+            .GetMethod("FlushPresentedReceipts", BindingFlags.Instance | BindingFlags.NonPublic).Invoke(controller, null);
+        private static void Tick(RescueController controller)
+        {
+            TickWithoutPresentation(controller);
+            Present(controller);
+        }
         private static RescueController NewController(GameObject owner)
         {
             var controller = owner.AddComponent<RescueController>();
@@ -69,6 +77,105 @@ namespace LighthouseRescue.Tests
             typeof(RescueController).GetField("checkpoint", BindingFlags.Instance | BindingFlags.NonPublic)
                 .SetValue(controller, new CheckpointStore(Path.Combine(folder, "checkpoint.json")));
             return controller;
+        }
+
+        [Test]
+        public void LiveReceiptWaitsUntilTheProcessedFrameHasBeenPresented()
+        {
+            var owner = new GameObject("live-presented-receipt-test");
+            try
+            {
+                var controller = NewController(owner);
+                var source = new FakeSource();
+                Assert.That(controller.AttachLiveSource(source), Is.True);
+                controller.StartOrRestart();
+                long time = Now();
+                Assert.That(source.Send(Board(time), time), Is.True);
+
+                TickWithoutPresentation(controller);
+                Assert.That(controller.Current.JoinedCount, Is.EqualTo(1));
+                Assert.That(source.Handled, Is.Empty, "the UI has not completed a rendered frame yet");
+
+                Present(controller);
+                Assert.That(source.Handled.Count, Is.EqualTo(1));
+                Assert.That(source.Handled[0].Outcome, Is.EqualTo(LiveInboxOutcome.Applied));
+            }
+            finally { Cleanup(owner); }
+        }
+
+        [Test]
+        public void ReceiptDeliveryCoroutineWaitsForTheEndOfTheRenderedFrame()
+        {
+            var owner = new GameObject("live-end-of-frame-test");
+            try
+            {
+                var controller = NewController(owner);
+                var iterator = (IEnumerator)typeof(RescueController)
+                    .GetMethod("DeliverReceiptsAfterFrames", BindingFlags.Instance | BindingFlags.NonPublic)
+                    .Invoke(controller, null);
+                Assert.That(iterator.MoveNext(), Is.True);
+                Assert.That(iterator.Current, Is.InstanceOf<WaitForEndOfFrame>());
+            }
+            finally { Cleanup(owner); }
+        }
+
+        [Test]
+        public void ResetBeforePresentationSuppressesOldRoundReceipt()
+        {
+            var owner = new GameObject("live-reset-before-presentation-test");
+            try
+            {
+                var controller = NewController(owner);
+                var source = new FakeSource();
+                Assert.That(controller.AttachLiveSource(source), Is.True);
+                controller.StartOrRestart();
+                long time = Now();
+                Assert.That(source.Send(Board(time), time), Is.True);
+                TickWithoutPresentation(controller);
+                Assert.That(controller.Current.JoinedCount, Is.EqualTo(1));
+
+                controller.ResetRound();
+                Present(controller);
+                Assert.That(source.Handled, Is.Empty);
+                Assert.That(controller.Current.JoinedCount, Is.Zero);
+            }
+            finally { Cleanup(owner); }
+        }
+
+        [Test]
+        public void ReceiptPresentationBacklogStopsLiveSourceInsteadOfGrowingWithoutBound()
+        {
+            var owner = new GameObject("live-presentation-backlog-test");
+            try
+            {
+                var controller = NewController(owner);
+                var source = new FakeSource();
+                Assert.That(controller.AttachLiveSource(source), Is.True);
+                controller.StartOrRestart();
+                long time = Now();
+                for (int batch = 0; batch < 4; batch++)
+                {
+                    for (int i = 0; i < 64; i++)
+                    {
+                        var message = Board(time, "ignored-" + batch + "-" + i);
+                        message.Content = "闲聊";
+                        Assert.That(source.Send(message, time), Is.True);
+                    }
+                    TickWithoutPresentation(controller);
+                }
+                Assert.That(source.Handled, Is.Empty);
+                var extra = Board(time, "ignored-extra");
+                extra.Content = "闲聊";
+                Assert.That(source.Send(extra, time), Is.True);
+                TickWithoutPresentation(controller);
+
+                Assert.That(source.Status.State, Is.EqualTo(LiveConnectionState.Faulted));
+                Assert.That(source.Status.FaultTitle, Is.EqualTo("回执故障"));
+                Assert.That(source.Stopped, Is.True);
+                Present(controller);
+                Assert.That(source.Handled, Is.Empty);
+            }
+            finally { Cleanup(owner); }
         }
 
         [Test]
@@ -117,10 +224,10 @@ namespace LighthouseRescue.Tests
                 Assert.That(source.Stopped, Is.True);
                 Assert.That(source.ReceiptAttempts, Is.EqualTo(1));
                 Assert.That(source.Handled, Is.Empty);
-                Assert.That(controller.Current.JoinedCount, Is.EqualTo(1),
-                    "the already persisted event survives rollback; queued later events do not run");
+                Assert.That(controller.Current.JoinedCount, Is.EqualTo(2),
+                    "both events presented in the same frame were persisted before the receipt failure");
                 Assert.DoesNotThrow(() => Tick(controller));
-                Assert.That(controller.Current.JoinedCount, Is.EqualTo(1));
+                Assert.That(controller.Current.JoinedCount, Is.EqualTo(2));
                 Assert.That(source.ReceiptAttempts, Is.EqualTo(1));
             }
             finally { Cleanup(owner); }

@@ -68,6 +68,23 @@ def splash():
     return samples
 
 
+def wind_gust():
+    """A short low wind swell, separate from the constant rain loop."""
+    rng = random.Random(6073)
+    low = 0.0
+    body = 0.0
+    samples = []
+    for i in range(int(RATE * 2.8)):
+        t = i / RATE
+        noise = rng.uniform(-1, 1)
+        low = low * 0.97 + noise * 0.03
+        body = body * 0.82 + noise * 0.18
+        envelope = math.sin(math.pi * t / 2.8) ** 1.4
+        whistle = math.sin(2 * math.pi * (175 * t + 17 * t * t)) * 0.055
+        samples.append((low * 0.65 + body * 0.12 + whistle) * envelope)
+    return samples
+
+
 def write_wav(path, samples):
     peak = max(max(abs(value) for value in samples), 0.001)
     scale = min(1.0, 0.77 / peak)
@@ -81,10 +98,14 @@ def write_wav(path, samples):
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--ffmpeg", required=True)
+    parser.add_argument("--only", choices=("StormRain", "Thunder", "Splash", "WindGust"))
     args = parser.parse_args()
     OUTPUT.mkdir(parents=True, exist_ok=True)
     with tempfile.TemporaryDirectory(prefix="lighthouse-weather-") as directory:
-        for name, samples in (("StormRain", rain()), ("Thunder", thunder()), ("Splash", splash())):
+        generators = {"StormRain": rain, "Thunder": thunder, "Splash": splash,
+                      "WindGust": wind_gust}
+        for name in ((args.only,) if args.only else generators):
+            samples = generators[name]()
             wav = Path(directory) / f"{name}.wav"
             ogg = OUTPUT / f"{name}.ogg"
             write_wav(wav, samples)
