@@ -604,6 +604,68 @@ namespace LighthouseRescue.Tests
         }
 
         [Test]
+        public void AcceptedAudienceActionsShowThreeRecentSafeNamesWithLocalPortraits()
+        {
+            var owner = new GameObject("audience-portrait-test");
+            try
+            {
+                var view = owner.AddComponent<RescueView>();
+                view.Build(owner.AddComponent<HostControls>());
+                var snapshot = new RescueSnapshot { Phase = GamePhase.Gathering, RoundId = "portrait-round", Hull = 100 };
+                view.Render(snapshot);
+                foreach (string name in new[] { "海风", "小灯", "远帆", "夜航" })
+                    view.ShowFeedback(new GameEvent { UserId = "private-" + name, DisplayName = name == "远帆" ? "远\n\u202E帆" : name,
+                        Command = GameCommand.Board }, ApplyResult.Accepted);
+                view.ShowFeedback(new GameEvent { UserId = "private-rejected", DisplayName = "未计入",
+                    Command = GameCommand.Board }, ApplyResult.Duplicate);
+                view.Render(snapshot);
+                var portraits = Object.FindObjectsOfType<Image>().Where(image => image.name.StartsWith("Audience avatar ")).ToArray();
+                Assert.That(portraits.Length, Is.EqualTo(3));
+                Assert.That(portraits.All(image => image.sprite != null && image.sprite.texture.name.StartsWith("Crew")), Is.True);
+                var names = Object.FindObjectsOfType<Text>().Where(label => label.name.StartsWith("Audience name ")).ToArray();
+                Assert.That(names.Select(label => label.text), Is.EquivalentTo(new[] { "小灯", "远帆", "夜航" }));
+                Assert.That(names.All(label => !label.supportRichText), Is.True);
+                Assert.That(names.All(label => label.preferredHeight <= label.rectTransform.rect.height + 2f), Is.True,
+                    "the nickname line must fit above the audience buttons");
+                Assert.That(Object.FindObjectsOfType<Text>().Any(label => label.text.Contains("private-")), Is.False);
+                view.ResetTransitionBaseline(snapshot);
+                view.Render(snapshot);
+                Assert.That(Object.FindObjectsOfType<Image>().Any(image => image.name.StartsWith("Audience avatar ")), Is.False);
+            }
+            finally
+            {
+                foreach (var canvas in Object.FindObjectsOfType<Canvas>()) Object.DestroyImmediate(canvas.gameObject);
+                Object.DestroyImmediate(owner);
+            }
+        }
+
+        [TestCase(GameOutcome.FullSuccess, "Full rescue ending", "EndingFull", 3)]
+        [TestCase(GameOutcome.PartialSuccess, "Partial rescue ending", "EndingPartial", 1)]
+        [TestCase(GameOutcome.Failure, "Failed rescue ending", "EndingFailure", 0)]
+        public void SettlementUsesTheIllustrationForItsActualOutcome(GameOutcome outcome, string sceneName, string textureName, int saved)
+        {
+            var owner = new GameObject("ending-scene-test");
+            try
+            {
+                var view = owner.AddComponent<RescueView>();
+                view.Build(owner.AddComponent<HostControls>());
+                view.Render(new RescueSnapshot { Phase = GamePhase.Result, Outcome = outcome, SavedCount = saved, Hull = 44 });
+                var scene = GameObject.Find(sceneName);
+                Assert.That(scene, Is.Not.Null, "the result must display its own scene");
+                Assert.That(scene.GetComponent<Image>().sprite.texture.name, Is.EqualTo(textureName));
+                Assert.That(Object.FindObjectsOfType<Image>().Count(image => image.name.EndsWith("rescue ending")), Is.EqualTo(1));
+                Assert.That(Object.FindObjectsOfType<Image>().Count(image => image.name.StartsWith("Saved crew badge ")), Is.EqualTo(saved),
+                    "badges must show the actual saved count rather than people painted in the illustration");
+                Assert.That(Object.FindObjectsOfType<Text>().Any(label => label.text.StartsWith("救起 " + saved + "/3")), Is.True);
+            }
+            finally
+            {
+                foreach (var canvas in Object.FindObjectsOfType<Canvas>()) Object.DestroyImmediate(canvas.gameObject);
+                Object.DestroyImmediate(owner);
+            }
+        }
+
+        [Test]
         public void EndingShowsEffectiveFreeContributionTotals()
         {
             var owner = new GameObject("ending-contribution-test");
