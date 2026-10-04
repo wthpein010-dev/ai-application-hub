@@ -9,7 +9,12 @@ permissions:
   contents: read
 jobs:
   game:
-    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -22,3 +27,14 @@ jobs:
       - run: npm test && npm run typecheck && npm run build
         working-directory: build/lunar-freight
       - run: node --test tests/lunar-freight-publication.test.mjs
+      - run: npm install --no-save --package-lock=false playwright@1.61.1
+        working-directory: build/lunar-freight
+      - run: npx playwright install chromium
+        working-directory: build/lunar-freight
+      - run: node tests/effects-browser.mjs
+        working-directory: build/lunar-freight
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: lunar-effects-${{ matrix.os }}
+          path: build/lunar-freight/tests/artifacts/effects/

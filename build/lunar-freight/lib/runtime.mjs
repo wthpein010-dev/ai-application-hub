@@ -3,7 +3,7 @@ import { createScene } from './scene.mjs';
 export function createRuntime(canvas,publish,onError){
  let sim=new LunarSimulation({campaign:true}),view=createScene(canvas,sim),started=false,paused=false,mode=2,raf=0,last=performance.now(),acc=0,ui=0,external=null,disposed=false;
  const keys=new Set(),lifecycle=new AbortController();
- const snapshot=()=>({...sim.snapshot(),started,paused,mode,assets:view.assetStatus});
+ const snapshot=()=>({...sim.snapshot(),started,paused,mode,assets:view.assetStatus,effects:view.effects});
  const clear=()=>{keys.clear();external=null;};
  function action(name,value){
   if(name==='start'){started=true;paused=false;sim.campaign.start();clear();}
@@ -21,7 +21,7 @@ export function createRuntime(canvas,publish,onError){
  function frame(now){
   const dt=Math.min((now-last)/1000,.08);last=now;
   if(started&&!paused&&!sim.campaign.dialogue){acc+=dt;while(acc>=1/120){const input=external||{throttle:keys.has('KeyW')||keys.has('ArrowUp')?1:keys.has('KeyS')||keys.has('ArrowDown')?-1:0,steer:keys.has('KeyA')||keys.has('ArrowLeft')?1:keys.has('KeyD')||keys.has('ArrowRight')?-1:0,brake:keys.has('Space'),solar:keys.has('KeyT')};sim.step(1/120,input);acc-=1/120;}}else acc=0;
-  view.draw(dt,mode);if(now-ui>100){publish(snapshot());ui=now;}raf=requestAnimationFrame(frame);
+  view.draw(dt,mode,started&&!paused&&!sim.campaign.dialogue?dt:0);if(now-ui>100){publish(snapshot());ui=now;}raf=requestAnimationFrame(frame);
  }
  raf=requestAnimationFrame(frame);
  const context=document.modelContext;
