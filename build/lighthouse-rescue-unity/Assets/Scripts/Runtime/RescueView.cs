@@ -81,7 +81,14 @@ namespace LighthouseRescue.Runtime
         private Text muteText;
         private Text resultTitle;
         private Text resultDetail;
+        private Image[] endingScenes;
+        private Image endingAccent;
+        private GameObject resultBadges;
         private Image[] resultCrew;
+        private GameObject[] audienceCards;
+        private Image[] audienceAvatars;
+        private Text[] audienceNames;
+        private Sprite[] crewPortraits;
         private Image[] waitingCrew;
         private Image[] rain;
         private Image[] spray;
@@ -317,7 +324,7 @@ namespace LighthouseRescue.Runtime
             rescueToast = Label(root, "", 261, 739, 558, 80, 42, Gold, FontStyle.Bold, TextAnchor.MiddleCenter);
             routeText = Label(root, "", 71, 950, 935, 58, 37, SoftWhite, FontStyle.Bold, TextAnchor.MiddleCenter);
 
-            Panel(root, "Status panel", 48, 1091, 984, 213, Card);
+            Panel(root, "Status panel", 48, 1091, 984, 304, Card);
             scoreText = Label(root, "", 76, 1108, 930, 54, 36, Gold, FontStyle.Bold);
             hullText = Label(root, "", 76, 1172, 325, 43, 34, SoftWhite);
             Panel(root, "Hull track", 397, 1180, 568, 26, Hex("274958"));
@@ -326,7 +333,24 @@ namespace LighthouseRescue.Runtime
             repairFill = Panel(root, "Repair progress", 292, 1236, CheckpointProgressWidth, 18, Gold);
             lightText = Label(root, "", 548, 1225, 216, 42, 34, SoftWhite);
             lightFill = Panel(root, "Light progress", 764, 1236, CheckpointProgressWidth, 18, Gold);
-            crewText = Label(root, "", 61, 1320, 920, 65, 38, MutedText);
+            crewText = Label(root, "", 61, 1270, 920, 55, 38, MutedText);
+            crewPortraits = new[] { LoadArtSprite("Art/CrewA", true), LoadArtSprite("Art/CrewB", true), LoadArtSprite("Art/CrewC", true) };
+            audienceCards = new GameObject[3];
+            audienceAvatars = new Image[3];
+            audienceNames = new Text[3];
+            for (int i = 0; i < audienceCards.Length; i++)
+            {
+                var card = Panel(root, "Audience activity " + i, 48 + i * 337, 1329, 310, 65, Hex("204655"));
+                audienceCards[i] = card.gameObject;
+                audienceAvatars[i] = Panel(card.transform, "Audience avatar " + i, 7, 6, 52, 52, Color.white);
+                audienceAvatars[i].preserveAspect = true;
+                audienceNames[i] = Label(card.transform, "", 70, 5, 228, 55, 36, SoftWhite, FontStyle.Bold);
+                audienceNames[i].name = "Audience name " + i;
+                audienceNames[i].resizeTextForBestFit = true;
+                audienceNames[i].resizeTextMinSize = 25;
+                audienceNames[i].resizeTextMaxSize = 36;
+                card.gameObject.SetActive(false);
+            }
 
             boardButton = MakeButton("上船", 48, 1406, 310, 105, host.Board, Mint);
             leftButton = MakeButton("选左 · 短路", 382, 1406, 316, 105, host.VoteLeft, Gold);
@@ -347,13 +371,29 @@ namespace LighthouseRescue.Runtime
             speedButton = MakeButton("1×", 888, 1824, 144, 75, host.ToggleSpeed, MutedText, 33);
             speedText = speedButton.GetComponentInChildren<Text>();
 
-            resultCard = Panel(root, "Ending illustration", 141, 529, 798, 460, Hex("183747")).gameObject;
-            Panel(resultCard.transform, "Ending accent", 0, 0, 798, 13, Gold);
-            resultTitle = Label(resultCard.transform, "", 35, 75, 728, 100, 51, Gold, FontStyle.Bold, TextAnchor.MiddleCenter);
+            resultCard = Panel(root, "Ending illustration", 48, 438, 984, 629, Hex("102D3F")).gameObject;
+            endingAccent = Panel(resultCard.transform, "Ending accent", 0, 0, 984, 13, Gold);
+            var endingViewport = Rect(resultCard.transform, "Ending scene viewport", 0, 13, 984, 414);
+            endingViewport.gameObject.AddComponent<RectMask2D>();
+            endingScenes = new Image[3];
+            string[] endingNames = { "Full rescue ending", "Partial rescue ending", "Failed rescue ending" };
+            string[] endingArt = { "Art/EndingFull", "Art/EndingPartial", "Art/EndingFailure" };
+            string[] fallbackArt = { "Art/NightSeaV2", "Art/RescuePOV2", "Art/RescuePOV3" };
+            for (int i = 0; i < endingScenes.Length; i++)
+            {
+                endingScenes[i] = Picture(endingViewport, endingNames[i], endingArt[i], 0, 0, 984, 414, false);
+                if (endingScenes[i].sprite == null) endingScenes[i].sprite = LoadArtSprite(fallbackArt[i], false);
+                FitCover(endingScenes[i], 984, 414);
+                endingScenes[i].gameObject.SetActive(false);
+            }
+            resultBadges = Panel(resultCard.transform, "Rescued crew badges", 18, 28, 208, 70,
+                new Color(0.025f, 0.10f, 0.16f, 0.76f)).gameObject;
             resultCrew = new Image[3];
-            for (int i = 0; i < 3; i++)
-                resultCrew[i] = Picture(resultCard.transform, "Rescued survivor " + i, "Art/SurvivorV2", 203 + i * 137, 156, 119, 119, false);
-            resultDetail = Label(resultCard.transform, "", 25, 282, 748, 168, 38, SoftWhite, FontStyle.Bold, TextAnchor.MiddleCenter);
+            for (int i = 0; i < resultCrew.Length; i++)
+                resultCrew[i] = Picture(resultBadges.transform, "Saved crew badge " + i, "Art/SurvivorV2", 16 + i * 62, 9, 52, 52, false);
+            Panel(resultCard.transform, "Ending title scrim", 0, 343, 984, 84, new Color(0.025f, 0.10f, 0.16f, 0.82f));
+            resultTitle = Label(resultCard.transform, "", 30, 350, 924, 65, 48, Gold, FontStyle.Bold, TextAnchor.MiddleCenter);
+            resultDetail = Label(resultCard.transform, "", 30, 438, 924, 176, 38, SoftWhite, FontStyle.Bold, TextAnchor.MiddleCenter);
             resultCard.SetActive(false);
             if (FindObjectOfType<EventSystem>() == null)
                 new GameObject("UI Event System", typeof(EventSystem), typeof(StandaloneInputModule));
@@ -434,6 +474,14 @@ namespace LighthouseRescue.Runtime
                 crewText.text = audienceItem == null ? "每段自带 1 格值守｜免费参与能改变结局" : "值守各1格｜" + audienceItem;
                 crewText.color = audienceItem == null ? MutedText : Mint;
                 lastAudienceItem = audienceItem;
+            }
+            for (int i = 0; i < audienceCards.Length; i++)
+            {
+                bool visible = audienceFeed.TryGetRecent(i, Time.unscaledTime, out var activity);
+                audienceCards[i].SetActive(visible);
+                if (!visible) continue;
+                audienceAvatars[i].sprite = crewPortraits[activity.AvatarIndex];
+                audienceNames[i].text = activity.Name;
             }
             bool pov = IsRescuePOV(s);
             int povStage = Mathf.Clamp(s.CheckpointNumber == 0 ? (int)(s.Phase == GamePhase.Paused ? s.PhaseBeforePause : s.Phase) - (int)GamePhase.Checkpoint1 + 1 : s.CheckpointNumber, 1, 3);
@@ -602,12 +650,21 @@ namespace LighthouseRescue.Runtime
             if (s.Phase == GamePhase.Result)
             {
                 resultTitle.text = DescribeEnding(s.Outcome);
-                for (int i = 0; i < 3; i++) resultCrew[i].color = i < s.SavedCount ? Color.white : new Color(0.37f, 0.48f, 0.51f, 0.8f);
+                int ending = s.Outcome == GameOutcome.FullSuccess ? 0 : s.Outcome == GameOutcome.PartialSuccess ? 1 : 2;
+                for (int i = 0; i < endingScenes.Length; i++) endingScenes[i].gameObject.SetActive(i == ending);
+                int saved = Mathf.Clamp(s.SavedCount, 0, resultCrew.Length);
+                resultBadges.SetActive(saved > 0);
+                resultBadges.GetComponent<RectTransform>().sizeDelta = new Vector2(22 + saved * 62, 70);
+                for (int i = 0; i < resultCrew.Length; i++) resultCrew[i].gameObject.SetActive(i < saved);
+                Color endingColor = ending == 0 ? Gold : ending == 1 ? Mint : Hex("F1AAA0");
+                resultTitle.color = endingAccent.color = endingColor;
                 string contributions = s.ContributionTotalsComplete
                     ? "修理 " + s.RepairActions + "｜照明 " + s.LightActions + "｜点赞补光 " + s.LikeLightPoints
                     : "升级前贡献记录不可用";
+                string nextRound = ending == 0 ? "开始/再来：继续守护这片海" : ending == 1 ? "下局补足照明，让更多人上船" :
+                    s.Hull <= 0 ? "下局先修船，保住船体再救人" : "下局补足照明，让探照灯找到人";
                 resultDetail.text = "救起 " + s.SavedCount + "/3｜船体 " + s.Hull + "｜" + Mathf.RoundToInt((float)s.ElapsedSeconds) + " 秒\n" +
-                    contributions + "\n开始/再来：开启下一局";
+                    contributions + "\n" + nextRound;
             }
             var controller = GetComponent<RescueController>();
             speedText.text = (controller == null ? 1 : controller.Speed).ToString("0") + "×";
@@ -764,15 +821,29 @@ namespace LighthouseRescue.Runtime
         private Image Picture(Transform parent, string name, string resource, float x, float y, float w, float h, bool pixelArt = true)
         {
             var image = Panel(parent, name, x, y, w, h, Color.white);
-            var texture = Resources.Load<Texture2D>(resource);
-            if (texture != null)
-            {
-                texture.filterMode = pixelArt ? FilterMode.Point : FilterMode.Bilinear;
-                image.sprite = Sprite.Create(texture, new Rect(0, 0, texture.width, texture.height), new Vector2(0.5f, 0.5f));
-            }
+            image.sprite = LoadArtSprite(resource, pixelArt);
             image.preserveAspect = true;
             image.raycastTarget = false;
             return image;
+        }
+
+        private static Sprite LoadArtSprite(string resource, bool pixelArt)
+        {
+            var texture = Resources.Load<Texture2D>(resource);
+            if (texture == null) return null;
+            texture.filterMode = pixelArt ? FilterMode.Point : FilterMode.Bilinear;
+            return Sprite.Create(texture, new Rect(0, 0, texture.width, texture.height), new Vector2(0.5f, 0.5f));
+        }
+
+        private static void FitCover(Image image, float width, float height)
+        {
+            if (image.sprite == null) return;
+            var size = image.sprite.rect.size;
+            float scale = Mathf.Max(width / size.x, height / size.y);
+            image.preserveAspect = false;
+            image.rectTransform.sizeDelta = size * scale;
+            // Keep the lighthouse and faces in the upper composition visible; the title occupies the lower edge.
+            image.rectTransform.anchoredPosition = new Vector2((width - size.x * scale) / 2f, 0f);
         }
 
         private Text Label(Transform parent, string content, float x, float y, float w, float h, int size, Color color, FontStyle style = FontStyle.Normal, TextAnchor anchor = TextAnchor.MiddleLeft)

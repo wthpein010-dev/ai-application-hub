@@ -1,0 +1,192 @@
+{
+  "kind": "lighthouse-unity-performance-smoke",
+  "baseUrl": "http://127.0.0.1:6169/projects/lighthouse-rescue/index.html",
+  "results": [
+    {
+      "viewport": "1440x1100",
+      "roundWallSeconds": 185.001,
+      "environment": "Chromium emulation; Unity main-loop frame intervals, not GPU present FPS or physical hardware",
+      "source": "Unity.Time.unscaledDeltaTime",
+      "phase": "Result",
+      "route": "ShortLeft",
+      "outcome": "FullSuccess",
+      "saved": 3,
+      "total": {
+        "phase": "All",
+        "sampleCount": 11265,
+        "meanFrameMs": 16.85841178894043,
+        "meanFps": 59.317569732666016,
+        "p95FrameMsUpperBound": 33.29999923706055,
+        "maxFrameMs": 2103,
+        "slowFrameCount": 2
+      },
+      "phases": [
+        {
+          "phase": "Waiting",
+          "sampleCount": 165,
+          "meanFrameMs": 29.715150833129883,
+          "meanFps": 33.65286636352539,
+          "p95FrameMsUpperBound": 33.29999923706055,
+          "maxFrameMs": 2103,
+          "slowFrameCount": 2
+        },
+        {
+          "phase": "Gathering",
+          "sampleCount": 1200,
+          "meanFrameMs": 16.66583251953125,
+          "meanFps": 60.00300216674805,
+          "p95FrameMsUpperBound": 33.29999923706055,
+          "maxFrameMs": 19,
+          "slowFrameCount": 0
+        },
+        {
+          "phase": "Voting",
+          "sampleCount": 1200,
+          "meanFrameMs": 16.66583251953125,
+          "meanFps": 60.00300216674805,
+          "p95FrameMsUpperBound": 33.29999923706055,
+          "maxFrameMs": 20,
+          "slowFrameCount": 0
+        },
+        {
+          "phase": "Checkpoint1",
+          "sampleCount": 2099,
+          "meanFrameMs": 16.673654556274414,
+          "meanFps": 59.974853515625,
+          "p95FrameMsUpperBound": 33.29999923706055,
+          "maxFrameMs": 38,
+          "slowFrameCount": 0
+        },
+        {
+          "phase": "Checkpoint2",
+          "sampleCount": 2100,
+          "meanFrameMs": 16.66619110107422,
+          "meanFps": 60.001712799072266,
+          "p95FrameMsUpperBound": 33.29999923706055,
+          "maxFrameMs": 19,
+          "slowFrameCount": 0
+        },
+        {
+          "phase": "Checkpoint3",
+          "sampleCount": 2100,
+          "meanFrameMs": 16.665237426757812,
+          "meanFps": 60.00514602661133,
+          "p95FrameMsUpperBound": 33.29999923706055,
+          "maxFrameMs": 19,
+          "slowFrameCount": 0
+        },
+        {
+          "phase": "Finale",
+          "sampleCount": 2400,
+          "meanFrameMs": 16.66583251953125,
+          "meanFps": 60.00300216674805,
+          "p95FrameMsUpperBound": 33.29999923706055,
+          "maxFrameMs": 19,
+          "slowFrameCount": 0
+        },
+        {
+          "phase": "Result",
+          "sampleCount": 1,
+          "meanFrameMs": 17,
+          "meanFps": 58.82352828979492,
+          "p95FrameMsUpperBound": 33.29999923706055,
+          "maxFrameMs": 17,
+          "slowFrameCount": 0
+        }
+      ]
+    },
+    {
+      "viewport": "390x844",
+      "roundWallSeconds": 185.037,
+      "environment": "Chromium emulation; Unity main-loop frame intervals, not GPU present FPS or physical hardware",
+      "source": "Unity.Time.unscaledDeltaTime",
+      "phase": "Result",
+      "route": "ShortLeft",
+      "outcome": "FullSuccess",
+      "saved": 3,
+      "total": {
+        "phase": "All",
+        "sampleCount": 11292,
+        "meanFrameMs": 16.803667068481445,
+        "meanFps": 59.51081848144531,
+        "p95FrameMsUpperBound": 33.29999923706055,
+        "maxFrameMs": 2108,
+        "slowFrameCount": 2
+      },
+      "phases": [
+        {
+          "phase": "Waiting",
+          "sampleCount": 157,
+          "meanFrameMs": 30.235668182373047,
+          "meanFps": 33.07352066040039,
+          "p95FrameMsUpperBound": 33.29999923706055,
+          "maxFrameMs": 2108,
+          "slowFrameCount": 2
+        },
+        {
+          "phase": "Gathering",
+          "sampleCount": 1203,
+          "meanFrameMs": 16.619285583496094,
+          "meanFps": 60.171058654785156,
+          "p95FrameMsUpperBound": 33.29999923706055,
+          "maxFrameMs": 19,
+          "slowFrameCount": 0
+        },
+        {
+          "phase": "Voting",
+          "sampleCount": 1202,
+          "meanFrameMs": 16.638103485107422,
+          "meanFps": 60.103004455566406,
+          "p95FrameMsUpperBound": 33.29999923706055,
+          "maxFrameMs": 19,
+          "slowFrameCount": 0
+        },
+        {
+          "phase": "Checkpoint1",
+          "sampleCount": 2109,
+          "meanFrameMs": 16.594594955444336,
+          "meanFps": 60.26058578491211,
+          "p95FrameMsUpperBound": 33.29999923706055,
+          "maxFrameMs": 36,
+          "slowFrameCount": 0
+        },
+        {
+          "phase": "Checkpoint2",
+          "sampleCount": 2110,
+          "meanFrameMs": 16.586729049682617,
+          "meanFps": 60.289161682128906,
+          "p95FrameMsUpperBound": 33.29999923706055,
+          "maxFrameMs": 19,
+          "slowFrameCount": 0
+        },
+        {
+          "phase": "Checkpoint3",
+          "sampleCount": 2110,
+          "meanFrameMs": 16.586729049682617,
+          "meanFps": 60.289161682128906,
+          "p95FrameMsUpperBound": 33.29999923706055,
+          "maxFrameMs": 18,
+          "slowFrameCount": 0
+        },
+        {
+          "phase": "Finale",
+          "sampleCount": 2400,
+          "meanFrameMs": 16.66583251953125,
+          "meanFps": 60.00300216674805,
+          "p95FrameMsUpperBound": 33.29999923706055,
+          "maxFrameMs": 19,
+          "slowFrameCount": 0
+        },
+        {
+          "phase": "Result",
+          "sampleCount": 1,
+          "meanFrameMs": 16,
+          "meanFps": 62.5,
+          "p95FrameMsUpperBound": 16.700000762939453,
+          "maxFrameMs": 16,
+          "slowFrameCount": 0
+        }
+      ]
+    }
+  ]
+}

@@ -46,6 +46,18 @@ These three scene illustrations were generated with the built-in image generatio
 | `Resources/Art/RescuePOV2.png` | Second rescue: red-raincoat survivor reaching from broken dinghy | `9DDD291687F3E27C5E1C9017F34CC375001152B67CF56D1D8BBD29A4A9EA2729` |
 | `Resources/Art/RescuePOV3.png` | Third rescue: yellow-raincoat survivor by rocks in heavy surf | `64C5614F58A859D5FF373FE7E16F723E48490A7312EF72BDE160C06B24009929` |
 
+## Original ending illustrations generated on 2026-10-05
+
+These assets were generated with the built-in image generation tool, visually checked, and copied into `Assets/Resources/Art/`. They are game illustrations, separate from the licensed Kenney sprites. All prompts excluded text, logos, UI and watermarks.
+
+| Shipped asset | Final prompt / intended use | SHA-256 |
+| --- | --- | --- |
+| `Resources/Art/EndingFull.png` | Wide realistic painterly dawn harbor: weathered orange rescue boat, captain and exactly three blanket-wrapped rescued people, warm lighthouse and relieved atmosphere. Full success only. | `42A5188A8D87BDB7A4EED4FC339EBCF1E580D1B26BB222911D6080BE10902A43` |
+| `Resources/Art/EndingPartial.png` | Edit the rainy return illustration to a wide 16:9 neutral safe return: remove blanket-wrapped passengers, keep only captain and one raincoat-wearing crew member operating the searchlight, amber boat, rainy twilight sea and warm harbor. Do not specify survivor count. Actual saved count is rendered by UI badges and text. | `178E66EE44E509ADFADCFC6C5A7658682397544DAE7F71000F23DDACC4AC32FF` |
+| `Resources/Art/EndingFailure.png` | Wide realistic painterly storm retreat: weathered damaged orange rescue boat remains afloat, captain steering toward lighthouse, heavy rain, large waves and lightning. No casualties or celebratory rescued group. | `F19472B331EDD8892ACFFD41F67C87D2DDF3E1622DC663BE89C758EF7FEF53ED` |
+
+Local audience portraits use the existing licensed `CrewA`, `CrewB`, and `CrewC` sprites. They are decorative stand-ins, not downloaded viewer profile photos.
+
 ## Original synthesized storm audio
 
 `tools/generate_weather_audio.py` uses seeded noise and oscillators to create these sounds, then encodes them with the repository's locked `ffmpeg-static` binary. No third-party field recording is embedded. The generator is the reproducible source for the shipped OGG files.

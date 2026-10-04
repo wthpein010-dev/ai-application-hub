@@ -16,7 +16,22 @@ namespace LighthouseRescue.Runtime
         private struct Entry
         {
             public string Label;
+            public Activity Portrait;
             public float RecordedAt;
+        }
+
+        public readonly struct Activity
+        {
+            public readonly string Name;
+            public readonly string Action;
+            public readonly int AvatarIndex;
+
+            internal Activity(string name, string action, int avatarIndex)
+            {
+                Name = name;
+                Action = action;
+                AvatarIndex = avatarIndex;
+            }
         }
 
         public void Record(GameEvent gameEvent, ApplyResult result, float nowSeconds)
@@ -26,8 +41,24 @@ namespace LighthouseRescue.Runtime
             if (action == null) return;
             RemoveExpired(nowSeconds);
             if (entries.Count == 3) entries.RemoveAt(0);
-            entries.Add(new Entry { Label = SafeName(gameEvent.DisplayName) + "：" + action, RecordedAt = nowSeconds });
+            string name = SafeName(gameEvent.DisplayName);
+            string identity = string.IsNullOrEmpty(gameEvent.UserId) ? name : gameEvent.UserId;
+            uint hash = 2166136261;
+            // Local portraits remain consistent for an actor without retaining or displaying their identifier.
+            for (int i = 0; i < Math.Min(identity.Length, 512); i++) hash = unchecked((hash ^ identity[i]) * 16777619);
+            entries.Add(new Entry { Label = name + "：" + action,
+                Portrait = new Activity(name, action, (int)(hash % 3)), RecordedAt = nowSeconds });
             lastRecordedAt = nowSeconds;
+        }
+
+        public bool TryGetRecent(int index, float nowSeconds, out Activity activity)
+        {
+            activity = default;
+            if (index < 0 || float.IsNaN(nowSeconds) || float.IsInfinity(nowSeconds)) return false;
+            RemoveExpired(nowSeconds);
+            if (index >= entries.Count) return false;
+            activity = entries[entries.Count - 1 - index].Portrait;
+            return true;
         }
 
         public string Current(float nowSeconds)

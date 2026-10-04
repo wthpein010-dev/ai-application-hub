@@ -67,11 +67,81 @@ namespace LighthouseRescue.Runtime
 
         private IEnumerator Capture(string name)
         {
-            yield return new WaitForEndOfFrame();
             string file = Path.Combine(output, (shortRoute ? "short-" : "long-") + name + ".png");
-            ScreenCapture.CaptureScreenshot(file);
-            float deadline = Time.realtimeSinceStartup + 12f;
-            while (!File.Exists(file) && Time.realtimeSinceStartup < deadline) yield return null;
+            var canvasObject = GameObject.Find("Lighthouse rescue 9:16 canvas");
+            var canvas = canvasObject == null ? null : canvasObject.GetComponent<Canvas>();
+            if (canvas == null) throw new Exception("Capture canvas is unavailable");
+
+            RenderMode previousMode = canvas.renderMode;
+            Camera previousCamera = canvas.worldCamera;
+            float previousPlaneDistance = canvas.planeDistance;
+            RenderTexture previousActive = RenderTexture.active;
+            RenderTexture target = null;
+            Texture2D pixels = null;
+            GameObject cameraObject = null;
+            try
+            {
+                target = new RenderTexture(1080, 1920, 24, RenderTextureFormat.ARGB32);
+                if (!target.Create()) throw new Exception("Offscreen capture target could not be created");
+                cameraObject = new GameObject("Lighthouse offscreen capture camera");
+                var camera = cameraObject.AddComponent<Camera>();
+                camera.enabled = false;
+                camera.clearFlags = CameraClearFlags.SolidColor;
+                camera.backgroundColor = Color.black;
+                camera.orthographic = true;
+                camera.transform.position = new Vector3(0f, 0f, -10f);
+                camera.nearClipPlane = 0.01f;
+                camera.farClipPlane = 100f;
+                camera.targetTexture = target;
+
+                canvas.renderMode = RenderMode.ScreenSpaceCamera;
+                canvas.worldCamera = camera;
+                canvas.planeDistance = 1f;
+                yield return null; // Let Unity register the camera-space canvas before rendering it.
+                yield return new WaitForEndOfFrame();
+                Canvas.ForceUpdateCanvases();
+                camera.Render();
+
+                RenderTexture.active = target;
+                pixels = new Texture2D(target.width, target.height, TextureFormat.RGB24, false);
+                pixels.ReadPixels(new Rect(0, 0, target.width, target.height), 0, 0);
+                pixels.Apply();
+                bool hasVisiblePixels = false;
+                for (int y = 0; y < 8 && !hasVisiblePixels; y++)
+                    for (int x = 0; x < 8 && !hasVisiblePixels; x++)
+                        hasVisiblePixels = pixels.GetPixel((x * 2 + 1) * target.width / 16,
+                            (y * 2 + 1) * target.height / 16).maxColorComponent > 0.01f;
+                if (!hasVisiblePixels) throw new Exception("Offscreen capture rendered a blank image");
+                File.WriteAllBytes(file, pixels.EncodeToPNG());
+            }
+            finally
+            {
+                RenderTexture.active = previousActive;
+                try
+                {
+                    if (canvas != null)
+                    {
+                        canvas.renderMode = previousMode;
+                        canvas.worldCamera = previousCamera;
+                        canvas.planeDistance = previousPlaneDistance;
+                        Canvas.ForceUpdateCanvases();
+                    }
+                }
+                finally
+                {
+                    if (pixels != null) Destroy(pixels);
+                    if (cameraObject != null)
+                    {
+                        cameraObject.GetComponent<Camera>().targetTexture = null;
+                        Destroy(cameraObject);
+                    }
+                    if (target != null)
+                    {
+                        target.Release();
+                        Destroy(target);
+                    }
+                }
+            }
             yield return new WaitForSecondsRealtime(0.3f);
         }
     }
