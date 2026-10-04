@@ -870,5 +870,24 @@ namespace LighthouseRescue.Tests
                 Object.DestroyImmediate(owner);
             }
         }
+
+        [Test]
+        public void RepairAndLightProgressHaveEquallyReadableBarsOnPhones()
+        {
+            var owner = new GameObject("progress-layout-test");
+            try
+            {
+                owner.AddComponent<RescueView>().Build(owner.AddComponent<HostControls>());
+                var repair = GameObject.Find("Repair progress").GetComponent<RectTransform>().rect;
+                var light = GameObject.Find("Light progress").GetComponent<RectTransform>().rect;
+                Assert.That(repair.width, Is.GreaterThanOrEqualTo(180f));
+                Assert.That(light.width, Is.EqualTo(repair.width));
+            }
+            finally
+            {
+                foreach (var canvas in Object.FindObjectsOfType<Canvas>()) Object.DestroyImmediate(canvas.gameObject);
+                Object.DestroyImmediate(owner);
+            }
+        }
     }
 }

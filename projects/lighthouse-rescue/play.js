@@ -12,7 +12,7 @@ if (typeof createUnityInstance !== "function") {
     streamingAssetsUrl: "./game/StreamingAssets",
     companyName: "Lighthouse Rescue Studio",
     productName: "灯塔救援队",
-    productVersion: "1.4.13",
+    productVersion: "1.4.14",
     autoSyncPersistentDataPath: true
   }, value => { progress.textContent = `正在装载 ${Math.round(value * 100)}%`; })
     .then(() => { loading.hidden = true; })
