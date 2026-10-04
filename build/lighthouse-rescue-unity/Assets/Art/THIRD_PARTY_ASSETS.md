@@ -65,5 +65,6 @@ Local audience portraits use the existing licensed `CrewA`, `CrewB`, and `CrewC`
 | Shipped asset | Intended use | SHA-256 |
 | --- | --- | --- |
 | `Resources/Audio/StormRain.ogg` | Looping rain, wind and distant surf | `B73A3E2C5E1C29A5A4D9F3D89CC299C6515074E6DE0E5EDA5FE4661DF5D489B6` |
+| `Resources/Audio/WindGust.ogg` | Short low wind swell, separate from the constant rain loop | `CF31877769E0598E05C2A6C443A387322658B186EF1805B19BF9120DC292FFDA` |
 | `Resources/Audio/Thunder.ogg` | Lightning crack and rolling thunder | `5F6D2D7C3B03ECEADFEEB538FC9C33F395EE8EBB76DB0B46B9A69453197027F4` |
 | `Resources/Audio/Splash.ogg` | Water splash when a survivor is saved | `C44ED6F29E5C74A24F5C5718D44539DB951C9B1DB994CACA3872BCB21EC141BE` |
