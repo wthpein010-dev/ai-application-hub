@@ -20,6 +20,7 @@ namespace LighthouseRescue.Runtime
         private static readonly float[] LightningGaps = { 6.4f, 8.9f, 7.2f, 10.1f, 6.8f, 9.3f };
         private static readonly float[] PovSceneOffsets = { -89f, -10f, -177f };
         private const float LightningDuration = 0.22f;
+        private const float CheckpointProgressWidth = 200f;
 
         public static float LightningInterval(int strikeIndex, int checkpointNumber)
         {
@@ -321,10 +322,10 @@ namespace LighthouseRescue.Runtime
             hullText = Label(root, "", 76, 1172, 325, 43, 34, SoftWhite);
             Panel(root, "Hull track", 397, 1180, 568, 26, Hex("274958"));
             hullFill = Panel(root, "Hull fill", 397, 1180, 568, 26, Mint);
-            repairText = Label(root, "", 76, 1225, 388, 42, 34, SoftWhite);
-            repairFill = Panel(root, "Repair progress", 468, 1236, 213, 18, Gold);
-            lightText = Label(root, "", 698, 1225, 300, 42, 34, SoftWhite);
-            lightFill = Panel(root, "Light progress", 921, 1236, 75, 18, Gold);
+            repairText = Label(root, "", 76, 1225, 216, 42, 34, SoftWhite);
+            repairFill = Panel(root, "Repair progress", 292, 1236, CheckpointProgressWidth, 18, Gold);
+            lightText = Label(root, "", 548, 1225, 216, 42, 34, SoftWhite);
+            lightFill = Panel(root, "Light progress", 764, 1236, CheckpointProgressWidth, 18, Gold);
             crewText = Label(root, "", 61, 1320, 920, 65, 38, MutedText);
 
             boardButton = MakeButton("上船", 48, 1406, 310, 105, host.Board, Mint);
@@ -425,8 +426,8 @@ namespace LighthouseRescue.Runtime
             int effectiveRepairTarget = s.Phase == GamePhase.Paused && IsRescuePOV(s) ? lastRepairTarget : s.RepairTarget;
             repairText.text = effectiveRepairTarget == 0 ? "修理 --" : "修理 " + s.RepairProgress + " / " + effectiveRepairTarget;
             lightText.text = effectiveLightTarget == 0 ? "照明 --" : "照明 " + s.LightProgress + " / " + effectiveLightTarget;
-            SetFill(repairFill, 213, effectiveRepairTarget == 0 ? 0 : (float)s.RepairProgress / effectiveRepairTarget);
-            SetFill(lightFill, 75, effectiveLightTarget == 0 ? 0 : (float)s.LightProgress / effectiveLightTarget);
+            SetFill(repairFill, CheckpointProgressWidth, effectiveRepairTarget == 0 ? 0 : (float)s.RepairProgress / effectiveRepairTarget);
+            SetFill(lightFill, CheckpointProgressWidth, effectiveLightTarget == 0 ? 0 : (float)s.LightProgress / effectiveLightTarget);
             string audienceItem = audienceFeed.Current(Time.unscaledTime);
             if (lastAudienceItem != audienceItem)
             {

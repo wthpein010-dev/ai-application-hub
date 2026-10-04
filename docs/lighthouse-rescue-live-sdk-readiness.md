@@ -1,6 +1,6 @@
 # 《灯塔救援队》正式直播接入记录
 
-核对日期：2026-10-04。1.4.13 Windows 与 WebGL 包只使用本地模拟事件；本记录不表示已连接抖音直播间。
+核对日期：2026-10-05。1.4.14 Windows 与 WebGL 包只使用本地模拟事件；本记录不表示已连接抖音直播间。
 
 ## 已核对的环境与缺口
 
@@ -9,7 +9,7 @@
 | Unity | `build/lighthouse-rescue-unity/ProjectSettings/ProjectVersion.txt` 为 2022.3.62f3c1；官方要求 Unity 2020 及以上 LTS | 引擎版本符合文档要求 |
 | BGDT | 官方安装页当前给出 3.0.271；已从该页链接下载并检查 279,959 字节的安装包，SHA-256 `21D568AC3C6B1306F21F060FB036FD76913E6839312819D3C794637131F021B7`。2026-10-04 已通过 Unity 2022.3.62f3c1 批处理导入本地工程，编辑器脚本编译通过、退出码 0 | 本机已具备 BGDT 编辑器插件；插件包仅保留本地，不提交公开仓库 |
 | LiveOpenSDK | 项目没有 `Packages/com.bytedance.liveopensdk`；官方说明通过 BGDT 的 `cp` 渠道按企业和权限安装 | SDK 不可编译或联调；现有 `DouyinEventSource` 必须保持不可用 |
-| 真实直播权限 | 没有经当前任务验证的玩法 AppId、直播间、调试成员和直播伴侣 Token | 不能声称真实连接、ACK 或平台审核完成 |
+| 真实直播权限 | 已在抖音开放平台创建弹幕小玩法，AppID `tt331945a4ad6179bd10`；后台仍显示待上传版本，提案评估尚未提交；没有经本任务验证的测试直播间、调试成员或直播伴侣身份 | AppID 已具备，直播连接、ACK 与平台审核仍未完成 |
 
 > 任何账号凭据、Token 和直播间身份都不要写入仓库、日志或长期记忆。
 
@@ -33,7 +33,7 @@
 
 ## 接入顺序
 
-1. 本机已按[官方 BGDT 安装页](https://developer.open-douyin.com/docs/resource/zh-CN/mini-game/develop/guide/game-engine/rd-to-SCgame/BGDT-handbook/install)导入 3.0.271。取得直播玩法权限后，在 BGDT 的 `cp` 渠道安装获授权的 `LiveOpenSDK`；确认工程出现 `Packages/com.bytedance.liveopensdk`，记录实际 SDK 版本。不要修改 SDK 包内代码，也不要把 SDK 或 BGDT 二进制提交到公开仓库。
+1. 已创建玩法 AppID `tt331945a4ad6179bd10`，需先完成[提案评估模板副本](https://rpv4d9p6q2.feishu.cn/wiki/RVOewWL3KiDAeSkz1mxcblKVnVd)的主体名称、完整实机视频与分享权限核对，再在后台提交。BGDT 3.0.271 已按[官方安装页](https://developer.open-douyin.com/docs/resource/zh-CN/mini-game/develop/guide/game-engine/rd-to-SCgame/BGDT-handbook/install)导入本机；取得后续直播玩法权限后，在 `cp` 渠道安装获授权的 `LiveOpenSDK`，确认工程出现 `Packages/com.bytedance.liveopensdk` 并记录实际版本。不要修改 SDK 包内代码，也不要把 SDK 或 BGDT 二进制提交到公开仓库。
 2. 按[官方 Unity SDK 接入说明](https://developer.open-douyin.com/docs/resource/zh-CN/interaction/develop/unity-sdk/unity-sdk-access)使用 `ByteDance.LiveOpenSdk.Api`；先在包自带的 `SampleGameScene` 验证初始化、直播间信息和直推消息。样例代码若需修改，复制到工程自己的目录，不在包内修改。
 3. Windows 专用适配器实现 `ILiveMessageSource`，SDK 类型只留在 Windows 专用程序集。按官方顺序初始化 SDK、等待 `WaitForRoomInfoAsync()`、订阅 `OnConnectionStateChanged` 和 `OnMessage`，启动 `live_comment`、`live_like`、`live_gift` 的 `SinglePush` 任务。只有确认真实房间、权限和稳定事件 ID 并将状态标记为已连接后，才调用 `RescueController.AttachLiveSource`。停止对局时停止推送任务并取消订阅，退出时反初始化。WebGL 构建不能含 SDK 依赖。
 4. 适配器必须从 SDK 消息读取稳定 `MsgId`、`MsgType` 和毫秒 `Timestamp`，以真实房间 ID 和本局 ID 构造事件。评论映射“上船／左／右／修理／照明”，点赞按官方增量语义规范化，礼物只触发外观。用户去重字段须从实际 SDK 消息验证为稳定身份；昵称只供展示，不能作为一人一票或冷却键。缺字段或语义未验证时禁用直播模式。
