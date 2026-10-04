@@ -1,0 +1,6 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import {DustPool,PARTICLE_LIMIT,cargoTransitions} from '../lib/effects.mjs';
+test('dust remains bounded under sustained emission and expires',()=>{const pool=new DustPool(()=>.5);for(let i=0;i<10000;i++)pool.emit({x:1,y:2,z:3},{x:0,z:0});pool.step(.01);assert.equal(pool.particles.length,PARTICLE_LIMIT);assert.equal(pool.active,PARTICLE_LIMIT);pool.step(2);assert.equal(pool.active,0);});
+test('dust uses lunar gravity and freezes exactly when paused',()=>{const pool=new DustPool(()=>.5);pool.emit({x:0,y:0,z:0},{x:0,z:0});pool.step(.5);assert.ok(Math.abs(pool.particles[0].vy-(.775-.81))<1e-8);const before=structuredClone(pool.particles);pool.step(0);assert.deepEqual(pool.particles,before);});
+test('cargo effects report transitions once without mutating cargo or replaying initial drops',()=>{const states=new Map(),cargo=[{id:'A',state:'dropped',integrity:80}];assert.deepEqual(cargoTransitions(states,cargo),[]);cargo[0].state='carried';assert.equal(cargoTransitions(states,cargo)[0].state,'carried');cargo[0].state='delivered';const before=structuredClone(cargo);assert.equal(cargoTransitions(states,cargo)[0].state,'delivered');assert.deepEqual(cargo,before);assert.deepEqual(cargoTransitions(states,cargo),[]);});

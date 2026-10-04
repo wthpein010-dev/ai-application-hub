@@ -79,6 +79,7 @@ export default function Home() {
       </div>
       <div className="mission-footer"><span>信誉 <b>{Math.round(campaign?.reputation ?? 0)}</b></span><span>货物交付 <b>{s?.delivered ?? 0} / {total}</b></span></div>
     </aside>
+    {s?.effects?.feedback && <div className={`effect-feedback ${s.effects.feedback.kind}`} role="status">{s.effects.feedback.text}</div>}
     <div className="gravity">月球表面 <i /> 1.62 m/s² <span>保持平衡 · 稳妥送达</span></div>
     <div className="cameras panel" aria-label="镜头选择">{['驾驶舱', '跟随', '观察'].map((name, i) => <Button key={name} className={(s?.mode ?? 2) === i + 1 ? 'selected' : ''} aria-pressed={(s?.mode ?? 2) === i + 1} variant="ghost" onClick={() => act('camera', i + 1)}><kbd>{i + 1}</kbd>{name}</Button>)}</div>
     <aside className="map panel">

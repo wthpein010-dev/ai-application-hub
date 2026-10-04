@@ -1,6 +1,7 @@
 import * as T from 'three';
 import {GLTFLoader} from 'three/addons/loaders/GLTFLoader.js';
 import { BASES,heightAt,SIZE,CELL } from './simulation.mjs';
+import {DustPool,PARTICLE_LIMIT,cargoTransitions} from './effects.mjs';
 import {NPCS,LOST_SITE} from './campaign.mjs';
 const mat=(color,extra={})=>new T.MeshStandardMaterial({color,roughness:.8,metalness:.15,...extra});
 export function createScene(canvas,sim){
@@ -39,8 +40,26 @@ export function createScene(canvas,sim){
  const releaseScene=(root)=>{const geometries=new Set(),materials=new Set(),textures=new Set();root.traverse(o=>{if(o.geometry)geometries.add(o.geometry);for(const m of o.material?(Array.isArray(o.material)?o.material:[o.material]):[]){materials.add(m);for(const value of Object.values(m))if(value?.isTexture)textures.add(value);}});geometries.forEach(g=>g.dispose());materials.forEach(m=>m.dispose());textures.forEach(t=>t.dispose());};
  new GLTFLoader().load('./assets/lunar-kit.glb',gltf=>{if(disposed){releaseScene(gltf.scene);return;}kit=gltf.scene;const names=['RoverBody','Wheel','Habitat','NPC','Cargo'];assetStatus.models=names.filter(n=>kit.getObjectByName(n));assetStatus.loaded=assetStatus.models.length===5;decorate(rover,'RoverBody');wheelMeshes.forEach(g=>decorate(g,'Wheel'));habitats.forEach(g=>decorate(g,'Habitat'));npcs.forEach(g=>decorate(g,'NPC'));crates.forEach(g=>decorate(g,'Cargo'));decorate(wreck,'RoverBody');},undefined,error=>{assetStatus.error=String(error?.message||'模型加载失败');console.error('Lunar asset kit:',error);});
  const target=new T.Vector3(),desired=new T.Vector3(),up=new T.Vector3(0,1,0),ray=new T.Raycaster();let mode=2,first=true;
- function draw(dt,camMode=2){
+ const dust=new DustPool(),dustGeometry=new T.SphereGeometry(.09,4,3),dustMaterial=new T.MeshBasicMaterial({color:'#a6a099',transparent:true,opacity:.32,depthWrite:false});
+ const dustMesh=new T.InstancedMesh(dustGeometry,dustMaterial,PARTICLE_LIMIT);dustMesh.count=0;dustMesh.frustumCulled=false;dustMesh.instanceMatrix.setUsage(T.DynamicDrawUsage);scene.add(dustMesh);
+ const dummy=new T.Object3D(),cargoStates=new Map(),pulses=[],recoveryMarkers=[];let dustClock=0,feedback=null;
+ for(let i=0;i<5;i++){const pulse=add(new T.RingGeometry(.9,1,48),new T.MeshBasicMaterial({color:'#b8fff0',transparent:true,opacity:0,side:T.DoubleSide,depthWrite:false}));pulse.rotation.x=-Math.PI/2;pulse.visible=false;pulses.push({mesh:pulse,life:0});const marker=add(new T.RingGeometry(.8,1,32),new T.MeshBasicMaterial({color:'#ffac80',side:T.DoubleSide,transparent:true,opacity:.85,depthWrite:false}));marker.rotation.x=-Math.PI/2;marker.visible=false;recoveryMarkers.push(marker);}
+ function draw(dt,camMode=2,effectDt=dt){
   ensureCrates();
+  for(const event of cargoTransitions(cargoStates,sim.cargo)){
+   const cargo=sim.cargo.find(c=>c.id===event.id);
+   if(event.state==='delivered'){const pulse=pulses.find(p=>p.life<=0)||pulses[0];pulse.life=1.6;pulse.mesh.position.set(cargo.destination.x,heightAt(cargo.destination.x,cargo.destination.z)+.15,cargo.destination.z);feedback={kind:'delivery',text:event.id+' · 交付成功 / '+sim.delivered+' / 5',life:3};}
+   else if(event.state==='dropped')feedback={kind:'damage',text:event.id+' · 货物掉落 / 完好度 '+event.integrity+'% · 靠近后按 E 回收',life:4};
+   else if(event.state==='carried')feedback={kind:'pickup',text:event.id+' · 已回收 / 完好度 '+event.integrity+'%',life:3};
+  }
+  if(feedback){feedback.life-=effectDt;if(feedback.life<=0)feedback=null;}
+  dustClock+=effectDt;
+  if(effectDt>0&&dustClock>=.045){dustClock%=.045;if(sim.speed>.65)for(const wheel of sim.vehicle.wheelInfos)if(wheel.isInContact)dust.emit(wheel.raycastResult.hitPointWorld,sim.body.velocity);}
+  dust.step(effectDt);let count=0;
+  for(const particle of dust.particles){if(particle.life<=0)continue;dummy.position.set(particle.x,particle.y,particle.z);dummy.scale.setScalar(.6+(1.8-particle.life)*2);dummy.updateMatrix();dustMesh.setMatrixAt(count++,dummy.matrix);}
+  dustMesh.count=count;dustMesh.instanceMatrix.needsUpdate=true;
+  for(const pulse of pulses){pulse.life=Math.max(0,pulse.life-effectDt);pulse.mesh.visible=pulse.life>0;pulse.mesh.scale.setScalar(1+(1.6-pulse.life)*7);pulse.mesh.material.opacity=pulse.life/1.6*.7;}
+  for(let i=0;i<recoveryMarkers.length;i++){const cargo=sim.cargo[i],marker=recoveryMarkers[i];marker.visible=cargo?.state==='dropped';if(marker.visible){marker.position.set(cargo.body.position.x,heightAt(cargo.body.position.x,cargo.body.position.z)+.12,cargo.body.position.z);marker.scale.setScalar(1.4+.18*Math.sin(sim.time*4));}}
   const p=sim.body.position,q=sim.body.quaternion;rover.position.copy(p);rover.quaternion.copy(q);for(let i=0;i<6;i++){const t=sim.vehicle.wheelInfos[i].worldTransform;wheelMeshes[i].position.copy(t.position);wheelMeshes[i].quaternion.copy(t.quaternion);}
   for(let i=0;i<sim.cargo.length;i++){const c=sim.cargo[i],mesh=crates[i];if(c.state==='carried'){mesh.visible=true;mesh.position.copy(sim.body.pointToWorldFrame(c.offset));mesh.quaternion.copy(q);}else if(c.state==='dropped'){mesh.visible=true;mesh.position.copy(c.body.position);mesh.quaternion.copy(c.body.quaternion);}else{const b=c.destination;mesh.visible=true;mesh.position.set(b.x+2.5+(i>2?1:0),heightAt(b.x,b.z)+.4,b.z+2);mesh.quaternion.identity();}}
   for(let i=0;i<3;i++){rings[i].material.color.set(sim.cargo[i].state==='delivered'?'#efffff':BASES[i].color);beacons[i].scale.setScalar(1+.1*Math.sin(sim.time*3));}
@@ -56,5 +75,5 @@ export function createScene(canvas,sim){
   camera.lookAt(target);camera.updateProjectionMatrix();mode=camMode;first=false;
   const w=canvas.clientWidth,h=canvas.clientHeight;if(canvas.width!==Math.round(w*renderer.getPixelRatio())||canvas.height!==Math.round(h*renderer.getPixelRatio())){renderer.setSize(w,h,false);camera.aspect=w/h;camera.updateProjectionMatrix();}renderer.render(scene,camera);
  }
- return {draw,assetStatus,dispose(){disposed=true;releaseScene(scene);renderer.dispose();}};
+ return {draw,assetStatus,get effects(){return {particles:dustMesh.count,limit:PARTICLE_LIMIT,feedback:feedback?{kind:feedback.kind,text:feedback.text}:null};},dispose(){disposed=true;releaseScene(scene);renderer.dispose();}};
 }
