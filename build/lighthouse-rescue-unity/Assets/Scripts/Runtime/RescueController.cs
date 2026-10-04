@@ -172,6 +172,11 @@ namespace LighthouseRescue.Runtime
                         LiveItemsPerFrame, OnLiveReceipt);
                 }
                 catch (LiveFaultStopException) { return; }
+                catch (Exception error)
+                {
+                    StopForProcessingFault(error);
+                    return;
+                }
                 if (!liveSource.Status.IsConnected)
                 {
                     // Finish already received events within the frame budget, without moving the timer.
@@ -267,6 +272,9 @@ namespace LighthouseRescue.Runtime
 
         private void StopForReceiptFault(Exception error) =>
             StopForLiveFault("直播消息回执失败，已停止；检查连接后重启。", "回执故障", error);
+
+        private void StopForProcessingFault(Exception error) =>
+            StopForLiveFault("直播消息处理异常，已停止；检查日志后重启。", "处理故障", error);
 
         private void StopForLiveFault(string reason, string title, Exception error)
         {

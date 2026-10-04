@@ -127,6 +127,35 @@ namespace LighthouseRescue.Tests
         }
 
         [Test]
+        public void UnexpectedLiveDrainFailureStopsSourceWithoutAcknowledgingQueuedMessages()
+        {
+            var owner = new GameObject("live-processing-failure-test");
+            try
+            {
+                var controller = NewController(owner);
+                var source = new FakeSource();
+                Assert.That(controller.AttachLiveSource(source), Is.True);
+                controller.StartOrRestart();
+                long time = Now();
+                Assert.That(source.Send(Board(time), time), Is.True);
+
+                // Simulate an unexpected failure inside the live processing path.
+                typeof(RescueController).GetField("router", BindingFlags.Instance | BindingFlags.NonPublic)
+                    .SetValue(controller, null);
+
+                Assert.DoesNotThrow(() => Tick(controller));
+                Assert.That(source.Status.State, Is.EqualTo(LiveConnectionState.Faulted));
+                Assert.That(source.Status.FaultTitle, Is.EqualTo("处理故障"));
+                Assert.That(source.Stopped, Is.True);
+                Assert.That(source.Handled, Is.Empty);
+                Assert.That(controller.Current.JoinedCount, Is.Zero);
+                Assert.DoesNotThrow(() => Tick(controller));
+                Assert.That(source.Handled, Is.Empty);
+            }
+            finally { Cleanup(owner); }
+        }
+
+        [Test]
         public void PreviousRoundMessageIsReportedButCannotJoinResetRound()
         {
             var owner = new GameObject("live-round-test");
