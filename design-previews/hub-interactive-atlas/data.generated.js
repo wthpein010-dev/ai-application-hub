@@ -1368,7 +1368,7 @@ export const projects = [
     "category": "Unity 直播互动游戏",
     "kind": "game",
     "badge": "小游戏",
-    "brief": "一起选路、修船和照明，在三段风暴中救起三个人。免费互动就能改变结局。",
+    "brief": "俯视航行、船上视角救人。一起选路、修船和照明，在三段风暴中带三个人回家。",
     "problem": "验证主播主持的短局合作救援能否在竖屏直播中一眼看懂并反复开局。",
     "aiUse": "Unity 规则状态机、模拟观众事件、可恢复的 Windows 客户端与 WebGL 试玩共同构建；正式抖音直播权限尚待官方 SDK 和真实直播间联调。",
     "tags": [
@@ -1394,7 +1394,7 @@ export const projects = [
       {
         "type": "windows",
         "label": "Wins下载",
-        "href": "https://github.com/wthpein010-dev/ai-application-hub/releases/download/lighthouse-rescue-v1.4.13/LighthouseRescue-Windows-x64.zip",
+        "href": "https://github.com/wthpein010-dev/ai-application-hub/releases/download/lighthouse-rescue-v1.4.14/LighthouseRescue-Windows-x64.zip",
         "sourceLabel": "Wins下载"
       }
     ],
