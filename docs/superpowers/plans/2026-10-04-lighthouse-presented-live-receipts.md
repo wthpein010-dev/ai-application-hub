@@ -2,7 +2,7 @@
 
 **Goal:** Give the future official live adapter a receipt only after Unity has completed a visual frame for the processed messages.
 
-**Architecture:** `RescueController` retains a bounded queue of processed receipts. Its existing `OnLiveReceipt` path persists and renders state, then enqueues the receipt. One `WaitForEndOfFrame` coroutine calls a private flush method. Fault and round-reset paths clear unpresented receipts; a normal disconnect retains them until reconnection.
+**Architecture:** `RescueController` retains a bounded queue of processed receipts. Its existing `OnLiveReceipt` path persists and renders state, then enqueues the receipt. One `WaitForEndOfFrame` coroutine calls a private flush method. Fault and round-reset paths clear unpresented receipts; a normal disconnect still passes completed receipts to the adapter for its network retry policy.
 
 **Spec:** `docs/superpowers/specs/2026-10-04-lighthouse-presented-live-receipts.md`
 

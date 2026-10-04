@@ -240,6 +240,88 @@ namespace LighthouseRescue.Tests
         }
 
         [Test]
+        public void ForegroundWaveSprayFollowsRescuePOVAndStaysPooled()
+        {
+            var owner = new GameObject("foreground-spray-test");
+            try
+            {
+                var view = owner.AddComponent<RescueView>();
+                view.Build(owner.AddComponent<HostControls>());
+                var canvas = Object.FindObjectOfType<Canvas>();
+                int pooledCount = canvas.GetComponentsInChildren<RectTransform>(true).Length;
+                view.Render(new RescueSnapshot { Phase = GamePhase.Checkpoint1, CheckpointNumber = 1, Hull = 100 });
+                var fleck = GameObject.Find("Foreground spray 0").GetComponent<Image>();
+                float firstAlpha = fleck.color.a;
+                view.Render(new RescueSnapshot { Phase = GamePhase.Checkpoint3, CheckpointNumber = 3, Hull = 100 });
+                Assert.That(fleck.color.a, Is.GreaterThan(firstAlpha));
+                Assert.That(canvas.GetComponentsInChildren<RectTransform>(true).Length, Is.EqualTo(pooledCount));
+                view.Render(new RescueSnapshot { Phase = GamePhase.Voting, Hull = 100 });
+                Assert.That(GameObject.Find("Foreground spray 0"), Is.Null);
+                Assert.That(GameObject.Find("Rescue ship"), Is.Not.Null);
+            }
+            finally
+            {
+                foreach (var canvas in Object.FindObjectsOfType<Canvas>()) Object.DestroyImmediate(canvas.gameObject);
+                Object.DestroyImmediate(owner);
+            }
+        }
+
+        [Test]
+        public void SurvivorSpotlightRespondsToIlluminationWithoutCoveringTravelView()
+        {
+            var owner = new GameObject("survivor-spotlight-test");
+            try
+            {
+                var view = owner.AddComponent<RescueView>();
+                view.Build(owner.AddComponent<HostControls>());
+                var rescue = new RescueSnapshot { Phase = GamePhase.Checkpoint2, CheckpointNumber = 2,
+                    Hull = 100, LightTarget = 3 };
+                view.Render(rescue);
+                var cone = GameObject.Find("Survivor light cone").GetComponent<Image>();
+                float darkAlpha = cone.color.a;
+                rescue.LightProgress = 3;
+                view.Render(rescue);
+                Assert.That(cone.color.a, Is.GreaterThan(darkAlpha));
+                Assert.That(cone.color.a, Is.LessThan(0.5f));
+                view.Render(new RescueSnapshot { Phase = GamePhase.Finale, Hull = 100 });
+                Assert.That(GameObject.Find("Survivor light cone"), Is.Null);
+                Assert.That(GameObject.Find("Rescue ship"), Is.Not.Null);
+            }
+            finally
+            {
+                foreach (var canvas in Object.FindObjectsOfType<Canvas>()) Object.DestroyImmediate(canvas.gameObject);
+                Object.DestroyImmediate(owner);
+            }
+        }
+
+        [Test]
+        public void WindGustHasItsOwnCueThatMutesAndStopsOutsideTheStorm()
+        {
+            var owner = new GameObject("wind-cue-test");
+            try
+            {
+                var host = owner.AddComponent<HostControls>();
+                var view = owner.AddComponent<RescueView>();
+                view.Build(host);
+                var wind = owner.GetComponents<AudioSource>().Single(source => source.clip != null && source.clip.name == "WindGust");
+                Assert.That(wind.loop, Is.False);
+                view.Render(new RescueSnapshot { Phase = GamePhase.Checkpoint3, CheckpointNumber = 3, Hull = 100 });
+                Assert.That(wind.volume, Is.GreaterThan(0f));
+                host.ToggleMute();
+                view.Render(new RescueSnapshot { Phase = GamePhase.Checkpoint3, CheckpointNumber = 3, Hull = 100 });
+                Assert.That(wind.volume, Is.Zero);
+                host.ToggleMute();
+                view.Render(new RescueSnapshot { Phase = GamePhase.Finale, Hull = 100 });
+                Assert.That(wind.volume, Is.Zero);
+            }
+            finally
+            {
+                foreach (var canvas in Object.FindObjectsOfType<Canvas>()) Object.DestroyImmediate(canvas.gameObject);
+                Object.DestroyImmediate(owner);
+            }
+        }
+
+        [Test]
         public void LightningBrieflyIlluminatesRainSprayAndSearchlightMist()
         {
             var owner = new GameObject("lightning-reflection-test");

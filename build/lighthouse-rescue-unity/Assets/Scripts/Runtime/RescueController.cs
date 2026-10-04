@@ -1,4 +1,6 @@
 using System;
+using System.Collections;
+using System.Collections.Generic;
 using System.IO;
 using System.Threading;
 using LighthouseRescue.Rules;
@@ -12,6 +14,8 @@ namespace LighthouseRescue.Runtime
         private const string DemoRoom = "local-demo";
         private const int LiveInboxCapacity = 256;
         private const int LiveItemsPerFrame = 64;
+        private static readonly WaitForEndOfFrame PresentedFrame = new WaitForEndOfFrame();
+        private readonly Queue<LiveInboxReceipt> pendingPresentationReceipts = new Queue<LiveInboxReceipt>();
         private RescueGame game;
         private EventRouter router;
         private SimulationEventSource simulation;
@@ -136,8 +140,20 @@ namespace LighthouseRescue.Runtime
 
         private static long UnixNow() => DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
 
+        private void Start() => StartCoroutine(DeliverReceiptsAfterFrames());
+
+        private IEnumerator DeliverReceiptsAfterFrames()
+        {
+            while (true)
+            {
+                yield return PresentedFrame;
+                FlushPresentedReceipts();
+            }
+        }
+
         private void BindLiveRound(RescueGame next)
         {
+            pendingPresentationReceipts.Clear();
             liveInbox.SetRound(roomId, next.ViewSnapshot().RoundId);
             stageStartedUnixMilliseconds = 0;
             ObserveLivePhase(next.ViewSnapshot(), UnixNow());
@@ -203,7 +219,12 @@ namespace LighthouseRescue.Runtime
             view.Render(snapshot);
         }
 
-        private void OnDestroy() { simulation?.Stop(); liveSource?.Stop(); }
+        private void OnDestroy()
+        {
+            pendingPresentationReceipts.Clear();
+            simulation?.Stop();
+            liveSource?.Stop();
+        }
 
         private void OnLiveReceipt(LiveInboxReceipt receipt)
         {
@@ -226,11 +247,35 @@ namespace LighthouseRescue.Runtime
                 view.ShowFeedback(receipt.GameEvent, receipt.RuleResult);
                 view.Render(game.ViewSnapshot());
             }
-            try { liveSource.HandleReceipt(receipt); }
-            catch (Exception error)
+            if (pendingPresentationReceipts.Count >= LiveInboxCapacity)
             {
-                StopForReceiptFault(error);
+                StopForReceiptFault(new InvalidOperationException("Live receipt presentation backlog is full."));
                 throw new LiveFaultStopException();
+            }
+            pendingPresentationReceipts.Enqueue(receipt);
+        }
+
+        private void FlushPresentedReceipts()
+        {
+            if (liveSource == null || liveFaulted || awaitingLiveRecovery)
+            {
+                pendingPresentationReceipts.Clear();
+                return;
+            }
+            while (pendingPresentationReceipts.Count > 0)
+            {
+                if (Interlocked.CompareExchange(ref inboxOverflowed, 0, 0) != 0)
+                {
+                    StopForInboxOverflow();
+                    return;
+                }
+                try { liveSource.HandleReceipt(pendingPresentationReceipts.Peek()); }
+                catch (Exception error)
+                {
+                    StopForReceiptFault(error);
+                    return;
+                }
+                pendingPresentationReceipts.Dequeue();
             }
         }
 
@@ -280,6 +325,7 @@ namespace LighthouseRescue.Runtime
         {
             liveFaulted = true;
             awaitingLiveRecovery = true;
+            pendingPresentationReceipts.Clear();
             liveSource.Status.MarkFaulted(reason, title);
             try { liveSource.Stop(); }
             catch (Exception stopError) { Debug.LogWarning("Live source stop failed: " + stopError.GetType().Name); }
