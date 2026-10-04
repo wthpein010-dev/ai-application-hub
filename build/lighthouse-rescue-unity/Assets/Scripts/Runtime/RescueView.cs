@@ -56,6 +56,7 @@ namespace LighthouseRescue.Runtime
         private Image haze;
         private Image beam;
         private Image povBeam;
+        private Image povLightCone;
         private Image lightningFlash;
         private Image[] lightningBolt;
         private Image hullFill;
@@ -86,6 +87,7 @@ namespace LighthouseRescue.Runtime
         private Image[] lensRain;
         private Image[] windGusts;
         private Image[] searchlightMist;
+        private Image[] foregroundSpray;
         private GameObject resultCard;
         private GameObject recoveryCard;
         private Button boardButton, leftButton, rightButton, repairButton, lightButton, likeButton, giftButton;
@@ -95,6 +97,7 @@ namespace LighthouseRescue.Runtime
         private AudioSource sound;
         private AudioSource weatherSound;
         private AudioSource thunderSource;
+        private AudioSource windSource;
         private AudioClip clickSound, confirmSound, warningSound, rescueSound, thunderSound, splashSound;
         private HostControls host;
         private GamePhase lastPhase = GamePhase.Waiting;
@@ -108,6 +111,7 @@ namespace LighthouseRescue.Runtime
         private float nextLightningAt = 8f;
         private float lightningUntil;
         private float pendingThunderAt = -1f;
+        private float nextWindAt = 3f;
         private int lightningStrikeIndex;
         private int lastLightTarget;
         private int lastRepairTarget;
@@ -187,6 +191,10 @@ namespace LighthouseRescue.Runtime
             thunderSource.playOnAwake = false;
             thunderSource.clip = thunderSound;
             thunderSource.volume = 0f;
+            windSource = gameObject.AddComponent<AudioSource>();
+            windSource.playOnAwake = false;
+            windSource.clip = Resources.Load<AudioClip>("Audio/WindGust");
+            windSource.volume = 0f;
             splashSound = Resources.Load<AudioClip>("Audio/Splash");
             var canvasObject = new GameObject("Lighthouse rescue 9:16 canvas", typeof(RectTransform), typeof(Canvas), typeof(CanvasScaler), typeof(GraphicRaycaster));
             var canvas = canvasObject.GetComponent<Canvas>();
@@ -228,6 +236,9 @@ namespace LighthouseRescue.Runtime
                 rescuePOV[i].gameObject.SetActive(false);
             }
             var glowSprite = CreateGlowSprite();
+            povLightCone = Panel(root, "Survivor light cone", 226, 566, 540, 284, Color.clear);
+            povLightCone.sprite = CreateBeamSprite();
+            povLightCone.gameObject.SetActive(false);
             povBeam = Panel(root, "Searchlight on survivor", 305, 520, 510, 392, Color.clear);
             povBeam.sprite = glowSprite;
             povBeam.gameObject.SetActive(false);
@@ -291,6 +302,14 @@ namespace LighthouseRescue.Runtime
                     9 + i % 4 * 5, Color.clear);
                 searchlightMist[i].sprite = glowSprite;
                 searchlightMist[i].gameObject.SetActive(false);
+            }
+            foregroundSpray = new Image[28];
+            for (int i = 0; i < foregroundSpray.Length; i++)
+            {
+                int size = 7 + i % 5 * 5;
+                foregroundSpray[i] = Panel(root, "Foreground spray " + i, 90, 920, size, size, Color.clear);
+                foregroundSpray[i].sprite = glowSprite;
+                foregroundSpray[i].gameObject.SetActive(false);
             }
             hullFlash = Panel(root, "Hull damage flash", 48, 438, 984, 629, Color.clear);
             Panel(root, "Map info scrim", 48, 939, 984, 128, new Color(0.02f, 0.10f, 0.16f, 0.74f));
@@ -422,6 +441,7 @@ namespace LighthouseRescue.Runtime
             ship.gameObject.SetActive(!pov);
             wake.gameObject.SetActive(!pov);
             beam.gameObject.SetActive(!pov);
+            povLightCone.gameObject.SetActive(pov);
             povBeam.gameObject.SetActive(pov);
             for (int i = 0; i < waitingCrew.Length; i++) waitingCrew[i].gameObject.SetActive(!pov);
             boardButton.transform.parent.gameObject.SetActive(localDemo);
@@ -451,6 +471,7 @@ namespace LighthouseRescue.Runtime
                 lightningUntil = 0f;
                 pendingThunderAt = -1f;
                 thunderSource.Stop();
+                windSource.Stop();
             }
             if (s.Phase != GamePhase.Paused && !liveFault) weatherClock += Mathf.Min(Time.unscaledDeltaTime, 0.1f);
             float gust = WindGust(weatherClock);
@@ -461,7 +482,16 @@ namespace LighthouseRescue.Runtime
                 nextLightningAt = weatherClock + LightningInterval(lightningStrikeIndex++, s.CheckpointNumber);
             }
             if (!checkpoint || host.Muted) thunderSource.Stop();
+            if (!checkpoint || host.Muted || liveFault) windSource.Stop();
             thunderSource.volume = checkpoint && !host.Muted && !liveFault ? 0.27f : 0f;
+            windSource.volume = checkpoint && !host.Muted && !liveFault ? 0.13f + 0.15f * storm * gust : 0f;
+            if (Application.isPlaying && checkpoint && s.Phase != GamePhase.Paused && !host.Muted && !liveFault &&
+                windSource.clip != null && weatherClock >= nextWindAt && gust >= 0.78f)
+            {
+                windSource.pitch = 0.88f + 0.16f * gust;
+                windSource.Play();
+                nextWindAt = weatherClock + 5.5f;
+            }
             if (host.Muted) pendingThunderAt = -1f;
             if (checkpoint && !host.Muted && pendingThunderAt >= 0f && weatherClock >= pendingThunderAt)
             {
@@ -480,9 +510,15 @@ namespace LighthouseRescue.Runtime
                 float lightRatio = effectiveLightTarget <= 0 ? 0f : Mathf.Clamp01((float)s.LightProgress / effectiveLightTarget);
                 povBeam.rectTransform.anchoredPosition = new Vector2(targetX + Mathf.Sin(weatherClock * 0.82f) * 25f, -520f);
                 povBeam.color = new Color(1f, 0.83f, 0.49f, 0.09f + 0.17f * lightRatio);
+                povLightCone.rectTransform.anchoredPosition = new Vector2(
+                    Mathf.Clamp(targetX - 35f + Mathf.Sin(weatherClock * 0.82f) * 19f, 110f, 475f), -566f);
+                povLightCone.rectTransform.localEulerAngles = new Vector3(0f, 0f, povStage == 2 ? 16f : -12f);
+                povLightCone.color = new Color(1f, 0.88f, 0.58f, 0.10f + 0.26f * lightRatio);
             }
             float lightning = LightningPulse(LightningDuration - (lightningUntil - weatherClock));
             lightningFlash.color = new Color(0.68f, 0.81f, 1f, lightning * (pov ? 0.31f : 0.18f));
+            if (pov) povLightCone.color = new Color(1f, 0.91f, 0.69f,
+                Mathf.Min(0.46f, povLightCone.color.a + lightning * 0.08f));
             UpdateLightningBolt(lightning, povStage);
             for (int i = 0; i < lensRain.Length; i++)
             {
@@ -514,6 +550,17 @@ namespace LighthouseRescue.Runtime
                 searchlightMist[i].color = new Color(1f, 0.85f, 0.60f,
                     storm * (0.035f + 0.20f * mistLight) * (0.65f + 0.35f * Mathf.Sin(phase) * Mathf.Sin(phase))
                     + lightning * 0.13f);
+            }
+            for (int i = 0; i < foregroundSpray.Length; i++)
+            {
+                foregroundSpray[i].gameObject.SetActive(pov);
+                if (!pov) continue;
+                float phase = weatherClock * (2.2f + i % 4 * 0.3f) + i * 1.51f;
+                float rise = Mathf.Abs(Mathf.Sin(phase)) * (55f + i % 4 * 18f);
+                float x = 80f + (i * 211) % 900;
+                foregroundSpray[i].rectTransform.anchoredPosition = new Vector2(x, -(1005f - rise));
+                foregroundSpray[i].color = new Color(0.78f, 0.93f, 1f,
+                    (0.10f + 0.24f * Mathf.Abs(Mathf.Sin(phase))) * storm + lightning * 0.18f);
             }
             ship.anchoredPosition = new Vector2(405 + Mathf.Sin(weatherClock * 0.7f) * 8f, -666 + Mathf.Sin(weatherClock * 2f) * 7f);
             ship.localEulerAngles = new Vector3(0, 0, Mathf.Sin(weatherClock * 1.4f) * (2f + 2f * storm));
@@ -594,6 +641,8 @@ namespace LighthouseRescue.Runtime
             nextLightningAt = weatherClock + 7.5f;
             pendingThunderAt = -1f;
             thunderSource.Stop();
+            windSource.Stop();
+            nextWindAt = weatherClock + 3f;
         }
 
         public void ShowFeedback(GameEvent gameEvent, ApplyResult result)
