@@ -13,3 +13,4 @@
 证据：Builds/build-final.log中“PARCEL BUILD Succeeded bytes=27491583”；10关已知解答由模型验证；真实浏览器正常鼠标操作完成全部10关；390x844触摸通关和刷新恢复；撤销/非法落点/重开/提示/选关均通过；无页面脚本错误或失败资源。
 范围：测试环境为Windows Chromium/SwiftShader手机模拟，未验证真实iOS/Android设备或Windows独立播放器。JS heap不等于完整WASM或设备内存，WebGL初始内存128MB。
 美术和音效为原创代码绘制与合成，未称手绘或图像模型生成。中文字体Noto Sans CJK SC，字体许可随工程附带。
+工程下载页面沿用现有管理员门禁；当前管理员服务未配置时下载入口关闭，父线程若需网页工程下载应协调现有管理员资源目录，不能绕过。GitHub仓库已包含完整工程ZIP。
