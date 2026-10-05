@@ -6,8 +6,8 @@
   "files": [
     {
       "path": "about.html",
-      "bytes": 3200,
-      "sha256": "067ed95c636364fe7204449a17ee3a1acac3b64bdfecd5e30f9f5f5c8ea238de"
+      "bytes": 3369,
+      "sha256": "4e2f91367ade4978f8849bf4e9b4569260ed7eef935d6b89d75ae3bd6e6e481e"
     },
     {
       "path": "acceptance.json",
@@ -41,8 +41,18 @@
     },
     {
       "path": "index.html",
-      "bytes": 2443,
-      "sha256": "7bf455256432a3ffd71086c73425f40207dda0d6f2f1f957159e0be1b937996d"
+      "bytes": 2584,
+      "sha256": "9b9e33739388357df11c722c9e82bd9d87847ca363008317f7ced31bbbce2ded"
+    },
+    {
+      "path": "integration.json",
+      "bytes": 1327,
+      "sha256": "dcb0c7ad8b9c372281f950b91c825d75ce657e6d63406332e6aaea7b5aebcc7a"
+    },
+    {
+      "path": "memory-report.json",
+      "bytes": 1139,
+      "sha256": "6ffd5f68cad459e6c43bf0cd9e4743b0eff8e20f685edaf7d354fdf19f564f98"
     },
     {
       "path": "screenshots/webgl-desktop-complete.png",
