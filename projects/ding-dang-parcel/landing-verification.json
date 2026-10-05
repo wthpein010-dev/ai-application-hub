@@ -1,0 +1,22 @@
+[
+  {
+    "viewport": {
+      "width": 1280,
+      "height": 900
+    },
+    "images": true,
+    "overflow": false,
+    "download": 200,
+    "play": "关卡=1;已放=0;总数=2;完成=False;解锁=1"
+  },
+  {
+    "viewport": {
+      "width": 390,
+      "height": 844
+    },
+    "images": true,
+    "overflow": false,
+    "download": 200,
+    "play": "关卡=1;已放=0;总数=2;完成=False;解锁=1"
+  }
+]
