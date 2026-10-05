@@ -1,0 +1,108 @@
+{
+  "name": "小云朵搬家",
+  "id": "cloudlet-home",
+  "version": "1.0.0",
+  "engine": "2022.3.62f3c1",
+  "files": [
+    {
+      "path": "about.html",
+      "bytes": 3369,
+      "sha256": "4e2f91367ade4978f8849bf4e9b4569260ed7eef935d6b89d75ae3bd6e6e481e"
+    },
+    {
+      "path": "acceptance.json",
+      "bytes": 2182,
+      "sha256": "5ecbe6dcd0cd1cc274781b10460cc917a4a7e1efdd6f859d68cbee0121f66550"
+    },
+    {
+      "path": "Build/WebGL.data",
+      "bytes": 10217264,
+      "sha256": "c82a777eba58d95a0cb09818a91bd1e6dcdedb9bbf5a04defb60332edbba4bf2"
+    },
+    {
+      "path": "Build/WebGL.framework.js",
+      "bytes": 336880,
+      "sha256": "ef6d5f82c69c9b64e0f25155dd66480ad86817cf87b7eaff425eb4cb1cb8936d"
+    },
+    {
+      "path": "Build/WebGL.loader.js",
+      "bytes": 20680,
+      "sha256": "95d413ec942c6764ee89174a13da7a4c7f80567f6a4fb43992a6e8273c3b93d2"
+    },
+    {
+      "path": "Build/WebGL.wasm",
+      "bytes": 9923859,
+      "sha256": "c4bb3a1d8029ae239da010412a9b115f0aa3e0dc7ff63cfe4d9b1e6cf029991f"
+    },
+    {
+      "path": "cloudlet-home-unity-1.0.0.zip",
+      "bytes": 8177562,
+      "sha256": "07e0fdef96ed733a5e895cdc257a0713ccf2aa6ac46e6bcfa2dee279f5c6f472"
+    },
+    {
+      "path": "index.html",
+      "bytes": 2584,
+      "sha256": "9b9e33739388357df11c722c9e82bd9d87847ca363008317f7ced31bbbce2ded"
+    },
+    {
+      "path": "integration.json",
+      "bytes": 1327,
+      "sha256": "dcb0c7ad8b9c372281f950b91c825d75ce657e6d63406332e6aaea7b5aebcc7a"
+    },
+    {
+      "path": "memory-report.json",
+      "bytes": 1139,
+      "sha256": "6ffd5f68cad459e6c43bf0cd9e4743b0eff8e20f685edaf7d354fdf19f564f98"
+    },
+    {
+      "path": "screenshots/webgl-desktop-complete.png",
+      "bytes": 121555,
+      "sha256": "6b07bed01a81a38bfd9c5909b0725efd045d81e22fee30a62e6d13634bd30e35"
+    },
+    {
+      "path": "screenshots/webgl-desktop-game.png",
+      "bytes": 113141,
+      "sha256": "61deaf5bc541f0ba70ee64b0e9767c649fea87287c0464b301614b1f528924b8"
+    },
+    {
+      "path": "screenshots/webgl-desktop-level3.png",
+      "bytes": 122411,
+      "sha256": "9948ac88c38397496ab3a027c860b35653d0a38a954e3aecd953cfeefe8878ca"
+    },
+    {
+      "path": "screenshots/webgl-desktop-levels.png",
+      "bytes": 134799,
+      "sha256": "b5125150ae8cd3c2e1a4d65e002281222818594d8c19890ee3ebaf7e1b91d9c9"
+    },
+    {
+      "path": "screenshots/webgl-desktop-victory.png",
+      "bytes": 110836,
+      "sha256": "fcd07e832ddf69f37cac0c71995388fa41bbe2fc7a886d5a9d81ba7e0ff5af45"
+    },
+    {
+      "path": "screenshots/webgl-mobile-390x844-complete.png",
+      "bytes": 66120,
+      "sha256": "2e865d99901fead58142f487eb474d3c86407d32e4a0fcf6d5f92c8a89ecdb18"
+    },
+    {
+      "path": "screenshots/webgl-mobile-390x844-game.png",
+      "bytes": 61607,
+      "sha256": "4fb44675d1b823163572db3cbc58a764fdecaf6041c3fd034e71a9bb9b6362ae"
+    },
+    {
+      "path": "screenshots/webgl-mobile-390x844-level3.png",
+      "bytes": 66125,
+      "sha256": "1eb627821ea7bb0d92c27058754d1fd66f8d724331ea58509ce28727dc5e51c7"
+    },
+    {
+      "path": "screenshots/webgl-mobile-390x844-levels.png",
+      "bytes": 73115,
+      "sha256": "ddf7d01175db83d7bce0508c853ec705c9dd8d412dc6cc1e441cacb3c3601bc4"
+    },
+    {
+      "path": "screenshots/webgl-mobile-390x844-victory.png",
+      "bytes": 60779,
+      "sha256": "1b1b751cb445642cf7aa512c22163dd4559239d54956b2bcfde15488edd51c13"
+    }
+  ]
+}

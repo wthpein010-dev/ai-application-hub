@@ -1,0 +1,125 @@
+{
+  "version": "1.0.0",
+  "date": "2026-10-05T00:09:07.075Z",
+  "base": "http://127.0.0.1:8635/",
+  "results": [
+    {
+      "platform": "desktop mouse",
+      "loadedMs": 2912,
+      "levels": [
+        {
+          "level": 1,
+          "won": true
+        },
+        {
+          "level": 2,
+          "won": true
+        },
+        {
+          "level": 3,
+          "won": true
+        },
+        {
+          "level": 4,
+          "won": true
+        },
+        {
+          "level": 5,
+          "won": true
+        },
+        {
+          "level": 6,
+          "won": true
+        },
+        {
+          "level": 7,
+          "won": true
+        },
+        {
+          "level": 8,
+          "won": true
+        },
+        {
+          "level": 9,
+          "won": true
+        },
+        {
+          "level": 10,
+          "won": true
+        }
+      ],
+      "undo": true,
+      "reset": true,
+      "failureRetry": true,
+      "persistence": true,
+      "selection": true,
+      "errors": [],
+      "failed": [],
+      "heapBytes": 16622391,
+      "resourceBytes": 20498683,
+      "canvas": [
+        1100,
+        1000
+      ]
+    },
+    {
+      "platform": "390x844 simulated single touch",
+      "loadedMs": 2479,
+      "levels": [
+        {
+          "level": 1,
+          "won": true
+        },
+        {
+          "level": 2,
+          "won": true
+        },
+        {
+          "level": 3,
+          "won": true
+        },
+        {
+          "level": 4,
+          "won": true
+        },
+        {
+          "level": 5,
+          "won": true
+        },
+        {
+          "level": 6,
+          "won": true
+        },
+        {
+          "level": 7,
+          "won": true
+        },
+        {
+          "level": 8,
+          "won": true
+        },
+        {
+          "level": 9,
+          "won": true
+        },
+        {
+          "level": 10,
+          "won": true
+        }
+      ],
+      "undo": true,
+      "reset": true,
+      "failureRetry": true,
+      "persistence": true,
+      "selection": true,
+      "errors": [],
+      "failed": [],
+      "heapBytes": 16613643,
+      "resourceBytes": 20498683,
+      "canvas": [
+        390,
+        844
+      ]
+    }
+  ]
+}

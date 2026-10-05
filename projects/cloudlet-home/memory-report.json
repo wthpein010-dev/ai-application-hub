@@ -1,0 +1,47 @@
+{
+  "version": "1.0.0",
+  "scope": "Same Chromium page, five WebGL launches/reloads; JS heap and backing storage, not native OS peak",
+  "samples": [
+    {
+      "reload": 0,
+      "wasmBytes": 48365568,
+      "usedSize": 5112304,
+      "totalSize": 10629120,
+      "embedderHeapUsedSize": 1611128,
+      "backingStorageSize": 20829832
+    },
+    {
+      "reload": 1,
+      "wasmBytes": 48365568,
+      "usedSize": 11469804,
+      "totalSize": 17797120,
+      "embedderHeapUsedSize": 2103952,
+      "backingStorageSize": 41632276
+    },
+    {
+      "reload": 2,
+      "wasmBytes": 48365568,
+      "usedSize": 12128176,
+      "totalSize": 20508672,
+      "embedderHeapUsedSize": 2722456,
+      "backingStorageSize": 62434959
+    },
+    {
+      "reload": 3,
+      "wasmBytes": 48365568,
+      "usedSize": 13799900,
+      "totalSize": 31084544,
+      "embedderHeapUsedSize": 1699248,
+      "backingStorageSize": 41255468
+    },
+    {
+      "reload": 4,
+      "wasmBytes": 48365568,
+      "usedSize": 21986720,
+      "totalSize": 32747520,
+      "embedderHeapUsedSize": 2165728,
+      "backingStorageSize": 62064049
+    }
+  ],
+  "errors": []
+}
