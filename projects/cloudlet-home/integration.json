@@ -1,35 +1,26 @@
 {
   "id": "cloudlet-home",
   "name": "小云朵搬家",
-  "version": "1.0.0",
-  "category": "Unity WebGL 休闲解谜",
+  "version": "1.1.0",
   "entry": "./projects/cloudlet-home/index.html",
   "about": "./projects/cloudlet-home/about.html",
-  "package": "./projects/cloudlet-home/cloudlet-home-unity-1.0.0.zip",
-  "screenshot": "./projects/cloudlet-home/screenshots/webgl-desktop-level3.png",
-  "mobileScreenshot": "./projects/cloudlet-home/screenshots/webgl-mobile-390x844-level3.png",
-  "brief": "转动花园里的黄色风车，送可爱云团回到对应小屋。十个手工关卡、单指操作、撤销提示与本地存档。",
-  "aiUse": "AI 自主设计确定性风向规则、原创程序美术与合成音效、手工关卡、Unity工程及WebGL构建、浏览器鼠标/模拟触摸逐关验收。",
-  "tags": [
-    "Unity",
-    "WebGL",
-    "风向解谜",
-    "原创",
-    "中文"
-  ],
+  "package": "./projects/cloudlet-home/cloudlet-home-unity-1.1.0.zip",
+  "screenshot": "./projects/cloudlet-home/screenshots/mobile-1.1.0-final-720x1280-game.png",
+  "mobileScreenshot": "./projects/cloudlet-home/screenshots/mobile-1.1.0-final-390x844-game.png",
+  "brief": "720×1280竖屏风向解谜，单指触摸或电脑点击送小云团回家。十个手工关卡、取消与多指保护、后台暂停、本地存档和旧版进度兼容。",
   "tested": [
-    "桌面 Chromium 鼠标：10/10关",
-    "390×844 Chromium 模拟单指触摸：10/10关",
-    "撤销、重开、失败重试、选关、风向和解锁进度恢复"
+    "720x1280: 10/10关及全部中断路径",
+    "360x640: 10/10关及全部中断路径",
+    "390x844: 10/10关及全部中断路径",
+    "desktop: 10/10关及全部中断路径"
   ],
+  "migration": "1.0.0进度/风向 -> 1.1.0，Android UA + DPR3，模拟原生Touch继续通关与保存",
   "notTested": [
     "真实移动设备",
-    "Safari",
-    "Windows原生构建"
+    "Safari"
   ],
   "parentActions": [
-    "Hub公共应用清单和展示图入口",
-    "game-producer-portfolio作品卡与链接",
-    "合并后确切提交/CI/线上核验"
-  ]
+    "共享卡片若需更新版本/展示图，使用本清单；现有试玩URL保持不变"
+  ],
+  "ciPending": true
 }

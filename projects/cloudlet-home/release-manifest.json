@@ -1,28 +1,33 @@
 {
   "name": "小云朵搬家",
   "id": "cloudlet-home",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "engine": "2022.3.62f3c1",
+  "design": [
+    720,
+    1280
+  ],
+  "physicalMobileTested": false,
   "files": [
     {
       "path": "about.html",
-      "bytes": 3369,
-      "sha256": "4e2f91367ade4978f8849bf4e9b4569260ed7eef935d6b89d75ae3bd6e6e481e"
+      "bytes": 3715,
+      "sha256": "457ef531a99bb80275f68ee96d2a59b9ac9268e53c64efa3df0729e066b70dd3"
     },
     {
       "path": "acceptance.json",
-      "bytes": 2182,
-      "sha256": "5ecbe6dcd0cd1cc274781b10460cc917a4a7e1efdd6f859d68cbee0121f66550"
+      "bytes": 2662,
+      "sha256": "b48362c5507cc914dce1319ccc64db790251bda54db6bb3373a2475e086013ed"
     },
     {
       "path": "Build/WebGL.data",
-      "bytes": 10217264,
-      "sha256": "c82a777eba58d95a0cb09818a91bd1e6dcdedb9bbf5a04defb60332edbba4bf2"
+      "bytes": 10219310,
+      "sha256": "52b70d8f00d172eccbd5333b32d6804d1b8c57889d935b0a490016082e3b7c83"
     },
     {
       "path": "Build/WebGL.framework.js",
-      "bytes": 336880,
-      "sha256": "ef6d5f82c69c9b64e0f25155dd66480ad86817cf87b7eaff425eb4cb1cb8936d"
+      "bytes": 337371,
+      "sha256": "5cfab3b61d4dda8fcf8753836b356683204c5688786f3a54a6f2dab5376ef254"
     },
     {
       "path": "Build/WebGL.loader.js",
@@ -31,8 +36,8 @@
     },
     {
       "path": "Build/WebGL.wasm",
-      "bytes": 9923859,
-      "sha256": "c4bb3a1d8029ae239da010412a9b115f0aa3e0dc7ff63cfe4d9b1e6cf029991f"
+      "bytes": 9922765,
+      "sha256": "bbbc29c7187ab1f2231803d735f8e10fcd546671ba41fa01ec08b8cb5ce60e86"
     },
     {
       "path": "cloudlet-home-unity-1.0.0.zip",
@@ -40,19 +45,79 @@
       "sha256": "07e0fdef96ed733a5e895cdc257a0713ccf2aa6ac46e6bcfa2dee279f5c6f472"
     },
     {
+      "path": "cloudlet-home-unity-1.1.0.zip",
+      "bytes": 7981671,
+      "sha256": "83c79384f419cd22c19e80aa47c6de43d2537ebda755715f70f5d73e6c96e42f"
+    },
+    {
       "path": "index.html",
-      "bytes": 2584,
-      "sha256": "9b9e33739388357df11c722c9e82bd9d87847ca363008317f7ced31bbbce2ded"
+      "bytes": 3846,
+      "sha256": "87ca1b85d685ed5ed66964781b2cea001e2faea0406d80ef303e2be414d0eba4"
     },
     {
       "path": "integration.json",
-      "bytes": 1327,
-      "sha256": "dcb0c7ad8b9c372281f950b91c825d75ce657e6d63406332e6aaea7b5aebcc7a"
+      "bytes": 1142,
+      "sha256": "72e142eb84e1534addfaa28c9629c99d902058384184706f5ab12035f85521e6"
     },
     {
       "path": "memory-report.json",
-      "bytes": 1139,
-      "sha256": "6ffd5f68cad459e6c43bf0cd9e4743b0eff8e20f685edaf7d354fdf19f564f98"
+      "bytes": 1185,
+      "sha256": "416cdc084886d4d551c24029990d6307ced263f196e336599d8c9b4eccd3598d"
+    },
+    {
+      "path": "qa/mobile-1.1.0/browser-report.json",
+      "bytes": 2662,
+      "sha256": "b48362c5507cc914dce1319ccc64db790251bda54db6bb3373a2475e086013ed"
+    },
+    {
+      "path": "qa/mobile-1.1.0/final-layout-report.json",
+      "bytes": 1294,
+      "sha256": "72a01ec702b6e58af1eadac7605779ed0d1cdc59fed141aef8aabf497a27fd69"
+    },
+    {
+      "path": "qa/mobile-1.1.0/migration-report.json",
+      "bytes": 762,
+      "sha256": "c6a9c829638b5f237bd877bae79c05653c6550fa2361cf4c2795783fa55e5595"
+    },
+    {
+      "path": "screenshots/mobile-1.1.0-final-360x640-game.png",
+      "bytes": 55208,
+      "sha256": "b9c49db3ca1d8ef8c8fa89601cb8a8ecf0f83f365b09c3fa8ed3fcec3810fce8"
+    },
+    {
+      "path": "screenshots/mobile-1.1.0-final-360x640-victory.png",
+      "bytes": 54115,
+      "sha256": "7a479b18e917d212015b1a52d562bccff143e4808d8c1a71ac9bf0302853356b"
+    },
+    {
+      "path": "screenshots/mobile-1.1.0-final-390x844-game.png",
+      "bytes": 63372,
+      "sha256": "2d3e906c96af8e4700644e5ba3b190fadf39ed103cafe801fdb22aa1492d66ad"
+    },
+    {
+      "path": "screenshots/mobile-1.1.0-final-390x844-victory.png",
+      "bytes": 62405,
+      "sha256": "8c014ac3d92b486d483095293d9434341616ef8f3d2473c6a10ba53c6b6592ad"
+    },
+    {
+      "path": "screenshots/mobile-1.1.0-final-720x1280-game.png",
+      "bytes": 134375,
+      "sha256": "d662661d2d3f3ff24c3632bbd3f4fceaa6dd7d96aafb9159717a0062a951c1b5"
+    },
+    {
+      "path": "screenshots/mobile-1.1.0-final-720x1280-victory.png",
+      "bytes": 132567,
+      "sha256": "caf80bff8e2065d6cb6c3f273e7a4114e940fdba255cb8a3c98ed3a599c0227a"
+    },
+    {
+      "path": "screenshots/mobile-1.1.0-final-desktop-game.png",
+      "bytes": 111266,
+      "sha256": "ba432b098b934a1b289581a62a045074077d689eeb94f6e4c51f2a28ab801939"
+    },
+    {
+      "path": "screenshots/mobile-1.1.0-final-desktop-victory.png",
+      "bytes": 109596,
+      "sha256": "25fcdfc0db46d0cde0fd0bf1cc83fa807f90e101f26f90d1158c4003936e2caa"
     },
     {
       "path": "screenshots/webgl-desktop-complete.png",
