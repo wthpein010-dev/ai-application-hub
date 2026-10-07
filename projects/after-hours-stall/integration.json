@@ -1,12 +1,12 @@
 {
-  "version": "1.0.0",
+  "version": "1.0.1",
   "catalog": {
     "id": "after-hours-stall",
     "name": "下班收摊",
     "category": "Unity WebGL 休闲解谜",
     "status": "game",
     "badge": "小游戏",
-    "brief": "把桃桃、抹茶杯与招财猫滑回同色小摊：十个固定关卡，不限时，可撤销、提示和自动续玩。",
+    "brief": "把桃桃、抹茶杯和招财猫滑进同色小摊。十关、撤销提示与存档，720×1280竖屏和单指操作。",
     "problem": "为碎片时间设计规则直观、失误可恢复、具有整理成就感的小谜题。",
     "aiUse": "AI 完成原创关卡、BFS 解法验证、程序美术、合成音效、Unity 构建与鼠标/模拟触摸验收。",
     "folder": "./projects/after-hours-stall/",
@@ -23,7 +23,8 @@
       "WebGL",
       "整理",
       "滑动解谜",
-      "原创"
+      "原创",
+      "手游操作"
     ],
     "speed": 8,
     "impact": 7,
@@ -39,7 +40,7 @@
     "feature": "同色收摊、挡板协作、无限撤销",
     "accent": "#4cc492",
     "visualKind": "game",
-    "sourceScreenshot": "./projects/after-hours-stall/screenshots/webgl-desktop-game.png"
+    "sourceScreenshot": "./projects/after-hours-stall/screenshots/mobile-720x1280-game.png"
   },
   "portfolio": {
     "title": "下班收摊",
@@ -47,10 +48,10 @@
     "summary": "三件小物互相充当临时挡板，一滑到底，同色入摊。十个固定关卡经解法验证，支持无限撤销、从当前状态提示、重开与自动续玩。",
     "playUrl": "https://wthpein010-dev.github.io/ai-application-hub/projects/after-hours-stall/",
     "notes": [
-      "全中文菜单、教学与提示",
-      "原创程序图形与合成音效",
-      "Windows 实际构建，浏览器鼠标与390×844模拟触摸验收",
-      "Mac 与手机真机未验证"
+      "720×1280竖屏、单指拖动与大方向按钮",
+      "Windows实际构建及十关运行验收",
+      "720×1280/360×640/390×844浏览器模拟触摸及旧存档升级通过",
+      "Android/iOS/Mac原生与手机真机未验证"
     ]
   },
   "mediaSources": {
