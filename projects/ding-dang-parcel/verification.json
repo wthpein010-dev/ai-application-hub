@@ -1,34 +1,202 @@
-[
-  {
-    "mobile": false,
-    "viewport": {
-      "width": 1100,
-      "height": 900
-    },
-    "seconds": 85.965,
-    "heap": 23457452,
-    "status": "关卡=10;已放=9;总数=9;完成=True;解锁=10",
-    "canvas": {
-      "w": 1100,
-      "h": 900
-    },
-    "errors": [],
-    "resources": []
+{
+  "version": "1.1.0",
+  "design": {
+    "width": 720,
+    "height": 1280
   },
-  {
-    "mobile": true,
-    "viewport": {
-      "width": 390,
-      "height": 844
+  "deviceTesting": "Chromium simulation; no real iOS/Android validation",
+  "cases": [
+    {
+      "name": "720x1280",
+      "touch": true,
+      "deviceScaleFactor": 1,
+      "realDevice": false,
+      "seconds": 74.786,
+      "allTenLevels": false,
+      "version": "1.1.0",
+      "status": "关卡=2;已放=0;总数=3;完成=False;解锁=2;操作=0;选中=0;拖动=-1;旋转=1/2/3;摆放=-1,-1/-1,-1/-1,-1;布局=720x1280;界面=打包",
+      "heap": 57684959,
+      "canvas": {
+        "width": 720,
+        "height": 1280
+      },
+      "scrollY": 0,
+      "scale": 1,
+      "errors": [],
+      "failed": [],
+      "checks": [
+        "tap",
+        "drag",
+        "touch-cancel",
+        "out-of-bounds",
+        "rotate",
+        "rapid-taps",
+        "undo",
+        "hint",
+        "restart",
+        "retry",
+        "progress-reload",
+        "unlock",
+        "resize-cancel",
+        "safe-area-simulation",
+        "no-scroll",
+        "modal-controls-blocked"
+      ]
     },
-    "seconds": 15.753,
-    "heap": 117247828,
-    "status": "关卡=2;已放=0;总数=3;完成=False;解锁=2",
+    {
+      "name": "360x640",
+      "touch": true,
+      "deviceScaleFactor": 2,
+      "realDevice": false,
+      "seconds": 60.907,
+      "allTenLevels": false,
+      "version": "1.1.0",
+      "status": "关卡=2;已放=0;总数=3;完成=False;解锁=2;操作=0;选中=0;拖动=-1;旋转=1/2/3;摆放=-1,-1/-1,-1/-1,-1;布局=720x1280;界面=打包",
+      "heap": 23194588,
+      "canvas": {
+        "width": 720,
+        "height": 1280
+      },
+      "scrollY": 0,
+      "scale": 1,
+      "errors": [],
+      "failed": [],
+      "checks": [
+        "tap",
+        "drag",
+        "touch-cancel",
+        "out-of-bounds",
+        "rotate",
+        "rapid-taps",
+        "undo",
+        "hint",
+        "restart",
+        "retry",
+        "progress-reload",
+        "unlock",
+        "resize-cancel",
+        "safe-area-simulation",
+        "no-scroll",
+        "modal-controls-blocked"
+      ]
+    },
+    {
+      "name": "390x844",
+      "touch": true,
+      "deviceScaleFactor": 2,
+      "realDevice": false,
+      "seconds": 47.544,
+      "allTenLevels": false,
+      "version": "1.1.0",
+      "status": "关卡=2;已放=0;总数=3;完成=False;解锁=2;操作=0;选中=0;拖动=-1;旋转=1/2/3;摆放=-1,-1/-1,-1/-1,-1;布局=720x1280;界面=打包",
+      "heap": 92101533,
+      "canvas": {
+        "width": 780,
+        "height": 1688
+      },
+      "scrollY": 0,
+      "scale": 1,
+      "errors": [],
+      "failed": [],
+      "checks": [
+        "tap",
+        "drag",
+        "touch-cancel",
+        "out-of-bounds",
+        "rotate",
+        "rapid-taps",
+        "undo",
+        "hint",
+        "restart",
+        "retry",
+        "progress-reload",
+        "unlock",
+        "resize-cancel",
+        "safe-area-simulation",
+        "no-scroll",
+        "modal-controls-blocked"
+      ]
+    },
+    {
+      "name": "1280x900",
+      "touch": false,
+      "deviceScaleFactor": 1,
+      "realDevice": false,
+      "seconds": 36.665,
+      "allTenLevels": false,
+      "version": "1.1.0",
+      "status": "关卡=2;已放=0;总数=3;完成=False;解锁=2;操作=0;选中=0;拖动=-1;旋转=1/2/3;摆放=-1,-1/-1,-1/-1,-1;布局=720x1280;界面=打包",
+      "heap": 26331558,
+      "canvas": {
+        "width": 1280,
+        "height": 900
+      },
+      "scrollY": 0,
+      "scale": 1,
+      "errors": [],
+      "failed": [],
+      "checks": [
+        "tap",
+        "drag",
+        "touch-cancel",
+        "out-of-bounds",
+        "rotate",
+        "rapid-taps",
+        "undo",
+        "hint",
+        "restart",
+        "retry",
+        "progress-reload",
+        "unlock",
+        "resize-cancel",
+        "safe-area-simulation",
+        "no-scroll",
+        "modal-controls-blocked"
+      ]
+    }
+  ],
+  "allTenTouch": {
+    "name": "720x1280",
+    "touch": true,
+    "deviceScaleFactor": 1,
+    "realDevice": false,
+    "seconds": 223.791,
+    "allTenLevels": true,
+    "version": "1.1.0",
+    "status": "关卡=10;已放=9;总数=9;完成=True;解锁=10;操作=24;选中=8;拖动=-1;旋转=0/0/0/0/0/0/0/0/0;摆放=0,0/3,0/4,0/1,1/0,2/2,2/2,3/4,3/0,4;布局=720x1280;界面=通关",
+    "heap": 24615539,
     "canvas": {
-      "w": 390,
-      "h": 844
+      "width": 720,
+      "height": 1280
     },
+    "scrollY": 0,
+    "scale": 1,
     "errors": [],
-    "resources": []
+    "failed": [],
+    "checks": [
+      "tap",
+      "drag",
+      "touch-cancel",
+      "out-of-bounds",
+      "rotate",
+      "rapid-taps",
+      "undo",
+      "hint",
+      "restart",
+      "retry",
+      "progress-reload",
+      "unlock",
+      "resize-cancel",
+      "safe-area-simulation",
+      "no-scroll",
+      "modal-controls-blocked"
+    ]
+  },
+  "legacySave": {
+    "before": "关卡=2;已放=1;总数=3;完成=False;解锁=2",
+    "after": "关卡=2;已放=1;总数=3;完成=False;解锁=2;操作=0;选中=-1;拖动=-1;旋转=0/2/3;摆放=0,0/-1,-1/-1,-1;布局=720x1280;界面=打包",
+    "passed": true,
+    "method": "Actual v1.0.0 runtime writes save, v1.1.0 loads same origin and path",
+    "realDevice": false
   }
-]
+}
