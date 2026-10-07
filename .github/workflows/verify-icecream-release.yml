@@ -33,9 +33,14 @@ jobs:
           app="$RUNNER_TEMP/icecream-sign/IceCream.app"
           test -x "$app/Contents/MacOS/IceCream"
           lipo "$app/Contents/MacOS/IceCream" -verify_arch arm64 x86_64
-          codesign --force --deep --sign - "$app"
-          codesign --verify --deep --strict "$app"
-          ditto -c -k --keepParent "$app" signed/icecream-mac.zip
+          if codesign --verify --deep --strict "$app" 2>/dev/null; then
+            cp downloads/icecream-mac.zip signed/icecream-mac.zip
+          else
+            codesign --force --deep --sign - "$app"
+            codesign --verify --deep --strict "$app"
+            ditto -c -k --keepParent "$app" signed/icecream-mac.zip
+          fi
+          shasum -a 256 signed/icecream-mac.zip
       - uses: actions/upload-artifact@v4
         with:
           name: icecream-mac-signed
