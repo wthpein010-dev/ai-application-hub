@@ -1,0 +1,144 @@
+name: Verify IceCream desktop players
+
+on:
+  workflow_dispatch:
+  push:
+    branches: ["codex/icecream-desktop-release-20261007"]
+    paths:
+      - "downloads/icecream-*.zip"
+      - ".github/workflows/verify-icecream-release.yml"
+      - "projects/icecream/**"
+      - "tests/icecream-*.mjs"
+      - "app-20260706-restore-games.js"
+  pull_request:
+    paths:
+      - "downloads/icecream-*.zip"
+      - ".github/workflows/verify-icecream-release.yml"
+      - "projects/icecream/**"
+      - "tests/icecream-*.mjs"
+      - "app-20260706-restore-games.js"
+
+permissions:
+  contents: read
+
+jobs:
+  smoke-web:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - run: npm ci --ignore-scripts
+      - run: npx playwright install --with-deps chromium
+      - name: Verify downloads, retry handling and playable WebGL
+        env:
+          ICECREAM_EVIDENCE_DIR: evidence
+        run: |
+          node --test tests/icecream-desktop-release.test.mjs tests/icecream-page.test.mjs tests/icecream-demo-shell-browser.test.mjs
+          node tests/icecream-demo-shell-real-browser-smoke.mjs
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: icecream-web-evidence
+          path: evidence
+  sign-mac:
+    runs-on: macos-14
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+          sparse-checkout: downloads/icecream-mac.zip
+          sparse-checkout-cone-mode: false
+      - name: Sign the universal app for local distribution
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/icecream-sign" signed
+          ditto -x -k downloads/icecream-mac.zip "$RUNNER_TEMP/icecream-sign"
+          app="$RUNNER_TEMP/icecream-sign/IceCream.app"
+          test -x "$app/Contents/MacOS/IceCream"
+          lipo "$app/Contents/MacOS/IceCream" -verify_arch arm64 x86_64
+          if codesign --verify --deep --strict "$app" 2>/dev/null; then
+            cp downloads/icecream-mac.zip signed/icecream-mac.zip
+          else
+            codesign --force --deep --sign - "$app"
+            codesign --verify --deep --strict "$app"
+            ditto -c -k --keepParent "$app" signed/icecream-mac.zip
+          fi
+          shasum -a 256 signed/icecream-mac.zip
+      - uses: actions/upload-artifact@v4
+        with:
+          name: icecream-mac-signed
+          path: signed/icecream-mac.zip
+          if-no-files-found: error
+  smoke-mac:
+    needs: sign-mac
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - runner: macos-14
+            architecture: arm64
+          - runner: macos-15-intel
+            architecture: x86_64
+    runs-on: ${{ matrix.runner }}
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: icecream-mac-signed
+          path: signed
+      - name: Complete a level and enter the next one
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(uname -m)" = "${{ matrix.architecture }}"
+          mkdir -p player evidence
+          ditto -x -k signed/icecream-mac.zip player
+          app="$PWD/player/IceCream.app"
+          codesign --verify --deep --strict "$app"
+          lipo "$app/Contents/MacOS/IceCream" -verify_arch "${{ matrix.architecture }}"
+          "$app/Contents/MacOS/IceCream" -batchmode -nographics \
+            -icecream-smoke-test "$PWD/evidence/report.json" -logFile "$PWD/evidence/player.log" &
+          task_pid=$!
+          for attempt in $(seq 1 60); do
+            if ! kill -0 "$task_pid" 2>/dev/null; then break; fi
+            sleep 1
+          done
+          if kill -0 "$task_pid" 2>/dev/null; then kill "$task_pid"; cat evidence/player.log; exit 1; fi
+          wait "$task_pid"
+          python3 -c 'import json; r=json.load(open("evidence/report.json")); assert r["passed"] and r["levels"] == 10; print(r)'
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: icecream-mac-evidence-${{ matrix.architecture }}
+          path: evidence
+  smoke-windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+          sparse-checkout: downloads/icecream-windows.zip
+          sparse-checkout-cone-mode: false
+      - name: Complete a level and enter the next one
+        shell: pwsh
+        run: |
+          Expand-Archive downloads/icecream-windows.zip player
+          New-Item -ItemType Directory evidence | Out-Null
+          $report = Join-Path $PWD 'evidence/report.json'
+          $log = Join-Path $PWD 'evidence/player.log'
+          $taskPlayer = Start-Process player/IceCream.exe -ArgumentList "-batchmode -nographics -icecream-smoke-test `"$report`" -logFile `"$log`"" -WindowStyle Hidden -PassThru
+          if (!$taskPlayer.WaitForExit(60000)) { Stop-Process -Id $taskPlayer.Id; throw 'Timed out' }
+          if ($taskPlayer.ExitCode -ne 0) { Get-Content $log; throw 'Player failed' }
+          $result = Get-Content $report | ConvertFrom-Json
+          if (!$result.passed -or $result.levels -ne 10) { throw 'Gameplay smoke test failed' }
+          $result
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: icecream-windows-evidence
+          path: evidence

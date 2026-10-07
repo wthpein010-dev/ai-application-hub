@@ -1,0 +1,58 @@
+{
+  "version": "1.1.0",
+  "name": "吃了个冰",
+  "unityVersion": "2022.3.62f3c1",
+  "sourceCommit": "df1998e",
+  "integratedProjectCommit": "1a01545",
+  "levels": 10,
+  "referenceResolution": [750, 1624],
+  "assets": {
+    "windows": {
+      "url": "../../downloads/icecream-windows.zip",
+      "bytes": 35023612,
+      "sha256": "4b0340184c58e5e6988ce2afa69434155355e960255147ef159fec556e886616",
+      "architecture": "x86_64",
+      "executable": "IceCream.exe"
+    },
+    "mac": {
+      "url": "../../downloads/icecream-mac.zip",
+      "bytes": 44754514,
+      "sha256": "6d01bdb15b21ad0aeb87e472423721b3802cb94bb6aa7fc2eeea5afc37b94f90",
+      "architectures": ["arm64", "x86_64"],
+      "executable": "IceCream.app/Contents/MacOS/IceCream",
+      "signing": "ad-hoc",
+      "notarized": false
+    },
+    "web": {
+      "url": "./index.html",
+      "cacheVersion": "20261007-icecream-1.1.0",
+      "files": {
+        "Build/WebGLPreview.data": {
+          "bytes": 14508047,
+          "sha256": "0b89600d174a1617566818d977945cea9d2b8c6e750aebe679ab8bc43a4b3c48"
+        },
+        "Build/WebGLPreview.framework.js": {
+          "bytes": 436955,
+          "sha256": "e5b7bc8cd3d8d939bcb7f47a32240103bb95da61f98ac289f78008ceb270aef5"
+        },
+        "Build/WebGLPreview.loader.js": {
+          "bytes": 20794,
+          "sha256": "3b7a2f1e647d1ec414d71c3fb569155dd7843ccb74d48a8fbaae24cacf732228"
+        },
+        "Build/WebGLPreview.wasm": {
+          "bytes": 18389854,
+          "sha256": "f6ad242cf030ad9002732948b1dfc814253dc54a3553b2e725fd6a5c76e1aa08"
+        }
+      }
+    }
+  },
+  "verification": {
+    "unityEditMode": { "passed": 22, "failed": 0 },
+    "nativeRunUrl": "https://github.com/wthpein010-dev/ai-application-hub/actions/runs/37649868542",
+    "nativePlatforms": ["windows-x86_64", "mac-arm64", "mac-x86_64"],
+    "nativeFlow": "make-three-cones / serve-customers / success / next-level",
+    "webFlow": "nonblank-canvas / serve-three-customers / result-popup / next-level",
+    "mobileViewport": [390, 844],
+    "browserErrors": 0
+  }
+}

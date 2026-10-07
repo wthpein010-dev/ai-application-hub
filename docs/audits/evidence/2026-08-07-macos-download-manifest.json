@@ -118,6 +118,16 @@
         "arm64",
         "x64"
       ]
+    },
+    {
+      "id": "icecream",
+      "name": "吃了个冰",
+      "kind": "native",
+      "catalogUrl": "https://wthpein010-dev.github.io/ai-application-hub/downloads/icecream-mac.zip",
+      "archiveUrl": "https://wthpein010-dev.github.io/ai-application-hub/downloads/icecream-mac.zip",
+      "bytes": 44754514,
+      "sha256": "6D01BDB15B21AD0AEB87E472423721B3802CB94BB6AA7FC2EEEA5AFC37B94F90",
+      "architectures": ["arm64", "x64"]
     }
   ]
 }

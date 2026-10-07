@@ -9,7 +9,7 @@
 | --- | --- | --- | --- | --- | --- |
 | `hub` | AI 应用方案整理器 | 网页跨平台 | Windows：现代浏览器 | macOS：现代浏览器 | [主页](https://wthpein010-dev.github.io/ai-application-hub/index.html)，无系统安装包 |
 | `gamepulse-mini-radar` | 小游戏每日排行 | 网页跨平台 | Windows：现代浏览器 | macOS：现代浏览器 | [主页卡片](https://wthpein010-dev.github.io/ai-application-hub/index.html#apps)；演示使用公开托管网页 |
-| `icecream` | 吃了个冰 | 小游戏在线体验 | Windows：现代浏览器 | macOS：现代浏览器 | [网页体验](https://wthpein010-dev.github.io/ai-application-hub/projects/icecream/index.html)，不把 Unity 工程当安装包 |
+| `icecream` | 吃了个冰 | 原生双平台 | Windows：x64 便携游戏包（Wins下载） | macOS：Intel / Apple Silicon 通用 .app（Mac下载） | [网页体验](https://wthpein010-dev.github.io/ai-application-hub/projects/icecream/index.html)，桌面成品：./downloads/icecream-windows.zip / ./downloads/icecream-mac.zip；证据：projects/icecream/release-manifest.json、.github/workflows/verify-icecream-release.yml |
 | `vita-mahjong` | 羊了个羊：对对碰 | 项目辅助 | Windows：现代浏览器 | macOS：现代浏览器 | [工程体验](https://wthpein010-dev.github.io/ai-application-hub/projects/vita-mahjong/index.html)，不提供伪系统包 |
 | `zhuanglege-sha` | 装了个啥 | 小游戏在线体验 | Windows：现代浏览器 | macOS：现代浏览器 | [网页体验](https://wthpein010-dev.github.io/ai-application-hub/projects/zhuanglege-sha/index.html) |
 | `paws-home-client` | 羊了个羊：碰碰消 | 项目辅助 | Windows：现代浏览器 | macOS：现代浏览器 | [工程体验](https://wthpein010-dev.github.io/ai-application-hub/projects/paws-home-client/index.html) |

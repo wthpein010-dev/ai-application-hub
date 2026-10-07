@@ -98,6 +98,24 @@ test("project page titles use their catalog names", () => {
   assert.equal(pageTitle("projects/pureshrink/index.html"), "无损压缩工坊");
 });
 
+test("old IceCream metadata restores real desktop downloads while keeping edited copy", () => {
+  const project = loadDefaultAppsFromRuntime(runtime).find(app => app.id === "icecream");
+  const updated = loadAppsWithStoredValue([{
+    ...project,
+    brief: "我的配单游戏说明",
+    package: "./downloads/icecream-unity-project.zip",
+    platforms: {
+      web: "./projects/icecream/index.html",
+      windows: { href: "./downloads/icecream-unity-project.zip", label: "工程下载" },
+      mac: { href: "./downloads/icecream-wechat-minigame.zip", label: "微信包下载" }
+    }
+  }]).find(app => app.id === "icecream");
+  assert.equal(updated.brief, "我的配单游戏说明");
+  assert.equal(updated.package, "");
+  assert.equal(updated.platforms.windows.href, "./downloads/icecream-windows.zip");
+  assert.equal(updated.platforms.mac.href, "./downloads/icecream-mac.zip");
+});
+
 test("focused catalog copy describes the product users can actually open", () => {
   const hubBrief = /const HUB_BRIEF = "([^"]+)";/.exec(runtime)?.[1] || "";
   const reviewerStart = runtime.indexOf('id: "codex-reviewer"');

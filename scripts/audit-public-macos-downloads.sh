@@ -474,6 +474,10 @@ audit_combined_native() {
       app="${extracted}/${archive_architecture}/V曲线对比工具.app"
       executable="${app}/Contents/MacOS/V曲线对比工具"
       ;;
+    icecream)
+      app="${extracted}/IceCream.app"
+      executable="${app}/Contents/MacOS/IceCream"
+      ;;
     *)
       die "unsupported native product ${id}"
       ;;
@@ -507,12 +511,26 @@ audit_combined_native() {
     gamespec-relay)
       "${executable}" --smoke-test
       ;;
+    icecream)
+      local report="${evidence_directory}/icecream-${architecture}.json"
+      "${executable}" -batchmode -nographics -icecream-smoke-test "${report}" \
+        -logFile "${evidence_directory}/icecream-${architecture}.log" &
+      active_pid=$!
+      for attempt in $(seq 1 60); do
+        if ! kill -0 "${active_pid}" 2>/dev/null; then break; fi
+        sleep 1
+      done
+      if kill -0 "${active_pid}" 2>/dev/null; then kill "${active_pid}"; die "IceCream smoke test timed out"; fi
+      wait "${active_pid}"
+      active_pid=""
+      node -e 'const r=JSON.parse(require("fs").readFileSync(process.argv[1],"utf8")); if(!r.passed||r.levels!==10) throw new Error("IceCream gameplay failed")' "${report}"
+      ;;
   esac
 
   local checks="bytes,sha256,zip,info-plist,macho-${expected_machine},codesign"
   if [[ "${id}" == "pureshrink" ]]; then
     checks="${checks},ffmpeg-${expected_machine},smoke-test"
-  elif [[ "${id}" == "gamespec-relay" ]]; then
+  elif [[ "${id}" == "gamespec-relay" || "${id}" == "icecream" ]]; then
     checks="${checks},smoke-test"
   else
     checks="${checks},launch-5s"

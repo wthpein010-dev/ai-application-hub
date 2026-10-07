@@ -80,7 +80,8 @@
       h1 {
         margin: 0 0 18px;
         color: #4a2768;
-        font-size: clamp(46px, 7vw, 78px);
+        font-size: 78px;
+        letter-spacing: 0;
         line-height: 1.04;
         text-shadow: 0 8px 22px rgba(105, 58, 139, 0.2);
       }
@@ -269,6 +270,7 @@
           padding-top: 24px;
         }
         .copy { max-width: none; }
+        h1 { font-size: 46px; }
         .stage { width: min(100%, 430px); }
       }
     </style>
@@ -377,10 +379,12 @@
         startButton.textContent = "加载中...";
         stage.classList.add("is-running");
         loadingPanel.style.display = "grid";
+        progressFill.style.width = "0%";
+        loadingText.textContent = "正在准备资源...";
         syncCanvasResolution();
 
         const buildUrl = "Build";
-        const buildVersion = "20260830-demo-shell";
+        const buildVersion = "20261007-icecream-1.1.0";
         const config = {
           dataUrl: buildUrl + "/WebGLPreview.data?v=" + buildVersion,
           frameworkUrl: buildUrl + "/WebGLPreview.framework.js?v=" + buildVersion,
@@ -388,7 +392,7 @@
           streamingAssetsUrl: "StreamingAssets",
           companyName: "DefaultCompany",
           productName: "IceCream",
-          productVersion: "1.0",
+          productVersion: "1.1.0",
           showBanner: unityShowBanner,
           autoSyncPersistentDataPath: true,
           devicePixelRatio: Math.min(window.devicePixelRatio || 1, 2)
@@ -397,11 +401,11 @@
         loaderScript = document.createElement("script");
         loaderScript.src = buildUrl + "/WebGLPreview.loader.js?v=" + buildVersion;
         loaderScript.onload = () => {
-          createUnityInstance(canvas, config, progress => {
+          Promise.resolve().then(() => createUnityInstance(canvas, config, progress => {
             const percent = Math.round(progress * 100);
             progressFill.style.width = percent + "%";
             loadingText.textContent = "正在加载资源 " + percent + "%";
-          }).then(instance => {
+          })).then(instance => {
             unityInstance = instance;
             loadingPanel.style.display = "none";
             startButton.textContent = "游戏已启动";

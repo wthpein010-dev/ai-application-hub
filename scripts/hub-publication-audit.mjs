@@ -5,6 +5,7 @@ import { fileURLToPath } from "node:url";
 import { loadDefaultAppsFromRuntime } from "../tests/helpers/default-apps.mjs";
 
 const NATIVE_PROJECTS = new Set([
+  "icecream",
   "codex-quota-bar",
   "codex-thread-workbench",
   "clickflow",

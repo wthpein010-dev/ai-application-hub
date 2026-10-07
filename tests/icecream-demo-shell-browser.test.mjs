@@ -13,7 +13,8 @@ function contentType(file) {
   return {
     ".css": "text/css; charset=utf-8",
     ".html": "text/html; charset=utf-8",
-    ".js": "text/javascript; charset=utf-8"
+    ".js": "text/javascript; charset=utf-8",
+    ".mjs": "text/javascript; charset=utf-8"
   }[extname(file)] || "application/octet-stream";
 }
 
@@ -184,4 +185,24 @@ test("IceCream fullscreen control targets the portrait stage", async t => {
     return rect.width / rect.height;
   });
   assert.ok(Math.abs(ratio - 750 / 1624) < 0.0001, `fullscreen canvas ratio was ${ratio}`);
+});
+
+test("IceCream can retry when Unity initialization throws synchronously", async t => {
+  const { server, url } = await startServer();
+  const browser = await chromium.launch({ headless: true });
+  t.after(async () => {
+    await browser.close();
+    await new Promise(resolve => server.close(resolve));
+  });
+  const page = await browser.newPage();
+  page.on("pageerror", () => {});
+  await page.route("**/Build/WebGLPreview.loader.js*", route => route.fulfill({
+    contentType: "text/javascript",
+    body: 'window.createUnityInstance = () => { throw new Error("Initialization failed"); };'
+  }));
+  await page.goto(url, { waitUntil: "domcontentloaded" });
+  await page.getByRole("button", { name: "开始体验" }).click();
+  await page.getByRole("button", { name: "重新加载" }).waitFor({ timeout: 2000 });
+  assert.equal(await page.locator("#loadingPanel").isVisible(), false);
+  assert.match(await page.locator("#unity-warning").innerText(), /Initialization failed/);
 });
