@@ -1,8 +1,6 @@
 <!doctype html>
 <html lang="zh-CN">
 <head>
-<link rel="stylesheet" href="../../assets/subpage-shell.css">
-<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 64 64%22%3E%3Crect x=%223%22 y=%223%22 width=%2258%22 height=%2258%22 rx=%2212%22 fill=%22%23ff6e6e%22 stroke=%22%23243033%22 stroke-width=%225%22/%3E%3Ccircle cx=%2224%22 cy=%2231%22 r=%224%22 fill=%22%23243033%22/%3E%3Ccircle cx=%2240%22 cy=%2231%22 r=%224%22 fill=%22%23243033%22/%3E%3C/svg%3E">
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>下班收摊</title>
 <style>
@@ -18,19 +16,19 @@ h1{font-size:clamp(28px,7vw,60px);margin:0 0 12px}p{line-height:1.7}progress{wid
 #home:focus-visible{outline:3px solid #4cc492;outline-offset:2px}.sr-only{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%)}
 @media (orientation:landscape) and (max-height:600px) and (pointer:coarse){#rotate{display:grid}}
 </style>
-</head>
+<link rel="stylesheet" href="../../assets/subpage-shell.css"><link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 100 100%27%3E%3Crect width=%27100%27 height=%27100%27 rx=%2720%27 fill=%27%23ffb83b%27/%3E%3Ctext x=%2750%27 y=%2775%27 text-anchor=%27middle%27 font-size=%2770%27%3E%E6%94%B6%3C/text%3E%3C/svg%3E"></head>
 <body class="hub-subpage">
 <span id="accessible-state" class="sr-only" aria-live="polite"></span>
 <main id="stage"><canvas id="unity-canvas" tabindex="0" aria-label="下班收摊。拖动小物向一个方向滑到底，进入同色摊位。也可点选小物后点击方向按钮。"></canvas>
 <div id="loading"><h1>下班收摊</h1><p>十个轻松小傍晚<br>正在摆好小桌，请稍等。</p><progress id="progress" value="0" max="1"></progress><p id="error"></p></div>
 <div id="rotate" role="status"><h1>竖着玩，更顺手</h1><p>请把手机转回竖屏<br>小摊和进度都在等你。</p></div></main>
-<footer id="footer"><a id="home" class="hub-home-link" href="../../index.html#games">← 更多小游戏</a></footer>
-<script src="Build/WebGL.loader.js?v=1.0.1-mobile720-dpi2"></script>
+<footer id="footer"><a class="hub-home-link" id="home" href="../../index.html#games">← 更多小游戏</a></footer>
+<script src="Build/WebGL.loader.js?v=1.1.0-night-market"></script>
 <script>
 const canvas=document.querySelector('#unity-canvas');
-const config={dataUrl:'Build/WebGL.data?v=1.0.1-mobile720-dpi2',frameworkUrl:'Build/WebGL.framework.js?v=1.0.1-mobile720-dpi2',codeUrl:'Build/WebGL.wasm?v=1.0.1-mobile720-dpi2',streamingAssetsUrl:'StreamingAssets',companyName:'Little Evening Studio',productName:'After Hours Stall',productVersion:'1.0.1',devicePixelRatio:Math.min(window.devicePixelRatio||1,1.5)};
+const config={dataUrl:'Build/WebGL.data?v=1.1.0-night-market',frameworkUrl:'Build/WebGL.framework.js?v=1.1.0-night-market',codeUrl:'Build/WebGL.wasm?v=1.1.0-night-market',streamingAssetsUrl:'StreamingAssets',companyName:'Little Evening Studio',productName:'After Hours Stall',productVersion:'1.1.0',devicePixelRatio:Math.min(window.devicePixelRatio||1,1.5)};
 const cancel=()=>window.stallInstance?.SendMessage('After Hours Stall','CancelPointer');
-canvas.addEventListener('touchcancel',cancel,{passive:true});window.addEventListener('blur',cancel);window.addEventListener('resize',cancel);document.addEventListener('visibilitychange',()=>{if(document.hidden)cancel()});
-const orientation=matchMedia('(orientation:landscape) and (max-height:600px) and (pointer:coarse)');orientation.addEventListener('change',cancel);
+canvas.addEventListener('touchcancel',cancel,{passive:true});window.addEventListener('blur',()=>{cancel();window.stallInstance?.SendMessage('After Hours Stall','BackgroundPause')});window.addEventListener('resize',cancel);document.addEventListener('visibilitychange',()=>{if(document.hidden){cancel();window.stallInstance?.SendMessage('After Hours Stall','BackgroundPause')}});
+const orientation=matchMedia('(orientation:landscape) and (max-height:600px) and (pointer:coarse)');orientation.addEventListener('change',()=>{cancel();window.stallInstance?.SendMessage('After Hours Stall','BackgroundPause')});
 createUnityInstance(canvas,config,p=>document.querySelector('#progress').value=p).then(instance=>{window.stallInstance=instance;document.querySelector('#loading').style.display='none';canvas.focus()}).catch(error=>{const e=document.querySelector('#error');e.style.display='block';e.textContent='暂时未能载入，请用支持 WebGL 的浏览器刷新重试。\n'+error});
 </script></body></html>
