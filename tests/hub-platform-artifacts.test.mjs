@@ -10,7 +10,7 @@ import { extractValidatedZip, readZipEntries, validateZipEntries } from "./helpe
 const root = dirname(dirname(fileURLToPath(import.meta.url)));
 const runtime = readFileSync(join(root, "app-20260706-restore-games.js"), "utf8");
 const apps = loadDefaultAppsFromRuntime(runtime);
-const nativeIds = new Set(["codex-quota-bar", "codex-thread-workbench", "clickflow", "pureshrink", "gamespec-relay", "codex-multi-thread-workbench", "v-curve-tool"]);
+const nativeIds = new Set(["codex-quota-bar", "codex-thread-workbench", "clickflow", "pureshrink", "gamespec-relay", "codex-multi-thread-workbench", "v-curve-tool", "icecream"]);
 const extensionIds = new Set(["feishu-downloader"]);
 const compatibilityMatrixPath = join(root, "docs", "audits", "2026-08-03-platform-compatibility.md");
 

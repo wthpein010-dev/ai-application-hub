@@ -244,21 +244,21 @@ const defaultApps = [
   {
     id: "icecream",
     name: "吃了个冰",
-    category: "Unity 微信小游戏",
+    category: "Unity 跨平台小游戏",
     status: "game",
-    brief: "面向微信小游戏的竖屏冰激凌配单游戏：按顾客需求选择口味、制作甜筒并连续闯过 10 个关卡。",
+    brief: "竖屏冰激凌配单游戏：按顾客需求制作甜筒，连续闯过 10 个关卡，支持在线试玩与 Windows、Mac 桌面游玩。",
     problem: "需要一个打开网页即可试玩的竖屏配单原型，快速验证操作节奏、关卡难度和移动端适配。",
-    aiUse: "AI 参与玩法扩展、10 关配置、UGUI 预制体、750×1624 安全区适配、进度存档、WebGL 与微信小游戏构建及发布验证。",
+    aiUse: "AI 参与玩法扩展、10 关配置、UGUI 预制体、750×1624 安全区适配、进度存档、WebGL 与双平台桌面构建及发布验证。",
     folder: "./projects/icecream/",
     entry: "./projects/icecream/index.html",
     video: "./projects/icecream/video/index.html",
     package: "",
     platforms: {
       web: { href: "./projects/icecream/index.html", label: "试玩" },
-      windows: "",
-      mac: ""
+      windows: { href: "./downloads/icecream-windows.zip", label: "Wins下载" },
+      mac: { href: "./downloads/icecream-mac.zip", label: "Mac下载" }
     },
-    tags: ["Unity", "UGUI", "冰激凌", "微信小游戏"],
+    tags: ["Unity", "UGUI", "冰激凌", "跨平台"],
     speed: 9,
     impact: 9,
     risk: 7,
@@ -2286,9 +2286,10 @@ function normalizeApp(app) {
     normalized.package = "";
     normalized.platforms = {
       web: { href: "./projects/icecream/index.html", label: "试玩" },
-      windows: "",
-      mac: ""
+      windows: { href: "./downloads/icecream-windows.zip", label: "Wins下载" },
+      mac: { href: "./downloads/icecream-mac.zip", label: "Mac下载" }
     };
+    if (normalized.category === "Unity 微信小游戏") normalized.category = base.category;
     normalized.status = "game";
   }
   if (normalized.id === "brick-light-motion-lab") {

@@ -7,15 +7,44 @@ on:
     paths:
       - "downloads/icecream-*.zip"
       - ".github/workflows/verify-icecream-release.yml"
+      - "projects/icecream/**"
+      - "tests/icecream-*.mjs"
+      - "app-20260706-restore-games.js"
   pull_request:
     paths:
       - "downloads/icecream-*.zip"
       - ".github/workflows/verify-icecream-release.yml"
+      - "projects/icecream/**"
+      - "tests/icecream-*.mjs"
+      - "app-20260706-restore-games.js"
 
 permissions:
   contents: read
 
 jobs:
+  smoke-web:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - run: npm ci --ignore-scripts
+      - run: npx playwright install --with-deps chromium
+      - name: Verify downloads, retry handling and playable WebGL
+        env:
+          ICECREAM_EVIDENCE_DIR: evidence
+        run: |
+          node --test tests/icecream-desktop-release.test.mjs tests/icecream-page.test.mjs tests/icecream-demo-shell-browser.test.mjs
+          node tests/icecream-demo-shell-real-browser-smoke.mjs
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: icecream-web-evidence
+          path: evidence
   sign-mac:
     runs-on: macos-14
     steps:
