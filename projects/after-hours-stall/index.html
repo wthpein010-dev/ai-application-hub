@@ -23,10 +23,10 @@ h1{font-size:clamp(28px,7vw,60px);margin:0 0 12px}p{line-height:1.7}progress{wid
 <div id="loading"><h1>下班收摊</h1><p>十个轻松小傍晚<br>正在摆好小桌，请稍等。</p><progress id="progress" value="0" max="1"></progress><p id="error"></p></div>
 <div id="rotate" role="status"><h1>竖着玩，更顺手</h1><p>请把手机转回竖屏<br>小摊和进度都在等你。</p></div></main>
 <footer id="footer"><a class="hub-home-link" id="home" href="../../index.html#games">← 更多小游戏</a></footer>
-<script src="Build/WebGL.loader.js?v=1.1.0-night-market"></script>
+<script src="Build/WebGL.loader.js?v=1.2.0-six-mechanics"></script>
 <script>
 const canvas=document.querySelector('#unity-canvas');
-const config={dataUrl:'Build/WebGL.data?v=1.1.0-night-market',frameworkUrl:'Build/WebGL.framework.js?v=1.1.0-night-market',codeUrl:'Build/WebGL.wasm?v=1.1.0-night-market',streamingAssetsUrl:'StreamingAssets',companyName:'Little Evening Studio',productName:'After Hours Stall',productVersion:'1.1.0',devicePixelRatio:Math.min(window.devicePixelRatio||1,1.5)};
+const config={dataUrl:'Build/WebGL.data?v=1.2.0-six-mechanics',frameworkUrl:'Build/WebGL.framework.js?v=1.2.0-six-mechanics',codeUrl:'Build/WebGL.wasm?v=1.2.0-six-mechanics',streamingAssetsUrl:'StreamingAssets',companyName:'Little Evening Studio',productName:'After Hours Stall',productVersion:'1.2.0',devicePixelRatio:Math.min(window.devicePixelRatio||1,1.5)};
 const cancel=()=>window.stallInstance?.SendMessage('After Hours Stall','CancelPointer');
 canvas.addEventListener('touchcancel',cancel,{passive:true});window.addEventListener('blur',()=>{cancel();window.stallInstance?.SendMessage('After Hours Stall','BackgroundPause')});window.addEventListener('resize',cancel);document.addEventListener('visibilitychange',()=>{if(document.hidden){cancel();window.stallInstance?.SendMessage('After Hours Stall','BackgroundPause')}});
 const orientation=matchMedia('(orientation:landscape) and (max-height:600px) and (pointer:coarse)');orientation.addEventListener('change',()=>{cancel();window.stallInstance?.SendMessage('After Hours Stall','BackgroundPause')});
