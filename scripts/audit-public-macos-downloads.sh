@@ -646,6 +646,7 @@ if (!fixtureMode) {
     ["gamespec-relay", "native"],
     ["codex-multi-thread-workbench", "native"],
     ["v-curve-tool", "native"],
+    ["icecream", "native"],
   ]);
   if (manifest.downloads.length !== expected.size) {
     throw new Error(`Expected exactly ${expected.size} public Mac downloads`);
