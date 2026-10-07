@@ -1,0 +1,56 @@
+{
+  "version": "1.1.0",
+  "base": "http://127.0.0.1:8225/",
+  "date": "2026-10-07T07:37:44.289Z",
+  "scope": "Final HTML navigation target/layout and actual native input, first level and persistence; all ten levels and interruptions in browser-report.json",
+  "results": [
+    {
+      "name": "720x1280",
+      "width": 720,
+      "height": 1280,
+      "touch": true,
+      "version": "1.1.0",
+      "level1Won": true,
+      "saveRestored": true,
+      "navigationTargets44": true,
+      "errors": [],
+      "failed": []
+    },
+    {
+      "name": "360x640",
+      "width": 360,
+      "height": 640,
+      "touch": true,
+      "version": "1.1.0",
+      "level1Won": true,
+      "saveRestored": true,
+      "navigationTargets44": true,
+      "errors": [],
+      "failed": []
+    },
+    {
+      "name": "390x844",
+      "width": 390,
+      "height": 844,
+      "touch": true,
+      "version": "1.1.0",
+      "level1Won": true,
+      "saveRestored": true,
+      "navigationTargets44": true,
+      "errors": [],
+      "failed": []
+    },
+    {
+      "name": "desktop",
+      "width": 1440,
+      "height": 1000,
+      "touch": false,
+      "version": "1.1.0",
+      "level1Won": true,
+      "saveRestored": true,
+      "navigationTargets44": true,
+      "errors": [],
+      "failed": []
+    }
+  ]
+}

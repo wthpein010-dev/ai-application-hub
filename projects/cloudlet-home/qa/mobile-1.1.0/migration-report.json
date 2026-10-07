@@ -1,0 +1,31 @@
+{
+  "version": "1.1.0",
+  "date": "2026-10-07T07:30:46.586Z",
+  "scope": "Published 1.0.0 browser data retained while same-origin responses were intercepted with local 1.1.0; no server modification",
+  "viewport": "390x844",
+  "deviceScaleFactor": 3,
+  "restored": {
+    "level": 2,
+    "unlocked": 2,
+    "solved": 1,
+    "moves": 0,
+    "running": false,
+    "won": false,
+    "message": "云朵每到一格，都会跟随这里的箭头。",
+    "version": "1.1.0",
+    "lastInput": "",
+    "designWidth": 720,
+    "designHeight": 1280,
+    "acceptedInputs": 0,
+    "canceledInputs": 0,
+    "winds": [
+      3,
+      1
+    ],
+    "menu": false,
+    "minButtonPixels": 56.33333206176758
+  },
+  "continuedAndSaved": true,
+  "nativeTouch": true,
+  "errors": []
+}
