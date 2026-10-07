@@ -32,7 +32,7 @@ jobs:
           ditto -x -k downloads/icecream-mac.zip "$RUNNER_TEMP/icecream-sign"
           app="$RUNNER_TEMP/icecream-sign/IceCream.app"
           test -x "$app/Contents/MacOS/IceCream"
-          lipo -verify_arch arm64 x86_64 "$app/Contents/MacOS/IceCream"
+          lipo "$app/Contents/MacOS/IceCream" -verify_arch arm64 x86_64
           codesign --force --deep --sign - "$app"
           codesign --verify --deep --strict "$app"
           ditto -c -k --keepParent "$app" signed/icecream-mac.zip
@@ -66,7 +66,7 @@ jobs:
           ditto -x -k signed/icecream-mac.zip player
           app="$PWD/player/IceCream.app"
           codesign --verify --deep --strict "$app"
-          lipo -verify_arch "${{ matrix.architecture }}" "$app/Contents/MacOS/IceCream"
+          lipo "$app/Contents/MacOS/IceCream" -verify_arch "${{ matrix.architecture }}"
           "$app/Contents/MacOS/IceCream" -batchmode -nographics \
             -icecream-smoke-test "$PWD/evidence/report.json" -logFile "$PWD/evidence/player.log" &
           task_pid=$!
