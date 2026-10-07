@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { execFile } from "node:child_process";
+import { execFile, execFileSync } from "node:child_process";
 import { createHash } from "node:crypto";
 import { existsSync } from "node:fs";
 import { mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
@@ -330,6 +330,20 @@ test("the native audit script enforces product checks and refreshes stale downlo
   assert.match(script, /sleep 5/);
   assert.match(script, /codex-multi-thread-workbench/);
   assert.match(script, /test-codex-confirmation-bar-macos-package\.sh/);
+});
+
+test("the native audit production selector accepts all current Mac downloads", async () => {
+  const script = await readFile(auditScript, "utf8");
+  const selector = script.match(/node - "\$\{manifest_path\}"[^\n]*<<'NODE'\r?\n([\s\S]+?)\r?\nNODE/);
+  assert.ok(selector, "audit record selector must be available");
+  for (const architecture of ["arm64", "x64"]) {
+    const output = execFileSync(process.execPath, [
+      "-", join(root, "docs/audits/evidence/2026-08-07-macos-download-manifest.json"),
+      architecture, "false"
+    ], { input: selector[1], encoding: "utf8" });
+    const ids = output.trim().split("\n").map(row => row.split("\t")[0]);
+    assert.deepEqual(ids, manifest.downloads.map(item => item.id));
+  }
 });
 
 test("the native audit preserves actionable diagnostics when an app bundle cannot launch", async () => {
