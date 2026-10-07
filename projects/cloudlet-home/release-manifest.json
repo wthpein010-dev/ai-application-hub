@@ -61,8 +61,8 @@
     },
     {
       "path": "memory-report.json",
-      "bytes": 1185,
-      "sha256": "416cdc084886d4d551c24029990d6307ced263f196e336599d8c9b4eccd3598d"
+      "bytes": 1139,
+      "sha256": "6ffd5f68cad459e6c43bf0cd9e4743b0eff8e20f685edaf7d354fdf19f564f98"
     },
     {
       "path": "qa/mobile-1.1.0/browser-report.json",
