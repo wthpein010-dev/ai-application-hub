@@ -1,1 +1,36 @@
-<!doctype html><html lang="zh-CN"><head><link rel="stylesheet" href="../../assets/subpage-shell.css"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><title>下班收摊 · 十个轻松小傍晚</title><style>*{box-sizing:border-box}html,body{margin:0;width:100%;height:100%;background:#fff7db;color:#243033;font-family:Arial,sans-serif;overflow:hidden}#unity-canvas{width:100%;height:100%;display:block;touch-action:none}#loading{position:absolute;inset:0;display:grid;place-content:center;text-align:center;padding:24px}h1{font-size:clamp(32px,7vw,60px);margin:0 0 10px}p{line-height:1.7}progress{width:min(300px,75vw);accent-color:#4cc492;margin:auto}#error{display:none;color:#9a2737;white-space:pre-wrap}#home{position:absolute;left:10px;bottom:5px;font-size:11px;color:#243033;background:#fff7dbcc;border-radius:8px;padding:4px;text-decoration:none}.hub-home-link{top:auto!important;bottom:6px!important;left:8px!important;min-height:26px!important;padding:5px 9px!important;font-size:11px!important}</style></head><body class="hub-subpage"><span id="accessible-state" aria-live="polite" style="position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%)"></span><canvas id="unity-canvas" tabindex="0" aria-label="下班收摊。沿一个方向拖动小物，遇到挡板才停。选中后也可使用方向键。"></canvas><div id="loading"><h1>下班收摊</h1><p>下班收摊<br>正在准备十个轻松的小傍晚…</p><progress id="progress" value="0" max="1"></progress><p id="error"></p></div><a id="home" class="hub-home-link" href="../../index.html#games">← 返回小游戏</a><script src="Build/WebGL.loader.js"></script><script>const canvas=document.querySelector('#unity-canvas');const progress=document.querySelector('#progress');const config={dataUrl:'Build/WebGL.data',frameworkUrl:'Build/WebGL.framework.js',codeUrl:'Build/WebGL.wasm',streamingAssetsUrl:'StreamingAssets',companyName:'Little Evening Studio',productName:'After Hours Stall',productVersion:'1.0.0',devicePixelRatio:Math.min(window.devicePixelRatio||1,1.5)};createUnityInstance(canvas,config,p=>progress.value=p).then(instance=>{window.stallInstance=instance;document.querySelector('#loading').style.display='none';canvas.focus()}).catch(error=>{const e=document.querySelector('#error');e.style.display='block';e.textContent='暂时未能载入，请在支持 WebGL 的浏览器中刷新重试。\n'+error});</script></body></html>
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<link rel="stylesheet" href="../../assets/subpage-shell.css">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 64 64%22%3E%3Crect x=%223%22 y=%223%22 width=%2258%22 height=%2258%22 rx=%2212%22 fill=%22%23ff6e6e%22 stroke=%22%23243033%22 stroke-width=%225%22/%3E%3Ccircle cx=%2224%22 cy=%2231%22 r=%224%22 fill=%22%23243033%22/%3E%3Ccircle cx=%2240%22 cy=%2231%22 r=%224%22 fill=%22%23243033%22/%3E%3C/svg%3E">
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>下班收摊</title>
+<style>
+*{box-sizing:border-box} :root{--safe-top:env(safe-area-inset-top,0px);--safe-right:env(safe-area-inset-right,0px);--safe-bottom:env(safe-area-inset-bottom,0px);--safe-left:env(safe-area-inset-left,0px)}
+html,body{margin:0;width:100%;height:100%;height:100dvh;overflow:hidden;overscroll-behavior:none;background:#fff7db;color:#243033;font-family:system-ui,sans-serif}
+#stage{position:fixed;top:var(--safe-top);right:var(--safe-right);bottom:calc(var(--safe-bottom) + 48px);left:var(--safe-left);overflow:hidden}
+#unity-canvas{width:100%;height:100%;display:block;touch-action:none;outline:none;user-select:none;-webkit-user-select:none}
+#loading,#rotate{position:absolute;inset:0;display:grid;place-content:center;text-align:center;padding:24px;background:#fff7db}
+h1{font-size:clamp(28px,7vw,60px);margin:0 0 12px}p{line-height:1.7}progress{width:min(300px,75vw);accent-color:#4cc492;margin:auto}
+#error{display:none;color:#9a2737;white-space:pre-wrap}#rotate{display:none;z-index:3;touch-action:none}
+#footer{position:fixed;left:var(--safe-left);right:var(--safe-right);bottom:var(--safe-bottom);height:48px;display:flex;align-items:center;justify-content:center;background:#fff7db}
+#home.hub-home-link,#home{position:static!important;display:flex;align-items:center;justify-content:center;min-height:44px!important;min-width:180px;padding:8px 20px!important;border:2px solid #243033;border-radius:12px;color:#243033;background:#fff7db;text-decoration:none;font-size:14px!important;line-height:1.2;touch-action:manipulation}
+#home:focus-visible{outline:3px solid #4cc492;outline-offset:2px}.sr-only{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%)}
+@media (orientation:landscape) and (max-height:600px) and (pointer:coarse){#rotate{display:grid}}
+</style>
+</head>
+<body class="hub-subpage">
+<span id="accessible-state" class="sr-only" aria-live="polite"></span>
+<main id="stage"><canvas id="unity-canvas" tabindex="0" aria-label="下班收摊。拖动小物向一个方向滑到底，进入同色摊位。也可点选小物后点击方向按钮。"></canvas>
+<div id="loading"><h1>下班收摊</h1><p>十个轻松小傍晚<br>正在摆好小桌，请稍等。</p><progress id="progress" value="0" max="1"></progress><p id="error"></p></div>
+<div id="rotate" role="status"><h1>竖着玩，更顺手</h1><p>请把手机转回竖屏<br>小摊和进度都在等你。</p></div></main>
+<footer id="footer"><a id="home" class="hub-home-link" href="../../index.html#games">← 更多小游戏</a></footer>
+<script src="Build/WebGL.loader.js?v=1.0.1-mobile720"></script>
+<script>
+const canvas=document.querySelector('#unity-canvas');
+const config={dataUrl:'Build/WebGL.data?v=1.0.1-mobile720',frameworkUrl:'Build/WebGL.framework.js?v=1.0.1-mobile720',codeUrl:'Build/WebGL.wasm?v=1.0.1-mobile720',streamingAssetsUrl:'StreamingAssets',companyName:'Little Evening Studio',productName:'After Hours Stall',productVersion:'1.0.1',devicePixelRatio:Math.min(window.devicePixelRatio||1,1.5)};
+const cancel=()=>window.stallInstance?.SendMessage('After Hours Stall','CancelPointer');
+canvas.addEventListener('touchcancel',cancel,{passive:true});window.addEventListener('blur',cancel);window.addEventListener('resize',cancel);document.addEventListener('visibilitychange',()=>{if(document.hidden)cancel()});
+const orientation=matchMedia('(orientation:landscape) and (max-height:600px) and (pointer:coarse)');orientation.addEventListener('change',cancel);
+createUnityInstance(canvas,config,p=>document.querySelector('#progress').value=p).then(instance=>{window.stallInstance=instance;document.querySelector('#loading').style.display='none';canvas.focus()}).catch(error=>{const e=document.querySelector('#error');e.style.display='block';e.textContent='暂时未能载入，请用支持 WebGL 的浏览器刷新重试。\n'+error});
+</script></body></html>
