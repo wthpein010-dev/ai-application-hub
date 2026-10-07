@@ -1,23 +1,15 @@
-# 下班收摊 v1.0.1
+# 下班收摊 v1.1.0
 
-Unity 2022.3.62f3c1 原创轻休闲滑动整理解谜。拖动小物沿四方向滑动，遇到纸箱或同伴才停；滑入右侧同色小摊就收好。十个固定手工布局，不限时，可撤销、提示、重开和任选关卡。
+原创 Unity 休闲滑动解谜。桃子、抹茶杯和招财猫一滑到底，遇障碍即停；向右进入同色摊位收好。支持鼠标拖动、单指拖动和点选后的方向按钮。
 
-## 怎么玩
-Windows：运行 Builds/Windows/AfterHoursStall.exe。鼠标拖动，也可选中后按方向键或屏幕方向按钮；Z 撤销，R 重开，Esc 选关。自动存档与撤销历史在可执行文件旁 Saves/progress.txt。
+休闲模式保留十个固定关卡、撤销、重开、提示及 AH1 自动存档。模式菜单可以继续原来的休闲进度。
 
-WebGL：通过 HTTP/HTTPS 访问 Builds/WebGL/index.html。手机单指滑动，浏览器自动保存；清除站点数据会清除进度。
+新增“限时夜市”六摊：35/55/70/75/80/90秒，成功滑动后伸缩挡板换一拍。格内有小物时挡板延迟闭合；无效滑动不换拍。等一拍扣1秒，撤销恢复位置和节拍并扣2秒，提示扣3秒。挡板按动作变化，玩家能预判，不会在拖动中突然堵路。固定木箱、盆栽、路障锥碰撞相同，伸缩帘改变路线。
 
-## 工程与复测
-用已安装的 Unity 2022.3.62f3c1 打开本目录，场景 Assets/Scenes/Stall.unity。编辑器构建入口 StallBuild.Windows / StallBuild.WebGL / StallBuild.All。纯逻辑测试运行 Tests/RunTests.ps1；它只使用已装 Unity 内附 Mono，不会调用其他仓库或 ClickFlow。
+点击开始才计时。暂停、模式菜单、失焦、网页后台会停表，回到前台后点击继续才计时。零秒及以后不接受新动作；正剩余时间完成全部小物获胜。胜负都可重试。本地记录每摊最佳剩余时间；关闭程序后挑战重新开始，休闲进度照常保存。键盘：方向键、Z撤销、R重开、Esc菜单、空格暂停/继续、Q等一拍。
 
-## 资源来源与范围
-角色、纸箱、条纹小摊、界面、粒子与合成音效为原创程序生成。中文字体来源及 OFL 许可见 docs/asset-sources.md 和 docs/NotoSansSC-OFL.txt。没有广告、付费、账户或后台服务。
+工程：Unity2022.3.62f3c1，Assets/Scenes/Stall.unity。构建入口 Assets/Editor/StallBuild.cs 的 Windows / WebGL / All；全部生成到 Builds。Tests/RunTests.ps1 使用已安装引擎的Mono，不需要新SDK。没有广告、登录、联网账户、后台服务或在线排行榜。
 
-Mac 未构建、未做真机验证；390×844 为桌面窗口和浏览器模拟触摸，不等同于手机真机验证。真实验收记录见 docs/verification.md，截图见 QA。
+代码图形和合成音效原创。字体为 Noto Sans SC 的OFL授权子集，已移除保留字体名；详见 docs/asset-sources.md 和 docs/NotoSansSC-OFL.txt。新模式规格、实现计划和最终验收在 docs/challenge-*.md。
 
-## 手游操作版 1.0.1（2026-10-07）
-720×1280 竖屏逻辑画布、安全区、单指拖动及大方向键；按钮按实际缩放保持至少44像素命中区。取消、多指、出界、失焦和调整尺寸均取消当前手势。网页手机横屏提示转回竖屏。十关与 v1.0.0 本地进度兼容。
-
-新增验收：Tests/MobileTests.cs、Tools/browser-mobile.mjs；截图及记录在 QA/mobile-v1.0.1。浏览器手机为 Chromium CDP 模拟触摸，不等同手机真机。Android/iOS/Mac原生未构建、未上架。
-
-高 DPI 网页的命中区使用 canvas 像素 / CSS 宽度换算，至少44 CSS像素；追加DPR3小屏安全区边缘点击验收。
+目标竖屏720×1280，安全区等比适配。Windows与WebGL实际构建；手机触摸、390×844/360×640/DPR3为浏览器模拟，尚未做Android/iOS/mac原生构建与真机验证。目标60FPS、WebGL初始128MB；运行数据见验收报告，不能据桌面模拟推断手机帧率。
