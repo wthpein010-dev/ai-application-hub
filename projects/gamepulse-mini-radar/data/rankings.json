@@ -1,9 +1,9 @@
 {
   "schemaVersion": 1,
   "state": "ready",
-  "mirroredAt": "2026-10-07T02:26:45.583Z",
-  "sourceUpdatedAt": "2026-10-07T02:26:34.742Z",
-  "displayDate": "2026.10.07",
+  "mirroredAt": "2026-10-08T02:43:56.447Z",
+  "sourceUpdatedAt": "2026-10-08T02:43:45.492Z",
+  "displayDate": "2026.10.08",
   "stale": true,
   "storage": "d1",
   "sourceUrl": "https://gamepulse-mini-radar.polite-chord-7994.chatgpt.site/api/rankings",
@@ -19,14 +19,14 @@
       "id": "popular",
       "label": "应用宝热门榜",
       "status": "fresh",
-      "checkedAt": "2026-10-07T02:26:34.742Z",
+      "checkedAt": "2026-10-08T02:43:45.492Z",
       "message": ""
     },
     {
       "id": "grossing",
       "label": "应用宝畅销榜",
       "status": "fresh",
-      "checkedAt": "2026-10-07T02:26:34.742Z",
+      "checkedAt": "2026-10-08T02:43:45.492Z",
       "message": ""
     },
     {
@@ -46,7 +46,7 @@
         "category": "轻度休闲",
         "subCategory": "休闲闯关",
         "sourceLabel": "微信游戏 · 小游戏人气榜（截图校验） / 应用宝 · 热门榜",
-        "verifiedAt": "2026-10-07T02:26:34.742Z"
+        "verifiedAt": "2026-10-08T02:43:45.492Z"
       },
       {
         "rank": 2,
@@ -55,7 +55,7 @@
         "category": "轻度休闲",
         "subCategory": "消除",
         "sourceLabel": "微信游戏 · 小游戏人气榜（截图校验） / 应用宝 · 热门榜",
-        "verifiedAt": "2026-10-07T02:26:34.742Z"
+        "verifiedAt": "2026-10-08T02:43:45.492Z"
       },
       {
         "rank": 3,
@@ -73,7 +73,7 @@
         "category": "棋牌游戏",
         "subCategory": "纸牌",
         "sourceLabel": "微信游戏 · 小游戏人气榜（截图校验） / 应用宝 · 热门榜 / 应用宝 · 畅销榜",
-        "verifiedAt": "2026-10-07T02:26:34.742Z"
+        "verifiedAt": "2026-10-08T02:43:45.492Z"
       },
       {
         "rank": 5,
@@ -91,7 +91,7 @@
         "category": "轻度休闲",
         "subCategory": "烧脑",
         "sourceLabel": "微信游戏 · 小游戏人气榜（截图校验） / 应用宝 · 热门榜",
-        "verifiedAt": "2026-10-07T02:26:34.742Z"
+        "verifiedAt": "2026-10-08T02:43:45.492Z"
       },
       {
         "rank": 7,
@@ -118,16 +118,16 @@
         "category": "轻度休闲",
         "subCategory": "塔防",
         "sourceLabel": "微信游戏 · 小游戏人气榜（截图校验） / 应用宝 · 热门榜",
-        "verifiedAt": "2026-10-07T02:26:34.742Z"
+        "verifiedAt": "2026-10-08T02:43:45.492Z"
       },
       {
         "rank": 10,
         "title": "QQ经典农场",
         "developer": "腾讯",
         "category": "轻度休闲",
-        "subCategory": "模拟经营",
-        "sourceLabel": "微信游戏 · 小游戏人气榜（截图校验）",
-        "verifiedAt": "2026-07-21T09:52:20.000Z"
+        "subCategory": "经营",
+        "sourceLabel": "微信游戏 · 小游戏人气榜（截图校验） / 应用宝 · 热门榜",
+        "verifiedAt": "2026-10-08T02:43:45.492Z"
       }
     ],
     "popular": [
@@ -138,88 +138,88 @@
         "category": "轻度休闲",
         "subCategory": "消除",
         "sourceLabel": "微信游戏 · 小游戏人气榜（截图校验） / 应用宝 · 热门榜",
-        "verifiedAt": "2026-10-07T02:26:34.742Z"
+        "verifiedAt": "2026-10-08T02:43:45.492Z"
       },
       {
         "rank": 2,
-        "title": "拳击布娃娃游戏",
-        "developer": "开发者信息待来源补充",
-        "category": "轻度休闲",
-        "subCategory": "烧脑",
-        "sourceLabel": "应用宝 · 热门榜",
-        "verifiedAt": "2026-10-07T02:26:34.742Z"
-      },
-      {
-        "rank": 3,
-        "title": "向末日开炮",
-        "developer": "开发者信息待来源补充",
-        "category": "轻度休闲",
-        "subCategory": "经营",
-        "sourceLabel": "应用宝 · 热门榜 / 应用宝 · 畅销榜",
-        "verifiedAt": "2026-10-07T02:26:34.742Z"
-      },
-      {
-        "rank": 4,
         "title": "腾讯欢乐斗地主",
         "developer": "腾讯",
         "category": "棋牌游戏",
         "subCategory": "纸牌",
         "sourceLabel": "微信游戏 · 小游戏人气榜（截图校验） / 应用宝 · 热门榜 / 应用宝 · 畅销榜",
-        "verifiedAt": "2026-10-07T02:26:34.742Z"
+        "verifiedAt": "2026-10-08T02:43:45.492Z"
+      },
+      {
+        "rank": 3,
+        "title": "拳击布娃娃游戏",
+        "developer": "开发者信息待来源补充",
+        "category": "轻度休闲",
+        "subCategory": "烧脑",
+        "sourceLabel": "应用宝 · 热门榜",
+        "verifiedAt": "2026-10-08T02:43:45.492Z"
+      },
+      {
+        "rank": 4,
+        "title": "指尖闯关大挑战",
+        "developer": "开发者信息待来源补充",
+        "category": "小游戏",
+        "subCategory": "玩法待补充",
+        "sourceLabel": "应用宝 · 热门榜",
+        "verifiedAt": "2026-10-08T02:43:45.492Z"
       },
       {
         "rank": 5,
+        "title": "向末日开炮",
+        "developer": "开发者信息待来源补充",
+        "category": "轻度休闲",
+        "subCategory": "经营",
+        "sourceLabel": "应用宝 · 热门榜 / 应用宝 · 畅销榜",
+        "verifiedAt": "2026-10-08T02:43:45.492Z"
+      },
+      {
+        "rank": 6,
         "title": "躺平发育",
         "developer": "开发者信息待来源补充",
         "category": "轻度休闲",
         "subCategory": "塔防",
         "sourceLabel": "微信游戏 · 小游戏人气榜（截图校验） / 应用宝 · 热门榜",
-        "verifiedAt": "2026-10-07T02:26:34.742Z"
-      },
-      {
-        "rank": 6,
-        "title": "割草乱斗王",
-        "developer": "开发者信息待来源补充",
-        "category": "小游戏",
-        "subCategory": "玩法待补充",
-        "sourceLabel": "应用宝 · 热门榜",
-        "verifiedAt": "2026-10-07T02:26:34.742Z"
+        "verifiedAt": "2026-10-08T02:43:45.492Z"
       },
       {
         "rank": 7,
-        "title": "开局带把枪",
-        "developer": "开发者信息待来源补充",
-        "category": "小游戏",
-        "subCategory": "玩法待补充",
-        "sourceLabel": "应用宝 · 热门榜",
-        "verifiedAt": "2026-10-07T02:26:34.742Z"
-      },
-      {
-        "rank": 8,
         "title": "贪吃蛇大作战",
         "developer": "武汉微派网络",
         "category": "轻度休闲",
         "subCategory": "烧脑",
         "sourceLabel": "微信游戏 · 小游戏人气榜（截图校验） / 应用宝 · 热门榜",
-        "verifiedAt": "2026-10-07T02:26:34.742Z"
+        "verifiedAt": "2026-10-08T02:43:45.492Z"
       },
       {
-        "rank": 9,
-        "title": "脑力我最强",
+        "rank": 8,
+        "title": "开局带把枪",
         "developer": "开发者信息待来源补充",
         "category": "小游戏",
         "subCategory": "玩法待补充",
         "sourceLabel": "应用宝 · 热门榜",
-        "verifiedAt": "2026-10-07T02:26:34.742Z"
+        "verifiedAt": "2026-10-08T02:43:45.492Z"
       },
       {
-        "rank": 10,
+        "rank": 9,
         "title": "抓大鹅",
         "developer": "厂商信息待公开页确认",
         "category": "轻度休闲",
         "subCategory": "烧脑",
         "sourceLabel": "微信游戏 · 小游戏人气榜（截图校验） / 应用宝 · 热门榜",
-        "verifiedAt": "2026-10-07T02:26:34.742Z"
+        "verifiedAt": "2026-10-08T02:43:45.492Z"
+      },
+      {
+        "rank": 10,
+        "title": "升级",
+        "developer": "开发者信息待来源补充",
+        "category": "棋牌",
+        "subCategory": "纸牌",
+        "sourceLabel": "应用宝 · 热门榜",
+        "verifiedAt": "2026-10-08T02:43:45.492Z"
       }
     ],
     "grossing": [
@@ -230,7 +230,7 @@
         "category": "轻度休闲",
         "subCategory": "创新品类",
         "sourceLabel": "应用宝 · 畅销榜",
-        "verifiedAt": "2026-10-07T02:26:34.742Z"
+        "verifiedAt": "2026-10-08T02:43:45.492Z"
       },
       {
         "rank": 2,
@@ -239,7 +239,7 @@
         "category": "轻度休闲",
         "subCategory": "烧脑",
         "sourceLabel": "应用宝 · 畅销榜",
-        "verifiedAt": "2026-10-07T02:26:34.742Z"
+        "verifiedAt": "2026-10-08T02:43:45.492Z"
       },
       {
         "rank": 3,
@@ -248,34 +248,34 @@
         "category": "轻度休闲",
         "subCategory": "经营",
         "sourceLabel": "应用宝 · 畅销榜",
-        "verifiedAt": "2026-10-07T02:26:34.742Z"
+        "verifiedAt": "2026-10-08T02:43:45.492Z"
       },
       {
         "rank": 4,
-        "title": "无尽冬日",
-        "developer": "开发者信息待来源补充",
-        "category": "动作冒险",
-        "subCategory": "战术竞技",
-        "sourceLabel": "应用宝 · 畅销榜",
-        "verifiedAt": "2026-10-07T02:26:34.742Z"
-      },
-      {
-        "rank": 5,
-        "title": "向末日开炮",
-        "developer": "开发者信息待来源补充",
-        "category": "轻度休闲",
-        "subCategory": "经营",
-        "sourceLabel": "应用宝 · 热门榜 / 应用宝 · 畅销榜",
-        "verifiedAt": "2026-10-07T02:26:34.742Z"
-      },
-      {
-        "rank": 6,
         "title": "青云诀之伏魔",
         "developer": "开发者信息待来源补充",
         "category": "角色扮演",
         "subCategory": "MMORPG",
         "sourceLabel": "应用宝 · 畅销榜",
-        "verifiedAt": "2026-10-07T02:26:34.742Z"
+        "verifiedAt": "2026-10-08T02:43:45.492Z"
+      },
+      {
+        "rank": 5,
+        "title": "无尽冬日",
+        "developer": "开发者信息待来源补充",
+        "category": "动作冒险",
+        "subCategory": "战术竞技",
+        "sourceLabel": "应用宝 · 畅销榜",
+        "verifiedAt": "2026-10-08T02:43:45.492Z"
+      },
+      {
+        "rank": 6,
+        "title": "向末日开炮",
+        "developer": "开发者信息待来源补充",
+        "category": "轻度休闲",
+        "subCategory": "经营",
+        "sourceLabel": "应用宝 · 热门榜 / 应用宝 · 畅销榜",
+        "verifiedAt": "2026-10-08T02:43:45.492Z"
       },
       {
         "rank": 7,
@@ -284,7 +284,7 @@
         "category": "轻度休闲",
         "subCategory": "经营",
         "sourceLabel": "应用宝 · 畅销榜",
-        "verifiedAt": "2026-10-07T02:26:34.742Z"
+        "verifiedAt": "2026-10-08T02:43:45.492Z"
       },
       {
         "rank": 8,
@@ -293,7 +293,7 @@
         "category": "轻度休闲",
         "subCategory": "经营",
         "sourceLabel": "应用宝 · 畅销榜",
-        "verifiedAt": "2026-10-07T02:26:34.742Z"
+        "verifiedAt": "2026-10-08T02:43:45.492Z"
       },
       {
         "rank": 9,
@@ -302,7 +302,7 @@
         "category": "轻度休闲",
         "subCategory": "烧脑",
         "sourceLabel": "应用宝 · 畅销榜",
-        "verifiedAt": "2026-10-07T02:26:34.742Z"
+        "verifiedAt": "2026-10-08T02:43:45.492Z"
       },
       {
         "rank": 10,
@@ -311,7 +311,7 @@
         "category": "轻度休闲",
         "subCategory": "经营",
         "sourceLabel": "应用宝 · 畅销榜",
-        "verifiedAt": "2026-10-07T02:26:34.742Z"
+        "verifiedAt": "2026-10-08T02:43:45.492Z"
       }
     ],
     "overseas": [
