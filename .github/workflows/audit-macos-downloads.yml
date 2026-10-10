@@ -6,6 +6,7 @@ on:
     branches:
       - main
       - audit/mac-downloads-20260807
+      - codex/icecream-mac-audit-fix-20261008
     paths:
       - ".github/workflows/audit-macos-downloads.yml"
       - "app-20260706-restore-games.js"
