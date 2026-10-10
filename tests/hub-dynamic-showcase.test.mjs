@@ -38,7 +38,7 @@ test("homepage exposes the approved dynamic showcase shell", () => {
   assert.match(html, /<aside id="editPanel"[^>]+aria-hidden="true"[^>]+inert/u);
   assert.match(html, /href="\.\/styles\.css\?v=20260927-textbook-l19"/u);
   assert.match(html, /src="\.\/hub-project-media\.js\?v=20260927-textbook-l19"/u);
-  assert.match(html, /src="\.\/app-20260706-restore-games\.js\?v=20260927-textbook-l19"/u);
+  assert.match(html, /src="\.\/app-20260706-restore-games\.js\?v=20261007-icecream-desktop"/u);
 });
 
 test("approved showcase uses image-led Bento layouts with responsive fallbacks", () => {
