@@ -342,3 +342,63 @@ test('a formally archived event still counts toward weekly activity progress aft
   assert.match(plain(app.html()),/本周有效对局 1 \/ 3/);
   assert.equal(app.state().session.coins,128700);
 });
+
+test('one weekend entry consumes one ticket and preserves other tickets through later rounds and reload', () => {
+  const base=boot(), storage=base.storage(), key=base.key(), saved=JSON.parse(storage[key]);
+  saved.data.ticket=2;
+  const app=boot({storage:{...storage,[key]:JSON.stringify(saved)}});
+  app.click('tournament');app.click('eventDetail',2);app.click('register');app.click('confirmRegister');
+  assert.equal(app.state().data.ticket,2,'registration only reserves one ticket');
+  app.click('advance');app.click('checkin');app.click('advance');
+  assert.equal(app.state().data.ticket,1,'first roster publication consumes exactly one ticket');
+  app.click('advance');
+  for(let hand=1;hand<=4;hand++){app.click('advance');if(hand<4)app.click('advance');}
+  app.click('advance');
+  assert.equal(app.state().data.tournament.round,2);
+  const restored=boot({storage:app.storage(),now:app.now()});restored.click('advance');restored.click('advance');
+  assert.equal(restored.state().data.ticket,1,'the second round must not consume another ticket');
+  assert.equal(restored.state().session.coins,128600,'competition rounds do not charge coin fees');
+});
+
+test('a weekend advancement does not charge its ticket again in the next stage', () => {
+  const base=boot();base.click('tools');base.click('weekendScenario');
+  const storage=base.storage(),key=base.key(),saved=JSON.parse(storage[key]);saved.data.ticket=1;
+  const app=boot({storage:{...storage,[key]:JSON.stringify(saved)},now:base.now()});
+  app.click('advance');app.click('nextStage');app.click('advance');app.click('advance');
+  assert.equal(app.state().data.tournament.stage,1);
+  assert.equal(app.state().data.ticket,1,'the original entry already covers the next stage');
+});
+
+test('personal ready timeout keeps the open help page and returns to a fresh lobby without extending the old room', () => {
+  const app=boot();matchToReady(app);app.tick(59000);app.click('help');app.input('helpDraft.reason','准备过程中查看帮助');app.tick(1000);
+  assert.equal(app.state().session.status,'idle');
+  assert.equal(app.state().session.reserved,0);
+  assert.equal(app.state().session.coins,128600);
+  assert.equal(app.state().data.screen,'detailsHelp','timeout must preserve the queried page');
+  assert.match(plain(app.html()),/准备过程中查看帮助/,'the written draft must survive timeout');
+  app.click('closeModal');app.click('back');
+  assert.equal(app.state().data.screen,'coinLobby');
+  app.click('startCoin');app.click('queueCoin');app.click('advance');
+  assert.equal(app.state().session.status,'seated');
+  assert.equal(app.state().data.personalReadyDeadline,app.now()+60000);
+});
+
+test('an older weekend save already in a later round resumes without spending its remaining ticket', () => {
+  const base=boot();base.click('tools');base.click('weekendScenario');
+  const storage=base.storage(),key=base.key(),saved=JSON.parse(storage[key]);
+  delete saved.data.tournament.ticketUsed;
+  const app=boot({storage:{...storage,[key]:JSON.stringify(saved)},now:base.now()});
+  app.click('advance');app.click('nextStage');app.click('advance');app.click('advance');
+  assert.equal(app.state().data.ticket,1);
+  assert.equal(app.state().data.tournament.stage,1);
+});
+
+test('cancelling a weekend registration leaves all tickets available for a new confirmed registration', () => {
+  const app=boot();app.click('tournament');app.click('eventDetail',2);app.click('register');app.click('confirmRegister');
+  app.click('cancelRegistration');app.click('confirmCancelRegistration');
+  assert.equal(app.state().data.ticket,1);
+  assert.equal(app.state().data.tournament.status,'none');
+  app.click('eventDetail',2);app.click('register');app.click('confirmRegister');app.click('advance');app.click('checkin');app.click('advance');
+  assert.equal(app.state().data.ticket,0);
+  app.click('advance');assert.equal(app.state().data.tournament.status,'table');
+});
