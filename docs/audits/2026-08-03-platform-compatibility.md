@@ -1,7 +1,7 @@
 # AI Application Hub 平台兼容矩阵
 
 - 日期：2026-09-29
-- 范围：主页当前 38 张公开项目卡片
+- 范围：主页当前 39 张公开项目卡片
 - 规则：网页、小游戏和工程体验通过现代浏览器覆盖 Windows 与 macOS；只有经过原生构建、架构检查和产物校验的项目显示系统下载。
 - 通用门禁：`tests/hub-entry-pages-browser-smoke.mjs`、`tests/hub-video-pages-browser-smoke.mjs`、`tests/hub-platform-artifacts.test.mjs`。
 
@@ -48,8 +48,10 @@
 
 | `game-design-textbook` | 游戏设计研习册 | 网页跨平台 | Windows：现代浏览器 | macOS：现代浏览器 | [网页教材](https://wthpein010-dev.github.io/ai-application-hub/projects/game-design-textbook/index.html)；50课路线、16课全文、脑图、音频与实验，无系统安装包。 |
 
+| `mahjong-fields-ui` | 金币场与比赛场 · 交互参考 | 项目辅助 | Windows：现代浏览器 | macOS：现代浏览器 | [交互参考](https://wthpein010-dev.github.io/ai-application-hub/projects/mahjong-fields-ui/index.html)；纯网页演示及48秒页面流程视频，不连接真实服务或提供系统安装包。 |
+
 ## 结论
 
-- 38 个项目都可在 Windows 与 macOS 上通过网页查看或体验。
+- 39 个项目都可在 Windows 与 macOS 上通过网页查看或体验。
 - 7 个项目提供经过验证的原生 Windows/macOS 成品；Codex 多线程工作台与 V 曲线对比工具均通过 Windows x64 与 macOS arm64/x64 验证，飞书插件提供同一份跨平台浏览器扩展。
 - 其余项目不再显示来源码、Unity 工程、WebGL 压缩包或占位 ZIP 形式的伪系统下载。

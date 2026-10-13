@@ -28,7 +28,7 @@ function actionTypes(app) {
 }
 
 test("every card exposes actions that match its actual delivery type", () => {
-  assert.equal(apps.length, 38);
+  assert.equal(apps.length, 39);
   for (const app of apps) {
     const expected = app.id === "lighthouse-rescue"
       ? ["web", "video", "windows"]

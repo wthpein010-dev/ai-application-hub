@@ -80,17 +80,17 @@ export const projects = [
     "id": "icecream",
     "index": 2,
     "name": "吃了个冰",
-    "category": "Unity 微信小游戏",
+    "category": "Unity 跨平台小游戏",
     "kind": "game",
     "badge": "",
-    "brief": "面向微信小游戏的竖屏冰激凌配单游戏：按顾客需求选择口味、制作甜筒并连续闯过 10 个关卡。",
+    "brief": "竖屏冰激凌配单游戏：按顾客需求制作甜筒，连续闯过 10 个关卡，支持在线试玩与 Windows、Mac 桌面游玩。",
     "problem": "需要一个打开网页即可试玩的竖屏配单原型，快速验证操作节奏、关卡难度和移动端适配。",
-    "aiUse": "AI 参与玩法扩展、10 关配置、UGUI 预制体、750×1624 安全区适配、进度存档、WebGL 与微信小游戏构建及发布验证。",
+    "aiUse": "AI 参与玩法扩展、10 关配置、UGUI 预制体、750×1624 安全区适配、进度存档、WebGL 与双平台桌面构建及发布验证。",
     "tags": [
       "Unity",
       "UGUI",
       "冰激凌",
-      "微信小游戏"
+      "跨平台"
     ],
     "actions": [
       {
@@ -104,6 +104,18 @@ export const projects = [
         "label": "介绍视频",
         "href": "./projects/icecream/video/index.html",
         "sourceLabel": "介绍视频"
+      },
+      {
+        "type": "windows",
+        "label": "Wins下载",
+        "href": "./downloads/icecream-windows.zip",
+        "sourceLabel": "Wins下载"
+      },
+      {
+        "type": "mac",
+        "label": "Mac下载",
+        "href": "./downloads/icecream-mac.zip",
+        "sourceLabel": "Mac下载"
       }
     ],
     "visual": {
@@ -1514,6 +1526,43 @@ export const projects = [
       "surface": "#faeaf3",
       "ink": "#642645",
       "mark": "游戏"
+    }
+  },
+  {
+    "id": "mahjong-fields-ui",
+    "index": 38,
+    "name": "金币场与比赛场 · 交互参考",
+    "category": "游戏UI交互原型",
+    "kind": "engineering",
+    "badge": "项目辅助",
+    "brief": "点击体验金币选场、匹配、单局结算，以及比赛报名、检录、分桌和赛果。",
+    "problem": "以一致的画风对齐金币场与比赛场的页面流程及关键状态。",
+    "aiUse": "复用现有效果图并补充同画风界面，按现行策划制作交互参考；数据为示例，不连接真实游戏服务。",
+    "tags": [
+      "金币场",
+      "比赛场",
+      "交互原型",
+      "美术参考"
+    ],
+    "actions": [
+      {
+        "type": "web",
+        "label": "网页预览",
+        "href": "./projects/mahjong-fields-ui/index.html",
+        "sourceLabel": "演示"
+      },
+      {
+        "type": "video",
+        "label": "介绍视频",
+        "href": "./projects/mahjong-fields-ui/video/index.html",
+        "sourceLabel": "介绍视频"
+      }
+    ],
+    "visual": {
+      "accent": "#687125",
+      "surface": "#f1f3d8",
+      "ink": "#414817",
+      "mark": "金币"
     }
   }
 ];

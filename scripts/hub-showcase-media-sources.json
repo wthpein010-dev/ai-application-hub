@@ -35,5 +35,6 @@
   "lighthouse-rescue": { "mode": "file", "source": "projects/lighthouse-rescue/video/poster.jpg", "feature": "上船、选路、修理和照明，三段救起三人", "accent": "#ffd983", "visualKind": "game", "layout": "wide" },
   "holiday-gifts": {"mode":"file","source":"projects/holiday-gifts/video/poster.jpg","feature":"月饼碰三次，喜欢哪件就换哪件","accent":"#e6b945","visualKind":"game","layout":"wide"},
   "announcement-center": {"mode":"file","source":"projects/announcement-center/video/poster.jpg","feature":"横幅展开与挂件焕新公告","accent":"#a5cb53","visualKind":"product","layout":"wide"},
-  "game-design-textbook": {"mode":"file","source":"projects/game-design-textbook/video/poster.jpg","feature":"全文教材、知识脑图与概率实验","accent":"#286353","visualKind":"product","layout":"wide"}
+  "game-design-textbook": {"mode":"file","source":"projects/game-design-textbook/video/poster.jpg","feature":"全文教材、知识脑图与概率实验","accent":"#286353","visualKind":"product","layout":"wide"},
+  "mahjong-fields-ui": {"mode":"file","source":"projects/mahjong-fields-ui/video/poster.jpg","feature":"金币单局与赛事完整流程点击演示","accent":"#256da8","visualKind":"product","layout":"wide"}
 }

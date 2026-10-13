@@ -1,0 +1,23 @@
+name: Verify mahjong fields UI reference
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'projects/mahjong-fields-ui/**'
+      - 'tests/mahjong-fields-ui-publication.test.mjs'
+      - '.github/workflows/verify-mahjong-fields-ui.yml'
+  workflow_dispatch:
+jobs:
+  reference:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Check public entry and single-game state
+        run: |
+          node --check projects/mahjong-fields-ui/demo/app.js
+          node --check projects/mahjong-fields-ui/demo/state.js
+          node --test tests/mahjong-fields-ui-publication.test.mjs
+          node --test projects/mahjong-fields-ui/demo/tests/state.test.cjs

@@ -1,0 +1,1 @@
+{"name": "mahjong-fields-ui", "private": true, "type": "commonjs", "scripts": {"test": "node --test tests/state.test.cjs"}}
