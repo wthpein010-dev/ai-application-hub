@@ -402,3 +402,60 @@ test('cancelling a weekend registration leaves all tickets available for a new c
   assert.equal(app.state().data.ticket,0);
   app.click('advance');assert.equal(app.state().data.tournament.status,'table');
 });
+
+test('newcomer free entry is consumed at roster lock, not registration or cancellation, and only once across rounds', () => {
+  const app=boot();registerFirst(app);
+  assert.deepEqual(app.state().data.noviceEntryDays,[]);
+  app.click('cancelRegistration');app.click('confirmCancelRegistration');
+  assert.deepEqual(app.state().data.noviceEntryDays,[]);
+  enterFirstEvent(app);
+  assert.deepEqual(app.state().data.noviceEntryDays,['2026-10-13']);
+  for(let hand=1;hand<=4;hand++){app.click('advance');if(hand<4)app.click('advance');}
+  app.click('advance');app.click('advance');app.click('advance');
+  assert.deepEqual(app.state().data.noviceEntryDays,['2026-10-13']);
+  assert.equal(app.state().session.coins,128600);
+});
+
+function finishNewcomer(app) {
+  enterFirstEvent(app);
+  for(let round=1;round<=3;round++){
+    for(let hand=1;hand<=4;hand++){app.click('advance');if(hand<4)app.click('advance');}
+    app.click('advance');
+    if(round<3){app.click('advance');app.click('advance');}
+  }
+  app.click('advance');
+  assert.equal(app.state().data.tournament.status,'final');
+}
+
+test('a consumed newcomer day remains unavailable after reload and does not restrict another event', () => {
+  const app=boot();finishNewcomer(app);
+  const restored=boot({storage:app.storage(),now:app.now()});
+  restored.click('tournament');restored.click('eventDetail',1);restored.click('register');restored.click('confirmRegister');
+  assert.equal(restored.state().data.event,1);
+  restored.click('eventCenter');restored.click('eventDetail',0);
+  assert.match(plain(restored.html()),/免费次数.*0.*1|免费次数.*用完/);
+  assert.throws(()=>restored.click('register'),/missing/,'today must have no enabled newcomer registration');
+});
+
+test('the next Beijing calendar day offers a new newcomer entry without consuming it early', () => {
+  const app=boot();finishNewcomer(app);
+  const restored=boot({storage:app.storage(),now:epoch+86400000});
+  restored.click('tournament');restored.click('eventDetail',0);restored.click('register');restored.click('confirmRegister');
+  assert.deepEqual(restored.state().data.noviceEntryDays,['2026-10-13']);
+  restored.click('advance');restored.click('checkin');restored.click('advance');
+  assert.deepEqual(restored.state().data.noviceEntryDays,['2026-10-13','2026-10-14']);
+});
+
+test('a newcomer event finishing after midnight consumes only the date of roster lock, not the archive date', () => {
+  const first=boot();enterFirstEvent(first);
+  const app=boot({storage:first.storage(),now:epoch+86400000});
+  for(let round=1;round<=3;round++){
+    for(let hand=1;hand<=4;hand++){app.click('advance');if(hand<4)app.click('advance');}
+    app.click('advance');if(round<3){app.click('advance');app.click('advance');}
+  }
+  app.click('advance');
+  const restored=boot({storage:app.storage(),now:app.now()});
+  assert.deepEqual(restored.state().data.noviceEntryDays,['2026-10-13']);
+  restored.click('tournament');restored.click('eventDetail',0);restored.click('register');restored.click('confirmRegister');
+  assert.equal(restored.state().data.tournament.status,'registered');
+});

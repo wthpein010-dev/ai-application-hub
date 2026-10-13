@@ -17,10 +17,11 @@
     { name:'日常排位', badge:'实力排位', prize:'限定称号 · 头像框', count:16, rounds:4, time:'今日 20:00', duration:'约 160 分钟', entry:'微信小游戏免费', award:0 },
     { name:'周末锦标赛', badge:'任务券参赛', prize:'冠军 500 金币', count:64, rounds:4, time:'周六 19:00', duration:'周六资格赛 / 周日决赛', entry:'当周赛事券 ×1', award:500 }
   ];
-  const freshTournament = () => ({ status:'none', round:1, hand:1, stage:0, checked:false, awarded:false, ticketUsed:false, error:false, auto:false, points:0, roundRecords:[] });
+  function dayKey(stamp=Date.now()){return new Date(stamp+8*3600000).toISOString().slice(0,10);}
+  const freshTournament = () => ({ status:'none', round:1, hand:1, stage:0, checked:false, awarded:false, ticketUsed:false, noviceEntryUsed:false, error:false, auto:false, points:0, roundRecords:[] });
   const defaults = () => ({ screen:'home', field:2, game:0, region:'郑州', detailTab:0, coinTab:0, ready:false,
     matchCount:1, selectedTile:-1, discard:'二万', history:[], event:0, filter:0,
-    tournament:freshTournament(), previewEvent:0, eventArchives:[], navStack:[], settings:{sound:true,music:false}, favourites:[], reminders:[], myEventsTab:0,
+    tournament:freshTournament(), previewEvent:0, eventArchives:[], noviceEntryDays:[], navStack:[], settings:{sound:true,music:false}, favourites:[], reminders:[], myEventsTab:0,
     lossDemo:false, offline:false, ticket:1, pauseAuto:false });
   let data = defaults(), session = new FieldCore.Session(), generation = 0, timers = [], focusBeforeModal, toastTimer;
   function restoreSaved(saved) {
@@ -34,6 +35,19 @@
     candidate.favourites=Array.isArray(candidate.favourites)?candidate.favourites.filter(i=>Number.isInteger(i)&&events[i]):[];
     candidate.reminders=Array.isArray(candidate.reminders)?candidate.reminders.filter(i=>Number.isInteger(i)&&events[i]):[];
     candidate.settings={sound:true,music:false,...candidate.settings};
+    candidate.noviceEntryDays=[...new Set((Array.isArray(candidate.noviceEntryDays)?candidate.noviceEntryDays:[]).filter(x=>typeof x==='string'&&/^\d{4}-\d{2}-\d{2}$/.test(x)))];
+    for(const record of candidate.eventArchives){
+      const stamp=Number(record.id.replace('event-',''));
+      if(record.event===0&&record.tournament.status==='final'&&Number.isFinite(stamp))candidate.noviceEntryDays.push(record.tournament.entryDay||dayKey(stamp));
+    }
+    const current=candidate.tournament;
+    if(typeof current.noviceEntryUsed!=='boolean')current.noviceEntryUsed=candidate.event===0&&['published','table','smallResult','roundWait','finalTemp','final'].includes(current.status);
+    if(candidate.event===0&&current.noviceEntryUsed){
+      const stamp=Number((current.archiveId||'').replace('event-',''));
+      current.entryDay=current.entryDay||dayKey(current.archiveId&&Number.isFinite(stamp)?stamp:Date.now());
+      candidate.noviceEntryDays.push(current.entryDay);
+    }
+    candidate.noviceEntryDays=[...new Set(candidate.noviceEntryDays)];
     if(typeof candidate.tournament.ticketUsed!=='boolean'){
       const old=candidate.tournament;
       candidate.tournament.ticketUsed=candidate.event===2&&(['published','table','smallResult','roundWait','finalTemp','final'].includes(old.status)||old.round>1||old.stage>0);
@@ -49,6 +63,7 @@
   const e = () => events[data.event];
   const regionGames={郑州:['郑州麻将','红中麻将','跑得快'],武汉:['武汉麻将','红中麻将','跑得快'],陕北:['陕北麻将','红中麻将','跑得快']};
   const gameName = () => (regionGames[data.region]||regionGames.郑州)[data.game];
+  const noviceLeft = (day=dayKey()) => data.noviceEntryDays.includes(day)?0:1;
   const b = (label,action,cls='gold-button',extra='') => `<button type="button" onclick="FieldUI.handle(event)" class="${cls}" data-action="${action}" ${extra}>${label}</button>`;
   const badge = (label,cls='') => `<span class="badge ${cls}">${label}</span>`;
   const trophy = `<svg class="hero-trophy" viewBox="0 0 100 100" aria-hidden="true"><path d="M25 10h50v15h18v14c0 15-13 25-27 26l-8 8v10h16v9H26v-9h16V73l-8-8C20 64 7 54 7 39V25h18V10zm0 24H16v5c0 8 5 13 12 15-2-6-3-13-3-20zm50 0c0 7-1 14-3 20 7-2 12-7 12-15v-5h-9z"/></svg>`;
@@ -147,17 +162,17 @@
   }
   function eventStatus() { return ({none:'尚未报名',registered:'已报名 · 待检录',standby:'候补第 3 位',checkin:'可检录',allocating:'候场分桌',published:'分桌已发布',table:'比赛进行中',smallResult:'小局结束',roundWait:'轮次结束 · 等待汇总',finalTemp:'临时赛果 · 待复核',final:'正式赛果'})[t().status] || '已报名'; }
   function eventDetail() {
-    const index=data.previewEvent, x=events[index], status=index===data.event?t().status:'none';
+    const index=data.previewEvent, x=events[index], nextDay=index===0&&t().status==='final'&&t().entryDay!==dayKey(), status=index===data.event&&!nextDay?t().status:'none';
     const schedule=index===2?`<div class="timeline"><strong class="time">周六 18:25</strong><p>停止报名</p><strong class="time">18:30—18:50</strong><p>检录开放</p><strong class="time">18:50 / 18:55</strong><p>选择64/32人方案 / 锁名单</p><strong class="time">19:00</strong><p>资格赛开赛</p><strong class="time">周日 14:00</strong><p>十六强开赛，结束20分钟后决赛</p></div>`:`<div class="timeline"><strong class="time">${x.time}</strong><p>正式开赛<br><small>${x.duration}，另留缓冲时间</small></p><strong class="time">赛前 10 分</strong><p>停止报名，开放检录</p><strong class="time">赛前 5 分</strong><p>原名单检录截止</p><strong class="time">赛前 3 分</strong><p>满员锁定名单，发布赛程</p></div>`;
     const info=[schedule,
       `<div class="rewards">${(index===0?[['冠军','100 金币'],['第 2—4 名','每人 60 金币'],['第 5—16 名','每人 20 金币']]:index===1?[['冠军','7 天称号'],['前三名','7 天主题头像框'],['正常完赛','赛季积分']]:[['冠军','500 金币'],['第 2—4 名','每人 300 金币'],['第 5—16 名','每人 120 金币'],['其他正常完赛','每人 40 金币']]).map(([a,c])=>`<div class="reward-line"><span>${a}</span><strong>${c}</strong></div>`).join('')}<p class="subcopy">固定奖励在正式确认后自动到账。</p></div>`,
       `<ul class="rule-list"><li>${index===2?'64人资格赛 → 16强 → 4人决赛。人数不足时按正式方案处理。':`${x.rounds}轮瑞士制，每轮4小局，按轮次桌积分累计排名。`}</li><li>赛事牌局只记比赛成绩，不使用金币场输赢结算。</li><li>检录后由赛事统一分桌，名单锁定后不补新玩家。</li><li>结果先展示临时排名，经24小时申诉复核后确认；未结案件继续复核。</li></ul>`][data.detailTab];
-    const main=status==='none'?b('报名参赛','register'):status==='registered'?b('尚未开放检录','', 'neutral-button','disabled'):status==='checkin'?b('立即检录','checkin'):b(status==='final'?'查看赛果':status==='standby'?'查看候补':'返回当前进度','eventResume');
-    return header('赛事详情')+`<section class="panel body-panel"><div class="detail-layout"><div class="detail-hero">${badge(x.badge)}<h2 class="event-name">${x.name}</h2>${trophy}<strong class="prize">${x.prize}</strong><p>${x.count} 人参赛<br>${x.entry}</p>${badge(status==='none'?'报名开放':eventStatus(),'blue')}<div class="detail-shortcuts">${b(data.favourites.includes(index)?'★ 已收藏':'☆ 收藏','eventFavourite','blue-button small')}${b(data.reminders.includes(index)?'已提醒':'开赛提醒','eventReminder','blue-button small')}</div></div><div class="detail-information">${tabs(['赛程','奖励','规则'],'detailTab',data.detailTab)}<div class="detail-scroll">${info}</div></div></div></section>`+footer(b('我的赛事','myEvents','blue-button')+main,'tournament');
+    const main=status==='none'?(index===0&&!noviceLeft()?b('今日免费次数已用完','','neutral-button','disabled'):b('报名参赛','register')):status==='registered'?b('尚未开放检录','', 'neutral-button','disabled'):status==='checkin'?b('立即检录','checkin'):b(status==='final'?'查看赛果':status==='standby'?'查看候补':'返回当前进度','eventResume');
+    return header('赛事详情')+`<section class="panel body-panel"><div class="detail-layout"><div class="detail-hero">${badge(x.badge)}<h2 class="event-name">${x.name}</h2>${trophy}<strong class="prize">${x.prize}</strong><p>${x.count} 人参赛<br>${x.entry}${index===0?`<br>今日免费次数剩余 ${noviceLeft()} / 1`:''}</p>${badge(status==='none'?(index===0&&!noviceLeft()?'今日资格已使用':'报名开放'):eventStatus(),'blue')}<div class="detail-shortcuts">${b(data.favourites.includes(index)?'★ 已收藏':'☆ 收藏','eventFavourite','blue-button small')}${b(data.reminders.includes(index)?'已提醒':'开赛提醒','eventReminder','blue-button small')}</div></div><div class="detail-information">${tabs(['赛程','奖励','规则'],'detailTab',data.detailTab)}<div class="detail-scroll">${info}</div></div></div></section>`+footer(b('我的赛事','myEvents','blue-button')+main,'tournament');
   }
   function eventRegistered() {
     const status=t().status, check=status==='checkin';
-    return header('报名状态','eventCenter')+panel(e().name,steps(check?1:0)+`<div class="registration-status"><div class="seal">✓</div><h2 class="heading">${check?'检录已开放':'报名成功'}</h2><p>开赛时间：${e().time}<br>${check?'请在检录截止前确认到场。':'检录窗口尚未开放，请留意赛事提醒。'}</p>${badge('已获得正式席位','green')}<p class="subcopy">${data.event===2?'赛事券已锁定，锁名单后实扣一次。':'免费赛事，报名不扣金币。'}</p></div>`)+footer(b('取消报名','cancelRegistration','blue-button')+b('查看详情','currentDetail','blue-button')+b(check?'立即检录':'等待检录',check?'checkin':'','gold-button',check?'':'disabled'),'tournament');
+    return header('报名状态','eventCenter')+panel(e().name,steps(check?1:0)+`<div class="registration-status"><div class="seal">✓</div><h2 class="heading">${check?'检录已开放':'报名成功'}</h2><p>开赛时间：${e().time}<br>${check?'请在检录截止前确认到场。':'检录窗口尚未开放，请留意赛事提醒。'}</p>${badge('已获得正式席位','green')}<p class="subcopy">${data.event===2?'赛事券已锁定，锁名单后实扣一次。':data.event===0?'满员锁定名单时消耗本日1次免费资格，此前取消不消耗。':'免费赛事，报名不扣金币。'}</p></div>`)+footer(b('取消报名','cancelRegistration','blue-button')+b('查看详情','currentDetail','blue-button')+b(check?'立即检录':'等待检录',check?'checkin':'','gold-button',check?'':'disabled'),'tournament');
   }
   function eventStandby() {
     return header('候补状态','eventCenter')+panel(e().name,steps(0)+`<div class="central-state"><div class="countdown">3<small>候补顺位</small></div><h2 class="heading">正式席位已满</h2><p class="subcopy">候补不占正式席位、不锁定报名资源。<br>收到转正通知后，在有效时间内确认参赛。</p>${badge('候补人数 8 / 16','blue')}</div>`)+footer(b('查看详情','currentDetail','blue-button')+b('取消候补','cancelStandby','gold-button'),'tournament');
@@ -295,11 +310,17 @@
     if(!['none','final'].includes(t().status)) return showModal('已有未结束的赛事',`<p class="modal-copy">${e().name}的进度仍保留。可查看其他赛事详情，当前流程结束后再报名。</p>`,b('返回当前赛事','eventResume'));
     if(session.status!=='idle') return showModal('金币场流程尚未结束',`<p class="modal-copy">请先完成当前金币场流程。牌局中不能进入赛事实时对局，未来赛事预约限制仍待确认。</p>`,b('返回金币场','resumeCoin'));
     const x=events[data.previewEvent];
+    if(data.previewEvent===0&&!noviceLeft())return showModal('今日免费次数已用完','<p class="modal-copy">新手杯每日1次免费，本日已在锁定名单时消耗。可以查看原赛果或选择其他赛事；取消与后续轮次不会再次计算。</p>',b('查看其他赛事','eventCenter','blue-button'));
     if(data.previewEvent===2&&!data.ticket) return showModal('缺少赛事券',`<p class="modal-copy">当周完成3场有效赛事可获得赛事券。可从赛事任务查看进度。</p>`,b('赛事任务','eventTasks','blue-button'));
     showModal(standby?'确认候补':'报名确认',`<div class="modal-kv"><span>赛事</span><b>${x.name}</b></div><div class="modal-kv"><span>开赛</span><b>${x.time}</b></div><div class="modal-kv"><span>报名资源</span><b>${standby?'候补不锁资源':x.entry}</b></div><p class="modal-copy">${standby?'获得席位后需要本人确认并重新检查资格和报名资源。':'报名成功后需要按时检录；锁名单后由赛事统一分桌，不进入金币真人匹配。'}</p>`,b('取消','closeModal','blue-button')+b(standby?'加入候补':'确认报名',standby?'confirmStandby':'confirmRegister'));
   }
   function publishTable() {
     if(t().status!=='allocating') return;
+    if(data.event===0&&!t().noviceEntryUsed){
+      const day=dayKey();
+      if(!noviceLeft(day))return showModal('本日免费资格已使用','<p class="modal-copy">本次没有锁定名单或进入牌桌，请返回赛事中心查看原进度。</p>',b('赛事中心','eventCenter','blue-button'));
+      data.noviceEntryDays.push(day);t().entryDay=day;t().noviceEntryUsed=true;
+    }
     if(data.event===2&&!t().ticketUsed){
       if(data.ticket<1)return showModal('赛事券不足','<p class="modal-copy">本次尚未锁定名单或扣券，请核对报名资源后重试。</p>',b('赛事任务','eventTasks','blue-button'));
       data.ticket--;t().ticketUsed=true;
@@ -357,8 +378,8 @@
     if(name==='lowScenario'){session=new FieldCore.Session(120);data.field=0;data.screen='coinLobby';}
     if(name==='reliefScenario'){session=new FieldCore.Session(15);data.field=0;data.screen='supportSupply';}
     if(name==='standbyScenario'){t().status='standby';data.screen='eventStandby';}
-    if(name==='roundScenario'){t().status='roundWait';t().hand=4;t().points=8;data.screen='eventRoundWait';}
-    if(name==='finalScenario'){t().status='finalTemp';t().round=3;t().hand=4;t().points=24;t().reviewStarted=Date.now();t().reviewDeadline=Date.now()+86400000;data.screen='eventFinal';}
+    if(name==='roundScenario'){t().status='roundWait';t().entryDay=dayKey();t().noviceEntryUsed=true;data.noviceEntryDays=[t().entryDay];t().hand=4;t().points=8;data.screen='eventRoundWait';}
+    if(name==='finalScenario'){t().status='finalTemp';t().entryDay=dayKey();t().noviceEntryUsed=true;data.noviceEntryDays=[t().entryDay];t().round=3;t().hand=4;t().points=24;t().reviewStarted=Date.now();t().reviewDeadline=Date.now()+86400000;data.screen='eventFinal';}
     if(name==='weekendScenario'){data.event=2;data.previewEvent=2;t().status='roundWait';t().ticketUsed=true;t().round=4;t().hand=4;t().points=32;data.screen='eventRoundWait';}
     if(name==='readyTimeoutScenario'){data.field=2;session.queue(FEE);session.seat();data.personalReadyDeadline=Date.now();data.roomReadyDeadline=Date.now()+120000;return readyTimeout();}
     if(name==='tableFailure'){t().status='published';data.screen='eventAllocating';t().error=true;}
@@ -401,7 +422,7 @@
       case 'eventFilter':data.filter=Number(value);return render();
       case 'eventDetail':if(!events[Number(value)])return;data.previewEvent=Number(value);data.detailTab=0;return go('eventDetail');
       case 'currentDetail':data.previewEvent=data.event;return go('eventDetail');case 'detailTab':data.detailTab=Number(value);return render();
-      case 'register':return register();case 'confirmRegister':if(!['none','final'].includes(t().status)||session.status!=='idle')return;data.event=data.previewEvent;data.tournament=freshTournament();t().status='registered';return go('eventRegistered');
+      case 'register':return register();case 'confirmRegister':if(!['none','final'].includes(t().status)||session.status!=='idle')return;if(data.previewEvent===0&&!noviceLeft())return register();data.event=data.previewEvent;data.tournament=freshTournament();t().entryDay=dayKey();t().status='registered';return go('eventRegistered');
       case 'confirmStandby':if(!['none','final'].includes(t().status))return;data.event=data.previewEvent;data.tournament=freshTournament();t().status='standby';return go('eventStandby');
       case 'convertStandby':if(t().status!=='standby')return;if(FieldNavigation.remaining(t().offerDeadline)===0)return notify('转正通知已失效，请等待下一次席位通知');if(session.status!=='idle')return showModal('当前对局尚未结束','<p class="modal-copy">请先完成当前对局，再在通知有效期内确认。</p>',b('返回原流程','resumeCoin'));if(data.event===2&&!data.ticket)return notify('赛事券不足，未转为正式席位');t().status='checkin';return go('eventRegistered',{replace:true});
       case 'cancelStandby':t().status='none';return go('eventCenter',{replace:true});
