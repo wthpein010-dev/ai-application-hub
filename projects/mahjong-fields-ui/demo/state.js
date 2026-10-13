@@ -37,8 +37,11 @@
       return this.result;
     }
     static restore(raw) {
-      const data = JSON.parse(raw); const s = new Session(); Object.assign(s, data);
-      if (!['idle','matching','seated','playing'].includes(s.status) || !Number.isFinite(s.coins) || s.coins < 0 || s.available < 0) throw Error('演示存档无效');
+      const data = JSON.parse(raw); const s = new Session();
+      for(const key of ['coins','reserved','principal','fee','status','auto','result','started'])if(Object.hasOwn(data,key))s[key]=data[key];
+      if (!['idle','matching','seated','playing'].includes(s.status) || ['coins','reserved','principal','fee','started'].some(k=>!Number.isFinite(s[k])||s[k]<0) || s.available < 0 || typeof s.auto!=='boolean') throw Error('演示存档无效');
+      if(s.status==='idle'&&(s.reserved!==0||s.principal!==0)||['matching','seated'].includes(s.status)&&(s.principal!==0||s.reserved!==s.fee)||s.status==='playing'&&s.reserved!==0)throw Error('演示资产状态无效');
+      if(s.result&&(!Number.isFinite(s.result.net)||!Number.isFinite(s.result.actual)||typeof s.result.id!=='string'||['shortfall','principal','fee','balance'].some(k=>!Number.isFinite(s.result[k])||s.result[k]<0)))throw Error('演示结果存档无效');
       return s;
     }
   }

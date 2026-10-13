@@ -15,9 +15,10 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '24'
-      - name: Check public entry and single-game state
+      - name: Check project scripts and complete project tests
         run: |
-          node --check projects/mahjong-fields-ui/demo/app.js
-          node --check projects/mahjong-fields-ui/demo/state.js
+          for script in app.js state.js navigation.js support.js details.js; do
+            node --check "projects/mahjong-fields-ui/demo/$script"
+          done
           node --test tests/mahjong-fields-ui-publication.test.mjs
-          node --test projects/mahjong-fields-ui/demo/tests/state.test.cjs
+          node --test projects/mahjong-fields-ui/demo/tests/*.test.cjs

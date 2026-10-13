@@ -9,7 +9,8 @@ const project=join(root,'projects/mahjong-fields-ui');
 const read=p=>readFileSync(join(project,p),'utf8');
 test('mahjong UI reference is appended with public demo and video, without installation downloads',()=>{
   const apps=loadDefaultAppsFromRuntime(readFileSync(join(root,'app-20260706-restore-games.js'),'utf8'));
-  const app=apps.at(-1);
+  const app=apps.find(app=>app.id==='mahjong-fields-ui');
+  assert.equal(apps.filter(app=>app.id==='mahjong-fields-ui').length,1);
   assert.equal(app.id,'mahjong-fields-ui');
   assert.equal(app.status,'engineering');
   assert.equal(app.entry,'./projects/mahjong-fields-ui/index.html');
@@ -36,6 +37,22 @@ test('walkthrough uses shared lazy player, real H264 media and single-line capti
   assert.match(html,/hub-video-player\.js/);
   assert.ok(readFileSync(join(project,'video/fields-walkthrough.mp4')).includes(Buffer.from('avc1')));
   const blocks=read('video/fields-walkthrough.vtt').replaceAll('\r\n','\n').trim().split(/\n\n/).slice(1);
-  assert.equal(blocks.length,8);
+  assert.equal(blocks.length,13);
   for(const block of blocks)assert.equal(block.split('\n').length,3);
+});
+
+test('round2 ships all project modules and excludes private source documentation',()=>{
+  const entry=read('demo/index.html');
+  for(const name of ['app','state','navigation','support','details']) {
+    assert.ok(existsSync(join(project,'demo/'+name+'.js')),name);
+    assert.ok(entry.includes('src="'+name+'.js?v=1.1.0-r2"'),name);
+    assert.doesNotMatch(read('demo/'+name+'.js'),/https?:\/\/|[A-Z]:[\\/]/);
+  }
+  for(const name of ['styles','navigation','support','details'])assert.ok(entry.includes('href="'+name+'.css?v=1.1.0-r2"'),name);
+  assert.doesNotMatch(read('README.md'),/[A-Z]:[\\/]|feishu\.cn|larksuite\.com/i);
+  assert.equal(existsSync(join(project,'demo/DESIGN.md')),false);
+  assert.equal(existsSync(join(project,'demo/UX-CONTRACT.md')),false);
+  const pkg=JSON.parse(read('demo/package.json'));
+  assert.ok(pkg.scripts.test.includes('tests/*.test.cjs'));
+  for(const name of ['app','state','navigation','support','details'])assert.ok(pkg.scripts.check.includes(name+'.js'));
 });
