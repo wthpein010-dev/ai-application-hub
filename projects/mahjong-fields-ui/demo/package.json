@@ -1,7 +1,7 @@
 {
   "name": "mahjong-field-prototype",
   "private": true,
-  "version": "1.2.3",
+  "version": "1.2.4",
   "scripts": {
     "test": "node --test tests/*.test.cjs",
     "check": "node --check app.js && node --check state.js && node --check navigation.js && node --check support.js && node --check details.js"

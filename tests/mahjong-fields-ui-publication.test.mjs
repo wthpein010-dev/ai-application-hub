@@ -23,7 +23,7 @@ test('public entry presents only the game with relative-resource assets',()=>{
   const html=read('index.html');
   assert.doesNotMatch(html,/hub-home-link|class="bar"|界面演示|数值示例/);
   assert.match(html,/data-hub-immersive="mahjong-fields-ui"/);
-  assert.match(html,/iframe src="\.\/demo\/index\.html\?v=1\.2\.3"/);
+  assert.match(html,/iframe src="\.\/demo\/index\.html\?v=1\.2\.4"/);
   for(const path of ['demo/app.js','demo/state.js','demo/styles.css','demo/assets/coin-lobby.png','demo/assets/coin-match.png','demo/assets/coin-ready.png','demo/assets/courtyard.png'])assert.ok(existsSync(join(project,path)),path);
   const source=read('demo/app.js');
   assert.doesNotMatch(source,/https?:\/\/|[A-Z]:[\\/]/);
@@ -44,10 +44,10 @@ test('round2 ships all project modules and excludes private source documentation
   const entry=read('demo/index.html');
   for(const name of ['app','state','navigation','support','details']) {
     assert.ok(existsSync(join(project,'demo/'+name+'.js')),name);
-    assert.ok(entry.includes('src="'+name+'.js?v=1.2.3"'),name);
+    assert.ok(entry.includes('src="'+name+'.js?v=1.2.4"'),name);
     assert.doesNotMatch(read('demo/'+name+'.js'),/https?:\/\/|[A-Z]:[\\/]/);
   }
-  for(const name of ['styles','navigation','support','details','overlays'])assert.ok(entry.includes('href="'+name+'.css?v=1.2.3"'),name);
+  for(const name of ['styles','navigation','support','details','overlays'])assert.ok(entry.includes('href="'+name+'.css?v=1.2.4"'),name);
   assert.doesNotMatch(read('README.md'),/[A-Z]:[\\/]|feishu\.cn|larksuite\.com/i);
   assert.equal(existsSync(join(project,'demo/DESIGN.md')),false);
   assert.equal(existsSync(join(project,'demo/UX-CONTRACT.md')),false);

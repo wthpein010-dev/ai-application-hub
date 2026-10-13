@@ -261,8 +261,8 @@
     if(windowed){
       const changed=sheetBody.dataset.screen!==screen;
       sheetBody.innerHTML=pages[screen]();sheetBody.dataset.screen=screen;
-      const compact=new Set(['eventRegistered','eventStandby','eventAllocating','eventTasks','supportReturn']);
-      const wide=new Set(['coinResult','eventDetail','eventSmallResult','eventRoundWait','eventFinal','supportSignin','supportShop','supportProduct','detailsReplay','detailsHistory','detailsScore']);
+      const compact=new Set(['eventRegistered','eventStandby','eventAllocating','eventTasks']);
+      const wide=new Set(['coinResult','eventDetail','eventSmallResult','eventRoundWait','eventFinal','supportActivity','supportSignin','supportTea','supportReturn','supportFlip','supportShop','supportProduct','detailsReplay','detailsHistory','detailsScore']);
       const size=compact.has(screen)?[960,760]:wide.has(screen)?[1280,860]:[1200,820];
       sheet.style.width=size[0]+'px';sheet.style.height=size[1]+'px';
       sheetBody.classList.toggle('has-side',!!sheetBody.querySelector('nav.side-tabs'));

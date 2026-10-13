@@ -136,8 +136,20 @@ function boot(options = {}) {
     }
     now = end;
   }
-  return {click,clickText,clickAny,input,tick,state,now:() => now,storage:() => Object.fromEntries(store),html:() => nodes.sheet.open ? nodes['sheet-body'].innerHTML : nodes.stage.innerHTML,underlay:() => nodes.stage.innerHTML,sheetOpen:() => nodes.sheet.open,emit:(id,kind,event) => nodes[id].emit(kind,event),modal:() => nodes.modal.open ? nodes['modal-body'].innerHTML : '',key:() => [...store.keys()].find(x => x.startsWith('maluer-fields-'))};
+  return {click,clickText,clickAny,input,tick,state,now:() => now,storage:() => Object.fromEntries(store),html:() => nodes.sheet.open ? nodes['sheet-body'].innerHTML : nodes.stage.innerHTML,underlay:() => nodes.stage.innerHTML,sheetOpen:() => nodes.sheet.open,sheetSize:() => [nodes.sheet.style.width,nodes.sheet.style.height],emit:(id,kind,event) => nodes[id].emit(kind,event),modal:() => nodes.modal.open ? nodes['modal-body'].innerHTML : '',key:() => [...store.keys()].find(x => x.startsWith('maluer-fields-'))};
 }
+
+test('activity tabs retain one window size through switching and reload', () => {
+  let app=boot(); app.click('activity');
+  const size=app.sheetSize();
+  for(const [action,screen] of [['signinPage','supportSignin'],['teaPage','supportTea'],['returnPage','supportReturn'],['flipPage','supportFlip'],['activities','supportActivity']]) {
+    app.click('support:'+action);
+    assert.equal(app.state().data.screen,screen);
+    assert.deepEqual(app.sheetSize(),size,screen);
+    app=boot({storage:app.storage()});
+    assert.deepEqual(app.sheetSize(),size,screen+' reload');
+  }
+});
 
 test('home actions sit only on visible original artwork, without duplicate entry panels', () => {
   const app = boot();
