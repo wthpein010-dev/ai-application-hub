@@ -230,3 +230,26 @@ test('首个错误获得焦点，中文组合输入保留草稿，完成纠正�
     assert.equal(refreshes,before);
   } finally { if(originalDocument===undefined)delete global.document;else global.document=originalDocument; }
 });
+
+test('赛事申诉提交与原单重查都保持赛事工具栏，金币反馈保持金币工具栏', () => {
+  const data={screen:'eventFinal',event:0,history:[],tournament:{status:'finalTemp',round:3,reviewDeadline:Date.now()+60000}};
+  const ctx=moduleContext(data);ctx.footer=(_,kind)=>`<footer data-kind="${kind}"></footer>`;
+  const ui=details.create(ctx);ui.dispatch('details:appeal');data.details.appealDraft.reason='核对成绩';ui.dispatch('details:submitAppeal');
+  const appealId=data.details.selectedRequest;
+  assert.match(ui.pages.detailsRequest(),/data-kind="tournament"/);
+  data.screen='coinLobby';ui.dispatch('details:help');data.details.helpDraft.reason='核对金币';ui.dispatch('details:submitHelp');
+  assert.match(ui.pages.detailsRequest(),/data-kind="coin"/);
+  ui.dispatch('details:request',appealId);
+  assert.match(ui.pages.detailsRequest(),/data-kind="tournament"/);
+});
+
+test('申诉筛选记录页及其空态使用赛事工具栏，反馈筛选页保留金币工具栏', () => {
+  const data={screen:'detailsScore',event:0,history:[],tournament:{status:'final'}};
+  const ctx=moduleContext(data);ctx.footer=(_,kind)=>`<footer data-kind="${kind}"></footer>`;
+  const ui=details.create(ctx);ui.dispatch('details:requests','appeal');
+  assert.match(ui.pages.detailsRequests(),/data-kind="tournament"/);
+  ui.dispatch('details:requestTab','1');
+  assert.match(ui.pages.detailsRequests(),/data-kind="coin"/);
+  ui.dispatch('details:requestTab','2');
+  assert.match(ui.pages.detailsRequests(),/data-kind="tournament"/);
+});

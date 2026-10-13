@@ -5,8 +5,9 @@ import {loadDefaultAppsFromRuntime} from './helpers/default-apps.mjs';
 const root=new URL('../',import.meta.url),read=p=>readFileSync(new URL(p,root),'utf8');
 test('教材追加到应用集合并提供真实阅读与视频入口',()=>{
  const apps=loadDefaultAppsFromRuntime(read('app-20260706-restore-games.js'));
- const a=apps.at(-1);assert.equal(a.id,'game-design-textbook');assert.equal(a.status,'training');
- assert.equal(apps.at(-2).id,'announcement-center');assert.equal(a.platforms.windows,'');assert.equal(a.platforms.mac,'');
+ const matches=apps.filter(app=>app.id==='game-design-textbook');assert.equal(matches.length,1);
+ const [a]=matches;assert.equal(a.status,'training');
+ assert.equal(apps[apps.indexOf(a)-1]?.id,'announcement-center');assert.equal(a.platforms.windows,'');assert.equal(a.platforms.mac,'');
  for(const path of [a.entry,a.video])assert.ok(existsSync(new URL(path,root)));
 });
 test('已发布课程媒体、脑图跳转和测验完整，规划课不伪装成正文',()=>{
