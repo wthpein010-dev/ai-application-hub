@@ -22,6 +22,7 @@ test('mahjong UI reference is appended with public demo and video, without insta
 test('public entry presents only the game with relative-resource assets',()=>{
   const html=read('index.html');
   assert.doesNotMatch(html,/hub-home-link|class="bar"|界面演示|数值示例/);
+  assert.match(html,/data-hub-immersive="mahjong-fields-ui"/);
   assert.match(html,/iframe src="\.\/demo\/index\.html\?v=1\.2\.3"/);
   for(const path of ['demo/app.js','demo/state.js','demo/styles.css','demo/assets/coin-lobby.png','demo/assets/coin-match.png','demo/assets/coin-ready.png','demo/assets/courtyard.png'])assert.ok(existsSync(join(project,path)),path);
   const source=read('demo/app.js');

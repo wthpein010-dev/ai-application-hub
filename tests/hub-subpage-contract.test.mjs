@@ -52,6 +52,15 @@ test("all local entries use one shared fixed return control", () => {
     const anchors = html.match(/<a\b[^>]*>/gi) || [];
     const homeAnchors = anchors.filter((tag) => hasClass(tag, "hub-home-link"));
 
+    // This game has an explicit user-approved immersive entry: game UI only.
+    // Its catalog card and standalone video page retain Hub navigation.
+    if (app.id === "mahjong-fields-ui") {
+      assert.match(bodyTag, /data-hub-immersive="mahjong-fields-ui"/);
+      assert.equal(homeAnchors.length, 0);
+      assert.match(html, /<iframe\b[^>]*src="\.\/demo\/index\.html\?v=/);
+      continue;
+    }
+
     assert.equal(hasClass(bodyTag, "hub-subpage"), true, `${app.id} body shell`);
     assert.match(html, new RegExp(`href=["']${expectedShell.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}["']`), `${app.id} shell stylesheet`);
     assert.equal(homeAnchors.length, 1, `${app.id} should have one shared home control`);

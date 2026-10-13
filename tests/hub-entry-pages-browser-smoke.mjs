@@ -313,7 +313,7 @@ try {
       await page.goto(`${baseUrl}/${target}`, { waitUntil: "domcontentloaded", timeout: 60_000 });
       await page.waitForTimeout(350);
 
-      const layout = await page.evaluate(({ expectedName, expectedSection }) => {
+      const layout = await page.evaluate(({ expectedName, expectedSection, immersiveExpected }) => {
         const home = document.querySelector(".hub-home-link");
         const homeBox = home?.getBoundingClientRect();
         const homeStyle = home ? getComputedStyle(home) : null;
@@ -327,6 +327,8 @@ try {
         const resolvedHome = home ? new URL(home.href) : null;
 
         return {
+          immersive: immersiveExpected && document.body.dataset.hubImmersive === "mahjong-fields-ui"
+            && !home && Boolean(document.querySelector('iframe[src^="./demo/index.html?v="]')),
           bodyShell: document.body.classList.contains("hub-subpage"),
           homeCount: document.querySelectorAll(".hub-home-link").length,
           homeFixed: homeStyle?.position === "fixed",
@@ -340,14 +342,14 @@ try {
           titleMatches: document.title.trim() === expectedName,
           expectedSection: `#${expectedSection}`,
         };
-      }, { expectedName: app.name, expectedSection: sectionFor(app) });
+      }, { expectedName: app.name, expectedSection: sectionFor(app), immersiveExpected: app.id === "mahjong-fields-ui" });
 
       for (const [condition, ok] of Object.entries({
-        bodyShell: layout.bodyShell,
-        oneHomeControl: layout.homeCount === 1,
-        fixedHomeControl: layout.homeFixed,
-        visibleHomeControl: layout.homeInViewport,
-        correctHomeTarget: layout.homeTarget && layout.homeSection === layout.expectedSection,
+        bodyShell: layout.immersive || layout.bodyShell,
+        oneHomeControl: layout.immersive ? layout.homeCount === 0 : layout.homeCount === 1,
+        fixedHomeControl: layout.immersive || layout.homeFixed,
+        visibleHomeControl: layout.immersive || layout.homeInViewport,
+        correctHomeTarget: layout.immersive || (layout.homeTarget && layout.homeSection === layout.expectedSection),
         nonblankPrimaryContent: layout.nonblank,
         exactTitle: layout.titleMatches,
         noHorizontalOverflow: !layout.overflow,
