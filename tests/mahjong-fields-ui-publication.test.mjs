@@ -24,7 +24,7 @@ test('public wrapper carries the shared return control and original relative-res
   assert.match(html,/class="hub-home-link" href="\.\.\/\.\.\/index\.html#engineering"/);
   assert.match(html,/assets\/subpage-shell\.css/);
   assert.match(html,/assets\/hero-ai-companion\.png/);
-  assert.match(html,/iframe src="\.\/demo\/index\.html"/);
+  assert.match(html,/iframe src="\.\/demo\/index\.html\?v=1\.2\.0"/);
   for(const path of ['demo/app.js','demo/state.js','demo/styles.css','demo/assets/coin-lobby.png','demo/assets/coin-match.png','demo/assets/coin-ready.png','demo/assets/courtyard.png'])assert.ok(existsSync(join(project,path)),path);
   const source=read('demo/app.js');
   assert.doesNotMatch(source,/https?:\/\/|[A-Z]:[\\/]/);
