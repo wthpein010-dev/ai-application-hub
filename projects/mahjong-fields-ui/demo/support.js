@@ -52,7 +52,7 @@
     const refresh = () => ctx.refresh ? ctx.refresh() : ctx.go(d().screen);
     const B = (text, action, cls = 'gold-button', value = '', extra = '') => ctx.b(text, 'support:' + action, cls, `${value !== '' ? `data-value="${escape(value)}"` : ''} ${extra}`);
     const pill = (text, cls = '') => ctx.badge(text, cls);
-    const footer = actions => ctx.footer(actions || ctx.b('返回原流程', 'back', 'blue-button'), state().originKind);
+    const footer = actions => ctx.footer(actions || '', state().originKind);
     const full = (title, body, klass = '') => ctx.panel(title, body, 'support-panel ' + klass);
     const title = text => ctx.header(text, 'back');
     const safeText = text => escape(text);

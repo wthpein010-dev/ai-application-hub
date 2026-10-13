@@ -157,6 +157,25 @@ test('secondary pages close over the live queue and cannot discard its progress'
   assert.equal(app.state().session.status,'seated');
 });
 
+test('accessory windows have no synthetic return-flow button and close to the active table', () => {
+  const app=boot();app.click('coin');app.click('startCoin');app.click('queueCoin');
+  app.click('supply');
+  assert.doesNotMatch(plain(app.html()),/返回(?:原|当前)?流程/);
+  app.tick(8000);app.emit('sheet','cancel',{preventDefault(){}});
+  app.click('deal');app.tick(3100);app.click('history');
+  assert.doesNotMatch(plain(app.html()),/返回(?:原|当前)?流程/);
+  app.emit('sheet','cancel',{preventDefault(){}});
+  assert.equal(app.state().data.screen,'coinPlay');
+  assert.equal(app.state().session.status,'playing');
+});
+
+test('event center returns to the lobby after closing registration status without cancelling entry', () => {
+  const app=boot();registerFirst(app);
+  app.click('eventCenter');app.click('home');
+  assert.equal(app.state().data.screen,'home');
+  assert.equal(app.state().data.tournament.status,'registered');
+});
+
 test('closing blank around event details returns to center without signing up', () => {
   const app=boot(); app.click('tournament'); app.click('eventDetail',0);
   assert.equal(app.sheetOpen(),true); assert.match(app.underlay(),/全部赛事/);
@@ -177,7 +196,7 @@ test('waiting windows retain reachable demo controls without exposing live entra
 test('returning to selection after settlement cannot reopen a cleared table or old result', () => {
   const app=boot();matchToReady(app);app.click('deal');app.click('advance');app.click('advance');
   app.click('coin');assert.equal(app.state().data.screen,'coinLobby');
-  app.click('back');assert.equal(app.state().data.screen,'home');
+  app.click('home');assert.equal(app.state().data.screen,'home');
   assert.equal(app.state().session.status,'idle');
 });
 
