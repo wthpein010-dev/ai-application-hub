@@ -151,6 +151,28 @@ test('activity tabs retain one window size through switching and reload', () => 
   }
 });
 
+test('activity tabs close once to their opener after switching and reloading', () => {
+  let app=boot();app.click('activity');
+  for(const action of ['signinPage','teaPage','returnPage','flipPage','activities'])app.click('support:'+action);
+  app=boot({storage:app.storage()});app.click('back');
+  assert.equal(app.sheetOpen(),false);
+  assert.equal(app.state().data.screen,'home');
+});
+
+test('activity dismissal skips tab history in older saves and resumes the live queue', () => {
+  let app=boot();app.click('coin');app.click('startCoin');app.click('queueCoin');app.click('supply');app.click('support:activities');
+  app.click('support:teaPage');
+  const storage=app.storage(), saved=JSON.parse(storage[app.key()]);
+  saved.data.navStack.push('supportActivity','supportSignin','supportReturn');
+  storage[app.key()]=JSON.stringify(saved);app=boot({storage});app.tick(8000);
+  app.emit('sheet','cancel',{preventDefault(){}});
+  assert.equal(app.state().data.screen,'supportSupply');
+  app.emit('sheet','cancel',{preventDefault(){}});
+  assert.equal(app.sheetOpen(),false);
+  assert.equal(app.state().data.screen,'coinReady');
+  assert.equal(app.state().session.status,'seated');
+});
+
 test('home actions sit only on visible original artwork, without duplicate entry panels', () => {
   const app = boot();
   assert.doesNotMatch(app.html(), /home-entries|game-header/);

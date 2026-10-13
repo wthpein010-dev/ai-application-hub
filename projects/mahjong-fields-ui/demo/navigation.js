@@ -1,10 +1,12 @@
 (function(root,factory){if(typeof module==='object'&&module.exports)module.exports=factory();else root.FieldNavigation=factory();})(typeof globalThis!=='undefined'?globalThis:this,function(){
   const coinPages=['coinMatch','coinReady','coinPlay'];
+  const activityPages=new Set(['supportActivity','supportSignin','supportTea','supportReturn','supportFlip']);
   const eventPages=['eventRegistered','eventStandby','eventAllocating','eventTable','eventSmallResult','eventRoundWait','eventFinal'];
   const eventMap={none:'eventCenter',registered:'eventRegistered',standby:'eventStandby',checkin:'eventRegistered',allocating:'eventAllocating',published:'eventAllocating',table:'eventTable',smallResult:'eventSmallResult',roundWait:'eventRoundWait',finalTemp:'eventFinal',final:'eventFinal',cancelled:'eventCenter',eliminated:'eventFinal'};
-  function push(data,target){if(data.screen===target)return;data.navStack=(Array.isArray(data.navStack)?data.navStack:[]).concat(data.screen).slice(-16);}
+  function push(data,target){if(data.screen===target||(activityPages.has(data.screen)&&activityPages.has(target)))return;data.navStack=(Array.isArray(data.navStack)?data.navStack:[]).concat(data.screen).slice(-16);}
   function returnTarget(data,status){
     const stack=Array.isArray(data.navStack)?data.navStack:[];let target=stack.pop()||data.returnScreen||'home';
+    if(activityPages.has(data.screen))while(activityPages.has(target))target=stack.pop()||'home';
     if(coinPages.includes(target))target=({matching:'coinMatch',seated:'coinReady',playing:'coinPlay'})[status]||'coinLobby';
     if(eventPages.includes(target))target=eventMap[data.tournament?.status]||'eventCenter';
     return target;
