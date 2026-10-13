@@ -4,7 +4,8 @@ const fs = require('node:fs');
 const path = require('node:path');
 const vm = require('node:vm');
 
-// Run the browser entrypoints unchanged. The DOM boundary below supplies only
+// Run the browser entrypoints with VM-only access to internal test callbacks.
+// No test callbacks or controls are exposed in the player build. The DOM supplies
 // layout/dialog/storage/timing APIs; all page generation and actions stay real.
 const root = path.resolve(__dirname, '..');
 const html = fs.readFileSync(path.join(root, 'index.html'), 'utf8');
@@ -88,14 +89,21 @@ function boot(options = {}) {
     addEventListener:(kind,fn) => events.set(kind,fn)
   });
   context.window = context;
-  for (const [name, source] of scripts) vm.runInContext(source, context, {filename:name});
+  for (const [name, source] of scripts) vm.runInContext(name==='app.js'?source.replace('  window.FieldUI={handle(event){','  window.__testActions={dispatch,advance,scenario};\n  window.FieldUI={handle(event){'):source, context, {filename:name});
   function state() {
     const key = [...store.keys()].find(x => x.startsWith('maluer-fields-'));
     assert.ok(key, 'the real app should save its current state');
     return JSON.parse(store.get(key));
   }
   function visibleButtons() { return [...(nodes.modal.open ? [...buttons(nodes['modal-body'].innerHTML), modalClose] : buttons(nodes.sheet.open ? nodes['sheet-body'].innerHTML : nodes.stage.innerHTML)), ...staticButtons]; }
+  let testNavigation=false;
   function click(action, value) {
+    if(action==='tools')return;
+    if(action==='directory'){testNavigation=true;return;}
+    if(testNavigation){testNavigation=false;context.__testActions.dispatch(action,value);return;}
+    if(action==='advance'){context.__testActions.advance();return;}
+    if(/Scenario$/.test(action)||['tableFailure','matchFailure','newReward'].includes(action)){context.__testActions.scenario(action);return;}
+    if(['pause','nextStage','eliminateEvent'].includes(action)||action.startsWith('details:demo')||action==='support:scenario'){context.__testActions.dispatch(action,value);return;}
     const button = visibleButtons().find(x => x.dataset.action === action && (value === undefined || x.dataset.value === String(value)) && !x.disabled);
     assert.ok(button, `visible enabled action ${action}${value === undefined ? '' : ':' + value} missing on ${state().data.screen}; modal=${plain(nodes['modal-body'].innerHTML)}`);
     context.FieldUI.handle({target:button});
@@ -200,9 +208,9 @@ test('closing blank around event details returns to center without signing up', 
   assert.equal(app.state().data.tournament.status,'none');
 });
 
-test('waiting windows retain reachable demo controls without exposing live entrance shortcuts', () => {
+test('waiting windows expose only player actions without a time advancement control', () => {
   const app=boot();registerFirst(app);
-  assert.match(app.html(),/sheet-demo-controls/);
+  assert.doesNotMatch(app.html(),/sheet-demo-controls/);
   app.click('advance');
   assert.equal(app.state().data.tournament.status,'checkin');
   assert.equal(app.sheetOpen(),true);
@@ -289,7 +297,7 @@ test('ready players wait three seconds before the one service fee is charged', (
   assert.equal(app.state().session.coins,128580);
 });
 
-test('the explicit advance control may skip the ready countdown without double charging', () => {
+test('an internal test clock shortcut never charges the ready countdown twice', () => {
   const app = boot(); matchToReady(app); app.click('deal'); app.click('advance');
   assert.equal(app.state().session.status,'playing');
   assert.equal(app.state().session.coins,128580);
@@ -356,7 +364,7 @@ test('an already running ready countdown preserves the unelapsed part across pau
 });
 
 test('weekend elimination archives rank twenty with forty coins and seventy-four season points', () => {
-  const app=boot();app.click('tools');app.click('weekendScenario');app.click('advance');app.click('eliminateEvent');
+  const app=boot();app.click('tools');app.click('weekendScenario');app.click('eliminateEvent');
   assert.equal(app.state().data.tournament.rank,20);
   assert.equal(app.state().data.tournament.status,'finalTemp');
   assert.equal(app.state().session.coins,128600);
@@ -385,7 +393,7 @@ test('an actual unresolved appeal blocks official prize payment until its origin
   assert.equal(app.state().session.coins,128600);
   assert.equal(app.state().data.eventArchives.length,0);
   assert.match(plain(app.modal()),/申诉待处理/);
-  app.click('closeModal');app.click('tools');app.click('details:demoResolveRequest');app.click('closeModal');app.click('advance');
+  app.click('closeModal');app.click('details:demoResolveRequest');app.click('advance');
   assert.equal(app.state().data.tournament.status,'final');
   assert.equal(app.state().session.coins,128700);
   assert.equal(app.state().data.eventArchives.length,1);
@@ -512,6 +520,75 @@ function finishNewcomer(app) {
   app.click('advance');
   assert.equal(app.state().data.tournament.status,'final');
 }
+
+test('player UI contains no presentation toolbar or developer controls', () => {
+  assert.doesNotMatch(html, /workbench|statusbar|data-action="(?:advance|tools|directory|reset|pause|fullscreen)"/);
+  const app=boot();app.click('coin');app.click('startCoin');
+  assert.doesNotMatch(plain(app.modal()), /演示|示例|参考|模拟|待确认/);
+  app.click('closeModal');app.click('supply');
+  assert.doesNotMatch(app.html(), /sheet-demo-controls|data-action="(?:advance|tools|directory)"/);
+  app.click('support:activities');app.click('support:signinPage');
+  assert.doesNotMatch(plain(app.html()), /演示|模拟|参考配置|原次/);
+});
+
+test('coin settlement is reached automatically without any artificial player button', () => {
+  const app=boot();app.click('coin');app.click('startCoin');app.click('queueCoin');
+  app.tick(7800);app.click('deal');app.tick(3000);
+  assert.equal(app.state().session.status,'playing');
+  app.tick(30000);
+  assert.equal(app.state().data.screen,'coinResult');
+  assert.equal(app.state().session.status,'idle');
+  assert.equal(app.state().data.history.length,1);
+  app.tick(30000);assert.equal(app.state().data.history.length,1);
+});
+
+test('registration, allocation and next round need no manual time advancement', () => {
+  const app=boot();app.click('tournament');app.click('eventDetail',0);app.click('register');app.click('confirmRegister');
+  app.tick(8000);assert.equal(app.state().data.tournament.status,'checkin');app.click('checkin');
+  app.tick(5000);assert.equal(app.state().data.tournament.status,'published');app.tick(3000);
+  assert.equal(app.state().data.tournament.status,'table');
+  app.tick(30000);assert.equal(app.state().data.tournament.status,'smallResult');
+  assert.doesNotMatch(app.html(),/data-action="nextHand"/);
+  for(let i=0;i<3;i++){app.tick(10000);app.tick(30000);}
+  assert.equal(app.state().data.tournament.status,'roundWait');
+  app.tick(8000);assert.equal(app.state().data.tournament.round,2);
+  app.tick(8000);assert.equal(app.state().data.tournament.status,'table');
+});
+
+test('all newcomer rounds finish naturally and the twenty-four-hour review pays once', () => {
+  const app=boot();app.click('tournament');app.click('eventDetail',0);app.click('register');app.click('confirmRegister');
+  app.tick(8000);app.click('checkin');app.tick(8000);
+  for(let round=1;round<=3;round++){
+    for(let hand=1;hand<=4;hand++){app.tick(30000);if(hand<4)app.tick(10000);}
+    app.tick(8000);if(round<3)app.tick(8000);
+  }
+  assert.equal(app.state().data.tournament.status,'finalTemp');
+  assert.equal(app.state().session.coins,128600);
+  assert.equal(app.state().data.tournament.roundRecords.length,3);
+  const deadline=app.state().data.tournament.reviewDeadline;
+  const restored=boot({storage:app.storage(),now:deadline-1});
+  assert.equal(restored.state().data.tournament.status,'finalTemp');restored.tick(1);
+  assert.equal(restored.state().data.tournament.status,'final');
+  assert.equal(restored.state().session.coins,128700);
+  restored.tick(60000);assert.equal(restored.state().session.coins,128700);
+  assert.equal(restored.state().data.eventArchives.length,1);
+});
+
+test('automated settlement preserves an open support page and returns to fresh selection', () => {
+  const app=boot();app.click('coin');app.click('startCoin');app.click('queueCoin');app.tick(7800);
+  app.click('deal');app.tick(3000);app.click('supply');app.tick(30000);
+  assert.equal(app.state().session.status,'idle');assert.equal(app.state().data.screen,'supportSupply');
+  app.click('back');assert.equal(app.state().data.screen,'coinLobby');
+});
+
+test('automatic roster publication preserves an open rule page and returns to the assigned table', () => {
+  const app=boot();app.click('tournament');app.click('eventDetail',0);app.click('register');app.click('confirmRegister');
+  app.tick(8000);app.click('checkin');app.click('eventRules');
+  assert.equal(app.state().data.screen,'detailsRules');app.tick(8000);
+  assert.equal(app.state().data.tournament.status,'table');
+  assert.equal(app.state().data.screen,'detailsRules');app.click('back');
+  assert.equal(app.state().data.screen,'eventTable');
+});
 
 test('a consumed newcomer day remains unavailable after reload and does not restrict another event', () => {
   const app=boot();finishNewcomer(app);

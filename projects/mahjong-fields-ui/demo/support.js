@@ -123,12 +123,12 @@
     }
     function claimUI(r, pageAction) {
       if (!r) return '';
-      return `<div class="support-confirmed" role="status"><div>${pill(r.status === 'paid' ? '已到账' : '奖励确认中', r.status === 'paid' ? 'green' : 'blue')}<strong>${ctx.fmt(r.amount)} 金币</strong></div><p>${r.status === 'paid' ? '金币已加入可用余额。' : '本次金额已确定，请查询原次结果。'}</p>${r.status === 'paid' ? '' : B('查询原次结果', 'resolveReward', 'blue-button small', r.id)}${pageAction || ''}</div>`;
+      return `<div class="support-confirmed" role="status"><div>${pill(r.status === 'paid' ? '已到账' : '奖励确认中', r.status === 'paid' ? 'green' : 'blue')}<strong>${ctx.fmt(r.amount)} 金币</strong></div><p>${r.status === 'paid' ? '金币已加入可用余额。' : '本次金额已确定，请查看到账状态。'}</p>${r.status === 'paid' ? '' : B('查看到账状态', 'resolveReward', 'blue-button small', r.id)}${pageAction || ''}</div>`;
     }
     function unfinishedRewards() {
       const items = Object.values(state().rewards).filter(r => r.status === 'pending');
       if (!items.length) return '';
-      return `<section class="support-pending-ledger" aria-label="待确认的原次奖励"><h2>奖励确认中</h2>${items.map(r => `<article><div><strong>${safeText(r.label)}</strong><p>${safeText(r.date || dateKey(r.acceptedAt))} · ${r.amount}金币</p></div>${B('查询原次结果', 'resolveReward', 'blue-button small', r.id)}</article>`).join('')}</section>`;
+      return `<section class="support-pending-ledger" aria-label="待确认的奖励记录"><h2>奖励确认中</h2>${items.map(r => `<article><div><strong>${safeText(r.label)}</strong><p>${safeText(r.date || dateKey(r.acceptedAt))} · ${r.amount}金币</p></div>${B('查看到账状态', 'resolveReward', 'blue-button small', r.id)}</article>`).join('')}</section>`;
     }
     function selectedFlipDate() {
       const c = clock(), s = state(), dates = Object.keys(s.flipDates).filter(key => key >= addDays(c.today, -1) && key <= c.today).sort().reverse();
@@ -149,7 +149,7 @@
       return { ...status, today, rolling, pending, eligible: status.balanceEligible && today < 2 && rolling < 5 && !pending };
     }
     function reliefReason(r) {
-      if (r.pending) return '已有一笔救济确认中，查询原次结果后再查看资格。';
+      if (r.pending) return '已有一笔救济确认中，查看到账状态后再查看资格。';
       if (!r.balanceEligible) return '可用与锁定金币合计须低于20金币。';
       if (r.today >= 2) return '今日救济已达2次。';
       if (r.rolling >= 5) return '最近168小时救济已达5次。';
@@ -158,7 +158,7 @@
     const pages = {
       supportSupply() {
         const s = state(), r = reliefInfo();
-        return title('金币补给') + full('补充金币，再回原场次', `<div class="support-supply-layout"><section class="support-balance"><h2>可用金币</h2><strong class="support-coin-number">${ctx.fmt(r.available)}</strong><dl>${ctx.kv('锁定本金', ctx.fmt(r.locked))}${ctx.kv('预留服务费', ctx.fmt(r.reserved))}${ctx.kv('原场门槛', ctx.fmt(r.threshold))}${ctx.kv('还差', ctx.fmt(r.gap) + ' 金币')}</dl><p class="support-note">${r.gap ? '到账后仍不足时，可继续通过活动补充金币。' : '已符合本场门槛。返回选场后自行开始。'}</p></section><section class="support-supply-options"><article class="support-relief"><h2>金币救济</h2><strong>60 <small>金币 / 次</small></strong><p>${reliefReason(r)}</p><p class="support-small">今日 ${r.today}/2次 · 最近168小时 ${r.rolling}/5次</p>${r.pending ? B('查询原次结果', 'resolveReward', 'blue-button small', r.pending.id) : B(r.eligible ? '领取60金币' : '暂不符合救济', 'relief', 'gold-button small', '', r.eligible ? '' : 'disabled')}</article><div class="support-two-paths"><article><h3>活动奖励</h3><p>四项活动各自领奖</p>${B('查看活动', 'activities', 'blue-button small')}</article><article><h3>商城</h3><p>商品预览与金币装扮</p>${B('查看商城', 'shop', 'blue-button small')}</article></div><div class="support-inline-status" role="status">${s.message ? safeText(s.message) : '补给不会自动开始新对局。'}</div></section></div>`, 'support-wide') + footer();
+        return title('金币补给') + full('补充金币，再回原场次', `<div class="support-supply-layout"><section class="support-balance"><h2>可用金币</h2><strong class="support-coin-number">${ctx.fmt(r.available)}</strong><dl>${ctx.kv('锁定本金', ctx.fmt(r.locked))}${ctx.kv('预留服务费', ctx.fmt(r.reserved))}${ctx.kv('原场门槛', ctx.fmt(r.threshold))}${ctx.kv('还差', ctx.fmt(r.gap) + ' 金币')}</dl><p class="support-note">${r.gap ? '到账后仍不足时，可继续通过活动补充金币。' : '已符合本场门槛。返回选场后自行开始。'}</p></section><section class="support-supply-options"><article class="support-relief"><h2>金币救济</h2><strong>60 <small>金币 / 次</small></strong><p>${reliefReason(r)}</p><p class="support-small">今日 ${r.today}/2次 · 最近168小时 ${r.rolling}/5次</p>${r.pending ? B('查看到账状态', 'resolveReward', 'blue-button small', r.pending.id) : B(r.eligible ? '领取60金币' : '暂不符合救济', 'relief', 'gold-button small', '', r.eligible ? '' : 'disabled')}</article><div class="support-two-paths"><article><h3>活动奖励</h3><p>签到、茶歇、回访和翻牌</p>${B('查看活动', 'activities', 'blue-button small')}</article><article><h3>商城</h3><p>使用金币购买装扮</p>${B('查看商城', 'shop', 'blue-button small')}</article></div><div class="support-inline-status" role="status">${s.message ? safeText(s.message) : '补给不会自动开始新对局。'}</div></section></div>`, 'support-wide') + footer();
       },
       supportActivity() {
         syncProgress();
@@ -187,7 +187,7 @@
         const r = tea.pending ? s.rewards[tea.pending] : null, wait = Math.max(0, Math.ceil((tea.nextAt - now()) / 1000));
         const next = TEA[Math.min(tea.success, 2)];
         const viewing = tea.watching;
-        return title('茶歇好礼') + activityNav('teaPage') + full('闲歇片刻，领取好礼', `<div class="support-tea-layout"><section class="support-tea-hero"><div class="support-teacup" aria-hidden="true">茶</div><h2>${viewing ? '短片播放中' : '茶歇好礼'}</h2><p>${viewing ? '完整观看并通过确认，可领取本档奖励。' : '自愿观看短片，完整观看后领取金币。'}</p>${viewing ? `<div class="support-video-preview"><span>▶</span><strong>短片画面参考</strong></div>` : `<strong class="support-coin-number">${tea.success < 3 ? next : '10'}<small>${tea.success < 3 ? '本档金币' : '今日合计'}</small></strong>`}${viewing ? B('完整观看，确认奖励', 'teaComplete', 'gold-button small') + B('提前关闭', 'teaCancel', 'blue-button small') : r ? claimUI(r) : B(tea.success >= 3 ? '今日已领完' : wait ? `冷却剩余${wait}秒` : '观看短片', 'teaStart', 'gold-button small', '', tea.success >= 3 ? 'disabled' : '')}<div class="support-inline-status" role="status">${viewing ? '提前关闭不消耗成功次数。' : wait ? '两次成功奖励间隔60秒，点击可更新冷却状态。' : '广告不可用时可稍后重试。'}</div></section><section class="support-tea-progress"><h2>${flow.date === c.today ? '今日奖励' : flow.date + '原次奖励'} ${tea.success}/3</h2>${TEA.map((n, i) => `<div class="support-reward-stage"><span>${i + 1}</span><div><strong>${n} 金币</strong><p>${i < tea.success ? '已到账' : i === tea.success ? '当前档位' : '下一档'}</p></div>${pill(i < tea.success ? '已领取' : '待领取', i < tea.success ? 'green' : 'gray')}</div>`).join('')}<p class="support-note">同一档确认中时查询原次结果。提前关闭、播放失败不占成功次数。</p></section></div>`) + footer();
+        return title('茶歇好礼') + activityNav('teaPage') + full('闲歇片刻，领取好礼', `<div class="support-tea-layout"><section class="support-tea-hero"><div class="support-teacup" aria-hidden="true">茶</div><h2>${viewing ? '短片播放中' : '茶歇好礼'}</h2><p>${viewing ? '完整观看并通过确认，可领取本档奖励。' : '自愿观看短片，完整观看后领取金币。'}</p>${viewing ? `<div class="support-video-preview"><span>▶</span><strong>广告播放中</strong></div>` : `<strong class="support-coin-number">${tea.success < 3 ? next : '10'}<small>${tea.success < 3 ? '本档金币' : '今日合计'}</small></strong>`}${viewing ? B('领取奖励', 'teaComplete', 'gold-button small') + B('提前关闭', 'teaCancel', 'blue-button small') : r ? claimUI(r) : B(tea.success >= 3 ? '今日已领完' : wait ? `冷却剩余${wait}秒` : '观看短片', 'teaStart', 'gold-button small', '', tea.success >= 3 ? 'disabled' : '')}<div class="support-inline-status" role="status">${viewing ? '提前关闭不消耗成功次数。' : wait ? '请等待冷却结束。' : '广告不可用时可稍后重试。'}</div></section><section class="support-tea-progress"><h2>${flow.date === c.today ? '今日奖励' : flow.date + '奖励记录'} ${tea.success}/3</h2>${TEA.map((n, i) => `<div class="support-reward-stage"><span>${i + 1}</span><div><strong>${n} 金币</strong><p>${i < tea.success ? '已到账' : i === tea.success ? '当前档位' : '下一档'}</p></div>${pill(i < tea.success ? '已领取' : '待领取', i < tea.success ? 'green' : 'gray')}</div>`).join('')}<p class="support-note">同一档确认中时查看到账状态。提前关闭或播放失败不会消耗次数。</p></section></div>`) + footer();
       },
       supportReturn() {
         const c = clock(), s = state(), dates = Object.keys(s.returnDates).filter(key => key >= addDays(c.today, -1) && key <= c.today).sort().reverse();
@@ -200,7 +200,7 @@
       },
       supportShop() {
         const s = state(), cat = s.category || '全部', filtered = PRODUCTS.filter(p => cat === '全部' || p.category === cat);
-        return title('商城') + shopNav('shop') + full('装扮好礼', `<div class="support-shop-toolbar"><div class="support-categories">${['全部', '表情', '头像框', '牌背', '主题'].map(x => B(x, 'category', cat === x ? 'active' : '', x)).join('')}</div><span>可用 ${ctx.fmt(session().available)} 金币</span></div><div class="support-product-grid">${filtered.map(p => `<article class="support-product-card">${art(p)}<h2>${p.name}</h2><p>${p.note}</p><strong>${ctx.fmt(p.price)} 金币</strong>${B(s.owned[p.id] ? '已拥有 · 查看' : '预览商品', 'product', 'gold-button small', p.id)}</article>`).join('')}</div><p class="support-footnote">价格沿现有基础款参考配置展示。装扮不改变玩法与成绩。</p>`) + footer();
+        return title('商城') + shopNav('shop') + full('装扮好礼', `<div class="support-shop-toolbar"><div class="support-categories">${['全部', '表情', '头像框', '牌背', '主题'].map(x => B(x, 'category', cat === x ? 'active' : '', x)).join('')}</div><span>可用 ${ctx.fmt(session().available)} 金币</span></div><div class="support-product-grid">${filtered.map(p => `<article class="support-product-card">${art(p)}<h2>${p.name}</h2><p>${p.note}</p><strong>${ctx.fmt(p.price)} 金币</strong>${B(s.owned[p.id] ? '已拥有 · 查看' : '预览商品', 'product', 'gold-button small', p.id)}</article>`).join('')}</div><p class="support-footnote">装扮不改变玩法与成绩。</p>`) + footer();
       },
       supportProduct() {
         const s = state(), p = product(s.product) || PRODUCTS[0], owned = Boolean(s.owned[p.id]), pending = s.orders.find(o => o.product === p.id && o.status !== 'delivered');
@@ -217,7 +217,7 @@
       supportChest() {
         const s = state(), items = Object.values(s.chests), t = ctx.getTournament?.(), event = ctx.getEvent?.();
         const fixed = t && ['finalTemp', 'final'].includes(t.status) && event?.award;
-        return title('宝箱与奖励') + full('我的奖励', `<div class="support-chest-layout"><section class="support-chest-hero"><div class="support-chest-art" aria-hidden="true"><span>礼</span></div><h2>对局宝箱</h2><p>奖面80 / 120 / 200金币</p><p class="support-note">合格对局判定机会，每日最多3箱。并非每局都获得宝箱。</p></section><section class="support-chest-records">${fixed ? `<article class="support-chest-record"><div><h3>${safeText(event.name)} · 固定奖励</h3><p>${t.awarded ? '正式结果确认后自动到账，无需领取。' : '结果复核中，固定奖待确认。'}</p></div><strong>${event.award} 金币</strong>${pill(t.awarded ? '已自动到账' : '待复核', t.awarded ? 'green' : 'gray')}</article>` : ''}${items.map(chest => { const r = s.rewards['chest:' + chest.id]; return `<article class="support-chest-record"><div><h3>${chest.packaging === 'direct' ? '宝箱金币' : '宝箱金币礼包'}</h3><p>${chest.packaging === 'direct' ? '直接金币已自动入账，开箱仅查看奖品。' : '领取后加入可用金币，原次领取只发放一次。'}</p></div><strong>${chest.amount} 金币</strong>${chest.status === 'paid' ? pill('已到账', 'green') : chest.status === 'confirming' ? B('查询原次结果', 'resolveReward', 'blue-button small', r.id) : B('领取礼包', 'chestClaim', 'gold-button small', chest.id)}</article>`; }).join('')}${!items.length && !fixed ? `<div class="empty-state support-empty"><h2>暂无宝箱或赛事奖励</h2><p>合法已获得的奖励会保留在这里。</p></div>` : ''}</section></div>`, 'support-wide') + footer();
+        return title('宝箱与奖励') + full('我的奖励', `<div class="support-chest-layout"><section class="support-chest-hero"><div class="support-chest-art" aria-hidden="true"><span>礼</span></div><h2>对局宝箱</h2><p>可获得80 / 120 / 200金币</p><p class="support-note">完成有效对局有机会获得宝箱，每日最多3箱。</p></section><section class="support-chest-records">${fixed ? `<article class="support-chest-record"><div><h3>${safeText(event.name)} · 固定奖励</h3><p>${t.awarded ? '正式结果确认后自动到账，无需领取。' : '结果复核中，固定奖待确认。'}</p></div><strong>${event.award} 金币</strong>${pill(t.awarded ? '已自动到账' : '待复核', t.awarded ? 'green' : 'gray')}</article>` : ''}${items.map(chest => { const r = s.rewards['chest:' + chest.id]; return `<article class="support-chest-record"><div><h3>${chest.packaging === 'direct' ? '宝箱金币' : '宝箱金币礼包'}</h3><p>${chest.packaging === 'direct' ? '直接金币已自动入账，开箱仅查看奖品。' : '领取后加入可用金币，每份礼包仅可领取一次。'}</p></div><strong>${chest.amount} 金币</strong>${chest.status === 'paid' ? pill('已到账', 'green') : chest.status === 'confirming' ? B('查看到账状态', 'resolveReward', 'blue-button small', r.id) : B('领取礼包', 'chestClaim', 'gold-button small', chest.id)}</article>`; }).join('')}${!items.length && !fixed ? `<div class="empty-state support-empty"><h2>暂无宝箱或赛事奖励</h2><p>获得的宝箱和赛事奖励会显示在这里。</p></div>` : ''}</section></div>`, 'support-wide') + footer();
       }
     };
     function art(p) {
@@ -287,7 +287,7 @@
         case 'resolveReward': resolveReward(value); break;
         case 'relief': {
           const info = reliefInfo();
-          if (info.pending) { refresh(); ctx.notify('请查询原次救济结果'); break; }
+          if (info.pending) { refresh(); ctx.notify('请查看救济到账状态'); break; }
           if (!info.eligible) { s.message = reliefReason(info); refresh(); ctx.notify(s.message); break; }
           reward(`relief:${c.today}:${info.today + 1}`, 60, '金币救济', 'supportSupply', { kind: 'relief', date: c.today });
           s.message = '救济领取已受理，确认中不会重复领取。'; refresh(); break;
@@ -295,12 +295,12 @@
         case 'returnClaim': {
           const date = value || c.today, id = 'return:' + date;
           if (!s.returnDates[date] || date < addDays(c.today, -1) || date > c.today) { ctx.notify('这份回访资格已过期或尚未取得'); break; }
-          if (s.rewards[id]) { ctx.notify('这份回访奖励已受理，请查看原次结果'); refresh(); break; }
+          if (s.rewards[id]) { ctx.notify('这份回访奖励已受理，请查看到账状态'); refresh(); break; }
           reward(id, 10, '回访奖励', 'supportReturn', { kind: 'return', date }); refresh(); break;
         }
         case 'teaStart': {
           const tea = teaFlow().tea;
-          if (tea.success >= 3 || tea.pending || tea.watching) { ctx.notify(tea.pending ? '本档确认中，请查询原次结果' : tea.watching ? '短片已在播放' : '今日3档奖励已完成'); break; }
+          if (tea.success >= 3 || tea.pending || tea.watching) { ctx.notify(tea.pending ? '本档确认中，请查看到账状态' : tea.watching ? '短片已在播放' : '今日3档奖励已完成'); break; }
           if (now() < tea.nextAt) { refresh(); ctx.notify('两次成功奖励间隔60秒，请稍候'); break; }
           tea.watching = true; tea.startedAt = now(); refresh(); break;
         }
@@ -315,7 +315,7 @@
         case 'flipCard': {
           syncProgress(); const date = selectedFlipDate(), id = 'flip:' + date, card = Number(value);
           if (!s.flipDates[date] || date < addDays(c.today, -1) || date > c.today) { ctx.notify('完成有效对局后获得翻牌机会'); break; }
-          if (s.rewards[id]) { ctx.notify('本次翻牌已锁定原结果'); refresh(); break; }
+          if (s.rewards[id]) { ctx.notify('本次翻牌已完成，请查看奖励'); refresh(); break; }
           if (!Number.isInteger(card) || card < 0 || card > 3) break;
           /* 演示使用现行奖面3金币的已确定样例，不运行客户端随机开奖。 */
           reward(id, 3, '翻牌奖励', 'supportFlip', { kind: 'flip', date, card }); refresh(); break;

@@ -172,7 +172,7 @@ test('跨午夜完整观看继续原档，原日确认到账后不重发新日�
   h.ui.dispatch('support:teaStart');
   stamp += 2 * 60000;
   h.ui.dispatch('support:teaComplete');
-  assert.match(h.ui.pages.supportTea(), /2026-10-13原次奖励/);
+  assert.match(h.ui.pages.supportTea(), /2026-10-13奖励记录/);
   assert.equal(h.data.support.rewards['tea:2026-10-13:1'].amount, 3);
   assert.equal(h.data.support.rewards['tea:2026-10-14:1'], undefined);
   h.ui.dispatch('support:resolveReward', 'tea:2026-10-13:1');
