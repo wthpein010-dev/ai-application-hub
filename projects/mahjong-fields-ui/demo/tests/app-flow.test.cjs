@@ -176,6 +176,21 @@ test('event center returns to the lobby after closing registration status withou
   assert.equal(app.state().data.tournament.status,'registered');
 });
 
+test('closing a small-result window keeps the continuation deadline and does not ask to leave', () => {
+  const app=boot();enterFirstEvent(app);app.click('advance');
+  const deadline=app.state().data.tournament.nextHandDeadline;
+  app.emit('sheet','cancel',{preventDefault(){}});
+  assert.equal(app.sheetOpen(),false);
+  assert.equal(app.modal(),'');
+  assert.equal(app.state().data.screen,'eventTable');
+  assert.equal(app.state().data.tournament.status,'smallResult');
+  assert.equal(app.state().data.tournament.nextHandDeadline,deadline);
+  assert.throws(()=>app.click('tile',0),/missing/);
+  app.tick(10000);
+  assert.equal(app.state().data.tournament.hand,2);
+  assert.equal(app.state().data.tournament.status,'table');
+});
+
 test('closing blank around event details returns to center without signing up', () => {
   const app=boot(); app.click('tournament'); app.click('eventDetail',0);
   assert.equal(app.sheetOpen(),true); assert.match(app.underlay(),/全部赛事/);
