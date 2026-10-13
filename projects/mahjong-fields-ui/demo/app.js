@@ -3,6 +3,9 @@
   'use strict';
   const $ = s => document.querySelector(s);
   const stage = $('#stage'), modal = $('#modal'), modalBody = $('#modal-body');
+  const sheet = $('#sheet'), sheetBody = $('#sheet-body');
+  let focusBeforeSheet;
+  const primaryScreens = new Set(['home','coinLobby','coinMatch','coinReady','coinPlay','eventCenter','eventTable']);
   const fmt = n => new Intl.NumberFormat('zh-CN').format(n);
   const signed = n => (n > 0 ? '+' : '') + fmt(n);
   const demoNow=()=>data.pauseAuto?(data.pausedAt||Date.now()):Date.now();
@@ -66,10 +69,10 @@
   const noviceLeft = (day=dayKey()) => data.noviceEntryDays.includes(day)?0:1;
   const b = (label,action,cls='gold-button',extra='') => `<button type="button" onclick="FieldUI.handle(event)" class="${cls}" data-action="${action}" ${extra}>${label}</button>`;
   const badge = (label,cls='') => `<span class="badge ${cls}">${label}</span>`;
-  const trophy = `<svg class="hero-trophy" viewBox="0 0 100 100" aria-hidden="true"><path d="M25 10h50v15h18v14c0 15-13 25-27 26l-8 8v10h16v9H26v-9h16V73l-8-8C20 64 7 54 7 39V25h18V10zm0 24H16v5c0 8 5 13 12 15-2-6-3-13-3-20zm50 0c0 7-1 14-3 20 7-2 12-7 12-15v-5h-9z"/></svg>`;
+  const trophy = `<span class="hero-trophy" aria-hidden="true"></span>`;
   const kv = (label,value,compact=false) => `<div class="kv ${compact?'compact':''}"><dt>${label}</dt><dd>${value}</dd></div>`;
   const tabs = (labels,action,active,cls='tabs-row') => `<div class="${cls}">${labels.map((label,i)=>b(label,action,i===active?'active':'',`data-value="${i}" aria-pressed="${i===active}"`)).join('')}</div>`;
-  const sideTabs = active => `<nav class="side-tabs" aria-label="金币场页面">${['准备分桌','真人匹配','本局结果'].map((x,i)=>`<button type="button" onclick="FieldUI.handle(event)" class="${i===active?'active':''}" data-action="coinFlowTab" data-value="${i}" aria-pressed="${i===active}">${x}</button>`).join('')}</nav>`;
+  const sideTabs = active => `<div class="side-tabs flow-status" aria-label="金币场进度">${['真人匹配','准备开局','本局结果'].map((x,i)=>`<div class="${i===(active===1?0:active===0?1:2)?'active':''}">${x}</div>`).join('')}</div>`;
   function header(title,back='back',region=false) {
     return `<header class="game-header">${b('‹',back,'back','aria-label="返回"')}<h1 class="game-title">${title}</h1>${region?`<button type="button" onclick="FieldUI.handle(event)" class="region-chip" data-action="region">${data.region} ▾</button>`:''}<div class="assetbar">${b('<span>房</span><b>433</b>','wallet','currency','aria-label="房卡余额433"')}${b(`<span>🪙</span><b>${fmt(session.coins)}</b>`,'supply','currency',`aria-label="金币余额${session.coins}"`)}${b('<span>💎</span><b>0</b>','wallet','currency','aria-label="钻石余额0"')}</div></header>`;
   }
@@ -86,12 +89,31 @@
   function notify(message) { clearTimeout(toastTimer); $('#toast').textContent=message; $('#toast').classList.add('visible'); toastTimer=setTimeout(()=>$('#toast').classList.remove('visible'),3200); }
   function closeModal() { if(modal.open) modal.close(); }
   function showModal(title,body,actions='') {
-    focusBeforeModal = document.activeElement;
+    if(!modal.open) focusBeforeModal = document.activeElement;
     modalBody.innerHTML=`<h2 id="modal-title" class="modal-title">${title}</h2>${body}${actions?`<div class="modal-actions">${actions}</div>`:''}`;
     if(!modal.open) modal.showModal();
+    resize();
     (modal.querySelector('.modal-actions .blue-button') || modal.querySelector('.modal-close')).focus();
   }
   modal.addEventListener('close',()=>{ if(focusBeforeModal?.isConnected) focusBeforeModal.focus(); else document.querySelector('.workbench button')?.focus(); });
+  function dismissOnBlank(dialog,close) {
+    let startedOutside=false;
+    const outside=event=>{
+      const r=dialog.getBoundingClientRect();
+      return event.target===dialog&&(event.clientX<r.left||event.clientX>r.right||event.clientY<r.top||event.clientY>r.bottom);
+    };
+    dialog.addEventListener('pointerdown',event=>{startedOutside=outside(event);});
+    dialog.addEventListener('pointerup',event=>{if(startedOutside&&outside(event))close();startedOutside=false;});
+  }
+  dismissOnBlank(modal,closeModal);
+  function dismissSheet(){if(!modal.open)dispatch(sheetBody.querySelector('.back')?.dataset.action||'back');}
+  dismissOnBlank(sheet,dismissSheet);
+  sheet.addEventListener('cancel',event=>{event.preventDefault();dismissSheet();});
+  sheet.addEventListener('close',()=>{
+    const action=focusBeforeSheet?.dataset?.action,value=focusBeforeSheet?.dataset?.value;
+    const target=focusBeforeSheet?.isConnected?focusBeforeSheet:[...stage.querySelectorAll('button[data-action]')].find(x=>x.dataset.action===action&&x.dataset.value===value);
+    (target||stage.querySelector('button'))?.focus();
+  });
   function blockActive(destination) {
     const browse=destination.startsWith('support')||destination.startsWith('details')||['eventCenter','eventDetail','season','rewards','myEvents','seasonDetails','seasonWeek','seasonHistory'].includes(destination);
     if(session.status==='playing' && !browse && !['coinPlay','supply','history'].includes(destination)) {
@@ -110,8 +132,10 @@
   function flowGo(screen){if(data.screen.startsWith('support')||data.screen.startsWith('details')){save();render();}else go(screen,{replace:true});}
   function activeCoinScreen() { return session.status==='playing'?'coinPlay':session.status==='seated'?'coinReady':session.status==='matching'?'coinMatch':'coinLobby'; }
   function home() {
-    return `<img class="home-photo" src="assets/home.png" alt="麻溜儿大厅效果图，金币场和比赛场入口">${header('麻溜儿','home')}${b('','coin','home-hit','style="left:800px;top:362px;width:280px;height:350px" aria-label="进入金币场"')}${b('','tournament','home-hit','style="left:1095px;top:362px;width:280px;height:350px" aria-label="进入比赛场"')}
-      <div class="home-entries">${b('金币场 <small>单局竞技 · 金币结算</small>','coin','gold-button')}${b('比赛场 <small>报名参赛 · 赛季排名</small>','tournament','blue-button')}</div>${session.status!=='idle'?`<button type="button" onclick="FieldUI.handle(event)" class="resume-banner" data-action="resumeCoin">${session.status==='playing'?'本局进行中':'匹配流程进行中'} · 返回原流程 ›</button>`:''}`;
+    return `<img class="home-photo" src="assets/home.png" alt="麻溜儿大厅效果图，金币场和比赛场入口">${b('','coin','home-hit','style="left:780px;top:350px;width:275px;height:465px" aria-label="进入金币场"')}${b('','tournament','home-hit','style="left:1068px;top:350px;width:275px;height:465px" aria-label="进入比赛场"')}${b('','tournament','home-hit','style="left:1645px;top:351px;width:210px;height:269px" aria-label="比赛场快捷入口"')}
+      ${b(fmt(session.coins),'supply','home-balance coins',`aria-label="金币余额${session.coins}，查看补给"`)}${b('433','wallet','home-balance cards','aria-label="房卡余额433"')}${b('0','wallet','home-balance diamonds','aria-label="钻石余额0"')}
+      ${b('','shop','home-hit','style="left:15px;top:885px;width:300px;height:190px" aria-label="进入商城"')}${b('','activity','home-hit','style="left:331px;top:946px;width:87px;height:129px" aria-label="查看活动"')}${b('','help','home-hit','style="left:765px;top:946px;width:86px;height:129px" aria-label="帮助反馈"')}${b('','history','home-hit','style="left:898px;top:944px;width:89px;height:130px" aria-label="查看战绩"')}
+      ${session.status!=='idle'?`<button type="button" onclick="FieldUI.handle(event)" class="resume-banner" data-action="resumeCoin">${session.status==='playing'?'本局进行中':'匹配流程进行中'} · 返回原流程 ›</button>`:''}`;
   }
   function coinLobby() {
     const allowed=FieldCore.recommend(session.available), status=session.status!=='idle';
@@ -225,9 +249,22 @@
   const support=FieldSupport.create(ctx), details=FieldDetails.create(ctx);
   Object.assign(pages,support.pages,details.pages);Object.assign(labels,support.labels,details.labels);
   function render() {
+    const focusedAction=document.activeElement?.dataset?.action,focusedValue=document.activeElement?.dataset?.value;
     const screen=pages[data.screen]?data.screen:'home'; data.screen=screen;
-    stage.className=`stage ${screen==='coinLobby'?'photo-lobby':screen==='coinMatch'?'photo-match':screen==='coinReady'?'photo-ready':screen==='home'?'':'soft'}`;
-    stage.innerHTML=pages[screen](); document.title=`${labels[screen]} · 麻溜儿交互参考`;
+    const windowed=!primaryScreens.has(screen);
+    const base=windowed?sheetBase():screen;
+    if(windowed&&!sheet.open)focusBeforeSheet=document.activeElement;
+    stage.className=`stage ${base==='coinLobby'?'photo-lobby':base==='coinMatch'?'photo-match':base==='coinReady'?'photo-ready':base==='home'?'':'soft'}`;
+    stage.innerHTML=pages[base]();
+    if(windowed){
+      const changed=sheetBody.dataset.screen!==screen;
+      sheetBody.innerHTML=pages[screen]()+`<div class="sheet-demo-controls" aria-label="演示工具"><span>演示</span>${b('推进时间','advance','')}${b('演示面板','tools','')}</div>`;sheetBody.dataset.screen=screen;
+      sheet.setAttribute('aria-label',labels[screen]||'游戏弹板');
+      if(!sheet.open){sheet.showModal();sheetBody.querySelector('.back')?.focus();}
+      else if(changed)sheetBody.querySelector('.back')?.focus();
+      else if(focusedAction)[...sheetBody.querySelectorAll('button[data-action]')].find(x=>x.dataset.action===focusedAction&&x.dataset.value===focusedValue)?.focus();
+    }else if(sheet.open)sheet.close();
+    document.title=`${labels[screen]} · 麻溜儿交互参考`;
     $('#screen-label').textContent=labels[screen];
     $('#flow-hint').textContent=screen.startsWith('support')?'活动奖励和商城订单保留原次状态，返回后继续原进度':screen.startsWith('details')?'按原记录查看规则、费用、回放或成绩，返回键保留来源':screen==='coinPlay'||screen==='eventTable'?'点击手牌选牌与出牌；画面外推进可模拟本局结束':screen.startsWith('coin')?'选场 → 确认 → 匹配 → 准备 → 单局 → 结算清房':screen==='home'?'从金币场或比赛场入口开始体验':'详情 → 报名 → 检录 → 分桌 → 多轮比赛 → 复核 → 奖励到账';
     const sectionOf=page=>page==='home'?'home':page.startsWith('coin')||['supportSupply','detailsHistory','detailsRecord','detailsLedger','detailsReplay'].includes(page)?'coin':page.startsWith('event')||page.startsWith('season')||['myEvents','rewards','detailsSchedule','detailsScore','detailsAppeal'].includes(page)?'tournament':null;
@@ -237,10 +274,23 @@
     $('#advance').textContent=text; save(); resize();
     const pause=document.querySelector('[data-action="pause"]');pause.textContent=data.pauseAuto?'恢复自动推进':'停留当前页';pause.setAttribute('aria-pressed',String(data.pauseAuto));
   }
+  function sheetBase(){
+    if(session.status!=='idle')return activeCoinScreen();
+    if(['table','smallResult','roundWait'].includes(t().status))return 'eventTable';
+    if(data.screen==='coinResult')return 'coinLobby';
+    const base=(data.navStack||[]).slice().reverse().find(x=>primaryScreens.has(x));
+    return base||((data.screen.startsWith('event')||['myEvents','season','rewards'].includes(data.screen))?'eventCenter':'home');
+  }
   function resize() {
     const frame=$('#frame'), full=document.fullscreenElement===frame;
     const scale=full?Math.min(frame.clientWidth/1920,frame.clientHeight/1080):frame.clientWidth/1920;
     stage.style.transform=`scale(${scale})`; stage.style.left=full?`${(frame.clientWidth-1920*scale)/2}px`:'0'; stage.style.top=full?`${(frame.clientHeight-1080*scale)/2}px`:'0';
+    const r=frame.getBoundingClientRect();
+    for(const [dialog,width,height] of [[sheet,1660,900],[modal,1100,modal.offsetHeight||600]]){
+      dialog.style.transform=`scale(${scale})`;
+      dialog.style.left=`${r.left+(r.width-width*scale)/2}px`;
+      dialog.style.top=`${r.top+(r.height-Math.min(height,900)*scale)/2}px`;
+    }
   }
   function largeView(enabled) {
     document.body.classList.toggle('theater',enabled);
@@ -395,7 +445,14 @@
     const aliases={history:'details:history',rules:'details:rules',help:'details:help',eventRules:'details:eventRules',eventSchedule:'details:schedule',eventScore:'details:score',appeal:'details:appeal',coinInfo:'details:coinInfo',supply:'support:supply',activity:'support:activities',shop:'support:shop'};
     if(aliases[action])return dispatch(aliases[action],value);
     switch(action) {
-      case 'home':return go('home'); case 'coin': if(session.status==='idle')data.field=Math.max(0,FieldCore.recommend(session.available));return go('coinLobby');
+      case 'home':return go('home');
+      case 'coin':
+        if(session.status==='idle')data.field=Math.max(0,FieldCore.recommend(session.available));
+        if(data.screen==='coinResult'){
+          data.navStack=(data.navStack||[]).filter(x=>!x.startsWith('coin'));
+          return go('coinLobby',{replace:true});
+        }
+        return go('coinLobby');
       case 'resumeCoin':return go(activeCoinScreen()); case 'returnTable':return go('coinPlay');
       case 'tournament':case 'eventCenter':return go('eventCenter'); case 'directory':return directory(); case 'tools':return tools(); case 'advance':return advance(); case 'closeModal':return closeModal();
       case 'pause':data.pauseAuto=!data.pauseAuto;cancelTimers();if(data.pauseAuto)data.pausedAt=Date.now();else{const shift=data.pausedAt?Date.now()-data.pausedAt:0;for(const key of ['matchDeadline','matchExpiry','personalReadyDeadline','roomReadyDeadline','dealDeadline'])if(data[key])data[key]+=shift;for(const key of ['entryDeadline','nextHandDeadline'])if(t()[key])t()[key]+=shift;data.pausedAt=0;resumeTimers();}render();return notify(data.pauseAuto?'已暂停演示的自动计时，可手动推进或恢复':'已恢复演示自动推进');
@@ -444,7 +501,7 @@
       case 'eventScore':return showModal('成绩明细',`<div class="modal-kv"><span>当前累计桌积分</span><b>${t().points.toFixed(2)}</b></div><p class="modal-copy">每轮成绩及正式同分判定按赛事规则展示。临时赛果可在有效复核窗口申诉；本地演示不提交真实申诉。</p>`,b('查看申诉说明','appeal','blue-button'));
       case 'appeal':return showModal('申诉说明',`<p class="modal-copy">赛果发布后24小时内说明对应轮次、牌局及原因，提交后等待复核。未结案件继续复核，已正式确认的结果以最新决定为准。本地演示不发送数据。</p>`);
       case 'myEvents':return go('myEvents');case 'season':return go('season');case 'rewards':return go('rewards');
-      case 'settings':return showModal('牌桌设置',`${[['sound','音效'],['music','背景音乐']].map(([key,label])=>`<div class="setting-row"><span>${label}</span>${b(data.settings[key]?'开启':'关闭','toggleSetting','switch',`data-value="${key}" aria-pressed="${data.settings[key]}"`)}</div>`).join('')}<p class="modal-copy">麻将与扑克共用设置弹层，本地保存开关；演示不播放音频素材。</p>`);
+      case 'settings':return showModal('牌桌设置',`${[['sound','音效'],['music','背景音乐']].map(([key,label])=>`<div class="setting-row"><span>${label}</span>${b(data.settings[key]?'开启':'关闭','toggleSetting','switch',`data-value="${key}" aria-pressed="${data.settings[key]}"`)}</div>`).join('')}<p class="modal-copy">音效与背景音乐可分别开关，设置自动保存。</p>`);
       case 'toggleSetting':if(!['sound','music'].includes(value))return;data.settings[value]=!data.settings[value];return dispatch('settings');
       case 'back':return go(FieldNavigation.returnTarget(data,session.status),{replace:true});
       case 'reset':return showModal('重置演示',`<p class="modal-copy">恢复金币128,600及未报名状态，只清除这份网页的本地演示进度。</p>`,b('保留进度','closeModal','blue-button')+b('重置演示','confirmReset'));

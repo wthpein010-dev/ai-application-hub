@@ -27,6 +27,8 @@ function boot(options = {}) {
       name, innerHTML:'', textContent:'', style:{}, classList:classList(), className:'', dataset:{}, attributes:{}, disabled:false, isConnected:true,
       clientWidth:1920, clientHeight:1080, open:false,
       addEventListener(kind, fn) { listeners.set(kind, fn); },
+      emit(kind, event = {}) { listeners.get(kind)?.({target:this, ...event}); },
+      getBoundingClientRect() { return {left:0,top:0,right:1920,bottom:1080,width:1920,height:1080}; },
       getAttribute(key) { return this.attributes[key] ?? null; },
       setAttribute(key, value) { this.attributes[key] = String(value); },
       focus() { document.activeElement = this; },
@@ -56,7 +58,7 @@ function boot(options = {}) {
     return list.filter(x => (!action || x.dataset.action === action) && (!cls || x.classList.contains(cls)));
   }
   const selectButton = (list, selector) => selectButtons(list, selector)[0] || null;
-  const nodes = Object.fromEntries(['stage','modal','modal-body','frame','advance','screen-label','flow-hint','toast','viewport'].map(id => [id, node(id)]));
+  const nodes = Object.fromEntries(['stage','modal','modal-body','sheet','sheet-body','frame','advance','screen-label','flow-hint','toast','viewport'].map(id => [id, node(id)]));
   const staticButtons = buttons(html.slice(html.indexOf('<body>'), html.indexOf('<main')));
   const modalClose = buttons(html.slice(html.indexOf('<dialog'), html.indexOf('<div id="modal-body"')))[0];
   nodes.modal.querySelector = selector => selector.includes('modal-close') ? modalClose : selectButton(buttons(nodes['modal-body'].innerHTML), selector);
@@ -92,7 +94,7 @@ function boot(options = {}) {
     assert.ok(key, 'the real app should save its current state');
     return JSON.parse(store.get(key));
   }
-  function visibleButtons() { return [...(nodes.modal.open ? [...buttons(nodes['modal-body'].innerHTML), modalClose] : buttons(nodes.stage.innerHTML)), ...staticButtons]; }
+  function visibleButtons() { return [...(nodes.modal.open ? [...buttons(nodes['modal-body'].innerHTML), modalClose] : buttons(nodes.sheet.open ? nodes['sheet-body'].innerHTML : nodes.stage.innerHTML)), ...staticButtons]; }
   function click(action, value) {
     const button = visibleButtons().find(x => x.dataset.action === action && (value === undefined || x.dataset.value === String(value)) && !x.disabled);
     assert.ok(button, `visible enabled action ${action}${value === undefined ? '' : ':' + value} missing on ${state().data.screen}; modal=${plain(nodes['modal-body'].innerHTML)}`);
@@ -109,7 +111,7 @@ function boot(options = {}) {
     context.FieldUI.handle({target:button});
   }
   function input(name,value) {
-    const source=nodes.modal.open?nodes['modal-body'].innerHTML:nodes.stage.innerHTML;
+    const source=nodes.modal.open?nodes['modal-body'].innerHTML:nodes.sheet.open?nodes['sheet-body'].innerHTML:nodes.stage.innerHTML;
     assert.ok(source.includes(`data-details-input="${name}"`),`visible input ${name} missing`);
     const target=node('input');target.dataset.detailsInput=name;target.value=String(value);
     for(const listener of events.get('document:input')||[])listener({target});
@@ -126,15 +128,65 @@ function boot(options = {}) {
     }
     now = end;
   }
-  return {click,clickText,clickAny,input,tick,state,now:() => now,storage:() => Object.fromEntries(store),html:() => nodes.stage.innerHTML,modal:() => nodes.modal.open ? nodes['modal-body'].innerHTML : '',key:() => [...store.keys()].find(x => x.startsWith('maluer-fields-'))};
+  return {click,clickText,clickAny,input,tick,state,now:() => now,storage:() => Object.fromEntries(store),html:() => nodes.sheet.open ? nodes['sheet-body'].innerHTML : nodes.stage.innerHTML,underlay:() => nodes.stage.innerHTML,sheetOpen:() => nodes.sheet.open,emit:(id,kind,event) => nodes[id].emit(kind,event),modal:() => nodes.modal.open ? nodes['modal-body'].innerHTML : '',key:() => [...store.keys()].find(x => x.startsWith('maluer-fields-'))};
 }
+
+test('home actions sit only on visible original artwork, without duplicate entry panels', () => {
+  const app = boot();
+  assert.doesNotMatch(app.html(), /home-entries|game-header/);
+  assert.equal([...app.html().matchAll(/data-action="coin"/g)].length, 1);
+  assert.equal([...app.html().matchAll(/data-action="tournament"/g)].length, 2);
+  assert.doesNotMatch(html.slice(0, html.indexOf('<main')), /data-action="(?:coin|tournament)"/);
+});
+
+test('outside confirmation click dismisses without reserving coins or starting a queue', () => {
+  const app=boot(); app.click('coin'); app.click('startCoin');
+  app.emit('modal','pointerdown',{clientX:-1,clientY:-1});
+  app.emit('modal','pointerup',{clientX:-1,clientY:-1});
+  assert.equal(app.modal(),''); assert.equal(app.state().session.status,'idle');
+  assert.equal(app.state().session.coins,128600);
+});
+
+test('secondary pages close over the live queue and cannot discard its progress', () => {
+  const app=boot(); app.click('coin'); app.click('startCoin'); app.click('queueCoin');
+  app.click('supply');
+  assert.equal(app.sheetOpen(),true); assert.match(app.underlay(),/真人匹配/);
+  app.tick(8000);
+  app.emit('sheet','cancel',{preventDefault(){}});
+  assert.equal(app.sheetOpen(),false); assert.equal(app.state().data.screen,'coinReady');
+  assert.equal(app.state().session.status,'seated');
+});
+
+test('closing blank around event details returns to center without signing up', () => {
+  const app=boot(); app.click('tournament'); app.click('eventDetail',0);
+  assert.equal(app.sheetOpen(),true); assert.match(app.underlay(),/全部赛事/);
+  app.emit('sheet','pointerdown',{clientX:-1,clientY:-1});
+  app.emit('sheet','pointerup',{clientX:-1,clientY:-1});
+  assert.equal(app.state().data.screen,'eventCenter');
+  assert.equal(app.state().data.tournament.status,'none');
+});
+
+test('waiting windows retain reachable demo controls without exposing live entrance shortcuts', () => {
+  const app=boot();registerFirst(app);
+  assert.match(app.html(),/sheet-demo-controls/);
+  app.click('advance');
+  assert.equal(app.state().data.tournament.status,'checkin');
+  assert.equal(app.sheetOpen(),true);
+});
+
+test('returning to selection after settlement cannot reopen a cleared table or old result', () => {
+  const app=boot();matchToReady(app);app.click('deal');app.click('advance');app.click('advance');
+  app.click('coin');assert.equal(app.state().data.screen,'coinLobby');
+  app.click('back');assert.equal(app.state().data.screen,'home');
+  assert.equal(app.state().session.status,'idle');
+});
 
 function matchToReady(app) {
   app.click('coin'); app.click('startCoin'); app.click('queueCoin'); app.click('advance');
   assert.equal(app.state().session.status, 'seated');
 }
 function registerFirst(app) {
-  app.click('tournament'); app.click('eventDetail',0); app.click('register'); app.click('confirmRegister');
+  app.click('directory'); app.click('tournament'); app.click('eventDetail',0); app.click('register'); app.click('confirmRegister');
 }
 function enterFirstEvent(app) {
   registerFirst(app); app.click('advance'); app.click('checkin'); app.click('advance'); app.click('advance');
@@ -239,10 +291,10 @@ test('help and shop return to the original active table while another live entry
   else { app.click('back'); assert.equal(app.state().data.screen,supplyScreen); }
   app.click('back');
   assert.equal(app.state().data.screen,'coinPlay');
-  app.click('coin');
+  app.click('directory'); app.click('coin');
   assert.equal(app.state().session.status,'playing');
   if (app.modal()) app.click('closeModal');
-  app.click('tournament'); app.click('eventDetail',0); app.click('register');
+  app.click('directory'); app.click('tournament'); app.click('eventDetail',0); app.click('register');
   assert.match(plain(app.modal()),/未结束|先完成|不能/);
   assert.notEqual(app.state().data.tournament.status,'registered');
   assert.equal(app.state().session.status,'playing');
@@ -430,7 +482,7 @@ function finishNewcomer(app) {
 test('a consumed newcomer day remains unavailable after reload and does not restrict another event', () => {
   const app=boot();finishNewcomer(app);
   const restored=boot({storage:app.storage(),now:app.now()});
-  restored.click('tournament');restored.click('eventDetail',1);restored.click('register');restored.click('confirmRegister');
+  restored.click('eventCenter');restored.click('eventDetail',1);restored.click('register');restored.click('confirmRegister');
   assert.equal(restored.state().data.event,1);
   restored.click('eventCenter');restored.click('eventDetail',0);
   assert.match(plain(restored.html()),/免费次数.*0.*1|免费次数.*用完/);
@@ -440,7 +492,7 @@ test('a consumed newcomer day remains unavailable after reload and does not rest
 test('the next Beijing calendar day offers a new newcomer entry without consuming it early', () => {
   const app=boot();finishNewcomer(app);
   const restored=boot({storage:app.storage(),now:epoch+86400000});
-  restored.click('tournament');restored.click('eventDetail',0);restored.click('register');restored.click('confirmRegister');
+  restored.click('eventCenter');restored.click('eventDetail',0);restored.click('register');restored.click('confirmRegister');
   assert.deepEqual(restored.state().data.noviceEntryDays,['2026-10-13']);
   restored.click('advance');restored.click('checkin');restored.click('advance');
   assert.deepEqual(restored.state().data.noviceEntryDays,['2026-10-13','2026-10-14']);
@@ -456,6 +508,6 @@ test('a newcomer event finishing after midnight consumes only the date of roster
   app.click('advance');
   const restored=boot({storage:app.storage(),now:app.now()});
   assert.deepEqual(restored.state().data.noviceEntryDays,['2026-10-13']);
-  restored.click('tournament');restored.click('eventDetail',0);restored.click('register');restored.click('confirmRegister');
+  restored.click('eventCenter');restored.click('eventDetail',0);restored.click('register');restored.click('confirmRegister');
   assert.equal(restored.state().data.tournament.status,'registered');
 });

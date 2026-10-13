@@ -45,10 +45,10 @@ test('round2 ships all project modules and excludes private source documentation
   const entry=read('demo/index.html');
   for(const name of ['app','state','navigation','support','details']) {
     assert.ok(existsSync(join(project,'demo/'+name+'.js')),name);
-    assert.ok(entry.includes('src="'+name+'.js?v=1.1.2"'),name);
+    assert.ok(entry.includes('src="'+name+'.js?v=1.2.0"'),name);
     assert.doesNotMatch(read('demo/'+name+'.js'),/https?:\/\/|[A-Z]:[\\/]/);
   }
-  for(const name of ['styles','navigation','support','details'])assert.ok(entry.includes('href="'+name+'.css?v=1.1.2"'),name);
+  for(const name of ['styles','navigation','support','details','overlays'])assert.ok(entry.includes('href="'+name+'.css?v=1.2.0"'),name);
   assert.doesNotMatch(read('README.md'),/[A-Z]:[\\/]|feishu\.cn|larksuite\.com/i);
   assert.equal(existsSync(join(project,'demo/DESIGN.md')),false);
   assert.equal(existsSync(join(project,'demo/UX-CONTRACT.md')),false);
