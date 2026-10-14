@@ -257,3 +257,23 @@
 #sheet .support-flip-card{box-shadow:inset 0 0 0 3px #fff9dc,0 7px #74a6b64d;border-radius:16px}
 #sheet .support-flip-card.revealed{background:radial-gradient(#fffaf0,#ffe6a0);border-color:#d5a44b}
 @media(forced-colors:active){.field-foot,.event-summary{border:1px solid CanvasText}.tournament-prize b{color:CanvasText;text-shadow:none}}
+
+.coin-selection-summary {align-self:center;min-width:245px;padding-left:16px;border-left:2px solid #a7d3f2;color:#edf6ff;line-height:1.6;}
+.coin-selection-summary strong {display:block;font-size:27px;font-weight:700;color:#fff1bd;}
+.coin-selection-summary span {font-size:23px;}
+.photo-lobby .quick {min-width:360px;width:360px;}
+.photo-lobby .footerbar {gap:22px;padding-right:34px;}
+.photo-lobby .footer-actions {gap:24px;}
+.card-hit.active {box-shadow:0 0 0 3px #ffe691,0 0 18px #ffd85d8a;}
+.event-prize-table {border-collapse:separate;border-spacing:0;width:100%;font-size:24px;overflow:hidden;border:1px solid #b6d3e9;border-radius:12px;background:#f7fbff;}
+.event-prize-table th {font-size:22px;font-weight:500;color:#426180;background:#d9eafb;text-align:left;padding:14px;}
+.event-prize-table td {padding:24px 14px;border-top:1px solid #c9dcea;}
+.event-prize-table td strong {color:#945b13;font-size:27px;}
+.event-prize-table tbody tr:first-child {background:#fff4d8;}
+.event-prize-table tbody tr:nth-child(even) {background:#edf5ff;}
+#sheet .details-rule-body .details-tabs {gap:8px;margin:0 0 22px;}
+#sheet .details-rule-body .details-tab {min-width:0;flex:1;padding:0 10px;height:54px;font-size:23px;}
+#sheet .details-rule-body .rule-guide h2 {font-size:32px;margin:20px 0 8px;}
+#sheet .details-rule-body .rule-guide p {font-size:24px;margin:8px 0;}
+#sheet .details-history-heading {margin:12px 0;}
+#sheet .details-history-filters {margin-bottom:14px;}

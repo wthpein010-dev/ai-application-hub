@@ -656,3 +656,14 @@ test('a newcomer event finishing after midnight consumes only the date of roster
   restored.click('eventCenter');restored.click('eventDetail',0);restored.click('register');restored.click('confirmRegister');
   assert.equal(restored.state().data.tournament.status,'registered');
 });
+
+test('registered event cards and details both lead to the same pre-checkin state', () => {
+  const app=boot();app.click('tournament');app.click('eventDetail',0);app.click('register');app.click('confirmRegister');
+  app.click('eventCenter');
+  assert.match(plain(app.html()),/已报名.*待检录/);
+  app.clickText(/查看报名/);
+  assert.equal(app.state().data.screen,'eventRegistered');
+  app.click('currentDetail');app.clickText(/查看报名/);
+  assert.equal(app.state().data.screen,'eventRegistered');
+  assert.equal(app.state().data.tournament.status,'registered');
+});

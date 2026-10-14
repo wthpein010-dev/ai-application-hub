@@ -102,6 +102,68 @@ function moduleContext(data) {
   return {data,t:data.tournament,e:{name:'当前赛事',rounds:3},session:{},gameName:'郑州麻将',events:[{name:'旧新手杯',rounds:3}],b:button,badge:x=>`<span>${x}</span>`,header:x=>`<h1>${x}</h1>`,footer:x=>x||'',go:x=>{data.screen=x;},refresh(){},notify(){},showModal(){}};
 }
 
+test('尚未确认的战绩金额不能显示成零金币，确认的零保留零', () => {
+  const data={screen:'detailsHistory',history:[{id:'PENDING',actual:null,game:'红中麻将'},{id:'ZERO',actual:0,game:'红中麻将'}],tournament:{status:'none'}};
+  const ui=details.create(moduleContext(data));
+  const rendered=ui.pages.detailsHistory();
+  assert.match(rendered,/待确认/);
+  assert.equal((rendered.match(/>0 金币</g)||[]).length,1);
+});
+
+test('战绩查询失败保留原记录和筛选，重试成功不重复生成记录', async () => {
+  const data={screen:'coinLobby',history:[{id:'ORIGINAL',actual:72,game:'红中麻将'}],tournament:{status:'none'},details:{historyFilter:{period:7,game:'红中麻将'}}};
+  const ctx=moduleContext(data);let fail=true;
+  ctx.readHistory=()=>fail?Promise.reject(Error('unavailable')):Promise.resolve();
+  const ui=details.create(ctx);ui.dispatch('details:history');
+  assert.match(ui.pages.detailsHistory(),/查询中/);
+  await new Promise(resolve=>setImmediate(resolve));
+  assert.match(ui.pages.detailsHistory(),/查询未完成/);
+  assert.match(ui.pages.detailsHistory(),/72 金币/);
+  fail=false;ui.dispatch('details:historyRefresh');
+  await new Promise(resolve=>setImmediate(resolve));
+  assert.doesNotMatch(ui.pages.detailsHistory(),/查询未完成/);
+  assert.equal(data.history.length,1);
+  assert.equal(data.history[0].id,'ORIGINAL');
+  assert.deepEqual(data.details.historyFilter,{period:7,game:'红中麻将'});
+});
+
+test('较早的失败查询不能覆盖新一次成功结果', async () => {
+  const data={screen:'coinLobby',history:[],tournament:{status:'none'}};
+  const ctx=moduleContext(data);let rejectOld,queries=0;
+  ctx.readHistory=()=>++queries===1?new Promise((_,reject)=>{rejectOld=reject;}):Promise.resolve();
+  const ui=details.create(ctx);ui.dispatch('details:history');ui.dispatch('details:historyRefresh');
+  await new Promise(resolve=>setImmediate(resolve));rejectOld(Error('late failure'));
+  await new Promise(resolve=>setImmediate(resolve));
+  assert.equal(data.details.historyQuery.status,'ready');
+  assert.match(ui.pages.detailsHistory(),/暂无记录/);
+});
+
+test('刷新恢复中断的战绩查询不会永久显示加载或冒充最新数据', () => {
+  const data={screen:'detailsHistory',history:[],tournament:{status:'none'},details:{historyQuery:{status:'loading'}}};
+  const ui=details.create(moduleContext(data));
+  assert.match(ui.pages.detailsHistory(),/查询尚未完成/);
+  assert.match(ui.pages.detailsHistory(),/historyRefresh/);
+});
+
+test('图文流程恢复非法页码回第一页，末页不能继续跳到空白教学', () => {
+  const data={screen:'detailsRules',history:[],tournament:{status:'none'},details:{rulesMode:1,guidePage:999}};
+  const ui=details.create(moduleContext(data));
+  assert.match(ui.pages.detailsRules(),/1 \/ 4/);
+  ui.dispatch('details:guidePage','3');
+  assert.match(ui.pages.detailsRules(),/4 \/ 4/);
+  ui.dispatch('details:guidePage','4');
+  assert.match(ui.pages.detailsRules(),/4 \/ 4/);
+});
+
+test('未确认战绩详情不生成零额账目或允许未完成的回放', () => {
+  const data={screen:'detailsRecord',history:[{id:'PENDING',actual:null,game:'红中麻将'}],tournament:{status:'none'},details:{recordIndex:0}};
+  const ui=details.create(moduleContext(data));
+  assert.match(ui.pages.detailsRecord(),/结算同步中/);
+  assert.doesNotMatch(ui.pages.detailsRecord(),/0 <small>金币|data-action="details:ledger"|data-action="details:replay"/);
+  assert.match(ui.pages.detailsLedger(),/结算同步中/);
+  assert.match(ui.pages.detailsReplay(),/结算同步中/);
+});
+
 test('历史赛事只展示原轮次及精度，历史申诉动作不能改当前赛事', () => {
   const data={screen:'myEvents',event:0,history:[],tournament:{status:'finalTemp',round:3,points:99,reviewDeadline:Date.now()+60000},eventArchives:[{id:'old-event',event:0,rank:2,time:'昨天',tournament:{status:'final',round:2,points:6.5,roundRecords:[{stage:0,round:2,raw:123,points:6.5,cumulative:6.5,confirmed:true}]}}]};
   const ui=details.create(moduleContext(data));
