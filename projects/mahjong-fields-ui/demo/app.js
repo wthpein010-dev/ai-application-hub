@@ -166,10 +166,14 @@
   function flowGo(screen){if(data.screen.startsWith('support')||data.screen.startsWith('details')){save();render();}else go(screen,{replace:true});}
   function activeCoinScreen() { return session.status==='playing'?'coinPlay':session.status==='seated'?'coinReady':session.status==='matching'?'coinMatch':'coinLobby'; }
   function home() {
-    return `<img class="home-photo" src="assets/home-single-event.webp" width="1672" height="941" fetchpriority="high" decoding="async" alt="麻溜儿大厅效果图，金币场和比赛场入口">${b('','coin','home-hit','style="left:780px;top:350px;width:275px;height:465px" aria-label="进入金币场"')}${b('','tournament','home-hit','style="left:1068px;top:350px;width:275px;height:465px" aria-label="进入比赛场"')}
+    const floor=FieldCatalogue.fieldsFor(data.profile)[0].min;
+    return `<img class="home-photo" src="assets/home-hub.webp" width="1671" height="941" fetchpriority="high" decoding="async" alt="麻溜儿大厅排版：金币场与比赛场大卡，茶馆与亲友房次排，底部工具成组">${b(`<span id="home-floor" class="home-entry-floor"><i class="gold-coin" aria-hidden="true"></i>${fmt(floor)} 金币起</span>`,'coin','home-hit home-mode-hit','style="left:654px;top:206px;width:594px;height:327px" aria-label="进入金币场" aria-describedby="home-floor"')}${b('','tournament','home-hit home-mode-hit','style="left:1274px;top:206px;width:602px;height:326px" aria-label="进入比赛场"')}
+      <div class="home-region">${regionPicker()}</div>
       ${b(fmt(session.coins),'supply','home-balance coins',`aria-label="金币余额${session.coins}，查看补给"`)}${b('433','wallet','home-balance cards','aria-label="房卡余额433"')}${b('0','wallet','home-balance diamonds','aria-label="钻石余额0"')}
-      ${b('','shop','home-hit','style="left:15px;top:885px;width:300px;height:190px" aria-label="进入商城"')}${b('','activity','home-hit','style="left:331px;top:946px;width:87px;height:129px" aria-label="查看活动"')}${b('','help','home-hit','style="left:765px;top:946px;width:86px;height:129px" aria-label="帮助反馈"')}${b('','history','home-hit','style="left:898px;top:944px;width:89px;height:130px" aria-label="查看战绩"')}
-      ${session.status!=='idle'?`<button type="button" onclick="FieldUI.handle(event)" class="resume-banner" data-action="resumeCoin">${session.status==='playing'?'返回牌桌':'查看匹配'} ›</button>`:''}`;
+      <nav class="home-tools" aria-label="大厅常用功能">${[
+        ['进入商城','shop',735,168],['查看活动','activity',978,172],['查看战绩','history',1221,170],['帮助反馈','help',1456,180],['设置','settings',1690,168]
+      ].map(([label,action,left,width])=>b('',action,'home-hit',`style="left:${left}px;top:903px;width:${width}px;height:162px" aria-label="${label}"`)).join('')}</nav>
+      ${session.status!=='idle'?`<button type="button" onclick="FieldUI.handle(event)" class="resume-banner home-resume" data-action="resumeCoin">${session.status==='playing'?'返回牌桌':'查看匹配'} ›</button>`:''}`;
   }
   function coinLobby() {
     ensureCoinSelection();

@@ -205,8 +205,8 @@ test('未开放玩法与匹配中地区变更不会改动原局，旧六人匹�
 test('home loads the priority hall image without downloading the hidden secondary background',()=>{
   const app=boot();
   const home=app.html();
-  assert.match(home,/<img\b[^>]*src="assets\/home-single-event\.webp"[^>]*fetchpriority="high"/);
-  assert.match(home,/<img\b[^>]*width="1672"[^>]*height="941"/);
+  assert.match(home,/<img\b[^>]*src="assets\/home-hub\.webp"[^>]*fetchpriority="high"/);
+  assert.match(home,/<img\b[^>]*width="1671"[^>]*height="941"/);
   const css=fs.readFileSync(path.join(root,'styles.css'),'utf8');
   const base=css.match(/\.stage\{([^}]+)\}/)[1];
   assert.doesNotMatch(base,/url\(/,'hall must not download the covered courtyard');

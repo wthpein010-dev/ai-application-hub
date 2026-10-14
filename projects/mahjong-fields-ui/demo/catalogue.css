@@ -114,3 +114,13 @@
 .field-pager{position:absolute;left:510px;top:851px;width:1370px;height:54px;display:flex;justify-content:center;align-items:center;gap:22px;color:#fff7d0;font:600 23px var(--body);text-shadow:0 2px 3px #143658}
 .field-page-button{width:58px;height:48px;padding:0;display:grid;place-items:center;border:2px solid #cfe7fa;border-radius:24px;background:#194d79d9;color:#fff0b0;font:600 39px/1 var(--body);box-shadow:inset 0 0 0 2px #3d739b}
 .field-page-button:disabled{opacity:.35}
+
+/* Lobby follows the competitor hierarchy while keeping the existing artwork-hotspot owner. */
+.home-mode-hit{border-radius:32px}
+.home-entry-floor{position:absolute;left:46px;top:232px;width:224px;height:58px;display:flex;align-items:center;justify-content:center;gap:10px;color:#785119;font:600 25px var(--body);white-space:nowrap;pointer-events:none;text-shadow:0 1px #fff1c5}
+.home-entry-floor .gold-coin{width:27px;height:27px;border-width:2px;box-shadow:inset 0 0 0 2px #c68a0c,0 2px 4px #15395533}
+.home-entry-floor .gold-coin:after{left:8px;top:8px;width:7px;height:7px}
+.home-region .region-picker{left:508px;top:32px;min-width:295px;height:74px;background:#19467cad;box-shadow:inset 0 0 0 3px #fff3c916,0 3px 8px #18365955}
+.home-region .region-picker>span{font-size:23px;padding:0 14px}
+.home-region .region-picker select{min-width:190px;max-width:235px;height:68px;font-size:29px;padding-left:13px}
+.home-resume{left:655px;top:124px;padding:9px 30px;height:63px;font-size:27px;background:#175485e8;max-width:1215px}
