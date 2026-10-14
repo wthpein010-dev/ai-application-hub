@@ -23,7 +23,7 @@ test('public entry presents only the game with relative-resource assets',()=>{
   const html=read('index.html');
   assert.doesNotMatch(html,/hub-home-link|class="bar"|界面演示|数值示例/);
   assert.match(html,/data-hub-immersive="mahjong-fields-ui"/);
-  assert.match(html,/iframe src="\.\/demo\/index\.html\?v=1\.4\.1"/);
+  assert.match(html,/iframe src="\.\/demo\/index\.html\?v=1\.4\.2"/);
   for(const path of ['demo/app.js','demo/state.js','demo/styles.css','demo/assets/coin-lobby.webp','demo/assets/coin-match.webp','demo/assets/coin-ready.webp','demo/assets/courtyard.webp'])assert.ok(existsSync(join(project,path)),path);
   const source=read('demo/app.js');
   assert.doesNotMatch(source,/https?:\/\/|[A-Z]:[\\/]/);
@@ -32,7 +32,7 @@ test('public entry presents only the game with relative-resource assets',()=>{
 test('walkthrough uses shared lazy player, real H264 media and single-line captions',()=>{
   const html=read('video/index.html');
   assert.match(html,/data-hub-video-page/);
-  assert.match(html,/preload="none" data-src="\.\/fields-walkthrough\.mp4\?v=1\.4\.1"/);
+  assert.match(html,/preload="none" data-src="\.\/fields-walkthrough\.mp4\?v=1\.4\.2"/);
   assert.match(html,/hub-video-player\.js/);
   assert.ok(readFileSync(join(project,'video/fields-walkthrough.mp4')).includes(Buffer.from('avc1')));
   const blocks=read('video/fields-walkthrough.vtt').replaceAll('\r\n','\n').trim().split(/\n\n/).slice(1);
@@ -44,10 +44,10 @@ test('round2 ships all project modules and excludes private source documentation
   const entry=read('demo/index.html');
   for(const name of ['app','state','navigation','support','details','catalogue']) {
     assert.ok(existsSync(join(project,'demo/'+name+'.js')),name);
-    assert.ok(entry.includes('src="'+name+'.js?v=1.4.1"'),name);
+    assert.ok(entry.includes('src="'+name+'.js?v=1.4.2"'),name);
     assert.doesNotMatch(read('demo/'+name+'.js'),/https?:\/\/|[A-Z]:[\\/]/);
   }
-  for(const name of ['styles','navigation','support','details','overlays','catalogue'])assert.ok(entry.includes('href="'+name+'.css?v=1.4.1"'),name);
+  for(const name of ['styles','navigation','support','details','overlays','catalogue'])assert.ok(entry.includes('href="'+name+'.css?v=1.4.2"'),name);
   assert.doesNotMatch(read('README.md'),/[A-Z]:[\\/]|feishu\.cn|larksuite\.com/i);
   assert.equal(existsSync(join(project,'demo/DESIGN.md')),false);
   assert.equal(existsSync(join(project,'demo/UX-CONTRACT.md')),false);

@@ -66,3 +66,43 @@
 .coin-select .footerbar{height:156px;background:linear-gradient(90deg,#173653a8,#193b579c);border-color:#d4eaff74}.coin-fee-note{display:flex;flex-direction:column;justify-content:center;gap:8px;color:#fff0c3;text-align:center;min-width:170px;padding:8px 10px;font-size:24px}.coin-fee-note small{font-size:21px;color:#e4eff4}
 .coin-select .footer-actions .coin-start{position:relative;width:540px;min-width:540px;height:130px;padding:8px 54px 11px 34px;border:0;border-radius:70px;color:#774116;background:transparent url('assets/quick-start.svg') center/100% 100% no-repeat;box-shadow:0 4px 5px #16344b75,0 0 19px #ffe3905e;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:2px}
 .coin-start-title{font:700 61px/1.05 var(--display);text-shadow:0 1px #fff8db;white-space:nowrap}.coin-start-choice{font:400 26px/1.2 var(--body);white-space:nowrap}.coin-start-arrow{position:absolute;right:53px;top:27px;font:700 67px/1 Georgia;color:#9c6214;text-shadow:1px 2px #fff5b5}
+
+
+/* Rich art shares one transparent atlas; sizing remains owned by each existing surface. */
+.rich-art{display:block;flex:none;width:240px;height:160px;background:url('assets/enriched-icons.webp') 0 0/400% 400% no-repeat;pointer-events:none}
+.rich-0{background-position:0% 0%}
+.rich-1{background-position:33.3333% 0%}
+.rich-2{background-position:66.6667% 0%}
+.rich-3{background-position:100% 0%}
+.rich-4{background-position:0% 33.3333%}
+.rich-5{background-position:33.3333% 33.3333%}
+.rich-6{background-position:66.6667% 33.3333%}
+.rich-7{background-position:100% 33.3333%}
+.rich-8{background-position:0% 66.6667%}
+.rich-9{background-position:33.3333% 66.6667%}
+.rich-10{background-position:66.6667% 66.6667%}
+.rich-11{background-position:100% 66.6667%}
+.rich-12{background-position:0% 100%}
+.rich-13{background-position:33.3333% 100%}
+.rich-14{background-position:66.6667% 100%}
+.rich-15{background-position:100% 100%}
+
+.coin-game-tabs .mode-art{width:96px;height:64px;filter:drop-shadow(0 3px 3px #163b6955)}
+.coin-game-tabs button{gap:12px;padding:7px 9px}.coin-game-tabs button>span:last-child{font-size:31px}
+.coin-fields .field-base{top:178px}.coin-fields .field-base strong{font-size:72px}
+.coin-fields .field-illustration{width:234px;height:156px;left:calc(50% - 117px);top:300px;filter:drop-shadow(0 8px 5px #24574940)}
+.coin-fields.five .field-base strong,.coin-fields.six .field-base strong{font-size:66px}
+.coin-fields.five .field-illustration,.coin-fields.six .field-illustration{width:214px;height:143px;left:calc(50% - 107px);top:303px}
+.coin-fields .field-range,.coin-fields .field-population{z-index:2;background:#ffffffbc}
+.footerbar .round-icon{background:radial-gradient(ellipse at 35% 25%,#b1d4ed36,#173858b5);border:2px solid #f1d69a;box-shadow:inset 0 0 0 3px #203f5f88,0 3px 5px #0d2d4255}
+.utility-art{width:70px;height:66px;filter:drop-shadow(0 2px 1px #0c254455)}
+.event-card{isolation:isolate;overflow:hidden;position:relative}
+.event-card:before{content:'';position:absolute;left:0;right:0;top:90px;height:310px;z-index:-1;pointer-events:none;background:radial-gradient(ellipse,#ffe8ad77,transparent 68%)}
+.event-style-1:before{background:radial-gradient(ellipse,#94d9ff88,transparent 68%)}
+.event-style-2:before{background:radial-gradient(ellipse,#d9b7fb88,transparent 68%)}
+.event-card .event-art{width:252px;height:168px;margin:0 auto 4px;filter:drop-shadow(0 9px 6px #33557738)}
+.event-card .event-summary{font-size:22px;line-height:1.35;margin:6px 0 8px;padding:8px 0}
+.event-card .event-summary>strong{font-size:28px}.event-card .event-summary>span{font-size:22px}
+.detail-hero .event-art{width:300px;height:200px;margin:0 auto 4px;filter:drop-shadow(0 7px 5px #33557738)}
+.my-event-card .event-art{width:240px;height:160px}
+.refill-grid .rich-art,.refill-grid .refill-gift{width:198px;height:132px;filter:drop-shadow(0 5px 4px #3a608336)}
