@@ -145,6 +145,21 @@ function boot(options = {}) {
   return {click,clickText,clickAny,input,tick,state,now:() => now,storage:() => Object.fromEntries(store),storageWrites:()=>storageWrites,receive:raw=>events.get('storage')?.({key:[...store.keys()].find(x=>x.startsWith('maluer-fields-')),newValue:JSON.stringify(raw)}),html:() => nodes.sheet.open ? nodes['sheet-body'].innerHTML : nodes.stage.innerHTML,underlay:() => nodes.stage.innerHTML,sheetOpen:() => nodes.sheet.open,sheetSize:() => [nodes.sheet.style.width,nodes.sheet.style.height],emit:(id,kind,event) => nodes[id].emit(kind,event),modal:() => nodes.modal.open ? nodes['modal-body'].innerHTML : '',key:() => [...store.keys()].find(x => x.startsWith('maluer-fields-'))};
 }
 
+test('金币选场使用顶部横向玩法，当前场档角标与快速开始副标题同步',()=>{
+  let app=boot();app.click('coin');
+  assert.match(app.html(),/<nav class="coin-game-tabs" aria-label="金币场玩法"/);
+  assert.doesNotMatch(app.html(),/catalogue-nav|region-game-nav/);
+  const startText=()=>plain([...app.html().matchAll(/<button\b([^>]+)>([\s\S]*?)<\/button>/g)].find(m=>m[1].includes('data-action="startCoin"'))[2]);
+  assert.match(startText(),/快速开始.*郑州麻将 · 高手场/);
+  app.click('selectField','1');
+  assert.match(startText(),/快速开始.*郑州麻将 · 进阶场/);
+  assert.equal((app.html().match(/class="field-selection-flag"/g)||[]).length,1);
+  assert.match(app.html(),/data-action="selectField"[^>]*data-value="1"[^>]*aria-pressed="true"/);
+  app=boot({storage:app.storage()});assert.match(startText(),/郑州麻将 · 进阶场/);
+  app.click('profile','ddz-classic');assert.match(startText(),/斗地主 · 精英场/);
+  assert.match(app.html(),/coin-fields five/);
+});
+
 test('地区下拉切换直接更新四项金币玩法，名称顺序和刷新状态保持一致',()=>{
   let app=boot();app.click('coin');
   assert.match(app.html(),/<select\b[^>]*aria-label="切换地区"/);
@@ -191,7 +206,7 @@ test('cross-version storage events render remote state without republishing it i
   const {profile,...rest}=incoming.data;incoming.data={...rest,profile};
   const before=app.storageWrites();app.receive(incoming);
   assert.equal(app.storageWrites(),before,'receiving another tab update must not write storage again');
-  assert.match(app.html(),/进阶场 · 底分 50/);
+  assert.match(app.html(),/data-action="selectField"[^>]*data-value="1"[^>]*aria-label="[^"]+" aria-pressed="true"/);assert.match(app.html(),/郑州麻将 · 进阶场/);
   app.click('selectField',2);assert.equal(app.state().data.field,2);assert.ok(app.storageWrites()>before);
 });
 
