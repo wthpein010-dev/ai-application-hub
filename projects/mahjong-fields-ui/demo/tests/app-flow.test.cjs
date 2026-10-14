@@ -157,7 +157,21 @@ test('金币选场使用顶部横向玩法，当前场档角标与快速开始�
   assert.match(app.html(),/data-action="selectField"[^>]*data-value="1"[^>]*aria-pressed="true"/);
   app=boot({storage:app.storage()});assert.match(startText(),/郑州麻将 · 进阶场/);
   app.click('profile','ddz-classic');assert.match(startText(),/斗地主 · 精英场/);
-  assert.match(app.html(),/coin-fields five/);
+  assert.match(app.html(),/coin-fields four/);
+});
+
+test('每页四张场档保持原配置，第五档可翻页选择和刷新，切回麻将恢复第一页',()=>{
+  let app=boot();app.click('coin');app.click('profile','ddz-classic');
+  const visible=()=>[...app.html().matchAll(/data-action="selectField"[^>]*data-value="(\d+)"/g)].map(m=>Number(m[1]));
+  assert.deepEqual(visible(),[0,1,2,3]);
+  app.click('fieldWindow','1');assert.deepEqual(visible(),[1,2,3,4]);
+  app.click('selectField','4');assert.equal(app.state().data.field,4);
+  assert.match(app.html(),/斗地主 · 大师场/);
+  app=boot({storage:app.storage()});assert.deepEqual(visible(),[1,2,3,4]);
+  assert.equal(app.state().data.field,4);
+  app.click('profile','');assert.deepEqual(visible(),[0,1,2,3]);
+  assert.doesNotMatch(app.html(),/data-action="fieldWindow"/);
+  assert.equal(app.state().session.coins,128600);
 });
 
 test('地区下拉切换直接更新四项金币玩法，名称顺序和刷新状态保持一致',()=>{
@@ -191,7 +205,7 @@ test('未开放玩法与匹配中地区变更不会改动原局，旧六人匹�
 test('home loads the priority hall image without downloading the hidden secondary background',()=>{
   const app=boot();
   const home=app.html();
-  assert.match(home,/<img\b[^>]*src="assets\/home\.webp"[^>]*fetchpriority="high"/);
+  assert.match(home,/<img\b[^>]*src="assets\/home-single-event\.webp"[^>]*fetchpriority="high"/);
   assert.match(home,/<img\b[^>]*width="1672"[^>]*height="941"/);
   const css=fs.readFileSync(path.join(root,'styles.css'),'utf8');
   const base=css.match(/\.stage\{([^}]+)\}/)[1];
@@ -296,7 +310,7 @@ test('home actions sit only on visible original artwork, without duplicate entry
   const app = boot();
   assert.doesNotMatch(app.html(), /home-entries|game-header/);
   assert.equal([...app.html().matchAll(/data-action="coin"/g)].length, 1);
-  assert.equal([...app.html().matchAll(/data-action="tournament"/g)].length, 2);
+  assert.equal([...app.html().matchAll(/data-action="tournament"/g)].length, 1);
   assert.doesNotMatch(html.slice(0, html.indexOf('<main')), /data-action="(?:coin|tournament)"/);
 });
 

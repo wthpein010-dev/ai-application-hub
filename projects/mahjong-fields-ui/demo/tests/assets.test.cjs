@@ -17,6 +17,6 @@ test('runtime image references resolve to smaller lossless WebP assets',()=>{
     const body=fs.readFileSync(path.join(root,'assets',name));
     assert.equal(body.subarray(8,12).toString(),'WEBP');
   }
-  const home=fs.statSync(path.join(root,'assets/home.webp')).size;
+  const home=fs.statSync(path.join(root,'assets/home-single-event.webp')).size;
   assert.ok(home<2143150,'compressed hall must be smaller than the original PNG');
 });
