@@ -148,6 +148,15 @@ test('cross-version storage events render remote state without republishing it i
   app.click('selectField',2);assert.equal(app.state().data.field,2);assert.ok(app.storageWrites()>before);
 });
 
+test('ending a live coin round behind accessories replaces the old table backdrop with the current selection',()=>{
+  const app=boot();app.click('coin');app.click('gameGroup','ddz');app.click('startCoin');app.click('queueCoin');app.tick(8000);app.click('deal');app.tick(3000);
+  app.click('supply');app.click('support:activities');app.tick(30000);
+  assert.equal(app.state().session.status,'idle');
+  assert.match(app.underlay(),/selection-body/);
+  assert.doesNotMatch(app.underlay(),/poker-table|本局进行中不能离桌/);
+  app.click('back');app.click('back');assert.equal(app.state().data.screen,'coinLobby');
+});
+
 test('visible entry amounts and three-person poker follow the selected mode through settlement',()=>{
   const app=boot();app.click('coin');
   assert.match(app.html(),/准入金币/);assert.match(app.html(),/entry-corner/);

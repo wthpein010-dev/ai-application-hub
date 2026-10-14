@@ -305,6 +305,7 @@
     if(['table','smallResult','roundWait'].includes(t().status))return 'eventTable';
     if(data.screen==='coinResult')return 'coinLobby';
     const base=(data.navStack||[]).slice().reverse().find(x=>primaryScreens.has(x));
+    if(['coinMatch','coinReady','coinPlay'].includes(base))return 'coinLobby';
     return base||((data.screen.startsWith('event')||['myEvents','season','rewards'].includes(data.screen))?'eventCenter':'home');
   }
   function resize() {
