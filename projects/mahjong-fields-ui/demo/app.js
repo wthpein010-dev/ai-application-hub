@@ -4,7 +4,7 @@
   const $ = s => document.querySelector(s);
   const stage = $('#stage'), modal = $('#modal'), modalBody = $('#modal-body');
   const sheet = $('#sheet'), sheetBody = $('#sheet-body');
-  let focusBeforeSheet;
+  let focusBeforeSheet, receivingStorage=false;
   const primaryScreens = new Set(['home','coinLobby','coinMatch','coinReady','coinPlay','eventCenter','eventTable']);
   const fmt = n => new Intl.NumberFormat('zh-CN').format(n);
   const signed = n => (n > 0 ? '+' : '') + fmt(n);
@@ -86,7 +86,7 @@
   const panel = (title,body,cls='body-panel') => `<section class="panel ${cls}"><div class="panel-title">${title}</div><div class="panel-content">${body}</div></section>`;
   const aside = (title,body) => panel(title,body,'aside-panel');
   const steps = (active,labels=['报名','检录','分桌','比赛','赛果']) => `<div class="steps">${labels.map((label,i)=>`<div class="step ${i===active?'active':''}">${i+1} · ${label}</div>`).join('')}</div>`;
-  function save() { try { localStorage.setItem(KEY,JSON.stringify({data,session})); } catch { /* file/隐私浏览模式保持当前内存状态。 */ } }
+  function save() { if(receivingStorage)return;try { localStorage.setItem(KEY,JSON.stringify({data,session})); } catch { /* file/隐私浏览模式保持当前内存状态。 */ } }
   function later(fn,ms) { if(data.pauseAuto)return;const token=generation; timers.push(setTimeout(()=>{ if(token===generation) fn(); },ms)); }
   function cancelTimers() { generation++; timers.forEach(clearTimeout); timers=[]; }
   function notify(message) { clearTimeout(toastTimer); $('#toast').textContent=message; $('#toast').classList.add('visible'); toastTimer=setTimeout(()=>$('#toast').classList.remove('visible'),3200); }
@@ -551,7 +551,7 @@
     if(t().status==='published'&&!t().error){t().entryDeadline=t().entryDeadline||demoNow()+3000;later(enterEventTable,remaining(t().entryDeadline));}
     if(t().status==='smallResult'){t().nextHandDeadline=t().nextHandDeadline||demoNow()+10000;later(nextHand,remaining(t().nextHandDeadline));}
   }
-  window.addEventListener('storage',event=>{if(event.key===KEY&&event.newValue){try{restoreSaved(JSON.parse(event.newValue));cancelTimers();resumeTimers();closeModal();render();notify('游戏进度已更新');}catch{/* 忽略损坏存档，保留当前状态。 */}}});
+  window.addEventListener('storage',event=>{if(event.key===KEY&&event.newValue){try{receivingStorage=true;restoreSaved(JSON.parse(event.newValue));cancelTimers();resumeTimers();closeModal();render();notify('游戏进度已更新');}catch{/* 忽略损坏存档，保留当前状态。 */}finally{receivingStorage=false;}}});
   window.addEventListener('resize',resize);
   document.addEventListener('fullscreenchange',resize);
   if(!data.screen.startsWith('support')&&!data.screen.startsWith('details')){

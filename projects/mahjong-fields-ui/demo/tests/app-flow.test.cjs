@@ -15,7 +15,7 @@ const epoch = Date.parse('2026-10-13T02:00:00Z');
 const plain = value => String(value).replace(/<[^>]*>/g, ' ').replace(/&nbsp;/g, ' ').replace(/&(?:lt|gt|amp|quot);/g, x => ({'&lt;':'<','&gt;':'>','&amp;':'&','&quot;':'"'}[x])).replace(/\s+/g, ' ').trim();
 
 function boot(options = {}) {
-  let now = options.now ?? epoch, timerId = 0;
+  let now = options.now ?? epoch, timerId = 0, storageWrites = 0;
   const scheduled = new Map(), store = new Map(Object.entries(options.storage || {}));
   const events = new Map();
   function classList(initial = '') {
@@ -83,7 +83,7 @@ function boot(options = {}) {
   function schedule(fn, ms = 0, interval = 0) { const id = ++timerId; scheduled.set(id, {fn, due:now + Math.max(0, Number(ms) || 0), interval}); return id; }
   const context = vm.createContext({
     document, Date:ClockDate, console, Intl, ResizeObserver:class { observe() {} },
-    localStorage:{ getItem:key => store.get(key) ?? null, setItem:(key,value) => store.set(key,String(value)), removeItem:key => store.delete(key) },
+    localStorage:{ getItem:key => store.get(key) ?? null, setItem:(key,value) => {storageWrites++;store.set(key,String(value));}, removeItem:key => store.delete(key) },
     setTimeout:(fn,ms) => schedule(fn,ms), clearTimeout:id => scheduled.delete(id),
     setInterval:(fn,ms) => schedule(fn,ms,Math.max(1,Number(ms)||1)), clearInterval:id => scheduled.delete(id),
     addEventListener:(kind,fn) => events.set(kind,fn)
@@ -136,8 +136,17 @@ function boot(options = {}) {
     }
     now = end;
   }
-  return {click,clickText,clickAny,input,tick,state,now:() => now,storage:() => Object.fromEntries(store),html:() => nodes.sheet.open ? nodes['sheet-body'].innerHTML : nodes.stage.innerHTML,underlay:() => nodes.stage.innerHTML,sheetOpen:() => nodes.sheet.open,sheetSize:() => [nodes.sheet.style.width,nodes.sheet.style.height],emit:(id,kind,event) => nodes[id].emit(kind,event),modal:() => nodes.modal.open ? nodes['modal-body'].innerHTML : '',key:() => [...store.keys()].find(x => x.startsWith('maluer-fields-'))};
+  return {click,clickText,clickAny,input,tick,state,now:() => now,storage:() => Object.fromEntries(store),storageWrites:()=>storageWrites,receive:raw=>events.get('storage')?.({key:[...store.keys()].find(x=>x.startsWith('maluer-fields-')),newValue:JSON.stringify(raw)}),html:() => nodes.sheet.open ? nodes['sheet-body'].innerHTML : nodes.stage.innerHTML,underlay:() => nodes.stage.innerHTML,sheetOpen:() => nodes.sheet.open,sheetSize:() => [nodes.sheet.style.width,nodes.sheet.style.height],emit:(id,kind,event) => nodes[id].emit(kind,event),modal:() => nodes.modal.open ? nodes['modal-body'].innerHTML : '',key:() => [...store.keys()].find(x => x.startsWith('maluer-fields-'))};
 }
+
+test('cross-version storage events render remote state without republishing it into an endless echo',()=>{
+  const app=boot();app.click('coin');const incoming=app.state();incoming.data.field=1;
+  const {profile,...rest}=incoming.data;incoming.data={...rest,profile};
+  const before=app.storageWrites();app.receive(incoming);
+  assert.equal(app.storageWrites(),before,'receiving another tab update must not write storage again');
+  assert.match(app.html(),/进阶场 · 底分 50/);
+  app.click('selectField',2);assert.equal(app.state().data.field,2);assert.ok(app.storageWrites()>before);
+});
 
 test('visible entry amounts and three-person poker follow the selected mode through settlement',()=>{
   const app=boot();app.click('coin');
