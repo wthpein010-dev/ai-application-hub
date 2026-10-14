@@ -3,6 +3,20 @@ const assert=require('node:assert/strict');
 const fs=require('node:fs');
 const catalogue=fs.existsSync(__dirname+'/../catalogue.js')?require('../catalogue.js'):{};
 
+test('金币场地区及四项玩法名称顺序与提供清单逐项一致',()=>{
+  const expected={洛阳:['杠次','跑得快','斗地主','洛阳麻将'],郑州:['郑州麻将','红中麻将','斗地主','跑的快'],信阳:['固始麻将','老五嘴麻将','斗地主','跑的快'],南阳:['卡五星','中发白','斗地主','跑得快'],云南昭通:['光春天','血战麻将','跑的快','斗地主']};
+  assert.deepEqual(catalogue.REGIONS,Object.keys(expected));
+  for(const [region,names] of Object.entries(expected)){
+    const games=catalogue.gamesFor(region);
+    assert.deepEqual(games.map(x=>x.name),names,region);
+    assert.equal(new Set(games.map(x=>x.id)).size,4);
+    games.forEach(x=>{assert.ok(catalogue.getProfile(x.id));assert.equal(catalogue.isAvailable(region,x.id),true);});
+  }
+  assert.deepEqual(catalogue.gamesFor('未知地区'),[]);
+  assert.equal(catalogue.isAvailable('郑州','gushi'),false);
+  assert.equal(catalogue.isAvailable('信阳','gouji-dragon'),false);
+});
+
 test('参考玩法人数和场档数量随模式切换，麻将保留原四档',()=>{
   assert.equal(typeof catalogue.getProfile,'function');
   assert.equal(catalogue.getProfile('ddz-fast').players,3);

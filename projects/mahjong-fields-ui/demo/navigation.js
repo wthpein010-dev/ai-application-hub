@@ -14,7 +14,7 @@
   }
   function remaining(deadline,now=Date.now()){return Number.isFinite(deadline)?Math.max(0,deadline-now):0;}
   function validate(data,coinStatus){
-    if(!data||!Number.isInteger(data.field)||data.field<0||data.field>=(catalogue?.fieldsFor(data.profile||'').length||4)||!Number.isInteger(data.game)||data.game<0||data.game>2||!['郑州','武汉','陕北'].includes(data.region)||!Array.isArray(data.history))throw Error('演示页面存档无效');
+    if(!data||!Number.isInteger(data.field)||data.field<0||data.field>=(catalogue?.fieldsFor(data.profile||'').length||4)||!Number.isInteger(data.game)||data.game<0||data.game>3||![...catalogue.REGIONS,'武汉','陕北'].includes(data.region)||!Array.isArray(data.history))throw Error('演示页面存档无效');
     if(data.profile!==undefined&&!catalogue?.getProfile(data.profile))throw Error('玩法配置无效');
     const t=data.tournament;if(!t||!(t.status in eventMap)||!Number.isFinite(t.points)||!Number.isInteger(t.round)||t.round<1||t.round>4||!Number.isInteger(t.hand)||t.hand<1||t.hand>4||!Number.isInteger(t.stage)||t.stage<0||t.stage>2)throw Error('演示赛事存档无效');
     if(coinStatus!=='idle'&&['allocating','published','table','smallResult','roundWait'].includes(t.status))throw Error('重复占用的演示存档无效');

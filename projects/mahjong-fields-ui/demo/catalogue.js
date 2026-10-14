@@ -1,6 +1,6 @@
 (function(root,factory){if(typeof module==='object'&&module.exports)module.exports=factory();else root.FieldCatalogue=factory();})(typeof globalThis!=='undefined'?globalThis:this,function(){
   'use strict';
-  // Reference catalogue only. Actual region modes and opening criteria replace this data together.
+  // Region game names/order follow the confirmed list; field values remain prototype references.
   const profile=(id,name,players,art,rules)=>({id,name,players,art,rules});
   const GROUPS=[
     {id:'mahjong',name:'麻将',art:0,profiles:[
@@ -21,15 +21,28 @@
       profile('pdk','跑得快',3,1,['三人依次出牌，先出完手牌获胜。','金币场采用当前场次配置，不显示红10翻倍选项；红10翻倍仅可用于两人配置。']),
       profile('shengji','升级',4,4,['四人两队，对家同队；显示庄家、主牌和当前级牌。','本局完成后按本玩法结果结算，托管不产生额外座位。'])]}
   ];
+  const REGIONS=['洛阳','郑州','信阳','南阳','云南昭通'];
+  const REGION_GAMES={
+    洛阳:[['gangci','杠次'],['pdk','跑得快'],['ddz-classic','斗地主'],['luoyang','洛阳麻将']],
+    郑州:[['','郑州麻将'],['red','红中麻将'],['ddz-classic','斗地主'],['pdk','跑的快']],
+    信阳:[['gushi','固始麻将'],['laowuzui','老五嘴麻将'],['ddz-classic','斗地主'],['pdk','跑的快']],
+    南阳:[['kawuxing','卡五星'],['zhongfabai','中发白'],['ddz-classic','斗地主'],['pdk','跑得快']],
+    云南昭通:[['guangchuntian','光春天'],['xuezhan','血战麻将'],['pdk','跑的快'],['ddz-classic','斗地主']]
+  };
+  for(const [id,name] of [['gangci','杠次'],['luoyang','洛阳麻将'],['gushi','固始麻将'],['laowuzui','老五嘴麻将'],['kawuxing','卡五星'],['zhongfabai','中发白'],['guangchuntian','光春天'],['xuezhan','血战麻将']]){
+    GROUPS[0].profiles.push(profile(id,name,4,0,['按本玩法规则完成摸牌、出牌与胡牌。','金币场一局结束后按最终输赢结算，托管保留原座位。']));
+  }
   const FOUR=[{name:'休闲场',min:500,max:5000,base:10},{name:'进阶场',min:5000,max:50000,base:50},{name:'高手场',min:50000,max:500000,base:200},{name:'大师场',min:500000,max:Infinity,base:1000}];
   const SIX=[{name:'练习场',min:500,max:5000,base:10},{name:'进阶场',min:5000,max:50000,base:50},{name:'精英场',min:50000,max:500000,base:200},{name:'至尊场',min:500000,max:1000000,base:1000},{name:'大师场',min:1000000,max:5000000,base:2000},{name:'巅峰场',min:5000000,max:Infinity,base:10000}];
   const PACKS=[{price:6,base:3000,bonus:0,coins:3000},{price:30,base:15000,bonus:1500,coins:16500},{price:68,base:34000,bonus:6800,coins:40800},{price:128,base:64000,bonus:19200,coins:83200},{price:328,base:164000,bonus:65600,coins:229600},{price:648,base:324000,bonus:194400,coins:518400}];
   const getProfile=id=>GROUPS.flatMap(g=>g.profiles).find(p=>p.id===id)||null;
   const groupFor=id=>GROUPS.find(g=>g.profiles.some(p=>p.id===id))||GROUPS[0];
+  const gamesFor=region=>(REGION_GAMES[region]||[]).map(([id,name])=>({...getProfile(id),name}));
+  const isAvailable=(region,id)=>(REGION_GAMES[region]||[]).some(x=>x[0]===id);
   const FIVE=SIX.slice(0,5).map((f,i)=>({...f,max:i===4?Infinity:f.max}));
   const THREE=SIX.slice(0,3).map((f,i)=>({...f,max:i===2?Infinity:f.max}));
   const fieldsFor=id=>groupFor(id).id==='mahjong'?FOUR:id==='ddz-fast'?SIX:id==='guandan-a'?THREE:FIVE;
   const recommend=(id,coins)=>fieldsFor(id).findIndex(f=>coins>=f.min&&coins<f.max);
   function entryStatus(session,field){const gap=Math.max(0,field.min-session.available);return {gap,kind:gap?(session.principal>0&&session.coins>=field.min?'locked':'shortage'):session.available>=field.max?'over':'eligible'};}
-  return {GROUPS,PACKS,getProfile,groupFor,fieldsFor,recommend,entryStatus};
+  return {GROUPS,REGIONS,REGION_GAMES,gamesFor,isAvailable,PACKS,getProfile,groupFor,fieldsFor,recommend,entryStatus};
 });

@@ -101,6 +101,12 @@ function boot(options = {}) {
     if(action==='tools')return;
     if(action==='directory'){testNavigation=true;return;}
     if(testNavigation){testNavigation=false;context.__testActions.dispatch(action,value);return;}
+    if(action==='setRegion'){
+      const source=nodes.stage.innerHTML;
+      assert.match(source,/<select\b[^>]*aria-label="切换地区"/);
+      assert.ok(source.includes(`value="${value}"`),'region option must exist');
+      context.FieldUI.setRegion(value);return;
+    }
     if(action==='advance'){context.__testActions.advance();return;}
     if(/Scenario$/.test(action)||['tableFailure','matchFailure','newReward'].includes(action)){context.__testActions.scenario(action);return;}
     if(['pause','nextStage','eliminateEvent'].includes(action)||action.startsWith('details:demo')||action==='support:scenario'){context.__testActions.dispatch(action,value);return;}
@@ -139,6 +145,34 @@ function boot(options = {}) {
   return {click,clickText,clickAny,input,tick,state,now:() => now,storage:() => Object.fromEntries(store),storageWrites:()=>storageWrites,receive:raw=>events.get('storage')?.({key:[...store.keys()].find(x=>x.startsWith('maluer-fields-')),newValue:JSON.stringify(raw)}),html:() => nodes.sheet.open ? nodes['sheet-body'].innerHTML : nodes.stage.innerHTML,underlay:() => nodes.stage.innerHTML,sheetOpen:() => nodes.sheet.open,sheetSize:() => [nodes.sheet.style.width,nodes.sheet.style.height],emit:(id,kind,event) => nodes[id].emit(kind,event),modal:() => nodes.modal.open ? nodes['modal-body'].innerHTML : '',key:() => [...store.keys()].find(x => x.startsWith('maluer-fields-'))};
 }
 
+test('地区下拉切换直接更新四项金币玩法，名称顺序和刷新状态保持一致',()=>{
+  let app=boot();app.click('coin');
+  assert.match(app.html(),/<select\b[^>]*aria-label="切换地区"/);
+  app.click('setRegion','信阳');
+  assert.equal(app.modal(),'');assert.equal(app.state().data.region,'信阳');
+  assert.equal(app.state().data.profile,'gushi');
+  const names=[...app.html().matchAll(/data-action="profile"[^>]*>([\s\S]*?)<\/button>/g)].map(m=>plain(m[1]));
+  assert.deepEqual(names,['固始麻将','老五嘴麻将','斗地主','跑的快']);
+  assert.doesNotMatch(app.html(),/>够级<|>掼蛋<|>升级<|免洗斗地主/);
+  app.click('profile','laowuzui');app=boot({storage:app.storage()});
+  assert.equal(app.state().data.profile,'laowuzui');assert.match(app.html(),/老五嘴麻将/);assert.match(app.html(),/4人对局/);
+  app.click('setRegion','云南昭通');assert.equal(app.state().data.profile,'guangchuntian');
+  assert.match(app.html(),/光春天/);assert.match(app.html(),/4人对局/);
+});
+
+test('未开放玩法与匹配中地区变更不会改动原局，旧六人匹配存档仍可恢复',()=>{
+  const app=boot();app.click('coin');app.click('directory');app.click('profile','gushi');
+  assert.equal(app.state().data.profile,'');
+  app.click('startCoin');app.click('queueCoin');
+  app.click('matchHome');app.click('coin');assert.match(app.html(),/<select\b[^>]*disabled/);
+  const original=app.state();app.click('directory');app.click('setRegion','洛阳');
+  assert.equal(app.state().data.region,'郑州');assert.equal(app.state().session.reserved,original.session.reserved);
+  const old=app.state();old.data.profile='gouji-dragon';old.data.region='武汉';
+  const restored=boot({storage:{[app.key()]:JSON.stringify(old)}});restored.tick(8000);
+  assert.equal(restored.state().session.status,'seated');assert.equal(restored.state().data.region,'武汉');
+  assert.equal(restored.state().data.profile,'gouji-dragon');assert.match(restored.html(),/6 人/);
+});
+
 test('home loads the priority hall image without downloading the hidden secondary background',()=>{
   const app=boot();
   const home=app.html();
@@ -162,7 +196,7 @@ test('cross-version storage events render remote state without republishing it i
 });
 
 test('ending a live coin round behind accessories replaces the old table backdrop with the current selection',()=>{
-  const app=boot();app.click('coin');app.click('gameGroup','ddz');app.click('startCoin');app.click('queueCoin');app.tick(8000);app.click('deal');app.tick(3000);
+  const app=boot();app.click('coin');app.click('profile','ddz-classic');app.click('startCoin');app.click('queueCoin');app.tick(8000);app.click('deal');app.tick(3000);
   app.click('supply');app.click('support:activities');app.tick(30000);
   assert.equal(app.state().session.status,'idle');
   assert.match(app.underlay(),/selection-body/);
@@ -173,8 +207,8 @@ test('ending a live coin round behind accessories replaces the old table backdro
 test('visible entry amounts and three-person poker follow the selected mode through settlement',()=>{
   const app=boot();app.click('coin');
   assert.match(app.html(),/准入金币/);assert.match(app.html(),/entry-corner/);
-  app.click('gameGroup','ddz');
-  assert.equal(app.state().data.profile,'ddz-fast');
+  app.click('profile','ddz-classic');
+  assert.equal(app.state().data.profile,'ddz-classic');
   app.click('selectField','2');app.click('startCoin');app.click('queueCoin');app.tick(8000);
   assert.match(app.html(),/3 人/);app.click('deal');app.tick(3000);
   assert.match(app.html(),/poker-hand/);assert.doesNotMatch(app.html(),/剩余牌 72/);
@@ -190,16 +224,16 @@ test('shortage preserves the selected high field through supply and close, witho
   assert.equal(app.state().session.status,'idle');
 });
 
-test('six-person matching and profile-specific restoration do not fall back to four players',()=>{
-  let app=boot();app.click('coin');app.click('gameGroup','gouji');app.click('selectField','2');
+test('新地区三人扑克匹配及玩法存档恢复不回退为四人麻将',()=>{
+  let app=boot();app.click('coin');app.click('setRegion','云南昭通');app.click('profile','pdk');app.click('selectField','2');
   app.click('startCoin');app.click('queueCoin');app.tick(3000);
   app=boot({now:app.now(),storage:app.storage()});app.tick(8000);
-  assert.equal(app.state().data.profile,'gouji-dragon');assert.match(app.html(),/6 人/);
-  app.click('deal');app.tick(3000);assert.match(app.html(),/够级/);assert.match(app.html(),/poker-hand/);
+  assert.equal(app.state().data.profile,'pdk');assert.equal(app.state().data.region,'云南昭通');assert.match(app.html(),/3 人/);
+  app.click('deal');app.tick(3000);assert.match(app.html(),/跑的快/);assert.match(app.html(),/poker-hand/);
 });
 
 test('poker bidding and doubles precede playing, while wallet orders credit once and preserve the source field',()=>{
-  let app=boot();app.click('coin');app.click('gameGroup','ddz');app.click('startCoin');app.click('queueCoin');app.tick(8000);app.click('deal');app.tick(3000);
+  let app=boot();app.click('coin');app.click('profile','ddz-classic');app.click('startCoin');app.click('queueCoin');app.tick(8000);app.click('deal');app.tick(3000);
   assert.match(app.html(),/叫地主/);app.click('pokerBid','3');assert.match(app.html(),/加倍/);app.click('pokerDouble','1');
   app.click('hint');assert.equal(app.state().data.selectedTile,0);app.click('discard');
   app.tick(30000);app.click('coin');app.click('selectField','3');app.click('startCoin');app.click('coinPackages');app.click('packOrder','5');
