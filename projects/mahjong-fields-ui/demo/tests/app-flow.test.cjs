@@ -139,6 +139,19 @@ function boot(options = {}) {
   return {click,clickText,clickAny,input,tick,state,now:() => now,storage:() => Object.fromEntries(store),storageWrites:()=>storageWrites,receive:raw=>events.get('storage')?.({key:[...store.keys()].find(x=>x.startsWith('maluer-fields-')),newValue:JSON.stringify(raw)}),html:() => nodes.sheet.open ? nodes['sheet-body'].innerHTML : nodes.stage.innerHTML,underlay:() => nodes.stage.innerHTML,sheetOpen:() => nodes.sheet.open,sheetSize:() => [nodes.sheet.style.width,nodes.sheet.style.height],emit:(id,kind,event) => nodes[id].emit(kind,event),modal:() => nodes.modal.open ? nodes['modal-body'].innerHTML : '',key:() => [...store.keys()].find(x => x.startsWith('maluer-fields-'))};
 }
 
+test('home loads the priority hall image without downloading the hidden secondary background',()=>{
+  const app=boot();
+  const home=app.html();
+  assert.match(home,/<img\b[^>]*src="assets\/home\.webp"[^>]*fetchpriority="high"/);
+  assert.match(home,/<img\b[^>]*width="1672"[^>]*height="941"/);
+  const css=fs.readFileSync(path.join(root,'styles.css'),'utf8');
+  const base=css.match(/\.stage\{([^}]+)\}/)[1];
+  assert.doesNotMatch(base,/url\(/,'hall must not download the covered courtyard');
+  assert.match(css,/\.stage\.soft\{[^}]*url\(['"]?assets\/courtyard\.webp/);
+  app.click('coin');
+  assert.match(app.html(),/selection-body/);
+});
+
 test('cross-version storage events render remote state without republishing it into an endless echo',()=>{
   const app=boot();app.click('coin');const incoming=app.state();incoming.data.field=1;
   const {profile,...rest}=incoming.data;incoming.data={...rest,profile};

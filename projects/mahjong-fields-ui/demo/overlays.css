@@ -172,7 +172,7 @@
 .flow-status>div{height:115px;padding:35px 8px;text-align:center;color:#e7f3ff;font-size:34px;font-family:var(--display);border-bottom:1px solid #89b7d377}
 .flow-status>div.active{color:#774514;background:linear-gradient(#fff2bc,#f9d87b);border-right:4px solid #ebbb55;font-weight:700}
 .stage.soft::before{backdrop-filter:none;background:#183f5d28}
-.hero-trophy{--trophy-size:160px;display:block;width:var(--trophy-size);height:calc(var(--trophy-size)*1.12);background:url('assets/home.png');background-size:calc(var(--trophy-size)*8.08) calc(var(--trophy-size)*4.55);background-position:calc(var(--trophy-size)*-4.6) calc(var(--trophy-size)*-1.71);border-radius:24px;flex-shrink:0}
+.hero-trophy{--trophy-size:160px;display:block;width:var(--trophy-size);height:calc(var(--trophy-size)*1.12);background:url('assets/home.webp');background-size:calc(var(--trophy-size)*8.08) calc(var(--trophy-size)*4.55);background-position:calc(var(--trophy-size)*-4.6) calc(var(--trophy-size)*-1.71);border-radius:24px;flex-shrink:0}
 .event-grid{gap:28px;height:590px}
 .event-card{height:590px;padding:22px;display:flex;flex-direction:column;align-items:center;gap:4px;border:3px solid #c8e9ff;border-radius:26px;background:linear-gradient(155deg,#fbfdff,#d5ebff);box-shadow:0 7px 0 #6b9abd55,inset 0 0 0 3px #ffffff9c}
 .event-card:nth-child(2){background:linear-gradient(155deg,#f7fcff,#cce8fd)}
@@ -189,7 +189,7 @@
 #modal .scenario-buttons button{font-size:26px;padding:15px 20px;margin:10px 0}
 
 /* Reward artwork and blue/gold card hierarchy, shared by all game windows. */
-.reward-art{display:block;background-image:url('assets/rewards-atlas.png');background-size:200% 200%;background-repeat:no-repeat;border:0;border-radius:0;box-shadow:none;filter:drop-shadow(0 5px 4px #74501022)}
+.reward-art{display:block;background-image:url('assets/rewards-atlas.webp');background-size:200% 200%;background-repeat:no-repeat;border:0;border-radius:0;box-shadow:none;filter:drop-shadow(0 5px 4px #74501022)}
 .reward-trophy{background-position:0 0}.reward-coins{background-position:100% 0}.reward-chest{background-position:0 100%}.reward-tea{background-position:100% 100%}
 .hero-trophy.reward-art{height:var(--trophy-size);border-radius:0}
 .event-grid{height:622px}

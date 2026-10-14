@@ -1,5 +1,5 @@
 /* Shared blue/gold game materials; geometry uses design pixels. */
-.game-art{display:block;background-image:url('assets/game-atlas.png');background-size:200% 300%;background-repeat:no-repeat;width:190px;height:130px;flex:none}
+.game-art{display:block;background-image:url('assets/game-atlas.webp');background-size:200% 300%;background-repeat:no-repeat;width:190px;height:130px;flex:none}
 .art-0{background-position:0 0}.art-1{background-position:100% 0}.art-2{background-position:0 50%}.art-3{background-position:100% 50%}.art-4{background-position:0 100%}.art-5{background-position:100% 100%}
 .gold-coin{display:inline-block;width:32px;height:32px;border-radius:50%;border:3px solid #fff4a0;background:radial-gradient(circle at 30% 25%,#ffef7d,#eaaa17 65%,#bd790e);box-shadow:inset 0 0 0 3px #c68a0c,0 2px 4px #15395544;vertical-align:middle;position:relative}
 .gold-coin:after{content:'';position:absolute;width:8px;height:8px;background:#bd810e;left:9px;top:9px;transform:rotate(45deg)}
