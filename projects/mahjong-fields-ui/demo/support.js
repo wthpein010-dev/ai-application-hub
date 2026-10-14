@@ -57,7 +57,7 @@
     const title = text => ctx.header(text, 'back');
     const safeText = text => escape(text);
     const open = page => { state(); if (!String(d().screen).startsWith('support')) state().originKind = String(d().screen).startsWith('event') ? 'tournament' : 'coin'; ctx.go(page); };
-    const threshold = () => [500, 5000, 50000, 500000][Number(d().field) || 0];
+    const threshold = () => ctx.fields?.[Number(d().field)||0]?.min || [500,5000,50000,500000][Number(d().field)||0];
     function activityNav(active) {
       const items = [['活动中心', 'activities'], ['七日茶约', 'signinPage'], ['茶歇好礼', 'teaPage'], ['回访有礼', 'returnPage'], ['好运翻牌', 'flipPage']];
       return `<nav class="side-tabs support-side" aria-label="活动">${items.map(([label, action]) => B(label, action, active === action ? 'active' : '')).join('')}</nav>`;
@@ -348,7 +348,7 @@
       return true;
     }
     const labels = { supportSupply: '金币 · 补给', supportActivity: '配套 · 活动中心', supportSignin: '活动 · 七日茶约', supportTea: '活动 · 茶歇好礼', supportReturn: '活动 · 回访有礼', supportFlip: '活动 · 好运翻牌', supportShop: '配套 · 商城', supportProduct: '商城 · 商品预览', supportOrders: '商城 · 我的订单', supportWardrobe: '商城 · 我的装扮', supportChest: '奖励 · 宝箱与礼包' };
-    return { pages, labels, dispatch };
+    return { pages, labels, dispatch, supplyView(){const r=reliefInfo();return {r,s:state(),reason:reliefReason(r)};} };
   }
   return { create, SIGNIN, PRODUCTS, signinAmount: signupAmount, supplyStatus, escape };
 });

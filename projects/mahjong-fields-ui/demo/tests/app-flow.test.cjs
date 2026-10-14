@@ -139,6 +139,45 @@ function boot(options = {}) {
   return {click,clickText,clickAny,input,tick,state,now:() => now,storage:() => Object.fromEntries(store),html:() => nodes.sheet.open ? nodes['sheet-body'].innerHTML : nodes.stage.innerHTML,underlay:() => nodes.stage.innerHTML,sheetOpen:() => nodes.sheet.open,sheetSize:() => [nodes.sheet.style.width,nodes.sheet.style.height],emit:(id,kind,event) => nodes[id].emit(kind,event),modal:() => nodes.modal.open ? nodes['modal-body'].innerHTML : '',key:() => [...store.keys()].find(x => x.startsWith('maluer-fields-'))};
 }
 
+test('visible entry amounts and three-person poker follow the selected mode through settlement',()=>{
+  const app=boot();app.click('coin');
+  assert.match(app.html(),/准入金币/);assert.match(app.html(),/entry-corner/);
+  app.click('gameGroup','ddz');
+  assert.equal(app.state().data.profile,'ddz-fast');
+  app.click('selectField','2');app.click('startCoin');app.click('queueCoin');app.tick(8000);
+  assert.match(app.html(),/3 人/);app.click('deal');app.tick(3000);
+  assert.match(app.html(),/poker-hand/);assert.doesNotMatch(app.html(),/剩余牌 72/);
+  app.tick(30000);assert.equal(app.state().data.screen,'coinResult');
+  assert.equal((app.html().match(/<tr class=/g)||[]).length,3);
+});
+
+test('shortage preserves the selected high field through supply and close, without queuing',()=>{
+  const app=boot();app.click('coin');app.click('selectField','3');app.click('startCoin');
+  assert.equal(app.state().data.screen,'supportSupply');assert.match(app.html(),/金币不足/);
+  assert.match(app.html(),/371,400/);assert.match(app.html(),/金币礼包/);
+  app.click('back');assert.equal(app.state().data.screen,'coinLobby');assert.equal(app.state().data.field,3);
+  assert.equal(app.state().session.status,'idle');
+});
+
+test('six-person matching and profile-specific restoration do not fall back to four players',()=>{
+  let app=boot();app.click('coin');app.click('gameGroup','gouji');app.click('selectField','2');
+  app.click('startCoin');app.click('queueCoin');app.tick(3000);
+  app=boot({now:app.now(),storage:app.storage()});app.tick(8000);
+  assert.equal(app.state().data.profile,'gouji-dragon');assert.match(app.html(),/6 人/);
+  app.click('deal');app.tick(3000);assert.match(app.html(),/够级/);assert.match(app.html(),/poker-hand/);
+});
+
+test('poker bidding and doubles precede playing, while wallet orders credit once and preserve the source field',()=>{
+  let app=boot();app.click('coin');app.click('gameGroup','ddz');app.click('startCoin');app.click('queueCoin');app.tick(8000);app.click('deal');app.tick(3000);
+  assert.match(app.html(),/叫地主/);app.click('pokerBid','3');assert.match(app.html(),/加倍/);app.click('pokerDouble','1');
+  app.click('hint');assert.equal(app.state().data.selectedTile,0);app.click('discard');
+  app.tick(30000);app.click('coin');app.click('selectField','3');app.click('startCoin');app.click('coinPackages');app.click('packOrder','5');
+  const before=app.state().session.coins;app.click('payPack');assert.equal(app.state().session.coins,before+518400);
+  app=boot({now:app.now(),storage:app.storage()});assert.match(app.html(),/购买成功/);
+  app.click('returnSelection');assert.equal(app.state().data.field,3);assert.equal(app.state().session.status,'idle');
+  app.click('startCoin');assert.match(app.modal(),/确认进入/);
+});
+
 test('activity tabs retain one window size through switching and reload', () => {
   let app=boot(); app.click('activity');
   const size=app.sheetSize();
