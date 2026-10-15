@@ -142,8 +142,49 @@ function boot(options = {}) {
     }
     now = end;
   }
-  return {click,clickText,clickAny,input,tick,state,now:() => now,storage:() => Object.fromEntries(store),storageWrites:()=>storageWrites,receive:raw=>events.get('storage')?.({key:[...store.keys()].find(x=>x.startsWith('maluer-fields-')),newValue:JSON.stringify(raw)}),html:() => nodes.sheet.open ? nodes['sheet-body'].innerHTML : nodes.stage.innerHTML,underlay:() => nodes.stage.innerHTML,sheetOpen:() => nodes.sheet.open,sheetSize:() => [nodes.sheet.style.width,nodes.sheet.style.height],emit:(id,kind,event) => nodes[id].emit(kind,event),modal:() => nodes.modal.open ? nodes['modal-body'].innerHTML : '',key:() => [...store.keys()].find(x => x.startsWith('maluer-fields-'))};
+  return {click,clickText,clickAny,input,tick,state,now:() => now,storage:() => Object.fromEntries(store),storageWrites:()=>storageWrites,receive:raw=>events.get('storage')?.({key:[...store.keys()].find(x=>x.startsWith('maluer-fields-')),newValue:JSON.stringify(raw)}),html:() => nodes.sheet.open ? nodes['sheet-body'].innerHTML : nodes.stage.innerHTML,underlay:() => nodes.stage.innerHTML,sheetOpen:() => nodes.sheet.open,sheetSize:() => [nodes.sheet.style.width,nodes.sheet.style.height],modalSize:() => [nodes.modal.style.width,nodes.modal.style.height],emit:(id,kind,event) => nodes[id].emit(kind,event),modal:() => nodes.modal.open ? nodes['modal-body'].innerHTML : '',key:() => [...store.keys()].find(x => x.startsWith('maluer-fields-'))};
 }
+
+test('直接开始匹配：选场已明示扣费与离桌限制，点击后不再确认',()=>{
+  const app=boot();app.click('coin');
+  assert.match(plain(app.html()),/成功发牌扣费/);
+  assert.match(plain(app.html()),/开局后不可离桌/);
+  app.click('startCoin');
+  assert.equal(app.modal(),'');assert.equal(app.state().data.screen,'coinMatch');
+  assert.equal(app.state().session.status,'matching');assert.equal(app.state().session.coins,128600);
+  assert.equal(app.state().session.reserved,20);
+});
+
+test('直接取消匹配或准备：释放预留、不扣金币，不再增加确认',()=>{
+  for(const seated of [false,true]){
+    const app=boot();app.click('coin');app.click('startCoin');if(seated)app.tick(8000);
+    assert.equal(app.state().session.status,seated?'seated':'matching');
+    app.click('cancelCoin');assert.equal(app.modal(),'');
+    assert.equal(app.state().data.screen,'coinLobby');assert.equal(app.state().session.status,'idle');
+    assert.equal(app.state().session.reserved,0);assert.equal(app.state().session.coins,128600);
+    app.tick(130000);assert.equal(app.state().session.status,'idle');
+  }
+});
+
+test('取消的过期操作不能在发牌后离桌或停止本局结算计时',()=>{
+  const app=boot();app.click('coin');app.click('startCoin');app.tick(8000);app.click('deal');app.tick(3000);
+  assert.equal(app.state().session.status,'playing');
+  app.click('directory');app.click('confirmCancel');
+  assert.equal(app.state().session.status,'playing');assert.ok(app.state().session.principal>0);
+  app.tick(30000);assert.equal(app.state().session.status,'idle');assert.ok(app.state().session.result);
+});
+
+test('不同功能和赛事状态页使用同一功能窗口，提示与设置使用同一提示窗口',()=>{
+  const app=boot();app.click('coin');
+  for(const action of ['supply','history','rules']){
+    app.click(action);assert.deepEqual(app.sheetSize(),['1280px','860px'],action);app.click('back');
+  }
+  app.click('home');app.click('activity');assert.deepEqual(app.sheetSize(),['1280px','860px']);app.click('back');app.click('settings');const size=app.modalSize();
+  assert.deepEqual(size,['800px','600px']);app.click('closeModal');
+  app.click('tournament');app.click('eventDetail','0');app.click('register');
+  assert.deepEqual(app.modalSize(),size);assert.match(plain(app.modal()),/报名确认/);
+  app.click('confirmRegister');assert.deepEqual(app.sheetSize(),['1280px','860px']);
+});
 
 test('大厅十方案保存选择并共用实际入口，切换不动账户与玩法；失效风格只恢复默认外观',()=>{
   let app=boot();const original=app.state();
@@ -216,7 +257,7 @@ test('地区下拉切换直接更新四项金币玩法，名称顺序和刷新�
 test('未开放玩法与匹配中地区变更不会改动原局，旧六人匹配存档仍可恢复',()=>{
   const app=boot();app.click('coin');app.click('directory');app.click('profile','gushi');
   assert.equal(app.state().data.profile,'');
-  app.click('startCoin');app.click('queueCoin');
+  app.click('startCoin');
   app.click('matchHome');app.click('coin');assert.match(app.html(),/<select\b[^>]*disabled/);
   const original=app.state();app.click('directory');app.click('setRegion','洛阳');
   assert.equal(app.state().data.region,'郑州');assert.equal(app.state().session.reserved,original.session.reserved);
@@ -249,7 +290,7 @@ test('cross-version storage events render remote state without republishing it i
 });
 
 test('ending a live coin round behind accessories replaces the old table backdrop with the current selection',()=>{
-  const app=boot();app.click('coin');app.click('profile','ddz-classic');app.click('startCoin');app.click('queueCoin');app.tick(8000);app.click('deal');app.tick(3000);
+  const app=boot();app.click('coin');app.click('profile','ddz-classic');app.click('startCoin');app.tick(8000);app.click('deal');app.tick(3000);
   app.click('supply');app.click('support:activities');app.tick(30000);
   assert.equal(app.state().session.status,'idle');
   assert.match(app.underlay(),/selection-body/);
@@ -262,7 +303,7 @@ test('visible entry amounts and three-person poker follow the selected mode thro
   assert.match(app.html(),/准入金币/);assert.match(app.html(),/entry-corner/);
   app.click('profile','ddz-classic');
   assert.equal(app.state().data.profile,'ddz-classic');
-  app.click('selectField','2');app.click('startCoin');app.click('queueCoin');app.tick(8000);
+  app.click('selectField','2');app.click('startCoin');app.tick(8000);
   assert.match(app.html(),/3 人/);app.click('deal');app.tick(3000);
   assert.match(app.html(),/poker-hand/);assert.doesNotMatch(app.html(),/剩余牌 72/);
   app.tick(30000);assert.equal(app.state().data.screen,'coinResult');
@@ -279,21 +320,21 @@ test('shortage preserves the selected high field through supply and close, witho
 
 test('新地区三人扑克匹配及玩法存档恢复不回退为四人麻将',()=>{
   let app=boot();app.click('coin');app.click('setRegion','云南昭通');app.click('profile','pdk');app.click('selectField','2');
-  app.click('startCoin');app.click('queueCoin');app.tick(3000);
+  app.click('startCoin');app.tick(3000);
   app=boot({now:app.now(),storage:app.storage()});app.tick(8000);
   assert.equal(app.state().data.profile,'pdk');assert.equal(app.state().data.region,'云南昭通');assert.match(app.html(),/3 人/);
   app.click('deal');app.tick(3000);assert.match(app.html(),/跑的快/);assert.match(app.html(),/poker-hand/);
 });
 
 test('poker bidding and doubles precede playing, while wallet orders credit once and preserve the source field',()=>{
-  let app=boot();app.click('coin');app.click('profile','ddz-classic');app.click('startCoin');app.click('queueCoin');app.tick(8000);app.click('deal');app.tick(3000);
+  let app=boot();app.click('coin');app.click('profile','ddz-classic');app.click('startCoin');app.tick(8000);app.click('deal');app.tick(3000);
   assert.match(app.html(),/叫地主/);app.click('pokerBid','3');assert.match(app.html(),/加倍/);app.click('pokerDouble','1');
   app.click('hint');assert.equal(app.state().data.selectedTile,0);app.click('discard');
   app.tick(30000);app.click('coin');app.click('selectField','3');app.click('startCoin');app.click('coinPackages');app.click('packOrder','5');
   const before=app.state().session.coins;app.click('payPack');assert.equal(app.state().session.coins,before+518400);
   app=boot({now:app.now(),storage:app.storage()});assert.match(app.html(),/购买成功/);
   app.click('returnSelection');assert.equal(app.state().data.field,3);assert.equal(app.state().session.status,'idle');
-  app.click('startCoin');assert.match(app.modal(),/确认进入/);
+  app.click('startCoin');assert.equal(app.modal(),'');assert.equal(app.state().session.status,'matching');
 });
 
 test('activity tabs retain one window size through switching and reload', () => {
@@ -317,7 +358,7 @@ test('activity tabs close once to their opener after switching and reloading', (
 });
 
 test('activity dismissal skips tab history in older saves and resumes the live queue', () => {
-  let app=boot();app.click('coin');app.click('startCoin');app.click('queueCoin');app.click('supply');app.click('support:activities');
+  let app=boot();app.click('coin');app.click('startCoin');app.click('supply');app.click('support:activities');
   app.click('support:teaPage');
   const storage=app.storage(), saved=JSON.parse(storage[app.key()]);
   saved.data.navStack.push('supportActivity','supportSignin','supportReturn');
@@ -338,8 +379,8 @@ test('home actions sit only on visible original artwork, without duplicate entry
   assert.doesNotMatch(html.slice(0, html.indexOf('<main')), /data-action="(?:coin|tournament)"/);
 });
 
-test('outside confirmation click dismisses without reserving coins or starting a queue', () => {
-  const app=boot(); app.click('coin'); app.click('startCoin');
+test('outside explanation click dismisses without reserving coins or starting a queue', () => {
+  const app=boot(); app.click('coin'); app.click('wallet');
   app.emit('modal','pointerdown',{clientX:-1,clientY:-1});
   app.emit('modal','pointerup',{clientX:-1,clientY:-1});
   assert.equal(app.modal(),''); assert.equal(app.state().session.status,'idle');
@@ -347,7 +388,7 @@ test('outside confirmation click dismisses without reserving coins or starting a
 });
 
 test('secondary pages close over the live queue and cannot discard its progress', () => {
-  const app=boot(); app.click('coin'); app.click('startCoin'); app.click('queueCoin');
+  const app=boot(); app.click('coin'); app.click('startCoin');
   app.click('supply');
   assert.equal(app.sheetOpen(),true); assert.match(app.underlay(),/真人匹配/);
   app.tick(8000);
@@ -357,7 +398,7 @@ test('secondary pages close over the live queue and cannot discard its progress'
 });
 
 test('accessory windows have no synthetic return-flow button and close to the active table', () => {
-  const app=boot();app.click('coin');app.click('startCoin');app.click('queueCoin');
+  const app=boot();app.click('coin');app.click('startCoin');
   app.click('supply');
   assert.doesNotMatch(plain(app.html()),/返回(?:原|当前)?流程/);
   app.tick(8000);app.emit('sheet','cancel',{preventDefault(){}});
@@ -415,7 +456,7 @@ test('returning to selection after settlement cannot reopen a cleared table or o
 });
 
 function matchToReady(app) {
-  app.click('coin'); app.click('startCoin'); app.click('queueCoin'); app.click('advance');
+  app.click('coin'); app.click('startCoin');  app.click('advance');
   assert.equal(app.state().session.status, 'seated');
 }
 function registerFirst(app) {
@@ -537,7 +578,7 @@ test('help and shop return to the original active table while another live entry
 });
 
 test('a ready countdown created while paused resumes with only its own three seconds', () => {
-  const app=boot();app.click('coin');app.click('startCoin');app.click('queueCoin');app.click('pause');
+  const app=boot();app.click('coin');app.click('startCoin');app.click('pause');
   app.tick(30000);app.click('advance');
   assert.equal(app.state().session.status,'seated');
   app.tick(10000);app.click('deal');app.tick(20000);app.click('pause');
@@ -593,7 +634,7 @@ test('an actual unresolved appeal blocks official prize payment until its origin
 });
 
 test('automatic matching and continuation keep the queried page and return to the updated source', () => {
-  const coin=boot();coin.click('coin');coin.click('startCoin');coin.click('queueCoin');coin.click('help');
+  const coin=boot();coin.click('coin');coin.click('startCoin');coin.click('help');
   assert.equal(coin.state().data.screen,'detailsHelp');coin.tick(7800);
   assert.equal(coin.state().session.status,'seated');
   assert.equal(coin.state().data.screen,'detailsHelp');coin.click('back');
@@ -661,9 +702,9 @@ test('personal ready timeout keeps the open help page and returns to a fresh lob
   assert.equal(app.state().session.coins,128600);
   assert.equal(app.state().data.screen,'detailsHelp','timeout must preserve the queried page');
   assert.match(plain(app.html()),/准备过程中查看帮助/,'the written draft must survive timeout');
-  app.click('closeModal');app.click('back');
+  assert.equal(app.modal(),'');app.click('back');
   assert.equal(app.state().data.screen,'coinLobby');
-  app.click('startCoin');app.click('queueCoin');app.click('advance');
+  app.click('startCoin');app.click('advance');
   assert.equal(app.state().session.status,'seated');
   assert.equal(app.state().data.personalReadyDeadline,app.now()+60000);
 });
@@ -716,14 +757,14 @@ test('player UI contains no presentation toolbar or developer controls', () => {
   assert.doesNotMatch(html, /workbench|statusbar|data-action="(?:advance|tools|directory|reset|pause|fullscreen)"/);
   const app=boot();app.click('coin');app.click('startCoin');
   assert.doesNotMatch(plain(app.modal()), /演示|示例|参考|模拟|待确认/);
-  app.click('closeModal');app.click('supply');
+  assert.equal(app.modal(),'');app.click('supply');
   assert.doesNotMatch(app.html(), /sheet-demo-controls|data-action="(?:advance|tools|directory)"/);
   app.click('support:activities');app.click('support:signinPage');
   assert.doesNotMatch(plain(app.html()), /演示|模拟|参考配置|原次/);
 });
 
 test('coin settlement is reached automatically without any artificial player button', () => {
-  const app=boot();app.click('coin');app.click('startCoin');app.click('queueCoin');
+  const app=boot();app.click('coin');app.click('startCoin');
   app.tick(7800);app.click('deal');app.tick(3000);
   assert.equal(app.state().session.status,'playing');
   app.tick(30000);
@@ -766,7 +807,7 @@ test('all newcomer rounds finish naturally and the twenty-four-hour review pays 
 });
 
 test('automated settlement preserves an open support page and returns to fresh selection', () => {
-  const app=boot();app.click('coin');app.click('startCoin');app.click('queueCoin');app.tick(7800);
+  const app=boot();app.click('coin');app.click('startCoin');app.tick(7800);
   app.click('deal');app.tick(3000);app.click('supply');app.tick(30000);
   assert.equal(app.state().session.status,'idle');assert.equal(app.state().data.screen,'supportSupply');
   app.click('back');assert.equal(app.state().data.screen,'coinLobby');

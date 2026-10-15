@@ -125,7 +125,8 @@
   function showModal(title,body,actions='') {
     if(!modal.open) focusBeforeModal = document.activeElement;
     modal.style.width = '800px';
-    modalBody.innerHTML=`<h2 id="modal-title" class="modal-title">${title}</h2>${body}${actions?`<div class="modal-actions">${actions}</div>`:''}`;
+    modal.style.height = '600px';
+    modalBody.innerHTML=`<h2 id="modal-title" class="modal-title">${title}</h2><div class="modal-content">${body}</div><div class="modal-actions">${actions}</div>`;
     if(!modal.open) modal.showModal();
     resize();
     (modal.querySelector('.modal-actions .blue-button') || modal.querySelector('.modal-close')).focus();
@@ -181,7 +182,7 @@
     const paging=lastStart?`<nav class="field-pager" aria-label="场档翻页">${b('‹','fieldWindow','field-page-button',`data-value="0" aria-label="上一页场档" ${start===0||status?'disabled':''}`)}<span>${start===0?'1':'2'} / 2</span>${b('›','fieldWindow','field-page-button',`data-value="${lastStart}" aria-label="下一页场档" ${start===lastStart||status?'disabled':''}`)}</nav>`:'';
     const action=status?'resumeCoin':'startCoin';
     const label=status?(session.status==='playing'?'返回牌桌':session.status==='seated'?'进入准备桌':'查看匹配'):'快速开始';
-    return header('金币场','home',true)+`<nav class="coin-game-tabs" aria-label="金币场玩法">${games.map(g=>b(`${profileArt(g)}<span>${g.name}</span>`,'profile',g.id===data.profile?'active':'',`data-value="${g.id}" aria-pressed="${g.id===data.profile}" ${status?'disabled':''}`)).join('')}</nav><section class="selection-body coin-select-content" aria-label="${gameName()} · ${playerCount()}人对局"><div class="coin-fields ${layout}">${fields.slice(start,start+4).map((f,j)=>{const i=start+j;return b(`${data.field===i?'<span class="field-selection-flag">当前选择</span>':''}<span class="entry-corner"><i class="gold-coin" aria-hidden="true"></i>${fmt(f.min)}<small>准入金币</small></span><span class="field-name">${f.name}</span><span class="field-base"><small>底分</small><strong>${fmt(f.base)}</strong></span>${fieldArt(i)}<span class="field-range">准入 ${fmt(f.min)}${Number.isFinite(f.max)?'～'+fmt(f.max-1):'以上'}</span><span class="field-population">在线 ${fmt([1286,932,468,128,96,32][i])}</span>`,'selectField',`field-card skin-${i%4} ${data.field===i?'active':''}`,`data-value="${i}" aria-label="${f.name}，准入金币${f.min}，底分${f.base}${data.field===i?'，当前选择':''}" aria-pressed="${data.field===i}"`);}).join('')}</div></section>${paging}`+footer(`<div class="coin-fee-note"><small>服务费</small><span>${FEE} 金币 / 局</span></div>`+b(`<span class="coin-start-title">${label}</span><span class="coin-start-choice">${gameName()} · ${fields[data.field].name}</span><span class="coin-start-arrow" aria-hidden="true">›</span>`,action,'gold-button coin-start'));
+    return header('金币场','home',true)+`<nav class="coin-game-tabs" aria-label="金币场玩法">${games.map(g=>b(`${profileArt(g)}<span>${g.name}</span>`,'profile',g.id===data.profile?'active':'',`data-value="${g.id}" aria-pressed="${g.id===data.profile}" ${status?'disabled':''}`)).join('')}</nav><section class="selection-body coin-select-content" aria-label="${gameName()} · ${playerCount()}人对局"><div class="coin-fields ${layout}">${fields.slice(start,start+4).map((f,j)=>{const i=start+j;return b(`${data.field===i?'<span class="field-selection-flag">当前选择</span>':''}<span class="entry-corner"><i class="gold-coin" aria-hidden="true"></i>${fmt(f.min)}<small>准入金币</small></span><span class="field-name">${f.name}</span><span class="field-base"><small>底分</small><strong>${fmt(f.base)}</strong></span>${fieldArt(i)}<span class="field-range">准入 ${fmt(f.min)}${Number.isFinite(f.max)?'～'+fmt(f.max-1):'以上'}</span><span class="field-population">在线 ${fmt([1286,932,468,128,96,32][i])}</span>`,'selectField',`field-card skin-${i%4} ${data.field===i?'active':''}`,`data-value="${i}" aria-label="${f.name}，准入金币${f.min}，底分${f.base}${data.field===i?'，当前选择':''}" aria-pressed="${data.field===i}"`);}).join('')}</div></section>${paging}`+footer(`<div class="coin-fee-note"><small>服务费</small><span>${FEE} 金币 / 局</span><small>成功发牌扣费</small></div><p class="coin-entry-note">开局后不可离桌<br>可开启托管</p>`+b(`<span class="coin-start-title">${label}</span><span class="coin-start-choice">${gameName()} · ${fields[data.field].name}</span><span class="coin-start-arrow" aria-hidden="true">›</span>`,action,'gold-button coin-start'));
   }
   function coinMatch() {
     return header('金币场')+`<section class="queue-scene"><div class="queue-heading"><span>真人匹配</span><strong>${gameName()} · ${fields[data.field].name}</strong><p>${data.matchCount} / ${playerCount()} 人已就位</p></div><div class="queue-seats count-${playerCount()}">${players().map((name,i)=>`<div class="queue-person ${i>=data.matchCount?'waiting':''}"><div class="avatar">${i>=data.matchCount?'?':''}</div><strong>${i<data.matchCount?name:'等待玩家'}</strong><small>${i<data.matchCount?'已就位':'匹配中…'}</small></div>`).join('')}</div><div class="queue-info">${art(currentProfile().art)}<div><h3>底分 ${fmt(fields[data.field].base)} · 单局开赛</h3><p>已预留 ${FEE} 金币服务费，成功发牌扣除。</p><p>发牌前取消，全额释放预留。</p></div></div></section>`+footer(b('返回大厅','matchHome','blue-button')+b('取消匹配','cancelCoin','gold-button'));
@@ -311,6 +312,15 @@
   function coinPackages(){return header('金币礼包')+`<section class="package-layout"><div class="package-caption">购买金币 · 赠币包含在到账总额内</div><div class="package-grid">${FieldCatalogue.PACKS.map((pack,i)=>`<article>${art(i>2?3:5)}<h2>${fmt(pack.coins)} <small>金币</small></h2><p>${pack.bonus?`含赠币 ${fmt(pack.bonus)}`:'基础金币，无额外赠送'}</p>${b(`¥ ${pack.price}`,'packOrder','gold-button',`data-value="${i}"`)}</article>`).join('')}</div></section>`+footer(b('返回补给','returnSupply','blue-button'));}
   function coinPurchase(){const order=(data.coinOrders||[]).find(o=>o.id===data.packOrder?.id),pack=FieldCatalogue.PACKS[order?.pack];if(!pack)return emptyPage('金币订单','未找到订单','请返回礼包重新选择。');const paid=order.status==='paid';return header(paid?'金币已到账':'确认购买')+`<section class="purchase-layout">${art(3)}<h2>${paid?'购买成功':'金币礼包'}</h2><strong>${fmt(pack.coins)} 金币</strong><p>${paid?`当前可用金币 ${fmt(session.available)} · ${session.principal?'本局本金不增加':'返回原选场重新验资'}`:`支付金额 ¥${pack.price} · 含赠币 ${fmt(pack.bonus)}金币`}</p><small>订单 ${order.id.replace('coin-order-','')}</small></section>`+footer(b('返回礼包','coinPackages','blue-button')+b(paid?'返回原选场':'确认支付',paid?'returnSelection':'payPack','gold-button'));}
   Object.assign(pages,{supportSupply,coinPackages,coinPurchase});Object.assign(labels,{coinPackages:'金币礼包',coinPurchase:'金币订单'});
+  let renderedBaseMarkup='';
+  function animateContent(root,screen) {
+    if(window.matchMedia?.('(prefers-reduced-motion: reduce)').matches)return;
+    const cards=screen==='coinLobby'?root.querySelectorAll('.field-card'):screen==='eventCenter'?root.querySelectorAll('.event-card'):[];
+    const contents=cards.length?cards:root.querySelectorAll(':scope > :not(header):not(footer):not(nav):not(.flow-status):not(.aside-panel)');
+    [...contents].forEach((node,index)=>node.animate?.([
+      {opacity:0.25,transform:'translateY(12px)'},{opacity:1,transform:'translateY(0)'}
+    ],{duration:200,delay:cards.length?index*28:0,easing:'cubic-bezier(.2,.7,.2,1)',fill:'backwards'}));
+  }
   function render() {
     const focusedAction=document.activeElement?.dataset?.action,focusedValue=document.activeElement?.dataset?.value;
     const screen=pages[data.screen]?data.screen:'home'; data.screen=screen;
@@ -321,22 +331,23 @@
     const chooser=$('#lobby-chooser');
     if(chooser){chooser.hidden=screen!=='home';chooser.innerHTML=screen==='home'?FieldLobby.chooser(data.lobbyStyle,b):'';}
     $('#viewport').classList.toggle('with-lobby-chooser',screen==='home');
-    stage.innerHTML=pages[base]();
+    const baseChanged=stage.dataset.screen!==base,baseMarkup=pages[base]();
+    if(renderedBaseMarkup!==baseMarkup){stage.innerHTML=baseMarkup;renderedBaseMarkup=baseMarkup;}
+    stage.dataset.screen=base;
+    if(baseChanged&&!windowed)animateContent(stage,base);
     if(windowed){
       const changed=sheetBody.dataset.screen!==screen;
       sheetBody.innerHTML=pages[screen]();sheetBody.dataset.screen=screen;
-      const compact=new Set(['eventRegistered','eventStandby','eventAllocating','eventTasks']);
-      const wide=new Set(['coinResult','eventDetail','eventSmallResult','eventRoundWait','eventFinal','supportActivity','supportSignin','supportTea','supportReturn','supportFlip','supportShop','supportProduct','detailsReplay','detailsHistory','detailsScore']);
-      const size=compact.has(screen)?[960,760]:wide.has(screen)?[1280,860]:[1200,820];
-      sheet.style.width=size[0]+'px';sheet.style.height=size[1]+'px';
+      sheet.style.width='1280px';sheet.style.height='860px';
       sheetBody.classList.toggle('has-side',!!sheetBody.querySelector('nav.side-tabs'));
       sheetBody.classList.toggle('has-aside',!!sheetBody.querySelector('.aside-panel'));
       sheetBody.classList.toggle('no-actions',!sheetBody.querySelector('.footer-actions button'));
       sheetBody.querySelector('.back')?.setAttribute('aria-label','关闭弹板');
       sheet.setAttribute('aria-label',labels[screen]||'游戏弹板');
       if(!sheet.open){sheet.showModal();sheetBody.querySelector('.back')?.focus();}
-      else if(changed)sheetBody.querySelector('.back')?.focus();
+      else if(changed)(sheetBody.querySelector('nav.side-tabs button.active')||sheetBody.querySelector('.back'))?.focus();
       else if(focusedAction)[...sheetBody.querySelectorAll('button[data-action]')].find(x=>x.dataset.action===focusedAction&&x.dataset.value===focusedValue)?.focus();
+      if(changed)animateContent(sheetBody,screen);
     }else if(sheet.open)sheet.close();
     document.title=`${labels[screen]} · 麻溜儿麻将`;
     save(); resize();
@@ -368,7 +379,7 @@
     if(t().status!=='none'&&!['final','finalTemp','registered','standby'].includes(t().status)) return showModal('先处理当前赛事',`<p class="modal-copy">请先完成检录或当前赛事，本次不发起金币匹配。</p>`,b('返回赛事','eventResume'));
     const f=fields[data.field], entry=FieldCatalogue.entryStatus(session,f);
     if(entry.kind!=='eligible')return go('supportSupply');
-    showModal('确认进入',`<div class="modal-kv"><span>玩法 / 场档</span><b>${gameName()} · ${f.name}</b></div><div class="modal-kv"><span>单局服务费</span><b>${FEE} 金币</b></div><p class="modal-copy">成功发牌后扣除服务费。开局后无法离桌，可以托管；本局结束后结算金币。</p>`,b('返回选场','closeModal','blue-button')+b('确认匹配','queueCoin'));
+    return queueCoin();
   }
   function queueCoin() {
     if(session.status!=='idle') return;
@@ -396,11 +407,13 @@
   function readyTimeout() {
     if(session.status!=='seated')return;
     cancelTimers();session.cancel();data.ready=false;flowGo('coinLobby');
-    showModal('准备时间已结束','<p class="modal-copy">已移出候场桌，本次预留全部释放；重新开始会进入新匹配，不延长原桌总候场时间。</p>',b('重新选场','coin'));
+    notify('准备超时，已退出候场并释放预留金币');
   }
   function cancelCoin() {
     if(session.status==='playing') return dispatch('leaveCoin');
-    showModal('取消本次入场',`<p class="modal-copy">取消后退出匹配或准备桌，预留的 ${session.reserved} 金币恢复可用。尚未成功发牌，不扣服务费。</p>`,b('继续等待','closeModal','blue-button')+b('取消入场','confirmCancel'));
+    if(!['matching','seated'].includes(session.status))return;
+    cancelTimers();session.cancel();data.ready=false;go('coinLobby',{replace:true});
+    notify('已取消入场，预留金币已释放，本次未扣费');
   }
   function finishCoin() {
     if(session.status!=='playing') return;
@@ -529,7 +542,7 @@
       case 'pokerDouble':if(session.status!=='playing'||data.pokerPhase!=='double')return;data.pokerDouble=Number(value);data.pokerPhase='play';cancelTimers();render();return resumeTimers();
       case 'hint':data.selectedTile=0;return render();case 'pass':data.selectedTile=-1;render();return notify('等待其他玩家出牌');
       case 'startCoin':return startCoin(); case 'queueCoin':return queueCoin(); case 'cancelCoin':return cancelCoin();
-      case 'confirmCancel':cancelTimers();session.cancel();data.ready=false;return go('coinLobby',{replace:true}); case 'matchHome':return go('home');
+      case 'confirmCancel':return cancelCoin(); case 'matchHome':return go('home');
       case 'deal':return readyCoin();
       case 'leaveCoin':return showModal('本局进行中',`<p class="modal-copy">本局尚未结束，暂时无法离桌。可以开启托管，离线后会自动代打。</p>`,b('继续游戏','closeModal','blue-button')+b('开启托管','enableTrust'));
       case 'enableTrust':session.trust(true);closeModal();return render();case 'trust':if(session.status!=='playing')return;session.trust(!session.auto);data.offline=false;return render();
