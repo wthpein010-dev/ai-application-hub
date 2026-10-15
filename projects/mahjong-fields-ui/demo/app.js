@@ -189,30 +189,46 @@
   }
   function coinReady() {
     const seconds=Math.ceil(remaining(data.ready?data.dealDeadline:data.personalReadyDeadline)/1000);
-    return header('金币场')+board(false)+aside('本局信息',kv('玩法',gameName(),true)+kv('人数',`${playerCount()} 人`,true)+kv('场档',fields[data.field].name,true)+kv('底分',fmt(fields[data.field].base),true)+`<p class="aside-note">${data.ready?`全员已准备 · ${seconds} 秒后发牌`:`请准备 · 剩余 ${seconds} 秒`}<br>成功发牌才扣服务费。</p>`)+footer(b('退出准备','cancelCoin','blue-button')+b(data.ready?'已准备 · 等待发牌':'准备开局',data.ready?'':'deal','gold-button',data.ready?'disabled':''));
+    return tableHeader(false,true)+board(false)+`<section class="table-ready-stage" aria-label="准备开局"><p class="table-ready-count">${data.ready?playerCount():playerCount()-1} / ${playerCount()} 人已准备</p>${b(data.ready?'已准备 · 等待发牌':'准备开局',data.ready?'':'deal','gold-button table-ready-button',data.ready?'disabled':'')}<p class="table-ready-time">${data.ready?`全员已准备 · ${seconds} 秒后发牌`:`请准备 · 剩余 ${seconds} 秒`}</p><p class="table-fee-hint">成功发牌扣 ${FEE} 金币服务费</p></section>`;
+  }
+  function tableHeader(tournament=false,ready=false) {
+    const auto=tournament?t().auto:session.auto;
+    const room=tournament?e().name:gameName();
+    const info=tournament?`第${t().round}轮 · 小局 ${t().hand} / 4 · 桌积分 ${t().points.toFixed(2)}`:`${fields[data.field].name} · 底分 ${fmt(fields[data.field].base)} · ${playerCount()}人`;
+    return `<header class="table-topbar"><div class="table-room">${b('‹',ready?'cancelCoin':tournament?'eventLeave':'leaveCoin','table-back',`aria-label="${ready?'退出准备':'离开牌桌'}"`)}<div><h1>${room}</h1><p>${info}</p></div></div><nav class="table-header-tools" aria-label="牌桌操作">${b(`<i class="gold-coin" aria-hidden="true"></i>${fmt(session.coins)}`,'supply','table-wallet',`aria-label="金币余额${session.coins}"`)}${ready?'':b(auto?'取消托管':'开启托管',tournament?'eventTrust':'trust','table-trust-toggle',`aria-pressed="${auto}"`)}${b('⚙','settings','table-tool','aria-label="设置"')}${b('☰','tableMenu','table-tool','aria-label="牌桌菜单"')}</nav></header>`;
+  }
+  function tableMenu() {
+    const tournament=['table','smallResult','roundWait'].includes(t().status);
+    const items=tournament?[['赛程','eventSchedule'],['成绩','eventScore'],['赛事规则','eventRules'],['帮助反馈','help']]:[['玩法规则','rules'],['战绩','history'],['帮助反馈','help'],['金币说明','coinInfo']];
+    const ready=session.status==='seated';
+    return showModal('牌桌菜单',`<nav class="table-menu-grid" aria-label="牌桌工具">${items.map(([label,action])=>b(label,action,'blue-button')).join('')}</nav>`,b('继续游戏','closeModal','blue-button')+b(ready?'退出准备':'离开牌桌',ready?'cancelCoin':tournament?'eventLeave':'leaveCoin','gold-button'));
+  }
+  function mahjongFace(value) {
+    const wan=/^([一二三四五六七八九])万$/.exec(value);
+    if(wan)return `<span class="tile-number">${wan[1]}</span><small class="tile-suit">萬</small>`;
+    return `<span class="tile-symbol ${value==='中'?'red':value==='發'?'green':value.includes('●')?'dots':''}">${FieldNavigation.escape(value)}</span>`;
   }
   const hand=['一万','一万','二万','三万','四万','五万','六万','七万','八万','●●','●●','發','中','中'];
   function board(playing,tournament=false) {
     if(!tournament&&currentProfile().art!==0)return pokerBoard(playing);
     const auto=tournament?t().auto:session.auto;
     const canPlay=playing&&!auto&&(!tournament||t().status==='table');
-    return `<div class="table-canvas"><div class="table-glow"></div><div class="board-state"><span>${tournament?`${e().name} · 第${t().round}轮`:`${gameName()} · 单局`}</span><span>${playing?(tournament?`小局 ${t().hand} / 4`:'剩余牌 72'):'四人就位 · 等待准备'}</span></div>
-      <div class="seat top"><div class="avatar"></div><div class="seat-label"><strong>茶山客</strong><span>${playing?'思考中':'已准备'}</span></div></div><div class="seat left"><div class="avatar"></div><div class="seat-label"><strong>听雨</strong><span>${playing?'进行中':'已准备'}</span></div></div><div class="seat right"><div class="avatar"></div><div class="seat-label"><strong>清风</strong><span>${playing?'进行中':'已准备'}</span></div></div><div class="seat me"><div class="avatar"></div><div class="seat-label"><strong>Pain</strong><span>${playing?(auto?'托管中':canPlay?'你的回合':'等待续局'):'待准备'}</span></div></div>
-      <div class="tilebacks">${'<i></i>'.repeat(13)}</div><div class="tilebacks vertical">${'<i></i>'.repeat(13)}</div><div class="tilebacks vertical right">${'<i></i>'.repeat(13)}</div><div class="wind">東</div>
-      ${playing?`<div class="discard-pile"><span class="tile">${data.discard}</span><span class="tile bamboo">二条</span><span class="tile circle">●</span></div><div class="hand">${hand.map((x,i)=>b(x,'tile',`tile ${i===data.selectedTile?'chosen':''} ${i===9||i===10?'circle':''}`,`data-value="${i}" aria-label="选择${x}第${i+1}张" ${!canPlay?'disabled':''}`)).join('')}</div>${data.selectedTile>=0&&canPlay?`<div class="floating-actions">${b('出牌','discard','gold-button')}</div>`:''}`:`<div class="ready-control">其他玩家已准备</div>`}
+    return `<div class="table-canvas" data-playing="${playing}"><div class="table-glow"></div><div class="board-state"><span>${tournament?`${e().name} · 第${t().round}轮`:`${gameName()} · 单局`}</span><span>${playing?(tournament?`小局 ${t().hand} / 4`:'剩余牌 72'):'四人就位 · 等待准备'}</span></div>
+      <div class="seat top"><div class="avatar"></div><div class="seat-label"><strong>茶山客</strong><span>${playing?'思考中':'已准备'}</span></div></div><div class="seat left"><div class="avatar"></div><div class="seat-label"><strong>听雨</strong><span>${playing?'进行中':'已准备'}</span></div></div><div class="seat right"><div class="avatar"></div><div class="seat-label"><strong>清风</strong><span>${playing?'进行中':'已准备'}</span></div></div><div class="seat me"><div class="avatar"></div><div class="seat-label"><strong>Pain</strong><span>${playing?(auto?'托管中':canPlay?'你的回合':'等待续局'):data.ready?'已准备':'待准备'}</span></div></div>
+      ${playing?`<div class="tilebacks">${'<i></i>'.repeat(13)}</div><div class="tilebacks vertical">${'<i></i>'.repeat(13)}</div><div class="tilebacks vertical right">${'<i></i>'.repeat(13)}</div><div class="wind">東</div><div class="discard-pile"><span class="tile">${mahjongFace(data.discard)}</span><span class="tile bamboo">二条</span><span class="tile circle">●</span></div><div class="hand">${hand.map((x,i)=>b(mahjongFace(x),'tile',`tile ${i===data.selectedTile?'chosen':''} ${i===9||i===10?'circle':''}`,`data-value="${i}" aria-label="选择${x}第${i+1}张" ${!canPlay?'disabled':''}`)).join('')}</div>${data.selectedTile>=0&&canPlay?`<div class="floating-actions">${b('出牌','discard','gold-button')}</div>`:''}`:''}
       ${tournament&&!['table'].includes(t().status)?`<div class="table-waiting-message">${t().status==='smallResult'?'等待下一小局':'本轮已结束，等待赛事更新'}</div>`:''}
       ${playing&&auto?`<div class="trust-overlay"><div><h2 class="heading">${data.offline?'离线代打中':'正在托管'}</h2><p>原座位与手牌保留</p>${b(data.offline?'重新连接':'取消托管',tournament?'eventTrust':data.offline?'reconnect':'trust','blue-button small')}</div></div>`:''}</div>`;
   }
   const pokerCards=['♠A','♥A','♣K','♦K','♠Q','♥J','♣10','♦9','♠8','♥7','♣6','♦5','♠4','♥3','♣3','♦2','♠2','♣A','♦A','♥Q'];
-  const seatPoints={3:[[28,510],[40,130],[1170,130]],4:[[28,510],[40,300],[605,78],[1170,300]],6:[[28,510],[40,300],[280,82],[605,78],[945,82],[1170,300]]};
+  const seatPoints={3:[[2.5,78],[3,22],[90,22]],4:[[2.5,78],[3,42],[47,10],[90,42]],6:[[2.5,78],[3,43],[24,11],[47,8],[72,11],[90,43]]};
   function pokerBoard(playing){
     const count=playerCount(),phase=data.pokerPhase||'play',canPlay=playing&&!session.auto&&phase==='play';
     const cards=Array.from({length:count===6?35:count===4?27:data.pokerLord?20:17},(_,i)=>pokerCards[i%pokerCards.length]);
     const phaseActions=phase==='bid'?b('不叫','pokerBid','blue-button','data-value="0"')+[1,2,3].map(n=>b(n+'分','pokerBid','gold-button',`data-value="${n}"`)).join(''):b('不加倍','pokerDouble','blue-button','data-value="0"')+b('加倍','pokerDouble','gold-button','data-value="1"');
-    return `<div class="table-canvas poker-table"><div class="table-glow"></div><div class="board-state"><span>${gameName()} · ${fields[data.field].name}</span><span>${count}人 · ${playing?'本局进行中':'等待准备'}</span></div><div class="poker-emblem">${art(currentProfile().art)}<strong>${gameName()}</strong><small>${FieldCatalogue.groupFor(data.profile).id==='ddz'?'地主 · 农民':count===6?'对门 · 团队对局':count===4?'对家同队':'单局对局'}</small></div>${players().map((name,i)=>`<div class="poker-seat ${i===0?'self':''}" style="left:${seatPoints[count][i][0]}px;top:${seatPoints[count][i][1]}px"><div class="avatar"></div><strong>${name}</strong><small>${i===0?(playing?(session.auto?'托管中':'你的回合'):data.ready?'已准备':'待准备'):playing?`剩余 ${count===6?35:count===4?27:17}张`:'已准备'}</small></div>`).join('')}${playing?`${phase!=='play'?`<div class="poker-phase"><strong>${phase==='bid'?'叫地主':'选择加倍'}</strong><span>${phase==='bid'?'选择本局叫分':'地主已确定 · 加倍后开始出牌'}</span>${session.auto?'':`<div>${phaseActions}</div>`}</div>`:''}<div class="poker-discards ${phase!=='play'?'hidden':''}"><span>${data.pokerDiscard||'♠7'}</span><span>♥7</span></div><div class="poker-hand" style="--card-gap:${(955-90)/(cards.length-1)-90}px">${cards.map((x,i)=>b(`<small>${x[1]}${x.slice(2)}</small><strong>${x[0]}</strong>`,'tile',`playing-card ${/[♥♦]/.test(x)?'red':''} ${data.selectedTile===i?'chosen':''}`,`data-value="${i}" aria-label="选择${x}" ${!canPlay?'disabled':''}`)).join('')}</div>${canPlay?`<div class="poker-actions">${b('不出','pass','blue-button')}${b('提示','hint','blue-button')}${b('出牌','discard','gold-button',data.selectedTile<0?'disabled':'')}</div>`:''}`:'<div class="ready-control">其他玩家已准备</div>'}${playing&&session.auto?`<div class="trust-overlay"><div><h2 class="heading">正在托管</h2><p>原座位与手牌保留</p>${b('取消托管','trust','blue-button small')}</div></div>`:''}</div>`;
+    return `<div class="table-canvas poker-table" data-playing="${playing}"><div class="table-glow"></div><div class="board-state"><span>${gameName()} · ${fields[data.field].name}</span><span>${count}人 · ${playing?'本局进行中':'等待准备'}</span></div>${players().map((name,i)=>`<div class="poker-seat ${i===0?'self':''}" style="left:${seatPoints[count][i][0]}%;top:${seatPoints[count][i][1]}%"><div class="avatar"></div><strong>${name}</strong><small>${i===0?(playing?(session.auto?'托管中':'你的回合'):data.ready?'已准备':'待准备'):playing?`剩余 ${count===6?35:count===4?27:17}张`:'已准备'}</small></div>`).join('')}${playing?`${phase!=='play'?`<div class="poker-phase"><strong>${phase==='bid'?'叫地主':'选择加倍'}</strong><span>${phase==='bid'?'选择本局叫分':'地主已确定 · 加倍后开始出牌'}</span>${session.auto?'':`<div>${phaseActions}</div>`}</div>`:''}<div class="poker-discards ${phase!=='play'?'hidden':''}"><span>${data.pokerDiscard||'♠7'}</span><span>♥7</span></div><div class="poker-hand" style="--card-gap:${(1420-100)/(cards.length-1)-100}px">${cards.map((x,i)=>b(`<small>${x[1]}${x.slice(2)}</small><strong>${x[0]}</strong>`,'tile',`playing-card ${/[♥♦]/.test(x)?'red':''} ${data.selectedTile===i?'chosen':''}`,`data-value="${i}" aria-label="选择${x}" ${!canPlay?'disabled':''}`)).join('')}</div>${canPlay?`<div class="poker-actions">${b('不出','pass','blue-button')}${b('提示','hint','blue-button')}${b('出牌','discard','gold-button',data.selectedTile<0?'disabled':'')}</div>`:''}`:''}${playing&&session.auto?`<div class="trust-overlay"><div><h2 class="heading">正在托管</h2><p>原座位与手牌保留</p>${b('取消托管','trust','blue-button small')}</div></div>`:''}</div>`;
   }
   function coinPlay() {
-    return header('金币场','leaveCoin')+sideTabs(0)+board(true)+aside('本局信息',kv('本局本金',fmt(session.principal),true)+kv('已扣服务费',`${FEE} 金币`,true)+kv('本局状态',data.offline?'离线代打':session.auto?'托管中':'游戏中',true)+`<p class="aside-note">本局进行中不能离桌。<br>结束后结算金币并清房，下局重新选场。</p>`)+footer(b('设置','settings','blue-button')+b(session.auto?'取消托管':'开启托管','trust','gold-button'));
+    return tableHeader()+board(true);
   }
   function coinResult() {
     const r=session.result; if(!r) return emptyPage('本局结果','暂无结算结果','完成一局后在这里查看金币明细。','coin');
@@ -260,7 +276,7 @@
     return header('候场分桌','eventCenter')+panel(e().name,steps(2)+`<div class="central-state">${t().error?`<h2 class="heading">牌桌连接未完成</h2><p class="subcopy">分桌已经生效，重试将返回第${t().round}轮原桌。</p>${b('重试原桌','retryTable','gold-button')}`:published?`<h2 class="heading">第${t().round}轮分桌已发布</h2><table class="assign-table"><thead><tr><th>桌号</th><th>本人座位</th><th>同桌玩家</th></tr></thead><tbody><tr><td>${t().round+1}号桌</td><td>东</td><td>茶山客 / 清风 / 听雨</td></tr></tbody></table><p class="subcopy">3 秒后自动进入牌桌</p>`:`<div class="spinner" aria-label="分桌中"><i></i><i></i><i></i><i></i></div><h2 class="heading">检录完成，等待赛事分桌</h2><p class="subcopy">已检录 ${data.event===2?[64,16,4][t().stage]:e().count} / ${data.event===2?[64,16,4][t().stage]:e().count} 人<br>分桌尚未发布，请稍候。</p><div class="progress-track"><span style="width:100%"></span></div>`}</div>`)+footer(b('赛程详情','eventSchedule','blue-button'),'tournament');
   }
   function eventTable() {
-    return header('赛事牌桌','eventLeave')+`<nav class="side-tabs">${b('赛程','eventSchedule','active')}${b('成绩','eventScore','')}${b('规则','eventRules','')}</nav>`+board(true,true)+aside(e().name,kv('阶段',data.event===2?['资格赛','十六强','决赛'][t().stage]:'瑞士制',true)+kv('轮次',`${t().round} / ${eventRounds()}`,true)+kv('本轮小局',`${t().hand} / 4`,true)+kv('累计桌积分',fmt(t().points),true)+(data.event===2?kv('报名赛事券',`${t().ticketUsed?'本场已扣1张':'待锁名单'} · 剩余${data.ticket}张`,true):'')+`<p class="aside-note">${data.event===2?'后续轮次及晋级不重复扣券。<br>':''}本轮四小局结束后汇总桌积分。赛事结束后确认总排名。</p>`)+footer(b('设置','settings','blue-button')+b(t().auto?'取消托管':'开启托管','eventTrust','gold-button'),'tournament');
+    return tableHeader(true)+board(true,true);
   }
   function eventSmallResult() {
     return header('小局结果','eventTable')+panel(`${e().name} · 第${t().round}轮 第${t().hand}小局`,`<h2 class="heading sm">本小局 + 18 分</h2><table class="result-table"><thead><tr><th>玩家</th><th>本局原始分</th><th>本轮累计</th></tr></thead><tbody>${[['Pain',18],['茶山客',-4],['清风',-6],['听雨',-8]].map(([n,s],i)=>`<tr class="${i===0?'me':''}"><td>${n}</td><td>${signed(s)}</td><td>${signed(s*t().hand)}</td></tr>`).join('')}</tbody></table><p class="subcopy">10 秒后继续下一小局。</p>`)+footer(b('成绩明细','eventScore','blue-button'),'tournament');
@@ -318,7 +334,7 @@
     const cards=screen==='coinLobby'?root.querySelectorAll('.field-card'):screen==='eventCenter'?root.querySelectorAll('.event-card'):[];
     const contents=cards.length?cards:root.querySelectorAll(':scope > :not(header):not(footer):not(nav):not(.flow-status):not(.aside-panel)');
     [...contents].forEach((node,index)=>node.animate?.([
-      {opacity:0.25,transform:'translateY(12px)'},{opacity:1,transform:'translateY(0)'}
+      {opacity:0.25,translate:'0 12px'},{opacity:1,translate:'0 0'}
     ],{duration:200,delay:cards.length?index*28:0,easing:'cubic-bezier(.2,.7,.2,1)',fill:'backwards'}));
   }
   function render() {
@@ -327,7 +343,7 @@
     const windowed=!primaryScreens.has(screen);
     const base=windowed?sheetBase():screen;
     if(windowed&&!sheet.open)focusBeforeSheet=document.activeElement;
-    stage.className=`stage ${base==='home'?'lobby-'+FieldLobby.get(data.lobbyStyle).id:'soft'} ${base==='coinLobby'?'coin-select':''}`;
+    stage.className=`stage ${['coinReady','coinPlay','eventTable'].includes(base)?'gameplay':base==='home'?'lobby-'+FieldLobby.get(data.lobbyStyle).id:'soft'} ${base==='coinLobby'?'coin-select':''}`;
     const chooser=$('#lobby-chooser');
     if(chooser){chooser.hidden=screen!=='home';chooser.innerHTML=screen==='home'?FieldLobby.chooser(data.lobbyStyle,b):'';}
     $('#viewport').classList.toggle('with-lobby-chooser',screen==='home');
@@ -584,6 +600,7 @@
       case 'eventSchedule':return showModal('赛事进度',`<div class="modal-kv"><span>当前赛事</span><b>${e().name}</b></div><div class="modal-kv"><span>轮次 / 小局</span><b>第${t().round}轮 · ${t().hand} / 4</b></div><p class="modal-copy">每轮4小局。尚未完成本轮则继续原桌；完成后等待全部桌，再发布下一轮。</p>`);
       case 'eventScore':return showModal('成绩明细',`<div class="modal-kv"><span>当前累计桌积分</span><b>${t().points.toFixed(2)}</b></div><p class="modal-copy">每轮成绩及正式同分判定按赛事规则展示。临时赛果可在有效复核窗口申诉；</p>`,b('查看申诉说明','appeal','blue-button'));
       case 'appeal':return showModal('申诉说明',`<p class="modal-copy">赛果发布后24小时内说明对应轮次、牌局及原因，提交后等待复核。未结案件继续复核，已正式确认的结果以最新决定为准。</p>`);
+      case 'tableMenu':return tableMenu();
       case 'myEvents':return go('myEvents');case 'season':return go('season');case 'rewards':return go('rewards');
       case 'settings':return showModal('牌桌设置',`${[['sound','音效'],['music','背景音乐']].map(([key,label])=>`<div class="setting-row"><span>${label}</span>${b(data.settings[key]?'开启':'关闭','toggleSetting','switch',`data-value="${key}" aria-pressed="${data.settings[key]}"`)}</div>`).join('')}<p class="modal-copy">音效与背景音乐可分别开关，设置自动保存。</p>`);
       case 'toggleSetting':if(!['sound','music'].includes(value))return;data.settings[value]=!data.settings[value];return dispatch('settings');

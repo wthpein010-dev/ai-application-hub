@@ -142,8 +142,37 @@ function boot(options = {}) {
     }
     now = end;
   }
-  return {click,clickText,clickAny,input,tick,state,now:() => now,storage:() => Object.fromEntries(store),storageWrites:()=>storageWrites,receive:raw=>events.get('storage')?.({key:[...store.keys()].find(x=>x.startsWith('maluer-fields-')),newValue:JSON.stringify(raw)}),html:() => nodes.sheet.open ? nodes['sheet-body'].innerHTML : nodes.stage.innerHTML,underlay:() => nodes.stage.innerHTML,sheetOpen:() => nodes.sheet.open,sheetSize:() => [nodes.sheet.style.width,nodes.sheet.style.height],modalSize:() => [nodes.modal.style.width,nodes.modal.style.height],emit:(id,kind,event) => nodes[id].emit(kind,event),modal:() => nodes.modal.open ? nodes['modal-body'].innerHTML : '',key:() => [...store.keys()].find(x => x.startsWith('maluer-fields-'))};
+  return {click,clickText,clickAny,input,tick,state,now:() => now,storage:() => Object.fromEntries(store),storageWrites:()=>storageWrites,receive:raw=>events.get('storage')?.({key:[...store.keys()].find(x=>x.startsWith('maluer-fields-')),newValue:JSON.stringify(raw)}),html:() => nodes.sheet.open ? nodes['sheet-body'].innerHTML : nodes.stage.innerHTML,underlay:() => nodes.stage.innerHTML,stageClass:() => nodes.stage.className,sheetOpen:() => nodes.sheet.open,sheetSize:() => [nodes.sheet.style.width,nodes.sheet.style.height],modalSize:() => [nodes.modal.style.width,nodes.modal.style.height],emit:(id,kind,event) => nodes[id].emit(kind,event),modal:() => nodes.modal.open ? nodes['modal-body'].innerHTML : '',key:() => [...store.keys()].find(x => x.startsWith('maluer-fields-'))};
 }
+
+test('准备桌以完整桌面和中央准备操作呈现，发牌前不显示牌墙或手牌',()=>{
+  const app=boot();matchToReady(app);
+  assert.match(app.stageClass(),/gameplay/);assert.match(app.html(),/table-ready-stage/);
+  assert.doesNotMatch(app.html(),/aside-panel|本局信息|class="tilebacks|class="hand"|class="footerbar"/);
+  assert.match(plain(app.html()),/底分 200/);assert.match(plain(app.html()),/成功发牌扣/);
+  app.click('deal');assert.equal(app.state().session.status,'seated');
+  assert.match(plain(app.html()),/全员已准备/);app.tick(3000);
+  assert.equal(app.state().session.status,'playing');assert.match(app.html(),/class="hand"/);
+});
+
+test('对局工具按需从牌桌菜单打开，配套页保持新的牌桌背景和原本金',()=>{
+  const app=boot();matchToReady(app);app.click('deal');app.tick(3000);
+  assert.doesNotMatch(app.html(),/aside-panel|side-tabs|本局信息/);
+  const principal=app.state().session.principal;
+  app.click('tableMenu');assert.match(plain(app.modal()),/牌桌菜单/);app.click('help');
+  assert.equal(app.state().data.screen,'detailsHelp');assert.match(app.stageClass(),/gameplay/);
+  assert.match(app.underlay(),/table-topbar/);assert.equal(app.state().session.principal,principal);
+  app.click('back');app.click('trust');assert.equal(app.state().session.auto,true);
+  assert.match(app.html(),/trust-overlay/);
+});
+
+test('赛事桌沿用同一桌面，轮末弹板背景不可操作手牌且不恢复侧栏',()=>{
+  const app=boot();enterFirstEvent(app);assert.match(app.stageClass(),/gameplay/);
+  assert.doesNotMatch(app.html(),/aside-panel|side-tabs/);assert.match(plain(app.html()),/第1轮/);
+  app.tick(30000);assert.equal(app.state().data.tournament.status,'smallResult');
+  assert.match(app.stageClass(),/gameplay/);assert.doesNotMatch(app.underlay(),/aside-panel/);
+  assert.match(app.underlay(),/aria-label="选择一万第1张"[^>]*disabled/);
+});
 
 test('直接开始匹配：选场已明示扣费与离桌限制，点击后不再确认',()=>{
   const app=boot();app.click('coin');
@@ -402,7 +431,7 @@ test('accessory windows have no synthetic return-flow button and close to the ac
   app.click('supply');
   assert.doesNotMatch(plain(app.html()),/返回(?:原|当前)?流程/);
   app.tick(8000);app.emit('sheet','cancel',{preventDefault(){}});
-  app.click('deal');app.tick(3100);app.click('history');
+  app.click('deal');app.tick(3100);app.click('tableMenu');app.click('history');
   assert.doesNotMatch(plain(app.html()),/返回(?:原|当前)?流程/);
   app.emit('sheet','cancel',{preventDefault(){}});
   assert.equal(app.state().data.screen,'coinPlay');
@@ -553,7 +582,7 @@ test('reload preserves the original next-hand deadline instead of restarting ten
 test('help and shop return to the original active table while another live entry remains blocked', () => {
   const app = boot(); matchToReady(app); app.click('deal'); app.click('advance');
   const started = app.state().session.started, principal = app.state().session.principal, coins = app.state().session.coins;
-  app.click('help');
+  app.click('tableMenu');app.click('help');
   if (app.modal()) app.click('closeModal'); else app.click('back');
   assert.equal(app.state().data.screen,'coinPlay');
   app.click('supply');
@@ -696,7 +725,7 @@ test('a weekend advancement does not charge its ticket again in the next stage',
 });
 
 test('personal ready timeout keeps the open help page and returns to a fresh lobby without extending the old room', () => {
-  const app=boot();matchToReady(app);app.tick(59000);app.click('help');app.input('helpDraft.reason','准备过程中查看帮助');app.tick(1000);
+  const app=boot();matchToReady(app);app.tick(59000);app.click('tableMenu');app.click('help');app.input('helpDraft.reason','准备过程中查看帮助');app.tick(1000);
   assert.equal(app.state().session.status,'idle');
   assert.equal(app.state().session.reserved,0);
   assert.equal(app.state().session.coins,128600);
