@@ -17,7 +17,7 @@ jobs:
           node-version: '24'
       - name: Check project scripts and complete project tests
         run: |
-          for script in app.js state.js navigation.js support.js details.js catalogue.js; do
+          for script in app.js state.js navigation.js support.js details.js catalogue.js lobby.js; do
             node --check "projects/mahjong-fields-ui/demo/$script"
           done
           node --test tests/mahjong-fields-ui-publication.test.mjs

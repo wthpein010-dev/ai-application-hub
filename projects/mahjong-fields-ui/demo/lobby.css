@@ -1,0 +1,24 @@
+/* 网页对比工具在游戏框外；局内及二级页沿原尺寸。 */
+#lobby-chooser[hidden]{display:none}
+.viewport.with-lobby-chooser{flex-direction:column;gap:16px;padding:18px 0;min-height:100dvh}
+.with-lobby-chooser>.frame{width:min(100vw,calc((100dvh - 142px) * 16 / 9));flex-shrink:0}
+.lobby-chooser{display:flex;align-items:center;gap:18px;width:min(1520px,calc(100% - 32px));color:#d5e7f9;font-family:var(--body)}
+.lobby-choice-label{flex:none;display:flex;flex-direction:column;gap:6px}
+.lobby-choice-label strong{color:#f4d791;font-size:17px}
+.lobby-choice-label span{font-size:11px;color:#8faac4}
+.lobby-options{display:flex;gap:8px;flex:1;min-width:0;overflow-x:auto;padding:4px;scrollbar-width:thin}
+.lobby-choice{display:flex;align-items:center;gap:10px;flex:1;min-width:190px;text-align:left;min-height:70px;border:1px solid #48647d;border-radius:12px;padding:10px 12px;background:#172d43;color:#b9cee0}
+.lobby-choice span{display:flex;flex-direction:column;gap:5px}
+.lobby-choice strong{font-size:13px;font-weight:600;white-space:nowrap}
+.lobby-choice small{font-size:10px;white-space:nowrap;color:#92aec5}
+.lobby-choice[aria-pressed=true]{border-color:#e8c474;background:#2b3c4a;box-shadow:inset 0 0 0 1px #e8c474;color:#ffe4a8}
+.lobby-choice:focus-visible{outline:2px solid #ffe4a8;outline-offset:2px}
+.layout-icon{width:38px;height:31px;flex:none;display:grid;grid-template-columns:1fr 1fr;grid-template-rows:1fr 1fr;gap:3px}
+.layout-icon em{background:#75afd0;border-radius:3px}
+.icon-jade{grid-template-rows:3fr 1fr}.icon-jade em{background:#8ac8b2}
+.icon-wood{grid-template-columns:3fr 2fr;grid-template-rows:1fr 1fr 1fr}.icon-wood em{background:#d0a06b}.icon-wood em:first-child{grid-row:span 2}.icon-wood em:last-child{grid-column:span 2}
+.icon-ink{grid-template-columns:repeat(4,1fr);grid-template-rows:1fr}.icon-ink em{background:#c5d5ca}
+.icon-night{grid-template-columns:2fr 1fr 1fr}.icon-night em{background:#c3ab70}.icon-night em:first-child{grid-row:span 2}.icon-night em:nth-child(2){grid-column:span 2}
+.stage.lobby-wood .home-balance{background:#553b2a}.stage.lobby-ink .home-balance{background:#3a5b65}.stage.lobby-jade .home-balance{background:#205c61}.stage.lobby-night .home-balance{background:#172b51}
+@media(max-width:850px){.lobby-chooser{display:block;width:calc(100% - 20px)}.lobby-choice-label{flex-direction:row;align-items:center;gap:10px;margin:0 4px 6px}.lobby-choice-label strong{font-size:14px}.lobby-options{gap:6px}.lobby-choice{min-width:174px;min-height:62px;padding:8px}.with-lobby-chooser>.frame{width:min(100vw,calc((100dvh - 155px) * 16 / 9))}.viewport.with-lobby-chooser{gap:8px;padding:10px 0}}
+@media(prefers-reduced-motion:reduce){.lobby-choice{transition:none}}

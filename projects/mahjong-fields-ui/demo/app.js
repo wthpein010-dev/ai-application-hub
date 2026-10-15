@@ -19,7 +19,7 @@
   ];
   function dayKey(stamp=Date.now()){return new Date(stamp+8*3600000).toISOString().slice(0,10);}
   const freshTournament = () => ({ status:'none', round:1, hand:1, stage:0, checked:false, awarded:false, ticketUsed:false, noviceEntryUsed:false, error:false, auto:false, points:0, roundRecords:[] });
-  const defaults = () => ({ screen:'home', field:2, game:0, profile:'', region:'郑州', detailTab:0, coinTab:0, ready:false,
+  const defaults = () => ({ screen:'home', lobbyStyle:'classic', field:2, game:0, profile:'', region:'郑州', detailTab:0, coinTab:0, ready:false,
     matchCount:1, selectedTile:-1, discard:'二万', history:[], event:0, filter:0,
     tournament:freshTournament(), previewEvent:0, eventArchives:[], noviceEntryDays:[], navStack:[], settings:{sound:true,music:false}, favourites:[], reminders:[], myEventsTab:0,
     lossDemo:false, offline:false, ticket:1, pauseAuto:false });
@@ -27,6 +27,7 @@
   function restoreSaved(saved) {
     const candidate={...defaults(),...saved.data}, restored=FieldCore.Session.restore(JSON.stringify(saved.session));
     candidate.profile=saved.data.profile ?? (candidate.game===1?'red':candidate.game===2?'pdk':'');
+    candidate.lobbyStyle=FieldLobby.get(candidate.lobbyStyle).id;
     FieldNavigation.validate(candidate,restored.status);
     if(!Number.isInteger(candidate.event)||candidate.event<0||candidate.event>=events.length)throw Error('赛事记录无效');
     candidate.previewEvent=Number.isInteger(candidate.previewEvent)&&events[candidate.previewEvent]?candidate.previewEvent:candidate.event;
@@ -167,13 +168,8 @@
   function activeCoinScreen() { return session.status==='playing'?'coinPlay':session.status==='seated'?'coinReady':session.status==='matching'?'coinMatch':'coinLobby'; }
   function home() {
     const floor=FieldCatalogue.fieldsFor(data.profile)[0].min;
-    return `<img class="home-photo" src="assets/home-hub.webp" width="1671" height="941" fetchpriority="high" decoding="async" alt="麻溜儿大厅排版：金币场与比赛场大卡，茶馆与亲友房次排，底部工具成组">${b(`<span id="home-floor" class="home-entry-floor"><i class="gold-coin" aria-hidden="true"></i>${fmt(floor)} 金币起</span>`,'coin','home-hit home-mode-hit','style="left:654px;top:206px;width:594px;height:327px" aria-label="进入金币场" aria-describedby="home-floor"')}${b('','tournament','home-hit home-mode-hit','style="left:1274px;top:206px;width:602px;height:326px" aria-label="进入比赛场"')}
-      <div class="home-region">${regionPicker()}</div>
-      ${b(fmt(session.coins),'supply','home-balance coins',`aria-label="金币余额${session.coins}，查看补给"`)}${b('433','wallet','home-balance cards','aria-label="房卡余额433"')}${b('0','wallet','home-balance diamonds','aria-label="钻石余额0"')}
-      <nav class="home-tools" aria-label="大厅常用功能">${[
-        ['进入商城','shop',735,168],['查看活动','activity',978,172],['查看战绩','history',1221,170],['帮助反馈','help',1456,180],['设置','settings',1690,168]
-      ].map(([label,action,left,width])=>b('',action,'home-hit',`style="left:${left}px;top:903px;width:${width}px;height:162px" aria-label="${label}"`)).join('')}</nav>
-      ${session.status!=='idle'?`<button type="button" onclick="FieldUI.handle(event)" class="resume-banner home-resume" data-action="resumeCoin">${session.status==='playing'?'返回牌桌':'查看匹配'} ›</button>`:''}`;
+    return FieldLobby.home({id:data.lobbyStyle,coins:session.coins,floor,region:regionPicker(),b,fmt,
+      resume:session.status!=='idle'?`<button type="button" onclick="FieldUI.handle(event)" class="resume-banner home-resume" data-action="resumeCoin">${session.status==='playing'?'返回牌桌':'查看匹配'} ›</button>`:''});
   }
   function coinLobby() {
     ensureCoinSelection();
@@ -321,7 +317,10 @@
     const windowed=!primaryScreens.has(screen);
     const base=windowed?sheetBase():screen;
     if(windowed&&!sheet.open)focusBeforeSheet=document.activeElement;
-    stage.className=`stage ${base==='home'?'':'soft'} ${base==='coinLobby'?'coin-select':''}`;
+    stage.className=`stage ${base==='home'?'lobby-'+FieldLobby.get(data.lobbyStyle).id:'soft'} ${base==='coinLobby'?'coin-select':''}`;
+    const chooser=$('#lobby-chooser');
+    if(chooser){chooser.hidden=screen!=='home';chooser.innerHTML=screen==='home'?FieldLobby.chooser(data.lobbyStyle,b):'';}
+    $('#viewport').classList.toggle('with-lobby-chooser',screen==='home');
     stage.innerHTML=pages[base]();
     if(windowed){
       const changed=sheetBody.dataset.screen!==screen;
@@ -360,6 +359,7 @@
       dialog.style.left=`${r.left+(r.width-width*scale)/2}px`;
       dialog.style.top=`${r.top+(r.height-Math.min(height,900)*scale)/2}px`;
     }
+    if(data.screen==='home')$('#lobby-chooser')?.querySelector('[aria-pressed="true"]')?.scrollIntoView?.({block:'nearest',inline:'nearest'});
   }
   new ResizeObserver(resize).observe($('#frame'));
   function startCoin() {
@@ -496,6 +496,11 @@
     render();
   }
   function dispatch(action,value) {
+    if(action==='lobbyStyle'){
+      if(data.screen!=='home'||!FieldLobby.layouts.some(l=>l.id===value))return;
+      data.lobbyStyle=value;render();
+      $('#lobby-chooser')?.querySelector(`[data-value="${value}"]`)?.focus();return;
+    }
     if(action.startsWith('support:'))return support.dispatch(action,value);
     if(action.startsWith('details:'))return details.dispatch(action,value);
     const aliases={history:'details:history',rules:'details:rules',help:'details:help',eventRules:'details:eventRules',eventSchedule:'details:schedule',eventScore:'details:score',appeal:'details:appeal',coinInfo:'details:coinInfo',supply:'support:supply',activity:'support:activities',shop:'support:shop'};

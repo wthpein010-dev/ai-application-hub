@@ -59,7 +59,7 @@ function boot(options = {}) {
     return list.filter(x => (!action || x.dataset.action === action) && (!cls || x.classList.contains(cls)));
   }
   const selectButton = (list, selector) => selectButtons(list, selector)[0] || null;
-  const nodes = Object.fromEntries(['stage','modal','modal-body','sheet','sheet-body','frame','advance','screen-label','flow-hint','toast','viewport'].map(id => [id, node(id)]));
+  const nodes = Object.fromEntries(['stage','modal','modal-body','sheet','sheet-body','frame','advance','screen-label','flow-hint','toast','viewport','lobby-chooser'].map(id => [id, node(id)]));
   const staticButtons = buttons(html.slice(html.indexOf('<body>'), html.indexOf('<main')));
   const modalClose = buttons(html.slice(html.indexOf('<dialog'), html.indexOf('<div id="modal-body"')))[0];
   nodes.modal.querySelector = selector => selector.includes('modal-close') ? modalClose : selectButton(buttons(nodes['modal-body'].innerHTML), selector);
@@ -95,7 +95,7 @@ function boot(options = {}) {
     assert.ok(key, 'the real app should save its current state');
     return JSON.parse(store.get(key));
   }
-  function visibleButtons() { return [...(nodes.modal.open ? [...buttons(nodes['modal-body'].innerHTML), modalClose] : buttons(nodes.sheet.open ? nodes['sheet-body'].innerHTML : nodes.stage.innerHTML)), ...staticButtons]; }
+  function visibleButtons() { return [...(nodes.modal.open ? [...buttons(nodes['modal-body'].innerHTML), modalClose] : buttons(nodes.sheet.open ? nodes['sheet-body'].innerHTML : nodes.stage.innerHTML)), ...(!nodes['lobby-chooser'].hidden?buttons(nodes['lobby-chooser'].innerHTML):[]), ...staticButtons]; }
   let testNavigation=false;
   function click(action, value) {
     if(action==='tools')return;
@@ -144,6 +144,21 @@ function boot(options = {}) {
   }
   return {click,clickText,clickAny,input,tick,state,now:() => now,storage:() => Object.fromEntries(store),storageWrites:()=>storageWrites,receive:raw=>events.get('storage')?.({key:[...store.keys()].find(x=>x.startsWith('maluer-fields-')),newValue:JSON.stringify(raw)}),html:() => nodes.sheet.open ? nodes['sheet-body'].innerHTML : nodes.stage.innerHTML,underlay:() => nodes.stage.innerHTML,sheetOpen:() => nodes.sheet.open,sheetSize:() => [nodes.sheet.style.width,nodes.sheet.style.height],emit:(id,kind,event) => nodes[id].emit(kind,event),modal:() => nodes.modal.open ? nodes['modal-body'].innerHTML : '',key:() => [...store.keys()].find(x => x.startsWith('maluer-fields-'))};
 }
+
+test('大厅五方案保存选择并共用实际入口，切换不动账户与玩法；失效风格只恢复默认外观',()=>{
+  let app=boot();const original=app.state();
+  for(const id of ['jade','wood','ink','night','classic']){
+    app.click('lobbyStyle',id);assert.equal(app.state().data.lobbyStyle,id);
+    assert.deepEqual(app.state().session,original.session);
+    assert.equal(app.state().data.region,original.data.region);
+    app=boot({storage:app.storage()});assert.equal(app.state().data.lobbyStyle,id);
+    app.click('coin');assert.equal(app.state().data.screen,'coinLobby');
+    app.click('home');app.click('tournament');assert.equal(app.state().data.screen,'eventCenter');app.click('home');
+  }
+  const saved=app.state();saved.data.lobbyStyle='<invalid>';saved.session.coins=7654;
+  app=boot({storage:{[app.key()]:JSON.stringify(saved)}});
+  assert.equal(app.state().data.lobbyStyle,'classic');assert.equal(app.state().session.coins,7654);
+});
 
 test('金币选场使用顶部横向玩法，当前场档角标与快速开始副标题同步',()=>{
   let app=boot();app.click('coin');
