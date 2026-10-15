@@ -145,9 +145,9 @@ function boot(options = {}) {
   return {click,clickText,clickAny,input,tick,state,now:() => now,storage:() => Object.fromEntries(store),storageWrites:()=>storageWrites,receive:raw=>events.get('storage')?.({key:[...store.keys()].find(x=>x.startsWith('maluer-fields-')),newValue:JSON.stringify(raw)}),html:() => nodes.sheet.open ? nodes['sheet-body'].innerHTML : nodes.stage.innerHTML,underlay:() => nodes.stage.innerHTML,sheetOpen:() => nodes.sheet.open,sheetSize:() => [nodes.sheet.style.width,nodes.sheet.style.height],emit:(id,kind,event) => nodes[id].emit(kind,event),modal:() => nodes.modal.open ? nodes['modal-body'].innerHTML : '',key:() => [...store.keys()].find(x => x.startsWith('maluer-fields-'))};
 }
 
-test('大厅五方案保存选择并共用实际入口，切换不动账户与玩法；失效风格只恢复默认外观',()=>{
+test('大厅十方案保存选择并共用实际入口，切换不动账户与玩法；失效风格只恢复默认外观',()=>{
   let app=boot();const original=app.state();
-  for(const id of ['jade','wood','ink','night','classic']){
+  for(const id of ['jade','wood','ink','night','corner','rail','festival','poster','shelf','classic']){
     app.click('lobbyStyle',id);assert.equal(app.state().data.lobbyStyle,id);
     assert.deepEqual(app.state().session,original.session);
     assert.equal(app.state().data.region,original.data.region);
@@ -158,6 +158,15 @@ test('大厅五方案保存选择并共用实际入口，切换不动账户与�
   const saved=app.state();saved.data.lobbyStyle='<invalid>';saved.session.coins=7654;
   app=boot({storage:{[app.key()]:JSON.stringify(saved)}});
   assert.equal(app.state().data.lobbyStyle,'classic');assert.equal(app.state().session.coins,7654);
+});
+
+test('新增大厅活动位打开实际四活动与总入口，关闭回原方案且不自动领金币',()=>{
+  const app=boot();const coins=app.state().session.coins;
+  for(const [style,action,screen] of [['corner','activity','supportActivity'],['rail','support:teaPage','supportTea'],['festival','support:flipPage','supportFlip'],['poster','support:signinPage','supportSignin'],['shelf','support:returnPage','supportReturn']]){
+    app.click('lobbyStyle',style);app.click(action);assert.equal(app.state().data.screen,screen);
+    assert.deepEqual(app.sheetSize(),['1280px','860px']);assert.equal(app.state().session.coins,coins);
+    app.click('back');assert.equal(app.state().data.screen,'home');assert.equal(app.state().data.lobbyStyle,style);
+  }
 });
 
 test('金币选场使用顶部横向玩法，当前场档角标与快速开始副标题同步',()=>{
