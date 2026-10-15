@@ -1,0 +1,311 @@
+/* Flow layouts extend the shared blue/gold materials and native game windows. */
+
+/* Matching stays in the courtyard scene, with the player line as the focal point. */
+.stage[data-screen="coinMatch"] .queue-scene {
+  left: 280px;
+  right: 280px;
+  top: 226px;
+  bottom: 294px;
+  display: flex;
+  flex-direction: column;
+  padding: 24px 36px 20px;
+  border: 1px solid color-mix(in srgb, var(--surface) 58%, transparent);
+  border-radius: 32px;
+  background: linear-gradient(145deg, color-mix(in srgb, var(--primary) 88%, transparent), color-mix(in srgb, var(--text) 86%, transparent));
+  box-shadow: inset 0 0 0 5px color-mix(in srgb, var(--surface) 7%, transparent), 0 18px 44px color-mix(in srgb, var(--text) 28%, transparent);
+  color: var(--surface);
+}
+.stage[data-screen="coinMatch"] .queue-heading > span {
+  margin: 0 0 8px;
+  color: var(--gold);
+  font: 700 58px/1.15 var(--display);
+  text-shadow: 0 2px 3px var(--text);
+}
+.stage[data-screen="coinMatch"] .queue-heading strong { font-size: 31px; font-weight: 500; }
+.stage[data-screen="coinMatch"] .queue-heading p { margin: 15px 0 0; font-size: 29px; font-variant-numeric: tabular-nums; }
+.stage[data-screen="coinMatch"] .queue-seats { flex: 1; align-items: center; gap: 78px; margin: 18px 0 22px; }
+.stage[data-screen="coinMatch"] .queue-person { min-width: 158px; gap: 10px; }
+.stage[data-screen="coinMatch"] .queue-person .avatar {
+  width: 132px;
+  height: 132px;
+  border: 4px solid var(--gold);
+  box-shadow: 0 0 0 5px color-mix(in srgb, var(--gold) 18%, transparent), 0 8px 18px color-mix(in srgb, var(--text) 42%, transparent);
+}
+.stage[data-screen="coinMatch"] .queue-person:first-child .avatar { background-image: url('assets/coin-match.webp'); background-size: 1480px 832px; background-position: -385px -279px; }
+.stage[data-screen="coinMatch"] .queue-person:not(:first-child):not(.waiting) .avatar { background-image: url('assets/coin-ready.webp'); background-size: 2902px 1632px; background-position: -636px -570px; }
+.stage[data-screen="coinMatch"] .queue-person strong { font-size: 28px; font-weight: 500; }
+.stage[data-screen="coinMatch"] .queue-person small { font-size: 22px; color: var(--gold); }
+.stage[data-screen="coinMatch"] .queue-person.waiting .avatar {
+  position: relative;
+  overflow: visible;
+  border-color: color-mix(in srgb, var(--gold) 65%, var(--surface));
+  background: color-mix(in srgb, var(--primary) 55%, var(--surface));
+  color: color-mix(in srgb, var(--surface) 85%, transparent);
+  box-shadow: 0 0 0 5px color-mix(in srgb, var(--surface) 8%, transparent);
+  font: 400 58px/1 var(--body);
+}
+.stage[data-screen="coinMatch"] .queue-person.waiting .avatar::after { display: none; }
+.stage[data-screen="coinMatch"] .queue-person.waiting small { color: color-mix(in srgb, var(--surface) 78%, transparent); }
+.stage[data-screen="coinMatch"] .queue-pulse {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding-bottom: 25px;
+  border: 0;
+  border-radius: 50%;
+  font-size: 58px;
+  letter-spacing: 6px;
+  pointer-events: none;
+}
+.stage[data-screen="coinMatch"] .queue-pulse::before {
+  content: "";
+  position: absolute;
+  inset: -11px;
+  border: 2px solid color-mix(in srgb, var(--gold) 64%, transparent);
+  border-radius: 50%;
+  animation: queue-search 2.2s ease-out infinite;
+}
+@keyframes queue-search { 0% { opacity: .8; scale: .94; } 100% { opacity: 0; scale: 1.15; } }
+.stage[data-screen="coinMatch"] .count-6 { gap: 35px; }
+.stage[data-screen="coinMatch"] .count-6 .queue-person { min-width: 156px; }
+.stage[data-screen="coinMatch"] .count-6 .avatar { width: 116px; height: 116px; }
+.stage[data-screen="coinMatch"] .count-6 .queue-person:first-child .avatar { background-size: 1300px 731px; background-position: -338px -245px; }
+.stage[data-screen="coinMatch"] .count-6 .queue-person:not(:first-child):not(.waiting) .avatar { background-size: 2550px 1434px; background-position: -559px -501px; }
+.stage[data-screen="coinMatch"] .count-6 .queue-person strong { font-size: 26px; }
+.stage[data-screen="coinMatch"] .queue-info {
+  flex: none;
+  gap: 24px;
+  padding: 19px 10px 0;
+  border-top: 1px solid color-mix(in srgb, var(--surface) 24%, transparent);
+  text-align: center;
+}
+.stage[data-screen="coinMatch"] .queue-info > div { display: flex; flex-wrap: wrap; justify-content: center; align-items: baseline; gap: 9px 28px; }
+.stage[data-screen="coinMatch"] .queue-info h3 { flex: 0 0 100%; margin: 0 0 3px; color: var(--gold); font-size: 27px; font-weight: 500; }
+.stage[data-screen="coinMatch"] .queue-info p { margin: 0; font-size: 23px; line-height: 1.55; }
+.stage[data-screen="coinMatch"] .footer-actions .gold-button { min-width: 360px; font-size: 38px; }
+.stage[data-screen="coinMatch"] .footer-actions .blue-button { min-width: 250px; font-size: 31px; }
+
+/* Compact settlement fits four current players and six-player legacy records. */
+#sheet .coin-result-panel > .panel-title { padding: 10px 20px; font-size: 28px; }
+#sheet .coin-result-panel > .panel-content { display: flex; flex-direction: column; gap: 10px; padding: 14px 22px; }
+#sheet .coin-result-banner {
+  display: flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  gap: 20px;
+  min-height: 82px;
+  padding: 2px 22px;
+  border: 1px solid color-mix(in srgb, var(--gold) 55%, var(--background));
+  border-radius: 14px;
+  background: linear-gradient(105deg, color-mix(in srgb, var(--gold) 38%, var(--surface)), var(--surface));
+}
+#sheet .coin-result-banner > .rich-art { width: 132px; height: 88px; margin: -6px 0; filter: drop-shadow(0 5px 4px color-mix(in srgb, var(--text) 18%, transparent)); }
+#sheet .coin-result-banner > div { display: flex; align-items: baseline; gap: 23px; }
+#sheet .coin-result-banner > div > small { color: var(--text); font: 700 31px/1.3 var(--display); white-space: nowrap; }
+#sheet .coin-result-value { font: 700 52px/1.15 var(--body); color: var(--danger); font-variant-numeric: tabular-nums; white-space: nowrap; }
+#sheet .coin-result-value > small { font: 400 24px/1.3 var(--body); }
+#sheet .coin-result-value.negative { color: var(--success); }
+#sheet .result-account-line { display: grid; flex: none; grid-template-columns: repeat(3, minmax(0, 1fr)); min-height: 52px; padding: 6px 0; border-radius: 10px; background: var(--background); }
+#sheet .result-account-line > span { display: flex; justify-content: center; align-items: baseline; gap: 14px; padding: 0 10px; }
+#sheet .result-account-line > span + span { border-left: 1px solid color-mix(in srgb, var(--primary) 22%, transparent); }
+#sheet .result-account-line small { font-size: 21px; white-space: nowrap; }
+#sheet .result-account-line strong { font-size: 29px; line-height: 1.35; font-variant-numeric: tabular-nums; }
+#sheet .coin-result-table { flex: none; table-layout: fixed; border-collapse: separate; border-spacing: 0; border: 1px solid color-mix(in srgb, var(--primary) 24%, var(--surface)); }
+#sheet .coin-result-table th { height: 42px; padding: 6px 12px; font-size: 22px; }
+#sheet .coin-result-table th:first-child { width: 31%; text-align: left; padding-left: 22px; }
+#sheet .coin-result-table td { height: 54px; padding: 5px 12px; font-size: 25px; line-height: 1.25; font-variant-numeric: tabular-nums; }
+#sheet .coin-result-table td:first-child { text-align: left; padding-left: 18px; white-space: nowrap; }
+#sheet .coin-result-table tbody tr:last-child td { border-bottom: 0; }
+#sheet .coin-result-table .result-avatar { display: inline-block; width: 38px; height: 38px; margin-right: 13px; vertical-align: middle; border-width: 2px; background-image: url('assets/coin-ready.webp'); background-size: 848px 477px; background-position: -306px -115px; }
+#sheet .coin-result-table tr:not(.me) .result-avatar { background-position: -186px -167px; }
+#sheet .coin-result-panel .result-foot { margin-top: auto; padding: 0; min-height: 42px; font-size: 21px; line-height: 1.4; }
+#sheet .coin-result-panel .result-foot .small { height: 42px; min-width: 150px; font-size: 22px; }
+#sheet .coin-result-panel:has(.coin-result-table tbody tr:nth-child(6)) .coin-result-table td { height: 44px; padding-top: 3px; padding-bottom: 3px; font-size: 23px; }
+
+/* Event identity stays on the left while the current action owns the right. */
+#sheet [data-screen="eventDetail"] .detail-layout { grid-template-columns: 340px minmax(0, 1fr); gap: 20px; padding: 18px; }
+#sheet [data-screen="eventDetail"] .detail-hero { padding: 14px 16px; gap: 3px; }
+#sheet [data-screen="eventDetail"] .detail-hero .event-art { width: 168px; height: 112px; margin: 0 auto; }
+#sheet [data-screen="eventDetail"] .detail-hero .event-name { font-size: 36px; margin: 8px 0; }
+#sheet [data-screen="eventDetail"] .detail-hero > p { margin: 10px 0; font-size: 22px; line-height: 1.55; }
+#sheet [data-screen="eventDetail"] .tournament-prize { display: flex; align-items: baseline; justify-content: center; flex-wrap: nowrap; gap: 8px; min-height: 50px; }
+#sheet [data-screen="eventDetail"] .tournament-prize > small { width: auto; font-size: 18px; }
+#sheet [data-screen="eventDetail"] .tournament-prize > b { font-size: 44px; line-height: 1.1; }
+#sheet [data-screen="eventDetail"] .tournament-prize > span { font-size: 20px; }
+#sheet [data-screen="eventDetail"] .detail-information { gap: 15px; padding: 15px 13px; }
+#sheet [data-screen="eventDetail"] .detail-scroll { margin: 0; padding: 0 12px 0 7px; }
+#sheet [data-screen="eventDetail"] .detail-shortcuts { margin-top: 12px; }
+#sheet [data-screen="eventDetail"] .detail-shortcuts .small { min-width: 118px; height: 46px; font-size: 21px; }
+#sheet .event-status-layout { display: grid; grid-column: 1; grid-row: 2; grid-template-columns: 340px minmax(0, 1fr); gap: 20px; height: 100%; min-height: 0; padding: 18px; }
+#sheet .event-status-layout > * { min-width: 0; min-height: 0; }
+#sheet .event-overview {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  height: 100%;
+  padding: 16px;
+  overflow: auto;
+  scrollbar-gutter: stable;
+  border: 1px solid color-mix(in srgb, var(--primary) 28%, var(--surface));
+  border-radius: 16px;
+  background: radial-gradient(ellipse at 50% 30%, color-mix(in srgb, var(--gold) 26%, var(--surface)), var(--background) 78%);
+  text-align: center;
+}
+#sheet .event-overview > .badge { flex: none; font-size: 19px; padding: 5px 14px; }
+#sheet .event-overview .event-name { margin: 0; color: var(--text); font: 700 36px/1.25 var(--display); }
+#sheet .event-overview > .event-art { flex: none; width: 228px; height: 152px; margin: 0; filter: drop-shadow(0 7px 5px color-mix(in srgb, var(--text) 18%, transparent)); }
+#sheet .event-overview .prize { display: block; margin: 0; }
+#sheet .event-overview .tournament-prize small { font-size: 21px; margin-bottom: 3px; }
+#sheet .event-overview .tournament-prize b { font-size: 51px; }
+#sheet .event-overview .tournament-prize span { font-size: 22px; }
+#sheet .event-overview .tournament-prize .prize-title { font-size: 31px; padding-top: 3px; }
+#sheet .event-overview > p { width: 100%; margin: 0; font-size: 22px; line-height: 1.55; }
+#sheet .event-overview > .event-start-time { padding: 5px 0; color: var(--primary); font-size: 27px; font-weight: 600; font-variant-numeric: tabular-nums; }
+#sheet .event-overview > p:last-of-type { padding: 9px 4px; border-top: 1px solid color-mix(in srgb, var(--primary) 18%, transparent); }
+#sheet .event-overview > .badge:last-child { margin-top: auto; }
+#sheet .event-status-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  height: 100%;
+  padding: 24px 32px;
+  overflow: auto;
+  scrollbar-gutter: stable;
+  border: 1px solid color-mix(in srgb, var(--primary) 22%, var(--surface));
+  border-radius: 16px;
+  background: var(--surface);
+  text-align: center;
+}
+#sheet .event-state-symbol { display: grid; flex: none; place-items: center; width: 84px; height: 84px; border: 3px solid color-mix(in srgb, var(--gold) 70%, var(--background)); border-radius: 50%; background: color-mix(in srgb, var(--gold) 34%, var(--surface)); color: var(--success); font: 700 52px/1 var(--body); }
+#sheet .event-state-symbol:has(.spinner) { width: 110px; background: transparent; border: 0; border-radius: 0; }
+#sheet .event-state-symbol .spinner { height: 38px; margin: 0; gap: 11px; align-items: center; }
+#sheet .event-state-symbol .spinner i { width: 14px; height: 14px; background: var(--primary); }
+#sheet .event-status-card > .spinner { flex: none; height: 84px; align-items: center; gap: 12px; margin: 0; }
+#sheet .event-status-card > .spinner i { width: 15px; height: 15px; background: var(--primary); }
+#sheet .event-status-card .heading { margin: 0; font-size: 40px; line-height: 1.3; }
+#sheet .event-status-card > .subcopy { margin: 0; font-size: 24px; line-height: 1.55; }
+#sheet .event-status-facts { align-self: stretch; display: grid; gap: 0; margin: 4px 0 0; padding: 3px 18px; border: 1px solid color-mix(in srgb, var(--primary) 16%, var(--surface)); border-radius: 12px; background: var(--background); }
+#sheet .event-status-facts > div { display: flex; align-items: baseline; justify-content: space-between; gap: 16px; min-height: 52px; padding: 11px 2px; font-size: 23px; line-height: 1.35; }
+#sheet .event-status-facts > div + div { border-top: 1px solid color-mix(in srgb, var(--primary) 15%, transparent); }
+#sheet .event-status-facts small, #sheet .event-status-facts dt { margin: 0; font-size: 22px; }
+#sheet .event-status-facts strong, #sheet .event-status-facts dd { margin: 0; text-align: right; font-size: 24px; font-weight: 600; font-variant-numeric: tabular-nums; }
+#sheet .event-state-note { align-self: stretch; margin: 0; padding: 12px 16px; border-radius: 10px; background: color-mix(in srgb, var(--gold) 23%, var(--surface)); color: var(--text); font-size: 21px; line-height: 1.55; text-align: left; }
+#sheet .event-status-card > .gold-button { flex: none; min-width: 230px; height: 64px; margin-top: 4px; font-size: 27px; }
+#sheet .assigned-table { display: flex; flex: none; align-items: baseline; justify-content: center; gap: 14px; width: 100%; color: var(--primary); font-size: 26px; }
+#sheet .assigned-table strong { font: 700 70px/1.1 var(--body); font-variant-numeric: tabular-nums; }
+#sheet .assigned-table small { font-size: 24px; }
+#sheet .assigned-players { align-self: stretch; display: grid; flex: none; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; }
+#sheet .assigned-players > span, #sheet .assigned-players > div { display: flex; min-width: 0; flex-direction: column; align-items: center; gap: 7px; padding: 12px 5px; border: 1px solid color-mix(in srgb, var(--primary) 20%, var(--surface)); border-radius: 12px; background: var(--background); font-size: 22px; white-space: nowrap; }
+#sheet .assigned-players .avatar { width: 55px; height: 55px; border-width: 2px; background-image: url('assets/coin-ready.webp'); background-size: 1228px 691px; background-position: -443px -167px; }
+#sheet .assigned-players > :not(:first-child) .avatar { background-position: -269px -241px; }
+
+/* Round results keep the score, every seat and the continuation timer together. */
+#sheet .event-result-panel > .panel-title { padding: 10px 18px; font-size: 28px; }
+#sheet .event-result-panel > .panel-content { display: flex; flex-direction: column; gap: 12px; padding: 16px 22px; }
+#sheet .score-ribbon { display: grid; flex: none; grid-template-columns: repeat(3, minmax(0, 1fr)); padding: 12px 8px; border: 1px solid color-mix(in srgb, var(--primary) 24%, var(--surface)); border-radius: 13px; background: linear-gradient(110deg, var(--background), var(--surface)); }
+#sheet .score-ribbon > div, #sheet .score-ribbon > span { display: flex; flex-direction: column; align-items: center; gap: 5px; padding: 0 10px; }
+#sheet .score-ribbon > * + * { border-left: 1px solid color-mix(in srgb, var(--primary) 19%, transparent); }
+#sheet .score-ribbon small { font-size: 22px; line-height: 1.35; }
+#sheet .score-ribbon strong { color: var(--primary); font: 700 40px/1.15 var(--body); font-variant-numeric: tabular-nums; }
+#sheet .score-ribbon strong.positive { color: var(--danger); }
+#sheet .score-ribbon strong.negative { color: var(--success); }
+#sheet .event-result-panel .result-table { flex: none; border-collapse: separate; border-spacing: 0; border: 1px solid color-mix(in srgb, var(--primary) 24%, var(--surface)); table-layout: fixed; }
+#sheet .event-result-panel .result-table th { height: 44px; padding: 7px 10px; font-size: 22px; }
+#sheet .event-result-panel .result-table td { height: 57px; padding: 7px 10px; font-size: 25px; line-height: 1.35; font-variant-numeric: tabular-nums; }
+#sheet .event-result-panel .result-table tbody tr:last-child td { border-bottom: 0; }
+#sheet .event-result-panel .result-table .avatar { width: 38px; height: 38px; margin-right: 10px; border-width: 2px; background-image: url('assets/coin-ready.webp'); background-size: 848px 477px; background-position: -306px -115px; }
+#sheet .event-result-panel .result-table tr:not(.me) .avatar { background-position: -186px -167px; }
+#sheet .event-result-panel .waiting-message { flex: none; padding: 10px 17px; font-size: 23px; line-height: 1.45; }
+#sheet .event-result-panel > .panel-content > .subcopy { margin: auto 0 0; text-align: center; font-size: 23px; line-height: 1.5; }
+
+/* Supply uses one balance strip and three aligned, existing reward paths. */
+#sheet [data-screen="supportSupply"] .supply-redesign { padding: 2px 10px 10px; }
+#sheet [data-screen="supportSupply"] .supply-target { margin: 0 0 12px; font-size: 25px; line-height: 1.45; }
+#sheet [data-screen="supportSupply"] .supply-metrics { justify-content: center; align-items: center; gap: 0; padding: 10px 26px; margin: 0 0 18px; background: linear-gradient(110deg, color-mix(in srgb, var(--gold) 27%, var(--surface)), var(--background)); border-color: color-mix(in srgb, var(--primary) 23%, var(--surface)); }
+#sheet [data-screen="supportSupply"] .supply-metrics > div { flex: 1; }
+#sheet [data-screen="supportSupply"] .supply-metrics > div + div { border-left: 1px solid color-mix(in srgb, var(--primary) 23%, transparent); }
+#sheet [data-screen="supportSupply"] .supply-metrics small { font-size: 22px; }
+#sheet [data-screen="supportSupply"] .supply-metrics strong { display: flex; align-items: center; justify-content: center; gap: 10px; margin: 2px 0; color: var(--primary); font: 700 43px/1.2 var(--body); font-variant-numeric: tabular-nums; }
+#sheet [data-screen="supportSupply"] .supply-metrics > div:last-child strong { color: var(--danger); }
+#sheet [data-screen="supportSupply"] .supply-metrics i { margin: 0; }
+#sheet [data-screen="supportSupply"] .refill-grid { gap: 20px; align-items: stretch; }
+#sheet [data-screen="supportSupply"] .refill-grid article { display: grid; grid-template-rows: 100px 36px 43px minmax(62px, 1fr) 58px; gap: 5px; min-width: 0; min-height: 348px; padding: 14px 18px 18px; border: 1px solid color-mix(in srgb, var(--primary) 28%, var(--surface)); border-radius: 18px; background: linear-gradient(155deg, var(--surface), var(--background)); box-shadow: inset 0 0 0 3px color-mix(in srgb, var(--surface) 72%, transparent), 0 5px 0 color-mix(in srgb, var(--primary) 12%, transparent); }
+#sheet [data-screen="supportSupply"] .refill-grid article:nth-child(2) { border-color: color-mix(in srgb, var(--gold) 74%, var(--primary)); background: linear-gradient(155deg, color-mix(in srgb, var(--gold) 21%, var(--surface)), var(--surface)); }
+#sheet [data-screen="supportSupply"] .refill-grid :is(.game-art, .rich-art, .refill-gift) { justify-self: center; align-self: center; width: 168px; height: 112px; margin: -6px 0; filter: drop-shadow(0 7px 4px color-mix(in srgb, var(--text) 17%, transparent)); }
+#sheet [data-screen="supportSupply"] .refill-grid h2 { align-self: center; margin: 0; font: 700 30px/1.2 var(--display); }
+#sheet [data-screen="supportSupply"] .refill-grid strong { align-self: center; font: 700 32px/1.3 var(--body); font-variant-numeric: tabular-nums; }
+#sheet [data-screen="supportSupply"] .refill-grid strong small { font-size: 20px; font-weight: 400; }
+#sheet [data-screen="supportSupply"] .refill-grid p { align-self: center; margin: 0; font-size: 21px; line-height: 1.45; }
+#sheet [data-screen="supportSupply"] .refill-grid button { width: 100%; min-width: 0; height: 58px; padding: 0 10px; border-radius: 12px; font-size: 25px; }
+#sheet [data-screen="supportSupply"] .refill-status { margin: 14px 0 0; font-size: 21px; line-height: 1.5; }
+#sheet [data-screen="supportSupply"] .footer-actions .supply-shop-link { height: 52px; min-width: 0; margin-right: auto; padding: 8px 10px; border: 0; border-radius: 8px; background: transparent; box-shadow: none; color: var(--primary); font-size: 24px; text-decoration: underline; text-underline-offset: 5px; }
+
+/* The existing event cards keep one consistent action at their bottom edge. */
+.stage[data-screen="eventCenter"] .competition-content { top: 166px; bottom: 180px; }
+.stage[data-screen="eventCenter"] .competition-filters { min-height: 82px; margin-bottom: 22px; padding: 12px 20px; }
+.stage[data-screen="eventCenter"] .competition-filters button { padding: 10px 22px; font-size: 27px; }
+.stage[data-screen="eventCenter"] .event-grid { height: 622px; gap: 25px; align-items: stretch; }
+.stage[data-screen="eventCenter"] .event-card { display: grid; grid-template-rows: 30px 54px 160px 94px minmax(0, 1fr) 72px; gap: 0; align-items: center; height: 622px; min-width: 0; padding: 18px 23px 20px; border: 2px solid color-mix(in srgb, var(--gold) 80%, var(--surface)); border-radius: 25px; background: linear-gradient(155deg, var(--surface) 20%, var(--background)); box-shadow: 0 8px 0 color-mix(in srgb, var(--text) 22%, transparent), inset 0 0 0 3px color-mix(in srgb, var(--surface) 80%, transparent); }
+.stage[data-screen="eventCenter"] .event-style-1 { background: linear-gradient(155deg, var(--surface), color-mix(in srgb, var(--primary) 17%, var(--surface))); }
+.stage[data-screen="eventCenter"] .event-style-2 { background: linear-gradient(155deg, var(--surface), color-mix(in srgb, var(--gold) 58%, var(--background))); }
+.stage[data-screen="eventCenter"] .event-card > .badge { justify-self: start; align-self: start; max-width: 100%; margin: 0; padding: 4px 15px; font-size: 20px; line-height: 1.3; }
+.stage[data-screen="eventCenter"] .event-card .event-name { align-self: center; margin: 0; font: 700 42px/1.2 var(--display); text-align: center; color: var(--text); }
+.stage[data-screen="eventCenter"] .event-card .event-art { width: 246px; height: 164px; margin: 0 auto; filter: drop-shadow(0 9px 5px color-mix(in srgb, var(--text) 20%, transparent)); }
+.stage[data-screen="eventCenter"] .event-card .tournament-prize { min-height: 0; margin: 0; }
+.stage[data-screen="eventCenter"] .tournament-prize small { font-size: 21px; margin-bottom: 2px; }
+.stage[data-screen="eventCenter"] .tournament-prize b { font-size: 62px; }
+.stage[data-screen="eventCenter"] .tournament-prize span { font-size: 23px; }
+.stage[data-screen="eventCenter"] .tournament-prize .prize-title { padding-top: 0; font-size: 37px; line-height: 1.3; }
+.stage[data-screen="eventCenter"] .event-card .event-summary { display: flex; align-self: stretch; flex-direction: column; justify-content: center; gap: 4px; width: 100%; margin: 7px 0 13px; padding: 8px 0; border-color: color-mix(in srgb, var(--primary) 22%, transparent); text-align: center; line-height: 1.35; }
+.stage[data-screen="eventCenter"] .event-summary > strong { font-size: 30px; color: var(--primary); }
+.stage[data-screen="eventCenter"] .event-summary > span { font-size: 23px; }
+.stage[data-screen="eventCenter"] .event-card > .gold-button { align-self: end; width: 100%; height: 72px; min-width: 0; margin: 0; font-size: 30px; }
+.stage[data-screen="eventCenter"] .event-resume { top: 0; padding: 16px 19px; min-height: 82px; display: flex; align-items: center; justify-content: center; font-size: 24px; }
+
+/* Supporting event records inherit the same restrained card and table rhythm. */
+#sheet [data-screen="eventFinal"] .result-hero { grid-template-columns: 315px minmax(0, 1fr); gap: 22px; margin: 0; }
+#sheet [data-screen="eventFinal"] .winner-banner { padding: 22px 16px; }
+#sheet [data-screen="eventFinal"] .winner-banner h2 { margin: 12px 0; font-size: 38px; }
+#sheet [data-screen="eventFinal"] .winner-banner p { font-size: 24px; }
+#sheet [data-screen="eventFinal"] .rewards { min-width: 0; padding: 20px; }
+#sheet [data-screen="eventFinal"] .reward-line { padding: 18px 8px; font-size: 24px; }
+#sheet [data-screen="eventFinal"] .rewards > .subcopy { font-size: 23px; line-height: 1.6; }
+#sheet [data-screen="myEvents"] .my-event-card { gap: 24px; padding: 35px 24px; border: 1px solid color-mix(in srgb, var(--primary) 24%, var(--surface)); background: linear-gradient(135deg, var(--surface), var(--background)); }
+#sheet [data-screen="myEvents"] .my-event-card .event-art { width: 180px; height: 120px; }
+#sheet [data-screen="myEvents"] .my-event-card .heading { font-size: 35px; }
+#sheet [data-screen="myEvents"] .my-event-card .subcopy { font-size: 23px; }
+#sheet [data-screen="myEvents"] .my-event-card > .gold-button { min-width: 185px; height: 70px; font-size: 27px; padding: 0 18px; }
+#sheet [data-screen="myEvents"] .navigation-scroll { max-height: none; min-height: 0; margin-top: 16px; }
+#sheet :is([data-screen="myEvents"], [data-screen="seasonHistory"]) .empty-state { padding: 62px 24px; }
+#sheet :is([data-screen="myEvents"], [data-screen="seasonHistory"]) .empty-state h2 { font-size: 35px; }
+#sheet :is([data-screen="myEvents"], [data-screen="seasonHistory"]) .empty-state p { font-size: 24px; }
+#sheet [data-screen="season"] .account-strip { padding: 12px 18px; font-size: 23px; }
+#sheet [data-screen="season"] .stat-cards { margin: 13px 0; }
+#sheet [data-screen="season"] .stat-card { padding: 11px 12px; font-size: 22px; }
+#sheet [data-screen="season"] .stat-card strong { margin-top: 4px; font-size: 39px; }
+#sheet [data-screen="season"] .result-table td { height: 53px; padding: 9px 12px; font-size: 24px; }
+#sheet [data-screen="season"] .ranking-self { padding: 12px 18px; font-size: 23px; }
+
+@media (prefers-reduced-motion: reduce) {
+  .stage[data-screen="coinMatch"] .queue-pulse::before { animation: none; opacity: .5; }
+  #sheet .event-state-symbol .spinner i,
+  #sheet .event-status-card > .spinner i { animation: none; }
+}
+@media (forced-colors: active) {
+  .stage[data-screen="coinMatch"] .queue-scene,
+  #sheet :is(.coin-result-banner, .result-account-line, .coin-result-table, .event-overview, .event-status-card, .event-state-symbol, .event-status-facts, .event-state-note, .score-ribbon),
+  #sheet [data-screen="supportSupply"] :is(.supply-metrics, .refill-grid article),
+  .stage[data-screen="eventCenter"] .event-card { border-color: CanvasText; background: Canvas; color: CanvasText; box-shadow: none; }
+  .stage[data-screen="coinMatch"] .queue-heading > span,
+  .stage[data-screen="coinMatch"] .queue-person small,
+  .stage[data-screen="coinMatch"] .queue-info h3,
+  #sheet :is(.coin-result-value, .assigned-table, .score-ribbon strong),
+  #sheet [data-screen="supportSupply"] .supply-metrics strong { color: CanvasText; text-shadow: none; }
+  .stage[data-screen="coinMatch"] .queue-person .avatar,
+  .stage[data-screen="coinMatch"] .queue-pulse::before { border-color: CanvasText; }
+}

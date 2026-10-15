@@ -239,7 +239,7 @@
         if (!progress.coupon) { ctx.notify('需要1张补签券，本周3场有效对局可获得'); return; }
         const vip = Boolean(s.vipHistory[date]), amount = signupAmount(SIGNIN[index], vip);
         s.makeupTarget = date;
-        ctx.showModal('确认补签', `<div class="modal-kv"><span>补签日期</span><b>${date}</b></div><div class="modal-kv"><span>基础 / VIP额外 / 共得</span><b>${SIGNIN[index]} / ${amount - SIGNIN[index]} / ${amount}金币</b></div><p class="modal-copy">消耗1张当周补签券，本周补签机会用完。</p>`, ctx.b('返回签到', 'close', 'blue-button') + B('确认补签', 'makeup', 'gold-button', date)); return;
+        ctx.showModal('确认补签', `<div class="modal-kv"><span>补签日期</span><b>${date}</b></div><div class="modal-kv"><span>基础 / VIP额外 / 共得</span><b>${SIGNIN[index]} / ${amount - SIGNIN[index]} / ${amount}金币</b></div><p class="modal-copy">消耗1张当周补签券，本周补签机会用完。</p>`, ctx.b('返回签到', 'closeModal', 'blue-button') + B('确认补签', 'makeup', 'gold-button', date)); return;
       }
       reward(id, signupAmount(SIGNIN[index], s.vip), '签到奖励', 'supportSignin', { kind: 'signin', date, vip: s.vip });
       s.signClaims[date] = id; refresh();
@@ -330,7 +330,7 @@
           if (s.owned[p.id]) { open('supportWardrobe'); break; }
           if (s.orders.some(o => o.product === p.id)) { open('supportOrders'); break; }
           if (session().available < p.price) { purchase(p.id); break; }
-          ctx.showModal('确认购买', `<div class="modal-kv"><span>商品 / 数量</span><b>${p.name} / 1</b></div><div class="modal-kv"><span>价格 / 有效期</span><b>${p.price}金币 / 永久</b></div><p class="modal-copy">使用可用金币购买。永久商品只能拥有一份，购买后在我的装扮中装备。</p>`, ctx.b('返回商品', 'close', 'blue-button') + B('确认购买', 'purchase', 'gold-button', p.id)); break;
+          ctx.showModal('确认购买', `<div class="modal-kv"><span>商品 / 数量</span><b>${p.name} / 1</b></div><div class="modal-kv"><span>价格 / 有效期</span><b>${p.price}金币 / 永久</b></div><p class="modal-copy">使用可用金币购买。永久商品只能拥有一份，购买后在我的装扮中装备。</p>`, ctx.b('返回商品', 'closeModal', 'blue-button') + B('确认购买', 'purchase', 'gold-button', p.id)); break;
         }
         case 'purchase': purchase(value || s.product); break;
         case 'deliver': {

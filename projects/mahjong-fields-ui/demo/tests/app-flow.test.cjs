@@ -145,6 +145,22 @@ function boot(options = {}) {
   return {click,clickText,clickAny,input,tick,state,now:() => now,storage:() => Object.fromEntries(store),storageWrites:()=>storageWrites,receive:raw=>events.get('storage')?.({key:[...store.keys()].find(x=>x.startsWith('maluer-fields-')),newValue:JSON.stringify(raw)}),html:() => nodes.sheet.open ? nodes['sheet-body'].innerHTML : nodes.stage.innerHTML,underlay:() => nodes.stage.innerHTML,stageClass:() => nodes.stage.className,sheetOpen:() => nodes.sheet.open,sheetSize:() => [nodes.sheet.style.width,nodes.sheet.style.height],modalSize:() => [nodes.modal.style.width,nodes.modal.style.height],emit:(id,kind,event) => nodes[id].emit(kind,event),modal:() => nodes.modal.open ? nodes['modal-body'].innerHTML : '',key:() => [...store.keys()].find(x => x.startsWith('maluer-fields-'))};
 }
 
+test('赛事分桌和小局续局显示剩余秒数，刷新不延长原截止时间',()=>{
+  const app=boot();registerFirst(app);app.tick(8000);app.click('checkin');app.tick(5000);
+  const entry=app.state().data.tournament.entryDeadline;
+  app.tick(1000);assert.match(plain(app.html()),/2 秒后自动进入牌桌/);
+  const restored=boot({now:app.now(),storage:app.storage()});
+  assert.equal(restored.state().data.tournament.entryDeadline,entry);
+  assert.match(plain(restored.html()),/2 秒后自动进入牌桌/);
+  restored.tick(2000);assert.equal(restored.state().data.tournament.status,'table');
+  restored.tick(30000);const next=restored.state().data.tournament.nextHandDeadline;
+  restored.tick(3000);assert.match(plain(restored.html()),/7 秒后继续下一小局/);
+  const again=boot({now:restored.now(),storage:restored.storage()});
+  assert.equal(again.state().data.tournament.nextHandDeadline,next);
+  assert.match(plain(again.html()),/7 秒后继续下一小局/);
+  again.tick(7000);assert.equal(again.state().data.tournament.hand,2);
+});
+
 test('准备桌以完整桌面和中央准备操作呈现，发牌前不显示牌墙或手牌',()=>{
   const app=boot();matchToReady(app);
   assert.match(app.stageClass(),/gameplay/);assert.match(app.html(),/table-ready-stage/);
@@ -294,6 +310,29 @@ test('未开放玩法与匹配中地区变更不会改动原局，旧六人匹�
   const restored=boot({storage:{[app.key()]:JSON.stringify(old)}});restored.tick(8000);
   assert.equal(restored.state().session.status,'seated');assert.equal(restored.state().data.region,'武汉');
   assert.equal(restored.state().data.profile,'gouji-dragon');assert.match(restored.html(),/6 人/);
+});
+
+test('旧六人对局完成后结果保留六人和原玩法，返回选场才应用现行地区清单',()=>{
+  const app=boot();app.click('coin');app.click('startCoin');
+  const legacy=app.state();legacy.data.profile='gouji-dragon';legacy.data.region='武汉';
+  const restored=boot({now:app.now(),storage:{[app.key()]:JSON.stringify(legacy)}});
+  restored.tick(8000);restored.click('deal');restored.tick(3000);
+  assert.equal(restored.state().session.status,'playing');
+  restored.tick(30000);
+  const settled=restored.state();
+  assert.equal(settled.data.screen,'coinResult');assert.equal(settled.session.status,'idle');
+  assert.equal(settled.data.profile,'gouji-dragon');assert.equal(settled.data.region,'武汉');
+  assert.match(plain(restored.html()),/够级 · 六副带龙/);
+  const playerRows=restored.html().match(/<tbody>([\s\S]*?)<\/tbody>/)[1];
+  assert.equal((playerRows.match(/<tr\b/g)||[]).length,6);
+  const reloaded=boot({now:restored.now(),storage:restored.storage()});
+  assert.equal(reloaded.state().data.profile,'gouji-dragon');
+  assert.match(plain(reloaded.html()),/够级 · 六副带龙/);
+  assert.equal((reloaded.html().match(/<tbody>([\s\S]*?)<\/tbody>/)[1].match(/<tr\b/g)||[]).length,6);
+  reloaded.click('coin');
+  assert.equal(reloaded.state().data.screen,'coinLobby');
+  assert.equal(reloaded.state().data.region,'郑州');assert.equal(reloaded.state().data.profile,'');
+  assert.deepEqual(reloaded.state().session,settled.session);
 });
 
 test('home loads the priority hall image without downloading the hidden secondary background',()=>{
