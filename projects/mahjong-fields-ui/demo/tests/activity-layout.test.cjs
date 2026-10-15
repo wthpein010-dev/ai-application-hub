@@ -62,3 +62,41 @@ test('活动新布局继续使用正文滚动，并为横幅轻动效提供减�
   assert.match(css, /\.support-activity-spotlight::after[^}]*animation/);
   assert.doesNotMatch(css, /--sheet-(?:width|height)\s*:/);
 });
+
+test('活动插画仅作装饰，四页的金额与参与操作仍可独立读取', () => {
+  const { ui } = activityHarness();
+  const pages = [
+    ['supportSignin', 'signin', 'support:signin', '60'],
+    ['supportTea', 'tea', 'support:teaStart', '3'],
+    ['supportReturn', 'return', 'support:returnClaim', '10'],
+    ['supportFlip', 'flip', 'support:flipCard', '2 / 3 / 5 / 10']
+  ];
+  for (const [page, kind, action, amount] of pages) {
+    const html = ui.pages[page]();
+    assert.match(html, new RegExp(`<img[^>]*src="assets/activity-${kind}-v2.webp"[^>]*alt=""`));
+    assert.match(html, new RegExp(`data-action="${action}"`));
+    assert.ok(html.includes(amount), page + '的金币金额仍为文字');
+    assert.doesNotMatch(html, /<img[^>]*data-action=/);
+  }
+  const hub = ui.pages.supportActivity();
+  assert.match(hub, /src="assets\/activity-hub-v2.webp"[^>]*alt=""/);
+  assert.equal((hub.match(/class="support-entry-art[^\"]*"/g) || []).length, 4);
+});
+
+test('翻牌插画替换牌背后仍能辨别四张牌，揭开只显示既定奖励且不自动入账', () => {
+  const h = activityHarness();
+  h.ui.pages.supportFlip();
+  h.data.support.flipDates['2026-10-13'] = { qualified: true };
+  const before = h.ui.pages.supportFlip();
+  assert.equal((before.match(/src="assets\/activity-card-back-v2.webp"/g) || []).length, 4);
+  for (let i = 1; i <= 4; i++) assert.match(before, new RegExp(`aria-label="第${i}张好运牌，点击翻牌"`));
+  h.ui.dispatch('support:flipCard', '1');
+  const after = h.ui.pages.supportFlip();
+  assert.match(after, /aria-label="第2张好运牌，3金币"/);
+  assert.equal((after.match(/src="assets\/activity-card-back-v2.webp"/g) || []).length, 3);
+  assert.equal(h.data.support.rewards['flip:2026-10-13'].amount, 3);
+  assert.equal(h.data.support.rewards['flip:2026-10-13'].status, 'pending');
+  assert.equal(h.session.coins, 100);
+  h.ui.dispatch('support:flipCard', '2');
+  assert.equal(h.data.support.rewards['flip:2026-10-13'].card, 1);
+});
