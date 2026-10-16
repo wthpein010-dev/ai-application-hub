@@ -358,5 +358,5 @@ globalThis.HUB_PROJECT_MEDIA = Object.freeze({
   }),
   "announcement-center": Object.freeze({src:"./assets/hub-showcase/announcement-center.jpg?v=20260922-announcement",alt:"公告中心 · 挂件焕新内联展开交互演示",position:"center",layout:"wide",fallback:"公告中心",feature:"横幅展开、单项切换与挂件焕新说明",accent:"#a5cb53",visualKind:"product"}),
   "game-design-textbook": Object.freeze({src:"./assets/hub-showcase/game-design-textbook.jpg?v=20260927-textbook",alt:"游戏设计研习册的知识地图与全文课程",position:"center",layout:"wide",fallback:"游戏设计研习册",feature:"全文脑图、音频、实践与概率实验",accent:"#286353",visualKind:"product"}),
-  "mahjong-fields-ui": Object.freeze({"src":"./assets/hub-showcase/mahjong-fields-ui.jpg?v=20261015-fields-ui-164","alt":"金币场与比赛场 · 交互参考：匹配、报名与结算","position":"center","layout":"wide","fallback":"金币场与比赛场 · 交互参考","feature":"真人匹配、赛事报名与统一场次界面","accent":"#256da8","visualKind":"product"}),
+  "mahjong-fields-ui": Object.freeze({"src":"./assets/hub-showcase/mahjong-fields-ui.jpg?v=20261016-fields-ui-165","alt":"金币场与比赛场 · 交互参考：活动状态与结算账目","position":"center","layout":"wide","fallback":"金币场与比赛场 · 交互参考","feature":"活动资格与期限、金币补给和原局账目","accent":"#256da8","visualKind":"product"}),
 });

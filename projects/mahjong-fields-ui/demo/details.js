@@ -10,6 +10,11 @@
     const i = typeof index === 'string' && index.trim() !== '' ? Number(index) : index;
     return Array.isArray(history) && Number.isInteger(i) && i >= 0 && i < history.length ? history[i] : null;
   };
+  function recordBalance(record) {
+    const value = key => record && record[key] !== null && record[key] !== undefined && String(record[key]).trim() !== '' && Number.isFinite(Number(record[key])) ? Number(record[key]) : null;
+    const principal=value('principal'), fee=value('fee'), actual=value('actual'), after=value('balance');
+    return {before:principal!==null&&fee!==null?principal+fee:null,fee:fee!==null?-fee:null,actual,other:after!==null&&principal!==null&&actual!==null?after-principal-actual:null,after};
+  }
   function recordLedger(record) {
     if (!record) return [];
     const rows = [
@@ -22,6 +27,11 @@
     if (number(record.refund)) rows.push({kind:'refund',title:'原费用退款',change:number(record.refund),note:'按原退款记录展示。'});
     if (Array.isArray(record.rewards)) record.rewards.forEach(reward => rows.push({kind:'reward',title:reward.name || '活动奖励',change:number(reward.amount),note:'独立到账，不增加本局本金。'}));
     else if (number(record.reward)) rows.push({kind:'reward',title:'局中独立奖励',change:number(record.reward),note:'独立到账，不增加本局本金。'});
+    const balance=recordBalance(record);
+    if(balance.before!==null&&balance.after!==null&&!['refund','reward','rewards'].some(key=>Object.hasOwn(record,key))){
+      const remainder=balance.after-balance.before-rows.reduce((sum,row)=>sum+row.change,0);
+      if(remainder)rows.push({kind:'other',title:'结算前其他收支',change:remainder,note:'仅核对结算时快照；已单列的关联奖励和退款另按原记录展示。'});
+    }
     return rows;
   }
   function roundRows(tournament) {
@@ -366,5 +376,5 @@
     const labels={detailsRules:'规则说明',detailsHelp:'帮助反馈',detailsRequests:'处理记录',detailsRequest:'反馈详情',detailsHistory:'战绩与账目',detailsRecord:'本局详情',detailsLedger:'费用流水',detailsReplay:'原局回放',detailsSchedule:'赛事赛程',detailsScore:'赛事成绩',detailsAppeal:'成绩申诉'};
     return {pages,labels,dispatch};
   }
-  return {resolveRecord,recordLedger,roundRows,appealEligibility,submitLocalRequest,replayPosition,filterHistory,create};
+  return {resolveRecord,recordBalance,recordLedger,roundRows,appealEligibility,submitLocalRequest,replayPosition,filterHistory,create};
 });

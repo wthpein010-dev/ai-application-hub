@@ -3,6 +3,24 @@ const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const details = fs.existsSync(__dirname + '/../details.js') ? require('../details.js') : {};
 
+test('结算资产快照区分开局余额、服务费、牌局净额和局中其他收支', () => {
+  assert.equal(typeof details.recordBalance, 'function');
+  const result=details.recordBalance({principal:780,fee:20,actual:-780,balance:100});
+  assert.deepEqual(result,{before:800,fee:-20,actual:-780,other:100,after:100});
+  assert.equal(result.before+result.fee+result.actual+result.other,result.after);
+  assert.equal(details.recordBalance({principal:780,fee:20,actual:1500}).after,null);
+});
+
+test('未单列的快照收支可核对，关联奖励和结算后退款不产生反向补账',()=>{
+  const r={principal:780,fee:20,actual:-780,net:-1500,shortfall:720,balance:100};
+  const total=rows=>rows.reduce((sum,row)=>sum+row.change,0);
+  assert.equal(total(details.recordLedger(r)),-700);
+  const named=details.recordLedger({...r,rewards:[{name:'独立奖励',amount:100}]});
+  assert.equal(total(named),-700);assert.equal(named.filter(row=>row.kind==='other').length,0);
+  const refunded=details.recordLedger({principal:780,fee:20,actual:1500,balance:2280,refund:20});
+  assert.equal(total(refunded),1500);assert.equal(refunded.filter(row=>row.kind==='other').length,0);
+});
+
 test('指定旧战绩时读取原索引，不替换为最新结果，非法索引不落入其他记录', () => {
   assert.equal(typeof details.resolveRecord, 'function');
   const history = [{id:'old',actual:-780,fee:20},{id:'new',actual:1500,fee:20}];

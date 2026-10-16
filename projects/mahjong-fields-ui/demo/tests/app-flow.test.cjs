@@ -933,3 +933,33 @@ test('registered event cards and details both lead to the same pre-checkin state
   assert.equal(app.state().data.screen,'eventRegistered');
   assert.equal(app.state().data.tournament.status,'registered');
 });
+
+test('补币页可直接返回符合余额的低档，仍须本人再次开始匹配',()=>{
+  const app=boot();app.click('coin');app.click('selectField',3);app.click('startCoin');
+  assert.equal(app.state().data.screen,'supportSupply');
+  assert.match(plain(app.html()),/最低准入.*500,000/);
+  app.click('affordableField',2);
+  assert.equal(app.state().data.field,2);assert.equal(app.state().data.screen,'coinLobby');
+  assert.equal(app.state().session.status,'idle');assert.equal(app.state().session.coins,128600);
+});
+
+test('结算使用原局余额快照且费用流水直达同一原局，后续奖励不改写旧账',()=>{
+  const app=boot();matchToReady(app);app.click('deal');app.tick(3000);app.tick(30000);
+  const result=app.state().session.result;
+  assert.match(plain(app.html()),/开局前余额/);assert.match(plain(app.html()),/结算时余额/);
+  const next=app.state();next.session.coins+=100;app.receive(next);
+  assert.equal(app.state().session.result.balance,result.balance);
+  app.click('resultLedger');assert.equal(app.state().data.screen,'detailsLedger');
+  assert.equal(app.state().data.history[app.state().data.details.recordIndex].id,result.id);
+});
+
+test('茶歇冷却自然到期后原页面自动恢复按钮，不重置截止时间或重复奖励',()=>{
+  const app=boot();app.click('activity');app.click('support:teaPage');app.click('support:teaStart');
+  app.click('support:teaComplete');app.click('support:resolveReward','tea:2026-10-13:1');
+  const nextAt=app.state().data.support.tea['2026-10-13'].nextAt, coins=app.state().session.coins;
+  assert.throws(()=>app.click('support:teaStart'),/missing/);
+  app.tick(60000);
+  assert.equal(app.state().data.support.tea['2026-10-13'].nextAt,nextAt);
+  assert.equal(app.state().session.coins,coins);
+  app.click('support:teaStart');assert.equal(app.state().data.support.tea['2026-10-13'].watching,true);
+});

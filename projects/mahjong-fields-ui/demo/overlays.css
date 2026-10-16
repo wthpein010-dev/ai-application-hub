@@ -343,3 +343,6 @@
 #sheet .support-flip-page .support-flip-cards~.support-note{font-size:21px;margin:10px 0}
 #sheet .support-flip-page .support-flip-prizes{font-size:21px;padding:11px 15px;margin-top:12px}
 @media(forced-colors:active){#sheet .sheet-canvas:is([data-screen="supportActivity"],[data-screen="supportSignin"],[data-screen="supportTea"],[data-screen="supportReturn"],[data-screen="supportFlip"])::after{display:none}#sheet .support-activity-page>.panel-content{background:Canvas;color:CanvasText}#sheet .support-flip-page .support-flip-card{border:2px solid ButtonText;background:Canvas;color:ButtonText}#sheet .support-flip-page .support-flip-card>small{border-color:ButtonText;background:Canvas;color:ButtonText}#sheet .support-flip-page .support-flip-card:focus-visible{outline-color:Highlight}#sheet .support-flip-page .support-flip-card.revealed{border-color:Highlight;background:Canvas;color:CanvasText}}
+
+#sheet .support-day-date{display:flex;align-items:center;justify-content:center;gap:8px;font-size:18px;line-height:1.25}
+#sheet .support-day-date time{font-size:14px;line-height:1.25}

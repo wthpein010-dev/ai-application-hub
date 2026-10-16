@@ -33,6 +33,38 @@
 .support-entry-purpose{font:19px/1.5 var(--body);color:#52738c}
 .support-entry-reward{font:700 19px/1.5 var(--body);color:#83601f;font-variant-numeric:tabular-nums}
 .support-entry-arrow{position:absolute;right:9px;top:50%;transform:translateY(-50%);font:34px/1 var(--body);color:#9b7c3b}
+.support-spotlight-progress{font:18px/1.5 var(--body);color:var(--text);font-variant-numeric:tabular-nums}
+.support-activity-entry{min-height:194px;padding:12px 16px 12px 4px;gap:4px;align-items:center}
+.support-entry-art{width:112px;height:135px}
+.support-entry-copy{flex:1;align-self:stretch;gap:5px}
+.support-entry-heading{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.support-entry-title{font-size:28px}
+.support-entry-state{flex-shrink:0;padding:2px 9px;border:1px solid var(--primary);border-radius:20px;font:700 16px/1.4 var(--body);color:var(--primary);background:var(--surface)}
+.support-entry-state.ready{border-color:var(--activity-gold,#d3af5d);color:var(--text);background:var(--gold)}
+.support-entry-state.done{border-color:var(--success);color:var(--success);background:var(--surface)}
+.support-entry-reward{font-size:21px;line-height:1.45}
+.support-entry-purpose{font-size:18px;line-height:1.45}
+.support-entry-deadline{font:17px/1.45 var(--body);color:var(--text);font-variant-numeric:tabular-nums}
+.support-entry-action{align-self:flex-end;margin-top:auto;padding:4px 13px;border:1px solid #be933e;border-radius:22px;background:linear-gradient(#fff7d6,#f1cb69);color:#72511f;font:700 18px/1.4 var(--body)}
+.support-day time{font:16px/1.3 var(--body);font-variant-numeric:tabular-nums}
+#sheet .support-activity-page .support-day{height:155px}
+#sheet .support-activity-page .support-day.last{height:82px;gap:10px}
+.support-activity-page .support-day:disabled{opacity:1;cursor:default}
+.support-activity-page .support-day:disabled:not(.done){color:#57768b;background:var(--background)}
+.support-activity-page .support-day:disabled:not(.done) strong{color:#57768b}
+.support-activity-page .support-day.done em{color:var(--success)}
+.support-deadline{font:18px/1.6 var(--body);color:var(--text);margin:12px 0;font-variant-numeric:tabular-nums}
+.support-return-action{display:flex;flex-direction:column;align-items:center;gap:12px;flex-shrink:0}
+.support-return-action .badge{font-size:18px;padding:5px 10px;white-space:nowrap}
+.support-activity-history{margin-top:18px;border-top:1px solid #b9cdbd;padding-top:12px}
+.support-activity-history summary{font:22px/1.6 var(--body);color:var(--primary);cursor:pointer}
+.support-activity-history summary:hover{color:var(--text)}
+.support-activity-history summary:focus-visible{outline:3px solid var(--primary);outline-offset:4px}
+.support-activity-page .support-return-row.expired{background:var(--background);border-color:#b9cdbd;box-shadow:none}
+.support-activity-page .support-return-row.expired>strong{color:#57768b}
+.support-activity-page .support-reward-stage.locked{background:var(--background);box-shadow:none}
+.support-activity-page .support-reward-stage.current{border-color:var(--activity-gold);box-shadow:inset 0 0 0 2px var(--activity-cream)}
+@media(forced-colors:active){.support-entry-state,.support-entry-action{border-color:ButtonText;color:ButtonText;background:Canvas}.support-entry-purpose,.support-entry-deadline,.support-spotlight-progress,.support-deadline{color:CanvasText}.support-activity-history summary{color:LinkText}}
 #sheet .support-activity-independence{margin:10px 0 0;font:19px/1.5 var(--body);color:#57768c;text-align:center}
 .support-activity-spotlight:hover,.support-activity-entry:hover{filter:brightness(1.035);border-color:#b78b2d}
 .support-activity-spotlight:active,.support-activity-entry:active{filter:brightness(.97)}
@@ -50,3 +82,17 @@
 @keyframes support-activity-glint{0%,78%{left:-30%;opacity:0}81%{opacity:.85}94%,100%{left:125%;opacity:0}}
 @media(prefers-reduced-motion:reduce){.support-activity-spotlight::after{animation:none;display:none}}
 @media(forced-colors:active){.support-activity-spotlight,.support-activity-entry,.support-activity-page .support-today,.support-activity-page .support-tea-hero,.support-activity-page .support-return-row,.support-activity-page .support-reward-stage{border:2px solid ButtonText;background:Canvas;color:CanvasText;box-shadow:none}.support-activity-spotlight::before,.support-activity-spotlight::after,.support-activity-entry::before,.support-activity-festival,.support-activity-illustration,.support-entry-art{display:none}.support-activity-spotlight:focus-visible,.support-activity-entry:focus-visible{outline-color:Highlight}.support-entry-title,.support-entry-reward,.support-entry-purpose,.support-spotlight-title,.support-spotlight-label,.support-spotlight-reward{color:CanvasText;text-shadow:none}}
+
+/* Keep all four daily cards actionable in the first fixed-size activity view. */
+#sheet .support-activity-hub .support-activity-spotlight{height:144px;padding:10px 22px}
+#sheet .support-activity-hub .support-spotlight-copy{gap:0}
+#sheet .support-activity-hub .support-spotlight-label{font-size:15px}
+#sheet .support-activity-hub .support-spotlight-title{font-size:38px}
+#sheet .support-activity-hub .support-spotlight-reward{font-size:19px}
+#sheet .support-activity-hub .support-spotlight-reward strong{font-size:24px}
+#sheet .support-activity-hub .support-spotlight-progress{font-size:16px;line-height:1.4}
+#sheet .support-activity-hub .support-activity-entry{min-height:166px;padding:8px 12px 8px 4px}
+#sheet .support-activity-hub .support-entry-copy{gap:2px}
+#sheet .support-activity-hub .support-entry-art{width:104px;height:115px}
+#sheet .support-activity-hub .support-entry-reward{font-size:20px}
+#sheet .support-activity-hub .support-entry-action{padding:3px 12px}
