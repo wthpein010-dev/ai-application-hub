@@ -21,6 +21,10 @@ function harness() {
 }
 
 function button(html, action, value) {
+  if (action.endsWith('Page')) {
+    const task = [...html.matchAll(/<article\b[^>]*>[\s\S]*?<\/article>/g)].map(match => match[0]).find(markup => markup.includes(`data-action="support:${action}"`));
+    if (task) return task;
+  }
   return [...html.matchAll(/<button\b[^>]*>[\s\S]*?<\/button>/g)].map(match => match[0]).filter(markup => {
     return markup.includes(`data-action="support:${action}"`) && (value === undefined || markup.includes(`data-value="${value}"`));
   }).at(-1);
@@ -121,7 +125,7 @@ test('已受理签到展示原VIP与金额，之后会员变化不会改写奖�
   h.ui.dispatch('support:signin', 'today');
   h.data.support.vip = false;
   const html = h.ui.pages.supportSignin();
-  const today = html.slice(html.indexOf('<section class="support-today"'), html.indexOf('<section><div class="support-week-grid"'));
+  const today = html.slice(html.indexOf('<section class="support-today'), html.indexOf('<section class="support-signin-calendar"'));
   assert.match(today, /VIP加成20%/);
   assert.match(today, /<strong class="support-coin-number">60/);
   assert.match(button(h.ui.pages.supportActivity(), 'signinPage'), /今日 60金币/);

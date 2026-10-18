@@ -27,3 +27,17 @@ Use case: stylized-concept. Asset type: panoramic illustrated header background 
 29张截图按1.6.5交付原字节沿用；活动中心、七日茶约、茶歇好礼、回访有礼、好运翻牌5张为1.6.6浏览器实际截图，逐屏目检。工具返回的新截图原为JPEG，已规范为PNG且解码RGBA完全一致；本地效果图交付统一提供JPG。来源清单记录各画面哈希；历史原始文件保持原字节，未按保存扩展名推断真实编码。
 
 截图仅含本项目演示状态，不包含竞品账号原图、私有验收页面、登录资料或测试工具。
+
+
+## 1.7.0 活动海报与邀友插画
+
+制作Pain；2026-10-18。活动交互及数值沿本项目现行活动策划；竞品仅用于活动海报导航、任务奖励行的信息层级参考，竞品账号原图没有进入公开资源。
+
+新增资源 `demo/assets/activity-invite-170.webp`，1024×640、918796字节。内置image_gen原创生成，PNG转换为无损WebP并逐RGBA核对一致。源PNG SHA256 `04f0f7326fa97435bb67b3f759369cbd381aa1e6d8d95c55f27f390226adc7c6`；WebP SHA256 `341acfdd5fb5aafdbd543c0540ea018f288927b4bbd235b9698d5ddd8bcf6dad`。使用在普通邀友主视觉及海报；文字与按钮由HTML独立呈现。
+
+生成提示词：
+```text
+Use case: stylized-concept. Asset type: original horizontal illustration for a Chinese casual mahjong game's ordinary friend invitation page. Primary request: create a polished, inviting tea-courtyard gathering, no text, no logos. Reference images: the blue, jade-white and gold 3D tea service and the blue-gold courtyard header provided in the conversation are style references only; create a new scene. Scene: a graceful old Chinese town courtyard with blue glazed tiled roofs, a flowering tree, subtle warm gold sunlight and a soft cyan distant canal background. Subject: two friendly adult tea companions seated around a compact round tea table, one woman and one man, in tasteful stylized contemporary casual clothing with subtle Chinese details; relaxed welcoming smiles, holding tiny tea cups, a few clean mahjong tiles and refined tea service on the table, one small closed blue-gold decorative keepsake box with no coins flowing out. Style: exquisite rounded 3D illustration for a premium Chinese casual board game, sculpted characters, silk, glazed ceramic, enamel blue and gold details, bright clean readable silhouettes; fit an existing blue-and-gold mahjong interface. Composition: landscape 8:5, medium-wide scene, main two characters and table centered toward the right two thirds, no UI, enough quiet space on upper left for interface overlay; visual polish and controlled rich detail. Palette: turquoise and sky blue backdrop, deep azure roof and ceramic, ivory jade, warm gold rim light, small jade green accents. Constraints: no text, no symbols that resemble letters, no logo, no watermark, no interface buttons, no monetary amounts, no currency icons, no invitation-reward implication, no casino or gambling imagery, no extra people. Fully rendered background, not transparent.
+```
+
+本版图册35画面、175秒：29张按既有交付原字节沿用；活动中心、签到、茶歇、回访、翻牌和普通邀友6张本轮浏览器新拍。新截图仅规范PNG容器，解码像素一致。图册不是连续实机录屏，未连接真实服务。PSD仍保留独立1.6.4交付。

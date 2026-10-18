@@ -408,7 +408,7 @@ test('poker bidding and doubles precede playing, while wallet orders credit once
 test('activity tabs retain one window size through switching and reload', () => {
   let app=boot(); app.click('activity');
   const size=app.sheetSize();
-  for(const [action,screen] of [['signinPage','supportSignin'],['teaPage','supportTea'],['returnPage','supportReturn'],['flipPage','supportFlip'],['activities','supportActivity']]) {
+  for(const [action,screen] of [['signinPage','supportSignin'],['teaPage','supportTea'],['returnPage','supportReturn'],['flipPage','supportFlip'],['invitePage','supportInvite'],['activities','supportActivity']]) {
     app.click('support:'+action);
     assert.equal(app.state().data.screen,screen);
     assert.deepEqual(app.sheetSize(),size,screen);
@@ -419,10 +419,42 @@ test('activity tabs retain one window size through switching and reload', () => 
 
 test('activity tabs close once to their opener after switching and reloading', () => {
   let app=boot();app.click('activity');
-  for(const action of ['signinPage','teaPage','returnPage','flipPage','activities'])app.click('support:'+action);
+  for(const action of ['signinPage','teaPage','returnPage','flipPage','invitePage','activities'])app.click('support:'+action);
   app=boot({storage:app.storage()});app.click('back');
   assert.equal(app.sheetOpen(),false);
   assert.equal(app.state().data.screen,'home');
+});
+
+test('普通邀友预览使用原提示窗，取消后保留原页和待确认奖励且重复切页不增长返回栈', () => {
+  let app=boot();app.click('activity');app.click('support:signinPage');app.click('support:signin','today');
+  const before=app.state(),stackLength=before.data.navStack.length;
+  app.click('support:invitePage');
+  assert.deepEqual(app.sheetSize(),['1280px','860px']);
+  app.click('support:invitePreview');
+  assert.deepEqual(app.modalSize(),['800px','600px']);
+  assert.match(app.modal(),/邀友卡片预览/);
+  app.click('closeModal');
+  assert.equal(app.state().data.screen,'supportInvite');
+  assert.equal(app.modal(),'');
+  for(let i=0;i<12;i++){app.click('support:activities');app.click('support:invitePage');}
+  assert.equal(app.state().data.navStack.length,stackLength);
+  assert.deepEqual(app.state().data.support.rewards,before.data.support.rewards);
+  assert.equal(app.state().session.coins,before.session.coins);
+  app=boot({storage:app.storage()});app.click('back');
+  assert.equal(app.state().data.screen,'home');
+  assert.equal(app.sheetOpen(),false);
+});
+
+test('普通邀友去体验恢复本人未结束金币牌局，不另开匹配或改变本金', () => {
+  const app=boot();matchToReady(app);app.click('deal');app.tick(3000);
+  const before=app.state().session;
+  app.click('supply');app.click('support:activities');app.click('support:invitePage');
+  app.click('resumeCoin');
+  assert.equal(app.state().data.screen,'coinPlay');
+  assert.equal(app.state().session.status,'playing');
+  assert.equal(app.state().session.principal,before.principal);
+  assert.equal(app.state().session.coins,before.coins);
+  assert.equal(app.sheetOpen(),false);
 });
 
 test('activity dismissal skips tab history in older saves and resumes the live queue', () => {

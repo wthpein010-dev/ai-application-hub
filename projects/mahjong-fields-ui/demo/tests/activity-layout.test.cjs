@@ -19,12 +19,12 @@ function activityHarness() {
   return { data, session, ui };
 }
 
-test('活动中心有福利横幅和四个独立整卡入口，金额仍沿既有活动配置', () => {
+test('活动中心有福利横幅和四个独立任务入口，金额仍沿既有活动配置', () => {
   const { ui } = activityHarness();
   const html = ui.pages.supportActivity();
-  assert.match(html, /class="support-activity-spotlight"[^>]*data-action="support:signinPage"/);
-  const cards = Array.from(html.matchAll(/class="support-activity-entry[^\"]*"[^>]*data-action="support:([^\"]+)"/g), match => match[1]);
-  assert.deepEqual(cards, ['signinPage', 'teaPage', 'returnPage', 'flipPage']);
+  assert.match(html, /class="support-activity-spotlight[^\"]*"[^>]*data-action="support:signinPage"/);
+  const tasks = Array.from(html.matchAll(/<article\b[^>]*aria-label="(?:七日茶约|茶歇好礼|回访有礼|好运翻牌)"[^>]*>([\s\S]*?)<\/article>/g), match => match[1]);
+  assert.deepEqual(tasks.map(markup => markup.match(/data-action="support:([^\"]+)"/)[1]), ['signinPage', 'teaPage', 'returnPage', 'flipPage']);
   assert.match(html, /aria-label="茶友好礼，查看签到"/);
   assert.match(html, /aria-label="好运翻牌，完成有效对局后翻牌，每日1次 · 2 \/ 3 \/ 5 \/ 10金币，查看活动"/);
   assert.match(html, /基础每周700 · VIP共840/);
@@ -35,7 +35,7 @@ test('活动中心有福利横幅和四个独立整卡入口，金额仍沿既�
   let openButton = false;
   for (const [tag] of html.matchAll(/<\/?button\b[^>]*>/g)) {
     if (tag.startsWith('</')) openButton = false;
-    else { assert.equal(openButton, false, '整卡入口不能嵌套其他按钮'); openButton = true; }
+    else { assert.equal(openButton, false, '任务入口不能嵌套其他按钮'); openButton = true; }
   }
   assert.match(html, /class="support-activity-festival"[^>]*alt=""/);
 });
@@ -80,7 +80,7 @@ test('活动插画仅作装饰，四页的金额与参与操作仍可独立读�
   }
   const hub = ui.pages.supportActivity();
   assert.match(hub, /src="assets\/activity-welfare-header-166.webp"[^>]*alt=""/);
-  assert.equal((hub.match(/class="support-entry-art[^\"]*"/g) || []).length, 4);
+  assert.equal((hub.match(/<article\b[^>]*aria-label="(?:七日茶约|茶歇好礼|回访有礼|好运翻牌)"/g) || []).length, 4);
 });
 
 test('翻牌插画替换牌背后仍能辨别四张牌，揭开只显示既定奖励且不自动入账', () => {

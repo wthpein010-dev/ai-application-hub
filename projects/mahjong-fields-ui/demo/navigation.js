@@ -1,7 +1,7 @@
 (function(root,factory){if(typeof module==='object'&&module.exports)module.exports=factory();else root.FieldNavigation=factory();})(typeof globalThis!=='undefined'?globalThis:this,function(){
   const catalogue=typeof FieldCatalogue!=='undefined'?FieldCatalogue:typeof require==='function'?require('./catalogue.js'):null;
   const coinPages=['coinMatch','coinReady','coinPlay'];
-  const activityPages=new Set(['supportActivity','supportSignin','supportTea','supportReturn','supportFlip']);
+  const activityPages=new Set(['supportActivity','supportSignin','supportTea','supportReturn','supportFlip','supportInvite']);
   const eventPages=['eventRegistered','eventStandby','eventAllocating','eventTable','eventSmallResult','eventRoundWait','eventFinal'];
   const eventMap={none:'eventCenter',registered:'eventRegistered',standby:'eventStandby',checkin:'eventRegistered',allocating:'eventAllocating',published:'eventAllocating',table:'eventTable',smallResult:'eventSmallResult',roundWait:'eventRoundWait',finalTemp:'eventFinal',final:'eventFinal',cancelled:'eventCenter',eliminated:'eventFinal'};
   function push(data,target){if(data.screen===target||(activityPages.has(data.screen)&&activityPages.has(target)))return;data.navStack=(Array.isArray(data.navStack)?data.navStack:[]).concat(data.screen).slice(-16);}
