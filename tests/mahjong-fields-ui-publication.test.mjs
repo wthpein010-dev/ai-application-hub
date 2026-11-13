@@ -7,17 +7,9 @@ import {loadDefaultAppsFromRuntime} from './helpers/default-apps.mjs';
 const root=dirname(dirname(fileURLToPath(import.meta.url)));
 const project=join(root,'projects/mahjong-fields-ui');
 const read=p=>readFileSync(join(project,p),'utf8');
-test('mahjong UI reference is appended with public demo and video, without installation downloads',()=>{
+test('mahjong UI reference is unlisted from the public catalog',()=>{
   const apps=loadDefaultAppsFromRuntime(readFileSync(join(root,'app-20260706-restore-games.js'),'utf8'));
-  const app=apps.find(app=>app.id==='mahjong-fields-ui');
-  assert.equal(apps.filter(app=>app.id==='mahjong-fields-ui').length,1);
-  assert.equal(app.id,'mahjong-fields-ui');
-  assert.equal(app.status,'engineering');
-  assert.equal(app.entry,'./projects/mahjong-fields-ui/index.html');
-  assert.equal(app.video,'./projects/mahjong-fields-ui/video/index.html');
-  assert.equal(app.platforms.windows,'');
-  assert.equal(app.platforms.mac,'');
-  assert.ok(read('index.html').includes(`<title>${app.name}</title>`));
+  assert.equal(apps.some(app=>app.id==='mahjong-fields-ui'),false);
 });
 test('public entry presents only the game with relative-resource assets',()=>{
   const html=read('index.html');
