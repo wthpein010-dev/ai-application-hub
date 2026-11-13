@@ -92,6 +92,16 @@ test("legacy Planner metadata cannot move the training tool into games", () => {
   assert.equal(migrated.badge, planner.badge);
   assert.equal(migrated.brief, "保留我的题库说明");
 });
+
+test("Planner replaces the old project-specific default brief while preserving custom copy", () => {
+  const planner = loadDefaultAppsFromRuntime(runtime).find(app => app.id === 'planner-daily-quiz');
+  assert.match(planner.brief, /通用游戏策划基础/);
+  const legacy = '面向休闲游戏和对对碰项目的每日训练题库，每天 0 点刷新一轮题，限时答题后给出批改、答案说明和错题强化建议。';
+  const migrated = loadAppsWithStoredValue([{ ...planner, brief: legacy }]).find(app => app.id === planner.id);
+  assert.equal(migrated.brief, planner.brief);
+  const custom = loadAppsWithStoredValue([{ ...planner, brief: '我的策划学习计划' }]).find(app => app.id === planner.id);
+  assert.equal(custom.brief, '我的策划学习计划');
+});
 test("project page titles use their catalog names", () => {
   assert.equal(pageTitle("projects/icecream/index.html"), "吃了个冰");
   assert.equal(pageTitle("projects/clickflow/index.html"), "ClickFlow 鼠标自动化");

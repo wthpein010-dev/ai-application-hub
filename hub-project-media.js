@@ -140,7 +140,7 @@ globalThis.HUB_PROJECT_MEDIA = Object.freeze({
     visualKind: "product",
   }),
   "planner-daily-quiz": Object.freeze({
-    src: "./assets/hub-showcase/planner-daily-quiz.webp?v=20260827-hub-visual-polish",
+    src: "./assets/hub-showcase/planner-daily-quiz.webp?v=20261113-planner-foundations",
     alt: "每日策划知识考核功能画面",
     position: "center",
     layout: "standard",

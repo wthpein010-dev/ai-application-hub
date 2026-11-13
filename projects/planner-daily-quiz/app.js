@@ -1,6 +1,7 @@
 const STORAGE_KEY = "planner-daily-quiz-records-v1";
 const PROFILE_KEY = "planner-daily-quiz-profile-v1";
 const TODAY_KEY = "planner-daily-quiz-today-v1";
+const DATA_VERSION = "20261113-foundations";
 const ADMIN_PASSWORD = "admin";
 
 const state = {
@@ -11,7 +12,7 @@ const state = {
     submitEndpoint: "",
     adminRecordsEndpoint: "",
     aiFeedbackEndpoint: "",
-    version: "local"
+    version: "2026.11.13-foundations"
   },
   questions: [],
   dailyQuestions: [],
@@ -86,8 +87,8 @@ async function init() {
 
 async function loadData() {
   const [configResponse, questionResponse] = await Promise.all([
-    fetch("./data/config.json").catch(() => null),
-    fetch("./data/questions.json")
+    fetch(`./data/config.json?v=${DATA_VERSION}`).catch(() => null),
+    fetch(`./data/questions.json?v=${DATA_VERSION}`)
   ]);
   if (configResponse?.ok) {
     state.config = { ...state.config, ...(await configResponse.json()) };
@@ -601,7 +602,7 @@ function markSynced(id) {
 }
 
 function persistResult(result) {
-  const records = getRecords().filter(record => record.date !== result.date || record.profile.userName !== result.profile.userName);
+  const records = getRecords().filter(record => record.date !== result.date || record.profile.userName !== result.profile.userName || record.appVersion !== result.appVersion);
   records.push(result);
   localStorage.setItem(STORAGE_KEY, JSON.stringify(records));
 }
@@ -610,7 +611,7 @@ function getTodayRecord() {
   const profile = getProfile(false);
   const records = getRecords();
   if (!profile.userName) return null;
-  return records.find(record => record.date === todayKey() && record.profile.userName === profile.userName);
+  return records.find(record => record.date === todayKey() && record.profile.userName === profile.userName && record.appVersion === state.config.version);
 }
 
 function getRecords() {
