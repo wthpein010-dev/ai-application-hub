@@ -1527,42 +1527,5 @@ export const projects = [
       "ink": "#642645",
       "mark": "游戏"
     }
-  },
-  {
-    "id": "mahjong-fields-ui",
-    "index": 38,
-    "name": "金币场与比赛场 · 交互参考",
-    "category": "游戏UI交互原型",
-    "kind": "engineering",
-    "badge": "项目辅助",
-    "brief": "点击体验金币选场、匹配、单局结算，以及比赛报名、检录、分桌和赛果。",
-    "problem": "以一致的画风对齐金币场与比赛场的页面流程及关键状态。",
-    "aiUse": "复用现有效果图并补充同画风界面，按现行策划制作交互参考；数据为示例，不连接真实游戏服务。",
-    "tags": [
-      "金币场",
-      "比赛场",
-      "交互原型",
-      "美术参考"
-    ],
-    "actions": [
-      {
-        "type": "web",
-        "label": "网页预览",
-        "href": "./projects/mahjong-fields-ui/index.html",
-        "sourceLabel": "演示"
-      },
-      {
-        "type": "video",
-        "label": "介绍视频",
-        "href": "./projects/mahjong-fields-ui/video/index.html",
-        "sourceLabel": "介绍视频"
-      }
-    ],
-    "visual": {
-      "accent": "#687125",
-      "surface": "#f1f3d8",
-      "ink": "#414817",
-      "mark": "金币"
-    }
   }
 ];
