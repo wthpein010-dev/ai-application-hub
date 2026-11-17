@@ -4,6 +4,7 @@ param(
     [string]$ExecutablePath,
     [string]$TaskName = "Codex Confirmation Overlay Recovery",
     [string]$Arguments = "--confirmation-overlay",
+    [string]$BackgroundTaskHostPath = (Join-Path $PSScriptRoot "BackgroundTaskHost.exe"),
     [switch]$Describe
 )
 
@@ -26,7 +27,28 @@ $encodedLauncher = [Convert]::ToBase64String(
     [Text.Encoding]::Unicode.GetBytes($launcher))
 $taskActionArguments = `
     "-NoProfile -ExecutionPolicy Bypass -WindowStyle Hidden -EncodedCommand $encodedLauncher"
+$childExecutable = $taskActionExecutable
+$childArguments = $taskActionArguments
+$hostPath = [System.IO.Path]::GetFullPath($BackgroundTaskHostPath)
+$hostConfigPath = Join-Path $workingDirectory "CodexConfirmationBar-recovery.xml"
+$config = New-Object System.Xml.XmlDocument
+$root = $config.CreateElement("Task")
+[void]$config.AppendChild($root)
+foreach ($entry in @{
+    Executable = $childExecutable
+    Arguments = $childArguments
+    WorkingDirectory = $workingDirectory
+    LogPath = (Join-Path $workingDirectory "CodexConfirmationBar-recovery-host.log")
+}.GetEnumerator()) {
+    $element = $config.CreateElement($entry.Key)
+    $element.InnerText = $entry.Value
+    [void]$root.AppendChild($element)
+}
+$taskActionExecutable = $hostPath
+$taskActionArguments = '"' + $hostConfigPath + '"'
 $definition = [pscustomobject]@{
+    HostConfigXml = $config.OuterXml
+    HostConfigPath = $hostConfigPath
     TaskName = $TaskName
     ExecutablePath = $resolvedExecutable
     Arguments = $Arguments
@@ -48,6 +70,10 @@ if (-not (Test-Path -LiteralPath $resolvedExecutable -PathType Leaf)) {
     throw "Codex confirmation executable was not found: $resolvedExecutable"
 }
 
+if (-not (Test-Path -LiteralPath $hostPath -PathType Leaf)) {
+    throw "Console-free BackgroundTaskHost was not found: $hostPath. Supply a trusted GUI-subsystem host; no task has been changed."
+}
+$config.Save($hostConfigPath)
 $userId = [System.Security.Principal.WindowsIdentity]::GetCurrent().Name
 $action = New-ScheduledTaskAction `
     -Execute $taskActionExecutable `
