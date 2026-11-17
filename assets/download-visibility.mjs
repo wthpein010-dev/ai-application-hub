@@ -8,6 +8,12 @@ export function createDownloadVisibility({ root, storage }) {
   render();
   return {
     get enabled() { return enabled; },
+    refresh() {
+      try {
+        if (storage) enabled = storage.getItem(DOWNLOAD_VISIBILITY_KEY) === 'enabled';
+      } catch {}
+      render();
+    },
     setEnabled(value) {
       enabled = value === true;
       render();

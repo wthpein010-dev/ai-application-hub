@@ -36,6 +36,20 @@ test('unrecognized stored values stay closed and unavailable storage does not br
   assert.equal(gate.enabled, false);
 });
 
+test('restored history pages resync the latest same-tab setting', () => {
+  const home = fixture();
+  home.controller.setEnabled(true);
+  const detail = fixture(home.storage);
+  home.controller.setEnabled(false);
+  assert.equal(detail.controller.enabled, true);
+  detail.controller.refresh();
+  assert.equal(detail.controller.enabled, false);
+  assert.equal(detail.root.dataset.hubDownloads, 'disabled');
+  home.controller.setEnabled(true);
+  detail.controller.refresh();
+  assert.equal(detail.controller.enabled, true);
+});
+
 test('maintenance dispatch accepts exact trimmed commands and preserves maintenance', () => {
   const source = readFileSync(new URL('../app-20260706-restore-games.js', import.meta.url), 'utf8');
   const logs = []; const changes = []; let updates = 0;

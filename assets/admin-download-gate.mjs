@@ -6,6 +6,7 @@ let tabStorage;
 try { tabStorage = window.sessionStorage; } catch {}
 const downloadVisibility = createDownloadVisibility({ root: document.documentElement, storage: tabStorage });
 window.hubDownloadVisibility = downloadVisibility;
+window.addEventListener('pageshow', () => downloadVisibility.refresh());
 
 const client=createAdminDownloadClient({apiBase:ADMIN_API_BASE});
 const dialog=document.createElement('dialog');

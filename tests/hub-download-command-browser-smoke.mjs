@@ -83,8 +83,11 @@ try {
   }
   await page.goto(`${base}/projects/announcement-center/index.html`, {waitUntil:'domcontentloaded'}); await ready(page);
   assert.ok(await page.locator(packages).count() > 0, 'same-tab detail page retains the switch');
-  await page.goto(url, {waitUntil:'domcontentloaded'}); await ready(page);
+  await page.goBack({waitUntil:'domcontentloaded'}); await ready(page);
   await command('关闭下载', false); assert.equal(await page.locator(packages).count(), 0);
+  await page.goForward({waitUntil:'domcontentloaded'}); await ready(page);
+  assert.equal(await page.locator(packages).count(), 0, 'history restoration keeps downloads closed');
+  await page.goBack({waitUntil:'domcontentloaded'}); await ready(page);
   await page.reload({waitUntil:'domcontentloaded'}); await ready(page);
   assert.equal(await page.locator(packages).count(), 0);
   await page.goto(url + '#admin', {waitUntil:'domcontentloaded'});
