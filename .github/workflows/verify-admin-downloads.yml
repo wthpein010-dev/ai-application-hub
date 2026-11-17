@@ -4,8 +4,10 @@ on:
   pull_request:
     paths:
       - 'assets/admin-download-*'
+      - 'assets/download-visibility.mjs'
       - 'server/admin-download-api.mjs'
       - 'tests/admin-download-*.mjs'
+      - 'tests/hub-download-*.mjs'
       - 'app-20260706-restore-games.js'
       - 'index.html'
       - 'projects/**/*.html'
@@ -28,6 +30,6 @@ jobs:
           node-version: 24
       # Exact file list: never start ClickFlow, run Python/Tk, or use npm test.
       - name: Verify API, client and page integration
-        run: node --test tests/admin-download-api.test.mjs tests/admin-download-client.test.mjs tests/admin-download-coverage.test.mjs
+        run: node --test tests/admin-download-api.test.mjs tests/admin-download-client.test.mjs tests/admin-download-coverage.test.mjs tests/hub-download-visibility.test.mjs
       - name: Check browser module syntax
         run: node --check assets/admin-download-gate.mjs

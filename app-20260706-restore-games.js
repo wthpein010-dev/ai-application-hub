@@ -1923,11 +1923,25 @@ function getAdvice(app) {
 }
 
 function runCommand() {
-  if (nodes.command.value.trim() === "1") {
+  const command = nodes.command.value.trim();
+  if (command === "开启下载" || command === "关闭下载") {
+    const visibility = window.hubDownloadVisibility;
+    if (!visibility) {
+      log("下载开关尚未加载，请稍后重试或刷新页面。");
+      return;
+    }
+    const enabled = command === "开启下载";
+    const persisted = visibility.setEnabled(enabled);
+    nodes.command.value = "";
+    log(enabled
+      ? "已显示当前标签页的下载入口，仅有现成包的项目会显示。此开关不提供文件权限保护。"
+      : "已隐藏当前标签页的下载入口。");
+    if (!persisted) log("浏览器未允许保存会话设置，本次切换仅对当前页面有效。");
+  } else if (command === "1") {
     nodes.command.value = "";
     runMaintenance();
   } else {
-    log("未知命令。当前维护命令是 1。");
+    log("未知命令。支持：1、开启下载、关闭下载。");
   }
 }
 
