@@ -1,5 +1,11 @@
 import { createAdminDownloadClient } from './admin-download-client.mjs';
 import { ADMIN_API_BASE } from './admin-download-config.mjs';
+import { createDownloadVisibility } from './download-visibility.mjs';
+
+let tabStorage;
+try { tabStorage = window.sessionStorage; } catch {}
+const downloadVisibility = createDownloadVisibility({ root: document.documentElement, storage: tabStorage });
+window.hubDownloadVisibility = downloadVisibility;
 
 const client=createAdminDownloadClient({apiBase:ADMIN_API_BASE});
 const dialog=document.createElement('dialog');
@@ -61,8 +67,8 @@ dialog.querySelector('[data-admin-logout]').addEventListener('click',async()=>{
   try{await pending;status.textContent='已退出登录。';}catch{status.textContent='本页已退出；服务暂不可用，远端会话可能仍有效。';}
   finally{busy=false;display(status.textContent);}
 });
-// Legacy package controls never navigate to public URLs, even after login.
+// Public links are a tab-local opt-in, independent of the authenticated API.
 const legacySelector='[data-hub-package], [data-role="download-button"], a[href*="/releases/download/"], a[href*="/downloads/"], a[href*="/download/"], .card-actions [data-action="download"], .card-actions [data-action="mac"]';
-document.addEventListener('click',event=>{if(event.target.closest?.(legacySelector)){event.preventDefault();event.stopImmediatePropagation();open();}},true);
+document.addEventListener('click',event=>{if(!downloadVisibility.enabled && event.target.closest?.(legacySelector)){event.preventDefault();event.stopImmediatePropagation();open();}},true);
 window.addEventListener('hashchange',()=>{if(location.hash==='#admin')open();});
 if(location.hash==='#admin')open();
